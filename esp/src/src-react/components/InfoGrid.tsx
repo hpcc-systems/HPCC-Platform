@@ -1,7 +1,7 @@
 import * as React from "react";
 import { SelectionMode } from "./controls/Grid";
 import { CommandBar, ICommandBarItemProps } from "./CommandBarV9";
-import { Checkbox, Link } from "@fluentui/react-components";
+import { Badge, Checkbox, Link, tokens } from "@fluentui/react-components";
 import { SizeMe } from "../layouts/SizeMe";
 import { formatCost, formatTwoDigits } from "src/Session";
 import nlsHPCC from "src/nlsHPCC";
@@ -58,11 +58,11 @@ export const InfoGrid: React.FunctionComponent<InfoGridProps> = ({
 
     //  Command Bar  ---
     const buttons = React.useMemo((): ICommandBarItemProps[] => [
-        { key: "errors", onRender: () => <Checkbox defaultChecked label={`${filterCounts.error || 0} ${nlsHPCC.Errors}`} onChange={(_, data) => setErrorChecked(!!data.checked)} style={{ paddingTop: 8, paddingRight: 8 }} /> },
-        { key: "costs", onRender: () => <Checkbox defaultChecked label={`${filterCounts.cost || 0} ${nlsHPCC.Costs}`} onChange={(_, data) => setCostChecked(!!data.checked)} style={{ paddingTop: 8, paddingRight: 8 }} /> },
-        { key: "warnings", onRender: () => <Checkbox defaultChecked label={`${filterCounts.warning || 0} ${nlsHPCC.Warnings}`} onChange={(_, data) => setWarningChecked(!!data.checked)} style={{ paddingTop: 8, paddingRight: 8 }} /> },
-        { key: "infos", onRender: () => <Checkbox checked={infoChecked} label={`${filterCounts.info || 0} ${nlsHPCC.Infos}`} onChange={(_, data) => setInfoChecked(!!data.checked)} style={{ paddingTop: 8, paddingRight: 8 }} /> },
-        { key: "others", onRender: () => <Checkbox defaultChecked label={`${filterCounts.other || 0} ${nlsHPCC.Others}`} onChange={(_, data) => setOtherChecked(!!data.checked)} style={{ paddingTop: 8, paddingRight: 8 }} /> }
+        { key: "errors", onRender: () => <Checkbox defaultChecked onChange={(_, data) => setErrorChecked(!!data.checked)} style={{ marginRight: 8 }} label={<><span style={{ color: tokens.colorStatusDangerForeground1 }}>{nlsHPCC.Errors} </span><Badge appearance="tint" color="danger">{filterCounts.error || 0}</Badge></>} /> },
+        { key: "costs", onRender: () => <Checkbox defaultChecked onChange={(_, data) => setCostChecked(!!data.checked)} style={{ marginRight: 8 }} label={<><span style={{ color: tokens.colorStatusDangerForeground1 }}>{nlsHPCC.Costs} </span><Badge appearance="tint" color="danger">{filterCounts.cost || 0}</Badge></>} /> },
+        { key: "warnings", onRender: () => <Checkbox defaultChecked onChange={(_, data) => setWarningChecked(!!data.checked)} style={{ marginRight: 8 }} label={<><span style={{ color: tokens.colorStatusWarningForeground1 }}>{nlsHPCC.Warnings} </span><Badge appearance="tint" color="warning">{filterCounts.warning || 0}</Badge></>} /> },
+        { key: "infos", onRender: () => <Checkbox checked={infoChecked} onChange={(_, data) => setInfoChecked(!!data.checked)} style={{ marginRight: 8 }} label={<><span>{nlsHPCC.Infos} </span><Badge appearance="tint" color="informative">{filterCounts.info || 0}</Badge></>} /> },
+        { key: "others", onRender: () => <Checkbox defaultChecked onChange={(_, data) => setOtherChecked(!!data.checked)} style={{ marginRight: 8 }} label={<><span>{nlsHPCC.Others} </span><Badge appearance="tint" color="informative">{filterCounts.other || 0}</Badge></>} /> }
     ], [infoChecked, filterCounts.cost, filterCounts.error, filterCounts.info, filterCounts.other, filterCounts.warning]);
 
     React.useEffect(() => {
