@@ -1,0 +1,30 @@
+global:
+  cost:
+    currencyCode: USD
+    perCpu: 1.00
+
+thor:
+- name: thor
+  manager:
+    cost:
+      perCpu: 2.50
+  worker:
+    cost:
+      perCpu: 3.25
+  eclagent:
+    cost:
+      perCpu: 2.10
+  prefix: thor
+  numWorkers: 2
+  maxJobs: 2
+  maxGraphs: 2
+  numWorkersPerPod: 1
+  managerResources:
+    cpu: "1"
+    memory: "1G"
+  workerResources:
+    cpu: "1"
+    memory: "1G"
+  eclAgentResources:
+    cpu: "1"
+    memory: "1G"
