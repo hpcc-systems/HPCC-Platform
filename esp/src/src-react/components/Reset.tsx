@@ -11,6 +11,7 @@ import { resetFavorites } from "../hooks/favorite";
 import { resetCookieConsent } from "./Frame";
 import { resetWorkunitOptions } from "./Workunits";
 import { resetWorkunitSummarySplitter } from "./WorkunitSummary";
+import { resetWUSummaryOptions } from "./WUSSummary";
 
 const useResetStyles = makeStyles({
     root: {
@@ -28,7 +29,6 @@ export const ResetDialog: React.FunctionComponent<ResetDialogProps> = ({
     const [show, setShow] = React.useState(true);
     const [checkMetricOptions, setCheckMetricOptions] = React.useState(true);
     const [checkWorkunitOptions, setCheckWorkunitOptions] = React.useState(true);
-    const [checkWorkunitSummarySplitter, setCheckWorkunitSummarySplitter] = React.useState(true);
     const [checkHistory, setCheckHistoryCheckbox] = React.useState(true);
     const [checkFavorites, setCheckFavorites] = React.useState(true);
     const [checkEclWatchVersion, setCheckEclWatchVersion] = React.useState(true);
@@ -44,9 +44,8 @@ export const ResetDialog: React.FunctionComponent<ResetDialogProps> = ({
         }
         if (checkWorkunitOptions) {
             await resetWorkunitOptions();
-        }
-        if (checkWorkunitSummarySplitter) {
             await resetWorkunitSummarySplitter();
+            await resetWUSummaryOptions();
         }
         if (checkHistory) {
             await resetHistory();
@@ -70,7 +69,7 @@ export const ResetDialog: React.FunctionComponent<ResetDialogProps> = ({
         setShow(false);
         replaceUrl("/");
         window.location.reload();
-    }, [checkCookies, checkEclWatchVersion, checkFavorites, checkHistory, checkMetricOptions, checkNavWide, checkTheme, checkWorkunitOptions, checkWorkunitSummarySplitter]);
+    }, [checkCookies, checkEclWatchVersion, checkFavorites, checkHistory, checkMetricOptions, checkNavWide, checkTheme, checkWorkunitOptions]);
 
     return <div className={styles.root}>
         <MessageBox show={show} setShow={setShow} title={`${nlsHPCC.ResetUserSettings}?`} footer={
@@ -82,7 +81,6 @@ export const ResetDialog: React.FunctionComponent<ResetDialogProps> = ({
             <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
                 <Checkbox label={nlsHPCC.MetricOptions} checked={checkMetricOptions} onChange={(_, data) => setCheckMetricOptions(!!data.checked)} />
                 <Checkbox label={nlsHPCC.WorkunitOptions} checked={checkWorkunitOptions} onChange={(_, data) => setCheckWorkunitOptions(!!data.checked)} />
-                <Checkbox label={nlsHPCC.WorkunitSummarySplitter} checked={checkWorkunitSummarySplitter} onChange={(_, data) => setCheckWorkunitSummarySplitter(!!data.checked)} />
                 <Checkbox label={nlsHPCC.History} checked={checkHistory} onChange={(_, data) => setCheckHistoryCheckbox(!!data.checked)} />
                 <Checkbox label={nlsHPCC.Favorites} checked={checkFavorites} onChange={(_, data) => setCheckFavorites(!!data.checked)} />
                 <Checkbox label={nlsHPCC.ECLWatchVersion} checked={checkEclWatchVersion} onChange={(_, data) => setCheckEclWatchVersion(!!data.checked)} />

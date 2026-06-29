@@ -1,27 +1,53 @@
 import * as React from "react";
-import { Accordion, AccordionHeader, AccordionItem, AccordionPanel, Badge, Field, makeStyles, ProgressBar, Label, Link, SearchBox, SearchBoxChangeEvent, Text, Toolbar, ToolbarButton, tokens, ToolbarGroup, ToolbarDivider } from "@fluentui/react-components";
+import { Accordion, AccordionHeader, AccordionItem, AccordionPanel, Badge, Checkbox, Field, makeStyles, ProgressBar, Link, SearchBox, SearchBoxChangeEvent, Text, Toolbar, ToolbarButton, tokens, ToolbarDivider, ToolbarGroup } from "@fluentui/react-components";
 import { ArrowClockwiseRegular, ArrowResetFilled, ArrowRightFilled, DismissCircleRegular, FilterRegular, WarningRegular, InfoRegular } from "@fluentui/react-icons";
+import { useConst } from "@fluentui/react-hooks";
 import { DatePicker } from "@fluentui/react-datepicker-compat";
 import { timeFormat, timeParse } from "@hpcc-js/common";
-import { Workunit } from "@hpcc-js/comms";
+import { Workunit, WsWorkunits } from "@hpcc-js/comms";
 import { scopedLogger } from "@hpcc-js/util";
+import { userKeyValStore } from "src/KeyValStore";
 import nlsHPCC from "src/nlsHPCC";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { pushParams } from "../util/history";
-import { throttle } from "../util/throttle";
+import { throttle, ThrottleQueueItem } from "../util/throttle";
 import { SizeMe } from "../layouts/SizeMe";
+import { useUserStore } from "../hooks/store";
 
 const logger = scopedLogger("src-react/components/WUSSummary.tsx");
 
+const WUSSUMMARY_SHOWFAILED = "wusummary_showFailed";
+const WUSSUMMARY_SHOWCOMPLETED = "wusummary_showCompleted";
+const WUSSUMMARY_SHOWOTHER = "wusummary_showOther";
+const WUSSUMMARY_SHOWERROR = "wusummary_showError";
+const WUSSUMMARY_SHOWWARNING = "wusummary_showWarning";
+const WUSSUMMARY_SHOWINFO = "wusummary_showInfo";
+
+export function resetWUSummaryOptions() {
+    const store = userKeyValStore();
+    return Promise.all([
+        store?.delete(WUSSUMMARY_SHOWFAILED),
+        store?.delete(WUSSUMMARY_SHOWCOMPLETED),
+        store?.delete(WUSSUMMARY_SHOWOTHER),
+        store?.delete(WUSSUMMARY_SHOWERROR),
+        store?.delete(WUSSUMMARY_SHOWWARNING),
+        store?.delete(WUSSUMMARY_SHOWINFO)
+    ]);
+}
+
+const CANCELLED = "THROTTLE_CANCELLED";
+
 const useStyles = makeStyles({
-    root: {
-        maxWidth: "200px"
-    },
     toolbar: {
         justifyContent: "space-between",
     },
-    label: { marginLeft: tokens.spacingHorizontalM, marginRight: tokens.spacingHorizontalXS },
-    searchBox: { width: "220px" }
+    datePicker: {
+        maxWidth: "200px"
+    },
+    checkbox: {
+        marginRight: "8px"
+    },
+    searchBox: { flexGrow: 1, maxWidth: "none" }
 });
 
 const dateFormatter = timeFormat("%Y-%m-%d");
@@ -92,6 +118,17 @@ function severityForegroundColor(severity: string) {
     return undefined;
 }
 
+function severitySortOrder(severity: string) {
+    switch (severity) {
+        case "Error":
+            return 0;
+        case "Warning":
+            return 1;
+        default:
+            return 2;
+    }
+}
+
 interface Error {
     workunit: Workunit;
     severity: string;
@@ -104,6 +141,118 @@ interface Exceptions {
         messageSummary: string;
         errors: Error[];
     };
+}
+
+interface ExceptionFetchProgress {
+    fetched: number;
+    total: number;
+}
+
+interface UseThrottledExceptionFetchProps {
+    failed: Workunit[];
+    completed: Workunit[];
+    other: Workunit[];
+    showFailed: boolean;
+    showCompleted: boolean;
+    showOther: boolean;
+}
+
+function useThrottledExceptionFetch({
+    failed,
+    completed,
+    other,
+    showFailed,
+    showCompleted,
+    showOther
+}: UseThrottledExceptionFetchProps): { exceptions: Exceptions; progress: ExceptionFetchProgress } {
+    const fetchedCache = useConst(() => new Map<string, Promise<WsWorkunits.ECLException[]>>());
+    const [exceptions, setExceptions] = React.useState<Exceptions>({});
+    const [fetched, setFetched] = React.useState(0);
+
+    React.useEffect(() => {
+        let cancelled = false;
+
+        setFetched(0);
+
+        const throttleQueue: ThrottleQueueItem<WsWorkunits.ECLException[]>[] = [];
+        const throttledFetch = throttle(async (wu: Workunit): Promise<WsWorkunits.ECLException[]> => {
+            return wu.fetchECLExceptions();
+        }, { parallel: 6, timeout: 333, queue: throttleQueue });
+
+        const doFetch = async (wu: Workunit) => {
+            if (cancelled) return;
+            if (!fetchedCache.has(wu.Wuid)) {
+                fetchedCache.set(wu.Wuid, throttledFetch(wu));
+            }
+            return fetchedCache.get(wu.Wuid).then((fetchedExceptions) => {
+                if (cancelled) return;
+                setExceptions((prev) => {
+                    const retVal = { ...prev };
+                    fetchedExceptions.forEach(exception => {
+                        if (exception.Message?.startsWith("While expanding macro")) return;
+                        const key = `${exception.Severity}|${exception.Code}`;
+                        if (!retVal[key]) {
+                            retVal[key] = { severity: exception.Severity, messageSummary: exception.Message, errors: [] };
+                        } else {
+                            retVal[key].messageSummary = partialStringMatch([retVal[key].messageSummary, exception.Message], "?");
+                        }
+                        retVal[key].errors.push({ severity: exception.Severity, message: exception.Message, workunit: wu });
+                    });
+                    return retVal;
+                });
+            }).catch(err => {
+                if (cancelled) return;
+                if (err === CANCELLED) return;
+                logger.error(err);
+            }).finally(() => {
+                if (cancelled) return;
+                setFetched(prev => prev + 1);
+            });
+        };
+
+        setExceptions({});
+        const selectedWorkunits: Workunit[] = [];
+        if (showFailed) {
+            selectedWorkunits.push(...failed);
+        }
+        if (showCompleted) {
+            selectedWorkunits.push(...completed);
+        }
+        if (showOther) {
+            selectedWorkunits.push(...other);
+        }
+        selectedWorkunits.forEach(wu => {
+            doFetch(wu);
+        });
+
+        return () => {
+            cancelled = true;
+            throttleQueue.forEach(item => {
+                item.reject(CANCELLED);
+                fetchedCache.delete(item.args[0].Wuid);
+            });
+            throttleQueue.length = 0;
+        };
+    }, [failed, completed, other, showFailed, showCompleted, showOther, fetchedCache]);
+
+    const progress = React.useMemo(() => {
+        let total = 0;
+        if (showFailed) {
+            total += failed.length;
+        }
+        if (showCompleted) {
+            total += completed.length;
+        }
+        if (showOther) {
+            total += other.length;
+        }
+        return {
+            fetched: fetched > total ? total : fetched,
+            total
+        };
+    }, [showFailed, showCompleted, showOther, fetched, failed.length, completed.length, other.length]);
+
+    return { exceptions, progress };
 }
 
 export interface WUSSummaryProps {
@@ -120,13 +269,16 @@ export const WUSSummary: React.FunctionComponent<WUSSummaryProps> = ({
     const end = dateParser(to);
     const start = dateParser(from);
 
-    const [workunits, setWorkunits] = React.useState<Workunit[]>([]);
     const [completed, setCompleted] = React.useState<Workunit[]>([]);
     const [failed, setFailed] = React.useState<Workunit[]>([]);
     const [other, setOther] = React.useState<Workunit[]>([]);
-    const [exceptions, setExceptions] = React.useState<Exceptions>({});
-    const [fetched, setFetched] = React.useState(0);
     const [searchBoxValue, setSearchBoxValue] = React.useState(filter);
+    const [showFailed, setShowFailed] = useUserStore<boolean>(WUSSUMMARY_SHOWFAILED, true);
+    const [showCompleted, setShowCompleted] = useUserStore<boolean>(WUSSUMMARY_SHOWCOMPLETED, false);
+    const [showOther, setShowOther] = useUserStore<boolean>(WUSSUMMARY_SHOWOTHER, false);
+    const [showError, setShowError] = useUserStore<boolean>(WUSSUMMARY_SHOWERROR, true);
+    const [showWarning, setShowWarning] = useUserStore<boolean>(WUSSUMMARY_SHOWWARNING, false);
+    const [showInfo, setShowInfo] = useUserStore<boolean>(WUSSUMMARY_SHOWINFO, false);
 
     React.useEffect(() => {
         setSearchBoxValue(filter);
@@ -153,11 +305,9 @@ export const WUSSummary: React.FunctionComponent<WUSSummaryProps> = ({
             setOther(other);
         }
 
-        setWorkunits([]);
         setCompleted([]);
         setFailed([]);
         setOther([]);
-        setExceptions({});
 
         const adjustedEnd = new Date(end);
         adjustedEnd.setDate(adjustedEnd.getDate() + 1);
@@ -167,7 +317,6 @@ export const WUSSummary: React.FunctionComponent<WUSSummaryProps> = ({
             PageSize: 999999
         }).then(response => {
             if (!cancelled) {
-                setWorkunits(response);
                 updateGroups(response);
             }
         }).catch(err => logger.error(err));
@@ -177,58 +326,14 @@ export const WUSSummary: React.FunctionComponent<WUSSummaryProps> = ({
         };
     }, []);
 
-    React.useEffect(() => {
-        let cancelled = false;
-
-        setFetched(0);
-        const throttledFetch = throttle(async (wu: Workunit) => {
-            if (!cancelled) {
-                return wu.fetchECLExceptions().then((exceptions) => {
-                    if (!cancelled) {
-                        setExceptions((prev) => {
-                            const retVal = { ...prev };
-                            exceptions.forEach(exception => {
-                                if (exception.Message?.startsWith("While expanding macro")) return;
-                                if (!retVal[exception.Code]) {
-                                    retVal[exception.Code] = { severity: exception.Severity, messageSummary: exception.Message, errors: [] };
-                                } else {
-                                    if (retVal[exception.Code].severity !== exception.Severity) {
-                                        switch (retVal[exception.Code].severity) {
-                                            case "Info":
-                                                retVal[exception.Code].severity = exception.Severity;
-                                                break;
-                                            case "Warning":
-                                                if (exception.Severity === "Error") {
-                                                    retVal[exception.Code].severity = "Error";
-                                                }
-                                                break;
-                                        }
-                                    }
-                                    retVal[exception.Code].messageSummary = partialStringMatch([retVal[exception.Code].messageSummary, exception.Message], "?");
-                                }
-                                retVal[exception.Code].errors.push({ severity: exception.Severity, message: exception.Message, workunit: wu });
-                            });
-                            return retVal;
-                        });
-                    }
-                }).catch(err => {
-                    logger.error(err);
-                }).finally(() => {
-                    if (!cancelled) {
-                        setFetched(prev => prev + 1);
-                    }
-                });
-            }
-        }, 6, 333);
-
-        failed.forEach(wu => {
-            throttledFetch(wu);
-        });
-
-        return () => {
-            cancelled = true;
-        };
-    }, [failed]);
+    const { exceptions, progress } = useThrottledExceptionFetch({
+        failed,
+        completed,
+        other,
+        showFailed,
+        showCompleted,
+        showOther
+    });
 
     React.useEffect(() => {
         fetchData(dateParser(from), dateParser(to));
@@ -265,68 +370,137 @@ export const WUSSummary: React.FunctionComponent<WUSSummaryProps> = ({
         }, 500);
     }, []);
 
+    const onToggleShowFailed = React.useCallback(() => {
+        setShowFailed(!showFailed);
+    }, [setShowFailed, showFailed]);
+
+    const onToggleShowCompleted = React.useCallback(() => {
+        setShowCompleted(!showCompleted);
+    }, [setShowCompleted, showCompleted]);
+
+    const onToggleShowOther = React.useCallback(() => {
+        setShowOther(!showOther);
+    }, [setShowOther, showOther]);
+
+    const onToggleShowError = React.useCallback(() => {
+        setShowError(!showError);
+    }, [setShowError, showError]);
+
+    const onToggleShowWarning = React.useCallback(() => {
+        setShowWarning(!showWarning);
+    }, [setShowWarning, showWarning]);
+
+    const onToggleShowInfo = React.useCallback(() => {
+        setShowInfo(!showInfo);
+    }, [setShowInfo, showInfo]);
+
+    const severityCounts = React.useMemo(() => {
+        const counts = { Error: 0, Warning: 0, Info: 0 };
+        Object.values(exceptions).forEach(entry => {
+            entry.errors.forEach(err => {
+                if (err.severity === "Error") counts.Error++;
+                else if (err.severity === "Warning") counts.Warning++;
+                else counts.Info++;
+            });
+        });
+        return counts;
+    }, [exceptions]);
+
     const filteredExceptions = React.useMemo(() => {
-        if (!filter) return exceptions;
         const lc = filter.toLowerCase();
-        return Object.fromEntries(
-            Object.entries(exceptions).filter(([code, entry]) =>
-                code.toLowerCase().includes(lc) ||
-                entry.messageSummary.toLowerCase().includes(lc) ||
-                entry.errors.some(e => e.message.toLowerCase().includes(lc) || e.workunit.Wuid?.toLowerCase().includes(lc))
-            )
-        );
-    }, [exceptions, filter]);
+        const result: { [key: string]: { severity: string; messageSummary: string; errors: Error[]; filteredErrors: Error[] } } = {};
+
+        Object.entries(exceptions).forEach(([compositeKey, entry]) => {
+            const actualCode = compositeKey.split("|")[1];
+            const codeMatch = !lc || actualCode.toLowerCase().includes(lc);
+            const summaryMatch = !lc || entry.messageSummary.toLowerCase().includes(lc);
+
+            const filteredErrors = entry.errors.filter(e => {
+                if (!showFailed && e.workunit.isFailed()) return false;
+                if (!showCompleted && e.workunit.isComplete() && !e.workunit.isFailed()) return false;
+                if (!showOther && !e.workunit.isComplete() && !e.workunit.isFailed()) return false;
+                if (!showError && e.severity === "Error") return false;
+                if (!showWarning && e.severity === "Warning") return false;
+                if (!showInfo && e.severity !== "Error" && e.severity !== "Warning") return false;
+                if (codeMatch || summaryMatch) return true;
+                return e.message.toLowerCase().includes(lc) || e.workunit.Wuid?.toLowerCase().includes(lc);
+            });
+
+            if (filteredErrors.length > 0) {
+                result[compositeKey] = { ...entry, filteredErrors };
+            }
+        });
+
+        return result;
+    }, [exceptions, filter, showFailed, showCompleted, showOther, showError, showWarning, showInfo]);
+
+    const sortedFilteredExceptions = React.useMemo(() => {
+        return Object.entries(filteredExceptions).sort(([compositeKeyA, entryA], [compositeKeyB, entryB]) => {
+            const severityDelta = severitySortOrder(entryA.severity) - severitySortOrder(entryB.severity);
+            if (severityDelta !== 0) {
+                return severityDelta;
+            }
+            const codeA = compositeKeyA.split("|")[1];
+            const codeB = compositeKeyB.split("|")[1];
+            return codeA.localeCompare(codeB, undefined, { numeric: true, sensitivity: "base" });
+        });
+    }, [filteredExceptions]);
 
     return <>
         <HolyGrail
-            header={<Toolbar className={styles.toolbar}>
-                <ToolbarGroup>
-                    <ToolbarButton key="refresh" icon={<ArrowClockwiseRegular />} onClick={() => { fetchData(dateParser(from), dateParser(to)); }}>Refresh</ToolbarButton>
-                    <DatePicker key="from" value={start} onSelectDate={onFromChange} placeholder={nlsHPCC.FromDate} className={styles.root} />
-                    <ArrowRightFilled key="date-range-separator" />
-                    <DatePicker key="to" value={end} onSelectDate={onToChange} showCloseButton={true} placeholder={nlsHPCC.ToDate} className={styles.root} />
-                    <ToolbarButton key="reset" icon={<ArrowResetFilled title={nlsHPCC.Reset} />} onClick={() => { pushParams({ from: undefined, to: undefined, filter: undefined }); setSearchBoxValue(""); }} title={nlsHPCC.Reset}></ToolbarButton>
-                </ToolbarGroup>
-                <ToolbarDivider />
-                <ToolbarGroup>
+            header={<>
+                <Toolbar className={styles.toolbar}>
+                    <ToolbarGroup>
+                        <ToolbarButton key="refresh" icon={<ArrowClockwiseRegular />} onClick={() => { fetchData(dateParser(from), dateParser(to)); }}>Refresh</ToolbarButton>
+                        <DatePicker key="from" value={start} onSelectDate={onFromChange} placeholder={nlsHPCC.FromDate} className={styles.datePicker} />
+                        <ArrowRightFilled key="date-range-separator" />
+                        <DatePicker key="to" value={end} onSelectDate={onToChange} showCloseButton={true} placeholder={nlsHPCC.ToDate} className={styles.datePicker} />
+                        <ToolbarButton key="reset" icon={<ArrowResetFilled title={nlsHPCC.Reset} />} onClick={() => { pushParams({ from: undefined, to: undefined, filter: undefined }); setSearchBoxValue(""); }} title={nlsHPCC.Reset}></ToolbarButton>
+                        <ToolbarDivider />
+                    </ToolbarGroup>
+                    <ToolbarGroup>
+                        <Checkbox checked={showFailed} onChange={onToggleShowFailed} className={styles.checkbox} label={<><span style={{ color: tokens.colorStatusDangerForeground1 }}>{nlsHPCC.Failed} </span><Badge appearance="tint" color="danger">{failed.length}</Badge></>} />
+                        <Checkbox checked={showCompleted} onChange={onToggleShowCompleted} className={styles.checkbox} label={<><span style={{ color: tokens.colorStatusSuccessForeground1 }}>{nlsHPCC.Completed} </span><Badge appearance="tint" color="success">{completed.length}</Badge></>} />
+                        <Checkbox checked={showOther} onChange={onToggleShowOther} className={styles.checkbox} label={<><span>{nlsHPCC.Other} </span><Badge appearance="tint" color="informative">{other.length}</Badge></>} />
+                    </ToolbarGroup>
+                </Toolbar>
+                <Toolbar className={styles.toolbar}>
                     <SearchBox key="filter" value={searchBoxValue} onChange={onFilterChange} placeholder={nlsHPCC.Filter} contentBefore={<FilterRegular />} className={styles.searchBox} />
-                </ToolbarGroup>
-                <ToolbarDivider />
-                <ToolbarGroup>
-                    <Label key="completed-label" style={{ color: tokens.colorStatusSuccessForeground1 }} className={styles.label}>{nlsHPCC.Completed}:</Label><Badge key="completed-value" appearance="tint" color="success">{completed.length}</Badge>
-                    <Label key="failed-label" style={{ color: tokens.colorStatusDangerForeground1 }} className={styles.label}>{nlsHPCC.Failed}:</Label><Badge key="failed-value" appearance="tint" color="danger">{failed.length}</Badge>
-                    <Label key="total-label" style={{ color: tokens.colorBrandForeground1 }} className={styles.label}>{nlsHPCC.Total}:</Label><Badge key="total-value" appearance="tint" color="brand">{workunits.length}</Badge>
-                    <Label key="other-label" className={styles.label}>{nlsHPCC.Other}:</Label><Badge key="other-value" appearance="tint" color="informative">{other.length}</Badge>
-                </ToolbarGroup>
-            </Toolbar>}
-            main={
-                <SizeMe>{({ size }) =>
-                    <div style={{ width: "100%", height: "100%" }}>
-                        <div style={{ position: "absolute", width: "100%", height: `${size.height}px`, overflowY: "scroll" }}>
-                            <Field validationMessage={`${nlsHPCC.FetchingErrorDetails}: ${fetched} ${nlsHPCC.of} ${failed.length}.`} validationState={fetched < failed.length ? "none" : "success"}>
-                                <ProgressBar max={failed.length + 1} value={fetched + 1} />
-                            </Field>
-                            <Accordion multiple>
-                                {Object.keys(filteredExceptions).map(code => {
-                                    return <AccordionItem key={code} value={code}>
-                                        <AccordionHeader icon={severityIcon(filteredExceptions[code].severity)} style={{ margin: 4, borderStyle: "solid", borderWidth: 1, borderColor: severityBorderColor(filteredExceptions[code].severity), background: severityBackgroundColor(filteredExceptions[code].severity) }}>{code} ({filteredExceptions[code].errors.length}):  {filteredExceptions[code].messageSummary}</AccordionHeader>
-                                        <AccordionPanel>
-                                            {filteredExceptions[code].errors.map((err, idx) => {
-                                                return <div key={idx}>
-                                                    <Link href={`#/workunits/${err.workunit.Wuid}`}>{err.workunit.Wuid}</Link> - {severityIcon(err.severity, true)}
-                                                    <Text style={{ color: severityForegroundColor(err.severity) }}>
-                                                        <code style={{ whiteSpace: "pre-wrap", display: "inline" }}>{err.message}</code>
-                                                    </Text>
-                                                    <br />
-                                                </div>;
-                                            })}
-                                        </AccordionPanel>
-                                    </AccordionItem>;
-                                })}
-                            </Accordion>
-                        </div>
+                    <ToolbarGroup>
+                        <ToolbarDivider />
+                        <Checkbox checked={showError} onChange={onToggleShowError} className={styles.checkbox} label={<><span style={{ color: tokens.colorStatusDangerForeground1 }}>{nlsHPCC.Error} </span><Badge appearance="tint" color="danger">{severityCounts.Error}</Badge></>} />
+                        <Checkbox checked={showWarning} onChange={onToggleShowWarning} className={styles.checkbox} label={<><span style={{ color: tokens.colorStatusWarningForeground1 }}>{nlsHPCC.Warning} </span><Badge appearance="tint" color="warning">{severityCounts.Warning}</Badge></>} />
+                        <Checkbox checked={showInfo} onChange={onToggleShowInfo} className={styles.checkbox} label={<><span>{nlsHPCC.Info} </span><Badge appearance="tint" color="informative">{severityCounts.Info}</Badge></>} />
+                    </ToolbarGroup>
+                </Toolbar>
+            </>}
+            main={<SizeMe>{({ size }) =>
+                <div style={{ width: "100%", height: "100%" }}>
+                    <div style={{ position: "absolute", width: "100%", height: `${size.height}px`, overflowY: "scroll" }}>
+                        <Field validationMessage={`${nlsHPCC.FetchingErrorDetails}: ${progress.fetched} ${nlsHPCC.of} ${progress.total}.`} validationState={progress.fetched < progress.total ? "none" : "success"}>
+                            <ProgressBar max={progress.total + 1} value={progress.fetched + 1} />
+                        </Field>
+                        <Accordion collapsible multiple>
+                            {sortedFilteredExceptions.map(([compositeKey, exceptionEntry]) => {
+                                const code = compositeKey.split("|")[1];
+                                return <AccordionItem key={`accordion-item-${compositeKey}`} value={compositeKey}>
+                                    <AccordionHeader icon={severityIcon(exceptionEntry.severity)} style={{ margin: 4, borderStyle: "solid", borderWidth: 1, borderColor: severityBorderColor(exceptionEntry.severity), background: severityBackgroundColor(exceptionEntry.severity) }}>{code} ({exceptionEntry.filteredErrors.length}):  {exceptionEntry.messageSummary}</AccordionHeader>
+                                    <AccordionPanel>
+                                        {exceptionEntry.filteredErrors.map((err, idx) => {
+                                            return <div key={idx}>
+                                                <Link href={`#/workunits/${err.workunit.Wuid}`}>{err.workunit.Wuid}</Link> - {severityIcon(err.severity, true)}
+                                                <Text style={{ color: severityForegroundColor(err.severity) }}>
+                                                    <code style={{ whiteSpace: "pre-wrap", display: "inline" }}>{err.message}</code>
+                                                </Text>
+                                                <br />
+                                            </div>;
+                                        })}
+                                    </AccordionPanel>
+                                </AccordionItem>;
+                            })}
+                        </Accordion>
                     </div>
-                }</SizeMe >
-            }
+                </div>
+            }</SizeMe>}
         /></>;
 };

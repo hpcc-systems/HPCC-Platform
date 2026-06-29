@@ -1,5 +1,5 @@
 import * as React from "react";
-import { DetailsRow, IDetailsRowProps } from "./controls/Grid";
+import { IDetailsRowProps } from "./controls/Grid";
 import { CommandBar, ContextualMenuItemType, ICommandBarItemProps } from "./CommandBarV9";
 import { LockClosedFilled } from "@fluentui/react-icons";
 import { Link, Tooltip } from "@fluentui/react-components";
@@ -106,14 +106,11 @@ export const Workunits: React.FunctionComponent<WorkunitsProps> = ({
 
     const columns = React.useMemo((): FluentColumns => {
         return {
-            col1: {
-                width: 16,
-                selectorType: "checkbox"
-            },
             Protected: {
                 headerIconElement: <LockClosedFilled aria-label={nlsHPCC.Protected} />,
                 headerTooltip: nlsHPCC.Protected,
-                width: 16,
+                width: 24,
+                resizable: false,
                 sortable: true,
                 formatter: (_protected) => {
                     if (_protected === true) {
@@ -141,13 +138,13 @@ export const Workunits: React.FunctionComponent<WorkunitsProps> = ({
                     </>;
                 }
             },
-            Owner: { label: nlsHPCC.Owner, width: 80 },
-            Jobname: { label: nlsHPCC.JobName },
+            Owner: { label: nlsHPCC.Owner },
+            Jobname: { label: nlsHPCC.JobName, width: 180 },
             Cluster: { label: nlsHPCC.Cluster },
-            RoxieCluster: { label: nlsHPCC.RoxieCluster, sortable: false },
+            RoxieCluster: { label: nlsHPCC.RoxieCluster, width: 100, sortable: false },
             State: {
                 label: nlsHPCC.State,
-                width: 60,
+                width: 80,
                 formatter: (state, wu) => {
                     if (wu?.FailureDesc) {
                         return <Tooltip content={wu?.FailureDesc ?? ""} relationship="description"><span>{state}</span></Tooltip>;
@@ -297,10 +294,7 @@ export const Workunits: React.FunctionComponent<WorkunitsProps> = ({
         { key: "divider_5", itemType: ContextualMenuItemType.Divider },
         {
             key: "timeline", text: nlsHPCC.Timeline, canCheck: true, checked: showTimeline, iconProps: { iconName: "TimelineProgress" },
-            onClick: () => {
-                setShowTimeline(!showTimeline);
-                refreshTable.call();
-            }
+            onClick: () => { setShowTimeline(!showTimeline); }
         },
         {
             key: "zapImport", text: nlsHPCC.Import, disabled: !!store,
@@ -338,31 +332,29 @@ export const Workunits: React.FunctionComponent<WorkunitsProps> = ({
     }, [selection]);
 
     const renderRowTimings = React.useCallback((props: IDetailsRowProps) => {
-        if (showTimeline && props?.item?.__timeline_timings) {
+        if (props?.item?.__timeline_timings) {
             const total = props.item.__timeline_timings.page.end - props.item.__timeline_timings.page.start;
             const startPct = 100 - (props.item.__timeline_timings.start - props.item.__timeline_timings.page.start) / total * 100;
             const endPct = 100 - (props.item.__timeline_timings.end - props.item.__timeline_timings.page.start) / total * 100;
             const backgroundColor = palette(props.item.Cluster);
             const borderColor = d3Hsl(backgroundColor).darker().toString();
 
-            return <DetailsRow {...props} overlayElement={
-                <div style={{
-                    position: "absolute",
-                    top: 4,
-                    bottom: 4,
-                    left: `${endPct}%`,
-                    width: `${startPct - endPct}%`,
-                    backgroundColor,
-                    borderColor,
-                    borderWidth: 1,
-                    borderStyle: "solid",
-                    opacity: .33,
-                    pointerEvents: "none"
-                }} />
-            } />;
+            return <div style={{
+                position: "absolute",
+                top: 4,
+                bottom: 4,
+                left: `${endPct}%`,
+                width: `${startPct - endPct}%`,
+                backgroundColor,
+                borderColor,
+                borderWidth: 1,
+                borderStyle: "solid",
+                opacity: .33,
+                pointerEvents: "none"
+            }} />;
         }
-        return <DetailsRow {...props} />;
-    }, [palette, showTimeline]);
+        return null;
+    }, [palette]);
 
     return <HolyGrail
         header={<CommandBar items={buttons} farItems={copyButtons} />}

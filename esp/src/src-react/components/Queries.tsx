@@ -88,14 +88,11 @@ export const Queries: React.FunctionComponent<QueriesProps> = ({
 
     const columns = React.useMemo((): FluentColumns => {
         return {
-            col1: {
-                width: 16,
-                selectorType: "checkbox"
-            },
             Suspended: {
                 headerIconElement: <PauseRegular aria-label={nlsHPCC.Suspended} />,
                 headerTooltip: nlsHPCC.Suspended,
                 width: 16,
+                resizable: false,
                 sortable: false,
                 formatter: (suspended) => {
                     if (suspended === true) {
@@ -109,6 +106,7 @@ export const Queries: React.FunctionComponent<QueriesProps> = ({
                 headerIconElement: <WarningRegular aria-label={nlsHPCC.ErrorWarnings} />,
                 headerTooltip: nlsHPCC.ErrorWarnings,
                 width: 16,
+                resizable: false,
                 sortable: false,
                 formatter: (error, row) => {
                     if (row.ErrorCount > 0) {
@@ -122,6 +120,7 @@ export const Queries: React.FunctionComponent<QueriesProps> = ({
                 headerIconElement: <ErrorCircleRegular aria-label={nlsHPCC.Protected} />,
                 headerTooltip: nlsHPCC.MixedNodeStates,
                 width: 16,
+                resizable: false,
                 sortable: false,
                 formatter: (mixed, row) => {
                     const mixedStates = row?.Clusters?.ClusterQueryState[0]?.MixedNodeStates ?? false;
@@ -135,6 +134,7 @@ export const Queries: React.FunctionComponent<QueriesProps> = ({
                 headerIconElement: <CheckmarkCircleRegular aria-label={nlsHPCC.Active} />,
                 headerTooltip: nlsHPCC.Active,
                 width: 16,
+                resizable: false,
                 formatter: (activated, row) => {
                     if (row.Activated === true) {
                         return <CheckmarkCircleRegular />;
@@ -144,7 +144,7 @@ export const Queries: React.FunctionComponent<QueriesProps> = ({
                 field: nlsHPCC.Active,
             },
             Id: {
-                label: nlsHPCC.ID,
+                label: nlsHPCC.ID, width: 180,
                 formatter: (Id, row) => {
                     return <Link href={`#/queries/${row.QuerySetId}/${Id}`} >{Id}</Link>;
                 }
@@ -156,15 +156,15 @@ export const Queries: React.FunctionComponent<QueriesProps> = ({
                     return priority === undefined ? "" : priority;
                 }
             },
-            Name: { label: nlsHPCC.Name },
+            Name: { label: nlsHPCC.Name, width: 200 },
             QuerySetId: { label: nlsHPCC.Target, sortable: true },
             Wuid: {
-                label: nlsHPCC.WUID, width: 100,
+                label: nlsHPCC.WUID, width: 160,
                 formatter: (Wuid, idx) => {
                     return <Link href={`#/workunits/${Wuid}`}>{Wuid}</Link>;
                 }
             },
-            Dll: { label: nlsHPCC.Dll },
+            Dll: { label: nlsHPCC.Dll, width: 200 },
             PublishedBy: { label: nlsHPCC.PublishedBy },
             Status: { label: nlsHPCC.Status, sortable: false }
         };

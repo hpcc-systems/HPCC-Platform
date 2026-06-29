@@ -19,8 +19,21 @@ export function debounce(func: (...args: any[]) => void, timeout = 300): (...arg
     return retVal;
 }
 
-export function throttle(func: (...args: any[]) => void, parallel = 4, timeout = 600): (...args: any[]) => Promise<void> {
-    const queue = [];
+export interface ThrottleQueueItem<T> {
+    resolve: (value: T) => void;
+    reject: (reason?: any) => void;
+    args: any[];
+}
+
+export interface ThrottleOptions<T> {
+    parallel?: number;
+    timeout?: number;
+    // Optional queue to allow host to empty if needed.  If not provided, a new queue will be created.
+    queue?: ThrottleQueueItem<T>[]
+}
+
+export function throttle<T>(func: (...args: any[]) => T | Promise<T>, options: ThrottleOptions<T> = {}): (...args: any[]) => Promise<T> {
+    const { parallel = 4, timeout = 600, queue = [] } = options;
     let activeCount = 0;
 
     const processQueue = async () => {
@@ -29,7 +42,7 @@ export function throttle(func: (...args: any[]) => void, parallel = 4, timeout =
         }
 
         activeCount++;
-        const { resolve, reject, args } = queue.shift();
+        const { resolve, reject, args } = queue.shift() as ThrottleQueueItem<T>;
 
         try {
             const result = await func(...args);
@@ -43,7 +56,7 @@ export function throttle(func: (...args: any[]) => void, parallel = 4, timeout =
     };
 
     return (...args) => {
-        return new Promise((resolve, reject) => {
+        return new Promise<T>((resolve, reject) => {
             queue.push({ resolve, reject, args });
             processQueue();
         });
