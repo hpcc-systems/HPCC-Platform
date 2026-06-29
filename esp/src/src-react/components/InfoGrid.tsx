@@ -125,11 +125,7 @@ export const InfoGrid: React.FunctionComponent<InfoGridProps> = ({
                     }
                     return Message;
                 },
-                fluentColumn: {
-                    flexGrow: 1,
-                    minWidth: 320,
-                    isResizable: true
-                }
+                minWidth: 320
             },
             Column: { label: nlsHPCC.Col, width: 36 },
             LineNo: { label: nlsHPCC.Line, width: 36 },
@@ -141,11 +137,7 @@ export const InfoGrid: React.FunctionComponent<InfoGridProps> = ({
             },
             FileName: {
                 label: nlsHPCC.FileName,
-                fluentColumn: {
-                    flexGrow: 2,
-                    minWidth: 320,
-                    isResizable: true
-                }
+                minWidth: 320
             }
         };
     }, [wuid]);

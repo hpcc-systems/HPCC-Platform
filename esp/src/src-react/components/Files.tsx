@@ -178,17 +178,11 @@ export const Files: React.FunctionComponent<FilesProps> = ({
 
     const columns = React.useMemo((): FluentColumns => {
         return {
-            col1: {
-                width: 16,
-                disabled: (item) => {
-                    return item ? item.__hpcc_isDir : true;
-                },
-                selectorType: "checkbox"
-            },
             IsProtected: {
                 headerIconElement: <LockClosedFilled aria-label={nlsHPCC.Protected} />,
                 headerTooltip: nlsHPCC.Protected,
                 width: 16,
+                resizable: false,
                 sortable: false,
                 formatter: (_protected, row) => {
                     if (row.IsProtected === true) {
@@ -202,6 +196,7 @@ export const Files: React.FunctionComponent<FilesProps> = ({
                 headerIconElement: <FolderZipRegular aria-label={nlsHPCC.Compressed} />,
                 headerTooltip: nlsHPCC.Compressed,
                 width: 16,
+                resizable: false,
                 sortable: false,
                 formatter: (_compressed, row) => {
                     if (row.IsCompressed === true) {
@@ -418,6 +413,7 @@ export const Files: React.FunctionComponent<FilesProps> = ({
                                 setSelection={setSelection}
                                 setTotal={setTotal}
                                 refresh={refreshTable}
+                                canSelectRow={(item) => !item?.__hpcc_isDir}
                             ></FluentPagedGrid>
                         </div>
                     </div>

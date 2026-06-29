@@ -26,7 +26,9 @@ export const Services: React.FunctionComponent<ServicesProps> = ({
             Port: { label: nlsHPCC.Port, width: 120 },
             TLSSecure: {
                 headerIconElement: <LockClosedFilled aria-label={nlsHPCC.Protected} />,
-                label: nlsHPCC.TLS, width: 16,
+                label: nlsHPCC.TLS,
+                width: 16,
+                resizable: false,
                 formatter: secure => secure === true ? <LockClosedFilled /> : ""
             }
         };
