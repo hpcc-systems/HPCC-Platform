@@ -40,14 +40,15 @@ bool getService(StringBuffer &serviceAddress, const char *serviceName, bool fail
     return false;
 }
 
-void getMemorySpecifications(std::unordered_map<std::string, __uint64> &memorySpecifications, const IPropertyTree *config, const char *context, unsigned maxMB, GetJobValueFunction getJobValueFunction)
+IPropertyTree* getMemorySpecifications(const IPropertyTree *config, const char *context, unsigned maxMB, GetJobValueFunction getJobValueFunction, GetJobValueBoolFunction getJobValueBoolFunction)
 {
-    /* fills the memorySpecifications map with memory settings retreived from either
+    /* Creates a property tree with memory settings retrieved from either
      * the helper function (typically a workunit value fetch function) or the config.
      * Helper function values take priority.
      * "total" is computed and filled with the aggregate sum of all memory settings.
      * "recommendedMaxMemory" is computed and filled in based on max and the "maxMemPercentage" setting.
      */
+    Owned<IPropertyTree> memorySpecifications = createPTree(context);
 
     auto getSetting = [&](const char *setting, StringBuffer &result) -> bool
     {
@@ -65,14 +66,16 @@ void getMemorySpecifications(std::unordered_map<std::string, __uint64> &memorySp
         if (getSetting(setting, value))
         {
             offset_t memBytes = friendlyStringToSize(value);
-            memorySpecifications[setting] = memBytes;
+            VStringBuffer attrName("@%s", setting);
+            memorySpecifications->setPropInt64(attrName.str(), memBytes);
             totalRequirements += memBytes;
         }
     }
     offset_t maxBytes = ((offset_t)maxMB) * 0x100000;
     if (totalRequirements > maxBytes)
         throw makeStringExceptionV(0, "The total memory requirements of the query (%u MB) in '%s' exceed the memory limit (%u MB)", (unsigned)(totalRequirements / 0x100000), context, maxMB);
-    memorySpecifications["total"] = totalRequirements;
+    memorySpecifications->setPropInt64("@total", totalRequirements);
+    memorySpecifications->setPropInt64("@totalMemory", maxBytes);
 
     float maxPercentage = 100.0;
     offset_t recommendedMaxMemory = maxBytes;
@@ -88,7 +91,25 @@ void getMemorySpecifications(std::unordered_map<std::string, __uint64> &memorySp
                 WARNLOG("The total memory requirements of the query (%u MB) exceed the recommended limits for '%s' (total memory: %u MB, recommended max percentage : %.2f%%)", (unsigned)(totalRequirements / 0x100000), context, maxMB, maxPercentage);
         }
     }
-    memorySpecifications["recommendedMaxMemory"] = recommendedMaxMemory;
+    memorySpecifications->setPropInt64("@recommendedMaxMemory", recommendedMaxMemory);
+
+    // a simple helper used below, to fetch bool from workunit, the memory settings or legacy location
+    auto getBoolSetting = [&](const char *setting, bool defaultValue)
+    {
+        VStringBuffer attrSetting("@%s", setting);
+        return getJobValueBoolFunction(setting,
+            config->getPropBool(VStringBuffer("%s/%s", context, attrSetting.str()),
+            config->getPropBool(attrSetting, defaultValue)));
+    };
+    // heapMasterUseHugePages is only used by thor, so it should really not be used if if eclagent calls this function.
+    // But, to keeps things simple, we'll just use the same setting for eclagent and thor (eclagent won't have heapMasterUseHugePages)
+    bool gmemAllowHugePages = getBoolSetting("heapMasterUseHugePages", getBoolSetting("heapUseHugePages", false));
+    memorySpecifications->setPropBool("@heapUseHugePages", gmemAllowHugePages);
+    memorySpecifications->setPropBool("@heapUseTransparentHugePages", getBoolSetting("heapUseTransparentHugePages", true));
+    memorySpecifications->setPropBool("@heapRetainMemory", getBoolSetting("heapRetainMemory", false));
+    memorySpecifications->setPropBool("@heapLockMemory", getBoolSetting("heapLockMemory", false));
+    memorySpecifications->setPropBool("@traceRoxiePeakMemory", getBoolSetting("traceRoxiePeakMemory", false));
+    return memorySpecifications.getClear();
 }
 
 static unsigned pipeProgramUpdateHookCBId = 0;
