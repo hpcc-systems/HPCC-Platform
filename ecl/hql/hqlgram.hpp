@@ -503,6 +503,7 @@ public:
     void checkJoinFlags(const attribute & err, IHqlExpression * joinExpr);
     void checkLoopFlags(const attribute & err, IHqlExpression * loopExpr);
     IHqlExpression * checkIndexRecord(IHqlExpression * record, const attribute & errpos, OwnedHqlExpr & indexAttrs);
+    IHqlExpression * checkPackIndexRecord(IHqlExpression * record, IHqlExpression * optIndex, IHqlExpression * optIndexAttrs);
     void checkIndexFieldType(IHqlExpression * cur, bool isPayload, bool insideNestedRecord, const attribute & errpos);
     void checkIndexRecordType(IHqlExpression * record, unsigned numPayloadFields, bool insideNestedRecord, const attribute & errpos);
     void checkIndexRecordTypes(IHqlExpression * index, const attribute & errpos);
