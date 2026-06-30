@@ -499,7 +499,7 @@ void Cws_machineEx::setProcessRequest(CGetMachineInfoData& machineInfoData, Bool
             processTypeStr = processType;
     }
 
-    while (numIps--)
+    for (unsigned i=0; i<numIps; ++i)
     {
         unsigned numAddr;
         if (ipAddr.getNetAddress(sizeof(numAddr),&numAddr)!=sizeof(numAddr))
