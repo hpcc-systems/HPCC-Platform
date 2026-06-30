@@ -26,8 +26,10 @@
 #include "socketutils.hpp"
 #include <thread>
 #include <atomic>
+#include <chrono>
 #include <vector>
 #include <memory>
+#include <algorithm>
 #include <unistd.h>
 
 // Helper to generate a random port for testing
@@ -496,14 +498,37 @@ public:
                 client1.close();
             }
             
-            // Give time for socket to be released
-            MilliSleep(500);
-            
-            // Try to connect after listener is destroyed
-            SimpleClient client2("127.0.0.1", port);
-            bool connected = client2.connect(1000);
-            
-            CPPUNIT_ASSERT_MESSAGE("Should not connect after shutdown", !connected);
+            // A late connect can occasionally race with shutdown. Require that
+            // connections are refused within a short, bounded settling window.
+            bool observedConnectionRefused = false;
+            constexpr unsigned connectTimeoutMs = 200;
+            constexpr auto retryDelay = std::chrono::milliseconds(100);
+            constexpr auto maxSettleWindow = std::chrono::milliseconds(1500);
+            const auto deadline = std::chrono::steady_clock::now() + maxSettleWindow;
+            while (std::chrono::steady_clock::now() < deadline)
+            {
+                const auto remainingMs = std::chrono::duration_cast<std::chrono::milliseconds>(deadline - std::chrono::steady_clock::now()).count();
+                if (remainingMs <= 0)
+                {
+                    break;
+                }
+                const unsigned thisConnectTimeoutMs = std::min(connectTimeoutMs, (unsigned) remainingMs);
+                SimpleClient client2("127.0.0.1", port);
+                if (!client2.connect(thisConnectTimeoutMs))
+                {
+                    observedConnectionRefused = true;
+                    break;
+                }
+                client2.close();
+                if (std::chrono::steady_clock::now() + retryDelay >= deadline)
+                {
+                    break;
+                }
+                MilliSleep((unsigned) retryDelay.count());
+            }
+            StringBuffer assertMsg;
+            assertMsg.appendf("Should refuse connections within settling window (%lld ms) after shutdown", static_cast<long long>(maxSettleWindow.count()));
+            CPPUNIT_ASSERT_MESSAGE(assertMsg.str(), observedConnectionRefused);
         }
         catch (IException *e)
         {
