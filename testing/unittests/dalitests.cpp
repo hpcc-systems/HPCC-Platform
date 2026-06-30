@@ -2683,6 +2683,9 @@ public:
             attr.setProp("@job", attrValue);
             attr.setProp("@owner", attrValue);
             attr.setProp("@workunit", attrValue);
+            attr.setPropBool("@rowCompressed", true);
+            attr.setPropInt64("@compressedSize", 9);
+            attr.setPropInt64("@size", 17);
         }
     }
 
@@ -2835,7 +2838,12 @@ public:
         filterBuf.append(DFUQFTspecial).append(DFUQFilterSeparator).append(DFUQSFFileType).append(DFUQFilterSeparator).append(DFUQFFTnonsuperfileonly).append(DFUQFilterSeparator);
         filterBuf.append(DFUQFTspecial).append(DFUQFilterSeparator).append(DFUQSFFileNameWithPrefix).append(DFUQFilterSeparator).append(wildName).append(DFUQFilterSeparator);
 
-        std::vector<DFUQResultField> fields = {DFUQResultField::size, DFUQResultField::cost, DFUQResultField::term};
+        // Must include all fields needed for sorting and inspection in loop below.
+        //
+        // rowCompressed and blockCompressed required for getLogicalFilesSorted to successfully run the isCompressed()
+        // test used when determining which size value to populate DFUQResultField::size with (compressed vs uncompressed).
+        // Alternately, could use DFUQResultField::includeAll to return all fields if the test expands in scope.
+        std::vector<DFUQResultField> fields = {DFUQResultField::size, DFUQResultField::cost, DFUQResultField::rowCompressed, DFUQResultField::blockCompressed, DFUQResultField::term};
 
         DFUQResultField sortOrder[2] = {DFUQResultField::job|DFUQResultField::reverse, DFUQResultField::term};
         __int64 hint;
@@ -2857,6 +2865,9 @@ public:
             CPPUNIT_ASSERT_MESSAGE("testGetLogicalFilesSorted: Missing cost attributes", costAttrsPresent);
             bool dirAttrsPresent = attrs.hasProp("@directory");
             CPPUNIT_ASSERT_MESSAGE("testGetLogicalFilesSorted: directory attribute should NOT be present", !dirAttrsPresent);
+            CPPUNIT_ASSERT_MESSAGE("testGetLogicalFilesSorted: size field missing", attrs.hasProp("@DFUSFsize"));
+            CPPUNIT_ASSERT_MESSAGE("testGetLogicalFilesSorted: compressed size field missing", attrs.hasProp("@compressedSize"));
+            CPPUNIT_ASSERT_MESSAGE("testGetLogicalFilesSorted: size should use compressed size", attrs.getPropInt64("@DFUSFsize", -1) == attrs.getPropInt64("@compressedSize", -1));
         }
     }
 };
