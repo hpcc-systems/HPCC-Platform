@@ -569,6 +569,11 @@ dfuserver:
 - name: dfuserver
   maxJobs: 1
   replicas: 1
+  logging:
+    traceFlags:
+    - traceSprayDetails: true
+    - tracePartitionDetails: true
+
   #resources:
   #  cpu: "1"
   #  memory: "2G"
