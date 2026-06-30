@@ -19,6 +19,7 @@ service_plugins:
   WsWorkunits: ws_workunits
   ws_codesign: ws_codesign
   ws_logaccess: ws_logaccess
+  ws_sysinfolog: ws_sysinfolog
 
 binding_plugins:
   FileSpray: ws_fs
@@ -37,3 +38,4 @@ binding_plugins:
   WSESPControl: wsespcontrol
   ws_codesign: ws_codesign
   ws_logaccess: ws_logaccess
+  ws_sysinfolog: ws_sysinfolog
