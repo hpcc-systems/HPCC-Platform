@@ -30,9 +30,13 @@
 #include <aws/s3/model/UploadPartRequest.h>
 #include <aws/s3/model/CompleteMultipartUploadRequest.h>
 #include <aws/s3/model/AbortMultipartUploadRequest.h>
+#include <aws/s3/model/CopyObjectRequest.h>
+#include <aws/s3/model/UploadPartCopyRequest.h>
+#include <aws/s3/model/ListObjectsV2Request.h>
 
 #include "platform.h"
 #include "jlib.hpp"
+#include "jbuff.hpp"
 #include "jio.hpp"
 #include "jmutex.hpp"
 #include "jfile.hpp"
@@ -43,6 +47,8 @@
 #include "jtime.hpp"
 #include "jplane.hpp"
 #include "jsecrets.hpp"
+#include "jregexp.hpp"
+#include "jutil.hpp"
 
 #include "s3file.hpp"
 
@@ -264,23 +270,6 @@ static void handleRequestBackoff(const char* message, unsigned attempt, unsigned
     Sleep(backoffMs);
 }
 
-static void handleRequestException(const Aws::Client::AWSError<Aws::S3::S3Errors>& e, const char* op, unsigned attempt, unsigned maxRetries, const char* filename, offset_t pos, offset_t len)
-{
-    VStringBuffer msg("%s failed (attempt %u/%u) for file %s at offset %llu, len %llu: %s - %s",
-                      op, attempt, maxRetries, filename, pos, len,
-                      e.GetExceptionName().c_str(), e.GetMessage().c_str());
-
-    handleRequestBackoff(msg, attempt, maxRetries);
-}
-
-static void handleRequestException(const std::exception& e, const char* op, unsigned attempt, unsigned maxRetries, const char* filename, offset_t pos, offset_t len)
-{
-    VStringBuffer msg("%s failed (attempt %u/%u) for file %s at offset %llu, len %llu: %s",
-                      op, attempt, maxRetries, filename, pos, len, e.what());
-
-    handleRequestBackoff(msg, attempt, maxRetries);
-}
-
 static void handleRequestException(const Aws::Client::AWSError<Aws::S3::S3Errors>& e, const char* op, unsigned attempt, unsigned maxRetries, const char* filename)
 {
     VStringBuffer msg("%s failed (attempt %u/%u) for file %s: %s - %s",
@@ -296,6 +285,34 @@ static void handleRequestException(const std::exception& e, const char* op, unsi
                       op, attempt, maxRetries, filename, e.what());
 
     handleRequestBackoff(msg, attempt, maxRetries);
+}
+
+// Execute an S3 SDK call with retry/backoff, translating failures to IException
+// (via handleRequestException) rather than std::exception. Returns the successful outcome.
+template <typename Fn>
+static auto retryS3Op(const char* op, const char* context, Fn&& fn) -> decltype(fn())
+{
+    unsigned attempt = 0;
+    for (;;)
+    {
+        try
+        {
+            auto outcome = fn();
+            if (outcome.IsSuccess())
+                return outcome;
+            attempt++;
+            handleRequestException(outcome.GetError(), op, attempt, defaultMaxRetries, context);
+        }
+        catch (IException *)
+        {
+            throw;
+        }
+        catch (const std::exception& e)
+        {
+            attempt++;
+            handleRequestException(e, op, attempt, defaultMaxRetries, context);
+        }
+    }
 }
 
 //---------------------------------------------------------------------------------------------------------------------
@@ -362,8 +379,25 @@ public:
 
     ~S3MultipartUpload()
     {
-        if (active)
+        if (!active)
+            return;
+        // abort() can throw (via retryS3Op) after exhausting retries; a throw must
+        // never escape a destructor, so swallow and log any failure here.
+        try
+        {
             abort();
+        }
+        catch (IException* e)
+        {
+            StringBuffer msg;
+            e->errorMessage(msg);
+            ERRLOG("Failed to abort S3 multipart upload during cleanup: %s", msg.str());
+            e->Release();
+        }
+        catch (...)
+        {
+            ERRLOG("Unknown exception aborting S3 multipart upload during cleanup");
+        }
     }
 
     bool initiate();
@@ -386,6 +420,14 @@ private:
     CriticalSection ioCS;
     bool closed = false;
     offset_t currentPos = 0;
+    MemoryBuffer partBuffer;
+    // S3 multipart requires every non-final part to be at least 5MB.  The engine
+    // issues writes well below that (typically ~1MB blocks), so we coalesce them
+    // into >=minPartSize parts before uploading.  The final part, flushed on
+    // close(), is allowed to be smaller.
+    static constexpr size32_t minPartSize = 8 * 1024 * 1024; // 8MB
+
+    void flushPart();
 
 public:
     S3FileWriteIO(S3File* _file);
@@ -417,6 +459,7 @@ class S3File : implements CInterfaceOf<IFile>
 {
     friend class S3FileReadIO;
     friend class S3FileWriteIO;
+    friend class S3DirectoryIterator;
 
 private:
     StringBuffer fullName;
@@ -466,7 +509,7 @@ public:
     virtual unsigned getCRC() override { UNIMPLEMENTED; }
     virtual void setCreateFlags(unsigned short cflags) override { UNIMPLEMENTED; }
     virtual void setShareMode(IFSHmode shmode) override { UNIMPLEMENTED; }
-    virtual IDirectoryIterator* directoryFiles(const char* mask, bool sub, bool includeDirs) override { UNIMPLEMENTED; }
+    virtual IDirectoryIterator* directoryFiles(const char* mask, bool sub, bool includeDirs) override;
     virtual IDirectoryDifferenceIterator* monitorDirectory(IDirectoryIterator* prev, const char* mask, bool sub, bool includedirs, unsigned checkinterval, unsigned timeout, Semaphore* abortsem) override { UNIMPLEMENTED; }
     virtual void copySection(const RemoteFilename& dest, offset_t toOfs, offset_t fromOfs, offset_t size, ICopyFileProgress* progress, CFflags copyFlags) override { UNIMPLEMENTED; }
     virtual void copyTo(IFile* dest, size32_t buffersize, ICopyFileProgress* progress, bool usetmp, CFflags copyFlags) override { UNIMPLEMENTED; }
@@ -508,49 +551,30 @@ size32_t S3FileReadIO::read(offset_t pos, size32_t len, void* data)
 
 size32_t S3FileReadIO::readFromS3(offset_t pos, size32_t len, void* data)
 {
-    unsigned attempt = 0;
-    size32_t bytesRead = 0;
     const char* filename = file->queryFilename();
 
     CCycleTimer timer;
 
-    for (;;)
+    auto outcome = retryS3Op("S3File::read", filename, [&]()
     {
-        try
+        Aws::S3::Model::GetObjectRequest request;
+        request.SetBucket(file->bucketName.str());
+        request.SetKey(file->keyName.str());
+
+        // Only set range header for partial reads
+        if (pos > 0 || len != cachedFileSize)
         {
-            Aws::S3::Model::GetObjectRequest request;
-            request.SetBucket(file->bucketName.str());
-            request.SetKey(file->keyName.str());
-
-            // Only set range header for partial reads
-            if (pos > 0 || len != cachedFileSize)
-            {
-                StringBuffer range;
-                range.appendf("bytes=%llu-%llu", (unsigned long long)pos, (unsigned long long)(pos + len - 1));
-                request.SetRange(range.str());
-            }
-
-            auto outcome = file->getClient().GetObject(request);
-
-            if (outcome.IsSuccess())
-            {
-                auto& body = outcome.GetResult().GetBody();
-                body.read((char*)data, len);
-                bytesRead = (size32_t)body.gcount();
-                break;
-            }
-            else
-            {
-                attempt++;
-                handleRequestException(outcome.GetError(), "S3File::read", attempt, defaultMaxRetries, filename, pos, len);
-            }
+            StringBuffer range;
+            range.appendf("bytes=%llu-%llu", (unsigned long long)pos, (unsigned long long)(pos + len - 1));
+            request.SetRange(range.str());
         }
-        catch (const std::exception& e)
-        {
-            attempt++;
-            handleRequestException(e, "S3File::read", attempt, defaultMaxRetries, filename, pos, len);
-        }
-    }
+
+        return file->getClient().GetObject(request);
+    });
+
+    auto& body = outcome.GetResult().GetBody();
+    body.read((char*)data, len);
+    size32_t bytesRead = (size32_t)body.gcount();
 
     stats.ioReadCycles += timer.elapsedCycles();
     return bytesRead;
@@ -576,38 +600,20 @@ IFile* S3FileReadIO::queryFile() const
 
 bool S3MultipartUpload::initiate()
 {
-    unsigned attempt = 0;
-
     // Reserve space for estimated parts (assume average 200 parts for large files)
     completedParts.reserve(200);
 
-    for (;;)
+    auto outcome = retryS3Op("S3File::initiate", fullPath.str(), [&]()
     {
-        try
-        {
-            Aws::S3::Model::CreateMultipartUploadRequest request;
-            request.SetBucket(bucket.str());
-            request.SetKey(key.str());
+        Aws::S3::Model::CreateMultipartUploadRequest request;
+        request.SetBucket(bucket.str());
+        request.SetKey(key.str());
+        return getClient().CreateMultipartUpload(request);
+    });
 
-            auto outcome = getClient().CreateMultipartUpload(request);
-            if (outcome.IsSuccess())
-            {
-                uploadId.set(outcome.GetResult().GetUploadId().c_str());
-                active = true;
-                return true;
-            }
-            else
-            {
-                attempt++;
-                handleRequestException(outcome.GetError(), "S3File::initiate", attempt, defaultMaxRetries, fullPath.str());
-            }
-        }
-        catch (const std::exception& e)
-        {
-            attempt++;
-            handleRequestException(e, "S3File::initiate", attempt, defaultMaxRetries, fullPath.str());
-        }
-    }
+    uploadId.set(outcome.GetResult().GetUploadId().c_str());
+    active = true;
+    return true;
 }
 
 bool S3MultipartUpload::uploadPart(const void* data, size32_t len)
@@ -615,43 +621,26 @@ bool S3MultipartUpload::uploadPart(const void* data, size32_t len)
     if (!active)
         return false;
 
-    unsigned attempt = 0;
-
-    for (;;)
+    auto outcome = retryS3Op("S3File::uploadPart", fullPath.str(), [&]()
     {
-        try
-        {
-            Aws::S3::Model::UploadPartRequest request;
-            request.SetBucket(bucket.str());
-            request.SetKey(key.str());
-            request.SetUploadId(uploadId.str());
-            request.SetPartNumber(partNumber);
+        Aws::S3::Model::UploadPartRequest request;
+        request.SetBucket(bucket.str());
+        request.SetKey(key.str());
+        request.SetUploadId(uploadId.str());
+        request.SetPartNumber(partNumber);
 
-            Aws::Utils::Stream::PreallocatedStreamBuf buf((unsigned char*)data, len);
-            request.SetBody(std::make_shared<Aws::IOStream>(&buf));
+        Aws::Utils::Stream::PreallocatedStreamBuf buf((unsigned char*)data, len);
+        request.SetBody(std::make_shared<Aws::IOStream>(&buf));
 
-            auto outcome = getClient().UploadPart(request);
-            if (outcome.IsSuccess())
-            {
-                Aws::S3::Model::CompletedPart completedPart;
-                completedPart.SetPartNumber(partNumber);
-                completedPart.SetETag(outcome.GetResult().GetETag());
-                completedParts.push_back(completedPart);
-                partNumber++;
-                return true;
-            }
-            else
-            {
-                attempt++;
-                handleRequestException(outcome.GetError(), "S3File::uploadPart", attempt, defaultMaxRetries, fullPath.str(), 0, len);
-            }
-        }
-        catch (const std::exception& e)
-        {
-            attempt++;
-            handleRequestException(e, "S3File::uploadPart", attempt, defaultMaxRetries, fullPath.str(), 0, len);
-        }
-    }
+        return getClient().UploadPart(request);
+    });
+
+    Aws::S3::Model::CompletedPart completedPart;
+    completedPart.SetPartNumber(partNumber);
+    completedPart.SetETag(outcome.GetResult().GetETag());
+    completedParts.push_back(completedPart);
+    partNumber++;
+    return true;
 }
 
 bool S3MultipartUpload::complete()
@@ -659,39 +648,22 @@ bool S3MultipartUpload::complete()
     if (!active)
         return false;
 
-    unsigned attempt = 0;
-
-    for (;;)
+    retryS3Op("S3File::complete", fullPath.str(), [&]()
     {
-        try
-        {
-            Aws::S3::Model::CompletedMultipartUpload completedUpload;
-            completedUpload.SetParts(completedParts);
+        Aws::S3::Model::CompletedMultipartUpload completedUpload;
+        completedUpload.SetParts(completedParts);
 
-            Aws::S3::Model::CompleteMultipartUploadRequest request;
-            request.SetBucket(bucket.str());
-            request.SetKey(key.str());
-            request.SetUploadId(uploadId.str());
-            request.SetMultipartUpload(completedUpload);
+        Aws::S3::Model::CompleteMultipartUploadRequest request;
+        request.SetBucket(bucket.str());
+        request.SetKey(key.str());
+        request.SetUploadId(uploadId.str());
+        request.SetMultipartUpload(completedUpload);
 
-            auto outcome = getClient().CompleteMultipartUpload(request);
-            if (outcome.IsSuccess())
-            {
-                active = false;
-                return true;
-            }
-            else
-            {
-                attempt++;
-                handleRequestException(outcome.GetError(), "S3File::complete", attempt, defaultMaxRetries, fullPath.str());
-            }
-        }
-        catch (const std::exception& e)
-        {
-            attempt++;
-            handleRequestException(e, "S3File::complete", attempt, defaultMaxRetries, fullPath.str());
-        }
-    }
+        return getClient().CompleteMultipartUpload(request);
+    });
+
+    active = false;
+    return true;
 }
 
 bool S3MultipartUpload::abort()
@@ -699,36 +671,16 @@ bool S3MultipartUpload::abort()
     if (!active)
         return true;
 
-    unsigned attempt = 0;
-
-    for (;;)
+    active = false;
+    retryS3Op("S3File::abort", fullPath.str(), [&]()
     {
-        try
-        {
-            Aws::S3::Model::AbortMultipartUploadRequest request;
-            request.SetBucket(bucket.str());
-            request.SetKey(key.str());
-            request.SetUploadId(uploadId.str());
-
-            auto outcome = getClient().AbortMultipartUpload(request);
-            active = false;
-
-            if (outcome.IsSuccess())
-            {
-                return true;
-            }
-            else
-            {
-                attempt++;
-                handleRequestException(outcome.GetError(), "S3File::abort", attempt, defaultMaxRetries, fullPath.str());
-            }
-        }
-        catch (const std::exception& e)
-        {
-            attempt++;
-            handleRequestException(e, "S3File::abort", attempt, defaultMaxRetries, fullPath.str());
-        }
-    }
+        Aws::S3::Model::AbortMultipartUploadRequest request;
+        request.SetBucket(bucket.str());
+        request.SetKey(key.str());
+        request.SetUploadId(uploadId.str());
+        return getClient().AbortMultipartUpload(request);
+    });
+    return true;
 }
 
 //---------------------------------------------------------------------------------------------------------------------
@@ -776,7 +728,26 @@ size32_t S3FileWriteIO::write(offset_t pos, size32_t len, const void* data)
 
     CCycleTimer timer;
 
-    // Initiate multipart upload on first write
+    // Coalesce writes into >=minPartSize multipart parts.  S3 rejects any non-final
+    // part smaller than 5MB and the engine writes in much smaller blocks, so buffer
+    // until a full part is available before uploading.
+    partBuffer.append(len, data);
+    currentPos += len;
+    if (partBuffer.length() >= minPartSize)
+        flushPart();
+
+    stats.ioWrites++;
+    stats.ioWriteBytes += len;
+    stats.ioWriteCycles += timer.elapsedCycles();
+    return len;
+}
+
+void S3FileWriteIO::flushPart()
+{
+    if (partBuffer.length() == 0)
+        return;
+
+    // Initiate the multipart upload lazily, on the first part to be uploaded.
     if (!multipartUpload)
     {
         multipartUpload = std::make_unique<S3MultipartUpload>(file->planeName.str(), file->device, file->bucketName.str(), file->keyName.str());
@@ -784,21 +755,18 @@ size32_t S3FileWriteIO::write(offset_t pos, size32_t len, const void* data)
             throw makeStringException(-1, "Failed to initiate multipart upload");
     }
 
-    if (!multipartUpload->uploadPart(data, len))
+    if (!multipartUpload->uploadPart(partBuffer.bytes(), partBuffer.length()))
         throw makeStringException(-1, "Failed to upload part to S3");
 
-    currentPos += len;
-    stats.ioWrites++;
-    stats.ioWriteBytes += len;
-    stats.ioWriteCycles += timer.elapsedCycles();
-    return len;
+    partBuffer.clear();
 }
 
 void S3FileWriteIO::flush()
 {
     CriticalBlock block(ioCS);
-    // For S3, flush is essentially a no-op since we write directly
-    // Data is already sent to S3 in write() calls
+    // Intentionally a no-op: flushing partial data mid-stream could produce a
+    // sub-5MB non-final part, which S3 multipart rejects.  Buffered data is
+    // uploaded once it reaches minPartSize, and the remainder on close().
 }
 
 void S3FileWriteIO::close()
@@ -807,6 +775,11 @@ void S3FileWriteIO::close()
         return;
 
     CriticalBlock block(ioCS);
+
+    // Flush any remaining buffered data as the final part (may be <5MB, which
+    // S3 permits for the last part of a multipart upload).
+    if (partBuffer.length() > 0)
+        flushPart();
 
     if (multipartUpload)
     {
@@ -999,6 +972,8 @@ void S3File::ensureMetadata() const
 
 void S3File::gatherMetadata() const
 {
+    // Not routed through retryS3Op: HeadObject treats NO_SUCH_KEY / RESOURCE_NOT_FOUND
+    // as "file does not exist" (a normal result) rather than a retryable failure.
     unsigned attempt = 0;
 
     for (;;)
@@ -1050,6 +1025,128 @@ void S3File::gatherMetadata() const
 }
 
 //---------------------------------------------------------------------------------------------------------------------
+// S3DirectoryIterator - lists objects under a prefix via ListObjectsV2
+
+class S3DirectoryIterator : implements IDirectoryIterator, public CInterface
+{
+public:
+    IMPLEMENT_IINTERFACE;
+
+    S3DirectoryIterator(S3File & _owner, const char * _mask, bool _sub, bool _includeDirs)
+        : owner(&_owner), mask(_mask), sub(_sub), includeDirs(_includeDirs) {}
+
+    virtual bool first() override { index = 0; entries.kill(); fetchEntries(); return isValid(); }
+    virtual bool next() override { index++; return isValid(); }
+    virtual bool isValid() override { return index < entries.ordinality(); }
+
+    virtual IFile & query() override
+    {
+        Entry & e = entries.item(index);
+        if (!e.file)
+        {
+            StringBuffer path;
+            path.append(s3FilePrefix).append(owner->planeName).append("/").append(e.key);
+            e.file.setown(createS3File(path.str()));
+        }
+        return *e.file;
+    }
+
+    virtual StringBuffer & getName(StringBuffer & buf) override
+    {
+        const char * key = entries.item(index).key.str();
+        size_t keyLen = strlen(key);
+        if (keyLen > 0 && key[keyLen - 1] == '/')
+            keyLen--;
+        const char * slash = nullptr;
+        for (size_t i = keyLen; i > 0; i--)
+            if (key[i - 1] == '/') { slash = key + i - 1; break; }
+        return slash ? buf.append(keyLen - (slash + 1 - key), slash + 1) : buf.append(keyLen, key);
+    }
+
+    virtual bool isDir() override { return entries.item(index).isDir; }
+    virtual __int64 getFileSize() override { return entries.item(index).size; }
+    virtual bool getModifiedTime(CDateTime & ret) override
+    {
+        ret.clear();
+        time_t t = entries.item(index).modified;
+        if (t) ret.set(t);
+        return t != 0;
+    }
+
+private:
+    struct Entry : public CInterface
+    {
+        StringAttr key;
+        Owned<IFile> file;
+        offset_t size = 0;
+        time_t modified = 0;
+        bool isDir = false;
+    };
+
+    void fetchEntries()
+    {
+        StringBuffer prefix(owner->keyName);
+        if (prefix.length() && prefix.charAt(prefix.length() - 1) != '/')
+            prefix.append('/');
+
+        VStringBuffer listCtx("s3://%s/%s", owner->bucketName.str(), prefix.str());
+        Aws::String continuationToken;
+        bool hasMore = true;
+        while (hasMore)
+        {
+            Aws::S3::Model::ListObjectsV2Request request;
+            request.SetBucket(owner->bucketName.str());
+            request.SetPrefix(prefix.str());
+            if (!sub) request.SetDelimiter("/");
+            if (!continuationToken.empty()) request.SetContinuationToken(continuationToken);
+
+            auto outcome = retryS3Op("S3File::directoryFiles", listCtx.str(), [&]()
+            {
+                return owner->getClient().ListObjectsV2(request);
+            });
+
+            auto & result = outcome.GetResult();
+            for (auto & obj : result.GetContents())
+            {
+                const Aws::String & key = obj.GetKey();
+                if (key.length() == (size_t)prefix.length()) continue;
+                const char * name = key.c_str() + prefix.length();
+                if (mask.length() && !WildMatch(name, mask, false)) continue;
+                Entry * e = new Entry;
+                e->key.set(key.c_str());
+                e->size = obj.GetSize();
+                e->modified = obj.GetLastModified().Seconds();
+                entries.append(*e);
+            }
+            if (includeDirs && !sub)
+            {
+                for (auto & cp : result.GetCommonPrefixes())
+                {
+                    Entry * e = new Entry;
+                    e->key.set(cp.GetPrefix().c_str());
+                    e->isDir = true;
+                    entries.append(*e);
+                }
+            }
+            hasMore = result.GetIsTruncated();
+            continuationToken = result.GetNextContinuationToken();
+        }
+    }
+
+    Linked<S3File> owner;
+    StringAttr mask;
+    bool sub;
+    bool includeDirs;
+    unsigned index = 0;
+    CIArrayOf<Entry> entries;
+};
+
+IDirectoryIterator * S3File::directoryFiles(const char * mask, bool sub, bool includeDirs)
+{
+    return new S3DirectoryIterator(*this, mask ? mask : "", sub, includeDirs);
+}
+
+//---------------------------------------------------------------------------------------------------------------------
 // File hook implementation
 
 
@@ -1072,6 +1169,166 @@ extern S3FILE_API bool isS3FileName(const char *fileName)
     return (slash != nullptr && slash != planeName && *(slash + 1) != '\0');
 }
 
+//---------------------------------------------------------------------------------------------------------------------
+// S3 API copy client - server-side copy via CopyObject, or multipart UploadPartCopy for large objects
+
+static bool isS3Type(const char * type) { return type && strieq(type, "s3"); }
+
+static constexpr offset_t maxSingleCopySize = (offset_t)5 * 1024 * 1024 * 1024;  // 5GB - S3 single CopyObject limit
+static constexpr offset_t copyPartSize = (offset_t)500 * 1024 * 1024;             // 500MB per copy part
+
+class S3APICopyClientOp : public CInterfaceOf<IAPICopyClientOp>
+{
+public:
+    S3APICopyClientOp(const char * _srcBucket, const char * _srcKey,
+                      const char * _tgtBucket, const char * _tgtKey,
+                      const char * _srcPlane, unsigned _srcDevice,
+                      const char * _tgtPlane, unsigned _tgtDevice)
+        : srcBucket(_srcBucket), srcKey(_srcKey), tgtBucket(_tgtBucket), tgtKey(_tgtKey),
+          srcPlane(_srcPlane), tgtPlane(_tgtPlane), srcDevice(_srcDevice), tgtDevice(_tgtDevice) {}
+
+    virtual void startCopy(const char * source) override
+    {
+        try
+        {
+            auto outcome = retryS3Op("S3::HeadObject", srcKey.str(), [&]()
+            {
+                Aws::S3::Model::HeadObjectRequest headReq;
+                headReq.SetBucket(srcBucket.str());
+                headReq.SetKey(srcKey.str());
+                return getSrcClient().HeadObject(headReq);
+            });
+            srcSize = outcome.GetResult().GetContentLength();
+            if (srcSize <= maxSingleCopySize)
+                doSimpleCopy();
+            else
+                doMultipartCopy();
+            status = ApiCopyStatus::Success;
+        }
+        catch (...)
+        {
+            status = ApiCopyStatus::Failed;
+            throw;
+        }
+    }
+
+    virtual ApiCopyStatus getProgress(CDateTime & dateTime, int64_t & outputLength) override
+    {
+        dateTime.clear();
+        outputLength = (status == ApiCopyStatus::Success) ? srcSize : 0;
+        return status;
+    }
+    virtual ApiCopyStatus abortCopy() override { status = ApiCopyStatus::Aborted; return status; }
+    virtual ApiCopyStatus getStatus() const override { return status; }
+
+private:
+    void doSimpleCopy()
+    {
+        StringBuffer rawSource, copySource;
+        rawSource.appendf("%s/%s", srcBucket.str(), srcKey.str());
+        encodeURL(copySource, rawSource.str());
+        retryS3Op("S3::CopyObject", copySource.str(), [&]()
+        {
+            Aws::S3::Model::CopyObjectRequest request;
+            request.SetBucket(tgtBucket.str());
+            request.SetKey(tgtKey.str());
+            request.SetCopySource(copySource.str());
+            return getTgtClient().CopyObject(request);
+        });
+    }
+
+    void doMultipartCopy()
+    {
+        StringBuffer rawSource, copySource;
+        rawSource.appendf("%s/%s", srcBucket.str(), srcKey.str());
+        encodeURL(copySource, rawSource.str());
+
+        auto initOutcome = retryS3Op("S3::CreateMultipartUpload", tgtKey.str(), [&]()
+        {
+            Aws::S3::Model::CreateMultipartUploadRequest initReq;
+            initReq.SetBucket(tgtBucket.str());
+            initReq.SetKey(tgtKey.str());
+            return getTgtClient().CreateMultipartUpload(initReq);
+        });
+        Aws::String uploadId = initOutcome.GetResult().GetUploadId();
+
+        Aws::Vector<Aws::S3::Model::CompletedPart> parts;
+        try
+        {
+            unsigned partNum = 1;
+            for (offset_t pos = 0; pos < srcSize; pos += copyPartSize, partNum++)
+            {
+                offset_t end = std::min(pos + copyPartSize - 1, srcSize - 1);
+                VStringBuffer range("bytes=%llu-%llu", (unsigned long long)pos, (unsigned long long)end);
+                auto partOutcome = retryS3Op("S3::UploadPartCopy", copySource.str(), [&]()
+                {
+                    Aws::S3::Model::UploadPartCopyRequest partReq;
+                    partReq.SetBucket(tgtBucket.str());
+                    partReq.SetKey(tgtKey.str());
+                    partReq.SetUploadId(uploadId);
+                    partReq.SetPartNumber(partNum);
+                    partReq.SetCopySource(copySource.str());
+                    partReq.SetCopySourceRange(range.str());
+                    return getTgtClient().UploadPartCopy(partReq);
+                });
+                Aws::S3::Model::CompletedPart cp;
+                cp.SetPartNumber(partNum);
+                cp.SetETag(partOutcome.GetResult().GetCopyPartResult().GetETag());
+                parts.push_back(cp);
+            }
+            retryS3Op("S3::CompleteMultipartUpload", tgtKey.str(), [&]()
+            {
+                Aws::S3::Model::CompletedMultipartUpload completed;
+                completed.SetParts(parts);
+                Aws::S3::Model::CompleteMultipartUploadRequest completeReq;
+                completeReq.SetBucket(tgtBucket.str());
+                completeReq.SetKey(tgtKey.str());
+                completeReq.SetUploadId(uploadId);
+                completeReq.SetMultipartUpload(completed);
+                return getTgtClient().CompleteMultipartUpload(completeReq);
+            });
+        }
+        catch (...)
+        {
+            // Best-effort abort of the incomplete multipart upload
+            Aws::S3::Model::AbortMultipartUploadRequest abortReq;
+            abortReq.SetBucket(tgtBucket.str());
+            abortReq.SetKey(tgtKey.str());
+            abortReq.SetUploadId(uploadId);
+            getTgtClient().AbortMultipartUpload(abortReq);
+            throw;
+        }
+    }
+
+    Aws::S3::S3Client & getSrcClient() { return getS3ClientManager().getClient(srcPlane.str(), srcDevice); }
+    Aws::S3::S3Client & getTgtClient() { return getS3ClientManager().getClient(tgtPlane.str(), tgtDevice); }
+
+    StringAttr srcBucket, srcKey, tgtBucket, tgtKey, srcPlane, tgtPlane;
+    unsigned srcDevice, tgtDevice;
+    offset_t srcSize = 0;
+    ApiCopyStatus status = ApiCopyStatus::NotStarted;
+};
+
+class S3APICopyClient : public CInterfaceOf<IAPICopyClient>
+{
+    Linked<IStorageApiInfo> source, target;
+public:
+    S3APICopyClient(IStorageApiInfo * _source, IStorageApiInfo * _target)
+        : source(_source), target(_target) {}
+    virtual const char * name() const override { return "S3 API copy client"; }
+    virtual IAPICopyClientOp * startCopy(const char * srcPath, unsigned srcStripeNum,
+                                         const char * tgtPath, unsigned tgtStripeNum) const override
+    {
+        Owned<S3APICopyClientOp> op = new S3APICopyClientOp(
+            source->queryStorageContainerName(srcStripeNum), srcPath,
+            target->queryStorageContainerName(tgtStripeNum), tgtPath,
+            source->queryPlaneName(), srcStripeNum,
+            target->queryPlaneName(), tgtStripeNum);
+        op->startCopy(srcPath);
+        return op.getClear();
+    }
+};
+
 class S3FileHook : public CInterfaceOf<IContainedFileHook>
 {
 public:
@@ -1084,6 +1341,8 @@ public:
 
     virtual IAPICopyClient* getCopyApiClient(IStorageApiInfo* source, IStorageApiInfo* target) override
     {
+        if (source && target && isS3Type(source->getStorageType()) && isS3Type(target->getStorageType()))
+            return new S3APICopyClient(source, target);
         return nullptr;
     }
 };

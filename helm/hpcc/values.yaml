@@ -252,14 +252,18 @@ storage:
   #   cost:                                 # The storage cost
   #     storageAtRest: 0.0135               # Storage at rest cost: cost per GiB/month
   #   storageapi:                           # Optional information to allow access to storage api
-  #     type: azurefile | azureblob
-  #     managed: true | false               # (optional) use managed identity for authentication
+  #     type: azurefile | azureblob | s3
+  #     managed: true | false               # (optional) use managed identity for authentication (Azure)
   #     account: <account-name>             # (optional) default azure storage account name
   #     secret: <secret-for-sas-token>      # (optional) default secret name (under secrets/storage) for accessing storage account key
-  #     containers: [ <container-list> ]    # a list of containers
+  #     containers: [ <container-list> ]    # a list of containers (Azure)
   #       name: <container-name>            # azure storage container name
   #       account: <account-name>           # (optional) azure storage account name (inherits from parent if not specified)
   #       secret: <secret-for-sas-token>    # (optional) secret name (under secrets/storage) for accessing storage account key (inherits from parent if not specified)
+  #     region: <aws-region>                # (optional) AWS region for S3 (e.g. us-east-1)
+  #     endpoint: <endpoint-url>            # (optional) custom S3 endpoint (for MinIO, etc.)
+  #     buckets: [ <bucket-list> ]          # a list of S3 buckets (uses IAM roles for authentication via IRSA on EKS)
+  #       name: <bucket-name>              # S3 bucket name
 
   - name: dali
     storageClass: ""
