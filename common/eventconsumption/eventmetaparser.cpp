@@ -260,35 +260,6 @@ bool CMetaInfoState::tryRemapFileId(CEvent& event)
 
 CMetaInfoState::SourceFileKey CMetaInfoState::makeSourceFileKey(const CEvent& event)
 {
-    // One-time check that each attribute's declared wire type still matches its SourceFileKey
-    // field width. Switching on the actual EventAttrType (rather than hardcoding size
-    // assumptions) ensures a schema change to any of these attributes is caught immediately,
-    // regardless of what the new type is.
-    [[maybe_unused]] static bool validated = []()
-    {
-        auto check = [](EventAttr attr, EventAttrType expected)
-        {
-            EventAttrType actual = queryEventAttributeType(attr);
-            switch (actual)
-            {
-            case EATu1: case EATu4: case EATu8: break;
-            default:
-                throwStringExceptionV(0, "SourceFileKey: attribute %d has unhandled type %d"
-                                         " - update SourceFileKey and makeSourceFileKey",
-                                         int(attr), int(actual));
-            }
-            if (actual != expected)
-                throwStringExceptionV(0, "SourceFileKey: attribute %d type changed from %d to %d"
-                                         " - update SourceFileKey and makeSourceFileKey",
-                                         int(attr), int(expected), int(actual));
-        };
-        check(EvAttrInstanceId, EATu8);
-        check(EvAttrFileId,     EATu4);
-        check(EvAttrChannelId,  EATu1);
-        check(EvAttrReplicaId,  EATu1);
-        return true;
-    }();
-
     return {
         event.hasAttribute(EvAttrInstanceId) ? event.queryNumericValue(EvAttrInstanceId) : 0,
         event.hasAttribute(EvAttrFileId)     ? (uint32_t)event.queryNumericValue(EvAttrFileId)     : 0,
@@ -429,6 +400,10 @@ const char* CMetaInfoState::deriveLogicalFileName(const char* path, const CMetaI
 class EventMetaStateTest : public CppUnit::TestFixture
 {
     CPPUNIT_TEST_SUITE(EventMetaStateTest);
+    CPPUNIT_TEST(validateFileIdAttributeType);
+    CPPUNIT_TEST(validateChannelIdAttributeType);
+    CPPUNIT_TEST(validateReplicaIdAttributeType);
+    CPPUNIT_TEST(validateInstanceIdAttributeType);
     CPPUNIT_TEST(testPlaneLookup);
     CPPUNIT_TEST(testDataDrivenLogicalFileNameDerivation);
     CPPUNIT_TEST(testConflictingPlanePath);
@@ -450,6 +425,28 @@ class EventMetaStateTest : public CppUnit::TestFixture
     }
 
 public:
+    // These "tests" validate hash key generation expectations. It is assumed that all official
+    // builds, including for PR commits, will run the tests, forcing code updates prior to release.
+    // Test failure requires updates to:
+    // - CMetaInfoState::SourceFileKey
+    // - CMetaInfoState::makeSourceFileKey
+    void validateFileIdAttributeType()
+    {
+        CPPUNIT_ASSERT_MESSAGE("Expected EvAttrFileId to be EATu4", queryEventAttributeType(EvAttrFileId) == EATu4);
+    }
+    void validateChannelIdAttributeType()
+    {
+        CPPUNIT_ASSERT_MESSAGE("Expected EvAttrChannelId to be EATu1", queryEventAttributeType(EvAttrChannelId) == EATu1);
+    }
+    void validateReplicaIdAttributeType()
+    {
+        CPPUNIT_ASSERT_MESSAGE("Expected EvAttrReplicaId to be EATu1", queryEventAttributeType(EvAttrReplicaId) == EATu1);
+    }
+    void validateInstanceIdAttributeType()
+    {
+        CPPUNIT_ASSERT_MESSAGE("Expected EvAttrInstanceId to be EATu8", queryEventAttributeType(EvAttrInstanceId) == EATu8);
+    }
+
     void testPlaneLookup()
     {
         START_TEST
