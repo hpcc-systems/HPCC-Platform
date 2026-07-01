@@ -373,9 +373,9 @@ StringBuffer & LogMsg::toStringPlain(StringBuffer & out, unsigned fields) const
         }
     }
     if(fields & MSGFIELD_process)
-        out.appendf("pid=%d ",sysInfo.queryProcessID());
+        out.appendf("pid=%u ",sysInfo.queryProcessID());
     if(fields & MSGFIELD_thread)
-        out.appendf("tid=%d ",sysInfo.queryThreadID());
+        out.appendf("tid=%u ",sysInfo.queryThreadID());
     if(fields & MSGFIELD_session)
     {
         if(sysInfo.querySessionID() == UnknownSession)
@@ -628,9 +628,9 @@ StringBuffer & LogMsg::toStringTable(StringBuffer & out, unsigned fields) const
         }
     }
     if(fields & MSGFIELD_process)
-        out.appendf("%5d ",sysInfo.queryProcessID());
+        out.appendf("%5u ",sysInfo.queryProcessID());
     if(fields & MSGFIELD_thread)
-        out.appendf("%5d ",sysInfo.queryThreadID());
+        out.appendf("%5u ",sysInfo.queryThreadID());
     if(fields & MSGFIELD_session)
     {
         if(sysInfo.querySessionID() == UnknownSession)
