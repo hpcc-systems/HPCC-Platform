@@ -471,7 +471,7 @@ protected:
     void checkDataWrite(offset_type offset, size_t size);
 
     void writeEventHeader(EventType type, offset_type & offset);
-    void writeEventHeader(EventType type, offset_type & offset, __uint64 timestamp, const char* traceId, __uint64 threadId);
+    void writeEventHeader(EventType type, offset_type & offset, __uint64 timestamp, const char* traceId, unsigned threadId);
     void writeEventFooter(offset_type & offset, size32_t requiredSize, offset_t writeOffset);
 
     template <class T>

@@ -178,7 +178,7 @@ void *Thread::_threadmain(void *v)
     if (SEHHandling) 
         EnableSEHtranslation();
 #else
-    t->tidlog = threadLogID();
+    t->tidlog = getSystemThreadId();
 #endif
     int ret = t->begin();
     {
@@ -2681,7 +2681,7 @@ IWorkQueueThread *createWorkQueueThread(unsigned persisttime)
     return new CWorkQueueThread(persisttime);
 }
 
-unsigned threadLogID()  // for use in logging
+unsigned getSystemThreadId()  // for use in logging etc.
 {
 #if defined(__APPLE__)
      return pthread_mach_thread_np(pthread_self());

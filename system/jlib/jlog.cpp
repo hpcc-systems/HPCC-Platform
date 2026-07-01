@@ -106,7 +106,7 @@ LogMsgSysInfo::LogMsgSysInfo(LogMsgId _id, unsigned port, LogMsgSessionId sessio
     gettimeofday(&timeStarted, NULL);
 #endif
     processID = GetCurrentProcessId();
-    threadID = threadLogID();
+    threadID = getSystemThreadId();
     sessionID = session;
 #ifdef INCLUDE_LOGMSGSYSINFO_NODE
     node.setLocalHost(port);

@@ -36,7 +36,7 @@
 
 // Should be increased if the file format changes
 // Should be increased whenever new attributes are added - unless attribute types are specified in the file
-const static unsigned currentVersion = 1;
+const static unsigned currentVersion = 2;
 
 static_assert(EvAttrMax <= 128, "Event attributes >=128.  Review the format to decide whether version should change or packed integers used");
 
@@ -184,7 +184,7 @@ static constexpr EventAttrInformation attrInformation[] = {
     DEFINE_ATTR(FileSize, u8, size),
     DEFINE_ATTR(EventTimestamp, timestamp, timestamp),
     DEFINE_ATTR(EventTraceId, string, none),
-    DEFINE_ATTR(EventThreadId, u8, none),
+    DEFINE_ATTR(EventThreadId, u4, none),
     DEFINE_ATTR(EventStackTrace, string, none),
     DEFINE_ATTR(DataSize, u4, size),
     DEFINE_ATTR(ExpandTime, u8, duration),
@@ -357,8 +357,8 @@ bool isSourceAttribute(EventAttr attr)
 // events:
 //   eventType:     1 byte - which event from the EventType enumeration
 //   timestamp:     8 bytes - the time (in ns) since the start of recording that this event occured
-//   traceId:  opt 32 bytes - the otel trace id for the query that recorded the event
-//   threadId: opt  8 bytes - the id of the thread that recorded the event
+//   traceId:  opt 16 bytes - the otel trace id for the query that recorded the event
+//   threadId: opt  4 bytes - the id of the thread that recorded the event
 //   attributes:
 //     attribute:   1 byte - which attribute, from the EventAttr enumeration.  EventNone (0) marks the end of the attributes.
 //     value:       variable - the value of the attribute depends on the type
@@ -438,7 +438,7 @@ bool EventRecorder::startRecording(const char * optionsText, const char * filena
     processOptionString(optionsText, processOption);
     sizeMessageHeaderFooter = sizeof(EventType) + sizeof(__uint64) + sizeof(EventAttr); // event type, timestamp and end of attributes marker
     if (options & ERFthreadid)
-        sizeMessageHeaderFooter += sizeof(__uint64);
+        sizeMessageHeaderFooter += sizeof(unsigned);
     if (options & ERFtraceid)
         sizeMessageHeaderFooter += 16;
 
@@ -1184,12 +1184,12 @@ void EventRecorder::writeEventHeader(EventType type, offset_type & offset)
         writeTraceId(offset, queryThreadedActiveSpan()->queryTraceId());
     if (options & ERFthreadid)
     {
-        __uint64 threadId = (__uint64)GetCurrentThreadId();
+        unsigned threadId = (unsigned)getSystemThreadId();
         write(offset, threadId);
     }
 }
 
-void EventRecorder::writeEventHeader(EventType type, offset_type & offset, __uint64 timestamp, const char * traceid, __uint64 threadId)
+void EventRecorder::writeEventHeader(EventType type, offset_type & offset, __uint64 timestamp, const char * traceid, unsigned threadId)
 {
     __uint64 ts;
     if (timestamp)
@@ -1209,7 +1209,7 @@ void EventRecorder::writeEventHeader(EventType type, offset_type & offset, __uin
     if (options & ERFthreadid)
     {
         if (!threadId)
-            threadId = (__uint64)GetCurrentThreadId();
+            threadId = (unsigned)getSystemThreadId();
         write(offset, threadId);
     }
 }
@@ -1760,7 +1760,7 @@ public:
             return false;
         if (properties.options.includeTraceIds != EventFileOption::Disabled && !finishDataAttribute(event, EvAttrEventTraceId, 16))
             return false;
-        if (properties.options.includeThreadIds != EventFileOption::Disabled && !finishAttribute<__uint64>(event, EvAttrEventThreadId))
+        if (properties.options.includeThreadIds != EventFileOption::Disabled && !finishAttribute<unsigned>(event, EvAttrEventThreadId))
             return false;
         bool good = true;
         while (good)
