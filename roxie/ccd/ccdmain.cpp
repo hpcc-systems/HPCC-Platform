@@ -1176,6 +1176,8 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
 
         udpFlowSocketsSize = topology->getPropInt("@udpFlowSocketsSize", udpFlowSocketsSize);
         udpLocalWriteSocketSize = topology->getPropInt("@udpLocalWriteSocketSize", udpLocalWriteSocketSize);
+        tcpServerWorkerSendBufferSize = topology->getPropInt("@tcpServerWorkerSendBufferSize", tcpServerWorkerSendBufferSize);
+        tcpServerWorkerRecvBufferSize = topology->getPropInt("@tcpServerWorkerRecvBufferSize", tcpServerWorkerRecvBufferSize);
 
         udpResendLostPackets = topology->getPropBool("@udpResendLostPackets", true);
         udpAssumeSequential = topology->getPropBool("@udpAssumeSequential", false);

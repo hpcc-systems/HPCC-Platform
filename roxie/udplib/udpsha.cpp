@@ -48,6 +48,8 @@ bool udpTraceTimeouts = false;
 unsigned udpTraceLevel = 0;
 unsigned udpFlowSocketsSize = 131072;
 unsigned udpLocalWriteSocketSize = 1024000;
+unsigned tcpServerWorkerSendBufferSize = 0;
+unsigned tcpServerWorkerRecvBufferSize = 0;
 unsigned udpStatsReportInterval = 60000;
 
 unsigned udpOutQsPriority = 0;

@@ -108,6 +108,8 @@ class CTcpReceiveManager : implements IReceiveManager, public CInterface
 
         virtual CReadSocketHandler *createSocketHandler(ISocket *sock) override
         {
+            if (tcpServerWorkerRecvBufferSize)
+                sock->set_receive_buffer_size(tcpServerWorkerRecvBufferSize);
             return new CReadSocketHandler(*this, asyncReader, sock, sizeof(UdpPacketHeader), maxInitialReadSize);
         }
 

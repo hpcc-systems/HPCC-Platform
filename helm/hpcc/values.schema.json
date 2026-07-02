@@ -2554,6 +2554,18 @@
           "minimum": 0,
           "description": "Controls the write socket buffer size of the local UDP sockets (Agent to Server on same node)"
         },
+        "tcpServerWorkerSendBufferSize": {
+          "type": "integer",
+          "default": 0,
+          "minimum": 0,
+          "description": "Controls the write socket buffer size of the TCP worker connection sockets"
+        },
+        "tcpServerWorkerRecvBufferSize": {
+          "type": "integer",
+          "default": 0,
+          "minimum": 0,
+          "description": "Controls the read socket buffer size of the TCP worker connection sockets"
+        },
         "udpAgentBufferSize": {
           "type": "integer",
           "default": 262142,

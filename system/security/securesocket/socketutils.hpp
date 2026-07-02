@@ -274,6 +274,7 @@ public:
 
 protected:
     virtual void releaseBuffer(void * buffer);      // Default implementation throws an exception - i.e. aync send is not supported
+    virtual void configureConnectedSocket(ISocket * socket);
 
 protected:
     CriticalSection crit{SYNC_LOCATION};

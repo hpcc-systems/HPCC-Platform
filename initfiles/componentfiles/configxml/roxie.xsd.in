@@ -1125,6 +1125,20 @@
         </xs:appinfo>
       </xs:annotation>
     </xs:attribute>
+    <xs:attribute name="tcpServerWorkerSendBufferSize" type="xs:nonNegativeInteger" use="optional" default="0">
+      <xs:annotation>
+        <xs:appinfo>
+          <tooltip>Controls the write socket buffer size of the TCP worker connection sockets</tooltip>
+        </xs:appinfo>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="tcpServerWorkerRecvBufferSize" type="xs:nonNegativeInteger" use="optional" default="0">
+      <xs:annotation>
+        <xs:appinfo>
+          <tooltip>Controls the read socket buffer size of the TCP worker connection sockets</tooltip>
+        </xs:appinfo>
+      </xs:annotation>
+    </xs:attribute>
     <xs:attribute name="udpMulticastBufferSize" type="xs:nonNegativeInteger" use="optional" default="262142">
       <xs:annotation>
         <xs:appinfo>
