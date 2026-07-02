@@ -29,6 +29,9 @@ class wuTests : public CppUnit::TestFixture
         CPPUNIT_TEST(testTargetArchitectureMatch);
         CPPUNIT_TEST(testTargetArchitectureDefaults);
         CPPUNIT_TEST(testWorkUnitTargetArchitecturePersistence);
+        CPPUNIT_TEST(testCopyWorkUnitForRecompileCompileContext);
+        CPPUNIT_TEST(testCopyWorkUnitPreservesScheduledWorkflowCount);
+        CPPUNIT_TEST(testCopyWorkUnitForRecompileDoesNotCopyScheduledWorkflowCount);
     CPPUNIT_TEST_SUITE_END();
 
 public:
@@ -163,6 +166,67 @@ public:
         SCMStringBuffer rawValue;
         wu->getDebugValue(targetArchitectureDebugValue, rawValue);
         CPPUNIT_ASSERT_EQUAL_STR(targetArchitectureArm64Linux, rawValue.str());
+    }
+
+    void testCopyWorkUnitForRecompileCompileContext()
+    {
+        Owned<ILocalWorkUnit> source = createLocalWorkUnit();
+        source->setApplicationValue("app", "name", "value", true);
+        source->setClusterName("thor");
+        source->setDebugValue("allowedclusters", "thor,roxie", true);
+        source->setUser("submitter");
+        source->setSnapshot("snapshot1");
+        source->setWarningSeverity(1234, SeverityIgnore);
+        source->setDebugValue("eclcc-option", "1", true);
+        setWorkUnitTargetArchitecture(source, "aarch64");
+
+        Owned<ILocalWorkUnit> target = createLocalWorkUnit();
+        copyWorkUnitForRecompile(target, source);
+
+        SCMStringBuffer value;
+        target->getApplicationValue("app", "name", value);
+        CPPUNIT_ASSERT_EQUAL_STR("value", value.str());
+        CPPUNIT_ASSERT_EQUAL_STR("thor", target->queryClusterName());
+        CPPUNIT_ASSERT_EQUAL_STR("thor,roxie", target->getDebugValue("allowedclusters", value).str());
+        CPPUNIT_ASSERT_EQUAL_STR("submitter", target->queryUser());
+        CPPUNIT_ASSERT_EQUAL_STR("snapshot1", target->getSnapshot(value).str());
+        CPPUNIT_ASSERT_EQUAL(SeverityIgnore, target->getWarningSeverity(1234, SeverityError));
+        CPPUNIT_ASSERT_EQUAL_STR("1", target->getDebugValue("eclcc-option", value).str());
+        CPPUNIT_ASSERT_EQUAL_STR(targetArchitectureArm64Linux, target->getDebugValue(targetArchitectureDebugValue, value).str());
+    }
+
+    void addScheduledWorkflow(IWorkUnit &wu)
+    {
+        Owned<IWorkflowItem> wf = wu.addWorkflowItem(1, WFTypeNormal, WFModeNormal, 0, 0, 0, 0, 0);
+        wu.incEventScheduledCount();
+        wf->setScheduledOn("cron", "* * * * *");
+        wf->setScheduleCount(1);
+    }
+
+    void testCopyWorkUnitPreservesScheduledWorkflowCount()
+    {
+        Owned<ILocalWorkUnit> source = createLocalWorkUnit();
+        source->setCloneable(true);
+        addScheduledWorkflow(*source);
+
+        Owned<ILocalWorkUnit> target = createLocalWorkUnit();
+        queryExtendedWU(target)->copyWorkUnit(source, false, false);
+
+        CPPUNIT_ASSERT_EQUAL(1U, target->queryEventScheduledCount());
+        Owned<IConstWorkflowItemIterator> workflow = target->getWorkflowItems();
+        CPPUNIT_ASSERT(workflow->first());
+        CPPUNIT_ASSERT(workflow->query()->isScheduled());
+    }
+
+    void testCopyWorkUnitForRecompileDoesNotCopyScheduledWorkflowCount()
+    {
+        Owned<ILocalWorkUnit> source = createLocalWorkUnit();
+        addScheduledWorkflow(*source);
+
+        Owned<ILocalWorkUnit> target = createLocalWorkUnit();
+        copyWorkUnitForRecompile(target, source);
+
+        CPPUNIT_ASSERT_EQUAL(0U, target->queryEventScheduledCount());
     }
 };
 

@@ -35,6 +35,13 @@
 
 #define DALI_FILE_LOOKUP_TIMEOUT (1000*15*1)  // 15 seconds
 
+static constexpr int querySetCloneRecompileWaitMs = 30 * 60 * 1000;
+
+static int getCrossArchitectureRecompileWait(int requestedWait)
+{
+    return requestedWait > querySetCloneRecompileWaitMs ? requestedWait : querySetCloneRecompileWaitMs;
+}
+
 //The CQuerySetQueryActionTypes[] has to match with the ESPenum QuerySetQueryActionTypes in the ecm file.
 static unsigned NumOfQuerySetQueryActionTypes = 7;
 static const char *QuerySetQueryActionTypes[] = { "Suspend", "Unsuspend", "ToggleSuspend", "Activate",
@@ -128,6 +135,27 @@ void fetchRemoteWorkunit(IClientWsWorkunits *_ws, IEspContext *ctx, const char *
     checkUseEspOrDaliIP(ep, resp->getDaliServer(), netAddress);
     if (!ep.isNull())
         ep.getEndpointHostText(daliServer);
+}
+
+void fetchRemoteWorkunitArchive(IClientWsWorkunits *_ws, IEspContext *ctx, const char *netAddress, const char *wuid, StringBuffer &archiveText, bool useSSL)
+{
+    Owned<IClientWsWorkunits> ws = ensureWsWorkunitsClient(_ws, ctx, netAddress, useSSL);
+    Owned<IClientWULogFileRequest> req = ws->createWUFileRequest();
+    req->setWuid(wuid);
+    req->setErrorMessageFormat(CErrorMessageFormat_XML);
+    req->setType(File_ArchiveQuery);
+    req->updateFileOptions().setFileType(CWUFileType::CWUFileType_ArchiveQuery);
+    Owned<IClientWULogFileResponse> resp = ws->WUFile(req);
+    if (!resp || resp->getExceptions().ordinality() || !resp->getThefile().length())
+    {
+        const char *endpoint = isEmptyString(netAddress) ? "local WsWorkunits service" : netAddress;
+        if (!resp)
+            throw makeStringExceptionV(ECLWATCH_CANNOT_GET_WORKUNIT, "Cannot retrieve remote workunit archive for workunit %s from %s: no response", wuid, endpoint);
+        if (resp->getExceptions().ordinality())
+            throw makeStringExceptionV(ECLWATCH_CANNOT_GET_WORKUNIT, "Cannot retrieve remote workunit archive for workunit %s from %s: response contained %u exception(s)", wuid, endpoint, resp->getExceptions().ordinality());
+        throw makeStringExceptionV(ECLWATCH_RESOURCE_NOT_FOUND, "Cannot retrieve remote workunit archive for workunit %s from %s: archive is empty", wuid, endpoint);
+    }
+    archiveText.append(resp->getThefile().length(), resp->getThefile().toByteArray());
 }
 
 void fetchRemoteWorkunitAndQueryDetails(IClientWsWorkunits *_ws, IEspContext *ctx, const char *netAddress, const char *queryset, const char *query, const char *wuid, StringBuffer &name, StringBuffer &xml, StringBuffer &dllname, MemoryBuffer &dll, StringBuffer &daliServer, Owned<IClientWUQuerySetDetailsResponse> &respQueryInfo, bool useSSL)
@@ -2093,17 +2121,12 @@ void copyWorkunitForRecompile(IEspContext &context, IWorkUnitFactory *factory, c
 {
     Owned<IConstWorkUnit> src(factory->openWorkUnit(srcWuid));
     if (!src)
-        throw MakeStringException(ECLWATCH_CANNOT_OPEN_WORKUNIT,"Cannot open workunit %s.", srcWuid);
+        throw makeStringExceptionV(ECLWATCH_CANNOT_OPEN_WORKUNIT,"Cannot open workunit %s.", srcWuid);
     WsWuInfo info(context, src);
     StringBuffer archiveText;
     info.getWorkunitArchiveQuery(archiveText); //archive required, fail otherwise
     if (!isArchiveQuery(archiveText))
-        throw MakeStringException(ECLWATCH_RESOURCE_NOT_FOUND,"Cannot retrieve workunit ECL archive %s.", srcWuid);
-
-    SCMStringBuffer mainDefinition;
-    Owned <IConstWUQuery> query = src->getQuery();
-    if (query)
-        query->getQueryMainDefinition(mainDefinition);
+        throw makeStringExceptionV(ECLWATCH_RESOURCE_NOT_FOUND,"Cannot retrieve workunit ECL archive %s.", srcWuid);
 
     NewWsWorkunit wu(factory, context);
     wuid.set(wu->queryWuid());
@@ -2114,17 +2137,80 @@ void copyWorkunitForRecompile(IEspContext &context, IWorkUnitFactory *factory, c
     if (jobname.length())
         wu->setJobName(jobname);
     wu.setQueryText(archiveText.str());
-    if (mainDefinition.length())
-        wu.setQueryMain(mainDefinition.str());
-    wu->setResultLimit(src->getResultLimit());
-    IStringIterator &names = src->getDebugValues();
-    ForEach(names)
+    copyWorkUnitForRecompile(wu, src);
+}
+
+static void createWorkunitForArchiveRecompile(IEspContext &context, IWorkUnitFactory *factory, const char *srcWuid, const char *queryName, const char *archiveText, IConstWorkUnit *src, StringAttr &wuid, StringAttr &jobname)
+{
+    if (!isArchiveQuery(archiveText))
+        throw makeStringExceptionV(ECLWATCH_RESOURCE_NOT_FOUND, "Cannot retrieve workunit ECL archive %s.", srcWuid);
+
+    NewWsWorkunit wu(factory, context);
+    wuid.set(wu->queryWuid());
+    wu->setAction(WUActionCompile);
+    jobname.set(queryName);
+    if (jobname.length())
+        wu->setJobName(jobname);
+    wu.setQueryText(archiveText);
+    if (src)
+        copyWorkUnitForRecompile(wu, src);
+}
+
+static void throwMissingArchiveForArchitectureMismatch(const char *srcWuid, const char *sourceArchitecture, const char *destinationArchitecture)
+{
+    throw makeStringExceptionV(ECLWATCH_RESOURCE_NOT_FOUND, "Cannot deploy/copy workunit %s from architecture %s to %s: the workunit archive is required for cross-architecture recompilation. Recompile the source workunit with query archive support enabled.", srcWuid, sourceArchitecture, destinationArchitecture);
+}
+
+static bool isArchiveMissingException(IException *e)
+{
+    return e && (e->errorCode() == ECLWATCH_RESOURCE_NOT_FOUND);
+}
+
+static void waitForCrossArchitectureRecompile(const char *wuid, int wait)
+{
+    WUState state = waitForWorkUnitToCompile(wuid, wait);
+    if (!isCompiled(state))
+        throw makeStringExceptionV(ECLWATCH_CANNOT_UPDATE_WORKUNIT, "Cross-architecture recompile workunit %s did not reach compiled state; current state is %s (wait=%d ms)", wuid, getWorkunitStateStr(state), wait);
+}
+
+static void recompileLocalWorkunitForTarget(IEspContext &context, IWorkUnitFactory *factory, const char *srcWuid, const char *target, int wait, IArrayOf<IConstNamedValue> *debugs, const char *sourceArchitecture, const char *destinationArchitecture, StringAttr &wuid, StringAttr &jobname)
+{
+    try
     {
-        SCMStringBuffer name, value;
-        names.str(name);
-        if (0==strncmp(name.str(), "eclcc", 5))
-            wu->setDebugValue(name.str(), src->getDebugValue(name.str(), value).str(), true);
+        copyWorkunitForRecompile(context, factory, srcWuid, wuid, jobname);
     }
+    catch (IException *e)
+    {
+        if (isArchiveMissingException(e))
+        {
+            e->Release();
+            throwMissingArchiveForArchitectureMismatch(srcWuid, sourceArchitecture, destinationArchitecture);
+        }
+        throw;
+    }
+    PROGLOG("Cross-architecture deploy/copy detected for %s: %s -> %s; recompiling as %s for target %s", srcWuid, sourceArchitecture, destinationArchitecture, wuid.str(), target);
+    WsWuHelpers::submitWsWorkunit(context, wuid.str(), target, nullptr, 0, 0, true, false, false, nullptr, nullptr, debugs, nullptr);
+    waitForCrossArchitectureRecompile(wuid.str(), wait);
+}
+
+static void recompileArchiveForTarget(IEspContext &context, IWorkUnitFactory *factory, const char *srcWuid, const char *queryName, const char *archiveText, IConstWorkUnit *src, const char *target, int wait, IArrayOf<IConstNamedValue> *debugs, const char *sourceArchitecture, const char *destinationArchitecture, StringAttr &wuid, StringAttr &jobname)
+{
+    try
+    {
+        createWorkunitForArchiveRecompile(context, factory, srcWuid, queryName, archiveText, src, wuid, jobname);
+    }
+    catch (IException *e)
+    {
+        if (isArchiveMissingException(e))
+        {
+            e->Release();
+            throwMissingArchiveForArchitectureMismatch(srcWuid, sourceArchitecture, destinationArchitecture);
+        }
+        throw;
+    }
+    PROGLOG("Cross-architecture deploy/copy detected for %s: %s -> %s; recompiling as %s for target %s", srcWuid, sourceArchitecture, destinationArchitecture, wuid.str(), target);
+    WsWuHelpers::submitWsWorkunit(context, wuid.str(), target, nullptr, 0, 0, true, false, false, nullptr, nullptr, debugs, nullptr);
+    waitForCrossArchitectureRecompile(wuid.str(), wait);
 }
 
 bool CWsWorkunitsEx::onWURecreateQuery(IEspContext &context, IEspWURecreateQueryRequest &req, IEspWURecreateQueryResponse &resp)
@@ -3139,6 +3225,57 @@ public:
         }
     }
 
+    void recompileLocalQueryIfNeeded(StringBuffer &wuid)
+    {
+        Owned<IConstWorkUnit> cw = factory->openWorkUnit(wuid.str());
+        if (!cw)
+            return;
+
+        StringBuffer sourceArchitecture;
+        StringBuffer destinationArchitecture;
+        getWorkUnitTargetArchitecture(sourceArchitecture, cw);
+        getTargetClusterTargetArchitecture(destinationArchitecture, target);
+        if (targetArchitecturesMatch(sourceArchitecture.str(), destinationArchitecture.str()))
+            return;
+
+        StringAttr recompiledWuid;
+        StringAttr jobname;
+        recompileLocalWorkunitForTarget(*context, factory, wuid.str(), target, querySetCloneRecompileWaitMs, nullptr, sourceArchitecture.str(), destinationArchitecture.str(), recompiledWuid, jobname);
+        wuid.set(recompiledWuid);
+    }
+
+    bool recompileRemoteQueryIfNeeded(StringBuffer &wuid, const char *queryName, const char *xml)
+    {
+        Owned<ILocalWorkUnit> sourceWu = createLocalWorkUnitFromXml(xml);
+        StringBuffer sourceArchitecture;
+        StringBuffer destinationArchitecture;
+        getWorkUnitTargetArchitecture(sourceArchitecture, sourceWu);
+        getTargetClusterTargetArchitecture(destinationArchitecture, target);
+        if (targetArchitecturesMatch(sourceArchitecture.str(), destinationArchitecture.str()))
+            return false;
+
+        StringBuffer archiveText;
+        try
+        {
+            fetchRemoteWorkunitArchive(nullptr, context, srcAddress.str(), wuid.str(), archiveText, useSSL);
+        }
+        catch (IException *e)
+        {
+            if (isArchiveMissingException(e))
+            {
+                e->Release();
+                throwMissingArchiveForArchitectureMismatch(wuid.str(), sourceArchitecture.str(), destinationArchitecture.str());
+            }
+            throw;
+        }
+
+        StringAttr recompiledWuid;
+        StringAttr jobname;
+        recompileArchiveForTarget(*context, factory, wuid.str(), queryName, archiveText.str(), sourceWu, target, querySetCloneRecompileWaitMs, nullptr, sourceArchitecture.str(), destinationArchitecture.str(), recompiledWuid, jobname);
+        wuid.set(recompiledWuid);
+        return true;
+    }
+
     void publish()
     {
         Owned<IPropertyTreeIterator> entries = toBePublished->getElements("Publish");
@@ -3188,7 +3325,8 @@ public:
         StringBuffer fetchedName;
         StringBuffer remoteDfs;
         fetchRemoteWorkunit(NULL, context, srcAddress.str(), NULL, NULL, wuid, fetchedName, xml, dllname, dll, remoteDfs, useSSL);
-        deploySharedObject(*context, wuid, target, queryName, dll, queryDirectory, xml.str(), false, srcAddress.str(), dllname);
+        if (!recompileRemoteQueryIfNeeded(wuid, queryName, xml.str()))
+            deploySharedObject(*context, wuid, target, queryName, dll, queryDirectory, xml.str(), false, srcAddress.str(), dllname);
 
         SCMStringBuffer existingQueryId;
         queryIdFromQuerySetWuid(destQuerySet, wuid, queryName, existingQueryId);
@@ -3227,7 +3365,9 @@ public:
             return;
         }
         StringBuffer newQueryId;
-        Owned<IWorkUnit> workunit = factory->updateWorkUnit(wuid);
+        StringBuffer targetWuid(wuid);
+        recompileLocalQueryIfNeeded(targetWuid);
+        Owned<IWorkUnit> workunit = factory->updateWorkUnit(targetWuid.str());
         if (!workunit)
         {
             StringBuffer msg(wuid);
@@ -3235,13 +3375,13 @@ public:
             missingWuids.append(msg);
             return;
         }
-        addToBePublished(wuid, queryName, makeActive, context->queryUserId(), query);
+        addToBePublished(targetWuid.str(), queryName, makeActive, context->queryUserId(), query);
         if (cloneFilesEnabled && wufiles)
             wufiles->addFilesFromQuery(workunit, pm, newQueryId);
         if (cloneFilesEnabled && wufiles)
         {
             VStringBuffer queryPmMatch("%s.0", queryName);
-            Owned<IConstWorkUnit> workunit = factory->openWorkUnit(wuid);
+            Owned<IConstWorkUnit> workunit = factory->openWorkUnit(targetWuid.str());
             wufiles->addFilesFromQuery(workunit, pm, queryPmMatch);
         }
     }
@@ -3503,6 +3643,10 @@ bool CWsWorkunitsEx::onWUQuerysetCopyQuery(IEspContext &context, IEspWUQuerySetC
 
     StringBuffer remoteIP;
     StringBuffer wuid;
+    StringBuffer sourceArchitecture;
+    StringBuffer destinationArchitecture;
+    getTargetClusterTargetArchitecture(destinationArchitecture, target);
+    Owned<IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
     if (srcAddress.length())
     {
         StringBuffer xml;
@@ -3516,7 +3660,32 @@ bool CWsWorkunitsEx::onWUQuerysetCopyQuery(IEspContext &context, IEspWUQuerySetC
             wuid.set(srcInfo->getWuid());
         if (targetQueryName.isEmpty())
             targetQueryName.set(queryName);
-        deploySharedObject(context, wuid, target, targetQueryName.get(), dll, queryDirectory.str(), xml.str(), false, srcAddress.str(), dllname.str());
+
+        Owned<ILocalWorkUnit> sourceWu = createLocalWorkUnitFromXml(xml.str());
+        getWorkUnitTargetArchitecture(sourceArchitecture, sourceWu);
+        if (targetArchitecturesMatch(sourceArchitecture.str(), destinationArchitecture.str()))
+            deploySharedObject(context, wuid, target, targetQueryName.get(), dll, queryDirectory.str(), xml.str(), false, srcAddress.str(), dllname.str());
+        else
+        {
+            StringBuffer archiveText;
+            try
+            {
+                fetchRemoteWorkunitArchive(nullptr, &context, srcAddress.str(), wuid.str(), archiveText, req.getSourceSSL());
+            }
+            catch (IException *e)
+            {
+                if (isArchiveMissingException(e))
+                {
+                    e->Release();
+                    throwMissingArchiveForArchitectureMismatch(wuid.str(), sourceArchitecture.str(), destinationArchitecture.str());
+                }
+                throw;
+            }
+            StringAttr recompiledWuid;
+            StringAttr jobname;
+            recompileArchiveForTarget(context, factory, wuid.str(), targetQueryName.get(), archiveText.str(), sourceWu, target, getCrossArchitectureRecompileWait(req.getWait()), nullptr, sourceArchitecture.str(), destinationArchitecture.str(), recompiledWuid, jobname);
+            wuid.set(recompiledWuid);
+        }
     }
     else
     {
@@ -3538,8 +3707,24 @@ bool CWsWorkunitsEx::onWUQuerysetCopyQuery(IEspContext &context, IEspWUQuerySetC
             targetQueryName.set(query->queryProp("@name"));
     }
 
-    Owned<IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
     Owned<IConstWorkUnit> cw = factory->openWorkUnit(wuid.str());
+    if (!cw)
+        throw makeStringExceptionV(ECLWATCH_CANNOT_OPEN_WORKUNIT,"Cannot open workunit %s.", wuid.str());
+
+    if (!srcAddress.length())
+    {
+        getWorkUnitTargetArchitecture(sourceArchitecture, cw);
+        if (!targetArchitecturesMatch(sourceArchitecture.str(), destinationArchitecture.str()))
+        {
+            StringAttr recompiledWuid;
+            StringAttr jobname;
+            recompileLocalWorkunitForTarget(context, factory, wuid.str(), target, getCrossArchitectureRecompileWait(req.getWait()), nullptr, sourceArchitecture.str(), destinationArchitecture.str(), recompiledWuid, jobname);
+            wuid.set(recompiledWuid);
+            cw.setown(factory->openWorkUnit(wuid.str()));
+            if (!cw)
+                throw makeStringExceptionV(ECLWATCH_CANNOT_OPEN_WORKUNIT,"Cannot open recompiled workunit %s.", wuid.str());
+        }
+    }
 
     StringBuffer publisherWuid(req.getDfuPublisherWuid());
     if (!req.getDontCopyFiles())

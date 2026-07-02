@@ -1660,6 +1660,7 @@ extern WORKUNIT_API WUGraphType getGraphTypeFromString(const char* type);
 
 extern WORKUNIT_API bool getWorkUnitCreateTime(const char *wuid,CDateTime &time); // based on WUID
 extern WORKUNIT_API void clientShutdownWorkUnit();
+extern WORKUNIT_API void copyWorkUnitForRecompile(IWorkUnit *target, IConstWorkUnit *source);
 extern WORKUNIT_API IExtendedWUInterface * queryExtendedWU(IConstWorkUnit * wu);
 extern WORKUNIT_API const IExtendedWUInterface * queryExtendedWU(const IConstWorkUnit * wu);
 extern WORKUNIT_API StringBuffer &formatGraphTimerLabel(StringBuffer &str, const char *graphName, unsigned subGraphNum=0, unsigned __int64 subId=0);
@@ -1672,6 +1673,7 @@ extern WORKUNIT_API bool targetArchitecturesMatch(const char * left, const char 
 extern WORKUNIT_API StringBuffer & getWorkUnitTargetArchitecture(StringBuffer & targetArchitecture, const IConstWorkUnit * wu);
 extern WORKUNIT_API void setWorkUnitTargetArchitecture(IWorkUnit * wu, const char * architecture);
 extern WORKUNIT_API StringBuffer & getProcessTargetArchitecture(StringBuffer & targetArchitecture, const IPropertyTree * process);
+extern WORKUNIT_API StringBuffer & getTargetClusterTargetArchitecture(StringBuffer & targetArchitecture, const char * targetName);
 extern WORKUNIT_API void setWorkUnitFactory(IWorkUnitFactory *_factory);
 extern WORKUNIT_API IWorkUnitFactory * getWorkUnitFactory();
 extern WORKUNIT_API IWorkUnitFactory * getWorkUnitFactory(ISecManager *secmgr, ISecUser *secuser);

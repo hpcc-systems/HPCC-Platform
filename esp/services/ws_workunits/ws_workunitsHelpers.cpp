@@ -3834,7 +3834,15 @@ void WsWuHelpers::submitWsWorkunit(IEspContext& context, IConstWorkUnit* cw, con
     {
         wu->clearExceptions();
         if(notEmpty(cluster))
+        {
             wu->setClusterName(cluster);
+            if (compile)
+            {
+                StringBuffer targetArchitecture;
+                getTargetClusterTargetArchitecture(targetArchitecture, cluster);
+                setWorkUnitTargetArchitecture(wu, targetArchitecture.str());
+            }
+        }
         if(notEmpty(snapshot))
             wu->setSnapshot(snapshot);
         wu->setState(WUStateSubmitted);

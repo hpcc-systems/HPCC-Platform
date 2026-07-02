@@ -7179,6 +7179,82 @@ StringBuffer & getProcessTargetArchitecture(StringBuffer & targetArchitecture, c
     return normalizeTargetArchitecture(targetArchitecture, architecture);
 }
 
+static void mergeTargetArchitecture(StringBuffer & targetArchitecture, const char * targetName, const char * architecture)
+{
+    StringBuffer normalized;
+    normalizeTargetArchitecture(normalized, architecture);
+    if (targetArchitecture.isEmpty())
+    {
+        targetArchitecture.set(normalized);
+        return;
+    }
+    if (!targetArchitecturesMatch(targetArchitecture.str(), normalized.str()))
+        throw makeStringExceptionV(0, "Target '%s' references mixed target architectures '%s' and '%s'", targetName ? targetName : "", targetArchitecture.str(), normalized.str());
+}
+
+#ifndef _CONTAINERIZED
+static IPropertyTree *queryTargetProcess(IPropertyTree & root, const char * processType, const char * processName)
+{
+    if (isEmptyString(processName))
+        return nullptr;
+    VStringBuffer xpath("Software/%s[@name=\"%s\"]", processType, processName);
+    return root.queryPropTree(xpath.str());
+}
+
+static void mergeTargetProcessArchitecture(StringBuffer & targetArchitecture, const char * targetName, IPropertyTree & root, const char * processType, const char * processName)
+{
+    if (isEmptyString(processName))
+        return;
+    IPropertyTree *process = queryTargetProcess(root, processType, processName);
+    StringBuffer processArchitecture;
+    getProcessTargetArchitecture(processArchitecture, process);
+    mergeTargetArchitecture(targetArchitecture, targetName, processArchitecture.str());
+}
+#endif
+
+StringBuffer & getTargetClusterTargetArchitecture(StringBuffer & targetArchitecture, const char * targetName)
+{
+    targetArchitecture.clear();
+    if (isEmptyString(targetName))
+        return normalizeTargetArchitecture(targetArchitecture, nullptr);
+
+#ifdef _CONTAINERIZED
+    Owned<IPropertyTreeIterator> queues = getComponentConfigSP()->getElements("queues");
+    ForEach(*queues)
+    {
+        IPropertyTree &queue = queues->query();
+        const char *queueName = queue.queryProp("@name");
+        if (!isEmptyString(queueName) && strieq(queueName, targetName))
+        {
+            StringBuffer queueArchitecture;
+            getProcessTargetArchitecture(queueArchitecture, &queue);
+            mergeTargetArchitecture(targetArchitecture, targetName, queueArchitecture.str());
+        }
+    }
+#else
+    Owned<IEnvironmentFactory> factory = getEnvironmentFactory(true);
+    Owned<IConstEnvironment> env = factory->openEnvironment();
+    Owned<IPropertyTree> root = &env->getPTree();
+
+    VStringBuffer xpath("Software/Topology/Cluster[@name=\"%s\"]", targetName);
+    IPropertyTree *target = root->queryPropTree(xpath.str());
+    if (target)
+    {
+        mergeTargetProcessArchitecture(targetArchitecture, targetName, *root, "EclAgentProcess", target->queryProp("EclAgentProcess/@process"));
+
+        Owned<IPropertyTreeIterator> thors = target->getElements("ThorCluster");
+        ForEach(*thors)
+            mergeTargetProcessArchitecture(targetArchitecture, targetName, *root, "ThorCluster", thors->query().queryProp("@process"));
+
+        mergeTargetProcessArchitecture(targetArchitecture, targetName, *root, "RoxieCluster", target->queryProp("RoxieCluster/@process"));
+    }
+#endif
+
+    if (targetArchitecture.isEmpty())
+        normalizeTargetArchitecture(targetArchitecture, nullptr);
+    return targetArchitecture;
+}
+
 CLocalWorkUnit::CLocalWorkUnit(ISecManager *secmgr, ISecUser *secuser)
 {
     clearCached(false);
@@ -8579,6 +8655,37 @@ static void copyTree(IPropertyTree * to, const IPropertyTree * from, const char 
         to->setPropTree(xpath, match);
 }
 
+static void copyWorkUnitCompileContext(IPropertyTree *to, const IPropertyTree *from)
+{
+    Owned<IPropertyTree> pt = from->getBranch("Application");
+    if (pt)
+        synchronizePTree(ensurePTree(to, "Application"), pt, false, false);
+
+    IPropertyTree *debug = from->queryBranch("Debug");
+    if (debug)
+    {
+        IPropertyTree *curDebug = to->queryPropTree("Debug");
+        if (curDebug)
+        {
+            Owned<IPropertyTreeIterator> elems = debug->getElements("*");
+            ForEach(*elems)
+            {
+                IPropertyTree *elem = &elems->query();
+                if (!curDebug->hasProp(elem->queryName()))
+                    curDebug->setPropTree(elem->queryName(), LINK(elem));
+            }
+        }
+        else
+            to->setPropTree("Debug", LINK(debug));
+    }
+
+    copyTree(to, from, "OnWarnings");
+    updateProp(to, from, "@clusterName");
+    updateProp(to, from, "allowedclusters");
+    updateProp(to, from, "@submitID");
+    updateProp(to, from, "SNAPSHOT");
+}
+
 IPropertyTree *CLocalWorkUnit::queryPTree() const
 {
     return p;
@@ -8607,34 +8714,14 @@ void CLocalWorkUnit::copyWorkUnit(IConstWorkUnit *cached, bool copyStats, bool a
     query.clear();
     updateProp(p, fromP, "@jobName");
     copyTree(p, fromP, "Query");
-    pt = fromP->getBranch("Application");
-    if (pt)
-        synchronizePTree(ensurePTree(p, "Application"), pt, false, false);
-
-    pt = fromP->queryBranch("Debug");
-    if (pt)
-    {
-        IPropertyTree *curDebug = p->queryPropTree("Debug");
-        if (curDebug)
-        {
-            Owned<IPropertyTreeIterator> elems = pt->getElements("*");
-            ForEach(*elems)
-            {
-                IPropertyTree *elem = &elems->query();
-                if (!curDebug->hasProp(elem->queryName()))
-                    curDebug->setPropTree(elem->queryName(),LINK(elem));
-            }
-        }
-        else
-            p->setPropTree("Debug", LINK(pt));
-    }
-    copyTree(p, fromP, "OnWarnings");
+    copyWorkUnitCompileContext(p, fromP);
     copyTree(p, fromP, "Plugins");
     copyTree(p, fromP, "Libraries");
     copyTree(p, fromP, "Results");
     copyTree(p, fromP, "Graphs");
     copyTree(p, fromP, "Summaries");
     copyTree(p, fromP, "Workflow");
+    setProp(p, fromP, "@eventScheduledCount");
     copyTree(p, fromP, "WebServicesInfo");
     if (copyStats)
     {
@@ -8647,12 +8734,6 @@ void CLocalWorkUnit::copyWorkUnit(IConstWorkUnit *cached, bool copyStats, bool a
             pt->Release();
         }
     }
-
-    updateProp(p, fromP, "@clusterName");
-    updateProp(p, fromP, "allowedclusters");
-    updateProp(p, fromP, "@submitID");
-    updateProp(p, fromP, "SNAPSHOT");
-    setProp(p, fromP, "@eventScheduledCount");
 
     //MORE: This is very adhoc.  All options that should be cloned should really be in a common branch
     if (all)
@@ -8723,6 +8804,28 @@ void CLocalWorkUnit::copyWorkUnit(IConstWorkUnit *cached, bool copyStats, bool a
     }
 
     copyTree(p, fromP, "usedsources"); // field usage
+}
+
+extern WORKUNIT_API void copyWorkUnitForRecompile(IWorkUnit *target, IConstWorkUnit *source)
+{
+    IExtendedWUInterface *targetExtended = queryExtendedWU(target);
+    const IExtendedWUInterface *sourceExtended = queryExtendedWU(source);
+    if (!targetExtended || !sourceExtended)
+        throw makeStringException(WUERR_InternalUnknownImplementation, "Workunit not created using workunit dll");
+
+    copyWorkUnitCompileContext(targetExtended->queryPTree(), sourceExtended->queryPTree());
+
+    SCMStringBuffer mainDefinition;
+    Owned<IConstWUQuery> query = source->getQuery();
+    if (query)
+        query->getQueryMainDefinition(mainDefinition);
+
+    if (mainDefinition.length())
+    {
+        Owned<IWUQuery> targetQuery = target->updateQuery();
+        targetQuery->setQueryMainDefinition(mainDefinition.str());
+    }
+    target->setResultLimit(source->getResultLimit());
 }
 
 bool CLocalWorkUnit::hasDebugValue(const char *propname) const
@@ -14134,6 +14237,9 @@ void addQueryToQuerySet(IWorkUnit *workunit, IPropertyTree *queryRegistry, const
     }
 
     IPropertyTree *newEntry = addNamedQuery(queryRegistry, cleanQueryName, workunit->queryWuid(), dllName.str(), isLibrary(workunit), userid, snapshot.str());
+    StringBuffer targetArchitecture;
+    getWorkUnitTargetArchitecture(targetArchitecture, workunit);
+    newEntry->setProp("@targetArchitecture", targetArchitecture.str());
     Owned<IConstWULibraryIterator> libraries = &workunit->getLibraries();
     checkAddLibrariesToQueryEntry(newEntry, libraries);
     newQueryId.append(newEntry->queryProp("@id"));

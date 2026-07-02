@@ -4903,6 +4903,9 @@ void deploySharedObject(IEspContext &context, StringBuffer &wuid, const char *cl
     writeSharedObject(baseDllName.str(), obj, dir, dllpath, dllname);
 
     wu->setClusterName(cluster);
+    StringBuffer targetArchitecture;
+    getTargetClusterTargetArchitecture(targetArchitecture, cluster);
+    setWorkUnitTargetArchitecture(wu, targetArchitecture.str());
     wu->commit();
 
     {
