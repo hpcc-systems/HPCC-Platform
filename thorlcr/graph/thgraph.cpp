@@ -15,6 +15,7 @@
     limitations under the License.
 ############################################################################## */
 
+#include <algorithm>
 #include <limits>
 
 #include "thgraph.hpp"
