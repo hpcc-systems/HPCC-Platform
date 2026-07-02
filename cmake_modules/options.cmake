@@ -107,6 +107,8 @@ if (EMSCRIPTEN)
     set (INCLUDE_PLUGINS OFF)
     set (CLIENTTOOLS_ONLY ON)
     set (COMMAND_NODE_PREFIX "node")
+
+    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-error=unused-but-set-global")
     set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -sMODULARIZE=0 -sEXPORT_ES6=0 --allow-multiple-definition -z muldefs -sNODERAWFS=1 -sEXIT_RUNTIME=1 -sSTACK_SIZE=5242880 -sTOTAL_MEMORY=134217728")
 
     set (USE_APR OFF)

@@ -1518,7 +1518,7 @@ void getSystemProcessInfo(unsigned &numCPUs, unsigned &CPUSpeed)
 
 static unsigned evalAffinityCpus()
 {
-#if defined(__APPLE__) || defined(EMSCRIPTEN)
+#if defined(__APPLE__) || defined(__EMSCRIPTEN__)
     // MORE - could do better
 #else
     cpu_set_t cpuset;

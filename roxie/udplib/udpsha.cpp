@@ -324,7 +324,7 @@ int check_max_socket_write_buffer(int size) {
     return check_set("/proc/sys/net/core/wmem_max", size);
 }
 
-#if defined( __linux__) || defined(__APPLE__) || defined(EMSCRIPTEN)
+#if defined( __linux__) || defined(__APPLE__) || defined(__EMSCRIPTEN__)
 void setLinuxThreadPriority(int level)
 {
     if (!udpAdjustThreadPriorities)

@@ -193,7 +193,7 @@ static void doSetCompilerPath(const char * path, const char * includes, const ch
     if (_access(fname.str(), 4))
     {
 #else
-#if defined(__linux__) || defined(__FreeBSD__) || defined(__APPLE__) || defined(EMSCRIPTEN)
+#if defined(__linux__) || defined(__FreeBSD__) || defined(__APPLE__) || defined(__EMSCRIPTEN__)
     struct stat filestatus;
     int r = stat(fname.str(), &filestatus);
     if (    (r != 0)

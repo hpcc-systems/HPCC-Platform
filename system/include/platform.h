@@ -94,7 +94,7 @@
 
 typedef unsigned size32_t;
 
-#if (defined (__linux__) || defined (__FreeBSD__)  || defined (__APPLE__) || defined (EMSCRIPTEN))
+#if (defined (__linux__) || defined (__FreeBSD__)  || defined (__APPLE__) || defined (__EMSCRIPTEN__))
 typedef __SIZE_TYPE__ memsize_t;
 #else
 typedef size_t memsize_t;
@@ -282,9 +282,9 @@ inline int daemon(int, int) { return -1; }
 #define __cdecl
 
 
-#if defined(__linux__) || defined (__FreeBSD__)  || defined (__APPLE__) || defined(EMSCRIPTEN)
+#if defined(__linux__) || defined (__FreeBSD__)  || defined (__APPLE__) || defined(__EMSCRIPTEN__)
 // **** START OF LINUX SPECIFIC SECTION ****
-#if not defined(EMSCRIPTEN)
+#if not defined(__EMSCRIPTEN__)
   #include <aio.h>
 #else
   #include <utime.h>
@@ -349,6 +349,9 @@ typedef int socklen_t;
 #include <stdlib.h>
 #include <sys/types.h>
 #include <unistd.h>
+#if defined(__EMSCRIPTEN__)
+extern "C" inline int daemon(int, int) { return -1; }
+#endif
 #include <fcntl.h>
 #include <string.h>
 #include <ctype.h>
@@ -468,7 +471,7 @@ inline bool DeleteFile(const char * name) { return unlink(name)==0; }
 #include <pthread.h>
 #include <sys/stat.h>
 #include <sys/time.h>
-#if defined(EMSCRIPTEN)
+#if defined(__EMSCRIPTEN__)
 #include <errno.h>
 #else
 #include <sys/errno.h>
@@ -478,7 +481,7 @@ inline bool DeleteFile(const char * name) { return unlink(name)==0; }
 #if defined (__FreeBSD__) || defined (__APPLE__)
 #define MAP_ANONYMOUS MAP_ANON
 #endif
-#if defined(__FreeBSD__) || defined(__linux__) || defined(__CYGWIN__) || defined (__APPLE__) || defined(EMSCRIPTEN)
+#if defined(__FreeBSD__) || defined(__linux__) || defined(__CYGWIN__) || defined (__APPLE__) || defined(__EMSCRIPTEN__)
 #include <sys/ioctl.h>
 #else
 #include <sys/filio.h>

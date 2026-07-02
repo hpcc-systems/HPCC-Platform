@@ -528,7 +528,7 @@ public:
             toSend.push_back(buffer);
             maxPackets--;
             totalSent += header->length;
-#if defined(__linux__) || defined(__APPLE__) || defined(EMSCRIPTEN)
+#if defined(__linux__) || defined(__APPLE__) || defined(__EMSCRIPTEN__)
             if (isLocal && (totalSent> 100000))  // Avoids sending too fast to local node, for reasons lost in the mists of time
                 break;
 #endif

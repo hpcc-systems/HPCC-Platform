@@ -965,7 +965,7 @@ static void closeAndDeleteEmpty(const char * filename, FILE *handle)
         bool del = (fgetpos(handle, &pos)==0)&&
 #if defined( _WIN32) || defined(__FreeBSD__) || defined(__APPLE__)
             (pos==0);
-#elif defined(EMSCRIPTEN)
+#elif defined(__EMSCRIPTEN__)
             (pos.__lldata==0);
 #else
             (pos.__pos==0);

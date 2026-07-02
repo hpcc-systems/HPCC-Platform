@@ -3172,7 +3172,7 @@ const void * jmemmem(size_t lenHaystack, const void * haystack, size_t lenNeedle
  */
 StringBuffer& sanitizeCommandArg(const char* arg, StringBuffer& sanitized)
 {
-#if defined(__linux__) || defined(__APPLE__) || defined(EMSCRIPTEN)
+#if defined(__linux__) || defined(__APPLE__) || defined(__EMSCRIPTEN__)
     if (!isEmptyString(arg))
     {
         size_t len = strlen(arg);
