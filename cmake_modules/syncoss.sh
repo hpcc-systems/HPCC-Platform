@@ -26,6 +26,25 @@ require_value() {
     fi
 }
 
+ensure_commit_available() {
+    local remote=$1
+    local ref=$2
+    local sha=$3
+
+    if [[ -z "$sha" ]]; then
+        return 0
+    fi
+
+    # merge-base requires both commits to be present locally; fetch the
+    # specific remote branch ref when this object is missing locally.
+    if ! git cat-file -e "$sha^{commit}" 2>/dev/null; then
+        git fetch --quiet "$remote" "$ref" || true
+        if ! git cat-file -e "$sha^{commit}" 2>/dev/null; then
+            echo "Warning: Could not fetch commit $sha from $remote $ref" >&2
+        fi
+    fi
+}
+
 
 # Parse arguments
 while [[ "$#" -gt 0 ]]; do
@@ -67,6 +86,7 @@ echo "Gathering remote refs..."
 ORIGIN_REFS_FILE=$(mktemp "${TMPDIR:-/tmp}/syncoss-origin-refs.XXXXXX")
 OSS_REFS_FILE=$(mktemp "${TMPDIR:-/tmp}/syncoss-oss-refs.XXXXXX")
 ORIGIN_BRANCH_SHAS_FILE=$(mktemp "${TMPDIR:-/tmp}/syncoss-origin-branch-shas.XXXXXX")
+MISSING_SHA="-"
 trap 'rm -f "$ORIGIN_REFS_FILE" "$OSS_REFS_FILE" "$ORIGIN_BRANCH_SHAS_FILE"' EXIT
 
 git ls-remote origin > "$ORIGIN_REFS_FILE"
@@ -80,8 +100,9 @@ TAG_ACTIONS_FILE=$(mktemp "${TMPDIR:-/tmp}/syncoss-tag-actions.XXXXXX")
 trap 'rm -f "$ORIGIN_REFS_FILE" "$OSS_REFS_FILE" "$ORIGIN_BRANCH_SHAS_FILE" "$MERGED_REFS_FILE" "$TAG_ACTIONS_FILE"' EXIT
 
 # Build merged refs: read OSS refs into a map, then print origin entries with the
-# matching oss sha (empty if missing). Using awk keeps this O(N).
-awk 'NR==FNR { oss[$2]=$1; next } { printf "%s\t%s\t%s\n", $1, ( $2 in oss ? oss[$2] : "" ), $2 }' "$OSS_REFS_FILE" "$ORIGIN_REFS_FILE" > "$MERGED_REFS_FILE"
+# matching oss sha. Use a non-empty placeholder for missing shas so Bash read with
+# tab IFS keeps all three columns aligned.
+awk -v missing_sha="$MISSING_SHA" 'NR==FNR { oss[$2]=$1; next } { printf "%s\t%s\t%s\n", $1, ( $2 in oss ? oss[$2] : missing_sha ), $2 }' "$OSS_REFS_FILE" "$ORIGIN_REFS_FILE" > "$MERGED_REFS_FILE"
 
 # Build set of branch SHAs from origin (unchanged)
 while read -r sha ref; do
@@ -108,6 +129,10 @@ push_to_oss() {
 echo "Synchronizing branches..."
 # Read merged refs: origin_sha <tab> oss_sha <tab> ref
 while IFS=$'\t' read -r origin_sha oss_sha ref; do
+    if [[ "$oss_sha" == "$MISSING_SHA" ]]; then
+        oss_sha=""
+    fi
+
     if [[ "$ref" == refs/heads/* ]]; then
         branch="${ref#refs/heads/}"
 
@@ -117,10 +142,17 @@ while IFS=$'\t' read -r origin_sha oss_sha ref; do
             if [[ "$origin_sha" != "$oss_sha" ]]; then
 
                 # Check if the branch is new to oss, or if oss can be fast-forwarded from origin
-                if [[ -z "$oss_sha" ]] || git merge-base --is-ancestor "$oss_sha" "$origin_sha" 2>/dev/null; then
+                if [[ -z "$oss_sha" ]]; then
                     push_to_oss "$origin_sha" "$ref" "Branch $branch"
                 else
-                    echo "Branch $branch: Push would be rejected (oss is not an ancestor of origin). Skipping."
+                    ensure_commit_available origin "$ref" "$origin_sha"
+                    ensure_commit_available oss "$ref" "$oss_sha"
+
+                    if git merge-base --is-ancestor "$oss_sha" "$origin_sha" 2>/dev/null; then
+                        push_to_oss "$origin_sha" "$ref" "Branch $branch"
+                    else
+                        echo "Branch $branch: Push would be rejected (oss is not an ancestor of origin). Skipping."
+                    fi
                 fi
             fi
         fi
