@@ -1292,7 +1292,20 @@ size_t getRelativeRoxiePtr(const void *_ptr)
 
 void registerRoxieMemory(IAsyncProcessor & processor)
 {
-    processor.lockMemory(heapBase, heapEnd - heapBase);
+/*
+    // The following code is commented out because it causes a significant drop in performance.
+    // It is not clear why - it should remove the need to copy data between use space and the kernel.
+    // Revisit at a later date
+
+    if (!heapBase || !heapEnd)
+        return;
+
+    // Memory needs to be retained by this processes and not returned to the OS, otherwise the memory could be remapped
+    // and the io_uring kernel mapping will become invalid, leading to an EFAULT error when the kernel tries to access it.
+    if (heapLocked || origHeapRetainMemory)
+        processor.lockMemory(heapBase, heapEnd - heapBase);
+*/
+
 }
 
 inline static HeapletBase *findBase(const void *ptr)
