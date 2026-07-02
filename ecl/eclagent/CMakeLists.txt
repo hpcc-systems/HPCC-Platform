@@ -45,7 +45,8 @@ ADD_DEFINITIONS( -DNO_SYBASE -D_CONSOLE )
 
 HPCC_ADD_EXECUTABLE ( hthor ${SRCS} )
 install ( TARGETS hthor RUNTIME DESTINATION ${EXEC_DIR} )
-target_link_libraries ( hthor
+target_link_libraries ( hthor PRIVATE
+      jlib
       hthorlib
       wuanalysis
       ${CppUnit_LIBRARIES}

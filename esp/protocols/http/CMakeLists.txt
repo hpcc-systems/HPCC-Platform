@@ -81,10 +81,11 @@ add_dependencies(esphttp  espscm)
 
 install(TARGETS esphttp RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR})
 target_link_libraries(
-    esphttp
+    esphttp PRIVATE
     ${XALAN_LIBRARIES}
     ${XERCES_LIBRARIES}
     jlib
+    xmllib
     dalibase
     thorhelper      # this should not be dependent on the engine helper dll
     workunit        # neither should it be dependent on the wokunit dll
@@ -93,26 +94,30 @@ target_link_libraries(
     )
 
 IF (USE_OPENSSL)
-    target_link_libraries (esphttp ${OPENSSL_LIBRARIES})
+    target_link_libraries (esphttp PRIVATE ${OPENSSL_LIBRARIES})
 ENDIF()
 
 if(LIBMEMCACHED_FOUND)
     if(MEMCACHED_USE_EXTERNAL_LIBRARY)
-        target_link_libraries(esphttp libmemcached libmemcachedutil)
+        target_link_libraries(esphttp PRIVATE libmemcached libmemcachedutil)
         add_dependencies(esphttp generate-libmemcached)
         install(CODE "set(ENV{LD_LIBRARY_PATH} \"\$ENV{LD_LIBRARY_PATH}:${PROJECT_BINARY_DIR}:${CMAKE_BINARY_DIR}/build-libmemcached/libmemcached/.libs\")")
     else()
-        target_link_libraries(esphttp ${LIBMEMCACHED_LIBRARIES})
+        target_link_libraries(esphttp PRIVATE ${LIBMEMCACHED_LIBRARIES})
     endif()
 endif()
 
 if(USE_OPENLDAP)
-    target_link_libraries(esphttp LdapSecurity)
+    target_link_libraries(esphttp PRIVATE LdapSecurity)
 endif(USE_OPENLDAP)
 
 IF (USE_ZLIB)
-    target_link_libraries ( esphttp
+    target_link_libraries ( esphttp PRIVATE
         zcrypt
     )
 ENDIF()
+
+if (CMAKE_DL_LIBS)
+    target_link_libraries(esphttp PRIVATE ${CMAKE_DL_LIBS})
+endif()
 

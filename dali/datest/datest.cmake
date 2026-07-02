@@ -42,7 +42,7 @@ include_directories (
 
 HPCC_ADD_EXECUTABLE ( datest ${SRCS} )
 set_target_properties (datest PROPERTIES COMPILE_FLAGS -D_CONSOLE)
-target_link_libraries ( datest 
+target_link_libraries ( datest PRIVATE 
          jlib
          mp 
          dafsclient

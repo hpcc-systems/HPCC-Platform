@@ -45,12 +45,12 @@ ADD_DEFINITIONS( -D_USRDLL -DCRYPTOLIB_EXPORTS )
 HPCC_ADD_LIBRARY( cryptolib SHARED ${SRCS} )
 install ( TARGETS cryptolib DESTINATION plugins CALC_DEPS)
 target_link_libraries ( 
-        cryptolib
+        cryptolib PRIVATE
         dalibase
         jlib
         ${ZLIB_LIBRARIES}
     )
 
 IF (USE_OPENSSL)
-    target_link_libraries (cryptolib ${OPENSSL_LIBRARIES})
+    target_link_libraries (cryptolib PRIVATE ${OPENSSL_LIBRARIES})
 ENDIF (USE_OPENSSL)

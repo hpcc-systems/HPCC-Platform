@@ -43,8 +43,9 @@ ADD_DEFINITIONS( -DNO_SYBASE -D_CONSOLE )
 
 HPCC_ADD_EXECUTABLE ( scheduleadmin ${SRCS} )
 install ( TARGETS scheduleadmin RUNTIME DESTINATION ${EXEC_DIR} )
-target_link_libraries ( scheduleadmin 
+target_link_libraries ( scheduleadmin PRIVATE 
          jlib
+         mp
          remote 
          dalibase 
          dllserver 

@@ -76,6 +76,7 @@ add_dependencies(SMCLib espscm)
 install ( TARGETS SMCLib RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )
 target_link_libraries ( SMCLib PRIVATE
          jlib
+         mp
          remote 
          xmllib 
          esphttp 
@@ -84,6 +85,7 @@ target_link_libraries ( SMCLib PRIVATE
          nbcd 
          eclrtl 
          deftype 
+         thorhelper
          workunit 
     )
 

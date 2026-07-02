@@ -102,6 +102,10 @@ if(WSSQL_SERVICE)
         ${HPCC_SOURCE_DIR}/esp/espcommon
         )
 
+    if (VCPKG_INSTALLED_DIR AND VCPKG_TARGET_TRIPLET)
+        include_directories(${VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}/include)
+    endif()
+
     if (CMAKE_COMPILER_IS_CLANG)
       set_source_files_properties(${ANTLR_sql2ecl_SOURCES} PROPERTIES COMPILE_FLAGS -Wno-parentheses-equality)
     endif()
@@ -110,22 +114,30 @@ if(WSSQL_SERVICE)
     HPCC_ADD_LIBRARY(ws_sql SHARED ${SRCS})
     add_dependencies(ws_sql espscm sql2ecl)
     target_link_libraries(
-        ws_sql
+        ws_sql PRIVATE
         ws_workunits
         ws_dfu
         jlib
+        hql
+        fileview2
+        remote
         xmllib
         esphttp
         dalibase
         ${ANTLR_LIB}
         wuwebview
+        SMCLib
         ${COMMON_ESP_SERVICE_LIBS}
         )
+
+    if (NOT CONTAINERIZED)
+        target_link_libraries ( ws_sql PRIVATE environment )
+    endif()
 
     SET_DIRECTORY_PROPERTIES(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES "antlr3c")
 
 IF (USE_OPENSSL)
-    target_link_libraries ( ws_sql
+    target_link_libraries ( ws_sql PRIVATE
     	securesocket
     )
 ENDIF()

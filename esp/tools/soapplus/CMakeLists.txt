@@ -47,17 +47,17 @@ ADD_DEFINITIONS( -D_CONSOLE )
 HPCC_ADD_EXECUTABLE ( soapplus ${SRCS} )
 install ( TARGETS soapplus RUNTIME DESTINATION ${EXEC_DIR} COMPONENT Runtime)
 
-target_link_libraries ( soapplus 
+target_link_libraries ( soapplus PRIVATE 
          jlib
          xmllib 
     )
 
 if (WIN32)
-    target_link_libraries ( soapplus ws2_32 )
+    target_link_libraries ( soapplus PRIVATE ws2_32 )
 endif()
 
 IF (USE_OPENSSL)
-    target_link_libraries ( soapplus 
+    target_link_libraries ( soapplus PRIVATE 
          securesocket 
     )
 ENDIF()

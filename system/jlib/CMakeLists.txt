@@ -23,13 +23,6 @@
 
 project( jlib )
 
-INCLUDE(CheckLibraryExists)
-
-if (NOT WIN32 AND NOT WIN64)
-CHECK_LIBRARY_EXISTS(dl dlopen "" HAVE_LIBDL)
-CHECK_LIBRARY_EXISTS(crypt crypt "" HAVE_LIBCRYPT)
-endif ()
-
 if(NOT TARGET lzma)
   add_subdirectory(${HPCC_SOURCE_DIR}/system/lzma ${CMAKE_BINARY_DIR}/system/lzma)
 endif(NOT TARGET lzma)
@@ -258,13 +251,9 @@ if (NOT WIN32 AND NOT WIN64 AND NOT APPLE AND NOT EMSCRIPTEN)
     target_link_libraries ( jlib PRIVATE PkgConfig::liburing )
 endif ()
 
-if ( ${HAVE_LIBDL} )
-    target_link_libraries ( jlib PRIVATE dl)
-endif ( ${HAVE_LIBDL} )
-
-if ( ${HAVE_LIBCRYPT} )
-    target_link_libraries ( jlib PRIVATE crypt)
-endif ( ${HAVE_LIBCRYPT} )
+if (CMAKE_DL_LIBS)
+    target_link_libraries ( jlib PRIVATE ${CMAKE_DL_LIBS} )
+endif()
 
 target_link_libraries ( jlib PRIVATE
         

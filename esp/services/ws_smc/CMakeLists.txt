@@ -71,7 +71,7 @@ ADD_DEFINITIONS( -D_USRDLL -DWS_SMC_EXPORTS -DWSSMC_API_LOCAL -DESP_SERVICE_WsSM
 HPCC_ADD_LIBRARY( ws_smc SHARED ${SRCS}  )
 add_dependencies ( ws_smc espscm )
 install ( TARGETS ws_smc RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )
-target_link_libraries ( ws_smc
+target_link_libraries ( ws_smc PRIVATE
          jlib
          xmllib
          esphttp
@@ -95,11 +95,13 @@ target_link_libraries ( ws_smc
          ws_topology
          schedulectrl
          ws_workunits
+         ${CppUnit_LIBRARIES}
          ${COMMON_ESP_SERVICE_LIBS}
     )
 
 if (NOT CONTAINERIZED)
     target_link_libraries ( ws_smc
+        PRIVATE
         ws_machine
         environment
     )
@@ -107,9 +109,10 @@ endif()
 
 IF (USE_OPENSSL)
     target_link_libraries ( ws_smc
+    	PRIVATE
     	securesocket
     )
 ENDIF()
 IF (USE_OPENLDAP)
-target_link_libraries ( ws_smc LdapSecurity )
+target_link_libraries ( ws_smc PRIVATE LdapSecurity )
 ENDIF(USE_OPENLDAP)

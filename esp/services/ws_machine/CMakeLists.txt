@@ -64,7 +64,7 @@ ADD_DEFINITIONS( -D_USRDLL -Dws_machine_API_LOCAL -DESP_SERVICE_ws_machine)
 HPCC_ADD_LIBRARY( ws_machine SHARED ${SRCS} )
 add_dependencies( ws_machine espscm )
 install ( TARGETS ws_machine RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )
-target_link_libraries ( ws_machine
+target_link_libraries ( ws_machine PRIVATE
          jlib
          roxiecommlib
          xmllib
@@ -80,6 +80,7 @@ target_link_libraries ( ws_machine
 
 IF (USE_OPENSSL)
     target_link_libraries ( ws_machine
+    	PRIVATE
     	securesocket
     )
 ENDIF()

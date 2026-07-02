@@ -72,6 +72,7 @@ if(NOT PLUGIN)
     target_link_libraries(
         workunit PRIVATE
         jlib 
+        mp
         dalibase 
         dllserver 
         nbcd 

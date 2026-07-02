@@ -74,7 +74,7 @@ ADD_DEFINITIONS( -D_USRDLL -DESDL_ENGINE_EXPORTS )
 HPCC_ADD_LIBRARY( esdl_svc_engine SHARED ${SRCS} )
 install ( TARGETS esdl_svc_engine RUNTIME DESTINATION bin LIBRARY DESTINATION lib )
 add_dependencies (esdl_svc_engine espscm)
-target_link_libraries ( esdl_svc_engine
+target_link_libraries ( esdl_svc_engine PRIVATE
          jlib
          xmllib
          esphttp
@@ -92,7 +92,11 @@ target_link_libraries ( esdl_svc_engine
     )
 
 IF (USE_OPENSSL)
-    target_link_libraries ( esdl_svc_engine
+    target_link_libraries ( esdl_svc_engine PRIVATE
     	securesocket
     )
 ENDIF()
+
+if (CMAKE_DL_LIBS)
+    target_link_libraries ( esdl_svc_engine PRIVATE ${CMAKE_DL_LIBS} )
+endif()

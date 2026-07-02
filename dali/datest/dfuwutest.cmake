@@ -43,7 +43,7 @@ include_directories (
 
 HPCC_ADD_EXECUTABLE ( dfuwutest ${SRCS} )
 set_target_properties (dfuwutest PROPERTIES COMPILE_FLAGS -D_CONSOLE)
-target_link_libraries ( dfuwutest
+target_link_libraries ( dfuwutest PRIVATE
          workunit
          jlib
          mp 
@@ -54,5 +54,5 @@ target_link_libraries ( dfuwutest
     )
 
 if (NOT CONTAINERIZED)
-    target_link_libraries ( dfuwutest environment )
+    target_link_libraries ( dfuwutest PRIVATE environment )
 endif()

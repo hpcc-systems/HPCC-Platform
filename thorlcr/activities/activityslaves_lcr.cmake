@@ -116,8 +116,10 @@ set_target_properties(activityslaves_lcr PROPERTIES
     COMPILE_FLAGS -D_USRDLL
     DEFINE_SYMBOL ACTIVITYSLAVES_EXPORTS )
 install ( TARGETS activityslaves_lcr RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )
-target_link_libraries ( activityslaves_lcr 
+target_link_libraries ( activityslaves_lcr PRIVATE
          jlib
+         mp
+         dafsclient
          thorsort_lcr 
          nbcd 
          hql
@@ -136,5 +138,5 @@ target_link_libraries ( activityslaves_lcr
     )
 
 if (NOT CONTAINERIZED)
-    target_link_libraries ( activityslaves_lcr environment )
+    target_link_libraries ( activityslaves_lcr PRIVATE environment )
 endif()

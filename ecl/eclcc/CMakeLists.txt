@@ -61,12 +61,13 @@ endif()
 
 HPCC_ADD_EXECUTABLE ( eclcc ${SRCS} )
 install ( TARGETS eclcc RUNTIME DESTINATION ${EXEC_DIR} )
-target_link_libraries ( eclcc 
+target_link_libraries ( eclcc PRIVATE
          eclrtl 
          deftype 
          dafsclient 
          dalibase 
          dllserver
+         mp
          hql
          hqlcpp
          jlib
@@ -77,11 +78,11 @@ target_link_libraries ( eclcc
     )
 
 if (NOT CONTAINERIZED)
-  target_link_libraries ( eclcc environment )
+  target_link_libraries ( eclcc PRIVATE environment )
 endif()
 
 IF (USE_ZLIB)
-    target_link_libraries ( eclcc
+    target_link_libraries ( eclcc PRIVATE
         zcrypt
     )
 ENDIF()

@@ -55,9 +55,13 @@ HPCC_ADD_LIBRARY( ws_loggingservice SHARED ${SRCS} )
 
 install ( TARGETS ws_loggingservice RUNTIME DESTINATION bin LIBRARY DESTINATION lib )
 add_dependencies (ws_loggingservice espscm)
-target_link_libraries ( ws_loggingservice
+target_link_libraries ( ws_loggingservice PRIVATE
     esphttp
     jlib
     logginglib
     ${COMMON_ESP_SERVICE_LIBS}
 )
+
+if (CMAKE_DL_LIBS)
+    target_link_libraries ( ws_loggingservice PRIVATE ${CMAKE_DL_LIBS} )
+endif()
