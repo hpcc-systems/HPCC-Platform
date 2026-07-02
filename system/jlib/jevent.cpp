@@ -1760,8 +1760,25 @@ public:
             return false;
         if (properties.options.includeTraceIds != EventFileOption::Disabled && !finishDataAttribute(event, EvAttrEventTraceId, 16))
             return false;
-        if (properties.options.includeThreadIds != EventFileOption::Disabled && !finishAttribute<unsigned>(event, EvAttrEventThreadId))
-            return false;
+        if (properties.options.includeThreadIds != EventFileOption::Disabled)
+        {
+            // EventThreadId was u8 in v1. Changed to u4 in v2.
+            if (1 == properties.version)
+            {
+                // Can't use finishAttribute<__uint64> because the 8-byte value cannot be set into a 4-byte attribute.
+                // Read the 8-byte value and truncate to 4 bytes before setting to avoid a failed assertion. Truncation
+                // is acceptable because no logical dependency on thread id exists in v1 files.
+                __uint64 oldThreadId;
+                (void)readToken(oldThreadId);
+                if (!event.setValue(EvAttrEventThreadId, static_cast<uint32_t>(oldThreadId & 0xFFFFFFFFULL)))
+                    return false;
+            }
+            else
+            {
+                if (!finishAttribute<uint32_t>(event, EvAttrEventThreadId))
+                    return false;
+            }
+        }
         bool good = true;
         while (good)
         {
@@ -1830,9 +1847,19 @@ protected:
             throw makeStringExceptionV(JLIBERR_SystemFileSIsNotAnEventFile, "file '%s' is not an event file", file.queryFilename());
 
         bufferedStream->read(sizeof(properties.version), &properties.version);
-        //MORE: Need to handle multiple file versions
-        if (properties.version != currentVersion)
-            throw makeStringExceptionV(JLIBERR_SystemUnsupportedFileVersionURequiredU, "unsupported file version %u (required %u)", properties.version, currentVersion);
+        switch (properties.version)
+        {
+        // Accepted versions:
+        case 1:
+        case 2:
+            break;
+        // Rejected versions:
+        case 0:
+        default:
+            if (currentVersion == properties.version)
+                throw makeStringExceptionV(JLIBERR_SystemUnsupportedFileVersionURequiredU, "file consumer sync error - file '%s' version %u not accepted as current version", file.queryFilename(), properties.version);
+            throw makeStringExceptionV(JLIBERR_SystemUnsupportedFileVersionURequiredU, "file '%s' version %u is not supported (must be 1 or 2)", file.queryFilename(), properties.version);
+        }
 
         byte compressionType;
         bufferedStream->read(sizeof(compressionType), &compressionType);
