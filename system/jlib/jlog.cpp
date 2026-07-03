@@ -106,7 +106,7 @@ LogMsgSysInfo::LogMsgSysInfo(LogMsgId _id, unsigned port, LogMsgSessionId sessio
     gettimeofday(&timeStarted, NULL);
 #endif
     processID = GetCurrentProcessId();
-    threadID = threadLogID();
+    threadID = getSystemThreadId();
     sessionID = session;
 #ifdef INCLUDE_LOGMSGSYSINFO_NODE
     node.setLocalHost(port);
@@ -965,7 +965,7 @@ static void closeAndDeleteEmpty(const char * filename, FILE *handle)
         bool del = (fgetpos(handle, &pos)==0)&&
 #if defined( _WIN32) || defined(__FreeBSD__) || defined(__APPLE__)
             (pos==0);
-#elif defined(EMSCRIPTEN)
+#elif defined(__EMSCRIPTEN__)
             (pos.__lldata==0);
 #else
             (pos.__pos==0);
@@ -3420,6 +3420,157 @@ bool fetchLogByClass(LogQueryResultDetails & resultDetails, StringBuffer & retur
 
 //logAccessPluginConfig expected to contain connectivity and log mapping information
 typedef IRemoteLogAccess * (*newLogAccessPluginMethod_t_)(IPropertyTree & logAccessPluginConfig);
+
+// Length of the "YYYY-MM-DD HH:MM:SS" timestamp prefix written by jlog
+// when MSGFIELD_date and MSGFIELD_time are enabled.
+static constexpr size_t logTimestampPrefixLength = 19;
+
+bool isLogTimestampPrefix(const char *p)
+{
+    // Separator positions inside "YYYY-MM-DD HH:MM:SS":
+    //   YYYY-MM-DD HH:MM:SS
+    //   0123456789012345678
+    //       ^  ^  ^  ^  ^
+    //       4  7  10 13 16
+    return p && p[4] == '-' && p[7] == '-' && p[10] == ' ' && p[13] == ':' && p[16] == ':';
+}
+
+// Maximum rows requested from the remote log backend in one batch.
+static constexpr unsigned defaultAuditLogPageSize = 2000;
+
+// Upper bound on rows returned by a single queryAuditLogs() call, to guard
+// against unbounded results exhausting memory on very large time ranges.
+static constexpr unsigned maxAuditLogRows = 100000;
+
+// Split a chunk of log rows into individual lines and append each as a
+// separate entry to `out`, appending at most `maxRows` lines.
+static void appendLogsFromChunk(const char *chunk, StringAttrArray &out, unsigned maxRows)
+{
+    const char *base = chunk;
+    unsigned appended = 0;
+    while (!isEmptyString(base) && appended < maxRows)
+    {
+        const char *rowStart = base;
+        const char *rowEnd = rowStart;
+        while (*rowEnd && *rowEnd != '\n' && *rowEnd != '\r')
+            ++rowEnd;
+
+        // Find the jlog timestamp prefix in this row.
+        const char *tsStart = nullptr;
+        for (const char *p = rowStart; (p + logTimestampPrefixLength) <= rowEnd; ++p)
+        {
+            if (isLogTimestampPrefix(p))
+            {
+                tsStart = p;
+                break;
+            }
+        }
+        if (!tsStart)
+        {
+            base = rowEnd;
+            while (*base == '\n' || *base == '\r')
+                ++base;
+            continue;
+        }
+
+        // Payload starts at the first comma after the timestamp.
+        const char *payloadStart = tsStart + logTimestampPrefixLength;
+        while (payloadStart < rowEnd && *payloadStart != ',')
+            ++payloadStart;
+        if (payloadStart >= rowEnd)
+        {
+            base = rowEnd;
+            while (*base == '\n' || *base == '\r')
+                ++base;
+            continue;
+        }
+
+        // Message ends at the closing quote.
+        const char *msgEnd = payloadStart;
+        while (msgEnd < rowEnd && *msgEnd != '"')
+            ++msgEnd;
+
+        // Rebuild as daaudit-style text.
+        StringBuffer line;
+        line.append(logTimestampPrefixLength, tsStart);
+        line.append(' ');
+        line.append(static_cast<size32_t>(msgEnd - payloadStart), payloadStart);
+        out.append(*new StringAttrItem(line.str(), line.length()));
+        ++appended;
+
+        base = rowEnd;
+        while (*base == '\n' || *base == '\r')
+            ++base;
+    }
+}
+
+static unsigned queryAuditLogsRemote(IRemoteLogAccess &logAccess, const CDateTime &from, const CDateTime &to, const char *match, StringAttrArray &out, unsigned max)
+{
+    LogAccessTimeRange timeRange;
+    timeRange.setStart(from);
+    timeRange.setEnd(to);
+
+    Owned<ILogAccessFilter> audience(getAudienceLogAccessFilter(MSGAUD_audit));
+    Owned<ILogAccessFilter> filter;
+    if (isEmptyString(match) || streq(match, "*"))
+    {
+        // No message-level filter requested; let backend return all audit audience rows.
+        filter.set(audience.getClear());
+    }
+    else
+    {
+        Owned<ILogAccessFilter> messageFilter(getWildCardLogAccessFilter(match));
+        filter.setown(getBinaryLogAccessFilterOwn(audience.getClear(), messageFilter.getClear(), LOGACCESS_FILTER_and));
+    }
+
+    LogAccessConditions options;
+    options.setFilter(filter.getClear());
+    options.setTimeRange(timeRange);
+    options.setReturnColsMode(RETURNCOLS_MODE_min);
+    options.setLimit(defaultAuditLogPageSize);
+
+    Owned<IRemoteLogAccessStream> reader = logAccess.getLogReader(options, LOGACCESS_LOGFORMAT_csv);
+    if (!reader)
+        return 0;
+
+    const unsigned baseOrdinality = out.ordinality();
+    StringBuffer chunk;
+    do
+    {
+        unsigned recsRead = 0;
+        bool more = reader->readLogEntries(chunk.clear(), recsRead);
+        if (recsRead > 0)
+            appendLogsFromChunk(chunk.str(), out, max - (out.ordinality() - baseOrdinality));
+        if (!more || (out.ordinality() - baseOrdinality) >= max)
+            break;
+    }
+    while (true);
+    return out.ordinality() - baseOrdinality;
+}
+
+// Containerized implementation: scans audit-audience rows via IRemoteLogAccess.
+static unsigned containerizedQueryAuditLogs(const CDateTime &from, const CDateTime &to, const char *match, StringAttrArray &out, unsigned max)
+{
+    IRemoteLogAccess *logAccessor = queryRemoteLogAccessor();
+    assertex(logAccessor); // Containerized systems require IRemoteLogAccess to be initialized
+    return queryAuditLogsRemote(*logAccessor, from, to, match, out, max);
+}
+
+// Bare-metal registers its Dali-backed implementation via registerQueryAuditLogs();
+// containerized deployments default to the IRemoteLogAccess scan above.
+static queryAuditLogsFn registeredQueryAuditLogs = isContainerized() ? containerizedQueryAuditLogs : nullptr;
+
+void registerQueryAuditLogs(queryAuditLogsFn fn)
+{
+    registeredQueryAuditLogs = fn;
+}
+
+unsigned queryAuditLogs(const CDateTime &from, const CDateTime &to, const char *match, StringAttrArray &out)
+{
+    if (!registeredQueryAuditLogs)
+        throw makeStringException(JLIBERR_AuditLogQueryNotRegistered, "queryAuditLogs: no queryAuditLogs function registered");
+    return registeredQueryAuditLogs(from, to, match, out, maxAuditLogRows);
+}
 
 IRemoteLogAccess *queryRemoteLogAccessor()
 {

@@ -54,7 +54,7 @@ set_target_properties( udplib PROPERTIES
     DEFINE_SYMBOL UDPLIB_EXPORTS )
 install ( TARGETS udplib RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )
 
-target_link_libraries ( udplib 
+target_link_libraries ( udplib PRIVATE 
          jlib
          roxiemem
          securesocket

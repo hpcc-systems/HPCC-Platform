@@ -24,12 +24,13 @@
 #define da_decl DECL_IMPORT
 #endif
 
-class CDateTime;
-extern da_decl unsigned queryAuditLogs(const CDateTime &from,const CDateTime &to, const char *mask,StringAttrArray &out,unsigned start=0,unsigned max=100000);
-
+#include "jlog.hpp"  // exports queryAuditLogs() (was previously declared here)
 
 // for server use
 interface IDaliServer;
 extern da_decl IDaliServer *createDaliAuditServer(const char *dir); // called for coven members
+
+// for baremetal client init (registers daliQueryAuditLogs with jlog)
+extern da_decl void registerDaliAuditLogQueryFn();
 
 #endif

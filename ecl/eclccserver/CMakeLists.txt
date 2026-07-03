@@ -49,7 +49,7 @@ include_directories (
 HPCC_ADD_EXECUTABLE ( eclccserver ${SRCS} ${INCLUDES} )
 install ( TARGETS eclccserver RUNTIME DESTINATION ${EXEC_DIR} )
 
-target_link_libraries ( eclccserver 
+target_link_libraries ( eclccserver PRIVATE 
          jlib
          mp
          dalibase
@@ -58,7 +58,7 @@ target_link_libraries ( eclccserver
     )
 
 if (NOT CONTAINERIZED)
-    target_link_libraries ( eclccserver environment )
+    target_link_libraries ( eclccserver PRIVATE environment )
 endif()
 
 HPCC_ADD_SUBDIRECTORY (vchooks "PLATFORM")

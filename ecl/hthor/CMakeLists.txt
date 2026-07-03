@@ -80,7 +80,7 @@ ADD_DEFINITIONS( -D_USRDLL -DHTHOR_EXPORTS -DSTARTQUERY_EXPORTS )
 
 HPCC_ADD_LIBRARY( hthorlib SHARED ${SRCS} ${INCLUDES} )
 install ( TARGETS hthorlib RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} ARCHIVE DESTINATION componentfiles/cl/lib )
-target_link_libraries ( hthorlib
+target_link_libraries ( hthorlib PRIVATE
          dafsclient
          dalibase
          dllserver
@@ -99,11 +99,12 @@ target_link_libraries ( hthorlib
     )
 
 if (NOT CONTAINERIZED)
-    target_link_libraries ( hthorlib environment )
+    target_link_libraries ( hthorlib PRIVATE environment )
 endif()
 
 IF (USE_OPENSSL)
     target_link_libraries ( hthorlib
+    	PRIVATE
     	securesocket
     )
 ENDIF()

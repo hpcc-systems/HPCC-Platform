@@ -56,7 +56,7 @@ ADD_DEFINITIONS( -D_USRDLL -DDLLSERVER_EXPORTS )
 
 HPCC_ADD_LIBRARY( dllserver SHARED ${SRCS} )
 install ( TARGETS dllserver RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )
-target_link_libraries ( dllserver
+target_link_libraries ( dllserver PRIVATE
          ${ZLIB_LIBRARIES}
          jlib 
          mp 
@@ -67,10 +67,14 @@ target_link_libraries ( dllserver
     )
 
 if (NOT CONTAINERIZED)
-  target_link_libraries ( dllserver environment )
+  target_link_libraries ( dllserver PRIVATE environment )
 endif()
 
 if (NOT WIN32)
-  target_link_libraries ( dllserver ${BINUTILS_LIBRARIES})
+  target_link_libraries ( dllserver PRIVATE ${BINUTILS_LIBRARIES})
+endif()
+
+if (CMAKE_DL_LIBS)
+  target_link_libraries ( dllserver PRIVATE ${CMAKE_DL_LIBS} )
 endif()
 

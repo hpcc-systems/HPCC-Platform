@@ -98,6 +98,10 @@ target_link_libraries ( fileview2 PRIVATE
          hql 
     )
 
+if (CMAKE_DL_LIBS)
+    target_link_libraries ( fileview2 PRIVATE ${CMAKE_DL_LIBS} )
+endif()
+
 if (NOT CONTAINERIZED)
     target_link_libraries ( fileview2 PRIVATE environment )
 endif()

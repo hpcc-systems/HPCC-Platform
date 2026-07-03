@@ -882,7 +882,8 @@ public:
         numnodes = _numnodes;
         partno = _partno;
         transferserver.clear();
-        transferserver.setown(createMergeTransferServer(this));
+        size32_t totalBufSize = (size32_t)activity->getOptInt(THOROPT_SORT_MERGE_TOTAL_BUFFER_MB, SORT_MERGE_TOTAL_BUFFER_SIZE / 0x100000) * 0x100000;
+        transferserver.setown(createMergeTransferServer(this, numnodes, totalBufSize));
         transferserver->start();
         return true; // used to establish link
     }

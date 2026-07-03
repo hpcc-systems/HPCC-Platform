@@ -38,7 +38,7 @@
 #pragma GCC diagnostic ignored "-Warray-bounds"
 #endif
 
-#if defined(_USE_OPENSSL) || defined(EMSCRIPTEN)
+#if defined(_USE_OPENSSL) || defined(__EMSCRIPTEN__)
 #define CPPHTTPLIB_OPENSSL_SUPPORT
 #endif
 

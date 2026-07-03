@@ -48,12 +48,13 @@ include_directories (
 HPCC_ADD_EXECUTABLE ( eclscheduler ${SRCS} ${INCLUDES} )
 install ( TARGETS eclscheduler RUNTIME DESTINATION ${EXEC_DIR} )
 
-target_link_libraries ( eclscheduler 
+target_link_libraries ( eclscheduler PRIVATE
          jlib
+        mp
          schedulectrl
          workunit
     )
 
 if (NOT CONTAINERIZED)
-    target_link_libraries ( eclscheduler environment )
+    target_link_libraries ( eclscheduler PRIVATE environment )
 endif()

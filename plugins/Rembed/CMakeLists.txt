@@ -55,7 +55,7 @@ if(REMBED)
         SET_DEPENDENCIES(CPACK_DEBIAN_PACKAGE_DEPENDS r-base-core r-cran-rcpp r-cran-inline)
         SET_DEPENDENCIES(CPACK_RPM_PACKAGE_REQUIRES R-Rcpp)
         target_link_libraries(
-            Rembed
+            Rembed PRIVATE
             ${R_LIBRARIES}
             eclrtl
             nbcd

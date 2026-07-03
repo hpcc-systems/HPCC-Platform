@@ -1831,4 +1831,16 @@ extern jlib_decl IRemoteLogAccess * queryRemoteLogAccessor();
 
 extern jlib_decl IException * queryRemoteLogAccessorLoadError();
 
+// Retrieve audit log entries for the given time range.
+// On baremetal, dispatches to the Dali audit server via a function pointer
+// registered by Dali client initialization. In containerized deployments, falls
+// back to an IRemoteLogAccess scan. Returns the number of rows appended to
+// `out`; each row is a full daaudit-format line "YYYY-MM-DD HH:MM:SS ,...".
+// Registered implementations take a `max` cap on the number of rows returned,
+// to guard against unbounded results; queryAuditLogs() applies a default cap.
+typedef unsigned (*queryAuditLogsFn)(const CDateTime &from, const CDateTime &to,
+    const char *match, StringAttrArray &out, unsigned max);
+extern jlib_decl void registerQueryAuditLogs(queryAuditLogsFn fn);
+extern jlib_decl unsigned queryAuditLogs(const CDateTime &from, const CDateTime &to, const char *match, StringAttrArray &out);
+
 #endif

@@ -27,6 +27,7 @@
 #include "daserver.hpp"
 #include "dacsds.ipp"
 #include "dautils.hpp"
+#include "daaudit.hpp"
 
 #include "daclient.hpp"
 #include "sysinfologger.hpp"
@@ -147,6 +148,8 @@ bool initClientProcess(IGroup *servergrp, DaliClientRole role, unsigned mpport, 
 
     if (!isContainerized()) // The Environment is bare-metal only
     {
+        registerDaliAuditLogQueryFn();
+
         // auto install environment monitor for server roles
         // causes any config update hooks (installed by installConfigUpdateHook() to trigger on an env. change)
         switch (role)

@@ -58,10 +58,14 @@ ADD_DEFINITIONS( -D_USRDLL -DWS_DFSCLIENT_EXPORTS -DWsDfs_API_LOCAL )
 
 HPCC_ADD_LIBRARY( ws_dfsclient SHARED ${SRCS} )
 install ( TARGETS ws_dfsclient RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )
-target_link_libraries ( ws_dfsclient
+target_link_libraries ( ws_dfsclient PRIVATE
          jlib
          xmllib
          esphttp
          dalibase
          workunit
     )
+
+if (NOT CONTAINERIZED)
+     target_link_libraries ( ws_dfsclient PRIVATE environment )
+endif()

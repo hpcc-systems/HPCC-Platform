@@ -23,6 +23,8 @@ concurrency:
 permissions:
   contents: read
   pull-requests: write
+  checks: read # read CheckRun results in statusCheckRollup
+  statuses: read # read commit StatusContext results in statusCheckRollup
 
 jobs:
   sync-tagged-reviewers:
@@ -100,9 +102,32 @@ jobs:
                         body
                         isDraft
                         mergeable
-                        mergeStateStatus
+                        baseRefName
                         author {
                           login
+                        }
+                        commits(last: 1) {
+                          nodes {
+                            commit {
+                              statusCheckRollup {
+                                contexts(first: 100) {
+                                  totalCount
+                                  nodes {
+                                    __typename
+                                    ... on CheckRun {
+                                      name
+                                      status
+                                      conclusion
+                                    }
+                                    ... on StatusContext {
+                                      context
+                                      state
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
                         }
                         reviewRequests(first: 100) {
                           nodes {
@@ -129,7 +154,7 @@ jobs:
                 pr = data?.repository?.pullRequest;
                 if (!pr) return null;
 
-                if (pr.mergeable !== 'UNKNOWN' && pr.mergeStateStatus !== 'UNKNOWN') {
+                if (pr.mergeable !== 'UNKNOWN') {
                   return pr;
                 }
 
@@ -200,6 +225,34 @@ jobs:
               return [...new Set(candidatePrNumbers)];
             }
 
+            // Read the set of REQUIRED status-check contexts for a branch from its
+            // active rulesets (the repo's "Status checks that are required" list).
+            // Returns a Set of context names, an empty Set when none are required,
+            // or null when the rules could not be determined.
+            async function getRequiredCheckContexts(baseRef) {
+              if (!baseRef) return null;
+              try {
+                const { data: rules } = await github.rest.repos.getBranchRules({
+                  owner,
+                  repo,
+                  branch: baseRef,
+                });
+                const required = new Set();
+                for (const rule of rules || []) {
+                  if (rule.type !== 'required_status_checks') continue;
+                  const checks = rule.parameters?.required_status_checks || [];
+                  for (const check of checks) {
+                    if (check?.context) required.add(check.context);
+                  }
+                }
+                core.info(`Tracing: required checks for '${baseRef}': [${[...required].join(', ')}]`);
+                return required;
+              } catch (err) {
+                core.warning(`Could not read branch rules for '${baseRef}': ${err?.message || String(err)}`);
+                return null;
+              }
+            }
+
             async function syncReviewersForPr(prNumber) {
               const failures = [];
               const pr = await getPullRequestWithRetry(owner, repo, prNumber);
@@ -208,13 +261,57 @@ jobs:
                 return failures;
               }
 
-              // Gate only on review-readiness: not draft, clean merge state.
-              if (pr.isDraft || pr.mergeStateStatus !== 'CLEAN') {
+              // Gate on REQUIRED-checks readiness, NOT full merge-readiness.
+              // Gating on mergeStateStatus === 'CLEAN' would deadlock: CLEAN also
+              // requires an approving review, but this action exists to request the
+              // reviewers who would provide that review. Instead, proceed once the PR
+              // is not a draft, has no merge conflicts, and every status check that the
+              // base branch marks as REQUIRED has passed - ignoring non-required checks
+              // and any outstanding required-review gate.
+              if (pr.isDraft || pr.mergeable !== 'MERGEABLE') {
                 core.info(
-                  `PR #${pr.number} is not review-ready yet: draft=${pr.isDraft}, mergeable=${pr.mergeable}, mergeStateStatus=${pr.mergeStateStatus}`
+                  `PR #${pr.number} is not check-ready yet: draft=${pr.isDraft}, mergeable=${pr.mergeable}`
                 );
                 return failures;
               }
+
+              const requiredContexts = await getRequiredCheckContexts(pr.baseRefName);
+              if (requiredContexts === null) {
+                core.info(
+                  `PR #${pr.number}: unable to determine required status checks for base '${pr.baseRefName}'; skipping until this can be resolved.`
+                );
+                return failures;
+              }
+
+              // Map each reported check/status context to whether it is currently passing.
+              const checkPassing = new Map();
+              const rollupContexts = pr.commits?.nodes?.[0]?.commit?.statusCheckRollup?.contexts;
+              if ((rollupContexts?.totalCount || 0) > (rollupContexts?.nodes?.length || 0)) {
+                core.warning(
+                  `PR #${pr.number}: more status contexts (${rollupContexts.totalCount}) than fetched (${rollupContexts.nodes.length}); required-check evaluation may be incomplete.`
+                );
+              }
+              for (const node of rollupContexts?.nodes || []) {
+                if (node.__typename === 'CheckRun') {
+                  const passing = node.status === 'COMPLETED' &&
+                    ['SUCCESS', 'NEUTRAL', 'SKIPPED'].includes(node.conclusion);
+                  checkPassing.set(node.name, passing);
+                } else if (node.__typename === 'StatusContext') {
+                  checkPassing.set(node.context, node.state === 'SUCCESS');
+                }
+              }
+
+              const unmetRequired = [...requiredContexts].filter((ctx) => !checkPassing.get(ctx));
+              if (unmetRequired.length > 0) {
+                core.info(
+                  `PR #${pr.number} is not check-ready yet: ${unmetRequired.length} required check(s) not passing: ${unmetRequired.join(', ')}`
+                );
+                return failures;
+              }
+
+              core.info(
+                `PR #${pr.number}: all ${requiredContexts.size} required check(s) passing; proceeding to sync reviewers.`
+              );
 
               // Parse desired reviewers from a single "Reviewers:" line in body.
               const desired = parseReviewersFromBody(pr.body);

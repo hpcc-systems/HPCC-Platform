@@ -109,7 +109,7 @@ ADD_DEFINITIONS( -D_USRDLL -DWS_WORKUNITS_EXPORTS -DWSWU_API_LOCAL -Dws_logacces
 HPCC_ADD_LIBRARY( ws_workunits SHARED ${SRCS} )
 add_dependencies ( ws_workunits espscm )
 install ( TARGETS ws_workunits RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )
-target_link_libraries ( ws_workunits
+target_link_libraries ( ws_workunits PRIVATE
          jlib
          mp
          remote
@@ -139,16 +139,20 @@ target_link_libraries ( ws_workunits
     )
 
 if (NOT CONTAINERIZED)
-    target_link_libraries ( ws_workunits environment )
+    target_link_libraries ( ws_workunits PRIVATE environment )
 endif()
 
 IF (USE_OPENSSL)
-    target_link_libraries ( ws_workunits
+    target_link_libraries ( ws_workunits PRIVATE
     	securesocket
     )
 ENDIF()
 IF (USE_ZLIB)
-  target_link_libraries ( ws_workunits
+  target_link_libraries ( ws_workunits PRIVATE
       zcrypt
       )
 ENDIF()
+
+if (CMAKE_DL_LIBS)
+    target_link_libraries ( ws_workunits PRIVATE ${CMAKE_DL_LIBS} )
+endif()

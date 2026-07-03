@@ -857,6 +857,317 @@ thor: []
     </sect2>
   </sect1>
 
+  <sect1 id="DFSClientCerts" role="nobrk">
+    <title>Configuring Client Certificates for Secure Remote DFS
+    Access</title>
+
+    <para><emphasis role="bold">Scope and Scenarios:</emphasis> This section
+    explains how to configure a containerized HPCC Systems<superscript>®</superscript>
+    deployment so one environment exposes logical files through the DFS ESP
+    service and a second environment accesses those logical files using
+    <emphasis>~remote::</emphasis> naming. This section is specifically about
+    <emphasis role="bold">remote DFS service access</emphasis>, not direct
+    dafilesrv access.</para>
+
+    <para><emphasis role="bold">Configuration as code guidance:</emphasis>
+    Keep customizations in one or more override YAML files (for example,
+    separate files for certificates, ESP DFS service, and client storage
+    mappings). Use base chart defaults as the starting point and merge your
+    custom files with <emphasis>-f</emphasis> during install/upgrade.</para>
+
+    <para><emphasis role="bold">See:</emphasis> Certificate issuer setup, root
+    CA examples, and cert-manager lifecycle details in the <ulink
+    url="https://hpcc-systems.github.io/HPCC-Platform/helm/examples/certmanager/README.md">https://hpcc-systems.github.io/HPCC-Platform/helm/examples/certmanager/README.md</ulink> and related DevDocs.</para>
+
+    <sect2 id="DFSClientCerts-Overview">
+      <title>Overview</title>
+
+      <para>Remote DFS in container environments has two sides:</para>
+
+      <itemizedlist>
+        <listitem>
+          <para><emphasis role="bold">Server environment (env1):</emphasis>
+          Exposes the DFS ESP service and defines allowed remote clients via
+          <emphasis role="bold">remoteClients</emphasis>.</para>
+        </listitem>
+
+        <listitem>
+          <para><emphasis role="bold">Client environment (env2):</emphasis>
+          Maps remote planes using <emphasis
+          role="bold">storage.remote</emphasis> and local <emphasis
+          role="bold">category: remote</emphasis> planes, and references a
+          secret containing client certificate materials (typically via an
+          auto-derived secret key from the remote DFS service URL).</para>
+        </listitem>
+      </itemizedlist>
+
+      <para>Logical files are then accessed from env2 using names such as:
+      <emphasis>~remote::env1::somescope::somefilename</emphasis>.</para>
+
+      <para>Note on deployment topology: The steps below use two Kubernetes
+      namespaces (env1 and env2) on a single cluster purely for simplicity of
+      illustration. In practice, the server and client environments are
+      typically deployed on entirely separate Kubernetes clusters — and may
+      reside in different cloud regions, subscriptions, or data centers. The
+      configuration principles are identical regardless of topology; only the
+      mechanism for reaching the DFS service endpoint (and how certificates
+      are transported between environments) will differ.</para>
+    </sect2>
+
+    <sect2 id="DFSClientCerts-ServerSetup">
+      <title>Step 1: Configure Server Environment (env1)</title>
+
+      <orderedlist>
+        <listitem>
+          <para>Switch to (or create) namespace
+          <emphasis>env1</emphasis>.</para>
+
+          <programlisting>kubectl create ns env1
+kubectl config set-context --current --namespace=env1</programlisting>
+        </listitem>
+
+        <listitem>
+          <para>Install cert-manager if needed (see certmanager README for
+          details).</para>
+
+          <programlisting>helm repo add jetstack https://charts.jetstack.io
+helm repo update
+helm install cert-manager jetstack/cert-manager --set installCRDs=true --namespace cert-manager --create-namespace</programlisting>
+        </listitem>
+
+        <listitem>
+          <para>Enable chart certificate management and enable the remote
+          issuer.</para>
+
+          <programlisting>certificates:
+  enabled: true
+  issuers:
+    remote:
+      enabled: true
+      name: hpcc-remote-issuer
+      kind: Issuer
+      spec:
+        ca:
+          secretName: hpcc-remote-issuer-key-pair</programlisting>
+        </listitem>
+
+        <listitem>
+          <para>Configure the DFS ESP service and define each remote client
+          environment that will connect. The <emphasis
+          role="bold">esp</emphasis> setting is a Helm list, so values files
+          replace the whole list rather than merging one item. Start from the
+          chart defaults, then include a complete <emphasis
+          role="bold">esp</emphasis> list containing all services you want to
+          keep (for example, <emphasis>eclwatch</emphasis> and
+          <emphasis>eclservices</emphasis>) plus the DFS entry:</para>
+
+          <programlisting>helm show values hpcc/hpcc &gt; env1-values-base.yaml
+
+# In env1-dfs.yaml, provide the full esp list you want to keep:
+esp:
+  - name: eclwatch
+    application: eclwatch
+  - name: eclservices
+    application: eclservices
+  - name: dfs
+    application: dfs
+    auth: none
+    replicas: 1
+    remoteClients:
+      - name: env2
+        organization: mycompany
+    service:
+      visibility: local
+      servicePort: 8520</programlisting>
+        </listitem>
+
+        <listitem>
+          <para>Create a CA key pair for the remote issuer and store it as the
+          Kubernetes TLS secret named in <emphasis
+          role="bold">certificates.issuers.remote.spec.ca.secretName</emphasis>.</para>
+
+          <programlisting>openssl req -x509 -newkey rsa:2048 -nodes -keyout ca.key -sha256 -days 1825 -out ca.crt -subj "/C=US/ST=Georgia/L=Alpharetta/O=HPCC Systems/OU=HPCC Example/CN=info@hpccsystems.com"
+kubectl create secret tls hpcc-remote-issuer-key-pair --cert=ca.crt --key=ca.key</programlisting>
+        </listitem>
+
+        <listitem>
+          <para>Deploy env1 with your override file(s).</para>
+
+          <programlisting>helm install env1 hpcc/hpcc -f env1-certs.yaml -f env1-dfs.yaml</programlisting>
+        </listitem>
+      </orderedlist>
+    </sect2>
+
+    <sect2 id="DFSClientCerts-ExportClientCreds">
+      <title>Step 2: Export env1 DFS Client Credentials and Endpoint</title>
+
+      <orderedlist>
+        <listitem>
+          <para>After env1 starts, list secrets and locate generated remote
+          client certificate secrets (typically prefixed with
+          <emphasis>client-remote-dfs-</emphasis>).</para>
+
+          <programlisting>kubectl get secrets</programlisting>
+        </listitem>
+
+        <listitem>
+          <para>Extract certificate, key, and CA files for env2 from the
+          generated secret (example secret name shown):</para>
+
+          <programlisting>kubectl get secret client-remote-dfs-dfs-env2-tls -o json | jq -r '.data."tls.crt"' | base64 -d &gt; env2tls.crt
+kubectl get secret client-remote-dfs-dfs-env2-tls -o json | jq -r '.data."tls.key"' | base64 -d &gt; env2tls.key
+kubectl get secret client-remote-dfs-dfs-env2-tls -o json | jq -r '.data."ca.crt"' | base64 -d &gt; env2ca.crt</programlisting>
+        </listitem>
+
+        <listitem>
+          <para>Get the env1 DFS service endpoint and port (default
+          8520).</para>
+
+          <programlisting>kubectl get svc | grep dfs</programlisting>
+        </listitem>
+      </orderedlist>
+    </sect2>
+
+    <sect2 id="DFSClientCerts-ClientSetup">
+      <title>Step 3: Configure Client Environment (env2)</title>
+
+      <orderedlist>
+        <listitem>
+          <para>Switch to (or create) namespace
+          <emphasis>env2</emphasis>.</para>
+
+          <programlisting>kubectl create ns env2
+kubectl config set-context --current --namespace=env2</programlisting>
+        </listitem>
+
+        <listitem>
+          <para>Create a Kubernetes secret from the files extracted from
+          env1. The Kubernetes secret name can be any valid name (example:
+          <emphasis>env1-access</emphasis>).</para>
+
+          <programlisting>kubectl create secret generic env1-access \
+  --from-file=tls.crt=env2tls.crt \
+  --from-file=tls.key=env2tls.key \
+  --from-file=ca.crt=env2ca.crt</programlisting>
+        </listitem>
+
+        <listitem>
+          <para>Compute the default remote secret key from the DFS service URL
+          and map that key to your Kubernetes secret in the client storage
+          secrets section.</para>
+
+          <programlisting>ecl url-secret-name https://&lt;env1-dfs-endpoint&gt;:8520
+# Example output:
+# http-connect-ssl-env1-dfs-endpoint-8520</programlisting>
+
+          <programlisting>secrets:
+  storage:
+    http-connect-ssl-env1-dfs-endpoint-8520: env1-access</programlisting>
+        </listitem>
+
+        <listitem>
+          <para>Define a local plane with <emphasis>category:
+          remote</emphasis> and map the remote environment under
+          <emphasis>storage.remote</emphasis>. Because
+          <emphasis role="bold">storage.planes</emphasis> is a Helm list,
+          your override must include every plane you want to keep (for
+          example, <emphasis>dali</emphasis>, <emphasis>dll</emphasis>,
+          <emphasis>sasha</emphasis>, <emphasis>data</emphasis>, and
+          <emphasis>mydropzone</emphasis>) plus your new remote plane.</para>
+
+          <programlisting>helm show values hpcc/hpcc &gt; env2-values-base.yaml
+
+# In env2-storage.yaml, keep your existing planes and append env1-data:
+storage:
+  planes:
+    - name: dali
+      pvc: env2-dali-pvc
+      prefix: "/var/lib/HPCCSystems/dalistorage"
+      category: dali
+    - name: dll
+      pvc: env2-dll-pvc
+      prefix: "/var/lib/HPCCSystems/queries"
+      category: dll
+    - name: sasha
+      pvc: env2-sasha-pvc
+      prefix: "/var/lib/HPCCSystems/sasha"
+      category: sasha
+    - name: data
+      pvc: env2-data-pvc
+      prefix: "/var/lib/HPCCSystems/hpcc-data"
+      category: data
+    - name: mydropzone
+      pvc: env2-dropzone-pvc
+      prefix: "/var/lib/HPCCSystems/dropzone"
+      category: lz
+    - name: env1-data
+      pvc: env1-pvc
+      prefix: "/var/lib/HPCCSystems/env1/hpcc-data"
+      category: remote
+  remote:
+    - name: env1
+      service: https://&lt;env1-dfs-endpoint&gt;:8520
+      planes:
+        - remote: data
+          local: env1-data</programlisting>
+
+          <para><emphasis role="bold">Note:</emphasis> The local remote plane
+          must point to storage that corresponds to the remote environment's
+          plane content. This is commonly done with a PVC mapped to the same
+          backing storage account/share/path. In cloud-native deployments,
+          this plane may be backed by cloud APIs/services rather than a local
+          PVC.</para>
+        </listitem>
+
+        <listitem>
+          <para>Deploy env2 with your client override file(s).</para>
+
+          <programlisting>helm install env2 hpcc/hpcc -f env2-storage.yaml</programlisting>
+        </listitem>
+      </orderedlist>
+    </sect2>
+
+    <sect2 id="DFSClientCerts-Testing">
+      <title>Step 4: Test Remote DFS Access</title>
+
+      <para>In env1, create a logical file:</para>
+
+      <programlisting>ds := DATASET([{1, 'one'}, {2, 'two'}, {3, 'three'}], {unsigned num, string str}, DISTRIBUTED);
+OUTPUT(ds, , '~somescope::somefilename', OVERWRITE);</programlisting>
+
+      <para>In env2, read it via remote DFS:</para>
+
+      <programlisting>ds := DATASET('~remote::env1::somescope::somefilename', {unsigned num, string str}, FLAT);
+OUTPUT(ds, ALL);</programlisting>
+
+      <para>If access fails, verify:</para>
+
+      <itemizedlist>
+        <listitem>
+          <para>The env1 DFS service endpoint/port is reachable from
+          env2.</para>
+        </listitem>
+
+        <listitem>
+          <para>The entry under <emphasis>secrets.storage</emphasis> uses the
+          correct name derived from the DFS service URL (for example, via
+          <emphasis>ecl url-secret-name</emphasis>) and maps to a Kubernetes secret
+          containing matching certificate, key, and CA files.</para>
+        </listitem>
+
+        <listitem>
+          <para>The env1 DFS service includes env2 in
+          <emphasis>remoteClients</emphasis>.</para>
+        </listitem>
+
+        <listitem>
+          <para>The remote plane mapping uses correct remote and local plane
+          names.</para>
+        </listitem>
+      </itemizedlist>
+    </sect2>
+  </sect1>
+
   <sect1 id="CostTracking1">
     <title>Container Cost Tracking</title>
 

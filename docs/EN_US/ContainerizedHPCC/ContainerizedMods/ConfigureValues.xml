@@ -3256,6 +3256,136 @@ global:
             </varlistentry>
           </variablelist></para>
       </sect3>
+
+      <sect3 id="eclSecurity_Settings">
+        <title>ECL Security Settings</title>
+
+        <para>The <emphasis role="bold">eclSecurity</emphasis> section under
+        <emphasis>security</emphasis> in the <emphasis>values.yaml</emphasis>
+        file controls which ECL language features are permitted during ECL
+        compilation. These settings apply globally to all ECL compilation
+        components (eclccserver) in the deployment.</para>
+
+        <para>The following is an example of the eclSecurity section as it
+        appears in the <emphasis>values.yaml</emphasis> file:</para>
+
+        <programlisting>security:
+  eclSecurity:
+    # Possible values:
+    # allow - functionality is permitted
+    # deny - functionality is not permitted
+    # allowSigned - functionality permitted only if code signed
+    embedded: "allow"
+    pipe:  "allow"
+    extern: "allow"
+    datafile: "allow"
+</programlisting>
+
+        <para>Each setting accepts one of the following values:</para>
+
+        <para><informaltable colsep="1" frame="all" rowsep="1">
+            <tgroup cols="2">
+              <colspec colwidth="100pt" />
+
+              <colspec />
+
+              <tbody>
+                <row>
+                  <entry><emphasis role="bold">allow</emphasis></entry>
+
+                  <entry>The functionality is permitted for all ECL
+                  code.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">deny</emphasis></entry>
+
+                  <entry>The functionality is not permitted. Any ECL code
+                  attempting to use this feature will fail to compile.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">allowSigned</emphasis></entry>
+
+                  <entry>The functionality is permitted only if the ECL code
+                  has been digitally signed with a GPG key that is trusted by
+                  the ECLCC Server. Unsigned code attempting to use this
+                  feature will fail to compile.</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+
+        <para>The available security settings are:</para>
+
+        <para><variablelist>
+            <varlistentry>
+              <term>embedded</term>
+
+              <listitem>
+                <para>Controls whether ECL code may use embedded languages such
+                as C++, Python, Java, R, and other supported language plugins.
+                Denying this feature prevents ECL code from executing arbitrary
+                code in embedded languages. Note that parts of the ECL Standard
+                Library rely on embedded language support; setting this to
+                <emphasis role="bold">deny</emphasis> may cause some standard
+                library functions to fail.</para>
+              </listitem>
+            </varlistentry>
+
+            <varlistentry>
+              <term>pipe</term>
+
+              <listitem>
+                <para>Controls whether ECL code may use the PIPE command to
+                invoke external operating system processes. Denying or
+                restricting this feature prevents ECL code from spawning
+                external processes, which could otherwise be used to
+                circumvent file access controls or execute arbitrary
+                commands.</para>
+              </listitem>
+            </varlistentry>
+
+            <varlistentry>
+              <term>extern</term>
+
+              <listitem>
+                <para>Controls whether ECL code may use SERVICE declarations
+                to call external C++ library functions. The HPCC Systems
+                platform standard library plugin SERVICE definitions are
+                digitally signed; setting this to
+                <emphasis role="bold">allowSigned</emphasis> allows those to
+                continue working while preventing user-supplied, unsigned
+                SERVICE definitions from being called.</para>
+              </listitem>
+            </varlistentry>
+
+            <varlistentry>
+              <term>datafile</term>
+
+              <listitem>
+                <para>Controls whether ECL code may access data files directly.
+                When set to <emphasis role="bold">allowSigned</emphasis>, data
+                file access is permitted only if the ECL code has been
+                digitally signed with a trusted key. This setting is
+                particularly useful in combination with
+                <emphasis role="bold">allowSigned</emphasis> for the other
+                options.</para>
+              </listitem>
+            </varlistentry>
+          </variablelist></para>
+
+        <para><emphasis role="bold">NOTE</emphasis>: Setting
+        <emphasis>embedded</emphasis>, <emphasis>pipe</emphasis>, or
+        <emphasis>extern</emphasis> to <emphasis role="bold">allow</emphasis>
+        enables potentially insecure ECL features. Consider using
+        <emphasis role="bold">allowSigned</emphasis> in production environments
+        to restrict these features to trusted, digitally signed code
+        only.</para>
+
+        <para>For more information about code signing, see the
+        <emphasis>ECL Programmer's Guide</emphasis>.</para>
+      </sect3>
     </sect2>
   </sect1>
 </chapter>

@@ -65,10 +65,12 @@ set_target_properties(graph_lcr PROPERTIES
     COMPILE_FLAGS -D_USRDLL
     DEFINE_SYMBOL GRAPH_EXPORTS )
 install ( TARGETS graph_lcr RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )
-target_link_libraries ( graph_lcr 
+target_link_libraries ( graph_lcr PRIVATE
          jlib
+         mp
          jhtree 
          remote 
+         dafsclient
          dalibase 
          dllserver 
          nbcd 
@@ -80,7 +82,7 @@ target_link_libraries ( graph_lcr
     )
 
 if (USE_TBBMALLOC)
-   target_link_libraries ( graph_lcr TBB::tbb )
+   target_link_libraries ( graph_lcr PRIVATE TBB::tbb )
 endif()
 
 

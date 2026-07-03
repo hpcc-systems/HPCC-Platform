@@ -57,13 +57,18 @@ ADD_DEFINITIONS( -D_CONSOLE )
 
 HPCC_ADD_EXECUTABLE ( logging_test ${SRCS} )
 
-target_link_libraries ( logging_test
+target_link_libraries ( logging_test PRIVATE
          jlib
+         esphttp
          loggingmanager
     )
+
+if (CMAKE_DL_LIBS)
+    target_link_libraries ( logging_test PRIVATE ${CMAKE_DL_LIBS} )
+endif()
     
 IF (USE_OPENSSL)
-    target_link_libraries ( logging_test 
+    target_link_libraries ( logging_test PRIVATE
         securesocket
     )
 ENDIF()

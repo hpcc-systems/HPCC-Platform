@@ -121,7 +121,7 @@ if (EMSCRIPTEN)
 endif ()
 install ( TARGETS ccd RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} ARCHIVE DESTINATION componentfiles/cl/lib )
 
-target_link_libraries ( ccd 
+target_link_libraries ( ccd PRIVATE 
          ${CppUnit_LIBRARIES}
          dafsclient 
          dalibase 
@@ -130,6 +130,7 @@ target_link_libraries ( ccd
          eclrtl 
          jhtree 
          jlib
+         mp
          libbase58
          nbcd
          roxiemem 
@@ -142,15 +143,19 @@ target_link_libraries ( ccd
     )
 
 if (NOT CONTAINERIZED)
-    target_link_libraries ( ccd environment )
+    target_link_libraries ( ccd PRIVATE environment )
 endif()
 
 IF (USE_OPENSSL)
-    target_link_libraries ( ccd
+    target_link_libraries ( ccd PRIVATE
     	securesocket
     )
 ENDIF()
 
 IF (USE_TBBMALLOC AND USE_TBBMALLOC_ROXIE)
-   target_link_libraries ( ccd TBB::tbb )
+   target_link_libraries ( ccd PRIVATE TBB::tbb )
 ENDIF()
+
+if (CMAKE_DL_LIBS)
+  target_link_libraries ( ccd PRIVATE ${CMAKE_DL_LIBS} )
+endif()

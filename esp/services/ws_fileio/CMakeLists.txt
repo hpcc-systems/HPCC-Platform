@@ -66,7 +66,7 @@ ADD_DEFINITIONS( -D_USRDLL -DWsFileIO_API_LOCAL -DESP_SERVICE_WsFileIO)
 HPCC_ADD_LIBRARY( ws_fileio SHARED ${SRCS} )
 install ( TARGETS ws_fileio RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )
 add_dependencies (ws_fileio espscm)
-target_link_libraries ( ws_fileio
+target_link_libraries ( ws_fileio PRIVATE
          jlib
          mp
          remote
@@ -79,5 +79,5 @@ target_link_libraries ( ws_fileio
     )
 
 if (NOT CONTAINERIZED)
-    target_link_libraries ( ws_fileio environment )
+    target_link_libraries ( ws_fileio PRIVATE environment )
 endif()

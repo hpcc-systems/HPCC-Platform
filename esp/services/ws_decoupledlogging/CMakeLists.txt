@@ -57,7 +57,7 @@ HPCC_ADD_LIBRARY( ws_decoupledlogging SHARED ${SRCS} )
 add_dependencies( ws_decoupledlogging espscm )
 
 install ( TARGETS ws_decoupledlogging RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )
-target_link_libraries ( ws_decoupledlogging
+target_link_libraries ( ws_decoupledlogging PRIVATE
          jlib
          xmllib
          logginglib
@@ -66,7 +66,11 @@ target_link_libraries ( ws_decoupledlogging
     )
 
 IF (USE_OPENSSL)
-    target_link_libraries ( ws_decoupledlogging
+    target_link_libraries ( ws_decoupledlogging PRIVATE
         securesocket
     )
 ENDIF()
+
+if (CMAKE_DL_LIBS)
+    target_link_libraries ( ws_decoupledlogging PRIVATE ${CMAKE_DL_LIBS} )
+endif()

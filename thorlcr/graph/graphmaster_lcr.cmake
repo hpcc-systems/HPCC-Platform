@@ -56,8 +56,10 @@ set_target_properties(graphmaster_lcr PROPERTIES
     COMPILE_FLAGS -D_USRDLL
     DEFINE_SYMBOL GRAPHMASTER_EXPORTS )
 install ( TARGETS graphmaster_lcr RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )
-target_link_libraries ( graphmaster_lcr
+target_link_libraries ( graphmaster_lcr PRIVATE
          jlib
+         mp
+         roxiemem
          jhtree 
          nbcd 
          eclrtl 

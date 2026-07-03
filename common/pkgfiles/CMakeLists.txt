@@ -57,11 +57,16 @@ if(NOT PLUGIN)
         RUNTIME DESTINATION ${EXEC_DIR}
         LIBRARY DESTINATION ${LIB_DIR})
     target_link_libraries(
-        pkgfiles
+        pkgfiles PRIVATE
+        jlib
+        mp
+        dalibase
+        workunit
+        eclrtl
         dfuwu
         ws_dfsclient
         )
     if (NOT CONTAINERIZED)
-        target_link_libraries(pkgfiles environment)
+        target_link_libraries(pkgfiles PRIVATE environment)
     endif()
 endif()
