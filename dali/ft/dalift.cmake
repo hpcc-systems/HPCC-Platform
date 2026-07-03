@@ -59,7 +59,7 @@ set_target_properties (dalift PROPERTIES
     DEFINE_SYMBOL DALIFT_EXPORTS
     )
 install ( TARGETS dalift RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )
-target_link_libraries ( dalift 
+target_link_libraries ( dalift PRIVATE 
          jlib
          eclrtl
          jhtree
@@ -73,6 +73,6 @@ target_link_libraries ( dalift
     )
 
 if (NOT CONTAINERIZED)
-    target_link_libraries ( dalift environment )
+    target_link_libraries ( dalift PRIVATE environment )
 endif()
 

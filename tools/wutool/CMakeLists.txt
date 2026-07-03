@@ -54,7 +54,7 @@ endif()
 ADD_DEFINITIONS( -D_CONSOLE )
 
 HPCC_ADD_EXECUTABLE ( wutool ${SRCS} )
-target_link_libraries ( wutool 
+target_link_libraries ( wutool PRIVATE 
          jlib
          remote 
          dalibase 
@@ -65,10 +65,15 @@ target_link_libraries ( wutool
          workunit
          wuanalysis
          ${CppUnit_LIBRARIES}
+        mp
     )
+
+if (NOT CONTAINERIZED)
+  target_link_libraries ( wutool PRIVATE environment )
+endif()
     
 if ( USE_CPPUNIT )
-  target_link_libraries ( wutool workunitservices )
+  target_link_libraries ( wutool PRIVATE workunitservices )
 endif()
 
 install ( TARGETS wutool RUNTIME DESTINATION ${EXEC_DIR} )

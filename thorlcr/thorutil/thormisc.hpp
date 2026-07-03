@@ -132,6 +132,7 @@
 #define THOROPT_KJ_STRIPE_OUT_OF_CLUSTER_LOOKUPS "keyedJoinStripeOutOfClusterLookups" // Stripe out of cluster keyed lookups (default = false)
 #define THOROPT_NEWLOOKAHEAD "newlookahead"                                       // Use new lookahead implementation (default = true)
 #define THOROPT_FORCE_NEWLOOKAHEAD "forcenewlookahead"                            // Force new lookahead implementation and allow spilling
+#define THOROPT_SORT_MERGE_TOTAL_BUFFER_MB "sortMergeTotalBufferMB"               // Total buffer size used for socket merging blocks (default = 64MB)
 
 constexpr bool defaultNewLookAhead = true;
 

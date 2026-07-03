@@ -194,6 +194,10 @@ target_link_libraries ( hql PRIVATE
          ${CppUnit_LIBRARIES}
     )
 
+if (CMAKE_DL_LIBS)
+    target_link_libraries ( hql PRIVATE ${CMAKE_DL_LIBS} )
+endif()
+
 IF (USE_ZLIB)
     target_link_libraries ( hql PRIVATE
         zcrypt

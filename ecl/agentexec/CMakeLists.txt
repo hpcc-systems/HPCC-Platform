@@ -45,7 +45,7 @@ ADD_DEFINITIONS( -D_CONSOLE )
 
 HPCC_ADD_EXECUTABLE ( agentexec ${SRCS} )
 install ( TARGETS agentexec RUNTIME DESTINATION ${EXEC_DIR} )
-target_link_libraries ( agentexec
+target_link_libraries ( agentexec PRIVATE
          jlib 
          dalibase 
          eclrtl 
@@ -54,5 +54,5 @@ target_link_libraries ( agentexec
     )
 
 if (NOT CONTAINERIZED)
-    target_link_libraries ( agentexec environment )
+    target_link_libraries ( agentexec PRIVATE environment )
 endif()

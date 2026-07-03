@@ -47,7 +47,7 @@ set_target_properties ( dfuwu PROPERTIES
         DEFINE_SYMBOL DFUWU_EXPORTS
         )
 install ( TARGETS dfuwu RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )
-target_link_libraries ( dfuwu 
+target_link_libraries ( dfuwu PRIVATE 
          workunit
          jlib
          mp 

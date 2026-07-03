@@ -57,10 +57,11 @@ install ( TARGETS esdllib RUNTIME DESTINATION bin LIBRARY DESTINATION lib )
 
 add_dependencies ( esdllib jlib espscm)
 
-target_link_libraries ( esdllib
+target_link_libraries ( esdllib PRIVATE
     jlib
     xmllib
     dllserver
+    eclrtl
 )
 
 IF (USE_LIBXSLT)

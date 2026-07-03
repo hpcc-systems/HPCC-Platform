@@ -61,7 +61,7 @@ ADD_DEFINITIONS( -D_USRDLL )
 HPCC_ADD_LIBRARY( ws_ecl SHARED ${SRCS} )
 add_dependencies( ws_ecl espscm )
 install ( TARGETS ws_ecl RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )
-target_link_libraries ( ws_ecl
+target_link_libraries ( ws_ecl PRIVATE
          jlib
          xmllib
          esphttp
@@ -83,11 +83,12 @@ target_link_libraries ( ws_ecl
     )
 
 if (NOT CONTAINERIZED)
-    target_link_libraries ( ws_ecl environment )
+    target_link_libraries ( ws_ecl PRIVATE environment )
 endif()
 
 IF (USE_OPENSSL)
     target_link_libraries ( ws_ecl
+    	PRIVATE
     	securesocket
     )
 ENDIF()

@@ -3680,6 +3680,11 @@ IPropertyTree *createBinaryDataCompressionTestPTree(const char *testXml)
  *
  * Tests PTree serialization/deserialization format consistency between MemoryBuffer and IBufferedSerialInputStream
  * and measures performance of both operations
+ *
+ * testRoundTripForRootOnlyPTree                              - Tests round-trip serialization/deserialization for a PTree with only a root node
+ * testRoundTripForCompatibilityConfigPropertyTree            - Tests round-trip serialization/deserialization for a complex compatibility config PTree
+ * testRoundTripForBinaryDataCompressionTestPTree             - Tests round-trip serialization/deserialization for a PTree with various binary data sizes
+ * testMalformedStreamTruncations                             - Tests deserialization error handling for deterministic truncation offsets
  */
 
 class PTreeSerializationDeserializationTest : public CppUnit::TestFixture
@@ -3689,6 +3694,7 @@ class PTreeSerializationDeserializationTest : public CppUnit::TestFixture
     CPPUNIT_TEST(testRoundTripForRootOnlyPTree);
     CPPUNIT_TEST(testRoundTripForCompatibilityConfigPropertyTree);
     CPPUNIT_TEST(testRoundTripForBinaryDataCompressionTestPTree);
+    CPPUNIT_TEST(testMalformedStreamTruncations);
     CPPUNIT_TEST_SUITE_END();
 
 protected:
@@ -3813,6 +3819,30 @@ protected:
         DBGLOG("=== ROUND-TRIP TEST COMPLETED SUCCESSFULLY");
     }
 
+    void expectTruncatedStreamFailure(const MemoryBuffer &serialized, size32_t truncationOffset)
+    {
+        VStringBuffer contextDescription("truncation test at offset %u of %u", truncationOffset, serialized.length());
+        VStringBuffer assertMsg("Serialized stream shorter than truncation offset for %s", contextDescription.str());
+        CPPUNIT_ASSERT_MESSAGE(assertMsg.str(), truncationOffset < serialized.length());
+
+        MemoryBuffer truncated;
+        truncated.append(truncationOffset, serialized.toByteArray());
+        Owned<IBufferedSerialInputStream> in{createBufferedSerialInputStreamFillMemory(truncated)};
+        try
+        {
+            Owned<IPropertyTree> unexpected{createPTreeFromBinary(*in, ipt_none)};
+            unexpected.clear();
+        }
+        catch (IException *e)
+        {
+            e->Release();
+            return;
+        }
+
+        VStringBuffer failMsg("Expected createPTreeFromBinary to throw IException for %s", contextDescription.str());
+        CPPUNIT_FAIL(failMsg.str());
+    }
+
 public:
     // Complete round-trip test methods - perform serialization and deserialization in one test
     void testRoundTripForRootOnlyPTree()
@@ -3828,6 +3858,30 @@ public:
     void testRoundTripForBinaryDataCompressionTestPTree()
     {
         performRoundTripTest(__func__, createBinaryDataCompressionTestPTree(testXml));
+    }
+
+    // Malformed buffered-serial stream truncations test: ensure deserialize errors are reported without relying on specific format offsets
+    void testMalformedStreamTruncations()
+    {
+        START_TEST
+
+        Owned<IPropertyTree> original{createPTree("root")};
+        original->setProp("@scenario", "truncation-test");
+        original->setProp("@variant", "malformed-stream");
+        original->setProp("name", "truncation-probe");
+        original->setProp("description", "verify truncated binary stream throws");
+
+        MemoryBuffer serialized;
+        Owned<IBufferedSerialOutputStream> out{createBufferedSerialOutputStream(serialized)};
+        original->serializeToStream(*out);
+        out->flush();
+        CPPUNIT_ASSERT_MESSAGE("Expected serialized PTree stream to contain at least one byte", serialized.length() > 0);
+
+        const size32_t truncationOffsets[] = {0, serialized.length() / 2, serialized.length() - 1};
+        for (size32_t truncationOffset : truncationOffsets)
+            expectTruncatedStreamFailure(serialized, truncationOffset);
+
+        END_TEST
     }
 };
 

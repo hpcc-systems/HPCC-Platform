@@ -116,6 +116,10 @@ target_link_libraries(
     ${Python3_LIBRARIES}
 )
 
+if (CMAKE_DL_LIBS)
+    target_link_libraries ( py3embed PRIVATE ${CMAKE_DL_LIBS} )
+endif()
+
 if(PLATFORM OR CLIENTTOOLS_ONLY)
     install(
         FILES ${CMAKE_CURRENT_SOURCE_DIR}/python3.ecllib

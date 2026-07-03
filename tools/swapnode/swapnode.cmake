@@ -42,7 +42,9 @@ ADD_DEFINITIONS( -D_CONSOLE -DENABLE_AUTOSWAP )
 
 HPCC_ADD_EXECUTABLE ( swapnode ${SRCS} )
 install ( TARGETS swapnode RUNTIME DESTINATION ${EXEC_DIR} )
-target_link_libraries ( swapnode
+target_link_libraries ( swapnode PRIVATE
          jlib
+         mp
+         dalibase
          swapnodelib
     )

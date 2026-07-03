@@ -59,8 +59,10 @@ install ( TARGETS esdlscriptlib RUNTIME DESTINATION bin LIBRARY DESTINATION lib 
 
 add_dependencies ( esdlscriptlib jlib espscm)
 
-target_link_libraries ( esdlscriptlib
+target_link_libraries ( esdlscriptlib PRIVATE
     jlib
+    xmllib
+    eclrtl
     dllserver
     esphttp
 )
@@ -69,5 +71,5 @@ IF (USE_LIBXSLT)
     include_directories (
          ${LIBXML2_INCLUDE_DIR}
     )
-    target_link_libraries (esdlscriptlib ${LIBXML2_LIBRARIES})
+    target_link_libraries (esdlscriptlib PRIVATE ${LIBXML2_LIBRARIES})
 ENDIF()

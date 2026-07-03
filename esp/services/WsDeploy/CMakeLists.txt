@@ -67,8 +67,9 @@ ADD_DEFINITIONS( -D_USRDLL -DWsDeploy_API_LOCAL -DESP_SERVICE_WsDeploy)
 HPCC_ADD_LIBRARY( WsDeploy SHARED ${SRCS}  )
 add_dependencies (WsDeploy espscm)
 install ( TARGETS WsDeploy RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )
-target_link_libraries ( WsDeploy
+target_link_libraries ( WsDeploy PRIVATE
          jlib
+         mp
          xmllib
          esphttp
          dalibase
@@ -82,11 +83,11 @@ target_link_libraries ( WsDeploy
     )
 
 if (NOT CONTAINERIZED)
-    target_link_libraries ( WsDeploy environment )
+    target_link_libraries ( WsDeploy PRIVATE environment )
 endif()
 
 IF (USE_OPENSSL)
-    target_link_libraries ( WsDeploy
+    target_link_libraries ( WsDeploy PRIVATE
     	securesocket
     )
 ENDIF()

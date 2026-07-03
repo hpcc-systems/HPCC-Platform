@@ -40,7 +40,8 @@ include_directories (
 HPCC_ADD_EXECUTABLE ( ftslave ${SRCS} )
 set_target_properties (ftslave PROPERTIES COMPILE_FLAGS -D_CONSOLE)
 install ( TARGETS ftslave RUNTIME DESTINATION ${EXEC_DIR} )
-target_link_libraries ( ftslave
+target_link_libraries ( ftslave PRIVATE
+         dafsclient
          dalibase 
          dalift 
          ftslavelib
@@ -50,5 +51,5 @@ target_link_libraries ( ftslave
     )
 
 if (NOT CONTAINERIZED)
-    target_link_libraries ( ftslave environment )
+    target_link_libraries ( ftslave PRIVATE environment )
 endif()

@@ -64,9 +64,13 @@ add_dependencies( loggingmanager espscm )
 
 install ( TARGETS loggingmanager RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )
 
-target_link_libraries ( loggingmanager
+target_link_libraries ( loggingmanager PRIVATE
     jlib
     xmllib
     logginglib
     esphttp
 )
+
+if (CMAKE_DL_LIBS)
+    target_link_libraries ( loggingmanager PRIVATE ${CMAKE_DL_LIBS} )
+endif()

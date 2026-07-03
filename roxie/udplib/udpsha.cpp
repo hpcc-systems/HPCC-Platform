@@ -324,7 +324,7 @@ int check_max_socket_write_buffer(int size) {
     return check_set("/proc/sys/net/core/wmem_max", size);
 }
 
-#if defined( __linux__) || defined(__APPLE__) || defined(EMSCRIPTEN)
+#if defined( __linux__) || defined(__APPLE__) || defined(__EMSCRIPTEN__)
 void setLinuxThreadPriority(int level)
 {
     if (!udpAdjustThreadPriorities)
@@ -349,9 +349,9 @@ void setLinuxThreadPriority(int level)
         param.sched_priority = level;
     }
     if(( rc = pthread_setschedparam(self, policy, &param)) != 0) 
-        DBGLOG("pthread_setschedparam error: %d policy=%i pr=%i id=%" I64F "i TID=%i", rc, policy, param.sched_priority, (unsigned __int64) self, threadLogID());
+        DBGLOG("pthread_setschedparam error: %d policy=%i pr=%i id=%" I64F "i TID=%u", rc, policy, param.sched_priority, (unsigned __int64) self, getSystemThreadId());
     else
-        DBGLOG("priority set id=%" I64F "i policy=%i pri=%i TID=%i", (unsigned __int64) self, policy, param.sched_priority, threadLogID());
+        DBGLOG("priority set id=%" I64F "i policy=%i pri=%i TID=%u", (unsigned __int64) self, policy, param.sched_priority, getSystemThreadId());
 }
 #endif
 

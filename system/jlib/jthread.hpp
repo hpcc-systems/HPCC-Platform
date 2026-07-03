@@ -75,7 +75,7 @@ extern jlib_decl void removeThreadExceptionHandler(IExceptionHandler *handler);
 extern jlib_decl void enableThreadSEH();
 extern jlib_decl void disableThreadSEH();
 
-extern jlib_decl unsigned threadLogID();  // for use in logging
+extern jlib_decl unsigned getSystemThreadId();  // for use in logging etc.
 
 // A function registered via addThreadTermFunc will be called when the thread that registered that function
 // terminates. Such a function should call on to the previously registered function (if any) - generally you

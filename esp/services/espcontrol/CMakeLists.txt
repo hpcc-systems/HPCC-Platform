@@ -55,15 +55,16 @@ ADD_DEFINITIONS( -D_USRDLL -DWSESPControl_API_LOCAL -DESP_SERVICE_WSESPControl)
 
 HPCC_ADD_LIBRARY( ws_espcontrol SHARED ${SRCS} )
 install ( TARGETS ws_espcontrol RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )
-target_link_libraries ( ws_espcontrol
+target_link_libraries ( ws_espcontrol PRIVATE
          jlib
          xmllib
          esphttp
+        dalibase
          ${COMMON_ESP_SERVICE_LIBS}
     )
 
 IF (USE_OPENSSL)
-    target_link_libraries ( ws_espcontrol
+    target_link_libraries ( ws_espcontrol PRIVATE
         securesocket
     )
 ENDIF()

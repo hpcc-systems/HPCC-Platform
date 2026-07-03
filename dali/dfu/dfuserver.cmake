@@ -54,7 +54,7 @@ set_target_properties ( dfuserver PROPERTIES
         COMPILE_FLAGS "-D_CONSOLE -D_DFUSERVER"
         )
 install ( TARGETS dfuserver RUNTIME DESTINATION ${EXEC_DIR})
-target_link_libraries ( dfuserver 
+target_link_libraries ( dfuserver PRIVATE 
          jlib
          mp 
          dafsclient 
@@ -72,5 +72,5 @@ target_link_libraries ( dfuserver
     )
 
 if (NOT CONTAINERIZED)
-    target_link_libraries ( dfuserver environment )
+    target_link_libraries ( dfuserver PRIVATE environment )
 endif()

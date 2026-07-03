@@ -87,7 +87,7 @@ ADD_DEFINITIONS( -D_USRDLL -DWS_DFU_EXPORTS -DWSDFU_API_LOCAL -DWSDFUXREF_API_LO
 HPCC_ADD_LIBRARY( ws_dfu SHARED ${SRCS} )
 add_dependencies ( ws_dfu espscm )
 install ( TARGETS ws_dfu RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )
-target_link_libraries ( ws_dfu
+target_link_libraries ( ws_dfu PRIVATE
          jlib
          mp
          dafsclient
@@ -109,15 +109,17 @@ target_link_libraries ( ws_dfu
          wsdfuaccess
          pkgfiles
          thorhelper
+         ws_dfsclient
         ${COMMON_ESP_SERVICE_LIBS}
     )
 
 if (NOT CONTAINERIZED)
-    target_link_libraries ( ws_dfu environment )
+    target_link_libraries ( ws_dfu PRIVATE environment )
 endif()
 
 IF (USE_OPENSSL)
     target_link_libraries ( ws_dfu
+    	PRIVATE
     	securesocket
     )
 ENDIF()

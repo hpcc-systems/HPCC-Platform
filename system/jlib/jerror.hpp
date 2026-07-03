@@ -340,6 +340,7 @@
 #define JLIBERR_UtilK8sServiceQueryFailed               6354
 #define JLIBERR_SystemThreadPersistentNotReady          6355
 #define JLIBERR_UtilProcessForkFailed                   6356
+#define JLIBERR_AuditLogQueryNotRegistered              6357
 
 //---- Text for all errors (make it easy to internationalise) ---------------------------
 

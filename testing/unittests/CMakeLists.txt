@@ -146,8 +146,10 @@ if (NOT TARGET SMCLib)
 endif ()
 
 install ( TARGETS unittests RUNTIME DESTINATION ${EXEC_DIR} )
-target_link_libraries ( unittests
+target_link_libraries ( unittests PRIVATE
          jlib
+         mp
+         eclrtl
          dafsclient
          dalibase
          deftype
@@ -165,11 +167,15 @@ target_link_libraries ( unittests
     )
 
 if (TARGET SMCLib)
-    target_link_libraries ( unittests SMCLib )
+    target_link_libraries ( unittests PRIVATE SMCLib )
 endif ()
 
 if (NOT CONTAINERIZED)
-  target_link_libraries ( unittests configmgr )
+  target_link_libraries ( unittests PRIVATE configmgr )
+endif ()
+
+if (CMAKE_DL_LIBS)
+    target_link_libraries ( unittests PRIVATE ${CMAKE_DL_LIBS} )
 endif ()
 
 endif ()

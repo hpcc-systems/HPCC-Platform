@@ -30,7 +30,7 @@
 #include <sys/stat.h>
 #include <algorithm>
 
-#if defined (__linux__) || defined (__APPLE__) || defined (EMSCRIPTEN)
+#if defined (__linux__) || defined (__APPLE__) || defined (__EMSCRIPTEN__)
 #include <time.h>
 #include <dirent.h>
 #include <utime.h>
@@ -596,7 +596,7 @@ bool CFile::getTime(CDateTime * createTime, CDateTime * modifiedTime, CDateTime 
     return true;
 }
 
-#if defined (EMSCRIPTEN)
+#if defined (__EMSCRIPTEN__)
 #define _utimbuf utimbuf
 #endif
 
@@ -2783,7 +2783,7 @@ public:
 
     bool getResult(size32_t &ret,bool wait)
     {
-#if defined(EMSCRIPTEN)
+#if defined(__EMSCRIPTEN__)
         throw makeErrnoException(ECANCELED, "TODO:  Add EMSCRIPTEN support");
 #else
         if (value==(size32_t)-1) {
@@ -2840,7 +2840,7 @@ void CFileAsyncIO::close()
         HANDLE tmpHandle = NULLFILE;
         std::swap(tmpHandle, file);
 
-#if defined(EMSCRIPTEN)
+#if defined(__EMSCRIPTEN__)
         throw makeErrnoException(ECANCELED, "TODO:  Add EMSCRIPTEN support");
 #else
         aio_cancel(tmpHandle, NULL);
@@ -2898,7 +2898,7 @@ IFileAsyncResult *CFileAsyncIO::readAsync(offset_t pos, size32_t len, void * dat
     res->cb.aio_nbytes = len;
     res->cb.aio_sigevent.sigev_notify = SIGEV_NONE;
 
-#if defined(EMSCRIPTEN)
+#if defined(__EMSCRIPTEN__)
     throw makeErrnoException(ECANCELED, "TODO:  Add EMSCRIPTEN support");
 #else
 
@@ -2922,7 +2922,7 @@ IFileAsyncResult *CFileAsyncIO::writeAsync(offset_t pos, size32_t len, const voi
     res->cb.aio_sigevent.sigev_notify = SIGEV_NONE;
     res->cb.aio_sigevent.sigev_value.sival_ptr = (void*)res;
 
-#if defined(EMSCRIPTEN)
+#if defined(__EMSCRIPTEN__)
     throw makeErrnoException(ECANCELED, "TODO:  Add EMSCRIPTEN support");
 #else
 

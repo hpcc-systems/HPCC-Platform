@@ -56,12 +56,16 @@ endif()
 
 HPCC_ADD_EXECUTABLE ( daserver ${SRCS} )
 install ( TARGETS daserver RUNTIME DESTINATION ${EXEC_DIR})
-target_link_libraries ( daserver 
+target_link_libraries ( daserver PRIVATE
          jlib
          mp 
          dafsclient 
          dalibase 
     )
 IF (USE_OPENLDAP)
-target_link_libraries ( daserver LdapSecurity )
+target_link_libraries ( daserver PRIVATE LdapSecurity )
 ENDIF(USE_OPENLDAP)
+
+if (CMAKE_DL_LIBS)
+    target_link_libraries ( daserver PRIVATE ${CMAKE_DL_LIBS} )
+endif()

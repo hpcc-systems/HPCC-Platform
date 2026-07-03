@@ -337,7 +337,7 @@ IDaliServer *createDaliAuditServer(const char *auditdir)
 
                         
 
-unsigned queryAuditLogs(const CDateTime &from,const CDateTime &to, const char *match,StringAttrArray &out,unsigned start, unsigned max)
+unsigned daliQueryAuditLogs(const CDateTime &from, const CDateTime &to, const char *match, StringAttrArray &out, unsigned max)
 {
     CMessageBuffer mb;
     mb.append((int)MAR_QUERY);
@@ -345,6 +345,9 @@ unsigned queryAuditLogs(const CDateTime &from,const CDateTime &to, const char *m
     to.serialize(mb);
     if (!match||(strcmp(match,"*")==0))
         match = "";
+    // The audit query server still expects a start offset on the wire; always
+    // request from the beginning.
+    unsigned start = 0;
     bool fixlocal = true; 
     mb.append(match).append(start).append(max).append(fixlocal);
     queryCoven().sendRecv(mb,RANK_RANDOM,MPTAG_DALI_AUDIT_REQUEST);
@@ -370,3 +373,7 @@ unsigned queryAuditLogs(const CDateTime &from,const CDateTime &to, const char *m
     return n;
 }
 
+da_decl void registerDaliAuditLogQueryFn()
+{
+    registerQueryAuditLogs(daliQueryAuditLogs);
+}

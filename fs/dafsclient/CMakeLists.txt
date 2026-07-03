@@ -59,6 +59,10 @@ target_link_libraries ( dafsclient PRIVATE
     remote
     )
 
+if (CMAKE_DL_LIBS)
+    target_link_libraries ( dafsclient PRIVATE ${CMAKE_DL_LIBS} )
+endif()
+
 IF (USE_OPENSSL)
     target_link_libraries ( dafsclient PRIVATE
     	securesocket

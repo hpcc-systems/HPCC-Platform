@@ -16,6 +16,7 @@
 ############################################################################## */
 
 #include "platform.h"
+#include <algorithm>
 #include "portlist.h"
 #include "jlib.hpp"
 #include "jfile.hpp"
@@ -1725,11 +1726,9 @@ public:
         bool hasMarginDelta = getWriteSyncMarginDeltaMs(marginDeltaMs);
         if (hasMarginDelta)
         {
-            int64_t adjustedMarginMs = static_cast<int64_t>(marginMs) + static_cast<int64_t>(marginDeltaMs);
-            if (adjustedMarginMs <= 0)
-                marginMs = 0;
-            else if (static_cast<uint64_t>(adjustedMarginMs) > static_cast<uint64_t>((unsigned)-1))
-                marginMs = (unsigned)-1; // max
+            marginMs = (unsigned)std::clamp((int64_t)marginMs + marginDeltaMs, (int64_t)0, (int64_t)(unsigned)-1);
+            if (0 == marginMs)
+                return;
         }
 
         // The file-level @modified time is used as a single baseline for every part's retry threshold. Each

@@ -71,9 +71,12 @@ ADD_DEFINITIONS( -D_USRDLL -DFileSpray_API_LOCAL -DESP_SERVICE_FileSpray)
 HPCC_ADD_LIBRARY( ws_fs SHARED ${SRCS} )
 add_dependencies ( ws_fs espscm )
 install ( TARGETS ws_fs RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )
-target_link_libraries ( ws_fs
+target_link_libraries ( ws_fs PRIVATE
          jlib
+         mp
+         xmllib
          esphttp
+         dafsclient
          dalibase
          workunit
          SMCLib
@@ -84,5 +87,5 @@ target_link_libraries ( ws_fs
     )
 
 if (NOT CONTAINERIZED)
-    target_link_libraries ( ws_fs environment )
+    target_link_libraries ( ws_fs PRIVATE environment )
 endif()

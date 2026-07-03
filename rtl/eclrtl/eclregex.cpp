@@ -36,7 +36,7 @@
 
 #include <memory>
 
-#ifdef EMSCRIPTEN
+#ifdef __EMSCRIPTEN__
 namespace std {
     template<>
     struct char_traits<UChar> : char_traits<char16_t> {

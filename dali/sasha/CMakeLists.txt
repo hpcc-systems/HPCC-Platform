@@ -26,12 +26,6 @@ project (sasha)
 
 include (saruncmd.cmake)
 
-INCLUDE(CheckLibraryExists) 
-
-if (NOT WIN32 AND NOT WIN64)
-CHECK_LIBRARY_EXISTS(crypt crypt "" HAVE_LIBCRYPT) 
-endif ()
-
 set (    SRCS 
          saarch.cpp 
          sacmd.cpp 
@@ -75,12 +69,9 @@ HPCC_ADD_LIBRARY ( sashalib SHARED ${SRCS} )
 
 target_compile_definitions ( sashalib PRIVATE SASHALIB_EXPORTS _USRDLL )
 
-if ( ${HAVE_LIBCRYPT} )
-target_link_libraries ( sashalib crypt)
-endif ( ${HAVE_LIBCRYPT} )
-
-target_link_libraries ( sashalib
+target_link_libraries ( sashalib PRIVATE
          jlib 
+         mp
          dafsclient 
          dalibase 
          dllserver 
@@ -92,7 +83,7 @@ target_link_libraries ( sashalib
     )
 
 if (NOT CONTAINERIZED)
-    target_link_libraries ( sashalib environment )
+    target_link_libraries ( sashalib PRIVATE environment )
 endif()
 
 install ( TARGETS sashalib RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )
@@ -105,12 +96,21 @@ set (    SRCS
 HPCC_ADD_EXECUTABLE ( saserver ${SRCS} )
 install ( TARGETS saserver RUNTIME DESTINATION ${EXEC_DIR})
 
-target_link_libraries ( saserver
+target_link_libraries ( saserver PRIVATE
          sashalib
+         jlib
+        dllserver
+        dalibase
+        dafsclient
+        mp
     )
 
+if (NOT CONTAINERIZED)
+    target_link_libraries ( saserver PRIVATE environment )
+endif()
+
 if (USE_CPPUNIT)
-    target_link_libraries ( saserver ${CppUnit_LIBRARIES} )
+    target_link_libraries ( saserver PRIVATE ${CppUnit_LIBRARIES} )
 endif()
 
 set (    SRCS 
@@ -131,7 +131,7 @@ ADD_DEFINITIONS ( -D_CONSOLE )
 HPCC_ADD_EXECUTABLE ( sasha ${SRCS} )
 install ( TARGETS sasha RUNTIME DESTINATION ${EXEC_DIR})
 
-target_link_libraries ( sasha 
+target_link_libraries ( sasha PRIVATE
          ${XALAN_LIBRARIES} ${XERCES_LIBRARIES}
          jlib
          mp

@@ -65,7 +65,7 @@ ADD_DEFINITIONS( -D_USRDLL -DWS_TOPOLOGY_EXPORTS -DWSWU_API_LOCAL -DESP_SERVICE_
 HPCC_ADD_LIBRARY( ws_topology SHARED ${SRCS} )
 add_dependencies ( ws_topology espscm )
 install ( TARGETS ws_topology RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )
-target_link_libraries ( ws_topology
+target_link_libraries ( ws_topology PRIVATE
          jlib
          remote
          xmllib
@@ -78,21 +78,22 @@ target_link_libraries ( ws_topology
          workunit
          SMCLib
          swapnodelib
+         ${CppUnit_LIBRARIES}
          ${COMMON_ESP_SERVICE_LIBS}
          )
 
 if (NOT CONTAINERIZED)
-    target_link_libraries ( ws_topology environment )
+    target_link_libraries ( ws_topology PRIVATE environment )
 endif()
 
 IF (USE_OPENSSL)
-    target_link_libraries ( ws_topology
+    target_link_libraries ( ws_topology PRIVATE
     	securesocket
     )
 ENDIF()
 
 IF (USE_ZLIB)
-  target_link_libraries ( ws_topology
+  target_link_libraries ( ws_topology PRIVATE
       zcrypt
       )
 ENDIF()

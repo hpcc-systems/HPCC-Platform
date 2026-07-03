@@ -41,7 +41,7 @@ ADD_DEFINITIONS( -D_USRDLL -DGITFILE_EXPORTS )
 HPCC_ADD_LIBRARY( gitfile SHARED ${SRCS}  )
 install ( TARGETS gitfile DESTINATION filehooks CALC_DEPS)
 
-target_link_libraries ( gitfile
+target_link_libraries ( gitfile PRIVATE
     jlib
     libgit2::libgit2package
 )

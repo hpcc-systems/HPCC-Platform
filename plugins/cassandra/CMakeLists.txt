@@ -66,7 +66,7 @@ if(CASSANDRAEMBED OR USE_CASSANDRA)
       COMPONENT Runtime CALC_DEPS)
 
     target_link_libraries(
-      cassandraembed
+      cassandraembed PRIVATE
       nbcd
       eclrtl
       roxiemem

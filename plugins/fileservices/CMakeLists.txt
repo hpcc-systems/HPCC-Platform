@@ -66,13 +66,14 @@ ADD_DEFINITIONS( -D_USRDLL -DFILESERVICES_EXPORTS -DWSDFU_API_LOCAL -DFileSpray_
 HPCC_ADD_LIBRARY( fileservices SHARED ${SRCS} )  
 add_dependencies ( fileservices espscm )
 install ( TARGETS fileservices DESTINATION plugins )
-target_link_libraries ( fileservices
+target_link_libraries ( fileservices PRIVATE
          deftype
          dalibase
          dllserver
          esphttp
          eclrtl
          jlib
+         mp
          nbcd
          remote
          workunit
@@ -80,6 +81,6 @@ target_link_libraries ( fileservices
     )
 
 if (NOT CONTAINERIZED)
-    target_link_libraries ( fileservices environment )
+    target_link_libraries ( fileservices PRIVATE environment )
 endif()
 
