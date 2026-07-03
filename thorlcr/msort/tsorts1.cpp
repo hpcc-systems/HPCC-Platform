@@ -301,6 +301,7 @@ protected: friend class CSortMerge;
     Semaphore rowifsem;
     Owned<ISecureSocketContext> secureContextServer;
     Owned<ISecureSocketContext> secureContextClients;
+    size32_t mergeBufSize;
 public:
     IMPLEMENT_IINTERFACE_USING(Thread)
 
@@ -309,8 +310,8 @@ public:
         Thread::start(true);
     }
 
-    CSortTransferServerThread(ISortSlaveBase &in) 
-        : slave(in), Thread("SortTransferServer") 
+    CSortTransferServerThread(ISortSlaveBase &in, unsigned numnodes, size32_t totalBufSize)
+        : slave(in), Thread("SortTransferServer")
     {
         unsigned port = in.getTransferPort();
         server.setown(ISocket::create(port));
@@ -322,6 +323,12 @@ public:
             secureContextClients.setown(createSecureSocketContextSecret("local", ClientSocket));
         }
 #endif
+        // numnodes is guaranteed to be non-zero
+        mergeBufSize = totalBufSize / numnodes;
+        if (mergeBufSize < 0x8000)
+            mergeBufSize = 0x8000;
+        else if (mergeBufSize > 0x100000)
+            mergeBufSize = 0x100000;
     }
 
     void setRowIF(IThorRowInterfaces *_rowif)
@@ -452,7 +459,7 @@ public:
                         break;
                     }
 
-                    strm = ConnectMergeWrite(localRowif,socket,0x100000,poscount,numrecs);
+                    strm = ConnectMergeWrite(localRowif,socket,mergeBufSize,poscount,numrecs);
                     {
                         CriticalBlock block(acceptsect);
                         pendingSocket.clear();
@@ -699,7 +706,7 @@ void CSortMerge::closedown()
     LOG(MCthorDetailedDebugInfo, "SORT Merge: finished %s, %d rows merged",url.str(),ndone);
 }
 
-IMergeTransferServer *createMergeTransferServer(ISortSlaveBase *parent)
+IMergeTransferServer *createMergeTransferServer(ISortSlaveBase *parent, unsigned numnodes, size32_t totalBufSize)
 {
-    return new CSortTransferServerThread(*parent);
+    return new CSortTransferServerThread(*parent, numnodes, totalBufSize);
 }
