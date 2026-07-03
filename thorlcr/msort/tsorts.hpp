@@ -115,6 +115,6 @@ interface IMergeTransferServer: extends IInterface
     virtual void subjoin() = 0;
 };
 
-extern DECL_EXPORT IMergeTransferServer *createMergeTransferServer(ISortSlaveBase *parent);
+extern DECL_EXPORT IMergeTransferServer *createMergeTransferServer(ISortSlaveBase *parent, unsigned numnodes, size32_t totalBufSize);
 
 #endif
