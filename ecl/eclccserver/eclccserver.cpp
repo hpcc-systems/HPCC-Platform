@@ -143,6 +143,11 @@ public:
     {
     }
 
+    virtual ~AbortWaiter() override
+    {
+        stop();
+    }
+
     virtual int run()
     {
         wu->subscribe(SubscribeOptionAbort);
