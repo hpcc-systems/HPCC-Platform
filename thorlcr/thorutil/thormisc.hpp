@@ -130,6 +130,7 @@
 #define THOROPT_JOBINFO_CAPTURE_BEHAVIOUR "jobInfoCaptureBehaviour"               // controls behaviour of job info collection (default = 0)
 #define THOROPT_CHECK_FILE_DATES "verifyFileDates"                                // Enable a check that the modification date on the file matches the meta data (default = false)
 #define THOROPT_KJ_STRIPE_OUT_OF_CLUSTER_LOOKUPS "keyedJoinStripeOutOfClusterLookups" // Stripe out of cluster keyed lookups (default = false)
+#define THOROPT_SORT_MERGE_TOTAL_BUFFER_MB "sortMergeTotalBufferMB"               // Total buffer size used for socket merging blocks (default = 64MB)
 
 
 #define INITIAL_SELFJOIN_MATCH_WARNING_LEVEL 20000 // max of row matches before selfjoin emits warning
