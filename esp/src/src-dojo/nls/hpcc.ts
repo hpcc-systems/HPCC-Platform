@@ -555,6 +555,7 @@ export = {
         LogLineStartFrom: "Log Line Start From",
         LoggedInAs: "Logged in as",
         LogicalFile: "Logical File",
+        LogicalFilePlaceholder: "full::logical::name",
         LogicalFiles: "Logical Files",
         LogicalFilesAndSuperfiles: "Logical Files and Superfiles",
         LogicalFilesOnly: "Logical Files Only",
