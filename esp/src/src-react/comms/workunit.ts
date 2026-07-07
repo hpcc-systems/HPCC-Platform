@@ -10,10 +10,15 @@ const logger = scopedLogger("src-react/comms/workunit.ts");
 
 const service = new WorkunitsService({ baseUrl: "" });
 
-export type WUQueryStore = BaseStore<WsWorkunits.WUQuery, Workunit>;
+type WUQueryWithTime = WsWorkunits.WUQuery & {
+    StartTime?: string;
+    EndTime?: string;
+};
 
-export function CreateWUQueryStore(): BaseStore<WsWorkunits.WUQuery, Workunit> {
-    const store = new Paged<WsWorkunits.WUQuery, Workunit>({
+export type WUQueryStore = BaseStore<WUQueryWithTime, Workunit>;
+
+export function CreateWUQueryStore(): BaseStore<WUQueryWithTime, Workunit> {
+    const store = new Paged<WUQueryWithTime, Workunit>({
         start: "PageStartFrom",
         count: "PageSize",
         sortBy: "Sortby",
@@ -21,6 +26,22 @@ export function CreateWUQueryStore(): BaseStore<WsWorkunits.WUQuery, Workunit> {
     }, "Wuid", (request, abortSignal): Thenable<{ data: Workunit[], total: number }> => {
         if (request.Sortby && request.Sortby === "TotalClusterTime") {
             request.Sortby = "ClusterTime";
+        }
+        if (request.StartDate && request.StartDate.indexOf("T") < 0) {
+            const time = request.StartTime || "00:00";
+            request.StartDate = `${request.StartDate}T${time}:00.000Z`;
+        }
+        delete request.StartTime;
+        if (request.EndDate && request.EndDate.indexOf("T") < 0) {
+            const time = request.EndTime || "00:00";
+            request.EndDate = `${request.EndDate}T${time}:00.000Z`;
+        }
+        delete request.EndTime;
+        if (request.EndDate) {
+            request.EndDate = new Date(request.EndDate).toISOString();
+        }
+        if (request.StartDate) {
+            request.StartDate = new Date(request.StartDate).toISOString();
         }
         return service.WUQuery(request, abortSignal).then(response => {
             const page = {
