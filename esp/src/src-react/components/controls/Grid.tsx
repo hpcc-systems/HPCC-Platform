@@ -1,5 +1,6 @@
 import * as React from "react";
-import { Button, DataGrid, DataGridHeader, DataGridHeaderCell, DataGridBody, DataGridRow, DataGridCell, createTableColumn, TableColumnDefinition, TableColumnSizingOptions, TableRowId, TableRow, TableCell, TableSelectionCell, Tooltip, Dropdown, Option, SkeletonItem, makeStyles, tokens } from "@fluentui/react-components";
+import { Button, createTableColumn, TableColumnDefinition, TableColumnSizingOptions, TableRowId, TableRow, TableCell, TableSelectionCell, Tooltip, Dropdown, Option, SkeletonItem, makeStyles, tokens } from "@fluentui/react-components";
+import { DataGrid, DataGridHeader, DataGridHeaderCell, DataGridBody, DataGridRow, DataGridCell, RowRenderer } from "@fluentui-contrib/react-data-grid-react-window";
 import { ChevronDoubleLeft20Regular, ChevronLeft20Regular, ChevronRight20Regular, ChevronDoubleRight20Regular } from "@fluentui/react-icons";
 import { useConst } from "@fluentui/react-hooks";
 import { BaseStore, Memory, QueryRequest, QuerySortItem } from "src/store/Memory";
@@ -519,10 +520,33 @@ const FluentStoreGrid: React.FunctionComponent<FluentStoreGridProps> = ({
     }, [columnWidths, colIsResizable]);
 
     const styles = useGridStyles();
-    const shimmerItems = React.useMemo(() => Array.from({ length: count }, (_, i) => ({ __shimmerIndex__: i })), [count]);
+    const shimmerItems = React.useMemo(() => {
+        return Array.from({ length: 4 }, (_, i) => ({ __shimmerIndex__: i }));
+    }, []);
     const dgSelectionMode = selectionMode === SelectionMode.single ? "single" : selectionMode === SelectionMode.multiple ? "multiselect" : undefined;
 
-    return <div style={{ position: "relative", height, overflow: "auto" }}>
+    const renderRow: RowRenderer<any> = React.useCallback(({ item, rowId }, style) => {
+        const itemIndex = items.findIndex(i => getRowId(i) === rowId);
+        const overlay = (!("__shimmerIndex__" in item) && onRenderRow) ? onRenderRow({ item, itemIndex }) : null;
+        const lastColumnId = tableColumns[tableColumns.length - 1]?.columnId;
+        return <DataGridRow<any> key={rowId} style={style} selectionCell={{ className: styles.selectionCell }}>
+            {({ renderCell, columnId }) => <>
+                <DataGridCell className={styles.cell}>
+                    {"__shimmerIndex__" in item
+                        ? <SkeletonItem style={{ height: "12px" }} />
+                        : renderCell(item)
+                    }
+                </DataGridCell>
+                {overlay && columnId === lastColumnId && (
+                    <div aria-hidden style={{ position: "absolute", inset: 0, padding: 0, pointerEvents: "none", overflow: "hidden" }}>
+                        {overlay}
+                    </div>
+                )}
+            </>}
+        </DataGridRow>;
+    }, [items, onRenderRow, tableColumns, styles.selectionCell, styles.cell, getRowId]);
+
+    return <div style={{ position: "relative", height }}>
         <DataGrid
             items={loaded ? items : shimmerItems}
             columns={tableColumns}
@@ -547,27 +571,8 @@ const FluentStoreGrid: React.FunctionComponent<FluentStoreGridProps> = ({
                     }}
                 </DataGridRow>
             </DataGridHeader>
-            <DataGridBody<any>>
-                {({ item, rowId }) => {
-                    const itemIndex = items.findIndex(i => getRowId(i) === rowId);
-                    const overlay = (!("__shimmerIndex__" in item) && onRenderRow) ? onRenderRow({ item, itemIndex }) : null;
-                    const lastColumnId = tableColumns[tableColumns.length - 1]?.columnId;
-                    return <DataGridRow<any> key={rowId} style={overlay ? { position: "relative" } : undefined} selectionCell={{ className: styles.selectionCell }}>
-                        {({ renderCell, columnId }) => <>
-                            <DataGridCell className={styles.cell}>
-                                {"__shimmerIndex__" in item
-                                    ? <SkeletonItem style={{ height: "12px" }} />
-                                    : renderCell(item)
-                                }
-                            </DataGridCell>
-                            {overlay && columnId === lastColumnId && (
-                                <div aria-hidden style={{ position: "absolute", inset: 0, padding: 0, pointerEvents: "none", overflow: "hidden" }}>
-                                    {overlay}
-                                </div>
-                            )}
-                        </>}
-                    </DataGridRow>;
-                }}
+            <DataGridBody<any> itemSize={32} height={Math.max(0, (parseInt(height, 10) || 400) - 32)}>
+                {renderRow}
             </DataGridBody>
         </DataGrid>
     </div>;
