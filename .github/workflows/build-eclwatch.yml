@@ -48,5 +48,5 @@ jobs:
         with:
           name: ${{ inputs.asset-name }}
           path: |
-            esp/src/build/dist-nightly/
+            esp/src/build/dist-nightly
           if-no-files-found: error

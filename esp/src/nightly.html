@@ -24,8 +24,6 @@
             bottom: 0px;
         }
     </style>
-    <script type="text/javascript" src="/esp/files/dgrid-shim/index.min.js">
-    </script>
 
     <script type="text/javascript">
         getAuthType();
@@ -33,16 +31,13 @@
             if (document.cookie.indexOf("ESPSessionState=true") > -1) {
                 checkCookie();
             } else if (document.cookie.indexOf("ESPSessionState=false") > -1) {
-                // No session required - continue loading
+                window.location.href;
             } else {
                 sendAuthRequest();
             }
 
             function checkCookie() {
-                if (document.cookie.indexOf("ESPAuthenticated=true") > -1)
-                    return;
-                if (window.location.hash.indexOf("#/login") !== 0)
-                    window.location.replace(location.origin + "/esp/files/nightly.html#/login");
+                document.cookie.indexOf("ESPAuthenticated=true") > -1 ? window.location.href : window.location.href = location.origin + "/esp/files/Login.html";
             }
 
             function sendAuthRequest() {
