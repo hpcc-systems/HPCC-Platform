@@ -118,9 +118,10 @@ test.describe("V9 Files - Logical Files", () => {
             test.skip(true, "Logical Files grid does not use checkbox selection");
             return;
         }
-        // Click td[1] (first data cell after selection cell) to trigger row selection
-        // via the row's onClick handler rather than the selection cell's Checkbox
-        await firstRow.locator("td").nth(1).click();
+        // Click gridcell[1] (first data cell after selection cell) to trigger row selection
+        // via the row's onClick handler rather than the selection cell's Checkbox.
+        // Note: the DataGrid renders cells as div[role='gridcell'], not <td> elements.
+        await firstRow.locator("[role='gridcell']").nth(1).click();
         await expect(page.locator(".fui-TableBody .fui-TableRow[aria-selected='true']")).toHaveCount(1);
     });
 

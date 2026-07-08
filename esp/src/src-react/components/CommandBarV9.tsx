@@ -39,6 +39,7 @@ import {
     Maximize16Regular, MoreHorizontal16Regular, Save16Regular, Settings16Regular, TableLink16Regular,
     TableRegular, TextBulletListRegular, Timeline20Regular, TopSpeed16Regular,
     WindowEdit16Regular, ZoomFit16Regular, ZoomFit20Regular, ZoomIn16Regular, ZoomOut16Regular,
+    SearchRegular,
 } from "@fluentui/react-icons";
 
 const useStyles = makeStyles({
@@ -108,6 +109,7 @@ const ICON_MAP: Record<string, React.ReactElement> = {
     Relationship: <TableLink16Regular />,
     Save: <Save16Regular />,
     ScaleVolume: <Maximize16Regular />,
+    SearchRegular: <SearchRegular />,
     Settings: <Settings16Regular />,
     SpeedHigh: <TopSpeed16Regular />,
     Table: <TableRegular />,

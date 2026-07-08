@@ -43,6 +43,7 @@ export const ECLArchive: React.FunctionComponent<ECLArchiveProps> = ({
     lineNum
 }) => {
     const [fullscreen, setFullscreen] = React.useState<boolean>(false);
+    const [findOpenRequestKey, setFindOpenRequestKey] = React.useState(0);
     const [dockpanel, setDockpanel] = React.useState<ResetableDockPanel>();
     const [_archiveXmlStr, _workunit2, _state2, archive, refreshArchive] = useWorkunitArchive(wuid);
     const { metrics, refresh: refreshMetrics } = useWorkunitMetrics(wuid, scopeFilterDefault, nestedFilterDefault);
@@ -106,6 +107,10 @@ export const ECLArchive: React.FunctionComponent<ECLArchiveProps> = ({
             }
         },
         { key: "divider_1", itemType: ContextualMenuItemType.Divider },
+        {
+            key: "find", text: nlsHPCC.Find, iconProps: { iconName: "SearchRegular" },
+            onClick: () => setFindOpenRequestKey(prev => prev + 1)
+        },
     ], [parentUrl, refreshArchive, refreshMetrics]);
 
     const rightButtons = React.useMemo((): ICommandBarItemProps[] => [
@@ -118,7 +123,7 @@ export const ECLArchive: React.FunctionComponent<ECLArchiveProps> = ({
             key: "fullscreen", title: nlsHPCC.MaximizeRestore, iconProps: { iconName: fullscreen ? "ChromeRestore" : "FullScreen" },
             onClick: () => setFullscreen(!fullscreen)
         }
-    ], [selectionText, fullscreen]);
+    ], [fullscreen, selectionText]);
 
     return <HolyGrail fullscreen={fullscreen}
         header={<CommandBar items={buttons} farItems={rightButtons} />}
@@ -141,7 +146,7 @@ export const ECLArchive: React.FunctionComponent<ECLArchiveProps> = ({
                     }
                 </DockPanelItem>
                 <DockPanelItem key="eclEditor" title="ECL" padding={4} location="split-right" relativeTo="scopesTable">
-                    <ECLArchiveEditor ecl={selectionText} markers={markers} lineNum={lineNum}></ECLArchiveEditor>
+                    <ECLArchiveEditor ecl={selectionText} markers={markers} lineNum={lineNum} findOpenRequestKey={findOpenRequestKey}></ECLArchiveEditor>
                 </DockPanelItem>
                 <DockPanelItem key="properties" title="Properties" location="split-bottom" relativeTo="scopesTable" >
                     <MetricsPropertiesTables wuid={wuid} scopes={selectedMetrics}></MetricsPropertiesTables>

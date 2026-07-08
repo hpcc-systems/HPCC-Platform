@@ -242,10 +242,11 @@ test.describe("V9 Workunit Details", () => {
         // Initially save button should be disabled
         await expect(page.getByRole("menuitem", { name: "Save" })).toHaveAttribute("aria-disabled", "true");
 
-        // Modify job name
+        // Modify job name using pressSequentially to reliably trigger React's onChange
+        // in the Fluent UI v9 controlled Input (fill() alone does not always fire the event).
         const jobNameField = page.getByRole("textbox", { name: "Job Name" });
-        await jobNameField.clear();
-        await jobNameField.fill("Modified Job Name");
+        await jobNameField.click({ clickCount: 3 });
+        await jobNameField.pressSequentially("Modified Job Name");
 
         // Save button should now be enabled
         await expect(page.getByRole("menuitem", { name: "Save" })).not.toHaveAttribute("aria-disabled", "true");
