@@ -4,7 +4,7 @@ import { Query } from "@hpcc-js/comms";
 import { scopedLogger } from "@hpcc-js/util";
 import nlsHPCC from "src/nlsHPCC";
 import { HolyGrail } from "../layouts/HolyGrail";
-import { FluentGrid, useCopyButtons, useFluentStoreState, FluentColumns } from "./controls/Grid";
+import { AutoSizeFluentGrid, useCopyButtons, useFluentStoreState, FluentColumns } from "./controls/Grid";
 
 const logger = scopedLogger("src-react/components/QuerySummaryStats.tsx");
 
@@ -87,7 +87,7 @@ export const QuerySummaryStats: React.FunctionComponent<QuerySummaryStatsProps> 
 
     return <HolyGrail
         header={<CommandBar items={buttons} farItems={copyButtons} />}
-        main={<FluentGrid
+        main={<AutoSizeFluentGrid
             data={data}
             primaryID={"__hpcc_id"}
             sort={{ attribute: "__hpcc_id", descending: false }}
@@ -95,6 +95,6 @@ export const QuerySummaryStats: React.FunctionComponent<QuerySummaryStatsProps> 
             setSelection={setSelection}
             setTotal={setTotal}
             refresh={refreshTable}
-        ></FluentGrid>}
+        ></AutoSizeFluentGrid>}
     />;
 };

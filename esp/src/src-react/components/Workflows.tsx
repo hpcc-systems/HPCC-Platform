@@ -4,7 +4,7 @@ import nlsHPCC from "src/nlsHPCC";
 import { QuerySortItem } from "src/store/Store";
 import { useWorkunitWorkflows } from "../hooks/workunit";
 import { HolyGrail } from "../layouts/HolyGrail";
-import { FluentGrid, useCopyButtons, useFluentStoreState, FluentColumns } from "./controls/Grid";
+import { useCopyButtons, useFluentStoreState, FluentColumns, AutoSizeFluentGrid } from "./controls/Grid";
 
 interface WorkflowsProps {
     wuid: string;
@@ -75,17 +75,15 @@ export const Workflows: React.FunctionComponent<WorkflowsProps> = ({
 
     return <HolyGrail
         header={<CommandBar items={buttons} farItems={copyButtons} />}
-        main={
-            <FluentGrid
-                data={data}
-                primaryID={"__hpcc_id"}
-                alphaNumColumns={{ Name: true, Value: true }}
-                sort={sort}
-                columns={columns}
-                setSelection={setSelection}
-                setTotal={setTotal}
-                refresh={refreshTable}
-            ></FluentGrid>
-        }
+        main={<AutoSizeFluentGrid
+            data={data}
+            primaryID={"__hpcc_id"}
+            alphaNumColumns={{ Name: true, Value: true }}
+            sort={sort}
+            columns={columns}
+            setSelection={setSelection}
+            setTotal={setTotal}
+            refresh={refreshTable}
+        ></AutoSizeFluentGrid>}
     />;
 };

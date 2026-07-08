@@ -7,7 +7,7 @@ import nlsHPCC from "src/nlsHPCC";
 import { QuerySortItem } from "src/store/Store";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { pushUrl } from "../util/history";
-import { FluentGrid, useCopyButtons, useFluentStoreState, FluentColumns } from "./controls/Grid";
+import { AutoSizeFluentGrid, useCopyButtons, useFluentStoreState, FluentColumns } from "./controls/Grid";
 
 const logger = scopedLogger("src-react/components/QuerySuperFiles.tsx");
 
@@ -108,7 +108,7 @@ export const QuerySuperFiles: React.FunctionComponent<QuerySuperFilesProps> = ({
 
     return <HolyGrail
         header={<CommandBar items={buttons} farItems={copyButtons} />}
-        main={<FluentGrid
+        main={<AutoSizeFluentGrid
             data={data}
             primaryID={"__hpcc_id"}
             sort={sort}
@@ -116,6 +116,6 @@ export const QuerySuperFiles: React.FunctionComponent<QuerySuperFilesProps> = ({
             setSelection={setSelection}
             setTotal={setTotal}
             refresh={refreshTable}
-        ></FluentGrid>}
+        ></AutoSizeFluentGrid>}
     />;
 };

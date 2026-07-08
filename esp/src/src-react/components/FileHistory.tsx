@@ -5,7 +5,7 @@ import { QuerySortItem } from "src/store/Store";
 import { useConfirm } from "../hooks/confirm";
 import { useFileHistory } from "../hooks/file";
 import { HolyGrail } from "../layouts/HolyGrail";
-import { FluentGrid, useCopyButtons, useFluentStoreState, FluentColumns } from "./controls/Grid";
+import { AutoSizeFluentGrid, useCopyButtons, useFluentStoreState, FluentColumns } from "./controls/Grid";
 
 interface FileHistoryProps {
     cluster: string;
@@ -68,19 +68,17 @@ export const FileHistory: React.FunctionComponent<FileHistoryProps> = ({
 
     return <HolyGrail
         header={<CommandBar items={buttons} farItems={copyButtons} />}
-        main={
-            <>
-                <FluentGrid
-                    data={data}
-                    primaryID={"__hpcc_id"}
-                    sort={sort}
-                    columns={columns}
-                    setSelection={setSelection}
-                    setTotal={setTotal}
-                    refresh={refreshTable}
-                ></FluentGrid>
-                <DeleteConfirm />
-            </>
-        }
+        main={<>
+            <AutoSizeFluentGrid
+                data={data}
+                primaryID={"__hpcc_id"}
+                sort={sort}
+                columns={columns}
+                setSelection={setSelection}
+                setTotal={setTotal}
+                refresh={refreshTable}
+            ></AutoSizeFluentGrid>
+            <DeleteConfirm />
+        </>}
     />;
 };

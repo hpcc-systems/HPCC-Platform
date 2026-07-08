@@ -5,7 +5,7 @@ import { QuerySortItem } from "src/store/Store";
 import * as Utility from "src/Utility";
 import { useFile } from "../hooks/file";
 import { HolyGrail } from "../layouts/HolyGrail";
-import { FluentGrid, useCopyButtons, useFluentStoreState, FluentColumns } from "./controls/Grid";
+import { AutoSizeFluentGrid, useCopyButtons, useFluentStoreState, FluentColumns } from "./controls/Grid";
 
 interface FilePartsProps {
     cluster?: string;
@@ -76,16 +76,14 @@ export const FileParts: React.FunctionComponent<FilePartsProps> = ({
 
     return <HolyGrail
         header={<CommandBar items={buttons} farItems={copyButtons} />}
-        main={
-            <FluentGrid
-                data={data}
-                primaryID={"Id"}
-                sort={sort}
-                columns={columns}
-                setSelection={setSelection}
-                setTotal={setTotal}
-                refresh={refreshTable}
-            ></FluentGrid>
-        }
+        main={<AutoSizeFluentGrid
+            data={data}
+            primaryID={"Id"}
+            sort={sort}
+            columns={columns}
+            setSelection={setSelection}
+            setTotal={setTotal}
+            refresh={refreshTable}
+        ></AutoSizeFluentGrid>}
     />;
 };

@@ -8,6 +8,7 @@ import nlsHPCC from "src/nlsHPCC";
 import { updatePage, updateSort } from "../../util/history";
 import { useDeepCallback, useDeepEffect, useDeepMemo } from "../../hooks/deepHooks";
 import { useUserStore, useNonReactiveEphemeralPageStore } from "../../hooks/store";
+import { SizeMe } from "../../layouts/SizeMe";
 import { ICommandBarItemProps } from "../CommandBarV9";
 import { createCopyDownloadSelection } from "../Common";
 
@@ -381,6 +382,9 @@ const FluentStoreGrid: React.FunctionComponent<FluentStoreGridProps> = ({
     const getRowId = React.useCallback((item: any) => "__shimmerIndex__" in item ? `__shimmer_${item.__shimmerIndex__}` : String(store.getIdentity(item)), [store]);
 
     //  Selection handler - supports an external ISelection (e.g. MetricsOptions) or an internal one bridged to a callback
+    const setSelectionRef = React.useRef(setSelection);
+    setSelectionRef.current = setSelection;
+
     const canSelectRowRef = React.useRef(canSelectRow);
     canSelectRowRef.current = canSelectRow;
 
@@ -390,7 +394,9 @@ const FluentStoreGrid: React.FunctionComponent<FluentStoreGridProps> = ({
             getKey: (item: any) => String(store.getIdentity(item)),
             canSelectItem: (item: any, index: number) => !canSelectRowRef.current || canSelectRowRef.current(item, index),
             onSelectionChanged: () => {
-                (setSelection as (s: any[]) => void)(handlerRef.current!.getSelection());
+                if (!isISelection(setSelectionRef.current)) {
+                    setSelectionRef.current(handlerRef.current!.getSelection());
+                }
             }
         });
         return handlerRef.current;
@@ -499,14 +505,14 @@ const FluentStoreGrid: React.FunctionComponent<FluentStoreGridProps> = ({
         selectionHandler.setChangeEvents(false, true);
         selectionHandler.setAllSelected(false);
         items.forEach((item, index) => {
-            if (ids.has(getRowId(item)) && (!canSelectRow || canSelectRow(item, index))) {
+            if (ids.has(getRowId(item)) && (!canSelectRowRef.current || canSelectRowRef.current(item, index))) {
                 selectionHandler.setIndexSelected(index, true, false);
                 allowedIds.add(getRowId(item));
             }
         });
         selectionHandler.setChangeEvents(true);
         setSelectedRowIds(allowedIds);
-    }, [items, selectionHandler, getRowId, canSelectRow]);
+    }, [items, selectionHandler, getRowId]);
 
     const colIsResizable = React.useCallback((columnId: string) => {
         const col = fluentColumns.find(c => c.key === columnId);
@@ -559,12 +565,14 @@ const FluentStoreGrid: React.FunctionComponent<FluentStoreGridProps> = ({
             resizableColumnsOptions={{ autoFitColumns: false }}
             columnSizingOptions={columnSizingOptions}
             onColumnResize={onColumnResize}
-            selectionMode={dgSelectionMode}
-            selectedItems={selectedRowIds}
-            onSelectionChange={loaded && dgSelectionMode ? onSelectionChange : undefined}
+            {...(dgSelectionMode ? {
+                selectionMode: dgSelectionMode,
+                selectedItems: selectedRowIds,
+                onSelectionChange: loaded ? onSelectionChange : undefined
+            } : {})}
         >
             <DataGridHeader className={styles.header}>
-                <DataGridRow selectionCell={{ className: styles.selectionCell }}>
+                <DataGridRow {...(dgSelectionMode ? { selectionCell: { className: styles.selectionCell } } : {})}>
                     {(col) => {
                         const resizable = colIsResizable(String(col.columnId));
                         return <DataGridHeaderCell className={styles.headerCell} {...(!resizable && { aside: null })}>{col.renderHeaderCell()}</DataGridHeaderCell>;
@@ -764,4 +772,21 @@ export const FluentPagedFooter: React.FunctionComponent<FluentPagedFooterProps> 
             {[10, 25, 50, 100, 250, 500, 1000].map(n => <Option key={n} value={String(n)}>{String(n)}</Option>)}
         </Dropdown>
     </div>;
+};
+
+
+export interface AutoSizeFluentGridProps extends Omit<FluentGridProps, "height"> {
+}
+
+export const AutoSizeFluentGrid: React.FunctionComponent<AutoSizeFluentGridProps> = (props) => {
+    return <SizeMe>{({ size }) =>
+        <div style={{ position: "relative", width: "100%", height: "100%" }}>
+            <div style={{ position: "absolute", width: "100%", height: `${size.height}px` }}>
+                <FluentGrid
+                    {...props}
+                    height={`${size.height}px`}
+                ></FluentGrid>
+            </div>
+        </div>
+    }</SizeMe>;
 };

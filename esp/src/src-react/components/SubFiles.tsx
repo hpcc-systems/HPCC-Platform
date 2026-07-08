@@ -9,7 +9,7 @@ import * as WsDfu from "src/WsDfu";
 import { useConfirm } from "../hooks/confirm";
 import { useFile, useSubfiles } from "../hooks/file";
 import { HolyGrail } from "../layouts/HolyGrail";
-import { FluentGrid, useCopyButtons, useFluentStoreState, FluentColumns } from "./controls/Grid";
+import { AutoSizeFluentGrid, useCopyButtons, useFluentStoreState, FluentColumns } from "./controls/Grid";
 import { pushUrl } from "../util/history";
 
 const defaultUIState = {
@@ -163,19 +163,17 @@ export const SubFiles: React.FunctionComponent<SubFilesProps> = ({
 
     return <HolyGrail
         header={<CommandBar items={buttons} farItems={copyButtons} />}
-        main={
-            <div style={{ position: "relative", height: "100%" }}>
-                <FluentGrid
-                    data={data}
-                    primaryID={"Name"}
-                    columns={columns}
-                    alphaNumColumns={{ RecordCount: true, Totalsize: true }}
-                    setSelection={setSelection}
-                    setTotal={setTotal}
-                    refresh={refreshTable}
-                ></FluentGrid>
-                <DeleteSubfilesConfirm />
-            </div>
-        }
+        main={<>
+            <AutoSizeFluentGrid
+                data={data}
+                primaryID={"Name"}
+                columns={columns}
+                alphaNumColumns={{ RecordCount: true, Totalsize: true }}
+                setSelection={setSelection}
+                setTotal={setTotal}
+                refresh={refreshTable}
+            ></AutoSizeFluentGrid>
+            <DeleteSubfilesConfirm />
+        </>}
     />;
 };

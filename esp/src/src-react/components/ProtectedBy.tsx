@@ -8,7 +8,7 @@ import { useConfirm } from "../hooks/confirm";
 import { useFile } from "../hooks/file";
 import { useMyAccount } from "../hooks/user";
 import { HolyGrail } from "../layouts/HolyGrail";
-import { FluentGrid, useCopyButtons, useFluentStoreState, FluentColumns } from "./controls/Grid";
+import { AutoSizeFluentGrid, useCopyButtons, useFluentStoreState, FluentColumns } from "./controls/Grid";
 
 const logger = scopedLogger("src-react/components/ProtectedBy.tsx");
 
@@ -73,9 +73,8 @@ export const ProtectedBy: React.FunctionComponent<ProtectedByProps> = ({
 
     return <HolyGrail
         header={<CommandBar items={buttons} farItems={copyButtons} />}
-        main={
-            <>
-                <FluentGrid
+        main={<>
+            <AutoSizeFluentGrid
                     data={data}
                     primaryID={"Owner"}
                     sort={sort}
@@ -83,9 +82,8 @@ export const ProtectedBy: React.FunctionComponent<ProtectedByProps> = ({
                     setSelection={setSelection}
                     setTotal={setTotal}
                     refresh={refreshTable}
-                ></FluentGrid>
-                <UnprotectAllConfirm />
-            </>
-        }
+                ></AutoSizeFluentGrid>
+            <UnprotectAllConfirm />
+        </>}
     />;
 };

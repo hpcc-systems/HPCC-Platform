@@ -1,5 +1,4 @@
 import * as React from "react";
-import { SelectionMode } from "./controls/Grid";
 import { CommandBar, ICommandBarItemProps } from "./CommandBarV9";
 import { Badge, Checkbox, Link, tokens } from "@fluentui/react-components";
 import { SizeMe } from "../layouts/SizeMe";
@@ -215,8 +214,7 @@ export const InfoGrid: React.FunctionComponent<InfoGridProps> = ({
         });
         setData(filteredExceptions);
         setFilterCounts(filterCounts);
-        setSelection(filteredExceptions);
-    }, [costChecked, errorChecked, errors, infoChecked, otherChecked, setSelection, warningChecked]);
+    }, [costChecked, errorChecked, errors, infoChecked, otherChecked, warningChecked]);
 
     React.useEffect(() => {
         if (data.length) {
@@ -245,11 +243,10 @@ export const InfoGrid: React.FunctionComponent<InfoGridProps> = ({
                 data={data}
                 primaryID={"id"}
                 columns={columns}
-                setSelection={_ => { }}
+                setSelection={setSelection}
                 setTotal={setTotal}
                 refresh={refreshTable}
                 height={`${size.height - (44 + 4)}px`}
-                selectionMode={SelectionMode.none}
             ></FluentGrid>
         }</SizeMe>
     </div>;
