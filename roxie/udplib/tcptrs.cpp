@@ -25,6 +25,7 @@
 #include "jencrypt.hpp"
 #include "jsecrets.hpp"
 #include "jiouring.hpp"
+#include "jevent.hpp"
 #include "roxie.hpp"
 #ifdef _WIN32
 #include <winsock.h>
@@ -108,6 +109,10 @@ public:
 
         if (bucket)
             bucket->wait((length / 1024)+1);
+
+        UdpPacketHeader *header = (UdpPacketHeader*) buffer->data;
+        if (recordingEvents() && header->ruid >= RUID_FIRST && !(header->pktSeq & UDP_PACKET_RESENT))
+            queryRecorder().recordResponseSend(header->ruid, header->msgId, header->msgSeq, header->pktSeq);
 
         // IUdpReceiverEntry is an opaque interface - cast to the unrelated actual class.  Better would be to derive
         // CSocketTarget from IUdpReceiverEntry, but that requires refactoring to resolve dll dependencies

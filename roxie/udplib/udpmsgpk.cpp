@@ -30,6 +30,7 @@
 #include "jisem.hpp"
 #include "jencrypt.hpp"
 #include "jsecrets.hpp"
+#include "jevent.hpp"
 
 #include "udplib.hpp"
 #include "udptrr.hpp"
@@ -189,6 +190,11 @@ public:
                 tail = dataBuff;
         }
         dataBuff->msgNext = finger;
+
+        //NOTE: Record the first unique packet that is received - even if it is resent
+        if (recordingEvents() && pktHdr->ruid >= RUID_FIRST)
+            queryRecorder().recordResponseReceive(pktHdr->ruid, pktHdr->msgId, pktHdr->msgSeq, pktHdr->pktSeq);
+
 #ifdef _DEBUG
         numPackets++;
 #endif

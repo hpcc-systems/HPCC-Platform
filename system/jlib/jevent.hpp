@@ -54,7 +54,25 @@ enum EventType : byte
     EventRecordingSource,         // information about the source of the recording
     EventIndexOpen,               // open an index ready for reading
     MetaPlaneInformation,         // information about a plane
+    EventRequestSend,           // remote request sent
+    EventRequestReceive,           // remote request received
+    EventWorkerStart,             // remote processing started
+    EventWorkerStop,              // remote processing completed
+    EventResponseSend,              // worker sent result
+    EventResponseReceive,           // worker result received
+    EventTaskStart,               // task execution started
+    EventTaskStop,                // task execution completed
     EventMax
+};
+
+// Tasks represent a logical step in processing.  They will always start and stop on the same thread.
+enum class EventTask : byte
+{
+    Sink,          // A sink for processing a set of activities in a graph/subgraph
+    Readahead,     // A lookahead thread within a processing graph - e.g. within a keyed join
+    Graph,         // Scope of executing a graph
+    SubGraph,      // Scope of executing a subgraph
+    Max
 };
 
 enum EventContext : byte
@@ -62,8 +80,22 @@ enum EventContext : byte
     EventCtxDali,
     EventCtxIndex,
     EventCtxOther,
+    EventCtxRemote,
+    EventCtxQuery,
     EventCtxMax
 };
+
+enum EventContextFlag : unsigned
+{
+    EventCtxNoneMask   = 0,
+    EventCtxDaliMask   = (1U << EventCtxDali),
+    EventCtxIndexMask  = (1U << EventCtxIndex),
+    EventCtxOtherMask  = (1U << EventCtxOther),
+    EventCtxRemoteMask = (1U << EventCtxRemote),
+    EventCtxQueryMask  = (1U << EventCtxQuery),
+    EventCtxAllMask    = (1U << EventCtxMax) - 1
+};
+BITMASK_ENUM(EventContextFlag);
 
 extern jlib_decl EventContext queryEventContext(EventType event);
 extern jlib_decl EventContext queryEventContext(const char* name);
@@ -98,6 +130,11 @@ enum EventAttr : byte
     EvAttrOpenTime,
     EvAttrPlane,
     EvAttrIsStriped,
+    EvAttrRequestId,
+    EvAttrRequestSeq,
+    EvAttrResponseId,
+    EvAttrResponseSeq,
+    EvAttrTask,
     EvAttrMax
 };
 
@@ -456,6 +493,16 @@ public:
     void recordQueryStart(const char * queryName);
     void recordQueryStop();
 
+    void recordRequestSend(unsigned requestId, unsigned requestSeq);
+    void recordRequestReceive(unsigned requestId, unsigned requestSeq);
+    void recordWorkerStart(unsigned requestId, unsigned requestSeq);
+    void recordWorkerStop(unsigned requestId, unsigned requestSeq);
+    void recordResponseSend(unsigned requestId, unsigned requestSeq, unsigned responseId, unsigned responseSeq);
+    void recordResponseReceive(unsigned requestId, unsigned requestSeq, unsigned responseId, unsigned responseSeq);
+
+    void recordTaskStart(EventTask task);
+    void recordTaskStop(EventTask task);
+
     void recordRecordingSource(const char* processDescriptor, byte channelId, byte replicaId, __uint64 instanceId);
 
     void recordEvent(CEvent& event);
@@ -464,6 +511,9 @@ public:
 
 protected:
     void recordRecordingActive(bool paused);
+    void recordTaskEvent(EventType event, EventTask task);
+    void recordRequestIdEvent(EventType event, unsigned requestId, unsigned requestSeq);
+    void recordResponseEvent(EventType event, unsigned requestId, unsigned requestSeq, unsigned responseId, unsigned responseSeq);
     void recordDaliEvent(EventType event, const char * xpath, __int64 id, stat_type elapsedNs, size32_t dataSize);
     void recordDaliEvent(EventType event, __int64 id, stat_type elapsedNs, size32_t dataSize);
 
@@ -509,6 +559,16 @@ protected:
 
     unsigned getBlockFromOffset(offset_type offset) { return (unsigned)((offset & bufferMask) / OutputBlockSize); }
 
+    inline bool isEventEnabled(EventContext context) const
+    {
+        return context < EventCtxMax && (contextFlags & (EventContextFlag)(1U << context)) != EventCtxNoneMask;
+    }
+
+    inline bool isEventEnabled(EventType event) const
+    {
+        return isEventEnabled(queryEventContext(event));
+    }
+
     inline void writeTraceId(offset_type & offset, const char* traceid)
     {
         assertex(strlen(traceid) == 32);
@@ -542,6 +602,7 @@ protected:
     Semaphore okToWriteSem;
     unsigned sizeMessageHeaderFooter{0};
     unsigned options{0};
+    EventContextFlag contextFlags{EventCtxAllMask};
     unsigned writersWaiting{0};
     byte compressionType;
     bool outputToLog{false};

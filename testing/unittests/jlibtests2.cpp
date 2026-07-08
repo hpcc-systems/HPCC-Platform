@@ -1298,6 +1298,18 @@ attribute: DataSize = 73
         recorder.recordQueryStart("TestQuery");
         recorder.recordQueryStop();
 
+        // Task events
+        recorder.recordTaskStart(EventTask::Sink);
+        recorder.recordTaskStop(EventTask::Sink);
+
+        // Remote events
+        recorder.recordRequestSend(1, 1);
+        recorder.recordRequestReceive(1, 1);
+        recorder.recordWorkerStart(1, 1);
+        recorder.recordWorkerStop(1, 1);
+        recorder.recordResponseSend(1, 1, 1, 1);
+        recorder.recordResponseReceive(1, 1, 1, 1);
+
         // Do not call Recording source (additional call to test multiple sources)
         // because this is done implicitly when recording is started and it is invalid to have two
         // of these events in a recording.

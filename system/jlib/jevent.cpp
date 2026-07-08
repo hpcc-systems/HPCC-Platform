@@ -53,6 +53,7 @@ enum EventFlags : unsigned
 BITMASK_ENUM(EventFlags);
 
 static constexpr unsigned defaultEventFlags = ERFthreadid;
+static constexpr EventContextFlag defaultContextFlags = EventCtxAllMask;
 
 inline void TRACEEVENT(char const * format, ...) __attribute__((format(printf, 1, 2)));
 inline void TRACEEVENT(char const * format, ...)
@@ -115,6 +116,15 @@ struct EventInformation
 #define RECORDINGSOURCE_ATTRS COMMON_ATTRS, EvAttrProcessDescriptor
 #define INDEXOPEN_ATTRS       COMMON_ATTRS, EvAttrFileId, EvAttrOpenTime
 #define PLANEINFORMATION_ATTRS COMMON_ATTRS, EvAttrPlane, EvAttrPath, EvAttrIsStriped
+#define REMOTEREQUEST_ATTRS    COMMON_ATTRS, EvAttrRequestId, EvAttrRequestSeq
+#define REMOTERECEIVE_ATTRS    COMMON_ATTRS, EvAttrRequestId, EvAttrRequestSeq
+#define WORKERSTART_ATTRS      COMMON_ATTRS, EvAttrRequestId, EvAttrRequestSeq
+#define WORKERSTOP_ATTRS       COMMON_ATTRS, EvAttrRequestId, EvAttrRequestSeq
+#define WORKERSEND_ATTRS       COMMON_ATTRS, EvAttrRequestId, EvAttrRequestSeq, EvAttrResponseId, EvAttrResponseSeq
+#define WORKERRECEIVE_ATTRS    COMMON_ATTRS, EvAttrRequestId, EvAttrRequestSeq, EvAttrResponseId, EvAttrResponseSeq
+#define TASKSTART_ATTRS        COMMON_ATTRS, EvAttrTask
+#define TASKSTOP_ATTRS         COMMON_ATTRS, EvAttrTask
+
 
 static constexpr EventInformation eventInformation[] {
     DEFINE_EVENT(None, EventCtxMax, { EvAttrNone } ),
@@ -134,11 +144,19 @@ static constexpr EventInformation eventInformation[] {
     DEFINE_META(FileInformation, EventCtxIndex, { FILEINFORMATION_ATTRS } ),
     DEFINE_EVENT(RecordingActive, EventCtxOther, { RECORDINGACTIVE_ATTRS } ),
     DEFINE_EVENT(IndexPayload, EventCtxIndex, { INDEXPAYLOAD_ATTRS } ),
-    DEFINE_EVENT(QueryStart, EventCtxIndex, { QUERYSTART_ATTRS } ),
-    DEFINE_EVENT(QueryStop, EventCtxIndex, { QUERYSTOP_ATTRS } ),
+    DEFINE_EVENT(QueryStart, EventCtxQuery, { QUERYSTART_ATTRS } ),
+    DEFINE_EVENT(QueryStop, EventCtxQuery, { QUERYSTOP_ATTRS } ),
     DEFINE_EVENT(RecordingSource, EventCtxOther, { RECORDINGSOURCE_ATTRS } ),
     DEFINE_EVENT(IndexOpen, EventCtxIndex, { INDEXOPEN_ATTRS } ),
-    DEFINE_META(PlaneInformation, EventCtxOther, { PLANEINFORMATION_ATTRS } ),
+    DEFINE_META(PlaneInformation, EventCtxIndex, { PLANEINFORMATION_ATTRS } ),
+    DEFINE_EVENT(RequestSend, EventCtxRemote, { REMOTEREQUEST_ATTRS } ),
+    DEFINE_EVENT(RequestReceive, EventCtxRemote, { REMOTERECEIVE_ATTRS } ),
+    DEFINE_EVENT(WorkerStart, EventCtxRemote, { WORKERSTART_ATTRS } ),
+    DEFINE_EVENT(WorkerStop, EventCtxRemote, { WORKERSTOP_ATTRS } ),
+    DEFINE_EVENT(ResponseSend, EventCtxRemote, { WORKERSEND_ATTRS } ),
+    DEFINE_EVENT(ResponseReceive, EventCtxRemote, { WORKERRECEIVE_ATTRS } ),
+    DEFINE_EVENT(TaskStart, EventCtxQuery, { TASKSTART_ATTRS } ),
+    DEFINE_EVENT(TaskStop, EventCtxQuery, { TASKSTOP_ATTRS } ),
 };
 static_assert(_elements_in(eventInformation) == EventMax);
 
@@ -197,6 +215,11 @@ static constexpr EventAttrInformation attrInformation[] = {
     DEFINE_ATTR(OpenTime, u8, duration),
     DEFINE_ATTR(Plane, string, none),
     DEFINE_ATTR(IsStriped, bool, none),
+    DEFINE_ATTR(RequestId, u4, none),
+    DEFINE_ATTR(RequestSeq, u4, none),
+    DEFINE_ATTR(ResponseId, u4, none),
+    DEFINE_ATTR(ResponseSeq, u4, none),
+    DEFINE_ATTR(Task, u1, none),
 };
 
 static_assert(_elements_in(attrInformation) == EvAttrMax);
@@ -215,6 +238,10 @@ EventContext queryEventContext(const char* token)
         return EventCtxIndex;
     if (strieq(token, "other"))
         return EventCtxOther;
+    if (strieq(token, "remote"))
+        return EventCtxRemote;
+    if (strieq(token, "query"))
+        return EventCtxQuery;
     return EventCtxMax;
 }
 
@@ -394,9 +421,13 @@ bool EventRecorder::startRecording(const char * optionsText, const char * filena
     isStarted = true;
     isStopped = false;
 
-    auto processOption = [this](const char * option, const char * valueText)
+    contextFlags = defaultContextFlags;
+    bool hadContextOption = false;
+
+    auto processOption = [this, &hadContextOption](const char * option, const char * valueText)
     {
         bool valueBool = strToBool(valueText);
+        EventContext contextFlag = EventCtxMax;
 
         if (strieq(option, "traceid"))
             options = (options & ~ERFtraceid) | (valueBool ? ERFtraceid : ERFnone);
@@ -427,6 +458,23 @@ bool EventRecorder::startRecording(const char * optionsText, const char * filena
             createSpans = valueBool;
         else if (strieq(option, "suppressPayloadHits"))
             suppressPayloadHits = valueBool;
+        else
+            contextFlag = queryEventContext(option);
+
+        if (contextFlag != EventCtxMax)
+        {
+            if (!hadContextOption)
+            {
+                contextFlags = valueBool ? EventCtxNoneMask : EventCtxAllMask;
+                hadContextOption = true;
+            }
+
+            EventContextFlag mask = (EventContextFlag)(1U << contextFlag);
+            if (valueBool)
+                contextFlags |= mask;
+            else
+                contextFlags &= ~mask;
+        }
     };
 
     options = defaultEventFlags;
@@ -717,7 +765,7 @@ static_assert(getSizeOfAttrs(true, 32768U, 1ULL, "boris", "blob") == 5 * sizeof(
 
 void EventRecorder::recordRecordingActive(bool enabled)
 {
-    if (!isRecording())
+    if (!isRecording() || !isEventEnabled(EventCtxOther))
         return;
 
     if (unlikely(outputToLog))
@@ -733,7 +781,7 @@ void EventRecorder::recordRecordingActive(bool enabled)
 
 void EventRecorder::recordIndexOpen(unsigned fileid, __uint64 openTime)
 {
-    if (!isRecording())
+    if (!isRecording() || !isEventEnabled(EventCtxIndex))
         return;
 
     if (unlikely(outputToLog))
@@ -752,7 +800,7 @@ void EventRecorder::recordIndexCacheHit(unsigned fileid, offset_t offset, byte n
 {
     dbgassertex(size != 0);
 
-    if (!isRecording())
+    if (!isRecording() || !isEventEnabled(EventCtxIndex))
         return;
 
     if (unlikely(outputToLog))
@@ -772,7 +820,7 @@ void EventRecorder::recordIndexCacheHit(unsigned fileid, offset_t offset, byte n
 
 void EventRecorder::recordIndexCacheMiss(unsigned fileid, offset_t offset, byte nodeKind)
 {
-    if (!isRecording())
+    if (!isRecording() || !isEventEnabled(EventCtxIndex))
         return;
 
     if (unlikely(outputToLog))
@@ -790,7 +838,7 @@ void EventRecorder::recordIndexCacheMiss(unsigned fileid, offset_t offset, byte 
 
 void EventRecorder::recordIndexLoad(unsigned fileid, offset_t offset, byte nodeKind, size32_t size, __uint64 expandTime, __uint64 readTime)
 {
-    if (!isRecording())
+    if (!isRecording() || !isEventEnabled(EventCtxIndex))
         return;
 
     if (unlikely(outputToLog))
@@ -821,7 +869,7 @@ void EventRecorder::recordIndexLoad(unsigned fileid, offset_t offset, byte nodeK
 
 void EventRecorder::recordIndexEviction(unsigned fileid, offset_t offset, byte nodeKind, size32_t size)
 {
-    if (!isRecording())
+    if (!isRecording() || !isEventEnabled(EventCtxIndex))
         return;
 
     if (unlikely(outputToLog))
@@ -840,7 +888,7 @@ void EventRecorder::recordIndexEviction(unsigned fileid, offset_t offset, byte n
 
 void EventRecorder::recordIndexPayload(unsigned fileid, offset_t offset, bool firstUse, __uint64 expandTime)
 {
-    if (!isRecording())
+    if (!isRecording() || !isEventEnabled(EventCtxIndex))
         return;
 
     // Tracing all the payload hits could generate a lot of data (e.g. when smart stepping) - and it is not needed for cache
@@ -864,7 +912,7 @@ void EventRecorder::recordIndexPayload(unsigned fileid, offset_t offset, bool fi
 
 void EventRecorder::recordDaliEvent(EventType event, const char * path, __int64 id, stat_type elapsedNs, size32_t dataSize)
 {
-    if (!isRecording())
+    if (!isRecording() || !isEventEnabled(EventCtxDali))
         return;
 
     assertex(path);
@@ -893,7 +941,7 @@ void EventRecorder::recordDaliEvent(EventType event, const char * path, __int64 
 
 void EventRecorder::recordDaliEvent(EventType event, __int64 id, stat_type elapsedNs, size32_t dataSize)
 {
-    if (!isRecording())
+    if (!isRecording() || !isEventEnabled(EventCtxDali))
         return;
 
     if (unlikely(outputToLog))
@@ -920,7 +968,7 @@ void EventRecorder::recordDaliEvent(EventType event, __int64 id, stat_type elaps
 void EventRecorder::recordFileInformation(unsigned fileid, const char * filename)
 {
     //Meta data is logged whether or not recording is paused, check that logging is enabled.
-    if (!isStarted || isStopped)
+    if (!isStarted || isStopped || !isEventEnabled(EventCtxIndex))
         return;
 
     if (unlikely(outputToLog))
@@ -938,7 +986,7 @@ void EventRecorder::recordFileInformation(unsigned fileid, const char * filename
 void EventRecorder::recordPlaneInformation(const char * plane, const char * path, bool isStriped)
 {
     //Meta data is logged whether or not recording is paused, check that logging is enabled.
-    if (!isStarted || isStopped)
+    if (!isStarted || isStopped || !isEventEnabled(EventCtxIndex))
         return;
 
     if (unlikely(outputToLog))
@@ -956,7 +1004,7 @@ void EventRecorder::recordPlaneInformation(const char * plane, const char * path
 
 void EventRecorder::recordQueryStart(const char * queryName)
 {
-    if (!isRecording())
+    if (!isRecording() || !isEventEnabled(EventCtxQuery))
         return;
 
     if (unlikely(outputToLog))
@@ -972,7 +1020,7 @@ void EventRecorder::recordQueryStart(const char * queryName)
 
 void EventRecorder::recordQueryStop()
 {
-    if (!isRecording())
+    if (!isRecording() || !isEventEnabled(EventCtxQuery))
         return;
 
     if (unlikely(outputToLog))
@@ -983,6 +1031,98 @@ void EventRecorder::recordQueryStop()
     offset_type pos = writeOffset;
     writeEventHeader(EventQueryStop, pos);
     writeEventFooter(pos, requiredSize, writeOffset);
+}
+
+void EventRecorder::recordTaskEvent(EventType event, EventTask task)
+{
+    if (!isRecording() || !isEventEnabled(EventCtxQuery))
+        return;
+
+    if (unlikely(outputToLog))
+        TRACEEVENT("{ \"name\": \"%s\", \"Task\": %u }", queryEventName(event), static_cast<unsigned>(task));
+
+    size32_t requiredSize = sizeMessageHeaderFooter + getSizeOfAttrs(task);
+    offset_type writeOffset = reserveEvent(requiredSize);
+    offset_type pos = writeOffset;
+    writeEventHeader(event, pos);
+    write(pos, EvAttrTask, static_cast<byte>(task));
+    writeEventFooter(pos, requiredSize, writeOffset);
+}
+
+void EventRecorder::recordTaskStart(EventTask task)
+{
+    recordTaskEvent(EventTaskStart, task);
+}
+
+void EventRecorder::recordTaskStop(EventTask task)
+{
+    recordTaskEvent(EventTaskStop, task);
+}
+
+void EventRecorder::recordRequestIdEvent(EventType event, unsigned requestId, unsigned requestSeq)
+{
+    if (!isRecording() || !isEventEnabled(EventCtxRemote))
+        return;
+
+    if (unlikely(outputToLog))
+        TRACEEVENT("{ \"name\": \"%s\", \"RequestId\": %u, \"RequestSeq\": %u }", queryEventName(event), requestId, requestSeq);
+
+    size32_t requiredSize = sizeMessageHeaderFooter + getSizeOfAttrs(requestId, requestSeq);
+    offset_type writeOffset = reserveEvent(requiredSize);
+    offset_type pos = writeOffset;
+    writeEventHeader(event, pos);
+    write(pos, EvAttrRequestId, requestId);
+    write(pos, EvAttrRequestSeq, requestSeq);
+    writeEventFooter(pos, requiredSize, writeOffset);
+}
+
+void EventRecorder::recordResponseEvent(EventType event, unsigned requestId, unsigned requestSeq, unsigned responseId, unsigned responseSeq)
+{
+    if (!isRecording() || !isEventEnabled(EventCtxRemote))
+        return;
+
+    if (unlikely(outputToLog))
+        TRACEEVENT("{ \"name\": \"%s\", \"RequestId\": %u, \"RequestSeq\": %u, \"ResponseId\": %u, \"ResponseSeq\": %u }", queryEventName(event), requestId, requestSeq, responseId, responseSeq);
+
+    size32_t requiredSize = sizeMessageHeaderFooter + getSizeOfAttrs(requestId, requestSeq, responseId, responseSeq);
+    offset_type writeOffset = reserveEvent(requiredSize);
+    offset_type pos = writeOffset;
+    writeEventHeader(event, pos);
+    write(pos, EvAttrRequestId, requestId);
+    write(pos, EvAttrRequestSeq, requestSeq);
+    write(pos, EvAttrResponseId, responseId);
+    write(pos, EvAttrResponseSeq, responseSeq);
+    writeEventFooter(pos, requiredSize, writeOffset);
+}
+
+void EventRecorder::recordRequestSend(unsigned requestId, unsigned requestSeq)
+{
+    recordRequestIdEvent(EventRequestSend, requestId, requestSeq);
+}
+
+void EventRecorder::recordRequestReceive(unsigned requestId, unsigned requestSeq)
+{
+    recordRequestIdEvent(EventRequestReceive, requestId, requestSeq);
+}
+
+void EventRecorder::recordWorkerStart(unsigned requestId, unsigned requestSeq)
+{
+    recordRequestIdEvent(EventWorkerStart, requestId, requestSeq);
+}
+
+void EventRecorder::recordWorkerStop(unsigned requestId, unsigned requestSeq)
+{
+    recordRequestIdEvent(EventWorkerStop, requestId, requestSeq);
+}
+
+void EventRecorder::recordResponseSend(unsigned requestId, unsigned requestSeq, unsigned responseId, unsigned responseSeq)
+{
+    recordResponseEvent(EventResponseSend, requestId, requestSeq, responseId, responseSeq);
+}
+
+void EventRecorder::recordResponseReceive(unsigned requestId, unsigned requestSeq, unsigned responseId, unsigned responseSeq)
+{
+    recordResponseEvent(EventResponseReceive, requestId, requestSeq, responseId, responseSeq);
 }
 
 void EventRecorder::recordRecordingSource(const char *processDescriptor, byte channelId, byte replicaId, __uint64 instanceId)
@@ -1058,8 +1198,12 @@ void EventRecorder::recordDaliSubscribe(const char * xpath, __int64 id, stat_typ
 
 void EventRecorder::recordEvent(CEvent& event)
 {
+    EventType type = event.queryType();
+    if (!isEventEnabled(type) && (type != EventRecordingSource))
+        return;
+
     // FileInformation events record even when recording is paused. All others record when actively recording.
-    switch (event.queryType())
+    switch (type)
     {
     case MetaFileInformation:
     case MetaPlaneInformation:
