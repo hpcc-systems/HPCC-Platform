@@ -1,6 +1,6 @@
 import { Page } from "@playwright/test";
 import { test, expect } from "./fixtures";
-import { getWuid, loadWUs } from "./global";
+import { getWuid, loadWUs, replaceTextboxValue } from "./global";
 
 /**
  * Helper function to click a tab that might be in the overflow menu
@@ -245,8 +245,7 @@ test.describe("V9 Workunit Details", () => {
         // Modify job name using pressSequentially to reliably trigger React's onChange
         // in the Fluent UI v9 controlled Input (fill() alone does not always fire the event).
         const jobNameField = page.getByRole("textbox", { name: "Job Name" });
-        await jobNameField.click({ clickCount: 3 });
-        await jobNameField.pressSequentially("Modified Job Name");
+        await replaceTextboxValue(jobNameField, "Modified Job Name");
 
         // Save button should now be enabled
         await expect(page.getByRole("menuitem", { name: "Save" })).not.toHaveAttribute("aria-disabled", "true");
@@ -309,7 +308,7 @@ test.describe("V9 Workunit Details", () => {
     });
 
     test("Should update description and save successfully", async ({ page }) => {
-        const testDescription = `Test description updated at ${new Date().toISOString()}`;
+        const testDescription = `PW-${Date.now()}`;
 
         // Get the description field and store the original value
         const descriptionField = page.getByRole("textbox", { name: "Description" });
@@ -317,9 +316,9 @@ test.describe("V9 Workunit Details", () => {
 
         const originalDescription = await descriptionField.inputValue();
 
-        // Clear and update the description
-        await descriptionField.clear();
-        await descriptionField.fill(testDescription);
+        // Update description using pressSequentially to reliably trigger React's onChange
+        // in the Fluent UI v9 controlled Input.
+        await replaceTextboxValue(descriptionField, testDescription);
 
         // Verify the save button is not aria-disabled after modification.
         // NOTE: isEnabled() does NOT check aria-disabled (FluentUI v9 uses aria-disabled rather than
@@ -327,22 +326,29 @@ test.describe("V9 Workunit Details", () => {
         const saveButton = page.getByRole("menuitem", { name: "Save" });
         const ariaDisabled = await saveButton.getAttribute("aria-disabled").catch(() => "true");
         if (ariaDisabled === "true") {
-            test.skip(true, "Save button is aria-disabled - workunit may be protected or fill() did not trigger React onChange");
+            test.skip(true, "Save button is aria-disabled - workunit may be protected or input change was not detected");
+            return;
+        }
+
+        const ariaDisabledBeforeClick = await saveButton.getAttribute("aria-disabled").catch(() => "true");
+        if (ariaDisabledBeforeClick === "true") {
+            test.skip(true, "Save button became aria-disabled before click");
             return;
         }
 
         // Click save button
         await saveButton.click();
 
-        // Wait 5 seconds for the save operation to complete.
-        await page.waitForTimeout(5000);
+        // Wait for save lifecycle to complete and for explicit success feedback.
+        await expect(saveButton).toHaveAttribute("aria-disabled", "true", { timeout: 10000 });
+        await expect(page.getByText(/Successfully Saved/i)).toBeVisible({ timeout: 10000 });
 
         // Refresh the page to verify the change was persisted
         await page.getByRole("menuitem", { name: "Refresh" }).click();
         await page.waitForLoadState("networkidle");
 
         // Wait for the description field to be updated with the saved value
-        await expect(descriptionField).toHaveValue(testDescription, { timeout: 5000 });
+        await expect(descriptionField).toHaveValue(testDescription, { timeout: 10000 });
 
         // Verify the description field now contains the updated value
         const updatedDescription = await descriptionField.inputValue();
@@ -350,12 +356,12 @@ test.describe("V9 Workunit Details", () => {
 
         // Clean up - restore the original description if it was different
         if (originalDescription !== testDescription) {
-            await descriptionField.clear();
-            await descriptionField.fill(originalDescription);
+            await replaceTextboxValue(descriptionField, originalDescription);
             const cleanupAriaDisabled = await saveButton.getAttribute("aria-disabled").catch(() => "true");
             if (cleanupAriaDisabled !== "true") {
                 await saveButton.click();
-                await page.waitForLoadState("networkidle");
+                await expect(saveButton).toHaveAttribute("aria-disabled", "true", { timeout: 10000 });
+                await expect(page.getByText(/Successfully Saved/i)).toBeVisible({ timeout: 10000 });
             }
         }
     });

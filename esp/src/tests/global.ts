@@ -1,4 +1,5 @@
 import { DFUWorkunit, Workunit } from "@hpcc-js/comms";
+import { expect, Locator } from "@playwright/test";
 import * as fs from "fs";
 import * as path from "path";
 
@@ -249,4 +250,35 @@ NewChilds := NORMALIZE(DeNormedRecs, LEFT.NumRows, NewChildren(LEFT, COUNTER));
 
 OUTPUT(NewChilds,, 'global::setup::ts::ChildrenExtracted', OVERWRITE);
 `;
+}
+
+/**
+ * Reliably replace the value of a controlled textbox (e.g. Fluent UI v9 Input).
+ * Uses pressSequentially instead of fill() so that React's onChange fires correctly.
+ */
+export async function replaceTextboxValue(field: Locator, value: string) {
+    await field.click();
+    await field.press("ControlOrMeta+A");
+    await field.press("Backspace");
+
+    if (value.length > 0) {
+        await field.pressSequentially(value);
+    }
+
+    // Controlled inputs can update asynchronously; wait briefly before retrying.
+    const appliedOnFirstAttempt = await expect(field)
+        .toHaveValue(value, { timeout: 1000 })
+        .then(() => true)
+        .catch(() => false);
+
+    if (!appliedOnFirstAttempt) {
+        await field.click();
+        await field.press("ControlOrMeta+A");
+        await field.press("Backspace");
+        if (value.length > 0) {
+            await field.pressSequentially(value);
+        }
+    }
+
+    await expect(field).toHaveValue(value, { timeout: 5000 });
 }
