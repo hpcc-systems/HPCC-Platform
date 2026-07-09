@@ -48,7 +48,9 @@ See [Filter by Event](#filter-by-event) for more information about filtering by 
 
 An event type term identifies either a single event type or a single event context, implicitly identifying every event type associated with that context.
 
-Event terms may be specified by the `EventType` enumeration, the `EventCtx` enumeration, or a comma-delimited list of event type and/or context names. The list format is described as follows:
+Event contexts are represented internally as bit flags. One event type may belong to more than one context.
+
+Event terms may be specified by the `EventType` enumeration, the `EventContext` enumeration, or a comma-delimited list of event type and/or context names. The list format is described as follows:
 
         term-list ::= term ( ',' term )*
         term ::= ( [ type-comparison ] type-term | [ context-comparison ] context-term )
@@ -63,14 +65,16 @@ By default, all identified types are accumulated into a collection of accepted e
 - `eq` (default): the term type is accumulated
 - `neq`: all types except the term type are accumulated
 - `in` (default): all event types with the term context are accumulated
-- `out`: all event types without the term context are accumulated
+- `out`: all event types that are not members of the term context are accumulated
 - `except`: removes the term value from the accumulated collection
   - If the term value is a type, the type is removed if it was previously accumulated.
   - If the term value is a context, all previously accumulated types of the context are removed.
 
-An example using `out` might be `[not]dali`. The effect is to accept all events not in the dali event context.
+An example using `out` might be `[out]dali`. The effect is to accept all events not in the dali event context.
 
 An example using `except` might be `index,[except]IndexPayload`. The effect of this list is to accept all index context events except for IndexPayload.
+
+An example using scoped context exclusion is `index,[except]meta`. The effect is to accept all index context events except those that are also members of the meta context.
 
 ##### Filter by Attribute
 

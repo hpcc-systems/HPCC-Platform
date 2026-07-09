@@ -94,6 +94,7 @@ class JlibEventTest : public CppUnit::TestFixture
 public:
     CPPUNIT_TEST_SUITE(JlibEventTest);
         CPPUNIT_TEST(testEventTracing);
+        CPPUNIT_TEST(testContextOptionBaseline);
         CPPUNIT_TEST(testMultiBlock);
         CPPUNIT_TEST(testMultiThread);
         CPPUNIT_TEST(testBlocked);
@@ -178,6 +179,44 @@ public:
             CPPUNIT_ASSERT(!recorder.isRecording());
             CPPUNIT_ASSERT_EQUAL(10U, summary.numEvents);        // One pause + 8 index, 2 dali, not the two logged when paused.
             CPPUNIT_ASSERT_EQUAL_STR("testfile.bin", summary.filename);        // One pause + 8 index, 2 dali, not the two logged when paused.
+        }
+        catch (IException * e)
+        {
+            StringBuffer msg;
+            e->errorMessage(msg);
+            e->Release();
+            CPPUNIT_FAIL(msg.str());
+        }
+    }
+
+    void testContextOptionBaseline()
+    {
+        try
+        {
+            EventRecorder &recorder = queryRecorder();
+
+            CPPUNIT_ASSERT(recorder.startRecording("dali=1", "context_baseline_include.evt", nullptr, 0, 0, 0, false));
+            CPPUNIT_ASSERT(recorder.isRecording());
+            recorder.recordIndexCacheMiss(1, nodeSize, NodeLeaf);
+            recorder.recordDaliGet(123, 100, 64);
+            EventRecordingSummary summary;
+            CPPUNIT_ASSERT(recorder.stopRecording(&summary, false));
+
+            verifyCounts("context_baseline_include.evt", {
+                { EventIndexCacheMiss, 0 },
+                { EventDaliGet, 1 }
+            });
+
+            CPPUNIT_ASSERT(recorder.startRecording("dali=0", "context_baseline_exclude.evt", nullptr, 0, 0, 0, false));
+            CPPUNIT_ASSERT(recorder.isRecording());
+            recorder.recordIndexCacheMiss(1, nodeSize, NodeLeaf);
+            recorder.recordDaliGet(123, 100, 64);
+            CPPUNIT_ASSERT(recorder.stopRecording(&summary, false));
+
+            verifyCounts("context_baseline_exclude.evt", {
+                { EventIndexCacheMiss, 1 },
+                { EventDaliGet, 0 }
+            });
         }
         catch (IException * e)
         {
@@ -386,6 +425,8 @@ public:
             removeFile("recordingsource_multiple.evt");
             removeFile("recordingsource_recursion.evt");
             removeFile("pullevents.evt");
+            removeFile("context_baseline_include.evt");
+            removeFile("context_baseline_exclude.evt");
         }
     }
 

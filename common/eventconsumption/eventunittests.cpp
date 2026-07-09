@@ -153,7 +153,7 @@ void testEventVisitationLinks(const char* testData, unsigned flags)
     END_TEST
 }
 
-void testEventVisitationLinks(const IPropertyTree& inputTree, const IPropertyTree& expectTree, IPropertyTreeIterator& visitationLinks, unsigned flags, bool disablePreScan)
+static bool runEventVisitationLinks(const IPropertyTree& inputTree, const IPropertyTree& expectTree, IPropertyTreeIterator& visitationLinks, unsigned flags, bool disablePreScan)
 {
     class TestOp : public CEventConsumingOp
     {
@@ -257,9 +257,37 @@ void testEventVisitationLinks(const IPropertyTree& inputTree, const IPropertyTre
         bool disablePreScan;
     };
 
-    START_TEST
     TestOp op(inputTree, expectTree, visitationLinks, flags, disablePreScan);
-    CPPUNIT_ASSERT_MESSAGE("failed to process visitation links", op.doOp());
+    return op.doOp();
+}
+
+bool testEventVisitationLinksThrowsIException(const char* testData, unsigned flags)
+{
+    try
+    {
+        Owned<IPropertyTree> testTree = createTestConfiguration(testData);
+        IPropertyTree* inputTree = testTree->queryBranch("input");
+        if (!inputTree)
+            return false;
+        IPropertyTree* expectTree = testTree->queryBranch("expect");
+        if (!expectTree)
+            return false;
+        Owned<IPropertyTreeIterator> links = testTree->getElements("link");
+        bool disablePreScan = testTree->hasProp("noPreScan");
+        (void)runEventVisitationLinks(*inputTree, *expectTree, *links, flags, disablePreScan);
+        return false;
+    }
+    catch (IException* e)
+    {
+        e->Release();
+        return true;
+    }
+}
+
+void testEventVisitationLinks(const IPropertyTree& inputTree, const IPropertyTree& expectTree, IPropertyTreeIterator& visitationLinks, unsigned flags, bool disablePreScan)
+{
+    START_TEST
+    CPPUNIT_ASSERT_MESSAGE("failed to process visitation links", runEventVisitationLinks(inputTree, expectTree, visitationLinks, flags, disablePreScan));
     END_TEST
 }
 
