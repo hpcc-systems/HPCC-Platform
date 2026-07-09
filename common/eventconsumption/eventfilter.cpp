@@ -658,7 +658,7 @@ public: // IEventFilter
                     EventType type = queryEventType(token);
                     if (EventNone == type)
                         throw makeStringExceptionV(-1, "event filter event term has unknown type name '%s'", token);
-                    if (!IEventFilter::acceptEvent(type))
+                    if (!acceptEvent(type, comp))
                         throw makeStringExceptionV(-1, "event type term '%s' not accepted", token);
                 }
                 else if (termNode.hasProp("@context"))
@@ -666,9 +666,9 @@ public: // IEventFilter
                     const char* token = termNode.queryProp("@context");
                     FilterTermComparison comp = extractComparison(token);
                     EventContext context = queryEventContext(token);
-                    if (EventCtxOther == context)
+                    if (EventCtxInvalid == context)
                         throw makeStringExceptionV(-1, "event filter context term has unknown context name '%s'", token);
-                    if (!IEventFilter::acceptEvents(context))
+                    if (!acceptEvents(context, comp))
                         throw makeStringExceptionV(-1, "event context term '%s' not accepted", token);
                 }
             }
@@ -703,7 +703,7 @@ public: // IEventFilter
     {
         for (byte type = EventNone + 1; type < EventMax; type++)
         {
-            bool matched = (queryEventContext(EventType(type)) == context);
+            bool matched = eventInAnyContext(EventType(type), context);
             switch (comp)
             {
             case FilterTermComparison::Default:
@@ -735,7 +735,7 @@ public: // IEventFilter
             const char* token = tokens.item(i);
             FilterTermComparison comp = extractComparison(token);
             EventContext context = queryEventContext(token);
-            if (context != EventCtxMax)
+            if (context != EventCtxInvalid)
             {
                 if (!acceptEvents(context, comp))
                     return false;
@@ -905,11 +905,16 @@ class EventFilterTests : public CppUnit::TestFixture
     CPPUNIT_TEST(testFilterByEventsByContext);
     CPPUNIT_TEST(testFilterByEventsByType);
     CPPUNIT_TEST(testFilterByEventsByContextComplement);
+    CPPUNIT_TEST(testFilterByEventsByMetaContext);
+    CPPUNIT_TEST(testFilterByEventsByMetaContextComplement);
+    CPPUNIT_TEST(testFilterByEventsByContextScopedMetaException);
     CPPUNIT_TEST(testFilterByEventsByTypeComplement);
     CPPUNIT_TEST(testFilterByEventsWithGoodException);
     CPPUNIT_TEST(testFilterByEventsWithIrrelevantException);
     CPPUNIT_TEST(testFilterByEventByCanceledTerms);
     CPPUNIT_TEST(testFilterByEventByBadName);
+    CPPUNIT_TEST(testFilterByEventByBadContextName);
+    CPPUNIT_TEST(testFilterByEventByBadContextAttribute);
     CPPUNIT_TEST(testFilterByEventByBadComparison);
     CPPUNIT_TEST(testFilterByAttributeByFileId);
     CPPUNIT_TEST(testFilterByAttributeByFileIdLogicalFilename);
@@ -1210,6 +1215,69 @@ public:
         testEventVisitationLinks(testData, PTEFlenientParsing);
     }
 
+    void testFilterByEventsByMetaContext()
+    {
+        constexpr const char* testData = R"!!!(
+            <test>
+                <link kind="event-filter">
+                    <event list="meta"/>
+                </link>
+                <input>
+                    <event type="MetaFileInformation"/>
+                    <event type="IndexCacheHit"/>
+                    <event type="IndexCacheMiss"/>
+                </input>
+                <expect>
+                    <event type="MetaFileInformation"/>
+                </expect>
+            </test>
+        )!!!";
+        testEventVisitationLinks(testData, PTEFlenientParsing);
+    }
+
+    void testFilterByEventsByMetaContextComplement()
+    {
+        constexpr const char* testData = R"!!!(
+            <test>
+                <link kind="event-filter">
+                    <event list="[out]meta"/>
+                </link>
+                <input>
+                    <event type="IndexCacheHit"/>
+                    <event type="MetaFileInformation"/>
+                    <event type="MetaPlaneInformation"/>
+                    <event type="EventRecordingActive"/>
+                </input>
+                <expect>
+                    <event type="IndexCacheHit"/>
+                    <event type="EventRecordingActive"/>
+                </expect>
+            </test>
+        )!!!";
+        testEventVisitationLinks(testData, PTEFlenientParsing);
+    }
+
+    void testFilterByEventsByContextScopedMetaException()
+    {
+        constexpr const char* testData = R"!!!(
+            <test>
+                <link kind="event-filter">
+                    <event list="index,[except]meta"/>
+                </link>
+                <input>
+                    <event type="IndexCacheHit"/>
+                    <event type="IndexCacheMiss"/>
+                    <event type="MetaFileInformation"/>
+                </input>
+                <expect>
+                    <event type="IndexCacheHit"/>
+                    <event type="IndexCacheMiss"/>
+                </expect>
+            </test>
+        )!!!";
+        testEventVisitationLinks(testData, PTEFlenientParsing);
+    }
+
     void testFilterByEventsByTypeComplement()
     {
         constexpr const char* testData = R"!!!(
@@ -1396,7 +1464,46 @@ public:
                 </expect>
             </test>
         )!!!";
-        CPPUNIT_ASSERT_THROW_MESSAGE("expected exception for bad event filter term name", testEventVisitationLinks(testData, PTEFlenientParsing), std::exception);
+        CPPUNIT_ASSERT_MESSAGE("expected exception for bad event filter term name", testEventVisitationLinksThrowsIException(testData, PTEFlenientParsing));
+    }
+
+    void testFilterByEventByBadContextName()
+    {
+        constexpr const char* testData = R"!!!(
+            <test>
+                <link kind="event-filter">
+                    <event list="[in]bogus"/>
+                </link>
+                <input>
+                    <event type="IndexCacheHit"/>
+                </input>
+                <expect>
+                </expect>
+            </test>
+        )!!!";
+        CPPUNIT_ASSERT_MESSAGE("expected exception for bad event filter context name in event list", testEventVisitationLinksThrowsIException(testData, PTEFlenientParsing));
+    }
+
+    void testFilterByEventByBadContextAttribute()
+    {
+        Owned<IPropertyTree> config = createPTree("operation");
+        IPropertyTree* term = config->addPropTree("event", createPTree("event"));
+        term->setProp("@context", "bogus");
+
+        CMetaInfoState metaInfoState;
+        Owned<IEventFilter> filter = createEventFilter(metaInfoState);
+        try
+        {
+            filter->configure(*config);
+            CPPUNIT_FAIL("expected unknown context exception");
+        }
+        catch (IException* e)
+        {
+            StringBuffer msg;
+            e->errorMessage(msg);
+            e->Release();
+            CPPUNIT_ASSERT(strstr(msg.str(), "unknown context name 'bogus'") != nullptr);
+        }
     }
 
     void testFilterByEventByBadComparison()
@@ -1413,7 +1520,7 @@ public:
                 </expect>
             </test>
         )!!!";
-        CPPUNIT_ASSERT_THROW_MESSAGE("expected exception for bad event filter term comparison", testEventVisitationLinks(testData, PTEFlenientParsing), std::exception);
+        CPPUNIT_ASSERT_MESSAGE("expected exception for bad event filter term comparison", testEventVisitationLinksThrowsIException(testData, PTEFlenientParsing));
     }
 
     void testFilterByAttributeByFileId()

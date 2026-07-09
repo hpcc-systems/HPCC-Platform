@@ -53,7 +53,7 @@ enum EventFlags : unsigned
 BITMASK_ENUM(EventFlags);
 
 static constexpr unsigned defaultEventFlags = ERFthreadid;
-static constexpr EventContextFlag defaultContextFlags = EventCtxAllMask;
+static constexpr EventContext defaultContextFlags = EventCtxAll;
 
 inline void TRACEEVENT(char const * format, ...) __attribute__((format(printf, 1, 2)));
 inline void TRACEEVENT(char const * format, ...)
@@ -127,7 +127,7 @@ struct EventInformation
 
 
 static constexpr EventInformation eventInformation[] {
-    DEFINE_EVENT(None, EventCtxMax, { EvAttrNone } ),
+    DEFINE_EVENT(None, EventCtxNone, { EvAttrNone } ),
     DEFINE_EVENT(IndexCacheHit, EventCtxIndex, { INDEXCACHEHIT_ATTRS } ),
     DEFINE_EVENT(IndexCacheMiss, EventCtxIndex, { INDEXCACHEMISS_ATTRS } ),
     DEFINE_EVENT(IndexLoad, EventCtxIndex, { INDEXLOAD_ATTRS } ),
@@ -141,14 +141,14 @@ static constexpr EventInformation eventInformation[] {
     DEFINE_EVENT(DaliGetChildrenFor, EventCtxDali, { DALI_ATTRS } ),
     DEFINE_EVENT(DaliGetElements, EventCtxDali, { DALI_ATTRS } ),
     DEFINE_EVENT(DaliSubscribe, EventCtxDali, { DALI_ATTRS } ),
-    DEFINE_META(FileInformation, EventCtxIndex, { FILEINFORMATION_ATTRS } ),
+    DEFINE_META(FileInformation, EventCtxIndex | EventCtxMeta, { FILEINFORMATION_ATTRS } ),
     DEFINE_EVENT(RecordingActive, EventCtxOther, { RECORDINGACTIVE_ATTRS } ),
     DEFINE_EVENT(IndexPayload, EventCtxIndex, { INDEXPAYLOAD_ATTRS } ),
     DEFINE_EVENT(QueryStart, EventCtxQuery, { QUERYSTART_ATTRS } ),
     DEFINE_EVENT(QueryStop, EventCtxQuery, { QUERYSTOP_ATTRS } ),
-    DEFINE_EVENT(RecordingSource, EventCtxOther, { RECORDINGSOURCE_ATTRS } ),
+    DEFINE_EVENT(RecordingSource, EventCtxNone, { RECORDINGSOURCE_ATTRS } ),
     DEFINE_EVENT(IndexOpen, EventCtxIndex, { INDEXOPEN_ATTRS } ),
-    DEFINE_META(PlaneInformation, EventCtxIndex, { PLANEINFORMATION_ATTRS } ),
+    DEFINE_META(PlaneInformation, EventCtxIndex | EventCtxMeta, { PLANEINFORMATION_ATTRS } ),
     DEFINE_EVENT(RequestSend, EventCtxRemote, { REMOTEREQUEST_ATTRS } ),
     DEFINE_EVENT(RequestReceive, EventCtxRemote, { REMOTERECEIVE_ATTRS } ),
     DEFINE_EVENT(WorkerStart, EventCtxRemote, { WORKERSTART_ATTRS } ),
@@ -238,11 +238,13 @@ EventContext queryEventContext(const char* token)
         return EventCtxIndex;
     if (strieq(token, "other"))
         return EventCtxOther;
+    if (strieq(token, "meta"))
+        return EventCtxMeta;
     if (strieq(token, "remote"))
         return EventCtxRemote;
     if (strieq(token, "query"))
         return EventCtxQuery;
-    return EventCtxMax;
+    return EventCtxInvalid;
 }
 
 EventType queryEventType(const char* token)
@@ -427,7 +429,7 @@ bool EventRecorder::startRecording(const char * optionsText, const char * filena
     auto processOption = [this, &hadContextOption](const char * option, const char * valueText)
     {
         bool valueBool = strToBool(valueText);
-        EventContext contextFlag = EventCtxMax;
+        EventContext contextFlag = EventCtxInvalid;
 
         if (strieq(option, "traceid"))
             options = (options & ~ERFtraceid) | (valueBool ? ERFtraceid : ERFnone);
@@ -461,19 +463,17 @@ bool EventRecorder::startRecording(const char * optionsText, const char * filena
         else
             contextFlag = queryEventContext(option);
 
-        if (contextFlag != EventCtxMax)
+        if (contextFlag != EventCtxInvalid)
         {
             if (!hadContextOption)
             {
-                contextFlags = valueBool ? EventCtxNoneMask : EventCtxAllMask;
+                contextFlags = valueBool ? EventCtxNone : EventCtxAll;
                 hadContextOption = true;
             }
-
-            EventContextFlag mask = (EventContextFlag)(1U << contextFlag);
             if (valueBool)
-                contextFlags |= mask;
+                contextFlags |= contextFlag;
             else
-                contextFlags &= ~mask;
+                contextFlags &= ~contextFlag;
         }
     };
 

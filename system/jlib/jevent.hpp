@@ -26,6 +26,7 @@
 #include "jstring.hpp"
 #include "jstats.h"
 #include <condition_variable>
+#include <type_traits>
 
 // The order should not be changed, or items removed. New values should always be appended before EventMax
 // The meta prefix is used when there are records that provide extra meta data to help interpret
@@ -75,30 +76,42 @@ enum class EventTask : byte
     Max
 };
 
-enum EventContext : byte
+// The underlying data type was one byte when values were sequentially increasing.
+// The type is now two bytes because the values are now forming a bitmask.
+enum EventContext : uint16_t
 {
-    EventCtxDali,
-    EventCtxIndex,
-    EventCtxOther,
-    EventCtxRemote,
-    EventCtxQuery,
-    EventCtxMax
+    EventCtxNone    = 0x0000,
+    EventCtxDali    = 0x0001,
+    EventCtxIndex   = 0x0002,
+    EventCtxOther   = 0x0004,
+    EventCtxMeta    = 0x0008,
+    EventCtxRemote  = 0x0010,
+    EventCtxQuery   = 0x0020,
+    // Add all new contexts above this line.
+    // Dedicated sentinel for parse/validation failures. Not a context bit.
+    EventCtxInvalid = 0x8000,
 };
+BITMASK_ENUM(EventContext);
 
-enum EventContextFlag : unsigned
-{
-    EventCtxNoneMask   = 0,
-    EventCtxDaliMask   = (1U << EventCtxDali),
-    EventCtxIndexMask  = (1U << EventCtxIndex),
-    EventCtxOtherMask  = (1U << EventCtxOther),
-    EventCtxRemoteMask = (1U << EventCtxRemote),
-    EventCtxQueryMask  = (1U << EventCtxQuery),
-    EventCtxAllMask    = (1U << EventCtxMax) - 1
-};
-BITMASK_ENUM(EventContextFlag);
+// Reserved context bits include all bits that are not valid for use in event definitions.
+static constexpr EventContext EventCtxReserved = EventCtxInvalid;
+// All non-reserved context bits are valid for use in event definitions.
+static constexpr EventContext EventCtxValid = static_cast<EventContext>(~static_cast<std::underlying_type_t<EventContext>>(EventCtxReserved));
+// All valid context bits are accepted, including bits not explicitly defined in the enumeration.
+static constexpr EventContext EventCtxAll = EventCtxValid;
 
 extern jlib_decl EventContext queryEventContext(EventType event);
 extern jlib_decl EventContext queryEventContext(const char* name);
+
+// Returns true if the event type belongs to any of the contexts specified in the context bitmap,
+// false otherwise.
+inline bool eventInAnyContext(EventType event, EventContext context)
+{
+    EventContext eventContext = queryEventContext(event);
+    // It is a programming error to define any event with any EventCtxReserved context. Assert that it is not set.
+    assertex((eventContext & EventCtxReserved) == EventCtxNone);
+    return (eventContext & (context & EventCtxAll)) != EventCtxNone;
+}
 
 // The attributes that can be associated with each event
 // The order should not be changed, or items removed.  New values should always be appended before EvAttrMax
@@ -559,9 +572,9 @@ protected:
 
     unsigned getBlockFromOffset(offset_type offset) { return (unsigned)((offset & bufferMask) / OutputBlockSize); }
 
-    inline bool isEventEnabled(EventContext context) const
+    inline bool isEventEnabled(EventContext contextMask) const
     {
-        return context < EventCtxMax && (contextFlags & (EventContextFlag)(1U << context)) != EventCtxNoneMask;
+        return (contextFlags & (contextMask & EventCtxValid)) != EventCtxNone;
     }
 
     inline bool isEventEnabled(EventType event) const
@@ -602,7 +615,7 @@ protected:
     Semaphore okToWriteSem;
     unsigned sizeMessageHeaderFooter{0};
     unsigned options{0};
-    EventContextFlag contextFlags{EventCtxAllMask};
+    EventContext contextFlags{EventCtxAll};
     unsigned writersWaiting{0};
     byte compressionType;
     bool outputToLog{false};

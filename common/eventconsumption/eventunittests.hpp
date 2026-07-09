@@ -49,6 +49,12 @@ private:
 extern void testEventVisitationLinks(const char* testData, unsigned flags);
 inline void testEventVisitationLinks(const char* testData) { testEventVisitationLinks(testData, PTEFnone); }
 
+// Returns true if processing the supplied testData throws an IException.
+// This uses the same visitation pipeline as testEventVisitationLinks but avoids
+// relying on assertion-failure side effects in tests that need to verify throws.
+extern bool testEventVisitationLinksThrowsIException(const char* testData, unsigned flags);
+inline bool testEventVisitationLinksThrowsIException(const char* testData) { return testEventVisitationLinksThrowsIException(testData, PTEFnone); }
+
 // Uses a `CEventVisitationLinkTester` instance to iterate over the `input` events, verifying that
 // the events received by the tester match the `expected` events after modification by visitation
 // links configured by the `links` iterator.

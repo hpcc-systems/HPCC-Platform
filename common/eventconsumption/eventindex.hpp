@@ -74,7 +74,7 @@ inline NodeKind queryIndexNodeKind(const CEvent& evt)
             throw makeStringExceptionV(0, "unknown node kind %llu", nodeKind);
         return static_cast<NodeKind>(nodeKind);
     }
-    if (queryEventContext(evt.queryType()) == EventCtxIndex)
+    if (eventInAnyContext(evt.queryType(), EventCtxIndex))
         return LeafNode;
     throw makeStringExceptionV(0, "event %s does not use NodeKind", queryEventName(evt.queryType()));
 }

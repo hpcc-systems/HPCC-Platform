@@ -834,25 +834,22 @@ protected:
 public: // IEventVisitor
     virtual bool visitEvent(CEvent& event) override
     {
-        // Allow EventQueryStart events to pass through; trace ID to service name
-        // mapping is built earlier by the metadata parser (CMetaInfoState::visitEvent)
-        if (event.queryType() == EventQueryStart)
+        // Implicit filter applied unconditionally - only index events with FileId that aren't also FileInformation are relevant.
+        if (!eventInAnyContext(event.queryType(), EventCtxIndex))
             return true;
-
-        // Implicit event filter applied unconditionally
-        if (queryEventContext(event.queryType()) != EventCtxIndex)
+        if (!event.hasAttribute(EvAttrFileId))
             return true;
+        if (event.queryType() == MetaFileInformation)
+            return true;
+        // Accumulate statistics for this trace
         __uint64 fileId = event.queryNumericValue(EvAttrFileId);
-        if (event.queryType() != MetaFileInformation)
-        {
-            const char* traceIdStr = "";
-            if (event.hasAttribute(EvAttrEventTraceId))
-                traceIdStr = event.queryTextValue(EvAttrEventTraceId);
-            // Note: Missing trace ID values are considered valid and represented as empty string
+        const char* traceIdStr = "";
+        if (event.hasAttribute(EvAttrEventTraceId))
+            traceIdStr = event.queryTextValue(EvAttrEventTraceId);
+        // Note: Missing trace ID values are considered valid and represented as empty string
 
-            TraceHashKey key(traceIdStr);
-            stats[key].visit(event);
-        }
+        TraceHashKey key(traceIdStr);
+        stats[key].visit(event);
         return true;
     }
 
