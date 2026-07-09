@@ -4924,8 +4924,22 @@ void deploySharedObject(IEspContext &context, StringBuffer &wuid, const char *cl
     {
         if (srcxml->hasProp("@jobName"))
             wu->setJobName(srcxml->queryProp("@jobName"));
-        if (srcxml->hasProp("Query/Text"))
-            wu.setQueryText(srcxml->queryProp("Query/Text"));
+        Owned<IConstWUQuery> query = wu->getQuery();
+        SCMStringBuffer queryText;
+        if (query)
+            query->getQueryText(queryText);
+        // Some legacy query DLLs have an embedded workunit but rely on the source workunit XML for archive text.
+        if (!queryText.length())
+        {
+            Owned<ILocalWorkUnit> sourceWU = createLocalWorkUnitFromPTree(createPTreeFromIPT(srcxml));
+            Owned<IConstWUQuery> sourceQuery = sourceWU->getQuery();
+            if (sourceQuery)
+            {
+                sourceQuery->getQueryText(queryText);
+                if (queryText.length())
+                    wu.setQueryText(queryText.str());
+            }
+        }
     }
 
     wu->setState(WUStateCompiled);

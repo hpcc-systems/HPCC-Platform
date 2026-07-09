@@ -11163,8 +11163,10 @@ void CLocalWUQuery::setQueryText(const char *text)
     bool isArchive = isArchiveQuery(text);
     if (isArchive)
     {
-        p->setProp("Text", text);
         Owned<IPropertyTree> xml = createPTreeFromXMLString(text, ipt_caseInsensitive|ipt_lowmem);
+        MemoryBuffer serialized;
+        xml->serialize(serialized);
+        p->setPropBin("Text", serialized.length(), serialized.toByteArray(), COMPRESS_METHOD_LZ4HC);
         const char * path = xml->queryProp("Query/@attributePath");
         if (path)
         {

@@ -41,14 +41,16 @@ static void getWuQueryShortText(const IConstWUQuery &query, StringAttr &text)
 class wuArchiveTests : public CppUnit::TestFixture
 {
     CPPUNIT_TEST_SUITE( wuArchiveTests );
-        CPPUNIT_TEST(testQueryArchiveStoredAsXmlText);
+        CPPUNIT_TEST(testQueryArchiveStoredAsCompressedTree);
+        CPPUNIT_TEST(testNonArchiveQueryStoredAsPlainText);
         CPPUNIT_TEST(testCompressedQueryArchiveReadsAsXmlText);
+        CPPUNIT_TEST(testCompressedQueryArchiveSurvivesXmlExportImport);
         CPPUNIT_TEST(testMissingQueryTextClearsOutput);
         CPPUNIT_TEST(testCorruptCompressedQueryArchiveClearsOutput);
     CPPUNIT_TEST_SUITE_END();
 
 public:
-    void testQueryArchiveStoredAsXmlText()
+    void testQueryArchiveStoredAsCompressedTree()
     {
         Owned<ILocalWorkUnit> wu = createLocalWorkUnit();
         Owned<IWUQuery> query = wu->updateQuery();
@@ -57,12 +59,36 @@ public:
 
         IPropertyTree *queryTree = queryExtendedWU(wu)->queryPTree()->queryPropTree("Query");
         CPPUNIT_ASSERT(queryTree);
-        CPPUNIT_ASSERT(!queryTree->isBinary("Text"));
-        CPPUNIT_ASSERT_EQUAL_STR(testQueryArchive, queryTree->queryProp("Text"));
+        CPPUNIT_ASSERT(queryTree->isBinary("Text"));
+
+        MemoryBuffer serialized;
+        CPPUNIT_ASSERT(queryTree->getPropBin("Text", serialized));
+        Owned<IPropertyTree> archive = createPTree(serialized, ipt_caseInsensitive|ipt_lowmem);
+        CPPUNIT_ASSERT(archive);
+        CPPUNIT_ASSERT_EQUAL_STR("OUTPUT('archive text');", archive->queryProp("Query"));
 
         StringAttr text;
         getWuQueryText(*query, text);
-        CPPUNIT_ASSERT_EQUAL_STR(testQueryArchive, text.get());
+        CPPUNIT_ASSERT(strstr(text.get(), "<Archive") != nullptr);
+        CPPUNIT_ASSERT(strstr(text.get(), "<Query>OUTPUT(&apos;archive text&apos;);</Query>") != nullptr);
+    }
+
+    void testNonArchiveQueryStoredAsPlainText()
+    {
+        Owned<ILocalWorkUnit> wu = createLocalWorkUnit();
+        Owned<IWUQuery> query = wu->updateQuery();
+
+        const char *queryText = "OUTPUT('plain text');";
+        query->setQueryText(queryText);
+
+        IPropertyTree *queryTree = queryExtendedWU(wu)->queryPTree()->queryPropTree("Query");
+        CPPUNIT_ASSERT(queryTree);
+        CPPUNIT_ASSERT(!queryTree->isBinary("Text"));
+        CPPUNIT_ASSERT_EQUAL_STR(queryText, queryTree->queryProp("Text"));
+
+        StringAttr text;
+        getWuQueryText(*query, text);
+        CPPUNIT_ASSERT_EQUAL_STR(queryText, text.get());
     }
 
     void testCompressedQueryArchiveReadsAsXmlText()
@@ -88,6 +114,25 @@ public:
         StringAttr shortText;
         getWuQueryShortText(*query, shortText);
         CPPUNIT_ASSERT_EQUAL_STR("OUTPUT('archive text');", shortText.get());
+    }
+
+    void testCompressedQueryArchiveSurvivesXmlExportImport()
+    {
+        Owned<ILocalWorkUnit> source = createLocalWorkUnit();
+        Owned<IWUQuery> sourceQuery = source->updateQuery();
+        sourceQuery->setQueryText(testQueryArchive);
+
+        StringBuffer xml;
+        exportWorkUnitToXML(source, xml, false, false, false);
+
+        Owned<ILocalWorkUnit> imported = createLocalWorkUnitFromXml(xml);
+        Owned<IConstWUQuery> importedQuery = imported->getQuery();
+        CPPUNIT_ASSERT(importedQuery);
+
+        StringAttr text;
+        getWuQueryText(*importedQuery, text);
+        CPPUNIT_ASSERT(strstr(text.get(), "<Archive") != nullptr);
+        CPPUNIT_ASSERT(strstr(text.get(), "<Query>OUTPUT(&apos;archive text&apos;);</Query>") != nullptr);
     }
 
     void testMissingQueryTextClearsOutput()
