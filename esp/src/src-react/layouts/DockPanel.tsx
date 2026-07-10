@@ -262,7 +262,7 @@ export const DockPanel: React.FunctionComponent<DockPanelProps> = ({
         });
         diffs.enter.forEach(item => {
             const reactWidget = new ReactWidget();
-            dockPanel.addWidget(reactWidget, item.props.title, item.props.location, idx.get(item.props.relativeTo), item.props.closable, item.props.padding);
+            dockPanel.addWidget(reactWidget, { title: item.props.title, location: item.props.location, refWidget: idx.get(item.props.relativeTo), closable: item.props.closable, padding: item.props.padding });
             idx.set(item.key, reactWidget);
         });
         [...diffs.enter, ...diffs.update].forEach(item => {

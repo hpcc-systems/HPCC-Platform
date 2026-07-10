@@ -32,6 +32,17 @@ Both pathways use similar conceptual pipelines (`ISendManager` / `IReceiveManage
 
 ## Packet Reconstruction & Message Collating
 
+### Message Disambiguation: `msgSeq` vs `pktSeq`
+
+To understand how Roxie routes multiplexed communication correctly, one must understand how it disambiguates the multiple streams of logical packets traveling simultaneously:
+
+* **`msgSeq` (Message Sequence):** Identifies a unique **logical message stream** (a specific `IMessagePacker` instance). Every time a node wants to send a discrete transmission—whether a partial result stream, an error, or an out-of-band `ROXIE_ALIVE` ping—it allocates a new, atomically incremented `msgSeq` (via `getNextMessageSequence()` in `udptrs.cpp`). This guarantees that two simultaneous transmissions (even for the same `ruid` / `requestId`) are securely separated into two distinct `PackageSequencer` buckets (`PUID`) on the receiving side.
+* **`pktSeq` (Packet Sequence):** Identifies the **physical chunk index** within that specific `msgSeq` stream. Because UDP restricts datagram size, larger logical messages must be fragmented. The `pktSeq` is an incrementally increasing integer (0, 1, 2...) for each datagram sent in that stream. The receiver uses `pktSeq` to order the incoming packets and reassemble the fragments.
+
+Additionally, the top bits of `pktSeq` are used to pack logical flags about that specific chunk:
+* `UDP_PACKET_COMPLETE` (e.g., `0x80000000`) is bitwise-OR'd into the `pktSeq` of the final packet.
+* `UDP_PACKET_RESENT` (e.g., `0x40000000`) is used to flag packets that were retransmitted after a timeout.
+
 ### The Sequencing Challenge
 
 Since an individual data payload might exceed `roxiemem::DATA_ALIGNMENT_SIZE` or optimal MTU fragments, data is broken down via `IMessagePacker`. On the receiving end, `CMessageCollator` (in `udpmsgpk.cpp`) pieces this together.

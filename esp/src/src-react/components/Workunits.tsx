@@ -6,7 +6,7 @@ import { Link, Tooltip } from "@fluentui/react-components";
 import { hsl as d3Hsl } from "@hpcc-js/common";
 import { Workunit } from "@hpcc-js/comms";
 import { SizeMe } from "../layouts/SizeMe";
-import { defaultSort, emptyFilter, getStateImage, WUQueryStore, formatQuery } from "src/ESPWorkunit";
+import { defaultSort, emptyFilter, getStateImage, formatQuery } from "src/ESPWorkunit";
 import * as WsWorkunits from "src/WsWorkunits";
 import { formatCost } from "src/Session";
 import { userKeyValStore } from "src/KeyValStore";
@@ -18,7 +18,7 @@ import { useUserStore } from "../hooks/store";
 import { useLogicalClustersPalette } from "../hooks/platform";
 import { calcSearch, pushParams, pushUrl } from "../util/history";
 import { HolyGrail } from "../layouts/HolyGrail";
-import { CreateWUQueryStore } from "../comms/workunit";
+import { CreateWUQueryStore, WUQueryStore } from "../comms/workunit";
 import { FluentPagedGrid, FluentPagedFooter, useCopyButtons, useFluentStoreState, FluentColumns } from "./controls/Grid";
 import { Fields } from "./forms/Fields";
 import { Filter } from "./forms/Filter";
@@ -45,8 +45,10 @@ const FilterFields: Fields = {
     "LogicalFile": { type: "string", label: nlsHPCC.LogicalFile, placeholder: nlsHPCC.LogicalFilePlaceholder },
     "LogicalFileSearchType": { type: "logicalfile-type", label: nlsHPCC.LogicalFileType, placeholder: "", disabled: (params: Fields) => !params.LogicalFile.value },
     "LastNDays": { type: "string", label: nlsHPCC.LastNDays, placeholder: "2" },
-    "StartDate": { type: "datetime", label: nlsHPCC.FromDate },
-    "EndDate": { type: "datetime", label: nlsHPCC.ToDate },
+    "StartDate": { type: "date", label: nlsHPCC.FromDate },
+    "StartTime": { type: "time", label: nlsHPCC.FromTime },
+    "EndDate": { type: "date", label: nlsHPCC.ToDate },
+    "EndTime": { type: "time", label: nlsHPCC.ToTime },
 };
 
 const defaultUIState = {
@@ -207,6 +209,22 @@ export const Workunits: React.FunctionComponent<WorkunitsProps> = ({
     const filterFields: Fields = {};
     for (const fieldID in FilterFields) {
         filterFields[fieldID] = { ...FilterFields[fieldID], value: filter[fieldID] };
+    }
+
+    // Split ISO datetime strings into separate date and time fields
+    if (filter.StartDate) {
+        const startDateTime = new Date(filter.StartDate);
+        if (!isNaN(startDateTime.getTime())) {
+            filterFields.StartDate.value = startDateTime.toISOString().split("T")[0];
+            filterFields.StartTime.value = startDateTime.toISOString().split("T")[1]?.slice(0, 5);
+        }
+    }
+    if (filter.EndDate) {
+        const endDateTime = new Date(filter.EndDate);
+        if (!isNaN(endDateTime.getTime())) {
+            filterFields.EndDate.value = endDateTime.toISOString().split("T")[0];
+            filterFields.EndTime.value = endDateTime.toISOString().split("T")[1]?.slice(0, 5);
+        }
     }
 
     //  Command Bar  ---

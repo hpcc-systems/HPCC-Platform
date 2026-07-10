@@ -1,6 +1,6 @@
 import * as React from "react";
 import { Toolbar, ToolbarButton, ToolbarDivider, ToolbarProps, ToolbarToggleButton } from "@fluentui/react-components";
-import { CopyRegular, EyeRegular } from "@fluentui/react-icons";
+import { CopyRegular, EyeRegular, SearchRegular } from "@fluentui/react-icons";
 import { useConst, useOnEvent } from "@fluentui/react-hooks";
 import { Editor, CSSEditor, ECLEditor, XMLEditor, HTMLEditor, JSEditor, JSONEditor, SQLEditor, YAMLEditor, ICompletion } from "@hpcc-js/codemirror";
 import { Workunit } from "@hpcc-js/comms";
@@ -10,6 +10,7 @@ import { HolyGrail } from "../layouts/HolyGrail";
 import { AutosizeHpccJSComponent } from "../layouts/HpccJSAdapter";
 import { useUserTheme } from "../hooks/theme";
 import { useWorkunitXML } from "../hooks/workunit";
+import { CodeMirrorFindDialog } from "./CodeMirrorFindDialog";
 import { IFrame } from "./IFrame";
 
 import "hpcc/css/cmDarcula.css";
@@ -88,6 +89,7 @@ export const SourceEditor: React.FunctionComponent<SourceEditorProps> = ({
 }) => {
 
     const [checkedValues, setCheckedValues] = React.useState<Record<string, string[]>>({ displayOptions: ["preview"], });
+    const [findOpenRequestKey, setFindOpenRequestKey] = React.useState(0);
     const onChange: ToolbarProps["onCheckedValueChange"] = (e, { name, checkedItems }) => {
         setCheckedValues((s) => s ? { ...s, [name]: checkedItems } : { [name]: checkedItems });
     };
@@ -143,24 +145,31 @@ export const SourceEditor: React.FunctionComponent<SourceEditorProps> = ({
             ;
     }, [editor, text, readonly, isDark]);
 
-    return <HolyGrail
-        header={toolbar && (
-            <Toolbar size="small" checkedValues={checkedValues} onCheckedValueChange={onChange}>
-                <ToolbarButton icon={<CopyRegular />} onClick={() => navigator?.clipboard?.writeText(text)}>
-                    {nlsHPCC.Copy}
-                </ToolbarButton>
-                <ToolbarDivider />
-                <ToolbarToggleButton name="displayOptions" value="preview" icon={<EyeRegular />} disabled={mode !== "html"} appearance="transparent">
-                    {nlsHPCC.Preview}
-                </ToolbarToggleButton>
-            </Toolbar>
-        )}
-        main={
-            checkedValues?.displayOptions?.includes("preview") && mode === "html" ?
-                <IFrame src={previewUrl} padding={"4px 0"} /> :
-                <AutosizeHpccJSComponent widget={editor} padding={4} />
-        }
-    />;
+    return <>
+        <HolyGrail
+            header={toolbar && (
+                <Toolbar size="small" checkedValues={checkedValues} onCheckedValueChange={onChange}>
+                    <ToolbarButton icon={<SearchRegular />} onClick={() => setFindOpenRequestKey(prev => prev + 1)}>
+                        {nlsHPCC.Find}
+                    </ToolbarButton>
+                    <ToolbarDivider />
+                    <ToolbarButton icon={<CopyRegular />} onClick={() => navigator?.clipboard?.writeText(text)}>
+                        {nlsHPCC.Copy}
+                    </ToolbarButton>
+                    <ToolbarDivider />
+                    <ToolbarToggleButton name="displayOptions" value="preview" icon={<EyeRegular />} disabled={mode !== "html"} appearance="transparent">
+                        {nlsHPCC.Preview}
+                    </ToolbarToggleButton>
+                </Toolbar>
+            )}
+            main={
+                checkedValues?.displayOptions?.includes("preview") && mode === "html" ?
+                    <IFrame src={previewUrl} padding={"4px 0"} /> :
+                    <AutosizeHpccJSComponent widget={editor} padding={4} />
+            }
+        />
+        <CodeMirrorFindDialog editor={editor} openRequestKey={findOpenRequestKey} />
+    </>;
 };
 
 interface TextSourceEditorProps {
@@ -274,6 +283,7 @@ export const ECLSourceEditor: React.FunctionComponent<ECLSourceEditorProps> = ({
 }) => {
 
     const editor = useConst(() => new ECLEditor());
+    const [findOpenRequestKey, setFindOpenRequestKey] = React.useState(0);
     React.useEffect(() => {
         editor
             .text(text)
@@ -286,7 +296,19 @@ export const ECLSourceEditor: React.FunctionComponent<ECLSourceEditorProps> = ({
         }
     }, [editor, readonly, text, setEditor]);
 
-    return <AutosizeHpccJSComponent widget={editor} padding={4} />;
+    return <>
+        <HolyGrail
+            header={
+                <Toolbar size="small">
+                    <ToolbarButton icon={<SearchRegular />} onClick={() => setFindOpenRequestKey(prev => prev + 1)}>
+                        {nlsHPCC.Find}
+                    </ToolbarButton>
+                </Toolbar>
+            }
+            main={<AutosizeHpccJSComponent widget={editor} padding={4} />}
+        />
+        <CodeMirrorFindDialog editor={editor} openRequestKey={findOpenRequestKey} />
+    </>;
 };
 
 interface FetchEditor {

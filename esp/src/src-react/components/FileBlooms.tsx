@@ -4,7 +4,7 @@ import nlsHPCC from "src/nlsHPCC";
 import { QuerySortItem } from "src/store/Store";
 import { useFile } from "../hooks/file";
 import { HolyGrail } from "../layouts/HolyGrail";
-import { FluentGrid, useCopyButtons, useFluentStoreState, FluentColumns } from "./controls/Grid";
+import { AutoSizeFluentGrid, useCopyButtons, useFluentStoreState, FluentColumns } from "./controls/Grid";
 
 interface FileBloomsProps {
     cluster?: string;
@@ -60,16 +60,14 @@ export const FileBlooms: React.FunctionComponent<FileBloomsProps> = ({
 
     return <HolyGrail
         header={<CommandBar items={buttons} farItems={copyButtons} />}
-        main={
-            <FluentGrid
-                data={data}
-                primaryID={"FieldNames"}
-                sort={sort}
-                columns={columns}
-                setSelection={setSelection}
-                setTotal={setTotal}
-                refresh={refreshTable}
-            ></FluentGrid>
-        }
+        main={<AutoSizeFluentGrid
+            data={data}
+            primaryID={"FieldNames"}
+            sort={sort}
+            columns={columns}
+            setSelection={setSelection}
+            setTotal={setTotal}
+            refresh={refreshTable}
+        ></AutoSizeFluentGrid>}
     />;
 };

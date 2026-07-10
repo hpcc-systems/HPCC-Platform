@@ -955,6 +955,13 @@ unsigned getPathWriteSyncDelayRemainingMs(const char *physicalPath, offset_t &ex
     return snapshot->getDelayRemainingMs(physicalPath, now, expectedSize, compressed);
 }
 
+size32_t roundIndexBlockedIOSize(size32_t blockedIOSize, size32_t pageSize)
+{
+    if (pageSize && (blockedIOSize > pageSize))
+        return (blockedIOSize / pageSize) * pageSize;
+    return blockedIOSize;
+}
+
 static std::atomic<int> avoidRename{-1};
 static CriticalSection avoidRenameCS;
 // returns true if configured and should use 'result'

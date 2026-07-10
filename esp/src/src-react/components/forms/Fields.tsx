@@ -40,7 +40,7 @@ interface DropdownProps {
     optional?: boolean;
     disabled?: boolean;
     errorMessage?: string;
-    onChange?: (event: React.FormEvent<HTMLDivElement>, option?: IDropdownOption, index?: number) => void;
+    onChange?: (event: React.SyntheticEvent<HTMLDivElement> | undefined, option?: IDropdownOption, index?: number) => void;
     placeholder?: string;
     className?: string
 }
@@ -124,7 +124,7 @@ interface AsyncDropdownProps {
     multiSelect?: boolean;
     valueSeparator?: string;
     errorMessage?: string;
-    onChange?: (event: React.FormEvent<HTMLDivElement>, option?: IDropdownOption | IDropdownOption[], index?: number) => void;
+    onChange?: (event: React.SyntheticEvent<HTMLDivElement> | undefined, option?: IDropdownOption | IDropdownOption[], index?: number) => void;
     placeholder?: string;
     className?: string;
     fieldClass?: string;
@@ -287,7 +287,7 @@ interface DropdownMultiProps {
     optional?: boolean;
     disabled?: boolean;
     errorMessage?: string;
-    onChange?: (event: React.FormEvent<HTMLDivElement>, value?: string) => void;
+    onChange?: (event?: React.SyntheticEvent<HTMLDivElement>, value?: string) => void;
     placeholder?: string;
     className?: string
 }
@@ -349,7 +349,7 @@ const DropdownMulti: React.FunctionComponent<DropdownMultiProps> = ({
     </Field>;
 };
 
-export type FieldType = "string" | "password" | "number" | "checkbox" | "choicegroup" | "datetime" | "dropdown" | "dropdown-multi" |
+export type FieldType = "string" | "password" | "number" | "checkbox" | "choicegroup" | "date" | "time" | "datetime" | "dropdown" | "dropdown-multi" |
     "link" | "links" | "progress" |
     "workunit-state" |
     "file-type" | "file-sortby" |
@@ -384,6 +384,16 @@ interface StringField extends BaseField {
 interface NumericField extends BaseField {
     type: "number";
     value?: number;
+}
+
+interface DateField extends BaseField {
+    type: "date";
+    value?: string;
+}
+
+interface TimeField extends BaseField {
+    type: "time";
+    value?: string;
 }
 
 interface DateTimeField extends BaseField {
@@ -538,7 +548,7 @@ interface CloudPodNameField extends BaseField {
     value?: string;
 }
 
-export type Field = StringField | NumericField | CheckboxField | ChoiceGroupField | DateTimeField | DropdownField | DropdownMultiField |
+export type Field = StringField | NumericField | CheckboxField | ChoiceGroupField | DateField | TimeField | DateTimeField | DropdownField | DropdownMultiField |
     LinkField | LinksField | ProgressField |
     WorkunitStateField |
     FileTypeField | FileSortByField |
@@ -757,7 +767,7 @@ export interface TargetFolderTextFieldProps extends Omit<ComboboxProps, "options
     required?: boolean;
     errorMessage?: string;
     onInputValueChange?: (text: any) => void;
-    onChange?: (event: React.FormEvent<HTMLElement>, option?: IComboBoxOption, index?: number, value?: string) => void;
+    onChange?: (event?: React.SyntheticEvent<HTMLElement>, option?: IComboBoxOption, index?: number, value?: string) => void;
 }
 
 export const TargetFolderTextField: React.FunctionComponent<TargetFolderTextFieldProps> = (props) => {
@@ -815,7 +825,7 @@ export const TargetFolderTextField: React.FunctionComponent<TargetFolderTextFiel
         });
     }, [dropzone, isContainer, machineDirectory, props.required]);
 
-    const onChanged = React.useCallback((event: React.FormEvent<HTMLElement>, option?: IComboBoxOption, index?: number, value?: string): void => {
+    const onChanged = React.useCallback((event: React.SyntheticEvent<HTMLElement>, option?: IComboBoxOption, index?: number, value?: string): void => {
         let key = option?.key;
         if (!option && value) {
             key = [machineDirectory, value].join(pathSepChar);
@@ -1201,6 +1211,45 @@ export function createInputs(fields: Fields, onChange?: (id: string, newValue: a
                     />
                 });
                 break;
+            case "date":
+                field.value = field.value !== undefined ? field.value : "";
+                retVal.push({
+                    id: fieldID,
+                    label: field.label,
+                    field: <Field key={fieldID} required={field.required}>
+                        <Input
+                            id={fieldID}
+                            type="date"
+                            name={fieldID}
+                            value={field.value}
+                            onChange={(ev, data) => onChange(fieldID, data.value)}
+                            placeholder={field.placeholder}
+                            readOnly={field.readonly}
+                            disabled={field.disabled(field) ? true : false}
+                            appearance={field.readonly ? "filled-lighter" : "outline"}
+                        />
+                    </Field>
+                });
+                break;
+            case "time":
+                field.value = field.value !== undefined ? field.value : "";
+                retVal.push({
+                    id: fieldID,
+                    label: field.label,
+                    field: <Field key={fieldID} required={field.required}>
+                        <Input
+                            id={fieldID}
+                            type="time"
+                            name={fieldID}
+                            value={field.value}
+                            onChange={(ev, data) => onChange(fieldID, data.value)}
+                            readOnly={field.readonly}
+                            disabled={field.disabled(field) ? true : false}
+                            appearance={field.readonly ? "filled-lighter" : "outline"}
+                        />
+                    </Field>
+                });
+                break;
             case "datetime":
                 let dateStr;
                 // the html input "datetime-local" expects the value to be of the format "YYYY-MM-DDTHH:mm"
@@ -1228,7 +1277,9 @@ export function createInputs(fields: Fields, onChange?: (id: string, newValue: a
                             type="datetime-local"
                             name={fieldID}
                             value={field.value}
-                            onChange={(ev, data) => onChange(fieldID, data.value)}
+                            onChange={(ev, data) => {
+                                return onChange(fieldID, data.value);
+                            }}
                         />
                     </Field>
                 });

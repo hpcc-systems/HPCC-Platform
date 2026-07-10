@@ -5,13 +5,14 @@ import { Palette } from "@hpcc-js/common";
 import { ECLEditor } from "@hpcc-js/codemirror";
 import { useUserTheme } from "../hooks/theme";
 import { AutosizeHpccJSComponent } from "../layouts/HpccJSAdapter";
+import { CodeMirrorFindDialog } from "./CodeMirrorFindDialog";
 
 const palette = Palette.rainbow("YlOrRd");
 
 const useStyles = makeStyles({
     eclarchiveHighlightLine: {
         backgroundColor: "rgba(130, 198, 235, 0.4) !important",
-    },
+    }
 });
 
 interface ECLArchiveProps {
@@ -19,13 +20,15 @@ interface ECLArchiveProps {
     readonly?: boolean;
     markers?: { lineNum: number, label: string }[];
     lineNum?: number;
+    findOpenRequestKey?: number;
 }
 
 export const ECLArchiveEditor: React.FunctionComponent<ECLArchiveProps> = ({
     ecl = "",
     readonly = true,
     markers = [],
-    lineNum
+    lineNum,
+    findOpenRequestKey
 }) => {
     const { isDark } = useUserTheme();
     const [prevSelLine, setPrevSelLine] = React.useState(-1);
@@ -77,5 +80,8 @@ export const ECLArchiveEditor: React.FunctionComponent<ECLArchiveProps> = ({
             ;
     }, [editor, markers]);
 
-    return <AutosizeHpccJSComponent widget={editor}></AutosizeHpccJSComponent>;
+    return <>
+        <AutosizeHpccJSComponent widget={editor}></AutosizeHpccJSComponent>
+        <CodeMirrorFindDialog editor={editor} openRequestKey={findOpenRequestKey} />
+    </>;
 };

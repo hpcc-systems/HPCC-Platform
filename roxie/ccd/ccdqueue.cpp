@@ -24,6 +24,7 @@
 #include "jisem.hpp"
 #include "jencrypt.hpp"
 #include "jsecrets.hpp"
+#include "jevent.hpp"
 
 #include "udplib.hpp"
 #include "udptopo.hpp"
@@ -1035,6 +1036,48 @@ extern ISerializedRoxieQueryPacket *createSerializedRoxiePacket(MemoryBuffer &m)
 
 //=================================================================================
 
+static ISpan *createPseudoScopeFromPacket(const byte * traceInfo)
+{
+    char traceId[lenTraceId+1];
+    convertDataToHex(lenTraceId, traceId, bytesTraceId, (const char *) traceInfo);
+    traceId[lenTraceId] = 0;
+
+    char spanId[lenSpanId+1];
+    convertDataToHex(lenSpanId, spanId, bytesSpanId, (const char *) traceInfo + bytesTraceId);
+    spanId[lenSpanId] = 0;
+
+    return createPseudoSpan(traceId, spanId);
+}
+
+static ISpan *createPseudoScopeFromPacket(ISerializedRoxieQueryPacket * packet)
+{
+    if (!packet)
+        return nullptr;
+
+    const byte *traceInfo = packet->queryTraceInfo();
+    if (!traceInfo)
+        return nullptr;
+
+    const byte * endTraceInfo = traceInfo + packet->getTraceLength();
+    unsigned char loggingFlags = *traceInfo++;
+    if (!(loggingFlags & LOGGING_TRACEID))
+        return nullptr;
+
+    if (loggingFlags & LOGGING_TRACELEVELSET)
+        traceInfo++;
+
+    if (loggingFlags & LOGGING_DEBUGGERACTIVE)
+    {
+        assertex(traceInfo + sizeof(unsigned short) <= endTraceInfo);
+        unsigned short debugLen = *(unsigned short *) traceInfo;
+        assertex(traceInfo + sizeof(unsigned short) + debugLen <= endTraceInfo);
+        traceInfo += debugLen + sizeof(unsigned short);
+    }
+
+    assertex(traceInfo + bytesTraceId + bytesSpanId <= endTraceInfo);
+    return createPseudoScopeFromPacket(traceInfo);
+}
+
 AgentContextLogger::AgentContextLogger()
 {
     GetHostIp(ip);
@@ -1089,19 +1132,9 @@ void AgentContextLogger::set(ISerializedRoxieQueryPacket *packet)
             if (loggingFlags & LOGGING_TRACEID)
             {
                 assertex(traceInfo + bytesTraceId + bytesSpanId <= endTraceInfo);
-
-                char traceId[lenTraceId+1];
-                convertDataToHex(lenTraceId, traceId, bytesTraceId, (const char *) traceInfo);
-                traceId[lenTraceId] = 0;
-                traceInfo += bytesTraceId;
-
-                char spanId[lenSpanId+1];
-                convertDataToHex(lenSpanId, spanId, bytesSpanId, (const char *) traceInfo);
-                spanId[lenSpanId] = 0;
-                traceInfo += bytesSpanId;
-
-                agentSpan.setown(createPseudoSpan(traceId, spanId));
+                agentSpan.setown(createPseudoScopeFromPacket(traceInfo));
                 setActiveSpan(agentSpan);
+                traceInfo += bytesTraceId + bytesSpanId;
             }
 
             // Passing the wuid via the logging context prefix is a lot of a hack...
@@ -1713,17 +1746,18 @@ public:
         RoxiePacketHeader &header = packet->queryHeader();
         unsigned channel = header.channel;
         unsigned mySubChannel = header.mySubChannel();
+        bool sendWorkerStop = false;
 
         try
         {   
             bool debugging = logctx.queryDebuggerActive();
-            if (debugging)
+            if (unlikely(debugging))
             {
                 if (mySubChannel)
                     abortLaunch = true;  // when debugging, we always run on primary only...
             }
 
-            if (abortLaunch)
+            if (unlikely(abortLaunch))
             {
                 workerThreadBusy = false;  // Keep order - before setActivity below
                 if (doTrace(traceRoxiePackets))
@@ -1732,6 +1766,12 @@ public:
                     logctx.CTXLOG("Stop before processing - activity aborted %s", header.toString(x).str());
                 }
                 return;
+            }
+
+            if (recordingEvents() && header.uid >= RUID_FIRST)
+            {
+                queryRecorder().recordWorkerStart(header.uid, header.getSequenceId());
+                sendWorkerStop = true;
             }
 
             CCycleTimer workerTimer;
@@ -1750,6 +1790,9 @@ public:
             }
             if (!queryFactory)
             {
+                if (sendWorkerStop)
+                    queryRecorder().recordWorkerStop(header.uid, header.getSequenceId());
+
                 StringBuffer hdr;
                 IException *E = MakeStringException(MSGAUD_operator, ROXIE_UNKNOWN_QUERY, "Roxie agent received request for unregistered query: %s", header.toString(hdr).str());
                 EXCLOG(E, "doActivity");
@@ -1763,6 +1806,7 @@ public:
             setActivity(factory->createActivity(logctx, packet));
             if (!debugging)
                 ROQ->sendIbyti(header, logctx, mySubChannel);
+
             Owned<IMessagePacker> output = activity->process();
             stat_type elapsedNs = workerTimer.elapsedNs();
             logctx.setStatistic(StTimeAgentProcess, elapsedNs);
@@ -1797,6 +1841,10 @@ public:
         {
             throwRemoteException(MakeStringException(ROXIE_MULTICAST_ERROR, "Unknown exception"), activity, packet, false);
         }
+
+        if (sendWorkerStop)
+            queryRecorder().recordWorkerStop(header.uid, header.getSequenceId());
+
         workerThreadBusy = false; // Keep order - before setActivity below
         setActivity(NULL);
     }
@@ -2532,8 +2580,10 @@ public:
     {
         MTIME_SECTION(queryActiveTimer(), "RoxieSocketQueueManager::sendPacket");
         RoxiePacketHeader &header = x->queryHeader();
+        if (recordingEvents() && header.uid >= RUID_FIRST)
+            queryRecorder().recordRequestSend(header.uid, header.getSequenceId());
 
-        unsigned length = x->queryHeader().packetlength;
+        unsigned length = header.packetlength;
         assertex (header.activityId & ~ROXIE_PRIORITY_MASK);
         if (doTrace(traceRoxiePackets))
         {
@@ -2779,11 +2829,20 @@ public:
             }
             else
             {
+                OwnedActiveSpanScope tracingSpan;
+
                 unsigned mySubchannel = header.mySubChannel();
                 Owned<ISerializedRoxieQueryPacket> packet = createSerializedRoxiePacket((void *)data, length, false);
                 unsigned retries = header.thisChannelRetries(mySubchannel);
                 if (retries >= SUBCHANNEL_MASK)
                     return; // I already failed unrecoverably on this request - ignore it
+
+                if (recordingEvents() && header.uid >= RUID_FIRST)
+                {
+                    //This is currently only used to set the correct traceid - revisit later if needed elsewhere or to improve the efficiency
+                    tracingSpan.setown(createPseudoScopeFromPacket(packet));
+                    queryRecorder().recordRequestReceive(header.uid, header.getSequenceId());
+                }
                 if (acknowledgeAllRequests && (header.activityId & ~ROXIE_PRIORITY_MASK) < ROXIE_ACTIVITY_SPECIAL_FIRST)
                 {
 #ifdef DEBUG

@@ -26,6 +26,7 @@
 #include "jstring.hpp"
 #include "jstats.h"
 #include <condition_variable>
+#include <type_traits>
 
 // The order should not be changed, or items removed. New values should always be appended before EventMax
 // The meta prefix is used when there are records that provide extra meta data to help interpret
@@ -54,19 +55,63 @@ enum EventType : byte
     EventRecordingSource,         // information about the source of the recording
     EventIndexOpen,               // open an index ready for reading
     MetaPlaneInformation,         // information about a plane
+    EventRequestSend,           // remote request sent
+    EventRequestReceive,           // remote request received
+    EventWorkerStart,             // remote processing started
+    EventWorkerStop,              // remote processing completed
+    EventResponseSend,              // worker sent result
+    EventResponseReceive,           // worker result received
+    EventTaskStart,               // task execution started
+    EventTaskStop,                // task execution completed
     EventMax
 };
 
-enum EventContext : byte
+// Tasks represent a logical step in processing.  They will always start and stop on the same thread.
+enum class EventTask : byte
 {
-    EventCtxDali,
-    EventCtxIndex,
-    EventCtxOther,
-    EventCtxMax
+    Sink,          // A sink for processing a set of activities in a graph/subgraph
+    Readahead,     // A lookahead thread within a processing graph - e.g. within a keyed join
+    Graph,         // Scope of executing a graph
+    SubGraph,      // Scope of executing a subgraph
+    Max
 };
+
+// The underlying data type was one byte when values were sequentially increasing.
+// The type is now two bytes because the values are now forming a bitmask.
+enum EventContext : uint16_t
+{
+    EventCtxNone    = 0x0000,
+    EventCtxDali    = 0x0001,
+    EventCtxIndex   = 0x0002,
+    EventCtxOther   = 0x0004,
+    EventCtxMeta    = 0x0008,
+    EventCtxRemote  = 0x0010,
+    EventCtxQuery   = 0x0020,
+    // Add all new contexts above this line.
+    // Dedicated sentinel for parse/validation failures. Not a context bit.
+    EventCtxInvalid = 0x8000,
+};
+BITMASK_ENUM(EventContext);
+
+// Reserved context bits include all bits that are not valid for use in event definitions.
+static constexpr EventContext EventCtxReserved = EventCtxInvalid;
+// All non-reserved context bits are valid for use in event definitions.
+static constexpr EventContext EventCtxValid = static_cast<EventContext>(~static_cast<std::underlying_type_t<EventContext>>(EventCtxReserved));
+// All valid context bits are accepted, including bits not explicitly defined in the enumeration.
+static constexpr EventContext EventCtxAll = EventCtxValid;
 
 extern jlib_decl EventContext queryEventContext(EventType event);
 extern jlib_decl EventContext queryEventContext(const char* name);
+
+// Returns true if the event type belongs to any of the contexts specified in the context bitmap,
+// false otherwise.
+inline bool eventInAnyContext(EventType event, EventContext context)
+{
+    EventContext eventContext = queryEventContext(event);
+    // It is a programming error to define any event with any EventCtxReserved context. Assert that it is not set.
+    assertex((eventContext & EventCtxReserved) == EventCtxNone);
+    return (eventContext & (context & EventCtxAll)) != EventCtxNone;
+}
 
 // The attributes that can be associated with each event
 // The order should not be changed, or items removed.  New values should always be appended before EvAttrMax
@@ -98,6 +143,11 @@ enum EventAttr : byte
     EvAttrOpenTime,
     EvAttrPlane,
     EvAttrIsStriped,
+    EvAttrRequestId,
+    EvAttrRequestSeq,
+    EvAttrResponseId,
+    EvAttrResponseSeq,
+    EvAttrTask,
     EvAttrMax
 };
 
@@ -456,6 +506,16 @@ public:
     void recordQueryStart(const char * queryName);
     void recordQueryStop();
 
+    void recordRequestSend(unsigned requestId, unsigned requestSeq);
+    void recordRequestReceive(unsigned requestId, unsigned requestSeq);
+    void recordWorkerStart(unsigned requestId, unsigned requestSeq);
+    void recordWorkerStop(unsigned requestId, unsigned requestSeq);
+    void recordResponseSend(unsigned requestId, unsigned requestSeq, unsigned responseId, unsigned responseSeq);
+    void recordResponseReceive(unsigned requestId, unsigned requestSeq, unsigned responseId, unsigned responseSeq);
+
+    void recordTaskStart(EventTask task);
+    void recordTaskStop(EventTask task);
+
     void recordRecordingSource(const char* processDescriptor, byte channelId, byte replicaId, __uint64 instanceId);
 
     void recordEvent(CEvent& event);
@@ -464,6 +524,9 @@ public:
 
 protected:
     void recordRecordingActive(bool paused);
+    void recordTaskEvent(EventType event, EventTask task);
+    void recordRequestIdEvent(EventType event, unsigned requestId, unsigned requestSeq);
+    void recordResponseEvent(EventType event, unsigned requestId, unsigned requestSeq, unsigned responseId, unsigned responseSeq);
     void recordDaliEvent(EventType event, const char * xpath, __int64 id, stat_type elapsedNs, size32_t dataSize);
     void recordDaliEvent(EventType event, __int64 id, stat_type elapsedNs, size32_t dataSize);
 
@@ -509,6 +572,16 @@ protected:
 
     unsigned getBlockFromOffset(offset_type offset) { return (unsigned)((offset & bufferMask) / OutputBlockSize); }
 
+    inline bool isEventEnabled(EventContext contextMask) const
+    {
+        return (contextFlags & (contextMask & EventCtxValid)) != EventCtxNone;
+    }
+
+    inline bool isEventEnabled(EventType event) const
+    {
+        return isEventEnabled(queryEventContext(event));
+    }
+
     inline void writeTraceId(offset_type & offset, const char* traceid)
     {
         assertex(strlen(traceid) == 32);
@@ -542,6 +615,7 @@ protected:
     Semaphore okToWriteSem;
     unsigned sizeMessageHeaderFooter{0};
     unsigned options{0};
+    EventContext contextFlags{EventCtxAll};
     unsigned writersWaiting{0};
     byte compressionType;
     bool outputToLog{false};

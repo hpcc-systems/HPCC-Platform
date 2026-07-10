@@ -1032,6 +1032,8 @@ static const constexpr StatisticMeta statsMetaData[] = {
     { SIZESTAT(OffsetRoot), "The offset of the root branch in an index" },
     { TIMESTAT(FilePrepare), "The time spent preparing and opening a file or index" },
     { CYCLESTAT(FilePrepare) },
+    { TIMESTAT(SmartJoinDelay), "Time spent delaying smart-join broadcasts because of congestion" },
+    { CYCLESTAT(SmartJoinDelay) },
 };
 
 static MapStringTo<StatisticKind, StatisticKind> statisticNameMap(true);

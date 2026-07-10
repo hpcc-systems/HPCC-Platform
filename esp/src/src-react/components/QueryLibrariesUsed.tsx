@@ -5,7 +5,7 @@ import * as ESPQuery from "src/ESPQuery";
 import nlsHPCC from "src/nlsHPCC";
 import { QuerySortItem } from "src/store/Store";
 import { HolyGrail } from "../layouts/HolyGrail";
-import { FluentGrid, useCopyButtons, useFluentStoreState, FluentColumns } from "./controls/Grid";
+import { AutoSizeFluentGrid, useCopyButtons, useFluentStoreState, FluentColumns } from "./controls/Grid";
 
 const logger = scopedLogger("src-react/components/QueryLibrariesUsed.tsx");
 
@@ -72,7 +72,7 @@ export const QueryLibrariesUsed: React.FunctionComponent<QueryLibrariesUsedProps
 
     return <HolyGrail
         header={<CommandBar items={buttons} farItems={copyButtons} />}
-        main={<FluentGrid
+        main={<AutoSizeFluentGrid
             data={data}
             primaryID={"__hpcc_id"}
             sort={sort}
@@ -80,6 +80,6 @@ export const QueryLibrariesUsed: React.FunctionComponent<QueryLibrariesUsedProps
             setSelection={setSelection}
             setTotal={setTotal}
             refresh={refreshTable}
-        ></FluentGrid>}
+        ></AutoSizeFluentGrid>}
     />;
 };

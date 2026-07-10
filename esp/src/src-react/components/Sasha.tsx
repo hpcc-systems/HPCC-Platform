@@ -33,7 +33,7 @@ export const Sasha: React.FunctionComponent<SashaProps> = () => {
     setSelectedOption(String(data.optionValue ?? ""));
   };
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = (event: React.SyntheticEvent<HTMLFormElement>) => {
     event.preventDefault();
     switch (selectedOption) {
       case "getVersion":

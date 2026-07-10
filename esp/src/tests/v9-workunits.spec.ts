@@ -77,10 +77,11 @@ test.describe("V9 Workunits", () => {
 
         await expect(rows).not.toHaveCount(0);
 
-        // Click a data cell (td[3] = Owner column, plain text) to trigger row selection via the row's onClick handler.
-        // Avoid td[0] (SelectionCell checkbox), td[1] (Protected column - SVG icon that changes behaviour
-        // once the WU is protected), and td[2] (WUID link - navigates away).
-        await firstRow.locator("td").nth(3).click();
+        // Click a data cell (gridcell[3] = Owner column, plain text) to trigger row selection via the row's onClick handler.
+        // Avoid gridcell[0] (SelectionCell checkbox), gridcell[1] (Protected column - SVG icon that changes behaviour
+        // once the WU is protected), and gridcell[2] (WUID link - navigates away).
+        // Note: the DataGrid renders cells as div[role='gridcell'], not <td> elements.
+        await firstRow.locator("[role='gridcell']").nth(3).click();
         await expect(firstRow).toHaveAttribute("aria-selected", "true");
 
         if (browserName === "chromium") {
@@ -100,7 +101,7 @@ test.describe("V9 Workunits", () => {
             // Reselect only if selection was cleared by refresh
             const stillSelected = await firstRow.getAttribute("aria-selected");
             if (stillSelected !== "true") {
-                await firstRow.locator("td").nth(3).click();
+                await firstRow.locator("[role='gridcell']").nth(3).click();
                 await expect(firstRow).toHaveAttribute("aria-selected", "true");
             }
 
@@ -118,7 +119,7 @@ test.describe("V9 Workunits", () => {
         if (!hasCompleted) {
             test.skip(true, "No completed workunits available");
         }
-        await completedRow.locator("td").nth(3).click();
+        await completedRow.locator("[role='gridcell']").nth(3).click();
         await expect(page.locator(".fui-TableBody .fui-TableRow[aria-selected='true']")).toHaveCount(1);
         if (browserName === "chromium") {
             // SetToFailed requires hasNotProtected - skip if WU is protected or Protected field is null
@@ -198,8 +199,8 @@ test.describe("V9 Workunits", () => {
             await secondRow.locator("a").first().innerText()
         ];
 
-        await firstRow.locator("td").nth(3).click();
-        await secondRow.locator("td").nth(3).click();
+        await firstRow.locator("[role='gridcell']").nth(3).click();
+        await secondRow.locator("[role='gridcell']").nth(3).click();
         await expect(page.locator(".fui-TableBody .fui-TableRow[aria-selected='true']")).toHaveCount(2);
 
         // Compare requires at least 2 selected rows

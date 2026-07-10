@@ -90,7 +90,7 @@ const StatisticsMapping keyedJoinActivityStatistics({ StNumIndexAccepted, StNumP
 const StatisticsMapping commonJoinActivityStatistics({StNumMatchLeftRowsMax, StNumMatchRightRowsMax, StNumMatchCandidates, StNumMatchCandidatesMax}, basicActivityStatistics);
 const StatisticsMapping hashJoinActivityStatistics({StNumLeftRows, StNumRightRows}, commonJoinActivityStatistics);
 const StatisticsMapping allJoinActivityStatistics({}, commonJoinActivityStatistics);
-const StatisticsMapping lookupJoinActivityStatistics({StNumSmartJoinSlavesDegradedToStd, StNumSmartJoinDegradedToLocal}, commonJoinActivityStatistics);
+const StatisticsMapping lookupJoinActivityStatistics({StNumSmartJoinSlavesDegradedToStd, StNumSmartJoinDegradedToLocal, StTimeSmartJoinDelay}, commonJoinActivityStatistics);
 const StatisticsMapping joinActivityStatistics({StNumLeftRows, StNumRightRows}, commonJoinActivityStatistics);
 const StatisticsMapping diskReadActivityStatistics({StNumDiskRowsRead, }, basicActivityStatistics, diskReadRemoteStatistics);
 const StatisticsMapping diskWriteActivityStatistics({StPerReplicated}, basicActivityStatistics, diskWriteRemoteStatistics);

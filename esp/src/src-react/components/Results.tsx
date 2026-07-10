@@ -8,7 +8,7 @@ import { useWorkunitResults } from "../hooks/workunit";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { pivotItemStyle } from "../layouts/pivot";
 import { hashHistory } from "../util/history";
-import { FluentGrid, useCopyButtons, useFluentStoreState, FluentColumns } from "./controls/Grid";
+import { AutoSizeFluentGrid, useCopyButtons, useFluentStoreState, FluentColumns } from "./controls/Grid";
 import { Result } from "./Result";
 import { OverflowTabList, TabInfo } from "./controls/TabbedPanes/index";
 
@@ -157,18 +157,16 @@ export const Results: React.FunctionComponent<ResultsProps> = ({
 
     return <HolyGrail
         header={<CommandBar items={buttons} farItems={copyButtons} />}
-        main={
-            <FluentGrid
-                data={data}
-                primaryID={"__hpcc_id"}
-                alphaNumColumns={{ Name: true, Value: true }}
-                sort={sort}
-                columns={columns}
-                setSelection={setSelection}
-                setTotal={setTotal}
-                refresh={refreshTable}
-            ></FluentGrid>
-        }
+        main={<AutoSizeFluentGrid
+            data={data}
+            primaryID={"__hpcc_id"}
+            alphaNumColumns={{ Name: true, Value: true }}
+            sort={sort}
+            columns={columns}
+            setSelection={setSelection}
+            setTotal={setTotal}
+            refresh={refreshTable}
+        ></AutoSizeFluentGrid>}
     />;
 };
 

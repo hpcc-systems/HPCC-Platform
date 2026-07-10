@@ -24,6 +24,8 @@
 #include "jlog.hpp"
 #include "jencrypt.hpp"
 #include "jsecrets.hpp"
+#include "jevent.hpp"
+
 #include "roxie.hpp"
 #ifdef _WIN32
 #include <winsock.h>
@@ -1214,6 +1216,11 @@ public:
             header->length = length;
             assertex(length <= DATA_PAYLOAD);
         }
+
+        UdpPacketHeader *header = (UdpPacketHeader*) buffer->data;
+        if (recordingEvents() && header->ruid >= RUID_FIRST && !(header->pktSeq & UDP_PACKET_RESENT))
+            queryRecorder().recordResponseSend(header->ruid, header->msgId, header->msgSeq, header->pktSeq);
+
         static_cast<UdpReceiverEntry &>(receiver).pushData(queue, buffer);
     }
 

@@ -1106,24 +1106,32 @@ public:
         }
         catch (IException *E)
         {
+            OERRLOG(E);
             error.setown(E);
         }
         if (error)
         {
             Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
             workunit.setown(factory->updateWorkUnit(wuid));
+
+            // A failure to start a compile will not stop this compile from happening
+            // (Another eclccserver instance will pick it off the queue and compile it.)
+            // But if it is still waiting to compile add a non-fatal error into the workunit.
             if (workunit)
             {
                 if (workunit->aborting())
+                {
                     workunit->setState(WUStateAborted);
-                else if (workunit->getState()!=WUStateAborted)
+                    workunit->commit();
+                }
+                else if (workunit->getState() == WUStateSubmitted )
                 {
                     StringBuffer msg;
                     error->errorMessage(msg);
-                    addExceptionToWorkunit(workunit, SeverityError, "eclccserver", error->errorCode(), msg.str(), NULL, 0, 0, 0);
-                    workunit->setState(WUStateFailed);
+                    addExceptionToWorkunit(workunit, SeverityWarning, "eclccserver", error->errorCode(), msg.str(), NULL, 0, 0, 0);
+                    workunit->commit();
+                    //Do not fail it because as soon as a compile server is available it will be picked up and compiled
                 }
-                workunit->commit();
             }
             workunit.clear();
         }
@@ -1221,6 +1229,9 @@ public:
             addExceptionToWorkunit(workunit, SeverityError, "eclccserver", e->errorCode(), msg.str(), NULL, 0, 0, 0);
             e->Release();
         }
+
+        //If this server instance dies from this point onwards, do not terminate the workunit
+        workunit->setAgentSession(-1);
         if (ok)
         {
             workunit->setState(WUStateCompiled);

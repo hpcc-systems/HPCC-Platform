@@ -1,5 +1,6 @@
 import * as React from "react";
-import { Button, DataGrid, DataGridHeader, DataGridHeaderCell, DataGridBody, DataGridRow, DataGridCell, createTableColumn, TableColumnDefinition, TableColumnSizingOptions, TableRowId, TableRow, TableCell, TableSelectionCell, Tooltip, Dropdown, Option, SkeletonItem, makeStyles, tokens } from "@fluentui/react-components";
+import { Button, createTableColumn, TableColumnDefinition, TableColumnSizingOptions, TableRowId, TableRow, TableCell, TableSelectionCell, Tooltip, Dropdown, Option, SkeletonItem, makeStyles, tokens } from "@fluentui/react-components";
+import { DataGrid, DataGridHeader, DataGridHeaderCell, DataGridBody, DataGridRow, DataGridCell, RowRenderer } from "@fluentui-contrib/react-data-grid-react-window";
 import { ChevronDoubleLeft20Regular, ChevronLeft20Regular, ChevronRight20Regular, ChevronDoubleRight20Regular } from "@fluentui/react-icons";
 import { useConst } from "@fluentui/react-hooks";
 import { BaseStore, Memory, QueryRequest, QuerySortItem } from "src/store/Memory";
@@ -7,6 +8,7 @@ import nlsHPCC from "src/nlsHPCC";
 import { updatePage, updateSort } from "../../util/history";
 import { useDeepCallback, useDeepEffect, useDeepMemo } from "../../hooks/deepHooks";
 import { useUserStore, useNonReactiveEphemeralPageStore } from "../../hooks/store";
+import { SizeMe } from "../../layouts/SizeMe";
 import { ICommandBarItemProps } from "../CommandBarV9";
 import { createCopyDownloadSelection } from "../Common";
 
@@ -380,6 +382,9 @@ const FluentStoreGrid: React.FunctionComponent<FluentStoreGridProps> = ({
     const getRowId = React.useCallback((item: any) => "__shimmerIndex__" in item ? `__shimmer_${item.__shimmerIndex__}` : String(store.getIdentity(item)), [store]);
 
     //  Selection handler - supports an external ISelection (e.g. MetricsOptions) or an internal one bridged to a callback
+    const setSelectionRef = React.useRef(setSelection);
+    setSelectionRef.current = setSelection;
+
     const canSelectRowRef = React.useRef(canSelectRow);
     canSelectRowRef.current = canSelectRow;
 
@@ -389,7 +394,9 @@ const FluentStoreGrid: React.FunctionComponent<FluentStoreGridProps> = ({
             getKey: (item: any) => String(store.getIdentity(item)),
             canSelectItem: (item: any, index: number) => !canSelectRowRef.current || canSelectRowRef.current(item, index),
             onSelectionChanged: () => {
-                (setSelection as (s: any[]) => void)(handlerRef.current!.getSelection());
+                if (!isISelection(setSelectionRef.current)) {
+                    setSelectionRef.current(handlerRef.current!.getSelection());
+                }
             }
         });
         return handlerRef.current;
@@ -498,14 +505,14 @@ const FluentStoreGrid: React.FunctionComponent<FluentStoreGridProps> = ({
         selectionHandler.setChangeEvents(false, true);
         selectionHandler.setAllSelected(false);
         items.forEach((item, index) => {
-            if (ids.has(getRowId(item)) && (!canSelectRow || canSelectRow(item, index))) {
+            if (ids.has(getRowId(item)) && (!canSelectRowRef.current || canSelectRowRef.current(item, index))) {
                 selectionHandler.setIndexSelected(index, true, false);
                 allowedIds.add(getRowId(item));
             }
         });
         selectionHandler.setChangeEvents(true);
         setSelectedRowIds(allowedIds);
-    }, [items, selectionHandler, getRowId, canSelectRow]);
+    }, [items, selectionHandler, getRowId]);
 
     const colIsResizable = React.useCallback((columnId: string) => {
         const col = fluentColumns.find(c => c.key === columnId);
@@ -519,10 +526,33 @@ const FluentStoreGrid: React.FunctionComponent<FluentStoreGridProps> = ({
     }, [columnWidths, colIsResizable]);
 
     const styles = useGridStyles();
-    const shimmerItems = React.useMemo(() => Array.from({ length: count }, (_, i) => ({ __shimmerIndex__: i })), [count]);
+    const shimmerItems = React.useMemo(() => {
+        return Array.from({ length: 4 }, (_, i) => ({ __shimmerIndex__: i }));
+    }, []);
     const dgSelectionMode = selectionMode === SelectionMode.single ? "single" : selectionMode === SelectionMode.multiple ? "multiselect" : undefined;
 
-    return <div style={{ position: "relative", height, overflow: "auto" }}>
+    const renderRow: RowRenderer<any> = React.useCallback(({ item, rowId }, style) => {
+        const itemIndex = items.findIndex(i => getRowId(i) === rowId);
+        const overlay = (!("__shimmerIndex__" in item) && onRenderRow) ? onRenderRow({ item, itemIndex }) : null;
+        const lastColumnId = tableColumns[tableColumns.length - 1]?.columnId;
+        return <DataGridRow<any> key={rowId} style={style} selectionCell={{ className: styles.selectionCell }}>
+            {({ renderCell, columnId }) => <>
+                <DataGridCell className={styles.cell}>
+                    {"__shimmerIndex__" in item
+                        ? <SkeletonItem style={{ height: "12px" }} />
+                        : renderCell(item)
+                    }
+                </DataGridCell>
+                {overlay && columnId === lastColumnId && (
+                    <div aria-hidden style={{ position: "absolute", inset: 0, padding: 0, pointerEvents: "none", overflow: "hidden" }}>
+                        {overlay}
+                    </div>
+                )}
+            </>}
+        </DataGridRow>;
+    }, [items, onRenderRow, tableColumns, styles.selectionCell, styles.cell, getRowId]);
+
+    return <div style={{ position: "relative", height }}>
         <DataGrid
             items={loaded ? items : shimmerItems}
             columns={tableColumns}
@@ -535,39 +565,22 @@ const FluentStoreGrid: React.FunctionComponent<FluentStoreGridProps> = ({
             resizableColumnsOptions={{ autoFitColumns: false }}
             columnSizingOptions={columnSizingOptions}
             onColumnResize={onColumnResize}
-            selectionMode={dgSelectionMode}
-            selectedItems={selectedRowIds}
-            onSelectionChange={loaded && dgSelectionMode ? onSelectionChange : undefined}
+            {...(dgSelectionMode ? {
+                selectionMode: dgSelectionMode,
+                selectedItems: selectedRowIds,
+                onSelectionChange: loaded ? onSelectionChange : undefined
+            } : {})}
         >
             <DataGridHeader className={styles.header}>
-                <DataGridRow selectionCell={{ className: styles.selectionCell }}>
+                <DataGridRow {...(dgSelectionMode ? { selectionCell: { className: styles.selectionCell } } : {})}>
                     {(col) => {
                         const resizable = colIsResizable(String(col.columnId));
                         return <DataGridHeaderCell className={styles.headerCell} {...(!resizable && { aside: null })}>{col.renderHeaderCell()}</DataGridHeaderCell>;
                     }}
                 </DataGridRow>
             </DataGridHeader>
-            <DataGridBody<any>>
-                {({ item, rowId }) => {
-                    const itemIndex = items.findIndex(i => getRowId(i) === rowId);
-                    const overlay = (!("__shimmerIndex__" in item) && onRenderRow) ? onRenderRow({ item, itemIndex }) : null;
-                    const lastColumnId = tableColumns[tableColumns.length - 1]?.columnId;
-                    return <DataGridRow<any> key={rowId} style={overlay ? { position: "relative" } : undefined} selectionCell={{ className: styles.selectionCell }}>
-                        {({ renderCell, columnId }) => <>
-                            <DataGridCell className={styles.cell}>
-                                {"__shimmerIndex__" in item
-                                    ? <SkeletonItem style={{ height: "12px" }} />
-                                    : renderCell(item)
-                                }
-                            </DataGridCell>
-                            {overlay && columnId === lastColumnId && (
-                                <div aria-hidden style={{ position: "absolute", inset: 0, padding: 0, pointerEvents: "none", overflow: "hidden" }}>
-                                    {overlay}
-                                </div>
-                            )}
-                        </>}
-                    </DataGridRow>;
-                }}
+            <DataGridBody<any> itemSize={32} height={Math.max(0, (parseInt(height, 10) || 400) - 32)}>
+                {renderRow}
             </DataGridBody>
         </DataGrid>
     </div>;
@@ -759,4 +772,21 @@ export const FluentPagedFooter: React.FunctionComponent<FluentPagedFooterProps> 
             {[10, 25, 50, 100, 250, 500, 1000].map(n => <Option key={n} value={String(n)}>{String(n)}</Option>)}
         </Dropdown>
     </div>;
+};
+
+
+export interface AutoSizeFluentGridProps extends Omit<FluentGridProps, "height"> {
+}
+
+export const AutoSizeFluentGrid: React.FunctionComponent<AutoSizeFluentGridProps> = (props) => {
+    return <SizeMe>{({ size }) =>
+        <div style={{ position: "relative", width: "100%", height: "100%" }}>
+            <div style={{ position: "absolute", width: "100%", height: `${size.height}px` }}>
+                <FluentGrid
+                    {...props}
+                    height={`${size.height}px`}
+                ></FluentGrid>
+            </div>
+        </div>
+    }</SizeMe>;
 };

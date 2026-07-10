@@ -528,7 +528,7 @@ public:
                 </expect>
             </test>
         )!!!";
-        CPPUNIT_ASSERT_THROW_MESSAGE("expected exception not thrown", testEventVisitationLinks(testData), std::exception);
+        CPPUNIT_ASSERT_MESSAGE("expected exception not thrown", testEventVisitationLinksThrowsIException(testData));
     }
 
     void testStrictEventParsingUnknownAttribute()
@@ -542,7 +542,7 @@ public:
                 </expect>
             </test>
         )!!!";
-        CPPUNIT_ASSERT_THROW_MESSAGE("expected exception not thrown", testEventVisitationLinks(testData), std::exception);
+        CPPUNIT_ASSERT_MESSAGE("expected exception not thrown", testEventVisitationLinksThrowsIException(testData));
     }
 
     void testStrictEventParsingUnusedAttribute()
@@ -556,7 +556,7 @@ public:
                 </expect>
             </test>
         )!!!";
-        CPPUNIT_ASSERT_THROW_MESSAGE("expected exception not thrown", testEventVisitationLinks(testData), std::exception);
+        CPPUNIT_ASSERT_MESSAGE("expected exception not thrown", testEventVisitationLinksThrowsIException(testData));
     }
 
     void testStrictEventParsingIncompleteEvent()
@@ -570,7 +570,7 @@ public:
                 </expect>
             </test>
         )!!!";
-        CPPUNIT_ASSERT_THROW_MESSAGE("expected exception not thrown", testEventVisitationLinks(testData), std::exception);
+        CPPUNIT_ASSERT_MESSAGE("expected exception not thrown", testEventVisitationLinksThrowsIException(testData));
     }
 
     void testLenientEventParsing()
