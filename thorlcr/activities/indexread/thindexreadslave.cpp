@@ -306,6 +306,7 @@ public:
                     part.queryOwner().getClusterLabel(0, planeName);
                     blockedIOSize = getIndexBlockedIOSize(planeName, helper->hasSegmentMonitors());
                 }
+                blockedIOSize = roundIndexBlockedIOSize(blockedIOSize, getPageCachePageSize());
 
                 Owned<IKeyIndex> keyIndex = createKeyIndex(path, crc, *lazyIFileIO, (unsigned) -1, false, blockedIOSize);
                 IContextLogger * contextLogger = isSuperFile?contextLoggers[p]:contextLoggers[0];

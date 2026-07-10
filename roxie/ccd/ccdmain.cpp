@@ -1377,8 +1377,8 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
             setNodeFetchThresholdNs(topology->getPropInt64("@nodeFetchThresholdNs"));
         setIndexWarningThresholds(topology);
 
-        if (pageCache)
-            initializeDiskPageCache(pageCache);
+        // Call upfront to prepare page cache (will only activate if page cache is configured)
+        ensureDiskPageCacheInitialized(true);
 
         unsigned __int64 affinity = topology->getPropInt64("@affinity", 0);
         updateAffinity(affinity);

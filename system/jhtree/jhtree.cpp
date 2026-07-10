@@ -59,6 +59,8 @@
 #include "jhinplace.hpp"
 #include "jhblockcompressed.hpp"
 #include "jplane.hpp"
+#include "jcontainerized.hpp"
+#include "jptree.hpp"
 
 #include "jhtree.ipp"
 #include "keybuild.hpp"
@@ -1125,6 +1127,7 @@ IKeyIndex *CKeyStore::doload(const char *fileName, unsigned crc, IReplicatedFile
     StringBuffer fname;
     fname.append(fileName).append('/').append(crc).append('/').append(blockedIOSize);
 
+    const bool diskBackedLoad = (iMappedFile == nullptr);
     {
         //This mutex is now only held when the object is being created - any load will happen outside.
         synchronized block(mutex);
@@ -1155,7 +1158,9 @@ IKeyIndex *CKeyStore::doload(const char *fileName, unsigned crc, IReplicatedFile
                     iFile.setown(createIFile(fileName));
                 IFileIO *fio = iFile->open(IFOread);
                 if (fio)
+                {
                     keyIndex = new CDiskKeyIndex(getUniqId(fileIdx, fileName), fio, fname, isTLK, blockedIOSize);
+                }
                 else
                     throw MakeStringException(0, "Failed to open index file %s", fileName);
             }
@@ -1167,6 +1172,10 @@ IKeyIndex *CKeyStore::doload(const char *fileName, unsigned crc, IReplicatedFile
         }
     }
     assertex(NULL != keyIndex);
+    // Call for every disk-backed load (not only on newly-created indexes) so cached-disk callers
+    // cannot race with page-cache initialization; keep outside mutex to avoid lock inflation.
+    if (diskBackedLoad)
+        ensureDiskPageCacheInitialized(false);
 
     bool recording = recordingEvents();
     CCycleTimer loadTimer(recording);
@@ -2096,36 +2105,78 @@ done:
     return CKeyIndex::loadNodeFromMemory(match, pos, true);
 }
 
-
-// The initialization and cleanup functions are not thread safe.  They must only be called when no index activity is occuring.
-void initializeDiskPageCache(const IPropertyTree *config)
+static void doInitializeDiskPageCache(const IPropertyTree *config)
 {
     assertex(!activePageCache);
+
     if (!config)
         return;
 
     if (config->getPropInt64("@sizeMB", 0) == 0)
         return;
 
-    IPageCache * cache = nullptr;
+    Owned<IPageCache> cache;
     const char * type = config->queryProp("@type");
     if (type)
     {
         if (strieq(type, "demo"))
-            cache = createDemoPageCache(config);
+            cache.setown(createDemoPageCache(config));
         else if (strieq(type, "disk"))
-            cache = createDiskPageCache(config);
+            cache.setown(createDiskPageCache(config));
     }
 
     // Create a default disk page cache if no type is specified
     if (!cache)
-        cache = createDiskPageCache(config);
+        cache.setown(createDiskPageCache(config));
 
     if (!cache)
         return;
 
     pageCachePageSize = cache->queryPageSize();
-    activePageCache = cache;
+    activePageCache = cache.getClear();
+}
+
+
+static std::atomic<bool> diskPageCacheInitialized{false};
+static CriticalSection pageCacheInitCS;
+
+extern jhtree_decl void ensureDiskPageCacheInitialized(bool propagateInitError)
+{
+    if (diskPageCacheInitialized)
+        return;
+
+    CriticalBlock block(pageCacheInitCS);
+    if (diskPageCacheInitialized)
+        return;
+
+    // Combine component + global page cache settings, with component config taking precedence.
+    Owned<IPropertyTree> componentPageCache = getComponentConfigSP()->getPropTree("pageCache");
+    Owned<IPropertyTree> globalPageCache = getGlobalConfigSP()->getPropTree("pageCache");
+    Owned<IPropertyTree> pageCacheConfig = createPTree("pageCache");
+    if (globalPageCache)
+        synchronizePTree(pageCacheConfig, globalPageCache, false);
+
+    if (componentPageCache)
+        synchronizePTree(pageCacheConfig, componentPageCache, false);
+
+    try
+    {
+        doInitializeDiskPageCache(pageCacheConfig);
+    }
+    catch (IException *e)
+    {
+        pageCachePageSize = 0;
+        if (propagateInitError)
+        {
+            diskPageCacheInitialized = true; // suppress further attempts
+            throw;
+        }
+        OWARNLOG(e, "pageCache initialization failed - cache disabled");
+        e->Release();
+    }
+
+    // Set the flag after full initialization to prevent other threads from reading an uninitialized cache
+    diskPageCacheInitialized = true;
 }
 
 void clearDiskPageCache()
@@ -3218,6 +3269,12 @@ extern jhtree_decl IKeyIndex *createKeyIndex(const char *keyfile, unsigned crc, 
 extern jhtree_decl void clearKeyStoreCache(bool killAll)
 {
     queryKeyStore()->clearCache(killAll);
+}
+
+extern jhtree_decl size32_t getPageCachePageSize()
+{
+    ensureDiskPageCacheInitialized(false);
+    return pageCachePageSize;
 }
 
 extern jhtree_decl void clearKeyStoreCacheEntry(const char *name)

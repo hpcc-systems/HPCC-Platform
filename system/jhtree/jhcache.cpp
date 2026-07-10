@@ -34,6 +34,7 @@
 
 #include "jmisc.hpp"
 #include "jset.hpp"
+#include "jplane.hpp"
 #include "hlzw.h"
 
 #include "ctfile.hpp"
@@ -277,10 +278,29 @@ public:
 #endif
         }
 
-        // should we check config for some HPCC dir ?
-        const char *cacheFile = config->queryProp("@file");
-        if (!cacheFile)
-            cacheFile = "/tmp/roxiecache.tmp";
+        // A "plane" setup is preferred - it will derive the base path from the plane prefix. @file overrides the base path. @fileSuffix (if set) is appended to whichever base path is used.
+        StringBuffer cacheFilePath(config->queryProp("@file"));
+        if (cacheFilePath.isEmpty())
+        {
+            StringBuffer planeName;
+            if (!config->getProp("@plane", planeName))
+                getDefaultSpillPlane(planeName);
+
+            if (planeName.length())
+            {
+                Owned<const IStoragePlane> plane = getStoragePlaneByName(planeName, true);
+                cacheFilePath.set(plane->queryPrefix());
+                addPathSepChar(cacheFilePath).append("pagecache");
+                if (!recursiveCreateDirectoryForFile(cacheFilePath))
+                    throw makeOsExceptionV(GetLastError(), "Failed to create directory for file: %s", cacheFilePath.str());
+            }
+            else
+                cacheFilePath.set("/tmp/roxiecache.tmp");
+        }
+
+        const char *fileSuffix = config->queryProp("@fileSuffix");
+        if (!isEmptyString(fileSuffix))
+            cacheFilePath.append('.').append(fileSuffix);
 
         cache = std::make_unique<CacheEntry []>(numEntries);
 
@@ -292,7 +312,7 @@ public:
 
         fCrit = std::make_unique<CriticalSection []>(numCrits);
 
-        openPageCacheFile(cacheFile, openFlags);
+        openPageCacheFile(cacheFilePath, openFlags);
 
         DBGLOG("pageCache readSize: %u pageSize %u", readSize, pageSize);
         DBGLOG("pageCache num sets: %d file size: %llu MB critsecs: %d entries: %u", numSets, totSize / 1048576ULL, numCrits, numEntries);

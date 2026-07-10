@@ -192,6 +192,7 @@
       <xsl:apply-templates select="@*[string(.) != '']"/>
 
       <xsl:call-template name="copyVaultsConfig"/>
+      <xsl:copy-of select="./pageCache"/>
       <xsl:copy-of select="/Environment/Software/Directories"/> 
       <xsl:choose>
           <xsl:when test="tracing">

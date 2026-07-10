@@ -352,7 +352,7 @@ public:
 };
 
 
-interface IPropertyTree;
-void jhtree_decl initializeDiskPageCache(const IPropertyTree *config);
+extern jhtree_decl void ensureDiskPageCacheInitialized(bool propagateInitError);
+extern jhtree_decl size32_t getPageCachePageSize();
 
 #endif

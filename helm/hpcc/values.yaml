@@ -954,6 +954,10 @@ thor:
   #egress: engineEgress
   logging:
     detail: 50
+  pageCache: # thor page cache defaults
+    sizeMB: 100
+    pageSize: 8192
+
 
 eclscheduler:
 - name: eclscheduler
