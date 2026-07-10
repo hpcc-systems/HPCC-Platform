@@ -1,0 +1,17 @@
+# One impact component per line. Blank lines and lines starting with '#' are ignored.
+build
+ci
+config
+dali
+dfuserver
+documentation
+eclccserver
+eclwatch
+esp
+hthor
+roxie
+sasha
+stdlib
+testing
+thor
+xref
