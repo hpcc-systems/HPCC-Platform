@@ -862,12 +862,12 @@ thor: []
     Access</title>
 
     <para><emphasis role="bold">Scope and Scenarios:</emphasis> This section
-    explains how to configure a containerized HPCC Systems<superscript>®</superscript>
-    deployment so one environment exposes logical files through the DFS ESP
-    service and a second environment accesses those logical files using
-    <emphasis>~remote::</emphasis> naming. This section is specifically about
-    <emphasis role="bold">remote DFS service access</emphasis>, not direct
-    dafilesrv access.</para>
+    explains how to configure a containerized HPCC
+    Systems<superscript>®</superscript> deployment so one environment exposes
+    logical files through the DFS ESP service and a second environment
+    accesses those logical files using <emphasis>~remote::</emphasis> naming.
+    This section is specifically about <emphasis role="bold">remote DFS
+    service access</emphasis>, not direct dafilesrv access.</para>
 
     <para><emphasis role="bold">Configuration as code guidance:</emphasis>
     Keep customizations in one or more override YAML files (for example,
@@ -875,9 +875,12 @@ thor: []
     mappings). Use base chart defaults as the starting point and merge your
     custom files with <emphasis>-f</emphasis> during install/upgrade.</para>
 
-    <para><emphasis role="bold">See:</emphasis> Certificate issuer setup, root
-    CA examples, and cert-manager lifecycle details in the <ulink
-    url="https://hpcc-systems.github.io/HPCC-Platform/helm/examples/certmanager/README.md">https://hpcc-systems.github.io/HPCC-Platform/helm/examples/certmanager/README.md</ulink> and related DevDocs.</para>
+    <para><emphasis role="bold">Note:</emphasis> Certificate issuer setup,
+    root CA examples, and cert-manager life cycle details available from the
+    following link and the related DevDocs.</para>
+
+    <para><ulink
+    url="https://hpcc-systems.github.io/HPCC-Platform/helm/examples/certmanager/README.html">https://hpcc-systems.github.io/HPCC-Platform/helm/examples/certmanager/README.html</ulink></para>
 
     <sect2 id="DFSClientCerts-Overview">
       <title>Overview</title>
@@ -1041,8 +1044,8 @@ kubectl config set-context --current --namespace=env2</programlisting>
         </listitem>
 
         <listitem>
-          <para>Create a Kubernetes secret from the files extracted from
-          env1. The Kubernetes secret name can be any valid name (example:
+          <para>Create a Kubernetes secret from the files extracted from env1.
+          The Kubernetes secret name can be any valid name (example:
           <emphasis>env1-access</emphasis>).</para>
 
           <programlisting>kubectl create secret generic env1-access \
@@ -1068,10 +1071,10 @@ kubectl config set-context --current --namespace=env2</programlisting>
         <listitem>
           <para>Define a local plane with <emphasis>category:
           remote</emphasis> and map the remote environment under
-          <emphasis>storage.remote</emphasis>. Because
-          <emphasis role="bold">storage.planes</emphasis> is a Helm list,
-          your override must include every plane you want to keep (for
-          example, <emphasis>dali</emphasis>, <emphasis>dll</emphasis>,
+          <emphasis>storage.remote</emphasis>. Because <emphasis
+          role="bold">storage.planes</emphasis> is a Helm list, your override
+          must include every plane you want to keep (for example,
+          <emphasis>dali</emphasis>, <emphasis>dll</emphasis>,
           <emphasis>sasha</emphasis>, <emphasis>data</emphasis>, and
           <emphasis>mydropzone</emphasis>) plus your new remote plane.</para>
 
@@ -1151,8 +1154,8 @@ OUTPUT(ds, ALL);</programlisting>
         <listitem>
           <para>The entry under <emphasis>secrets.storage</emphasis> uses the
           correct name derived from the DFS service URL (for example, via
-          <emphasis>ecl url-secret-name</emphasis>) and maps to a Kubernetes secret
-          containing matching certificate, key, and CA files.</para>
+          <emphasis>ecl url-secret-name</emphasis>) and maps to a Kubernetes
+          secret containing matching certificate, key, and CA files.</para>
         </listitem>
 
         <listitem>
@@ -1792,11 +1795,12 @@ OUTPUT(ds, ALL);</programlisting>
       <sect3 id="Deploying_AkeylessVault">
         <title>Deploy the Akeyless Vaultless Platform</title>
 
-        <para>To use Akeyless, set the vault type to <emphasis>akeyless</emphasis>
-        and the kind to <emphasis>akeyless</emphasis>. The URL should point to
-        the Akeyless API endpoint or your gateway. Provide an access ID and
-        access key, typically from environment variables or a secure secret.
-        A token can also be supplied via the client-secret if desired.</para>
+        <para>To use Akeyless, set the vault type to
+        <emphasis>akeyless</emphasis> and the kind to
+        <emphasis>akeyless</emphasis>. The URL should point to the Akeyless
+        API endpoint or your gateway. Provide an access ID and access key,
+        typically from environment variables or a secure secret. A token can
+        also be supplied via the client-secret if desired.</para>
 
         <programlisting lang="YAML">  vaults:
   authn:
@@ -1808,9 +1812,10 @@ OUTPUT(ds, ALL);</programlisting>
       accessKey: ${env.AKEYLESS_ACCESS_KEY}
 </programlisting>
 
-        <para>The secret name referenced by HPCC (for example, in LDAP settings)
-        is passed to Akeyless as the secret name in the get-secret-value API.
-        If a version is provided, it will be used when retrieving the secret.</para>
+        <para>The secret name referenced by HPCC (for example, in LDAP
+        settings) is passed to Akeyless as the secret name in the
+        get-secret-value API. If a version is provided, it will be used when
+        retrieving the secret.</para>
       </sect3>
 
       <sect3 id="REF_HASHICORPVault_LDAP">
