@@ -21,9 +21,9 @@ permissions:
 
 env:
   VALID_TYPES: "build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test|deps|release|hotfix|security"
-  ISSUE_CLOSE_DIRECTIVE_REGEX: '^(close|closes|closed|fix|fixes|fixed|resolve|resolves|resolved)\s*:?\s*#[0-9]+\s*$'
-  NO_ISSUE_DIRECTIVE_REGEX: '^NoIssue\s*$'
-  IMPACTS_CONFIG_FILE: '.github/impact-components.yml'
+  ISSUE_CLOSE_DIRECTIVE_REGEX: '^(close|closes|closed|fix|fixes|fixed|resolve|resolves|resolved)\s*:?\s*#[0-9]+\s*(//.+)?$'
+  NO_ISSUE_DIRECTIVE_REGEX: '^NoIssue\.?\s*(//.+)?$'
+  IMPACTS_CONFIG_FILE: '.github/impact-components.txt'
 
 jobs:
   validate-metadata:
@@ -57,11 +57,11 @@ jobs:
 
           set +e
           {
-            echo "Checking PR title: $PR_TITLE"
+            echo "INFO: Checking PR title: $PR_TITLE"
 
             # Check if title follows Conventional Commits format
-            if echo "$PR_TITLE" | grep -qE "^(${VALID_TYPES})(\([a-zA-Z0-9_.-]+\))?!?: .+"; then
-              echo "✓ PR title is valid: follows Conventional Commits format"
+            if echo "$PR_TITLE" | grep -iqE "^(${VALID_TYPES})(\([a-zA-Z0-9_.-]+\))?!?: .+"; then
+              echo "INFO: PR title is valid: follows Conventional Commits format"
             else
               echo "✗ PR title is invalid"
               echo ""
@@ -139,13 +139,13 @@ jobs:
 
           set +e
           {
-            echo "First commit message: $COMMIT_MSG"
+            echo "INFO: First commit message: $COMMIT_MSG"
 
             if [ -z "$COMMIT_MSG" ]; then
               echo "✗ Could not determine first PR-introduced commit subject"
               failed=1
-            elif echo "$COMMIT_MSG" | grep -qE "^(${VALID_TYPES})(\([a-zA-Z0-9_.-]+\))?!?: .+"; then
-              echo "✓ First commit message is valid: follows Conventional Commits format"
+            elif echo "$COMMIT_MSG" | grep -iqE "^(${VALID_TYPES})(\([a-zA-Z0-9_.-]+\))?!?: .+"; then
+              echo "INFO: First commit message is valid: follows Conventional Commits format"
             else
               echo "✗ First commit message is invalid"
               echo ""
@@ -160,12 +160,14 @@ jobs:
               failed=1
             fi
 
-            if ! printf '%s\n' "$FULL_COMMIT_MSG" | python3 .github/scripts/check_directive_compliance.py \
-              "First commit message" \
-              "$ISSUE_CLOSE_DIRECTIVE_REGEX" \
-              "$NO_ISSUE_DIRECTIVE_REGEX" \
-              "$IMPACTS_CONFIG_FILE"; then
-              failed=1
+            if [ -n "$COMMIT_MSG" ]; then
+              if ! printf '%s\n' "$FULL_COMMIT_MSG" | python3 .github/scripts/check_directive_compliance.py \
+                "First commit message" \
+                "$ISSUE_CLOSE_DIRECTIVE_REGEX" \
+                "$NO_ISSUE_DIRECTIVE_REGEX" \
+                "$IMPACTS_CONFIG_FILE"; then
+                failed=1
+              fi
             fi
 
             exit "$failed"
@@ -188,28 +190,8 @@ jobs:
             if [ -f "$file_path" ]; then
               {
                 echo "=== $heading ==="
-                awk '
-                  /^✗ / {
-                    print
-                    next
-                  }
-                  /^Add one directive line in one of these formats:/ {
-                    print "  Example: Fixes #123"
-                    next
-                  }
-                  /^Add one line that starts with:/ {
-                    print "  Example: Impacts: None"
-                    next
-                  }
-                  /^If '\''None'\'' is used, it must be the only Impacts entry\./ {
-                    print "  Fix: use either Impacts: None or list real components, not both"
-                    next
-                  }
-                  /^Allowed components:/ {
-                    print "  Fix: choose one or more allowed components from .github/impact-components.yml"
-                    next
-                  }
-                ' "$file_path"
+                # Filter out informational lines; keep only error/warning messages
+                sed '/^INFO:/d' "$file_path"
                 echo ""
               } >> "$summary_file"
             fi
@@ -252,7 +234,6 @@ jobs:
               echo '```'
             } >> "$GITHUB_STEP_SUMMARY"
 
-            echo "Metadata validation failed. Review the full report above for all non-compliant items."
             exit 1
           fi
 
