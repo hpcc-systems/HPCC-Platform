@@ -106,6 +106,97 @@ class CBroadcaster : public CSimpleInterface
     broadcast_flags stopFlag;
     Owned<IBitSet> sendersDone, broadcastersStopping;
 
+    /*
+     * Broadcast backpressure / flow control
+     * =====================================
+     * The broadcast forms a tree: each node forwards (re-broadcasts) the rows it
+     * receives on to its children, as well as injecting its own local rows.
+     * Pending re-broadcasts are held on the CSend 'broadcastQueue'.
+     *
+     * That queue MUST remain effectively unbounded. A hard bound (blocking the
+     * producer when the queue is full) reintroduces the distributed deadlock of
+     * GH #34240: the blocked thread stops draining its MP socket, the socket
+     * zero-windows, that stalls the upstream sender mid-broadcast, and the cycle
+     * closes into a cluster-wide hang. So we never block the drain path; instead
+     * we apply *cooperative* backpressure that only ever slows the producers,
+     * preventing the unbounded queue growth that otherwise can OOM the job.
+     *
+     * Two cooperating mechanisms keep the queue bounded in practice:
+     *
+     * 1. Hop-by-hop congestion signalling (propagates pressure up the tree).
+     *    Every ACK carries the acking node's 'overshoot' - how many blocks its
+     *    own re-broadcast queue is over its soft limit (0 if at/under). The ACK
+     *    is always sent promptly - before the received row is queued - so a
+     *    congested node still replies quickly; the overshoot is therefore the
+     *    ONLY channel by which its pressure can reach its parents. On seeing a
+     *    non-zero value, the parent pauses proportionally (overshootDelayMs)
+     *    before continuing to forward. This throttles flow into the congested
+     *    subtree and, by slowing the parent's own draining, lets the pressure
+     *    build one hop further up the tree.
+     *
+     * 2. Source throttling (turns accumulated backlog into a real input rate).
+     *    send() injects new local rows. While the local queue is over its soft
+     *    limit - i.e. mechanism 1 has backed pressure up to here, or we are
+     *    simply producing faster than we can forward - it waits before injecting
+     *    the next row, pausing proportionally to the local overshoot. The local
+     *    queue depth is an integrated measure of downstream congestion, so this
+     *    directly gates the true source rate to match what the tree can absorb.
+     *
+     * A proportional signal (rather than a binary congested flag) keeps the
+     * response scale-invariant: overshoot is scored relative to the soft limit
+     * (see overshootDelayMs), so the same curve applies whether the limit is a
+     * handful of blocks or thousands on a large cluster. It sharpens mechanism 1
+     * in particular, where each ACK produces a single proportional pause.
+     *
+     * What it does NOT do is even out the per-worker congestion time. Mechanism 2
+     * is a drain-wait loop: it keeps sleeping until the local queue falls back
+     * under the soft limit, so the time it accumulates equals how long the worker
+     * was backed up - a function of that worker's forwarding load and position in
+     * the broadcast tree, not of the per-sleep magnitude. Changing the delay size
+     * (proportional vs flat, larger vs smaller) only re-chunks that wait; it does
+     * not shorten it. Consequently the StTimeSmartJoinDelay statistic is expected
+     * to be skewed across workers - it faithfully reports structural congestion and
+     * is not a sign of mistuning. Judge the backpressure by whether the peak queue
+     * depth (hence memory) stays bounded near the soft limit and whether overall
+     * runtime is acceptable, not by how uniform the delay is.
+     */
+    std::atomic<unsigned __int64> congestionWaitNs{0};
+
+    unsigned congestionMaxDelayMs = 10; // maximum backoff, reached when the queue is ~twice the soft limit
+
+    // Sleep 'timeMs' as backpressure, accumulating the total for stat.
+    void waitCongestion(unsigned timeMs)
+    {
+        MilliSleep(timeMs);
+        congestionWaitNs += (timeMs * 1000000ULL);
+    }
+
+    // Map a queue overshoot (blocks over the soft limit) to a proportional, capped backoff.
+    // Scaled by the soft limit so the response is independent of cluster size / queue budget:
+    // an overshoot equal to the soft limit (queue at ~2x the limit) reaches the maximum delay.
+    unsigned overshootDelayMs(unsigned overshoot) const
+    {
+        if (0 == overshoot)
+            return 0;
+        unsigned limit = sender.querySoftLimit(); // always >= 1, enforced by CSend::init()
+        // Ceiling division: any non-zero overshoot produces at least 1ms so the drain-wait
+        // loop in send() cannot exit while the queue is still over the soft limit.
+        unsigned __int64 delay = ((unsigned __int64)congestionMaxDelayMs * overshoot + limit - 1) / limit;
+        return delay > congestionMaxDelayMs ? congestionMaxDelayMs : (unsigned)delay;
+    }
+
+    // How many blocks our own re-broadcast queue is over its soft limit (0 if at/under).
+    unsigned localOvershoot() const
+    {
+        unsigned qs = sender.queryQueueSize();
+        unsigned limit = sender.querySoftLimit();
+        return qs > limit ? qs - limit : 0;
+    }
+
+public:
+    unsigned __int64 getCongestionWaitNs() const { return congestionWaitNs; }
+private:
+
     class CRecv : implements IThreaded
     {
         CBroadcaster &broadcaster;
@@ -159,6 +250,7 @@ class CBroadcaster : public CSimpleInterface
         unsigned myNode;
         unsigned nodes;
         bool aborted;
+        unsigned softLimit;
         void clearQueue()
         {
             for (;;)
@@ -175,11 +267,20 @@ class CBroadcaster : public CSimpleInterface
             myNode = broadcaster.activity.queryJob().queryMyNodeRank()-1; // 0 based
             nodes = broadcaster.activity.queryJob().queryNodes();
 
-            // in theory each worker could be sending log(n) packets, with the broadcaster on each blocking waiting for acks
-            unsigned limit = 0; // disabled for now (see HPCC-34240) [ limit = nodes * std::ceil(std::log2(nodes)); ]
-            limit = broadcaster.activity.getOptInt("lookupJoinBroadcastQLimit", limit);
-            if (0 != limit)
-                broadcastQueue.setLimit(limit);
+            // Soft limit on the pending re-broadcast queue. Exceeding it never blocks
+            // (see the backpressure rationale on CBroadcaster / GH #34240) - the overshoot
+            // is reported in our ACKs and gates our own source injection instead.
+            // Expressed as a memory budget: each queued block holds up to MAX_SEND_SIZE, so
+            // this bounds the per-worker broadcast backlog to ~lookupJoinBroadcastQLimitMB
+            // regardless of cluster size. The node count deliberately plays no part - queue
+            // depth reflects the forward-vs-arrival rate mismatch, not the topology.
+            unsigned budgetMB = broadcaster.activity.getOptUInt("lookupJoinBroadcastQLimitMB", 64);
+            softLimit = (unsigned)(((unsigned __int64)budgetMB * 0x100000) / MAX_SEND_SIZE);
+            if (softLimit < 1)
+                softLimit = 1;
+            softLimit = broadcaster.activity.getOptUInt("lookupJoinBroadcastQLimit", softLimit);
+            if (softLimit < 1)
+                softLimit = 1; // softLimit==0 would divide-by-zero in overshootDelayMs; keep minimum of 1
         }
         ~CSend()
         {
@@ -237,6 +338,8 @@ class CBroadcaster : public CSimpleInterface
             addBlock(NULL);
             threaded.join(INFINITE);
         }
+        unsigned queryQueueSize() const { return broadcastQueue.ordinality(); }
+        unsigned querySoftLimit() const { return softLimit; }
     // IThreaded
         virtual void threadmain() override
         {
@@ -343,6 +446,14 @@ class CBroadcaster : public CSimpleInterface
                     replyMsg.read(isStopping);
                     if (isStopping) // effectively a shortcut to mark asap that sender is stopping because the receiver has been requested to stop
                         setStopping(t-1);
+                    unsigned childOvershoot;
+                    replyMsg.read(childOvershoot);
+                    // Mechanism 1: a congested child throttles this parent's forwarding,
+                    // proportionally to how far over its soft limit the child's queue is.
+                    // The pause also slows our own draining, so the pressure accumulates
+                    // one hop further up towards the sources.
+                    if (childOvershoot)
+                        waitCongestion(overshootDelayMs(childOvershoot));
 #ifdef _TRACEBROADCAST
                     ActPrintLog(&activity, "Broadcast node %d Sent to node %d, origin node %d, origin slave %d, size %d, code=%d - received ack", myNode+1, t, origin+1, sendItem->querySlave()+1, sendLen, (unsigned)sendItem->queryCode());
 #endif
@@ -398,6 +509,12 @@ class CBroadcaster : public CSimpleInterface
             CMessageBuffer ackMsg;
             bool stopping = isStopping(); // this is effectively a shortcut to inform sender asap. bcast_sendStopping/bcast_stop will be queued soon
             ackMsg.append(stopping);
+            // Mechanism 1: report how far our re-broadcast queue is over its soft limit so
+            // the parent can throttle proportionally. Computed and sent here, before addBlock()
+            // below, so the ACK is never itself delayed by our congestion (that is what lets
+            // pressure propagate).
+            unsigned overshoot = localOvershoot();
+            ackMsg.append(overshoot);
             comm.send(ackMsg, sendRank, replyTag); // send ack
 #ifdef _TRACEBROADCAST
             ActPrintLog(&activity, "Broadcast node %d, sent ack to node %d, replyTag=%d", myNode+1, (unsigned)sendRank, (unsigned)replyTag);
@@ -463,6 +580,7 @@ public:
         broadcastLock = NULL;
         receiving = false;
         nodeBroadcast = false;
+        congestionMaxDelayMs = activity.getOptUInt("lookupJoinCongestionMaxDelayMs", congestionMaxDelayMs);
     }
     void start(IBCastReceive *_recvInterface, mptag_t _mpTag, bool _stopping, bool _nodeBroadcast)
     {
@@ -543,6 +661,23 @@ public:
     }
     bool send(CSendItem *sendItem)
     {
+        // Mechanism 2: throttle the true source while our local re-broadcast queue is
+        // backed up. The queue is never hard-bounded (GH #34240) - we only delay the
+        // producer, proportionally to how far the queue is over its soft limit, so a deeper
+        // backlog throttles the source harder while a brief spike is barely felt. This is a
+        // drain-wait: it loops until the queue falls back under the limit, so the time spent
+        // here reflects how long we were backed up, not the per-sleep size (see the flow
+        // control rationale on CBroadcaster).
+        for (;;)
+        {
+            if (activity.queryAbortSoon() || allRequestStop)
+                break;
+            unsigned delay = overshootDelayMs(localOvershoot());
+            if (!delay)
+                break;
+            waitCongestion(delay);
+        }
+
         broadcastToOthers(sendItem);
         return !allRequestStop;
     }
@@ -3075,7 +3210,11 @@ public:
         if (isSmart())
         {
             if (isGlobal())
+            {
                 activeStats.setStatistic(StNumSmartJoinDegradedToLocal, aggregateFailoversToLocal); // NB: is going to be same for all slaves.
+                if (broadcaster)
+                    activeStats.setStatistic(StTimeSmartJoinDelay, broadcaster->getCongestionWaitNs());
+            }
             activeStats.setStatistic(StNumSmartJoinSlavesDegradedToStd, aggregateFailoversToStandard);
         }
         {
