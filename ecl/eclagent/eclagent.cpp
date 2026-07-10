@@ -2090,6 +2090,7 @@ void EclAgent::doProcess()
                 UWARNLOG(errCode, "%s", rmMsg.str());
         }
 
+        w->setAgentSession(-1);
     }
     catch (IException *e)
     {

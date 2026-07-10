@@ -34,6 +34,8 @@
 #include "jprop.hpp"
 #include "jthread.hpp"
 
+#include "jhtree.hpp"
+
 #include "thormisc.hpp"
 #include "slavmain.hpp"
 #include "thorport.hpp"
@@ -623,6 +625,14 @@ int main( int argc, const char *argv[]  )
             };
 #endif
             installDefaultFileHooks(globals);
+
+            // If/when page cache is enabled, ensure each worker can derive a distinct page cache file via fileSuffix.
+            IPropertyTree *pageCache = ensurePTree(globals, "pageCache");
+            const char *fileSuffix = pageCache->queryProp("@fileSuffix");
+            if (!isEmptyString(fileSuffix))
+                throw makeStringException(0, "pageCache fileSuffix must not be specified in thor configuration");
+            pageCache->setProp("@fileSuffix", VStringBuffer("%u", mySlaveNum).str());
+
             slaveMain(jobListenerStopped, logHandler);
         }
 

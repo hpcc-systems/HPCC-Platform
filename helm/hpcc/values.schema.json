@@ -521,6 +521,9 @@
             "dali": { "$ref": "#/definitions/serviceAccount" }
           },
           "description": "ServiceAccount-specific configurations including annotations and pod labels for identity management integrations like Azure Workload Identity"
+        },
+        "pageCache": {
+          "$ref": "#/definitions/pageCache"
         }
       },
       "additionalProperties": false
@@ -632,7 +635,7 @@
         },
         "file": {
           "type": "string",
-          "description": "Disk page cache backing file path"
+          "description": "Disk page cache backing file path if 'plane' is not specified"
         },
         "debugCacheMissPenalty": {
           "description": "How long to delay a read that fails to hit the cache.  Used to model the performance impact of cache misses",
@@ -641,7 +644,15 @@
         "type": {
           "description": "Allows selection between the different cache implementations",
           "type": "string"
+        },
+        "plane": {
+          "description": "Names the storage plane whose prefix is used to derive the page cache backing file path",
+          "type": "string"
         }
+      },
+      "not": {
+        "$comment": "Ensure that 'file' and 'plane' are not BOTH set (specifying neither, or exactly one, is allowed)",
+        "required": ["file", "plane"]
       },
       "additionalProperties": true
     },
@@ -3085,6 +3096,9 @@
         },
         "plugins": {
           "$ref": "#/definitions/plugins"
+        },
+        "pageCache": {
+          "$ref": "#/definitions/pageCache"
         },
         "schedulingTimeoutSecs": {
           "$ref": "#/definitions/schedulingTimeoutSecs"
