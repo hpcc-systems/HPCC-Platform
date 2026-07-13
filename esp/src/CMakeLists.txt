@@ -46,15 +46,6 @@ file(COPY
     ${CMAKE_CURRENT_SOURCE_DIR}/webpack.config.js
     DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 
-# Check if the nightly eclwatch build downloaded as part of the CI and copy it over the top of the current build 
-#   * Ensures stale nightly.html is replaced by the latest version
-#   * The nightly build should consist of nightly.html and dist-nightly/*
-set(ECLWATCH_NIGHTLY_OVERLAY_DIR "${CMAKE_CURRENT_BINARY_DIR}/nightly-overlay" CACHE PATH "Optional nightly artifact overlay directory")
-if (EXISTS "${ECLWATCH_NIGHTLY_OVERLAY_DIR}")
-    message(STATUS "Applying ECL Watch nightly overlay from ${ECLWATCH_NIGHTLY_OVERLAY_DIR}")
-    file(COPY "${ECLWATCH_NIGHTLY_OVERLAY_DIR}/" DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
-endif ()
-
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/src/BuildInfo.ts ${CMAKE_CURRENT_BINARY_DIR}/src/BuildInfo.ts @ONLY)
 
 set ( SRCS
@@ -461,8 +452,11 @@ add_custom_command (
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
 )
 
-add_custom_target ( eclwatch ALL 
+add_custom_target ( eclwatch ALL
+    COMMAND ${CMAKE_COMMAND} "-DECLWATCH_BINARY_DIR:PATH=${CMAKE_CURRENT_BINARY_DIR}" -P "${CMAKE_CURRENT_SOURCE_DIR}/ApplyNightlyOverlay.cmake"
     DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/build/dist/stub.eclwatch.js
+    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+    COMMENT "Applying ECL Watch nightly overlay if present"
 )
 
 add_dependencies ( eclwatch eclwatch_fetchdeps )
