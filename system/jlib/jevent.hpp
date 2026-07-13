@@ -63,6 +63,16 @@ enum EventType : byte
     EventResponseReceive,           // worker result received
     EventTaskStart,               // task execution started
     EventTaskStop,                // task execution completed
+    EventLockWait,
+    EventLockAcquire,
+    EventLockRelease,
+    EventSemWait,
+    EventSemAcquire,
+    EventSemSignal,
+    EventLockTryWaitAcquire,
+    EventLockTryWaitFail,
+    EventLockWaitTimeout,
+    EventSemWaitTimeout,
     EventMax
 };
 
@@ -87,6 +97,7 @@ enum EventContext : uint16_t
     EventCtxMeta    = 0x0008,
     EventCtxRemote  = 0x0010,
     EventCtxQuery   = 0x0020,
+    EventCtxMutex   = 0x0040,
     // Add all new contexts above this line.
     // Dedicated sentinel for parse/validation failures. Not a context bit.
     EventCtxInvalid = 0x8000,
@@ -148,6 +159,7 @@ enum EventAttr : byte
     EvAttrResponseId,
     EvAttrResponseSeq,
     EvAttrTask,
+    EvAttrLockId,
     EvAttrMax
 };
 
@@ -516,6 +528,17 @@ public:
     void recordTaskStart(EventTask task);
     void recordTaskStop(EventTask task);
 
+    void recordLockWait(unsigned lockId);
+    void recordLockAcquire(unsigned lockId);
+    void recordLockRelease(unsigned lockId);
+    void recordSemWait(unsigned lockId);
+    void recordSemAcquire(unsigned lockId);
+    void recordSemSignal(unsigned lockId);
+    void recordLockTryWaitAcquire(unsigned lockId);
+    void recordLockTryWaitFail(unsigned lockId);
+    void recordLockWaitTimeout(unsigned lockId);
+    void recordSemWaitTimeout(unsigned lockId);
+
     void recordRecordingSource(const char* processDescriptor, byte channelId, byte replicaId, __uint64 instanceId);
 
     void recordEvent(CEvent& event);
@@ -525,6 +548,7 @@ public:
 protected:
     void recordRecordingActive(bool paused);
     void recordTaskEvent(EventType event, EventTask task);
+    void recordLockEvent(EventType event, unsigned lockId);
     void recordRequestIdEvent(EventType event, unsigned requestId, unsigned requestSeq);
     void recordResponseEvent(EventType event, unsigned requestId, unsigned requestSeq, unsigned responseId, unsigned responseSeq);
     void recordDaliEvent(EventType event, const char * xpath, __int64 id, stat_type elapsedNs, size32_t dataSize);
