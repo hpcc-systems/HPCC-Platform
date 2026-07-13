@@ -18,6 +18,7 @@
 #ifndef JEVENT_HPP
 #define JEVENT_HPP
 
+#include "jeventconst.hpp"
 #include "jscm.hpp"
 #include "jatomic.hpp"
 #include "jbuff.hpp"
@@ -27,54 +28,6 @@
 #include "jstats.h"
 #include <condition_variable>
 #include <type_traits>
-
-// The order should not be changed, or items removed. New values should always be appended before EventMax
-// The meta prefix is used when there are records that provide extra meta data to help interpret
-// the event data e.g. mapping file ids to filenames.
-enum EventType : byte
-{
-    EventNone,
-    EventIndexCacheHit,
-    EventIndexCacheMiss,
-    EventIndexLoad,
-    EventIndexEviction,
-    EventDaliChangeMode,
-    EventDaliCommit,
-    EventDaliConnect,
-    EventDaliEnsureLocal,
-    EventDaliGet,
-    EventDaliGetChildren,
-    EventDaliGetChildrenFor,
-    EventDaliGetElements,
-    EventDaliSubscribe,
-    MetaFileInformation,          // information about a file
-    EventRecordingActive,         // optional event to indicate that recording was suspended/re-enabled
-    EventIndexPayload,            // payload of a leaf node accessed
-    EventQueryStart,
-    EventQueryStop,
-    EventRecordingSource,         // information about the source of the recording
-    EventIndexOpen,               // open an index ready for reading
-    MetaPlaneInformation,         // information about a plane
-    EventRequestSend,           // remote request sent
-    EventRequestReceive,           // remote request received
-    EventWorkerStart,             // remote processing started
-    EventWorkerStop,              // remote processing completed
-    EventResponseSend,              // worker sent result
-    EventResponseReceive,           // worker result received
-    EventTaskStart,               // task execution started
-    EventTaskStop,                // task execution completed
-    EventLockWait,
-    EventLockAcquire,
-    EventLockRelease,
-    EventSemWait,
-    EventSemAcquire,
-    EventSemSignal,
-    EventLockTryWaitAcquire,
-    EventLockTryWaitFail,
-    EventLockWaitTimeout,
-    EventSemWaitTimeout,
-    EventMax
-};
 
 // Tasks represent a logical step in processing.  They will always start and stop on the same thread.
 enum class EventTask : byte
@@ -468,7 +421,6 @@ public:
 };
 
 //---------------------------------------------------------------------------------------------------------------------
-enum EventType : byte;
 enum EventAttr : byte;
 interface IFileIO;
 
