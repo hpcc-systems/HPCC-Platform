@@ -2416,12 +2416,6 @@ public:
 
 void slaveMain(bool &jobListenerStopped, ILogMsgHandler *logHandler)
 {
-    unsigned masterMemMB = globals->getPropInt("@masterTotalMem");
-    HardwareInfo hdwInfo;
-    getHardwareInfo(hdwInfo);
-    if (hdwInfo.totalMemory < masterMemMB)
-        OWARNLOG("Slave has less memory than master node");
-
     CThorResourceSlave slaveResource;
     CJobListener jobListener(jobListenerStopped);
     setIThorResource(slaveResource);
