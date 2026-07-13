@@ -11,6 +11,21 @@ on:
       asset-name:
         type: string
         description: 'Asset name'
+        required: false
+        default: 'eclwatch-nightly'
+
+  workflow_dispatch:
+    inputs:
+      os:
+        type: string
+        description: 'Operating System'
+        required: false
+        default: 'ubuntu-22.04'
+      asset-name:
+        type: string
+        description: 'Asset name'
+        required: false
+        default: 'eclwatch-nightly'
 
 permissions:
   contents: read
@@ -48,5 +63,6 @@ jobs:
         with:
           name: ${{ inputs.asset-name }}
           path: |
+            esp/src/build/nightly.html
             esp/src/build/dist-nightly
           if-no-files-found: error
