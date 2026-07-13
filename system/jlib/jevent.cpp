@@ -124,6 +124,7 @@ struct EventInformation
 #define WORKERRECEIVE_ATTRS    COMMON_ATTRS, EvAttrRequestId, EvAttrRequestSeq, EvAttrResponseId, EvAttrResponseSeq
 #define TASKSTART_ATTRS        COMMON_ATTRS, EvAttrTask
 #define TASKSTOP_ATTRS         COMMON_ATTRS, EvAttrTask
+#define MUTEX_ATTRS            COMMON_ATTRS, EvAttrLockId
 
 
 static constexpr EventInformation eventInformation[] {
@@ -157,6 +158,16 @@ static constexpr EventInformation eventInformation[] {
     DEFINE_EVENT(ResponseReceive, EventCtxRemote, { WORKERRECEIVE_ATTRS } ),
     DEFINE_EVENT(TaskStart, EventCtxQuery, { TASKSTART_ATTRS } ),
     DEFINE_EVENT(TaskStop, EventCtxQuery, { TASKSTOP_ATTRS } ),
+    DEFINE_EVENT(LockWait, EventCtxMutex, { MUTEX_ATTRS } ),
+    DEFINE_EVENT(LockAcquire, EventCtxMutex, { MUTEX_ATTRS } ),
+    DEFINE_EVENT(LockRelease, EventCtxMutex, { MUTEX_ATTRS } ),
+    DEFINE_EVENT(SemWait, EventCtxMutex, { MUTEX_ATTRS } ),
+    DEFINE_EVENT(SemAcquire, EventCtxMutex, { MUTEX_ATTRS } ),
+    DEFINE_EVENT(SemSignal, EventCtxMutex, { MUTEX_ATTRS } ),
+    DEFINE_EVENT(LockTryWaitAcquire, EventCtxMutex, { MUTEX_ATTRS } ),
+    DEFINE_EVENT(LockTryWaitFail, EventCtxMutex, { MUTEX_ATTRS } ),
+    DEFINE_EVENT(LockWaitTimeout, EventCtxMutex, { MUTEX_ATTRS } ),
+    DEFINE_EVENT(SemWaitTimeout, EventCtxMutex, { MUTEX_ATTRS } ),
 };
 static_assert(_elements_in(eventInformation) == EventMax);
 
@@ -220,6 +231,7 @@ static constexpr EventAttrInformation attrInformation[] = {
     DEFINE_ATTR(ResponseId, u4, none),
     DEFINE_ATTR(ResponseSeq, u4, none),
     DEFINE_ATTR(Task, u1, none),
+    DEFINE_ATTR(LockId, u4, none),
 };
 
 static_assert(_elements_in(attrInformation) == EvAttrMax);
@@ -244,6 +256,8 @@ EventContext queryEventContext(const char* token)
         return EventCtxRemote;
     if (strieq(token, "query"))
         return EventCtxQuery;
+    if (strieq(token, "mutex"))
+        return EventCtxMutex;
     return EventCtxInvalid;
 }
 
@@ -1057,6 +1071,72 @@ void EventRecorder::recordTaskStart(EventTask task)
 void EventRecorder::recordTaskStop(EventTask task)
 {
     recordTaskEvent(EventTaskStop, task);
+}
+
+void EventRecorder::recordLockEvent(EventType event, unsigned lockId)
+{
+    if (!isRecording() || !isEventEnabled(EventCtxMutex))
+        return;
+
+    if (unlikely(outputToLog))
+        TRACEEVENT("{ \"name\": \"%s\", \"LockId\": %u }", queryEventName(event), lockId);
+
+    size32_t requiredSize = sizeMessageHeaderFooter + getSizeOfAttrs(lockId);
+    offset_type writeOffset = reserveEvent(requiredSize);
+    offset_type pos = writeOffset;
+    writeEventHeader(event, pos);
+    write(pos, EvAttrLockId, lockId);
+    writeEventFooter(pos, requiredSize, writeOffset);
+}
+
+void EventRecorder::recordLockWait(unsigned lockId)
+{
+    recordLockEvent(EventLockWait, lockId);
+}
+
+void EventRecorder::recordLockAcquire(unsigned lockId)
+{
+    recordLockEvent(EventLockAcquire, lockId);
+}
+
+void EventRecorder::recordLockRelease(unsigned lockId)
+{
+    recordLockEvent(EventLockRelease, lockId);
+}
+
+void EventRecorder::recordSemWait(unsigned lockId)
+{
+    recordLockEvent(EventSemWait, lockId);
+}
+
+void EventRecorder::recordSemAcquire(unsigned lockId)
+{
+    recordLockEvent(EventSemAcquire, lockId);
+}
+
+void EventRecorder::recordSemSignal(unsigned lockId)
+{
+    recordLockEvent(EventSemSignal, lockId);
+}
+
+void EventRecorder::recordLockTryWaitAcquire(unsigned lockId)
+{
+    recordLockEvent(EventLockTryWaitAcquire, lockId);
+}
+
+void EventRecorder::recordLockTryWaitFail(unsigned lockId)
+{
+    recordLockEvent(EventLockTryWaitFail, lockId);
+}
+
+void EventRecorder::recordLockWaitTimeout(unsigned lockId)
+{
+    recordLockEvent(EventLockWaitTimeout, lockId);
+}
+
+void EventRecorder::recordSemWaitTimeout(unsigned lockId)
+{
+    recordLockEvent(EventSemWaitTimeout, lockId);
 }
 
 void EventRecorder::recordRequestIdEvent(EventType event, unsigned requestId, unsigned requestSeq)

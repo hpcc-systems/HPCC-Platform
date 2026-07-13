@@ -18,6 +18,7 @@
 #ifndef JEVENT_HPP
 #define JEVENT_HPP
 
+#include "jeventconst.hpp"
 #include "jscm.hpp"
 #include "jatomic.hpp"
 #include "jbuff.hpp"
@@ -27,44 +28,6 @@
 #include "jstats.h"
 #include <condition_variable>
 #include <type_traits>
-
-// The order should not be changed, or items removed. New values should always be appended before EventMax
-// The meta prefix is used when there are records that provide extra meta data to help interpret
-// the event data e.g. mapping file ids to filenames.
-enum EventType : byte
-{
-    EventNone,
-    EventIndexCacheHit,
-    EventIndexCacheMiss,
-    EventIndexLoad,
-    EventIndexEviction,
-    EventDaliChangeMode,
-    EventDaliCommit,
-    EventDaliConnect,
-    EventDaliEnsureLocal,
-    EventDaliGet,
-    EventDaliGetChildren,
-    EventDaliGetChildrenFor,
-    EventDaliGetElements,
-    EventDaliSubscribe,
-    MetaFileInformation,          // information about a file
-    EventRecordingActive,         // optional event to indicate that recording was suspended/re-enabled
-    EventIndexPayload,            // payload of a leaf node accessed
-    EventQueryStart,
-    EventQueryStop,
-    EventRecordingSource,         // information about the source of the recording
-    EventIndexOpen,               // open an index ready for reading
-    MetaPlaneInformation,         // information about a plane
-    EventRequestSend,           // remote request sent
-    EventRequestReceive,           // remote request received
-    EventWorkerStart,             // remote processing started
-    EventWorkerStop,              // remote processing completed
-    EventResponseSend,              // worker sent result
-    EventResponseReceive,           // worker result received
-    EventTaskStart,               // task execution started
-    EventTaskStop,                // task execution completed
-    EventMax
-};
 
 // Tasks represent a logical step in processing.  They will always start and stop on the same thread.
 enum class EventTask : byte
@@ -87,6 +50,7 @@ enum EventContext : uint16_t
     EventCtxMeta    = 0x0008,
     EventCtxRemote  = 0x0010,
     EventCtxQuery   = 0x0020,
+    EventCtxMutex   = 0x0040,
     // Add all new contexts above this line.
     // Dedicated sentinel for parse/validation failures. Not a context bit.
     EventCtxInvalid = 0x8000,
@@ -148,6 +112,7 @@ enum EventAttr : byte
     EvAttrResponseId,
     EvAttrResponseSeq,
     EvAttrTask,
+    EvAttrLockId,
     EvAttrMax
 };
 
@@ -456,7 +421,6 @@ public:
 };
 
 //---------------------------------------------------------------------------------------------------------------------
-enum EventType : byte;
 enum EventAttr : byte;
 interface IFileIO;
 
@@ -516,6 +480,17 @@ public:
     void recordTaskStart(EventTask task);
     void recordTaskStop(EventTask task);
 
+    void recordLockWait(unsigned lockId);
+    void recordLockAcquire(unsigned lockId);
+    void recordLockRelease(unsigned lockId);
+    void recordSemWait(unsigned lockId);
+    void recordSemAcquire(unsigned lockId);
+    void recordSemSignal(unsigned lockId);
+    void recordLockTryWaitAcquire(unsigned lockId);
+    void recordLockTryWaitFail(unsigned lockId);
+    void recordLockWaitTimeout(unsigned lockId);
+    void recordSemWaitTimeout(unsigned lockId);
+
     void recordRecordingSource(const char* processDescriptor, byte channelId, byte replicaId, __uint64 instanceId);
 
     void recordEvent(CEvent& event);
@@ -525,6 +500,7 @@ public:
 protected:
     void recordRecordingActive(bool paused);
     void recordTaskEvent(EventType event, EventTask task);
+    void recordLockEvent(EventType event, unsigned lockId);
     void recordRequestIdEvent(EventType event, unsigned requestId, unsigned requestSeq);
     void recordResponseEvent(EventType event, unsigned requestId, unsigned requestSeq, unsigned responseId, unsigned responseSeq);
     void recordDaliEvent(EventType event, const char * xpath, __int64 id, stat_type elapsedNs, size32_t dataSize);

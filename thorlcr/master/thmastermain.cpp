@@ -803,7 +803,6 @@ int main( int argc, const char *argv[]  )
 
         HardwareInfo hdwInfo;
         getHardwareInfo(hdwInfo);
-        globals->setPropInt("@masterTotalMem", hdwInfo.totalMemory);
         unsigned mmemSize = globals->getPropInt("@masterMemorySize"); // in MB
         unsigned gmemSize = globals->getPropInt("@globalMemorySize"); // in MB
         if (0 == gmemSize)
