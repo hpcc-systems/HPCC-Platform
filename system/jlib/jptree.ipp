@@ -277,8 +277,8 @@ private:
 #define IptFlagClr(fs, f) (fs &= (~f))
 
 // NOTE - hairy code alert!
-// In order to keep code common between atom and local versions of ptree, we store the atom-specific information BEFORE the this pointer of AttrStr
-// (see class AttrStrAtom below).
+// In order to keep code common between atom and local versions of ptree, we store the atom-specific information BEFORE the this pointer of AtomStr
+// (see class AtomStrAtom below).
 // This requires some care - in particular must use the right method to destroy the objects, and must not add any virtual methods to either class
 
 //#define TRACE_STRING_SIZE
@@ -286,7 +286,7 @@ private:
 //#define TRACE_ALL_STRING
 //#define TRACE_ALL_ATOM
 
-struct AttrStr
+struct AtomStr
 {
     const char *get() const
     {
@@ -294,7 +294,7 @@ struct AttrStr
     }
     char str_DO_NOT_USE_DIRECTLY[1];  // Actually [n] - null terminated
 
-    static AttrStr *create(const char *k)
+    static AtomStr *create(const char *k)
     {
         size32_t kl = k ? strlen(k) : 0;
 #ifdef TRACE_ALL_STRING
@@ -308,18 +308,18 @@ struct AttrStr
             DBGLOG("TRACE_STRING_SIZE: total size now %" I64F "d", maxsize.load());
         }
 #endif
-        AttrStr *ret = (AttrStr *) malloc(kl+1);
+        AtomStr *ret = (AtomStr *) malloc(kl+1);
         memcpy(ret->str_DO_NOT_USE_DIRECTLY, k, kl);
         ret->str_DO_NOT_USE_DIRECTLY[kl] = 0;
         return ret;
     }
-    static inline AttrStr *createNC(const char *k)
+    static inline AtomStr *createNC(const char *k)
     {
         // If we started to use a static hash table for common values, we would probably want to use a different one here for case-insensitive matches
         return create(k);
     }
 
-    static void destroy(AttrStr *a)
+    static void destroy(AtomStr *a)
     {
 #ifdef TRACE_STRING_SIZE
         totsize -= strlen(a->str_DO_NOT_USE_DIRECTLY)+1;
@@ -334,53 +334,103 @@ struct AttrStr
 };
 
 
-// In order to keep code common between atom and local versions of ptree, we store the atom-specific information BEFORE the this pointer of AttrStr
+// In order to keep code common between atom and local versions of ptree, we store the atom-specific information BEFORE the this pointer of AtomStr
 // This requires some care - in particular must use the right method to destroy the objects, and must not add any virtual methods to either class
 // Note that memory usage is significant as we create literally millions of these objects
 
 typedef unsigned hashfunc( const unsigned char *k, unsigned length, unsigned initval);
 
-struct AttrStrAtom
+struct AtomStrAtom
 {
     unsigned hash;
-    unsigned short linkcount;
+    std::atomic<unsigned short> linkcount;
     char str_DO_NOT_USE_DIRECTLY[1];  // Actually N
 
-    static AttrStrAtom *create(const char *k, size32_t kl, hashfunc _hash)
+protected:
+    void *operator new(size_t size, size32_t kl)
+    {
+        // size already includes the 1-byte str_DO_NOT_USE_DIRECTLY[1] member, which
+        // serves as the null terminator slot.  We need kl extra bytes for the string
+        // body, so total = size + kl (no +1 needed).
+        return malloc(size + kl);
+    }
+    void operator delete(void *p, size32_t kl)
+    {
+        free(p);
+    }
+    void operator delete(void *p)
+    {
+        free(p);
+    }
+
+    AtomStrAtom(const char *k, size32_t kl, unsigned _hash) : hash(_hash), linkcount(0)
+    {
+        memcpy(str_DO_NOT_USE_DIRECTLY, k, kl);
+        str_DO_NOT_USE_DIRECTLY[kl] = 0;
+    }
+    ~AtomStrAtom() = default;
+
+    static void traceCreate(const char *k, size_t sz)
     {
 #ifdef TRACE_ALL_ATOM
         DBGLOG("TRACE_ALL_ATOM: %s", k);
 #endif
 #ifdef TRACE_ATOM_SIZE
-        totsize += sizeof(AttrStrAtom)+kl+1;
+        totsize += sz;
         if (totsize > maxsize)
         {
             maxsize.store(totsize);
             DBGLOG("TRACE_ATOM_SIZE: total size now %" I64F "d", maxsize.load());
         }
 #endif
-        AttrStrAtom *ret = (AttrStrAtom *) malloc(offsetof(AttrStrAtom, str_DO_NOT_USE_DIRECTLY)+kl+1);
-        memcpy(ret->str_DO_NOT_USE_DIRECTLY, k, kl);
-        ret->str_DO_NOT_USE_DIRECTLY[kl] = 0;
-        ret->hash = _hash((const unsigned char *) k, kl, 17);
-        ret->linkcount = 0;
-        return ret;
     }
-    static void destroy(AttrStrAtom *a)
+    static void traceDestroy(const char *k, size_t sz)
     {
 #ifdef TRACE_ATOM_SIZE
-        totsize -= sizeof(AttrStrAtom)+strlen(a->str_DO_NOT_USE_DIRECTLY)+1;
+        totsize -= sz;
 #endif
-        free(a);
     }
 
-    AttrStr *toAttrStr()
+public:
+    AtomStr *toAtomStr()
     {
-        return (AttrStr *) &str_DO_NOT_USE_DIRECTLY;
+        return reinterpret_cast<AtomStr *>(&str_DO_NOT_USE_DIRECTLY);
     }
-    static AttrStrAtom *toAtom(AttrStr *a)
+    static AtomStrAtom *toAtom(AtomStr *a)
     {
-        return (AttrStrAtom *)(&a->str_DO_NOT_USE_DIRECTLY - offsetof(AttrStrAtom, str_DO_NOT_USE_DIRECTLY));
+        return reinterpret_cast<AtomStrAtom *>(reinterpret_cast<byte *>(a) - offsetof(AtomStrAtom, str_DO_NOT_USE_DIRECTLY));
+    }
+
+    // Saturating atomic increment.  Once the count reaches (unsigned short)-1 it
+    // sticks there permanently and the atom intentionally leaks rather than overflow.
+    inline bool link()
+    {
+        unsigned short lc = linkcount.load(std::memory_order_relaxed);
+        while (true)
+        {
+            if (unlikely(lc == (unsigned short)-1))
+                return true;
+            if (unlikely(lc == 0))
+                return false;
+            if (linkcount.compare_exchange_weak(lc, lc + 1, std::memory_order_relaxed))
+                return true;
+        }
+    }
+    // Saturating atomic decrement.  Returns true iff this thread performed the final
+    // decrement (1 -> 0), signaling that it now owns removing the atom from its
+    // hash table. Resurrection may occur before the lock is taken, handle carefully.
+    inline bool unlink()
+    {
+        unsigned short lc = linkcount.load(std::memory_order_relaxed);
+        while (true)
+        {
+            // It is possible but unlikely that lc has become 0 (e.g. another thread concurrently
+            // dropped it to 0) or become -1 (permanently leaked atom) at this point.
+            if (unlikely(lc == (unsigned short)-1 || lc == 0))
+                return false;
+            if (linkcount.compare_exchange_weak(lc, lc - 1, std::memory_order_acq_rel, std::memory_order_relaxed))
+                return (lc == 1);
+        }
     }
 #ifdef TRACE_ATOM_SIZE
     static std::atomic<__int64> totsize;
@@ -388,41 +438,78 @@ struct AttrStrAtom
 #endif
  };
 
-struct AttrStrC : public AttrStrAtom
+struct AtomStrC : public AtomStrAtom
 {
+    AtomStrC(const char *k, size32_t kl, unsigned _hash) : AtomStrAtom(k, kl, _hash)
+    {
+    }
     static inline unsigned getHash(const char *k)
     {
-        return hashcz((const byte *)k, 17);
+        return hashcz_fnv1a((const byte *)k, fnvInitialHash32);
     }
     inline bool eq(const char *k)
     {
         return streq(k,str_DO_NOT_USE_DIRECTLY);
     }
-    static AttrStrC *create(const char *k)
+    static AtomStrC *createHash(const char *k, size32_t kl, unsigned h)
+    {
+        // sizeof(AtomStrC) already includes the 1-byte str_DO_NOT_USE_DIRECTLY[1]
+        // tail, so the allocation and trace size is sizeof + kl (no +1).
+        traceCreate(k, sizeof(AtomStrC) + kl);
+        return new(kl) AtomStrC(k, kl, h);
+    }
+    static AtomStrC *create(const char *k)
     {
         size32_t kl = k ? strlen(k) : 0;
-        return (AttrStrC *) AttrStrAtom::create(k, kl, hashc);
+        return createHash(k, kl, hashc_fnv1a((const byte *)k, kl, fnvInitialHash32));
+    }
+    static void destroy(AtomStrC *a)
+    {
+        // sizeof(AtomStrC) already includes the 1-byte tail; size matches createHash.
+        traceDestroy(a->str_DO_NOT_USE_DIRECTLY, sizeof(AtomStrC) + strlen(a->str_DO_NOT_USE_DIRECTLY));
+        delete a;
     }
 };
 
-struct AttrStrNC : public AttrStrAtom
+struct AtomStrNC : public AtomStrAtom
 {
+    AtomStrNC(const char *k, size32_t kl, unsigned _hash) : AtomStrAtom(k, kl, _hash)
+    {
+    }
     static inline unsigned getHash(const char *k)
     {
-        return hashncz((const byte *)k, 17);
+        return hashncz_fnv1a((const byte *)k, fnvInitialHash32);
     }
     inline bool eq(const char *k)
     {
         return strieq(k,str_DO_NOT_USE_DIRECTLY);
     }
-    static AttrStrNC *create(const char *k)
+    static AtomStrNC *createHash(const char *k, size32_t kl, unsigned h)
+    {
+        // sizeof(AtomStrNC) already includes the 1-byte str_DO_NOT_USE_DIRECTLY[1]
+        // tail, so the allocation and trace size is sizeof + kl (no +1).
+        traceCreate(k, sizeof(AtomStrNC) + kl);
+        return new(kl) AtomStrNC(k, kl, h);
+    }
+    static AtomStrNC *create(const char *k)
     {
         size32_t kl = k ? strlen(k) : 0;
-        return (AttrStrNC *) AttrStrAtom::create(k, kl, hashnc);
+        return createHash(k, kl, hashnc_fnv1a((const byte *)k, kl, fnvInitialHash32));
+    }
+    static void destroy(AtomStrNC *a)
+    {
+        // sizeof(AtomStrNC) already includes the 1-byte tail; size matches createHash.
+        traceDestroy(a->str_DO_NOT_USE_DIRECTLY, sizeof(AtomStrNC) + strlen(a->str_DO_NOT_USE_DIRECTLY));
+        delete a;
     }
 };
 
-typedef CMinHashTable<AttrStrC> RONameTable;
+// Node-name tables use the standard 16-bit AtomStrAtom/AtomStrC instances.
+// Note: If the number of distinct occurrences of a specific name or attribute
+// exceeds 65534, the linkcount locks at (unsigned short)-1 and the atom
+// will intentionally permanently leak rather than overflow.
+
+typedef CMinHashTable<AtomStrC> RONameTable;
 
 // NOTE - hairy code alert!
 // To save on storage (and contention) we store short string values in same slot as the pointer to longer
@@ -556,31 +643,31 @@ inline const char *skipPTreeEncodedMarker(const char *name)
     return name;
 }
 
-typedef PtrStrUnion<AttrStr> AttrStrUnion;
-static_assert(sizeof(AttrStrUnion) == sizeof(AttrStr *), "AttrStrUnion size mismatch");  // Sanity check!
+typedef PtrStrUnion<AtomStr> AtomStrUnion;
+static_assert(sizeof(AtomStrUnion) == sizeof(AtomStr *), "AtomStrUnion size mismatch");  // Sanity check!
 
 #ifdef USE_READONLY_ATOMTABLE
-struct AttrStrUnionWithTable : public AttrStrUnion
+struct AtomStrUnionWithTable : public AtomStrUnion
 {
     inline bool isEncoded() const
     {
         if (!isPtr() && flag==3)
             return (hasPTreeEncodedMarker(roNameTable->getIndex(idx2)->str_DO_NOT_USE_DIRECTLY));
-        return hasPTreeEncodedMarker(AttrStrUnion::get());
+        return hasPTreeEncodedMarker(AtomStrUnion::get());
     }
     inline const char *get() const
     {
         if (!isPtr() && flag==3)
             return skipPTreeEncodedMarker(roNameTable->getIndex(idx2)->str_DO_NOT_USE_DIRECTLY);  // Should probably rename this back now!
-        return skipPTreeEncodedMarker(AttrStrUnion::get());
+        return skipPTreeEncodedMarker(AtomStrUnion::get());
     }
     bool set(const char *key)
     {
-        if (AttrStrUnion::set(key))
+        if (AtomStrUnion::set(key))
             return true;
         if (key && key[0]=='@')
         {
-            unsigned idx = roNameTable->findIndex(key, AttrStrC::getHash(key));
+            unsigned idx = roNameTable->findIndex(key, AtomStrC::getHash(key));
             if (idx != (unsigned) -1)
             {
                 assert(idx <= 0xffff);
@@ -594,19 +681,21 @@ struct AttrStrUnionWithTable : public AttrStrUnion
     static RONameTable *roNameTable;
 };
 
-struct AttrStrUnionWithValueTable : public AttrStrUnion
+struct AtomStrUnionWithValueTable : public AtomStrUnion
 {
     inline const char *get() const
     {
         if (flag==3) // no point in also checking !isPtr() afaics
             return roValueTable->getIndex(idx2)->str_DO_NOT_USE_DIRECTLY;  // Should probably rename this back now!
-        return AttrStrUnion::get();
+        return AtomStrUnion::get();
     }
     bool set(const char *key)
     {
+        if (AtomStrUnion::set(key))
+            return true;
         if (key)
         {
-            unsigned idx = roValueTable->findIndex(key, AttrStrC::getHash(key));
+            unsigned idx = roValueTable->findIndex(key, AtomStrC::getHash(key));
             if (idx != (unsigned) -1)
             {
                 assert(idx <= 0xffff);
@@ -622,16 +711,51 @@ struct AttrStrUnionWithValueTable : public AttrStrUnion
     }
     static RONameTable *roValueTable;
 };
+
+// Node-name variant: uses a separate roNameTable populated with common node names.
+// set() takes an nc flag and skips the RO table for nocase trees, since the table
+// stores case-sensitive entries only.
+struct NodeNameStrUnion : public AtomStrUnion
+{
+    inline const char *get() const
+    {
+        if (flag==3)
+            return roNameTable->getIndex(idx2)->str_DO_NOT_USE_DIRECTLY;
+        return AtomStrUnion::get();
+    }
+    bool set(const char *key, bool nc)
+    {
+        if (AtomStrUnion::set(key))
+            return true;
+        if (key && !nc)
+        {
+            unsigned idx = roNameTable->findIndex(key, AtomStrC::getHash(key));
+            if (idx != (unsigned) -1)
+            {
+                assert(idx <= 0xffff);
+                flag = 3;
+                idx2 = idx;
+                return true;
+            }
+        }
+        return false;
+    }
+    static RONameTable *roNameTable;
+};
 #else
-typedef AttrStrUnion AttrStrUnionWithTable;
-typedef AttrStrUnion AttrStrUnionWithValueTable;
+typedef AtomStrUnion AtomStrUnionWithTable;
+typedef AtomStrUnion AtomStrUnionWithValueTable;
+struct NodeNameStrUnion : public AtomStrUnion
+{
+    bool set(const char *key, bool /*nc*/) { return AtomStrUnion::set(key); }
+};
 
 #endif
 
 struct AttrValue
 {
-    AttrStrUnionWithTable key;
-    AttrStrUnionWithValueTable value;
+    AtomStrUnionWithTable key;
+    AtomStrUnionWithValueTable value;
 };
 
 
@@ -821,58 +945,10 @@ protected: // data
 };
 
 
-class CAttrValHashTable
-{
-    CMinHashTable<AttrStrC>  htc;
-    CMinHashTable<AttrStrNC> htnc;
-    CMinHashTable<AttrStrC>  htv;
-public:
-    inline AttrStr *addkey(const char *v,bool nc)
-    {
-        AttrStrAtom * ret;
-        if (nc)
-            ret = htnc.find(v,true);
-        else
-            ret = htc.find(v,true);
-        if (ret->linkcount!=(unsigned short)-1)
-            ret->linkcount++;
-        return ret->toAttrStr();
-    }
-    inline AttrStr *addval(const char *v)
-    {
-        AttrStrAtom * ret = htv.find(v,true);
-        if (ret->linkcount!=(unsigned short)-1)
-            ret->linkcount++;
-        return ret->toAttrStr();
-    }
-    inline void removekey(AttrStr *_a,bool nc)
-    {
-        AttrStrAtom *a = AttrStrAtom::toAtom(_a);
-        if (a->linkcount!=(unsigned short)-1)
-        {
-            if (--(a->linkcount)==0)
-            {
-                if (nc)
-                    htnc.remove((AttrStrNC *)a);
-                else
-                    htc.remove((AttrStrC *)a);
-            }
-        }
-    }
-    inline void removeval(AttrStr *_a)
-    {
-        AttrStrAtom *a = AttrStrAtom::toAtom(_a);
-        if (a->linkcount!=(unsigned short)-1)
-            if (--(a->linkcount)==0)
-                htv.remove((AttrStrC *)a);
-    }
-};
 
 class jlib_decl CAtomPTree : public PTree
 {
-    AttrValue *newAttrArray(unsigned n);
-    void freeAttrArray(AttrValue *a, unsigned n);
-    PtrStrUnion<HashKeyElement> name;
+    NodeNameStrUnion name;
 protected:
     virtual bool removeAttribute(const char *k) override;
     virtual IPropertyTree *create(IBufferedSerialInputStream &in, PTreeDeserializeContext &ctx) override
@@ -914,7 +990,7 @@ protected:
         return tree;
     }
     virtual void deserializeAttributes(const char *base, PTreeDeserializeContext &ctx) override;
-    AttrStrUnion name;
+    AtomStrUnion name;
 public:
     LocalPTree(const char *name=nullptr, byte flags=ipt_none, IPTArrayValue *value=nullptr, ChildMap *children=nullptr);
     ~LocalPTree();
@@ -925,7 +1001,8 @@ public:
         const char *myname = queryName();
         assert(myname);
         size32_t nl = strlen(myname);
-        return isnocase() ? hashnc_fnv1a((const byte *)myname, nl, fnvInitialHash32): hashc_fnv1a((const byte *)myname, nl, fnvInitialHash32);
+        return hash_fnv1a((const byte *)myname, nl, fnvInitialHash32, isnocase());
+
     }
     virtual void setName(const char *_name) override;
     virtual void setAttribute(const char *attr, const char *val, bool encoded) override;

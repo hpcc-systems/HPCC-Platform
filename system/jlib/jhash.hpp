@@ -453,6 +453,9 @@ extern jlib_decl unsigned hashvalue_fnv1a(unsigned value, unsigned initval);
 extern jlib_decl unsigned hashvalue_fnv1a(unsigned __int64 value, unsigned initval);
 extern jlib_decl unsigned hashvalue_fnv1a(const void * value, unsigned initval);
 
+extern jlib_decl unsigned hash_fnv1(const unsigned char *k, unsigned length, unsigned initval, bool ignoreCase);
+extern jlib_decl unsigned hash_fnv1a(const unsigned char *k, unsigned length, unsigned initval, bool ignoreCase);
+
 //================================================
 // Minimal Hash table template - slightly less overhead that HashTable/SuperHashTable
 
@@ -565,13 +568,12 @@ public:
         return table[v];
     }
 
-    void remove(C *c)
+    bool detach(C *c)
     {
         unsigned i = c->hash%htn;
-        C::destroy(c);
         while (table[i]!=c) {
             if (table[i]==NULL) {
-                return;
+                return false;
             }
             if (++i==htn)
                 i = 0;
@@ -598,7 +600,20 @@ public:
         }
         table[i] = NULL;
         n--;
-        if ((n>1024)&&(n<htn/4))
+        return true;
+    }
+
+    void remove(C *c)
+    {
+        // detach() returns false if the element is no longer in the table
+        // (e.g. if the caller already unlinked it manually).
+        bool found = detach(c);
+
+        // remove() always finalizes the object's lifecycle, destroying the memory
+        // regardless of whether it was still linked in the table.
+        C::destroy(c);
+
+        if (found && (n>1024)&&(n<htn/4))
             expand(false);
     }
 

@@ -39,6 +39,9 @@ extern jlib_decl unsigned hashc_fnv1a(const unsigned char *k, unsigned length, u
 extern jlib_decl unsigned hashnc_fnv1a(const unsigned char *k, unsigned length, unsigned initval);
 extern jlib_decl unsigned hashcz_fnv1a(const unsigned char *k, unsigned initval);
 extern jlib_decl unsigned hashncz_fnv1a(const unsigned char *k, unsigned initval);
+extern jlib_decl unsigned hash_fnv1(const unsigned char *k, unsigned length, unsigned initval, bool ignoreCase);
+extern jlib_decl unsigned hash_fnv1a(const unsigned char *k, unsigned length, unsigned initval, bool ignoreCase);
+
 
 class jlib_decl SuperHashTable : public CInterface
 {
@@ -520,10 +523,7 @@ public:
         size32_t l = (size32_t)strlen(key);
         HashKeyElement *hke = (HashKeyElement *) checked_malloc(sizeof(HashKeyElement)+l+1,-605);
         memcpy((void *) (hke->keyPtr()), key, l+1);
-        if (nocase)
-            hke->hashValue = hashnc_fnv1a((const unsigned char *)key, l, fnvInitialHash32);
-        else
-            hke->hashValue = hashc_fnv1a((const unsigned char *)key, l, fnvInitialHash32);
+        hke->hashValue = hash_fnv1a((const byte *)key, l, fnvInitialHash32, nocase);
         hke->linkCount = 0;
         return hke;
     }

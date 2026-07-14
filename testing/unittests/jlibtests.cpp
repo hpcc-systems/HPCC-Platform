@@ -29,6 +29,7 @@
 #include <future>
 
 #include "jsem.hpp"
+#include "jmutex.hpp"
 #include "jfile.hpp"
 #include "jdebug.hpp"
 #include "jset.hpp"
@@ -3891,6 +3892,7 @@ CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(PTreeSerializationDeserializationTest, "PT
 #include "jbuff.hpp"
 #include "jutil.hpp"
 #include "jzstd.hpp"
+#include <cmath>
 
 /* Test suite for PTree Binary and XML timing tests
  *
@@ -3901,7 +3903,9 @@ CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(PTreeSerializationDeserializationTest, "PT
  * --PTreeBinaryTimingStressTest.modes=bin-normal,bin-lowmem,xml-normal,xml-lowmem
  *                                                                CSV list of explicit benchmark modes. Default runs all four.
  * --PTreeBinaryTimingStressTest.validateContent=0                Validate that ipt_lowmem re-serializes byte-for-byte identically to the ipt_none reference (default: 0=off)
- * --PTreeBinaryTimingStressTest.excludeDtorTime=1                Exclude tree destructor time from per-thread measurements via CCycleTimer; wall=max(perThread) (default: 1=on)
+ * --PTreeBinaryTimingStressTest.synchronizePhases=1             Barrier the create and dtor phases so they never overlap across threads (default: 1=on).
+ *                                                                If 0 the phases run freely and overlap (some threads creating while others destruct),
+ *                                                                so the reported create and dtor timings mix the two workloads and may be misleading.
  */
 class PTreeBinaryTimingStressTest : public CppUnit::TestFixture
 {
@@ -3981,7 +3985,7 @@ public:
         CPPUNIT_ASSERT_MESSAGE("PTree timing test requires at least one enabled mode", enabledModes.any());
 
         validateContent = getComponentConfigSP()->getPropBool("PTreeBinaryTimingStressTest/@validateContent", false);
-        excludeDtorTime = getComponentConfigSP()->getPropBool("PTreeBinaryTimingStressTest/@excludeDtorTime", true);
+        synchronizePhases = getComponentConfigSP()->getPropBool("PTreeBinaryTimingStressTest/@synchronizePhases", true);
     }
 
     void testPTreeTiming()
@@ -4027,32 +4031,48 @@ public:
             buildReferenceBinary(binaryInput, referenceBin);
 
         bool anyComparing = enabledModeCount > 1;
-        StringBuffer header;
-        header.appendf("%7s", "Threads");
+
+        std::vector<ModeIndex> enabledList;
+        enabledList.reserve(enabledModeCount);
         for (unsigned mode = 0; mode < modeCount; ++mode)
         {
             ModeIndex modeIndex = (ModeIndex)mode;
-            if (!modeEnabled(modeIndex))
-                continue;
-
-            const char *modeTag = queryModeToken(modeIndex);
-            header.appendf(" %12s %12s", modeTag, "Avg(ms)");
-            if (anyComparing && modeIndex != baselineMode)
-                header.appendf(" %12s", "Diff(%)");
+            if (modeEnabled(modeIndex))
+                enabledList.push_back(modeIndex);
         }
-        DBGLOG("=== PTree PARALLEL BENCHMARK (size=%u bytes, iters=%u, dtor=%s, validate=%s) ===",
+
+        DBGLOG("=== PTree PARALLEL BENCHMARK (size=%u bytes, iters=%u, validate=%s) ===",
                 binaryInput.length(), iterations,
-                excludeDtorTime ? "excluded" : "included",
                 validateContent ? "on" : "off");
-        DBGLOG("%s", header.str());
+        DBGLOG("create/dtor/total avg/sd/min/max = per-iteration ms pooled across all %u iterations (comparable across thread counts).", iterations);
+        DBGLOG("wall = elapsed ms of the slowest thread for that phase (falls as threadCount shares the work).");
+        if (!synchronizePhases)
+            DBGLOG("NOTE: phase synchronization is OFF - create and dtor phases overlap across threads, so their timings may be misleading.");
+
+        StringBuffer groupHeader;
+        StringBuffer colHeader;
+        groupHeader.appendf("%7s %-10s", "", "");
+        colHeader.appendf("%7s %-10s", "Threads", "Mode");
+        for (const char *grp : {"create", "dtor", "total"})
+        {
+            groupHeader.appendf(" |%45s", grp);
+            colHeader.appendf(" |%9s%9s%9s%9s%9s", "avg", "sd", "min", "max", "wall");
+        }
         if (anyComparing)
-            DBGLOG("Diff baseline mode: %s", queryModeToken(baselineMode));
+        {
+            groupHeader.appendf(" |%9s", "");
+            colHeader.appendf(" |%9s", "diff%");
+        }
+        DBGLOG("%s", groupHeader.str());
+        DBGLOG("%s", colHeader.str());
+        if (anyComparing)
+            DBGLOG("diff%% = create avg vs baseline mode %s", queryModeToken(baselineMode));
 
         const MemoryBuffer *binaryValidationReference = validateContent ? &referenceBin : nullptr;
 
         for (unsigned threadCount : threadCounts)
         {
-            std::vector<double> modeTimings;
+            std::vector<TimingResult> modeTimings;
             modeTimings.reserve(enabledModeCount);
 
             for (unsigned mode = 0; mode < modeCount; ++mode)
@@ -4081,27 +4101,90 @@ public:
                 }
             }
 
-            const double baseline = modeTimings[0];
-            StringBuffer row;
-            row.appendf("%7u", threadCount);
-
+            const double baseline = selectPrimary(modeTimings[0]);
             for (unsigned i = 0; i < modeTimings.size(); ++i)
             {
-                const double wallMs = modeTimings[i];
-                row.appendf(" %12.3f %12.3f", wallMs, wallMs / iterations);
-                if (anyComparing && i > 0)
+                const TimingResult &r = modeTimings[i];
+                StringBuffer row;
+                row.appendf("%7u %-10s", threadCount, queryModeToken(enabledList[i]));
+
+                auto appendStats = [&](const TimingResult::Stats &st)
                 {
-                    double diff = (baseline > 0.0) ? calculatePercentDiff(baseline, wallMs) : 0.0;
-                    row.appendf(" %+12.2f", diff);
+                    row.appendf(" |%9.2f%9.2f%9.2f%9.2f%9.2f", st.avgMs, st.stddevMs, st.minMs, st.maxMs, st.wallMs);
+                };
+                appendStats(r.create);
+                appendStats(r.dtor);
+                appendStats(r.total);
+
+                if (anyComparing)
+                {
+                    if (i == 0)
+                        row.appendf(" |%9s", "-");
+                    else
+                    {
+                        double diff = (baseline > 0.0) ? calculatePercentDiff(baseline, selectPrimary(r)) : 0.0;
+                        row.appendf(" |%+9.2f", diff);
+                    }
                 }
+                DBGLOG("%s", row.str());
             }
-            DBGLOG("%s", row.str());
         }
 
         END_TEST
     }
 
 protected:
+    // Timing distribution from a single parallel run. Every iteration on every thread
+    // contributes one create sample and one dtor sample (total = the two summed for the
+    // same iteration). avg/sd/min/max are pooled across all iterations, so they describe
+    // the true per-iteration distribution and stay comparable across thread counts. Each
+    // phase also carries a wall time: the elapsed total of the slowest thread for that
+    // phase, which falls as more threads share the fixed work - the throughput speedup.
+    struct TimingResult
+    {
+        struct Stats
+        {
+            double avgMs = 0.0;
+            double stddevMs = 0.0;  // sample standard deviation (0 when <2 samples)
+            double minMs = 0.0;
+            double maxMs = 0.0;
+            double wallMs = 0.0;    // phase wall time: elapsed total of the slowest thread for this phase
+        };
+        Stats create;  // per-iteration creation/deserialization time (+ phase wall)
+        Stats dtor;     // per-iteration destruction (Release) time (+ phase wall)
+        Stats total;    // create + dtor of the same iteration (+ phase wall)
+    };
+
+    // Average per-iteration creation/deserialization time is the headline metric for diffs.
+    double selectPrimary(const TimingResult &r) const
+    {
+        return r.create.avgMs;
+    }
+
+    static TimingResult::Stats computeStats(const std::vector<double> &valuesMs)
+    {
+        TimingResult::Stats s;
+        if (valuesMs.empty())
+            return s;
+        double sum = 0.0;
+        double mn = valuesMs[0];
+        double mx = valuesMs[0];
+        for (double v : valuesMs)
+        {
+            sum += v;
+            mn = std::min(mn, v);
+            mx = std::max(mx, v);
+        }
+        s.avgMs = sum / valuesMs.size();
+        double var = 0.0;
+        for (double v : valuesMs)
+            var += (v - s.avgMs) * (v - s.avgMs);
+        s.stddevMs = (valuesMs.size() > 1) ? std::sqrt(var / (valuesMs.size() - 1)) : 0.0;
+        s.minMs = mn;
+        s.maxMs = mx;
+        return s;
+    }
+
     const char *queryModeToken(ModeIndex mode) const
     {
         switch (mode)
@@ -4119,7 +4202,7 @@ protected:
         }
     }
 
-    double runBinaryMode(unsigned threadCount, const MemoryBuffer &binaryInput, unsigned ptreeFlags,
+    TimingResult runBinaryMode(unsigned threadCount, const MemoryBuffer &binaryInput, unsigned ptreeFlags,
                          const MemoryBuffer *validationReference)
     {
         auto createTreeFunc = [&]()
@@ -4134,7 +4217,7 @@ protected:
         return runParallelTimingTest(threadCount, createTreeFunc);
     }
 
-    double runXmlMode(unsigned threadCount, const char *xmlInput, unsigned ptreeFlags,
+    TimingResult runXmlMode(unsigned threadCount, const char *xmlInput, unsigned ptreeFlags,
                        const MemoryBuffer *validationReference)
     {
         auto createTreeFunc = [&]()
@@ -4194,47 +4277,70 @@ protected:
 
     // Run iterations cycles on threadCount threads in parallel using createTreeFunc.
     //
-    // When excludeDtorTime is true (default): each timed iteration uses CCycleTimer snapped
-    // immediately after tree creation. Wall time is
-    // reported as max(per-thread cycles), giving the parallel critical path without dtor noise.
-    //
-    // When excludeDtorTime is false: wall clock spans the entire run, including dtors.
-    //
-    // Returns wall time in milliseconds.
-    double runParallelTimingTest(unsigned threadCount,
+    // The threads are optionally phase-synchronised (see synchronizePhases): when enabled, every
+    // thread finishes creating its tree before any thread starts destructing, so the create and
+    // dtor phases never overlap and each measures only its own contention; when disabled the
+    // phases overlap and the create/dtor timings may be misleading. Every iteration records a
+    // create sample and a dtor sample. The samples from all threads are pooled and summarised
+    // (avg/stddev/min/max) per metric, so the distribution is per-iteration and comparable across
+    // thread counts. Each phase also reports a wall time: the slowest thread's elapsed total for
+    // that phase, showing the throughput speedup.
+    TimingResult runParallelTimingTest(unsigned threadCount,
                                  const std::function<IPropertyTree *()> &createTreeFunc)
     {
+        const unsigned itersThisThread = iterations / threadCount;
+        // Per-iteration samples. Thread t owns the disjoint slice [t*itersThisThread, ...),
+        // so no locking is needed; the samples are pooled afterwards for the distribution.
+        std::vector<uint64_t> createCycles(iterations, 0);
+        std::vector<uint64_t> dtorCycles(iterations, 0);
+
+        // Optional phase barrier (see synchronizePhases). When enabled, every thread finishes
+        // creating before any thread starts destructing, so the create and dtor phases never
+        // overlap and each measures only its own contention. When disabled the phases run freely
+        // and overlap across threads (some threads creating while others destruct), so the
+        // reported create and dtor timings mix the two workloads and may be misleading. If a
+        // worker fails it sets stop and aborts the barrier, releasing any waiting threads instead
+        // of deadlocking.
         std::atomic<bool> stop{false};
-        std::vector<uint64_t> perThreadCycles(threadCount, 0);
+        Barrier barrier(threadCount);
 
         auto workerTask = [&](unsigned threadIdx)
         {
             try
             {
-                const unsigned itersThisThread = iterations / threadCount;
-
-                uint64_t myCycles = 0;
-                for (unsigned i = 0; i < itersThisThread && !stop; ++i)
+                const unsigned base = threadIdx * itersThisThread;
+                for (unsigned i = 0; i < itersThisThread; ++i)
                 {
+                    if (synchronizePhases)
+                        barrier.wait();             // start the create phase together
+                    if (stop)
+                        break;
                     CCycleTimer iterTimer;
                     Owned<IPropertyTree> tree = createTreeFunc();
-                    myCycles += iterTimer.elapsedCycles();
+                    createCycles[base + i] = iterTimer.elapsedCycles();
+
+                    if (synchronizePhases)
+                        barrier.wait();             // all created -> start the dtor phase together
+                    if (stop)
+                        break;
+                    CCycleTimer dtorTimer;
+                    tree.clear();
+                    dtorCycles[base + i] = dtorTimer.elapsedCycles();
                 }
-                perThreadCycles[threadIdx] = myCycles;
             }
             catch(IException *)
             {
                 stop = true;
+                barrier.abort();
                 throw;
             }
             catch (const std::exception &e)
             {
                 stop = true;
+                barrier.abort();
                 throw makeStringExceptionV(-1, "Worker thread exception: %s", e.what());
             }
         };
-
-        CCycleTimer wallTimer;
 
         try
         {
@@ -4254,6 +4360,7 @@ protected:
                 catch (const std::exception &e)
                 {
                     stop = true;
+                    barrier.abort();
                     if (!firstException)
                         firstException.setown(makeStringExceptionV(-1, "Failed to launch worker thread: %s", e.what()));
                 }
@@ -4289,17 +4396,52 @@ protected:
             CPPUNIT_FAIL(errMsg.str());
         }
 
-        if (excludeDtorTime)
+        std::vector<double> createMs;
+        std::vector<double> dtorMs;
+        std::vector<double> totalMs;
+        createMs.reserve(iterations);
+        dtorMs.reserve(iterations);
+        totalMs.reserve(iterations);
+        // Pool every iteration's samples so avg/sd/min/max describe the per-iteration
+        // distribution and stay comparable across thread counts (total = create + dtor of
+        // the same iteration).
+        for (unsigned i = 0; i < iterations; ++i)
         {
-            // Wall = max(per-thread deser-only cycles): parallel critical path, dtor excluded.
-            uint64_t maxCycles = *std::max_element(perThreadCycles.begin(), perThreadCycles.end());
-            return (double)cycle_to_nanosec(maxCycles) / 1e6;
+            double cMs = (double)cycle_to_nanosec(createCycles[i]) / 1e6;
+            double dMs = (double)cycle_to_nanosec(dtorCycles[i]) / 1e6;
+            createMs.push_back(cMs);
+            dtorMs.push_back(dMs);
+            totalMs.push_back(cMs + dMs);
         }
-        else
+
+        // Per-phase wall times: the elapsed total of the slowest thread for each phase,
+        // summed over that thread's slice of iterations.
+        uint64_t maxCreateCycles = 0;
+        uint64_t maxDtorCycles = 0;
+        uint64_t maxTotalCycles = 0;
+        for (unsigned t = 0; t < threadCount; ++t)
         {
-            // Wall = actual elapsed time including dtors and any first-iter validation overhead.
-            return (double)wallTimer.elapsedNs() / 1e6;
+            const unsigned base = t * itersThisThread;
+            uint64_t threadCreate = 0;
+            uint64_t threadDtor = 0;
+            for (unsigned i = 0; i < itersThisThread; ++i)
+            {
+                threadCreate += createCycles[base + i];
+                threadDtor += dtorCycles[base + i];
+            }
+            maxCreateCycles = std::max(maxCreateCycles, threadCreate);
+            maxDtorCycles = std::max(maxDtorCycles, threadDtor);
+            maxTotalCycles = std::max(maxTotalCycles, threadCreate + threadDtor);
         }
+
+        TimingResult result;
+        result.create = computeStats(createMs);
+        result.dtor = computeStats(dtorMs);
+        result.total = computeStats(totalMs);
+        result.create.wallMs = (double)cycle_to_nanosec(maxCreateCycles) / 1e6;
+        result.dtor.wallMs = (double)cycle_to_nanosec(maxDtorCycles) / 1e6;
+        result.total.wallMs = (double)cycle_to_nanosec(maxTotalCycles) / 1e6;
+        return result;
     }
 
     void decompressZstdBuffer(const void *compressedData, size_t compressedSize, const char *actualPath, MemoryBuffer &output)
@@ -4373,7 +4515,7 @@ protected:
     std::vector<unsigned> threadCounts;
     std::bitset<modeCount> enabledModes;
     bool validateContent{false};
-    bool excludeDtorTime{true};
+    bool synchronizePhases{true};
 };
 
 CPPUNIT_TEST_SUITE_REGISTRATION(PTreeBinaryTimingStressTest);

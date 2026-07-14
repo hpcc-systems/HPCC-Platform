@@ -86,17 +86,138 @@ IPropertyTreeIterator *createNullPTreeIterator() { return LINK(nullPTreeIterator
 //===================================================================
 
 #ifdef USE_READONLY_ATOMTABLE
-RONameTable *AttrStrUnionWithTable::roNameTable = nullptr;
-RONameTable *AttrStrUnionWithValueTable::roValueTable = nullptr;
+RONameTable *AtomStrUnionWithTable::roNameTable = nullptr;
+RONameTable *AtomStrUnionWithValueTable::roValueTable = nullptr;
+RONameTable *NodeNameStrUnion::roNameTable = nullptr;
 #endif
-static AtomRefTable *keyTable = nullptr;
-static AtomRefTable *keyTableNC = nullptr;
 
-static CriticalSection hashcrit;
-static CAttrValHashTable *attrHT = nullptr;
-static AttrValue **freelist = nullptr;
-static unsigned freelistmax = 0;
-static CLargeMemoryAllocator freeallocator((memsize_t)-1, 0x1000*sizeof(AttrValue), true);
+// Sharded node-name atom tables to reduce contention under parallel deserialization.
+constexpr unsigned kNameShards = 16;
+static_assert((kNameShards & (kNameShards - 1)) == 0 && kNameShards > 0, "kNameShards must be a power of two");
+
+template <class ATOM_TYPE>
+struct alignas(64) CAtomShard
+{
+    CriticalSection crit;
+    CMinHashTable<ATOM_TYPE> ht;
+
+    inline AtomStr *add(const char *v, size32_t len, unsigned hash)
+    {
+        CriticalBlock block(crit);
+        ATOM_TYPE *ret = ht.findh(v, hash);
+        if (ret)
+        {
+            // If an existing atom is found and we successfully increment its refcount
+            // (i.e. it is not currently being destroyed), we can safely reuse it.
+            if (ret->link())
+                return ret->toAtomStr();
+
+            // If link() returned false, the atom's refcount is already 0. Another thread
+            // is actively destroying it but hasn't yet removed it from the hash table.
+            // We must detach this outgoing atom to make way for a newly allocated one.
+            ht.detach(ret);
+        }
+
+        // Create a new atom for this string, initializing its refcount to 1.
+        ret = ATOM_TYPE::createHash(v, len, hash);
+        ret->linkcount.store(1, std::memory_order_relaxed);
+        ht.add(ret);
+        return ret->toAtomStr();
+    }
+
+    inline void remove(AtomStrAtom *a)
+    {
+        // Decrement the atom's refcount lock-free; only the rare final-reference
+        // handoff needs the shard lock to unlink it from the hash table.
+        if (!a->unlink())
+            return;
+
+        CriticalBlock block(crit);
+
+        // Since link() strictly rejects 0->1 transitions, resurrection is impossible
+        // under the lock. We unconditionally finalize the removal. (If another thread
+        // concurrently added the same string, it detached this outgoing atom and
+        // created a new one).
+        ht.remove((ATOM_TYPE *)a);
+    }
+};
+
+static CAtomShard<AtomStrC>  nameShardsC[kNameShards];
+static CAtomShard<AtomStrNC> nameShardsNC[kNameShards];
+
+// Sharded attribute tables to reduce contention under parallel deserialization.
+constexpr unsigned kAttrShards = 16;
+static_assert((kAttrShards & (kAttrShards - 1)) == 0 && kAttrShards > 0, "kAttrShards must be a power of two");
+
+static CAtomShard<AtomStrC>  attrKeyShardsC[kAttrShards];
+static CAtomShard<AtomStrNC> attrKeyShardsNC[kAttrShards];
+static CAtomShard<AtomStrC>  attrValShards[kAttrShards];
+
+static inline AtomStr *ensureNodeName(const char *name, bool nc)
+{
+    size32_t len = strlen(name);
+    if (unlikely(nc))
+    {
+        unsigned hash = hashnc_fnv1a((const byte *)name, len, fnvInitialHash32);
+        return nameShardsNC[hash & (kNameShards - 1)].add(name, len, hash);
+    }
+    else
+    {
+        unsigned hash = hashc_fnv1a((const byte *)name, len, fnvInitialHash32);
+        return nameShardsC[hash & (kNameShards - 1)].add(name, len, hash);
+    }
+}
+
+static inline AtomStr *ensureAttributeName(const char *key, bool nc)
+{
+    size32_t len = strlen(key);
+    if (unlikely(nc))
+    {
+        unsigned hash = hashnc_fnv1a((const byte *)key, len, fnvInitialHash32);
+        return attrKeyShardsNC[hash & (kAttrShards - 1)].add(key, len, hash);
+    }
+    else
+    {
+        unsigned hash = hashc_fnv1a((const byte *)key, len, fnvInitialHash32);
+        return attrKeyShardsC[hash & (kAttrShards - 1)].add(key, len, hash);
+    }
+}
+
+static inline AtomStr *ensureAttributeValue(const char *val)
+{
+    size32_t len = strlen(val);
+    unsigned hash = hashc_fnv1a((const byte *)val, len, fnvInitialHash32);
+    return attrValShards[hash & (kAttrShards - 1)].add(val, len, hash);
+}
+
+// Fast-path shard selection for removal.  An interned atom already stores the
+// hash that was used to place it (computed with the same FNV-1a algorithm as
+// the ensure* helpers), so the shard can be recovered from the atom prefix
+// with a single load instead of re-hashing the whole string.  Only valid for a
+// genuine heap atom (isPtr()), never for inline/RO-table unions.
+static inline void removeNameByPtr(AtomStr *n, bool nc)
+{
+    AtomStrAtom *a = AtomStrAtom::toAtom(n);
+    if (unlikely(nc))
+        nameShardsNC[a->hash & (kNameShards - 1)].remove(a);
+    else
+        nameShardsC[a->hash & (kNameShards - 1)].remove(a);
+}
+
+static inline void removeAttrKeyByPtr(AtomStr *k, bool nc)
+{
+    AtomStrAtom *a = AtomStrAtom::toAtom(k);
+    if (unlikely(nc))
+        attrKeyShardsNC[a->hash & (kAttrShards - 1)].remove(a);
+    else
+        attrKeyShardsC[a->hash & (kAttrShards - 1)].remove(a);
+}
+
+static inline void removeAttrValByPtr(AtomStr *v)
+{
+    AtomStrAtom *a = AtomStrAtom::toAtom(v);
+    attrValShards[a->hash & (kAttrShards - 1)].remove(a);
+}
 
 #ifdef USE_READONLY_ATOMTABLE
 static const char * roAttributes[] =
@@ -109,76 +230,90 @@ static const char * roAttributeValues[] =
 #include "jptree-attrvalues.hpp"    // potentially auto-generated
     nullptr
 };
+static const char * roNodeNames[] =
+{
+#include "jptree-nodenames.hpp"    // potentially auto-generated
+    nullptr
+};
 
 void initializeRoTable()
 {
     for (const char **attr = roAttributes; *attr; attr++)
     {
-        AttrStrUnionWithTable::roNameTable->find(*attr, true);
+        AtomStrUnionWithTable::roNameTable->find(*attr, true);
     }
     for (const char **value = roAttributeValues; *value; value++)
     {
-        AttrStrUnionWithValueTable::roValueTable->find(*value, true);
+        AtomStrUnionWithValueTable::roValueTable->find(*value, true);
+    }
+    for (const char **nodeName = roNodeNames; *nodeName; nodeName++)
+    {
+        NodeNameStrUnion::roNameTable->find(*nodeName, true);
     }
     // also populate read-only value table by generating some common constants
     StringBuffer constStr;
     for (unsigned c=0; c<1000; c++) // common unsigned values in attributes
     {
         constStr.clear().append(c);
-        AttrStrUnionWithValueTable::roValueTable->find(constStr.str(), true);
+        AtomStrUnionWithValueTable::roValueTable->find(constStr.str(), true);
     }
     for (unsigned c=1; c<=400; c++) // outer graphs
     {
         constStr.clear().append("graph").append(c);
-        AttrStrUnionWithValueTable::roValueTable->find(constStr.str(), true);
+        AtomStrUnionWithValueTable::roValueTable->find(constStr.str(), true);
         constStr.clear().append("Graph graph ").append(c);
-        AttrStrUnionWithValueTable::roValueTable->find(constStr.str(), true);
+        AtomStrUnionWithValueTable::roValueTable->find(constStr.str(), true);
+        constStr.clear().append("Graph graph").append(c);
+        AtomStrUnionWithValueTable::roValueTable->find(constStr.str(), true);
     }
-    for (unsigned c=1; c<=200; c++) // subgraphs
+    for (unsigned c=1; c<=50; c++) // result sets
     {
-        constStr.clear().append("sg").append(c);
-        AttrStrUnionWithValueTable::roValueTable->find(constStr.str(), true);
-    }
-    for (unsigned c=1; c<=200; c++) // Edge 0
-    {
-        constStr.clear().append(c).append("_0");
-        AttrStrUnionWithValueTable::roValueTable->find(constStr.str(), true);
+        constStr.clear().append("Result ").append(c);
+        AtomStrUnionWithValueTable::roValueTable->find(constStr.str(), true);
     }
     for (unsigned c=0; c<35; c++)
     {
         char ch = c<9 ? ('1' + c) : ('A' + (c-9));
         constStr.clear().append("~spill::").append(ch); // spills
-        AttrStrUnionWithValueTable::roValueTable->find(constStr.str(), true);
+        AtomStrUnionWithValueTable::roValueTable->find(constStr.str(), true);
         constStr.clear().append("gl").append(ch); // graph results
-        AttrStrUnionWithValueTable::roValueTable->find(constStr.str(), true);
+        AtomStrUnionWithValueTable::roValueTable->find(constStr.str(), true);
         constStr.clear().append("mf").append(ch); // meta factories
-        AttrStrUnionWithValueTable::roValueTable->find(constStr.str(), true);
+        AtomStrUnionWithValueTable::roValueTable->find(constStr.str(), true);
     }
-    for (unsigned c=1; c<=10; c++) // global auto attributes
+    // generate graph10..graph255 as node names (graph1..graph9 fit inline at <=6 chars)
+    for (unsigned c=10; c<=255; c++)
     {
-        constStr.clear().append("auto").append(c);
-        AttrStrUnionWithValueTable::roValueTable->find(constStr.str(), true);
+        constStr.clear().append("graph").append(c);
+        NodeNameStrUnion::roNameTable->find(constStr.str(), true);
     }
 #ifdef TRACE_ATOM_SIZE
     // If you are wanting an idea of the savings from use of the RO hash table, it may be useful to reset
     // the counts here. But it's more correct to actually leave them in place.
-    //AttrStrAtom::totsize = 0;
-    //AttrStrAtom::maxsize = 0;
+    //AtomStrAtom::totsize = 0;
+    //AtomStrAtom::maxsize = 0;
 #endif
 #ifdef _DEBUG
     for (const char **a = roAttributes; *a; a++)
     {
         // sanity check
-        unsigned idx = AttrStrUnionWithTable::roNameTable->findIndex(*a, AttrStrC::getHash(*a));
-        AttrStrC *val = AttrStrUnionWithTable::roNameTable->getIndex(idx);
+        unsigned idx = AtomStrUnionWithTable::roNameTable->findIndex(*a, AtomStrC::getHash(*a));
+        AtomStrC *val = AtomStrUnionWithTable::roNameTable->getIndex(idx);
         assert(val && val->eq(*a));
     }
     for (const char **v = roAttributeValues; *v; v++)
     {
         // sanity check
-        unsigned idx = AttrStrUnionWithValueTable::roValueTable->findIndex(*v, AttrStrC::getHash(*v));
-        AttrStrC *val = AttrStrUnionWithValueTable::roValueTable->getIndex(idx);
+        unsigned idx = AtomStrUnionWithValueTable::roValueTable->findIndex(*v, AtomStrC::getHash(*v));
+        AtomStrC *val = AtomStrUnionWithValueTable::roValueTable->getIndex(idx);
         assert(val && val->eq(*v));
+    }
+    for (const char **n = roNodeNames; *n; n++)
+    {
+        // sanity check
+        unsigned idx = NodeNameStrUnion::roNameTable->findIndex(*n, AtomStrC::getHash(*n));
+        AtomStrC *val = NodeNameStrUnion::roNameTable->getIndex(idx);
+        assert(val && val->eq(*n));
     }
 #endif
 }
@@ -188,28 +323,22 @@ MODULE_INIT(INIT_PRIORITY_JPTREE)
 {
     nullPTreeIterator = new NullPTreeIterator;
 #ifdef USE_READONLY_ATOMTABLE
-    AttrStrUnionWithTable::roNameTable = new RONameTable(255);
-    AttrStrUnionWithValueTable::roValueTable = new RONameTable(4095);
+    AtomStrUnionWithTable::roNameTable = new RONameTable(255);
+    AtomStrUnionWithValueTable::roValueTable = new RONameTable(4095);
+    NodeNameStrUnion::roNameTable = new RONameTable(16383);
     initializeRoTable();
 #endif
-    keyTable = new AtomRefTable;
-    keyTableNC = new AtomRefTable(true);
-    attrHT = new CAttrValHashTable;
     return true;
 }
 
 MODULE_EXIT()
 {
     delete nullPTreeIterator;
-    delete attrHT;
-    keyTable->Release();
-    keyTableNC->Release();
 #ifdef USE_READONLY_ATOMTABLE
-    delete AttrStrUnionWithTable::roNameTable;
-    delete AttrStrUnionWithValueTable::roValueTable;
+    delete AtomStrUnionWithTable::roNameTable;
+    delete AtomStrUnionWithValueTable::roValueTable;
+    delete NodeNameStrUnion::roNameTable;
 #endif
-    free(freelist);
-    freelist = NULL;
 }
 
 static int comparePropTrees(IInterface * const *ll, IInterface * const *rr)
@@ -3784,8 +3913,9 @@ LocalPTree::~LocalPTree()
     if (!attrs)
         return;
     AttrValue *a = attrs+numAttrs;
-    while (a--!=attrs)
+    while (a != attrs)
     {
+        --a;
         a->key.destroy();
         a->value.destroy();
     }
@@ -3801,11 +3931,11 @@ void LocalPTree::setName(const char *_name)
 {
     if (_name==name.get())
         return;
-    AttrStr *oname = name.getPtr();  // Don't free until after we copy - they could overlap
+    AtomStr *oname = name.getPtr();  // Don't free until after we copy - they could overlap
     if (!name.set(_name))
-        name.setPtr(AttrStr::create(_name));
+        name.setPtr(AtomStr::create(_name));
     if (oname)
-        AttrStr::destroy(oname);
+        AtomStr::destroy(oname);
 }
 
 bool LocalPTree::removeAttribute(const char *key)
@@ -3853,10 +3983,10 @@ void LocalPTree::deserializeAttributes(const char *base, PTreeDeserializeContext
         const char *attrValue = base + ctx.matchOffsets[i + 1];
         AttrValue *v = new (&attrs[numAttrs++]) AttrValue; // Initialize new AttrValue
 
-        if (!v->key.set(attrName)) // AttrStr will not return encoding marker when get() is called
-            v->key.setPtr(isnocase() ? AttrStr::createNC(attrName) : AttrStr::create(attrName));
+        if (!v->key.set(attrName)) // AtomStr will not return encoding marker when get() is called
+            v->key.setPtr(isnocase() ? AtomStr::createNC(attrName) : AtomStr::create(attrName));
         if (!v->value.set(attrValue))
-            v->value.setPtr(AttrStr::create(attrValue));
+            v->value.setPtr(AtomStr::create(attrValue));
     }
 }
 
@@ -3877,7 +4007,7 @@ void LocalPTree::setAttribute(const char *inputkey, const char *val, bool encode
     if (!val)
         val = "";  // cannot have NULL value
     AttrValue *v = findAttribute(key);
-    AttrStr *goer = nullptr;
+    AtomStr *goer = nullptr;
     if (v)
     {
         if (streq(v->value.get(), val))
@@ -3888,8 +4018,8 @@ void LocalPTree::setAttribute(const char *inputkey, const char *val, bool encode
     {
         attrs = (AttrValue *)realloc(attrs, (numAttrs+1)*sizeof(AttrValue));
         v = new(&attrs[numAttrs++]) AttrValue;  // Initialize new AttrValue
-        if (!v->key.set(inputkey)) //AttrStr will not return encoding marker when get() is called
-            v->key.setPtr(isnocase() ? AttrStr::createNC(inputkey) : AttrStr::create(inputkey));
+        if (!v->key.set(inputkey)) //AtomStr will not return encoding marker when get() is called
+            v->key.setPtr(isnocase() ? AtomStr::createNC(inputkey) : AtomStr::create(inputkey));
     }
     if (arrayOwner)
     {
@@ -3904,19 +4034,19 @@ void LocalPTree::setAttribute(const char *inputkey, const char *val, bool encode
     }
 
     if (!v->value.set(val))
-        v->value.setPtr(AttrStr::create(val));
+        v->value.setPtr(AtomStr::create(val));
     if (goer)
-        AttrStr::destroy(goer);
+        AtomStr::destroy(goer);
 }
 
 #ifdef TRACE_STRING_SIZE
-std::atomic<__int64> AttrStr::totsize { 0 };
-std::atomic<__int64> AttrStr::maxsize { 0 };
+std::atomic<__int64> AtomStr::totsize { 0 };
+std::atomic<__int64> AtomStr::maxsize { 0 };
 #endif
 
 #ifdef TRACE_ATOM_SIZE
-std::atomic<__int64> AttrStrAtom::totsize { 0 };
-std::atomic<__int64> AttrStrAtom::maxsize { 0 };
+std::atomic<__int64> AtomStrAtom::totsize { 0 };
+std::atomic<__int64> AtomStrAtom::maxsize { 0 };
 #endif
 
 ///////////////////
@@ -3938,76 +4068,44 @@ CAtomPTree::~CAtomPTree()
 {
     numAtomTrees--;
     bool nc = isnocase();
-    HashKeyElement *name_ptr = name.getPtr();
+    AtomStr *name_ptr = name.getPtr();
     if (name_ptr)
-    {
-        AtomRefTable *kT = nc?keyTableNC:keyTable;
-#ifdef TRACE_ATOM_SIZE
-        size_t gosize = sizeof(HashKeyElement)+strlen(name_ptr->get())+1;
-        if (kT->releaseKey(name_ptr))
-            AttrStrAtom::totsize -= gosize;
-#else
-        kT->releaseKey(name_ptr);
-#endif
-    }
+        removeNameByPtr(name_ptr, nc);
     if (!attrs)
         return;
     AttrValue *a = attrs+numAttrs;
+    while (a != attrs)
     {
-        CriticalBlock block(hashcrit);
-        while (a--!=attrs)
-        {
-            if (a->key.isPtr())
-                attrHT->removekey(a->key.getPtr(), nc);
-            if (a->value.isPtr())
-                attrHT->removeval(a->value.getPtr());
-        }
-        freeAttrArray(attrs, numAttrs);
+        --a;
+        AtomStr *k = a->key.getPtr();
+        if (k)
+            removeAttrKeyByPtr(k, nc);
+        AtomStr *valPtr = a->value.getPtr();
+        if (valPtr)
+            removeAttrValByPtr(valPtr);
     }
+    free(attrs);
 }
 
 void CAtomPTree::setName(const char *_name)
 {
-    AtomRefTable *kT = isnocase()?keyTableNC:keyTable;
-    HashKeyElement *oname = name.getPtr(); // NOTE - don't release yet as could overlap source name
+    AtomStr *oname = name.getPtr(); // NOTE - don't release yet as could overlap source name
     if (!_name)
         name.setPtr(nullptr);
     else
     {
         if (!validateXMLTag(_name))
             throw MakeIPTException(PTreeExcpt_InvalidTagName, ": %s", _name);
-        if (!name.set(_name))
+        if (!name.set(_name, isnocase()))
         {
 #ifdef TRACE_ALL_ATOM
             DBGLOG("TRACE_ALL_ATOM: %s", _name);
 #endif
-#ifdef TRACE_ATOM_SIZE
-            bool didCreate;
-            name.setPtr(kT->queryCreate(_name, didCreate));
-            if (didCreate)
-            {
-                AttrStrAtom::totsize += sizeof(HashKeyElement)+strlen(_name)+1;
-                if (AttrStrAtom::totsize > AttrStrAtom::maxsize)
-                {
-                    AttrStrAtom::maxsize.store(AttrStrAtom::totsize);
-                    DBGLOG("TRACE_ATOM_SIZE: total size now %" I64F "d", AttrStrAtom::maxsize.load());
-                }
-            }
-#else
-            name.setPtr(kT->queryCreate(_name));
-#endif
+            name.setPtr(ensureNodeName(_name, isnocase()));
         }
     }
     if (oname)
-    {
-#ifdef TRACE_ATOM_SIZE
-        size_t gosize = sizeof(HashKeyElement)+strlen(oname->get())+1;
-        if (kT->releaseKey(oname))
-            AttrStrAtom::totsize -= gosize;
-#else
-        kT->releaseKey(oname);
-#endif
-    }
+        removeNameByPtr(oname, isnocase());
 }
 
 const char *CAtomPTree::queryName() const
@@ -4019,46 +4117,23 @@ unsigned CAtomPTree::queryHash() const
 {
     if (name.isPtr())
     {
-        assert(name.getPtr());
-        return name.getPtr()->queryHash();
+        AtomStr *ptr = name.getPtr();
+        assert(ptr);
+        return AtomStrAtom::toAtom(ptr)->hash;
     }
-    else
-    {
-        const char *_name = name.get();
-        size32_t nl = strlen(_name);
-        return isnocase() ? hashnc_fnv1a((const byte *) _name, nl, fnvInitialHash32): hashc_fnv1a((const byte *) _name, nl, fnvInitialHash32);
-    }
+#ifdef USE_READONLY_ATOMTABLE
+    else if (name.flag == 3)
+        return NodeNameStrUnion::roNameTable->getIndex(name.idx2)->hash;
+#endif
+
+    const char *_name = name.get();
+    size32_t nl = strlen(_name);
+    return hash_fnv1a((const byte *)_name, nl, fnvInitialHash32, isnocase());
 }
 
-AttrValue *CAtomPTree::newAttrArray(unsigned n)
+static AttrValue *newAttrArray(unsigned n)
 {
-    // NB crit must be locked
-    if (!n)
-        return nullptr;
-    if (freelistmax<=n)
-    {
-        freelist = (AttrValue **)realloc(freelist, sizeof(AttrValue *)*(n+1));
-        while (freelistmax<=n)
-            freelist[freelistmax++] = nullptr;
-    }
-    AttrValue *&p = freelist[n];
-    AttrValue *ret = p;
-    if (ret)
-        p = *(AttrValue **)ret;
-    else
-        ret = (AttrValue *)freeallocator.alloc(sizeof(AttrValue)*n);
-    return ret;
-}
-
-void CAtomPTree::freeAttrArray(AttrValue *a, unsigned n)
-{
-    // NB crit must be locked
-    if (a)
-    {
-        AttrValue *&p = freelist[n];
-        *(AttrValue **)a = p;
-        p = a;
-    }
+    return n ? (AttrValue *)checked_malloc(sizeof(AttrValue) * n, -605) : nullptr;
 }
 
 void CAtomPTree::deserializeAttributes(const char *base, PTreeDeserializeContext &ctx)
@@ -4072,11 +4147,10 @@ void CAtomPTree::deserializeAttributes(const char *base, PTreeDeserializeContext
     dbgassertex(!(numAttrs || arrayOwner || attrs));
 
     // Allocate storage for all deserialized attributes in a single allocation.
-    CLeavableCriticalBlock block(hashcrit);
     AttrValue *newAttrs = newAttrArray(newAttrPairs);
-    block.ensureLeave();
 
     // Process each name/value pair. Commit to members only after fully successful population.
+    // Each attr key/value is routed to its own shard lock when atomization is required.
     const bool nc = isnocase();
     try
     {
@@ -4088,25 +4162,18 @@ void CAtomPTree::deserializeAttributes(const char *base, PTreeDeserializeContext
 
             const bool keySet = v->key.set(attrName);
             const bool valueSet = v->value.set(attrValue);
-            if (!keySet || !valueSet)
-            {
-                block.ensureEnter();
+            if (!keySet)
+                v->key.setPtr(ensureAttributeName(attrName, nc));
 
-                if (!keySet)
-                    v->key.setPtr(attrHT->addkey(attrName, nc));
-                if (!valueSet)
-                    v->value.setPtr(attrHT->addval(attrValue));
-            }
+            if (!valueSet)
+                v->value.setPtr(ensureAttributeValue(attrValue));
         }
     }
     catch (...)
     {
-        block.ensureEnter();
-        freeAttrArray(newAttrs, newAttrPairs);
-        block.ensureLeave();
+        free(newAttrs);
         throw;
     }
-    block.ensureLeave();
 
     attrs = newAttrs;
     numAttrs = newAttrPairs;
@@ -4132,28 +4199,23 @@ void CAtomPTree::setAttribute(const char *key, const char *val, bool encoded)
                 map->replaceEntryIfMapped(key, v->value.get(), val, this);
         }
 
-        AttrStr * goer = v->value.getPtr();
+        AtomStr * goer = v->value.getPtr();
         if (!v->value.set(val))
         {
-            CriticalBlock block(hashcrit);
             if (goer)
-                attrHT->removeval(goer);
-            v->value.setPtr(attrHT->addval(val));
+                removeAttrValByPtr(goer);
+            v->value.setPtr(ensureAttributeValue(val));
         }
         else if (goer)
-        {
-            CriticalBlock block(hashcrit);
-            attrHT->removeval(goer);
-        }
+            removeAttrValByPtr(goer);
     }
     else
     {
-        CriticalBlock block(hashcrit);
         AttrValue *newattrs = newAttrArray(numAttrs+1);
         if (attrs)
         {
             memcpy(newattrs, attrs, numAttrs*sizeof(AttrValue));
-            freeAttrArray(attrs, numAttrs);
+            free(attrs);
         }
         if (arrayOwner)
         {
@@ -4163,12 +4225,13 @@ void CAtomPTree::setAttribute(const char *key, const char *val, bool encoded)
         }
         v = &newattrs[numAttrs];
         if (!v->key.set(key))
-            v->key.setPtr(attrHT->addkey(key, isnocase()));
+            v->key.setPtr(ensureAttributeName(key, isnocase()));
+
         //shared via atom table, may want to add this later... escaped and unescaped versions should be considered unique
         //if (encoded)
         //    v->key.setEncoded();
         if (!v->value.set(val))
-            v->value.setPtr(attrHT->addval(val));
+            v->value.setPtr(ensureAttributeValue(val));
         numAttrs++;
         attrs = newattrs;
     }
@@ -4186,11 +4249,16 @@ bool CAtomPTree::removeAttribute(const char *key)
         if (map)
             map->removeEntryIfMapped(key, del->value.get(), this);
     }
-    CriticalBlock block(hashcrit);
     if (del->key.isPtr())
-        attrHT->removekey(del->key.getPtr(), isnocase());
+    {
+        AtomStr *k = del->key.getPtr();
+        removeAttrKeyByPtr(k, isnocase());
+    }
     if (del->value.isPtr())
-        attrHT->removeval(del->value.getPtr());
+    {
+        AtomStr *valPtr = del->value.getPtr();
+        removeAttrValByPtr(valPtr);
+    }
     AttrValue *newattrs = newAttrArray(numAttrs);
     if (newattrs)
     {
@@ -4198,7 +4266,7 @@ bool CAtomPTree::removeAttribute(const char *key)
         memcpy(newattrs, attrs, pos*sizeof(AttrValue));
         memcpy(newattrs+pos, attrs+pos+1, (numAttrs-pos)*sizeof(AttrValue));
     }
-    freeAttrArray(attrs, numAttrs+1);
+    free(attrs);
     attrs = newattrs;
     return true;
 }

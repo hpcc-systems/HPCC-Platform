@@ -298,6 +298,17 @@ unsigned hashncz_fnv1a(const unsigned char *k, unsigned initval)
     return policyHashncz<FNV1a>(k, initval);
 }
 
+// cased vs uncased helpers of the FNV1 and FNV1a hash functions
+unsigned hash_fnv1(const unsigned char *k, unsigned length, unsigned initval, bool ignoreCase)
+{
+    return ignoreCase ? hashnc(k, length, initval): hashc(k, length, initval);
+}
+
+unsigned hash_fnv1a(const unsigned char *k, unsigned length, unsigned initval, bool ignoreCase)
+{
+    return ignoreCase ? hashnc_fnv1a(k, length, initval): hashc_fnv1a(k, length, initval);
+}
+
 MappingKey::MappingKey(const void * inKey, int keysize)
 {
   int ksm = keysize;
