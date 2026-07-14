@@ -1343,6 +1343,19 @@ attribute: DataSize = 73
         recorder.recordTaskStart(EventTask::Sink);
         recorder.recordTaskStop(EventTask::Sink);
 
+        // Lock and semaphore events
+        constexpr unsigned lockId = 42;
+        recorder.recordLockWait(lockId);
+        recorder.recordLockAcquire(lockId);
+        recorder.recordLockRelease(lockId);
+        recorder.recordSemWait(lockId);
+        recorder.recordSemAcquire(lockId);
+        recorder.recordSemSignal(lockId);
+        recorder.recordLockTryWaitAcquire(lockId);
+        recorder.recordLockTryWaitFail(lockId);
+        recorder.recordLockWaitTimeout(lockId);
+        recorder.recordSemWaitTimeout(lockId);
+
         // Remote events
         recorder.recordRequestSend(1, 1);
         recorder.recordRequestReceive(1, 1);
