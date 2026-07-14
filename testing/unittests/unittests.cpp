@@ -1027,7 +1027,7 @@ class RelaxedAtomicTimingTest : public CppUnit::TestFixture
             }
             void test2()
             {
-                int &a = (int &) ra;
+                RelaxedAtomic<int> &a = ra;
                 while (count--)
                 {
                     CriticalBlock b(lock);
@@ -1045,13 +1045,12 @@ class RelaxedAtomicTimingTest : public CppUnit::TestFixture
             }
             void test4()
             {
-                int &a = (int &) ra;
+                RelaxedAtomic<int> &a = ra;
                 while (count--)
                 {
                     if (a != count)
                         a++;
                 }
-                ra = a;
             }
 
             unsigned mode;

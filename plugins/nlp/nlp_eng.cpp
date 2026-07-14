@@ -22,6 +22,12 @@
 #endif
 
 #include "nlp_engine.h"
+#ifdef DECL_EXPORT
+#undef DECL_EXPORT
+#endif
+#ifdef DECL_IMPORT
+#undef DECL_IMPORT
+#endif
 #include "nlp_eng.hpp"
 #include "jfile.hpp"
 #include "jlog.hpp"

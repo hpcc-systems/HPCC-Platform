@@ -165,13 +165,13 @@ if (CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_CLANG)
     set_source_files_properties (hqllex.cpp PROPERTIES COMPILE_FLAGS " -Wno-class-memaccess -Wno-sign-compare")
   endif()
 
-  #Compiler complains about an unused function yyunput, and make sure that any warnings are not reported as errors
-  set_source_files_properties (hqllex.cpp PROPERTIES COMPILE_FLAGS " -Wno-unused-function -Wno-error")
+    #Compiler complains about an unused function yyunput, and make sure that any warnings are not reported as errors
+    set_property (SOURCE hqllex.cpp APPEND_STRING PROPERTY COMPILE_FLAGS " -Wno-unused-function -Wno-error")
 
-  #Compiler complains about a variable is set but not used 
-  set_source_files_properties (hqlgram.cpp PROPERTIES COMPILE_FLAGS " -Wno-error=unused-but-set-variable -Wno-error=class-memaccess")
+    #Compiler complains about a variable is set but not used
+    set_property (SOURCE hqlgram.cpp APPEND_STRING PROPERTY COMPILE_FLAGS " -Wno-unused-but-set-variable -Wno-error=class-memaccess")
     if (CMAKE_COMPILER_IS_CLANG)
-        set_source_files_properties (hqlgram.cpp PROPERTIES COMPILE_FLAGS " -Wno-error=unused-but-set-variable -Wno-error=class-memaccess -Wno-error=nontrivial-memcall")
+        set_property (SOURCE hqlgram.cpp APPEND_STRING PROPERTY COMPILE_FLAGS " -Wno-nontrivial-memcall")
     endif()
 endif()
 

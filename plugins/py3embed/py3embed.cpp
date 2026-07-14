@@ -437,9 +437,27 @@ public:
             pythonLibrary = dlopen(modname.str(), RTLD_NOW|RTLD_GLOBAL);
 #endif
         // Initialize the Python Interpreter
+#if PY_VERSION_HEX >= 0x030B0000
+        PyConfig config;
+        PyConfig_InitPythonConfig(&config);
+        config.parse_argv = 0;
+        config.safe_path = 1;
+        PyStatus status = Py_InitializeFromConfig(&config);
+        PyConfig_Clear(&config);
+        if (PyStatus_Exception(status))
+        {
+            if (pythonLibrary)
+            {
+                FreeSharedObject(pythonLibrary);
+                pythonLibrary = 0;
+            }
+            return;
+        }
+#else
         Py_Initialize();
         const wchar_t *argv[] = { nullptr };
         PySys_SetArgvEx(0, (wchar_t **) argv, 0);
+#endif
 #ifdef INIT_PY_THREADS
         PyEval_InitThreads();
 #endif

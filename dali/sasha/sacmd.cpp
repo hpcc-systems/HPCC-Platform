@@ -13,14 +13,15 @@
 
 #include "sacmd.hpp"
 
+#include <vector>
+
 #define MAX_RESULT_SIZE (0x100000*10)
 
 class CSashaCommand: public CInterface, implements ISashaCommand
 {
     SashaCommandAction action;
     StringAttrArray ids;
-    CDateTime *dts = nullptr;
-    unsigned numdts = 0;
+    std::vector<CDateTime> dts;
 
     StringAttr after; //datetime
     StringAttr before; //datetime
@@ -81,7 +82,6 @@ public:
     CSashaCommand(MemoryBuffer &mb)
     {
         deserialize(mb);
-        free(dts);
     }
 
     void deserialize(MemoryBuffer &mb)
@@ -139,13 +139,12 @@ public:
                     mb.read(roxiecluster);
                     mb.read(eclcontains);
                 }
-                if (mb.remaining()>=sizeof(numdts)) { // new listdts info
-                    mb.read(numdts);
-                    free(dts);
-                    dts = NULL;
-                    if (numdts) {
-                        dts = (CDateTime *)calloc(numdts,sizeof(CDateTime));
-                        for (unsigned i=0;i<numdts;i++)
+                unsigned numDts = 0;
+                if (mb.remaining()>=sizeof(numDts)) { // new listdts info
+                    mb.read(numDts);
+                    dts.resize(numDts);
+                    if (numDts) {
+                        for (unsigned i=0;i<numDts;i++)
                             dts[i].deserialize(mb);
                     }
                 }
@@ -203,8 +202,9 @@ public:
             mb.append(roxiecluster);
             mb.append(eclcontains);
         }
-        mb.append(numdts);
-        for (i=0;i<numdts;i++) 
+        unsigned numDts = static_cast<unsigned>(dts.size());
+        mb.append(numDts);
+        for (i=0;i<numDts;i++)
             dts[i].serialize(mb);
 
         mb.append(sortDescending);
@@ -249,20 +249,12 @@ public:
 
     void addDT(CDateTime &dt)
     {
-        if ((numdts+16)/16!=(numdts+15)/16)
-        {
-            if (dts)
-                dts = (CDateTime *)realloc(dts,(numdts+16)*sizeof(CDateTime));
-            else
-                dts = (CDateTime *)malloc((numdts+16)*sizeof(CDateTime));
-        }
-        memset(dts+numdts,0,sizeof(CDateTime));
-        dts[numdts++].set(dt);
+        dts.push_back(dt);
     }
 
     void getDT(CDateTime &dt,unsigned i)
     {
-        if (i<numdts)
+        if (i<dts.size())
             dt.set(dts[i]);
         else
             dt.clear();
@@ -620,12 +612,11 @@ public:
                                     resultsize += reslen;
                                 }
                                 if (mb.length()-mb.getPos()>=sizeof(unsigned)) {
-                                    mb.read(numdts);
-                                    free(dts);
-                                    dts = NULL;
-                                    if (numdts) {
-                                        dts = (CDateTime *)calloc(numdts,sizeof(CDateTime));
-                                        for (i=0;i<numdts;i++)
+                                    unsigned numDts = 0;
+                                    mb.read(numDts);
+                                    dts.resize(numDts);
+                                    if (numDts) {
+                                        for (i=0;i<numDts;i++)
                                             dts[i].deserialize(mb);
                                     }
                                 }
@@ -685,8 +676,9 @@ public:
         msgbuf.append(n);
         for (i=0;i<n;i++)
             msgbuf.append(results.item(i).text);
-        msgbuf.append(numdts);
-        for (i=0;i<numdts;i++)
+        unsigned numDts = static_cast<unsigned>(dts.size());
+        msgbuf.append(numDts);
+        for (i=0;i<numDts;i++)
             dts[i].serialize(msgbuf);
         bool ret = queryWorldCommunicator().reply(msgbuf,1000*5*60);
         msgbuf.clear();

@@ -59,6 +59,9 @@ IF(NLP)
         endif()
 
         target_compile_definitions(nlp PUBLIC NLP_HAVE_ALLOCA)
+        if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+            target_compile_options(nlp PRIVATE -Wno-deprecated-declarations)
+        endif()
 
         install(
             TARGETS nlp

@@ -70,7 +70,7 @@ static const CCharacterSet wsCharSet([](unsigned char c) { return isspace(c); })
 class NullPTreeIterator final : implements IPropertyTreeIterator
 {
 public:
-    virtual ~NullPTreeIterator() {}
+    ~NullPTreeIterator() = default;
     virtual void Link() const override {}
     virtual bool Release() const override { return true; }
 // IPropertyTreeIterator

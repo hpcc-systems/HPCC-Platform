@@ -26,11 +26,18 @@
 
 //Using cpp wrapper from https://github.com/couchbaselabs/libcouchbase-cxx
 #include <cassert>
+#ifdef __clang__
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wformat-nonliteral"
+#endif
 #include <libcouchbase/couchbase++.h>
 #include <libcouchbase/couchbase++/views.h>
 #include <libcouchbase/couchbase++/query.h>
 #include <libcouchbase/couchbase++/endure.h>
 #include <libcouchbase/couchbase++/logging.h>
+#ifdef __clang__
+#pragma clang diagnostic pop
+#endif
 
 #include "platform.h"
 #include "jthread.hpp"
