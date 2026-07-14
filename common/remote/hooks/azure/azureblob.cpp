@@ -238,6 +238,10 @@ public:
     virtual bool getTime(CDateTime * createTime, CDateTime * modifiedTime, CDateTime * accessedTime) override;
     virtual fileBool isDirectory() override
     {
+        // A blob name ending with '/' is a virtual directory prefix in Azure Blob Storage.
+        // No real blob exists at this path, so GetProperties would return 404. Treat it as a directory.
+        if (!blobName.isEmpty() && blobName.str()[blobName.length()-1] == '/')
+            return fileBool::foundYes;
         ensureMetaData();
         if (!fileExists)
             return fileBool::notFound;

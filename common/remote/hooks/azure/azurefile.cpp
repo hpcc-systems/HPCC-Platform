@@ -147,18 +147,31 @@ protected:
 
     virtual void fetchPage() override
     {
-        if (!pagedResponse)
+        try
         {
-            ListFilesAndDirectoriesOptions options;
-            options.Include = Azure::Storage::Files::Shares::Models::ListFilesIncludeFlags::Timestamps;
-            pagedResponse.emplace(dirClient.ListFilesAndDirectories(options));
+            if (!pagedResponse)
+            {
+                ListFilesAndDirectoriesOptions options;
+                options.Include = Azure::Storage::Files::Shares::Models::ListFilesIncludeFlags::Timestamps;
+                pagedResponse.emplace(dirClient.ListFilesAndDirectories(options));
+            }
+            else
+            {
+                pagedResponse->MoveToNextPage();
+            }
+            extractItems(*pagedResponse);
+            hasMorePages = pagedResponse->NextPageToken.HasValue() && !pagedResponse->NextPageToken.Value().empty();
         }
-        else
+        catch (const Azure::Core::RequestFailedException &e)
         {
-            pagedResponse->MoveToNextPage();
+            // A missing parent path means there are no entries to list.
+            if (e.StatusCode == Azure::Core::Http::HttpStatusCode::NotFound)
+            {
+                hasMorePages = false;
+                return;
+            }
+            throw;
         }
-        extractItems(*pagedResponse);
-        hasMorePages = pagedResponse->NextPageToken.HasValue() && !pagedResponse->NextPageToken.Value().empty();
     }
 
 private:
@@ -194,6 +207,10 @@ public:
     virtual bool getTime(CDateTime * createTime, CDateTime * modifiedTime, CDateTime * accessedTime) override;
     virtual fileBool isDirectory() override
     {
+        // A path ending with '/' is a directory in Azure Files.
+        // Querying file properties for it can fail with invalid resource name.
+        if (!fileName.isEmpty() && fileName.str()[fileName.length()-1] == '/')
+            return fileBool::foundYes;
         ensureMetaData();
         if (!fileExists)
             return fileBool::notFound;
