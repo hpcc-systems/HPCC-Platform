@@ -2,6 +2,7 @@
 
 This area is dedicated to special notes from the platform team about each release.
 
+- [10.6 Platform Release Announcement](10.6-Platform-Release-Announcement.md)
 - [10.4 Platform Release Announcement](10.4-Platform-Release-Announcement.md)
 - [10.2 Platform Release Announcement](10.2-Platform-Release-Announcement.md)
 - [10.0 Platform Release Announcement](10.0-Platform-Release-Announcement.md)
