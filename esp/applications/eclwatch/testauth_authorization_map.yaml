@@ -25,7 +25,8 @@ authNZ:
             eclWUScope: none
             resource: none
          fileScopes: # what kinds of file scopes should be given to testuser?
-            "testuser": full
+            - name: "testuser"
+              access: full
          eclWUScopes: # what kinds of eclwu scopes should be given to testuser?
             "testuser": full
          resources:  # what kinds of resource permissions should be given to testuser?

@@ -46,6 +46,7 @@ set (    SRCS
          ${HPCC_SOURCE_DIR}/system/security/LdapSecurity/ldapsanitization.cpp
          loggingtests.cpp
          ldaptests.cpp
+         testauthsecuritytests.cpp
          txSummarytests.cpp
          accessmaptests.cpp
          fxpptests.cpp
@@ -60,6 +61,8 @@ set (    SRCS
          tlsasynctests.cpp
          ${HPCC_SOURCE_DIR}/esp/bindings/SOAP/xpp/fxpp/FragmentedXmlPullParser.cpp
          ${HPCC_SOURCE_DIR}/esp/bindings/SOAP/xpp/fxpp/FragmentedXmlAssistant.cpp
+         ${HPCC_SOURCE_DIR}/system/security/shared/authmap.cpp
+         ${HPCC_SOURCE_DIR}/system/security/plugins/testauthSecurity/testauthSecurity.cpp
          ${CMAKE_BINARY_DIR}/generated/ws_loggingservice_esp.cpp
          datamaskingtests.cpp
          ${HPCC_SOURCE_DIR}/tools/esp-api/espapi.cpp
@@ -103,6 +106,7 @@ include_directories (
          ./../../common/thorhelper
          ./../../dali/base
          ./../../system/security/shared
+         ./../../system/security/plugins/testauthSecurity
          ./../../common/deftype
          ./../../common/workunit
          ./../../system/security/cryptohelper

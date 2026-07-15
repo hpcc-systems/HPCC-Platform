@@ -22,6 +22,26 @@
 #include "authmap.ipp"
 #include "testauthSecurity.hpp"
 
+// Maps the string form of an authStatus enum value (e.g. "AS_PASSWORD_EXPIRED") to
+// the corresponding authStatus enum.  Returns AS_UNKNOWN for unrecognised strings.
+static authStatus authStatusFromString(const char* str)
+{
+    if (isEmptyString(str))
+        return AS_UNKNOWN;
+    if (streq(str, "AS_AUTHENTICATED"))            return AS_AUTHENTICATED;
+    if (streq(str, "AS_UNKNOWN"))                  return AS_UNKNOWN;
+    if (streq(str, "AS_UNEXPECTED_ERROR"))         return AS_UNEXPECTED_ERROR;
+    if (streq(str, "AS_INVALID_CREDENTIALS"))      return AS_INVALID_CREDENTIALS;
+    if (streq(str, "AS_PASSWORD_EXPIRED"))         return AS_PASSWORD_EXPIRED;
+    if (streq(str, "AS_PASSWORD_VALID_BUT_EXPIRED")) return AS_PASSWORD_VALID_BUT_EXPIRED;
+    if (streq(str, "AS_ACCOUNT_DISABLED"))         return AS_ACCOUNT_DISABLED;
+    if (streq(str, "AS_ACCOUNT_EXPIRED"))          return AS_ACCOUNT_EXPIRED;
+    if (streq(str, "AS_ACCOUNT_LOCKED"))           return AS_ACCOUNT_LOCKED;
+    if (streq(str, "AS_ACCOUNT_ROOT_ACCESS_DENIED")) return AS_ACCOUNT_ROOT_ACCESS_DENIED;
+    OWARNLOG("testauthSecurity: unrecognised authenticateStatus value '%s', treating as AS_UNKNOWN.", str);
+    return AS_UNKNOWN;
+}
+
 class CUserAccess : public CInterface
 {
     StringAttr userName, password;
@@ -30,6 +50,9 @@ class CUserAccess : public CInterface
     SecAccessFlags defaultFeatureAccess = SecAccess_Unavailable;
     MapStringTo<int> featureAccesses, eclwuScopeAccesses;
     Owned<IPropertyTree> fileScopeAccesses;
+    // AS_UNKNOWN means "no special state configured – use normal authentication behaviour"
+    authStatus m_authenticateStatus = AS_UNKNOWN;
+    CDateTime m_passwordExpiration; // isNull() when not configured
 
 public:
     CUserAccess(const char* _userName, const char* _password)
@@ -46,6 +69,30 @@ public:
     const char* queryPassword()
     {
         return password.get();
+    }
+
+    void setAuthenticateStatus(authStatus status)
+    {
+        m_authenticateStatus = status;
+    }
+
+    authStatus queryAuthenticateStatus() const
+    {
+        return m_authenticateStatus;
+    }
+
+    void setPasswordExpiration(const CDateTime& expiration)
+    {
+        m_passwordExpiration.set(expiration);
+    }
+
+    // Returns true and populates expiration if a password expiration date was configured.
+    bool queryPasswordExpiration(CDateTime& expiration) const
+    {
+        if (m_passwordExpiration.isNull())
+            return false;
+        expiration.set(m_passwordExpiration);
+        return true;
     }
 
     void setDefaultFeatureAccess(const char* access)
@@ -148,8 +195,6 @@ public:
             return false;
         if (fullPathOnly && (scope.charAt(scope.length() - 1) == '/'))
             return false;
-        if (!fullPathOnly)
-            return false;
         scopes.append(scope);
         return true;
     }
@@ -216,6 +261,7 @@ class CTestAuthSecurityManager : public CBaseSecurityManager
             readFeatureAccess(bindConfig->queryProp("@serviceType"), userSettings, newUserAccess);
             readFileScopeAccess(userSettings, newUserAccess);
             readECLWUScopeAccess(userSettings, newUserAccess);
+            readAuthState(userSettings, newUserAccess);
             userAccessMap.setValue(userName.str(), newUserAccess);
             userAccessList.append(*newUserAccess.getClear());
         }
@@ -293,9 +339,52 @@ class CTestAuthSecurityManager : public CBaseSecurityManager
         if (!t)
             return;
 
-        Owned<IAttributeIterator> attributes = t->getAttributes();
-        ForEach(*attributes)
-            userAccess->addFileScopeAccess(attributes->queryName() + 1, attributes->queryValue());
+        Owned<IPropertyTreeIterator> fileScopeIter = t->getElements("fileScope");
+        ForEach(*fileScopeIter)
+        {
+            IPropertyTree& fileScope = fileScopeIter->query();
+            const char* scopeName = fileScope.queryProp("@name");
+            const char* scopeAccess = fileScope.queryProp("@access");
+            if (isEmptyString(scopeName) || isEmptyString(scopeAccess))
+            {
+                OWARNLOG("Skipping invalid fileScope entry for user '%s': both @name and @access are required.",
+                    userSettings.queryProp("@userName"));
+                continue;
+            }
+            userAccess->addFileScopeAccess(scopeName, scopeAccess);
+        }
+    }
+
+    // Reads the optional @authenticateStatus and @passwordExpiration attributes from a
+    // userAccess config element.  These allow a test user to be pre-configured with a
+    // specific auth failure state so that ESP auth-failure handling paths can be exercised
+    // without a real LDAP server.
+    void readAuthState(IPropertyTree& userSettings, CUserAccess* userAccess)
+    {
+        const char* statusStr = userSettings.queryProp("@authenticateStatus");
+        if (!isEmptyString(statusStr))
+        {
+            authStatus status = authStatusFromString(statusStr);
+            userAccess->setAuthenticateStatus(status);
+        }
+
+        const char* expirationStr = userSettings.queryProp("@passwordExpiration");
+        if (!isEmptyString(expirationStr))
+        {
+            CDateTime expiration;
+            try
+            {
+                expiration.setDateString(expirationStr);
+                userAccess->setPasswordExpiration(expiration);
+            }
+            catch (IException* e)
+            {
+                StringBuffer msg;
+                OWARNLOG("testauthSecurity: invalid passwordExpiration '%s' for user '%s': %s",
+                    expirationStr, userSettings.queryProp("@userName"), e->errorMessage(msg).str());
+                e->Release();
+            }
+        }
     }
 
     SecAccessFlags getAccessFlag(SecResourceType rtype, ISecUser& user, const char* resourceName, IEspSecureContext* secureContext)
@@ -352,7 +441,27 @@ class CTestAuthSecurityManager : public CBaseSecurityManager
 
         CUserAccess* userAccess = *match;
         const char* pwd = user.credentials().getPassword();
-        return !isEmptyString(pwd) && streq(pwd, userAccess->queryPassword());
+        if (isEmptyString(pwd) || !streq(pwd, userAccess->queryPassword()))
+            return false;
+
+        // Password is correct.  Apply any configured authentication state so that
+        // ESP failure-handling paths (e.g. password-change redirect, account-locked
+        // message) can be exercised in test/development environments.
+        authStatus configuredStatus = userAccess->queryAuthenticateStatus();
+        if (configuredStatus != AS_UNKNOWN)
+        {
+            CDateTime expiration;
+            if (userAccess->queryPasswordExpiration(expiration))
+                user.setPasswordExpiration(expiration);
+
+            user.setAuthenticateStatus(configuredStatus);
+            // Only AS_AUTHENTICATED (and the default/no-state-configured path below)
+            // counts as a successful authentication.
+            return (configuredStatus == AS_AUTHENTICATED);
+        }
+
+        user.setAuthenticateStatus(AS_AUTHENTICATED);
+        return true;
     }
 
 public:
@@ -519,4 +628,3 @@ extern "C"
         return new CTestAuthSecurityManager(serviceName, &secMgrCfg, &bndCfg);
     }
 }
-
