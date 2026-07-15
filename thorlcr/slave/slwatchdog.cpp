@@ -30,7 +30,7 @@
 
 class CGraphProgressHandlerBase : public CInterfaceOf<ISlaveWatchdog>, implements IThreaded
 {
-    mutable CriticalSection crit;
+    mutable CriticalSection crit{SYNC_LOCATION};
     CGraphArray activeGraphs;
     bool stopped = true;
     bool progressEnabled = false;

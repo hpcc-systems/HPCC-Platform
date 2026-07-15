@@ -627,7 +627,7 @@ class CTempNameHandler
 public:
     unsigned num;
     StringBuffer rootDir, subDirName, prefix, subDirPath;
-    CriticalSection crit;
+    CriticalSection crit{SYNC_LOCATION};
 
     CTempNameHandler()
     {

@@ -161,7 +161,7 @@ class CRemoteBase : public CSimpleInterfaceOf<IDaFsConnection>
 protected: friend class CRemoteFileIO;
 
     StringAttr          filename;
-    CriticalSection     crit;
+    CriticalSection crit{SYNC_LOCATION};
     SocketEndpoint      ep;
     StringBuffer        storageSecret;
 

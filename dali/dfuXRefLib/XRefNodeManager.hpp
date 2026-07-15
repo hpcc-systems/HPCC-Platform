@@ -94,7 +94,7 @@ private:
     Owned<IPropertyTree> m_directories;
     bool m_bChanged;
     StringBuffer m_ClusterName;
-    CriticalSection commitCrit;
+    CriticalSection commitCrit{SYNC_LOCATION};
     StringAttr rootDir;
 
     // Helper methods to reduce code duplication

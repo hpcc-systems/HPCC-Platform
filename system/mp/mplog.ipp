@@ -106,7 +106,7 @@ private:
     void                      doRemoveChildFromManager(aindex_t pos, bool disconnected);
 private:
     CIArrayOf<IdLinkToChildPair> table;
-    CriticalSection           tableOfChildrenCrit;
+    CriticalSection tableOfChildrenCrit{SYNC_LOCATION};
     MPLogId                   nextId;
 };
 
@@ -191,7 +191,7 @@ private:
     void                      doRemoveParentFromManager(aindex_t pos, bool disconnected);
 private:
     CIArrayOf<IdLinkToParentPair> table;
-    CriticalSection           tableOfParentsCrit;
+    CriticalSection tableOfParentsCrit{SYNC_LOCATION};
     MPLogId                   nextId;
 };
 

@@ -50,7 +50,7 @@
 
 static __int64 subchangetotal;
 static unsigned subchangenum;
-static CriticalSection subchangesect;
+static CriticalSection subchangesect{SYNC_LOCATION};
 static IRemoteConnection *Rconn;
 static IDistributedFileDirectory & dir = queryDistributedFileDirectory();
 static IUserDescriptor *user = createUserDescriptor();
@@ -1057,7 +1057,7 @@ public:
             unsigned count;
 
         public:
-            Semaphore stopsem;
+            Semaphore stopsem{SYNC_LOCATION};
             CChange(unsigned _n) : Thread("CChange")
             {
                 n = _n;
@@ -1132,9 +1132,9 @@ public:
     {
         class CResult
         {
-            Semaphore sem;
+            Semaphore sem{SYNC_LOCATION};
             StringBuffer resultString;
-            CriticalSection crit;
+            CriticalSection crit{SYNC_LOCATION};
         public:
             CResult()
             {
@@ -1298,7 +1298,7 @@ public:
         {
             StringArray results;
             CRC32 crc;
-            CriticalSection crit;
+            CriticalSection crit{SYNC_LOCATION};
         public:
             void add(const char *out)
             {
@@ -1325,7 +1325,7 @@ public:
             CResults &results;
             unsigned expectedNotifications;
             std::atomic<unsigned> notifications = {0};
-            Semaphore joinSem;
+            Semaphore joinSem{SYNC_LOCATION};
         public:
             IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
@@ -3943,7 +3943,7 @@ class DaliJobQueueTester : public CppUnit::TestFixture
                 cppQueues.append(mainQueueName).append(",").append(childQueueName);
 
                 Owned<IJobQueue> localQueues = createJobQueue(cppQueues);
-                Semaphore dummySem;
+                Semaphore dummySem{SYNC_LOCATION};
                 Owned<JobProcessor> child = new CppJobProcessor(dummySem, processedSem, localQueues, id);
 
                 child->start(true);
@@ -3981,8 +3981,8 @@ class DaliJobQueueTester : public CppUnit::TestFixture
             queue->connect(true);
             queue->clear();
 
-            Semaphore startedSem;
-            Semaphore processedSem;
+            Semaphore startedSem{SYNC_LOCATION};
+            Semaphore processedSem{SYNC_LOCATION};
 
             CIArrayOf<JobProcessor> jobProcessors;
             for (auto & processor : processors)
@@ -4595,7 +4595,7 @@ testCategory2[] (1999011313..1999011313) => {TimeLocalExecute=40}
 
     public:
         StringAttr queueName;
-        Semaphore sem;
+        Semaphore sem{SYNC_LOCATION};
         unsigned numIterations;
     };
 

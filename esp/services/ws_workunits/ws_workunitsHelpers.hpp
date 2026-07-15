@@ -585,7 +585,7 @@ struct DataCache: public CInterface, implements IInterface
     const char* resultName, unsigned seq,   __int64 start, unsigned count, __int64 requested, __int64 total);
 
     std::list<Linked<DataCacheElement> > cache;
-    CriticalSection crit;
+    CriticalSection crit{SYNC_LOCATION};
     size32_t cacheSize;
 };
 
@@ -641,7 +641,7 @@ struct ArchivedWuCache: public CInterface, implements IInterface
     void add(const char* filter, const char* sashaUpdatedWhen, bool hasNextPage, unsigned numWUsReturned, IArrayOf<IEspECLWorkunit>& wus, IArrayOf<IEspECLWorkunitLW>& lwwus);
 
     std::list<Linked<ArchivedWuCacheElement> > cache;
-    CriticalSection crit;
+    CriticalSection crit{SYNC_LOCATION};
     size32_t cacheSize;
 };
 
@@ -732,7 +732,7 @@ struct WUArchiveCache: public CInterface, implements IInterface
     }
 
     std::list<Linked<WUArchiveCacheElement> > cache;
-    CriticalSection crit;
+    CriticalSection crit{SYNC_LOCATION};
     size32_t cacheSize;
 };
 
@@ -757,7 +757,7 @@ void xsltTransform(const char* xml, const char* sheet, IProperties *params, Stri
 class WUSchedule : public Thread
 {
     bool stopping;
-    Semaphore semSchedule;
+    Semaphore semSchedule{SYNC_LOCATION};
     IEspContainer* m_container;
     bool detached;
 

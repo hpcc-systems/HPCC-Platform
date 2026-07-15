@@ -73,7 +73,7 @@ class CAgentDebugContext : public CBaseDebugContext
     memsize_t parentActivity;
     unsigned channel;
     int debugSequence;
-    CriticalSection crit;
+    CriticalSection crit{SYNC_LOCATION};
     const IRoxieContextLogger &logctx; // hides base class definition with more derived class pointer
 
 public:
@@ -848,7 +848,7 @@ class CDeserializedResultStore : implements IDeserializedResultStore, public CIn
     PointerArrayOf<row_t> stored;
     UnsignedArray counts;
     IPointerArrayOf<IOutputMetaData> metas;
-    mutable SpinLock lock;
+    mutable SpinLock lock{SYNC_LOCATION};
 public:
     IMPLEMENT_IINTERFACE;
     ~CDeserializedResultStore()
@@ -1211,7 +1211,7 @@ protected:
 protected:
     bool exceptionLogged;
     std::atomic<bool> aborted;
-    CriticalSection abortLock; // NOTE: we don't bother to get lock when just reading to see whether to abort
+    CriticalSection abortLock{SYNC_LOCATION}; // NOTE: we don't bother to get lock when just reading to see whether to abort
     Owned<IException> exception;
 
     static void _toXML(IPropertyTree *tree, StringBuffer &xgmml, unsigned indent)
@@ -2149,9 +2149,9 @@ public:
     virtual void addWuExceptionEx(const char * text, unsigned code, unsigned severity, unsigned audience, const char * source) override { throwUnexpected(); }
 
 protected:
-    mutable CriticalSection contextCrit;
-    CriticalSection timerCrit;
-    CriticalSection resolveCrit;
+    mutable CriticalSection contextCrit{SYNC_LOCATION};
+    CriticalSection timerCrit{SYNC_LOCATION};
+    CriticalSection resolveCrit{SYNC_LOCATION};
     Owned<IPropertyTree> context;
     IPropertyTree *persists;
     IPropertyTree *temporaries;
@@ -2589,7 +2589,7 @@ class CRoxieServerContext : public CRoxieContextBase, implements IRoxieServerCon
     IHpccProtocolResponse *protocol = nullptr;
     IHpccProtocolResultsWriter *results = nullptr;
     IHpccNativeProtocolResponse *nativeProtocol = nullptr;
-    CriticalSection daliUpdateCrit;
+    CriticalSection daliUpdateCrit{SYNC_LOCATION};
     StringAttr querySetName;
 
     bool isRaw;
@@ -3115,7 +3115,7 @@ public:
     }
 
     mutable CIArrayOf<TerminationCallbackInfo> callbacks;
-    mutable CriticalSection callbacksCrit;
+    mutable CriticalSection callbacksCrit{SYNC_LOCATION};
 
     virtual void onTermination(QueryTermCallback callback, const char *key, bool isShared) const
     {

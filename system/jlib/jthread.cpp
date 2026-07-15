@@ -161,7 +161,7 @@ Options to prevent this:
   with the common joining pattern, but would fail if another object held onto a reference to the thread but didn't call join().
   Potentially more efficient, but more scope for accidental bugs.
 */
-static CriticalSection ThreadDestroyLock;
+static CriticalSection ThreadDestroyLock(SYNC_LOCATION);
 
 
 #ifdef _WIN32
@@ -714,7 +714,7 @@ void CAsyncFor::For(unsigned num,unsigned maxatonce,bool abortFollowingException
                     return 0;
                 }
             };
-            Semaphore ready;
+            Semaphore ready(SYNC_LOCATION);
             for (i=0;(i<num)&&(i<maxatonce);i++)
                 ready.signal();
             IArrayOf<Thread> started;
@@ -832,9 +832,9 @@ public:
     virtual ~CThreadPoolBase() {}
 protected: friend class CPooledThreadWrapper;
     IExceptionHandler *exceptionHandler = nullptr;
-    CriticalSection crit;
+    CriticalSection crit{SYNC_LOCATION};
     StringAttr poolname;
-    Semaphore donesem;
+    Semaphore donesem{SYNC_LOCATION};
     PointerArray waitingsems;
     UnsignedArray waitingids;
     std::atomic<bool> stopall{false};
@@ -842,7 +842,7 @@ protected: friend class CPooledThreadWrapper;
     unsigned defaultmax = 0;
     unsigned targetpoolsize = 0;
     unsigned delay = 0;
-    Semaphore availsem;
+    Semaphore availsem{SYNC_LOCATION};
     std::atomic_uint numrunning{0};
     virtual void notifyStarted(CPooledThreadWrapper *item)=0;
     virtual bool notifyStopped(CPooledThreadWrapper *item)=0;
@@ -853,7 +853,7 @@ class CPooledThreadWrapper: public Thread
 {
     PooledThreadHandle handle;
     IPooledThread *thread;
-    Semaphore sem;
+    Semaphore sem{SYNC_LOCATION};
     CThreadPoolBase &parent;
     StringAttr runningName;
 public:
@@ -1191,7 +1191,7 @@ public:
         // called in critical section
         if (t.isStopped())
             return true;
-        Semaphore sem;
+        Semaphore sem(SYNC_LOCATION);
         waitingsems.append(&sem);
         waitingids.append(t.queryHandle());
         crit.leave();
@@ -1468,7 +1468,7 @@ class CWindowsPipeProcess: implements IPipeProcess, public CInterface
     HANDLE hError;
     StringAttr title;
     unsigned retcode;
-    CriticalSection sect;
+    CriticalSection sect{SYNC_LOCATION};
     bool aborted;
     StringAttr allowedprogs;
     StringArray env;
@@ -1891,7 +1891,7 @@ static unsigned dowaitpid(HANDLE pid, int mode)
 extern char **environ;
 #endif
 
-static CriticalSection runsect; // single thread process start to avoid forked handle open/closes interleaving
+static CriticalSection runsect(SYNC_LOCATION); // single thread process start to avoid forked handle open/closes interleaving
 class CLinuxPipeProcess: implements IPipeProcess, public CInterface
 {
 
@@ -1917,7 +1917,7 @@ class CLinuxPipeProcess: implements IPipeProcess, public CInterface
     {
         MemoryAttr buf;
         size32_t bufsize;
-        Semaphore stopsem;
+        Semaphore stopsem{SYNC_LOCATION};
         CriticalSection &sect;
         int &hError;
     public:
@@ -2005,8 +2005,8 @@ protected: friend class PipeWriterThread;
     StringAttr prog;
     StringAttr dir;
     int retcode;
-    CriticalSection sect;
-    Semaphore started;
+    CriticalSection sect{SYNC_LOCATION};
+    Semaphore started{SYNC_LOCATION};
     bool aborted;
     MemoryBuffer stderrbuf;
     size32_t stderrbufsize;
@@ -2576,7 +2576,7 @@ class CWorkQueueThread: implements IWorkQueueThread, public CInterface
 {
 public:
     IMPLEMENT_IINTERFACE;
-    CriticalSection crit;
+    CriticalSection crit{SYNC_LOCATION};
     unsigned persisttime;
 
     class cWorkerThread: public Thread
@@ -2592,7 +2592,7 @@ public:
             persisttime = _persisttime;
         }
         QueueOf<IWorkQueueItem,false> queue;
-        Semaphore sem;  
+        Semaphore sem{SYNC_LOCATION};  
 
         int run()
         {

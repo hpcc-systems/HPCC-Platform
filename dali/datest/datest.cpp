@@ -1039,7 +1039,7 @@ class cNotify: public CInterface, implements ISessionNotify
 {
 public:
     IMPLEMENT_IINTERFACE;
-    Semaphore sem;
+    Semaphore sem{SYNC_LOCATION};
     void closed(SessionId id)
     {
         PROGLOG("Session closed %" I64F "d",id);
@@ -2722,7 +2722,7 @@ void TestNodeSubs()
             }
         };
         SubscriptionId sid;
-        CriticalSection sidCrit;
+        CriticalSection sidCrit{SYNC_LOCATION};
         Owned<ISDSNodeSubscription> subscriber;
 
         void test()
@@ -3176,7 +3176,7 @@ static void TestCriticalSection()
         itoa(j,num,10);
         strcpy(id,"CCS");
         strcat(id,num);
-        CCS[j] = new CriticalSection();
+        CCS[j] = new CriticalSection(SYNC_LOCATION);
     }
     unsigned k;
     for (k=0;k<NCCSTHREAD; k++) 

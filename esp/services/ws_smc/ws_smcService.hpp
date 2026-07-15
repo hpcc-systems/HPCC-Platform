@@ -185,7 +185,7 @@ class CWsSMCEx : public CWsSMC
     StringAttr espInstance;
     int m_BannerAction;
     bool m_EnableChatURL;
-    CriticalSection crit;
+    CriticalSection crit{SYNC_LOCATION};
     Owned<CInfoCacheReader> activityInfoCacheReader;
     MapStringToMyClass<ISmartSocketFactory> roxieConnMap;
 

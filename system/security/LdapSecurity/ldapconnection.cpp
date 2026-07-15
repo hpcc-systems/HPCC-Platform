@@ -144,7 +144,7 @@ class CHostManager
 {
 private:
     StringArray m_hostArray;
-    Mutex       m_HMMutex;
+    Mutex m_HMMutex{SYNC_LOCATION};
     unsigned    m_curHostIdx;
     std::atomic<bool> m_populated;
 
@@ -1556,7 +1556,7 @@ public:
     }
 };
 
-static CriticalSection  mpaCrit;
+static CriticalSection  mpaCrit{SYNC_LOCATION};
 static __int64 getMaxPwdAge(Owned<ILdapConnectionPool> _conns, const char * _baseDN, int _timeout)
 {
     static time_t   lastPwdAgeCheck = 0;
@@ -1604,7 +1604,7 @@ static __int64 getMaxPwdAge(Owned<ILdapConnectionPool> _conns, const char * _bas
     return maxPwdAge;
 }
 
-static CriticalSection  lcCrit;
+static CriticalSection  lcCrit{SYNC_LOCATION};
 class CLdapClient : implements ILdapClient, public CInterface
 {
 private:

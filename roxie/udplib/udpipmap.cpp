@@ -95,7 +95,7 @@ class IpMapTest : public CppUnit::TestFixture
         IpEntry::numCreated = 0;
         IpMapOf<IpEntry> map([](const ServerIdentifier s){return new IpEntry(s); });
         std::thread threads[100];
-        Semaphore ready;
+        Semaphore ready{SYNC_LOCATION};
         for (int i = 0; i < 100; i++)
         {
             threads[i] = std::thread([&]()

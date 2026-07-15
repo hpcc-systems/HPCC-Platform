@@ -182,8 +182,8 @@ struct ReplicateFileItem: extends CInterface
     ReplicateFileItem(CReplicateServer &_parent);
     StringAttr uuid;
     CIArrayOf<ReplicatePartItem> parts;
-    Semaphore sem;
-    CriticalSection sect;
+    Semaphore sem{SYNC_LOCATION};
+    CriticalSection sect{SYNC_LOCATION};
     bool stopping;
 
     class cThread: public Thread
@@ -433,8 +433,8 @@ bool ReplicatePartCopyItem::doneCopy(unsigned timeout)
 
 class CReplicateServer: public CInterface, implements IThreaded, implements IReplicateServer
 {
-    CriticalSection runningsect;
-    Semaphore runningsem;
+    CriticalSection runningsect{SYNC_LOCATION};
+    Semaphore runningsem{SYNC_LOCATION};
     CIArrayOf<ReplicateFileItem> running;
     Owned<IQueueChannel> qchannel;
     bool stopping;

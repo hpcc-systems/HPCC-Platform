@@ -285,7 +285,7 @@ public:
             return;
         PROGLOG("VERIFY: file %s started",name);
         file.clear();
-        CriticalSection crit;
+        CriticalSection crit{SYNC_LOCATION};
         class casyncfor: public CAsyncFor
         {
             CFileCrcList *parent;
@@ -364,7 +364,7 @@ class CSashaVerifierServer: public ISashaServer, public Thread
 {  
 
     bool stopped;
-    Semaphore stopsem;
+    Semaphore stopsem{SYNC_LOCATION};
     Owned<IUserDescriptor> udesc;
 public:
     IMPLEMENT_IINTERFACE_USING(Thread);
@@ -474,7 +474,7 @@ class CSashaDaFSMonitorServer: public ISashaServer, public Thread
 {  
 
     bool stopped;
-    Semaphore stopsem;
+    Semaphore stopsem{SYNC_LOCATION};
 public:
     IMPLEMENT_IINTERFACE_USING(Thread);
 
@@ -513,7 +513,7 @@ public:
             return;
         IPointerArrayOf<ISocket> sockets;
         multiConnect(eps,sockets,60*1000);
-        CriticalSection sect;
+        CriticalSection sect{SYNC_LOCATION};
         unsigned failurelimit = 10;             // only report 10 from each cluster
         class casyncfor: public CAsyncFor
         {

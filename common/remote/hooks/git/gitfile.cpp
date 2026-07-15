@@ -686,7 +686,7 @@ extern GITFILE_API void removeFileHook()
 MODULE_INIT(INIT_PRIORITY_STANDARD)
 {
     git_libgit2_init();
-    cs = new CriticalSection;
+    cs = new CriticalSection(SYNC_LOCATION);
     gitRepositoryFileHook = NULL;  // Not really needed, but you have to have a modinit to match a modexit
     return true;
 }

@@ -1747,7 +1747,7 @@ public:
         return lastAccess;
     }
 private:
-    mutable CriticalSection crit;  // It's POSSIBLE that we could get two queries in hitting the cache at the same time, I think...
+    mutable CriticalSection crit{SYNC_LOCATION};  // It's POSSIBLE that we could get two queries in hitting the cache at the same time, I think...
     UnsignedArray rows;
     StringArray wuids;
     StringArray fieldValues;
@@ -4597,7 +4597,7 @@ private:
             sem.signal();
         }
     private:
-        Semaphore sem;
+        Semaphore sem{SYNC_LOCATION};
         CCasssandraWorkUnitFactory &parent;
         bool stopping;
     } cacheRetirer;
@@ -4607,7 +4607,7 @@ private:
     int partitions = DEFAULT_PARTITIONS;
     int prefixSize = DEFAULT_PREFIX_SIZE;
     CassandraClusterSession cluster;
-    mutable CriticalSection cacheCrit;
+    mutable CriticalSection cacheCrit{SYNC_LOCATION};
     mutable MapXToMyClass<__uint64, __uint64, CCassandraWuUQueryCacheEntry> cacheIdMap;
 };
 

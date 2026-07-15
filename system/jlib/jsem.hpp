@@ -22,17 +22,21 @@
 
 #include "jiface.hpp"
 
+#define SYNC_STRINGIZE2(x) #x
+#define SYNC_STRINGIZE(x) SYNC_STRINGIZE2(x)
+#define SYNC_LOCATION __FILE__ ":" SYNC_STRINGIZE(__LINE__)
+
 #ifdef _WIN32
 
 class jlib_decl Semaphore
 {
 protected:
-    Semaphore(const char *name)
+    Semaphore([[maybe_unused]] const char *syncName, const char *name)
     {
         hSem = CreateSemaphore(NULL, 0, 0x7fffffff, name);
     }
 public:
-    Semaphore(unsigned initialCount = 0U)
+    Semaphore([[maybe_unused]] const char *syncName, unsigned initialCount = 0U)
     {
         hSem = CreateSemaphore(NULL, initialCount, 0x7fffffff, NULL);
     }
@@ -136,7 +140,7 @@ void jlib_decl getEndTime(timespec & abs, unsigned timeout);
 class jlib_decl Semaphore
 {
 public:
-    Semaphore(unsigned initialCount=0U);
+    Semaphore([[maybe_unused]] const char *syncName, unsigned initialCount=0U);
     ~Semaphore();
     bool tryWait();
     void wait();

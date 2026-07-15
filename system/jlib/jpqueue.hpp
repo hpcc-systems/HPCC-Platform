@@ -33,7 +33,7 @@
 template<typename T> class WaitQueue: public CInterface
 {
 public:
-    WaitQueue(): counter(), waiting(0), stopped(false)
+    WaitQueue(): waiting(0), stopped(false)
     {
     }
 
@@ -111,8 +111,8 @@ private:
         return ret;
     }
 
-    Mutex mutex;
-    Semaphore counter;
+    Mutex mutex{SYNC_LOCATION};
+    Semaphore counter{SYNC_LOCATION};
     std::list<T> queue;
     unsigned waiting;   // Not atomic because it is only accessed within a critical section
     std::atomic<bool> stopped; //need event
@@ -265,7 +265,7 @@ private:
     Workers workers;
     Monitor mworkers;
     Linked<IErrorListener> err;
-    Mutex merr;
+    Mutex merr{SYNC_LOCATION};
 };
 
 #ifdef _MSC_VER

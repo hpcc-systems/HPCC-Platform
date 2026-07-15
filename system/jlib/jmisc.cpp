@@ -66,7 +66,7 @@ void _rev(size32_t len, void * _ptr)
     }
 }
 
-Mutex printMutex;
+Mutex printMutex(SYNC_LOCATION);
 FILE *logFile;
 FILE *stdlog = stderr;
 class CStdLogIntercept: public ILogIntercept
@@ -665,7 +665,7 @@ bool wait_program_timeout(HANDLE handle,DWORD &runcode,unsigned timeoutMs)
 
 static bool hadAbortSignal = false;
 static bool handlerInstalled = false;
-CriticalSection abortCrit;
+CriticalSection abortCrit(SYNC_LOCATION);
 
 class AbortHandlerInfo : public CInterface
 {

@@ -161,7 +161,7 @@ struct CFieldInfo
 
 struct CFieldInfoMap : public map<string, CFieldInfo*>
 {
-   Mutex    m_mutex;
+   Mutex m_mutex{SYNC_LOCATION};
 
     virtual ~CFieldInfoMap()
     {

@@ -66,7 +66,7 @@ MODULE_EXIT()
 }
 
 
-CriticalSection crit;
+CriticalSection crit{SYNC_LOCATION};
 
 //---------------------------------------------------------------------------
 

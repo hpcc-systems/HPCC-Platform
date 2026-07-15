@@ -271,7 +271,7 @@ private:
       unsigned int m_uTimeout;
       unsigned int m_uCheckInterval;
       QueueOf<IConfigFileObserver,false> m_qObservers;
-      CriticalSection m_critsecObserverQueue;
+      CriticalSection m_critsecObserverQueue{SYNC_LOCATION};
       CConfigChangeNotification m_configChangeNotification;
 
     private:
@@ -335,7 +335,7 @@ private:
     private:
         CThreaded* m_pWorkerThread;
         CWsDeployFileInfo* m_pFileInfo;
-        Semaphore m_sem;
+        Semaphore m_sem{SYNC_LOCATION};
         bool m_quitThread;
         unsigned m_brokenConnTimeout;
     };
@@ -392,7 +392,7 @@ private:
     unsigned m_brokenConnTimeout;
     Owned<IPropertyTree> m_pComputers;
     StringBuffer m_user;
-    Semaphore m_sem;
+    Semaphore m_sem{SYNC_LOCATION};
   };
 
 public:
@@ -529,7 +529,7 @@ private:
     Owned<SCMStringBuffer>    m_pEnvXml;
     Owned<IPropertyTree>      m_pNavTree;
     Owned<SCMStringBuffer>    m_pGraphXml;
-    Mutex                     m_mutex;
+    Mutex m_mutex{SYNC_LOCATION};
     Owned<IEnvironment>       m_Environment;
     StringBuffer              m_userWithLock;
     StringBuffer              m_userIp;
@@ -779,7 +779,7 @@ public:
 
 private:
     CWsDeployFileInfo* m_pFileInfo;
-    Mutex m_mutex;
+    Mutex m_mutex{SYNC_LOCATION};
     bool m_opFailed;
     EnvAction m_eA;
     EnvAction m_cancelEA;
@@ -937,7 +937,7 @@ private:
   virtual void getWizOptions(StringBuffer& sb);
 
 protected:
-    Mutex                     m_mutexSrv;
+    Mutex m_mutexSrv{SYNC_LOCATION};
     StringBuffer              m_envFile;
     StringBuffer              m_backupDir;
     StringBuffer              m_sourceDir;

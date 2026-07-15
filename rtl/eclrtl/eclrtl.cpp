@@ -51,7 +51,7 @@
 #define UTF8_MAXSIZE     4
 
 IRandomNumberGenerator * random_;
-static CriticalSection random_Sect;
+static CriticalSection random_Sect{SYNC_LOCATION};
 
 MODULE_INIT(INIT_PRIORITY_ECLRTL_ECLRTL)
 {
@@ -279,7 +279,7 @@ private:
 
 typedef MapStringTo<RTLLocale, char const *> MapStrToLocale;
 MapStrToLocale *localeMap;
-CriticalSection localeCrit;
+CriticalSection localeCrit{SYNC_LOCATION};
 MODULE_INIT(INIT_PRIORITY_STANDARD)
 {
     localeMap = new MapStrToLocale;
@@ -484,7 +484,7 @@ static void multimemset(char * out, size_t outlen, char const * in, size_t inlen
 
 typedef MapStringTo<MemoryAttr, size32_t> MemoryAttrMapping;
 MemoryAttrMapping *unicodeBlankCache;
-CriticalSection ubcCrit;
+CriticalSection ubcCrit{SYNC_LOCATION};
 
 MODULE_INIT(INIT_PRIORITY_STANDARD)
 {

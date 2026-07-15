@@ -63,7 +63,7 @@ public:
     {
         if (!str||!*str)
             return;
-        static CriticalSection sect;
+        static CriticalSection sect{SYNC_LOCATION};
         CriticalBlock proc(sect);
         static bool ateol=true;
         if (trcfile[0]==0) {

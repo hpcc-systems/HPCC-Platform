@@ -26,7 +26,7 @@ class AciProcessor : implements IPermissionProcessor, public CInterface
 protected:
     Owned<IPropertyTree> m_cfg;
     Owned<IPropertyTree> m_sidcache;
-    Mutex                m_mutex;
+    Mutex m_mutex{SYNC_LOCATION};
     StringBuffer         m_server;
     ILdapClient*         m_ldap_client;
     LdapServerType       m_servertype;

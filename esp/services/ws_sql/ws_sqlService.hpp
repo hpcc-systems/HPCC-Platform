@@ -65,7 +65,7 @@ private:
 
     static const unsigned int ExpireSeconds = 60 * 60;
 
-    CriticalSection critCache;
+    CriticalSection critCache{SYNC_LOCATION};
     bool isQueryCached(const char * sqlQuery);
     bool getCachedQuery(const char * sqlQuery, StringBuffer & wuid);
     bool addQueryToCache(const char * sqlQuery, const char * wuid);

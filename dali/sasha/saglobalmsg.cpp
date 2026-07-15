@@ -45,8 +45,8 @@ static constexpr unsigned defaultGlobalMsgRetentionDays = 30;
 class CSashaGlobalMessageServer : public CInterfaceOf<ISashaServer>, public Thread
 {
     std::atomic<bool> stopped{true};
-    Semaphore stopSem;
-    Mutex runMutex;
+    Semaphore stopSem{SYNC_LOCATION};
+    Mutex runMutex{SYNC_LOCATION};
     
     unsigned intervalHours = defaultHouseKeepingIntervalHours;
     unsigned retentionPeriodDays = defaultGlobalMsgRetentionDays; // Messages older than this are deleted

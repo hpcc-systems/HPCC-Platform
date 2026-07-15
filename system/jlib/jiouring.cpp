@@ -73,7 +73,7 @@ protected:
     void processCompletions();
 
 protected:
-    CriticalSection requestCrit;        // Protect against queuing two operations at the same time
+    CriticalSection requestCrit{SYNC_LOCATION};        // Protect against queuing two operations at the same time
     bool isMultiThreaded{true};         // If false, the critical section is not used
     bool alive{false};
     std::atomic<bool> aborting{false};

@@ -158,7 +158,7 @@ struct CFieldInfo
 
 struct CFieldInfoMap : public std::map<std::string, CFieldInfo*>
 {
-   Mutex    m_mutex;
+   Mutex m_mutex{SYNC_LOCATION};
 
     virtual ~CFieldInfoMap()
     {
@@ -886,7 +886,7 @@ private:
     set<string>                 m_excludePartitionPatterns;
     StringBuffer                m_machineInfoFile;
     BoolHash                    m_legacyFilters;
-    Mutex                       mutex_machine_info_table;
+    Mutex mutex_machine_info_table{SYNC_LOCATION};
     Owned<CInfoCacheReader>     usageCacheReader;
 };
 

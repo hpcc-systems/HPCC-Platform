@@ -62,7 +62,7 @@ class CLogSerializer : public CInterface
     __int64 m_bytesWritten;
     unsigned long m_ItemCount;//
     unsigned long fileSize;//
-    CriticalSection crit;
+    CriticalSection crit{SYNC_LOCATION};
 protected:
     IFile* m_file;
     IFileIO* m_fileio;

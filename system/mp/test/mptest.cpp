@@ -97,7 +97,7 @@ public:
     }
 };
 
-CriticalSection CSectionTimer::findsect;
+CriticalSection CSectionTimer::findsect(SYNC_LOCATION);
 
 class TimedBlock
 {
@@ -420,7 +420,7 @@ struct CRandomBuffer
 
 void printtrc(char c)
 {
-    static CriticalSection crit;
+    static CriticalSection crit{SYNC_LOCATION};
     CriticalBlock block(crit);
     printf("%c",c);
 }
@@ -756,9 +756,9 @@ void testIPnodeHash()
 }
 
 //-----------Utility classes and global variables---------------//
-CriticalSection sendCriticalSec;
-CriticalSection recvCriticalSec;
-CriticalSection validateCriticalSec;
+CriticalSection sendCriticalSec{SYNC_LOCATION};
+CriticalSection recvCriticalSec{SYNC_LOCATION};
+CriticalSection validateCriticalSec{SYNC_LOCATION};
 bool* validate;
 
 int getNextCount(CriticalSection &sect, int &count)
@@ -1037,7 +1037,7 @@ void MPNxN(ICommunicator *comm, unsigned numStreams, size32_t perStreamMBSize, s
             CThreaded threaded;
             CSendStream &owner;
             mptag_t mpTag;
-            CriticalSection cs;
+            CriticalSection cs{SYNC_LOCATION};
             Owned<IException> exception;
             std::vector<std::queue<unsigned>> expectedHashes;
 

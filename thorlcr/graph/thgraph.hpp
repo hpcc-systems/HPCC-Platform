@@ -300,7 +300,7 @@ class CActivityCodeContext : implements ICodeContextExt
     CGraphBase *containerGraph = nullptr;
     CGraphBase *parent = nullptr;
     std::unique_ptr<CRuntimeStatisticCollection> stats;
-    mutable CriticalSection contextCrit;
+    mutable CriticalSection contextCrit{SYNC_LOCATION};
     std::unordered_map<std::string, Owned<ISectionTimer>> functionTimers;
 
 public:
@@ -418,7 +418,7 @@ class CJobChannel;
 class graph_decl CGraphElementBase : public CInterface, implements IInterface
 {
 protected:
-    CriticalSection crit;
+    CriticalSection crit{SYNC_LOCATION};
     Owned<IHThorArg> baseHelper;
     ThorActivityKind kind;
     activity_id id, ownerId;
@@ -560,7 +560,7 @@ class graph_decl CGraphTempHandler : implements IGraphTempHandler, public CInter
 protected:
     CFileUsageTable tmpFiles;
     CJobBase &job;
-    mutable CriticalSection crit;
+    mutable CriticalSection crit{SYNC_LOCATION};
     bool errorOnMissing;
 
 public:
@@ -620,8 +620,9 @@ class CJobBase;
 interface IPropertyTree;
 class graph_decl CGraphBase : public CGraphStub, implements IEclGraphResults
 {
-    mutable CriticalSection crit;
-    CriticalSection evaluateCrit, executeCrit;
+    mutable CriticalSection crit{SYNC_LOCATION};
+    CriticalSection evaluateCrit{SYNC_LOCATION};
+    CriticalSection executeCrit{SYNC_LOCATION};
     CGraphElementTable containers;
     CGraphElementArray sinks, activeSinks;
     bool sink, complete, global, localChild;
@@ -873,13 +874,13 @@ class CThorCodeContextBase;
 class graph_decl CJobBase : public CInterfaceOf<IInterface>, implements IExceptionHandler
 {
 protected:
-    CriticalSection crit;
+    CriticalSection crit{SYNC_LOCATION};
     Linked<ILoadedDllEntry> querySo;
     IUserDescriptor *userDesc;
     StringAttr key, graphName;
     bool aborted, pausing, resumed;
     StringBuffer wuid, user, scope, token;
-    mutable CriticalSection wuDirty;
+    mutable CriticalSection wuDirty{SYNC_LOCATION};
     mutable bool dirty;
     mptag_t slavemptag;
     Owned<IGroup> jobGroup, slaveGroup, nodeGroup;
@@ -900,7 +901,7 @@ protected:
     rank_t myNodeRank;
     Owned<IPropertyTree> graphXGMML;
     unsigned memorySpillAtPercentage;
-    CriticalSection sharedAllocatorCrit;
+    CriticalSection sharedAllocatorCrit{SYNC_LOCATION};
     Owned<IThorAllocator> sharedAllocator;
     bool jobEnded = false;
     bool failOnLeaks = false;
@@ -1025,7 +1026,7 @@ protected:
     CJobBase &job;
     Owned<IThorAllocator> thorAllocator;
     Owned<IGraphExecutor> graphExecutor;
-    CriticalSection crit;
+    CriticalSection crit{SYNC_LOCATION};
     CGraphTable subGraphs;
     CGraphTableCopy allGraphs; // for lookup, includes all child graphs
     Owned<ICommunicator> jobComm;
@@ -1037,7 +1038,7 @@ protected:
     unsigned channel;
     bool cleaned = false;
     unsigned myBasePort = 0;
-    CriticalSection portAllocCrit;
+    CriticalSection portAllocCrit{SYNC_LOCATION};
     Owned<IBitSet> portMap;
 
     void removeAssociates(CGraphBase &graph)
@@ -1309,7 +1310,7 @@ protected:
         virtual const void * getLinkedRowResult() { throw MakeStringException(0, "Graph Result %d accessed before it is created", id); }
     };
     IArrayOf<IThorResult> results;
-    CriticalSection cs;
+    CriticalSection cs{SYNC_LOCATION};
     activity_id ownerId;
     void ensureAtLeast(unsigned id)
     {

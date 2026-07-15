@@ -118,7 +118,7 @@ public:
 private:
     const std::function<T *(const ServerIdentifier)> tfunc;
     mutable std::atomic<const list *> table[256] = {};
-    mutable CriticalSection lock;
+    mutable CriticalSection lock{SYNC_LOCATION};
     mutable std::atomic<unsigned> firstHash = { 256 };
 };
 

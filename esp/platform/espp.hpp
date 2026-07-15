@@ -54,7 +54,7 @@ private:
     Owned<ISocketSelectHandler> m_selectHndlr;
     SocketPortMap m_srvSockets;
     SocketPortArray m_socketCleanup;
-    Semaphore m_waitForExit;
+    Semaphore m_waitForExit{SYNC_LOCATION};
     bool m_exiting;
     bool m_useDali;
     LogLevel m_logLevel;
@@ -66,10 +66,10 @@ private:
     bool txSummaryResourceReq;
     unsigned m_slowProcessingTime;
     StringAttr m_frameTitle;
-    Mutex abortMutex;
+    Mutex abortMutex{SYNC_LOCATION};
     bool m_SEHMappingEnabled;
     CEspConfig* m_config;
-    CriticalSection m_BindingCritSect;
+    CriticalSection m_BindingCritSect{SYNC_LOCATION};
     unsigned countCacheClients = 0;
     MapStringToMyClass<IEspCache> cacheClientMap;
     Owned<IPropertyTree> applicationConfig;

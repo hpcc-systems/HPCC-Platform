@@ -170,7 +170,7 @@ private:
     Owned<IRemoteConnection> conn;
     Owned<IPropertyTree> p;
     mutable MapStringToMyClass<IConstEnvBase> cache; // NB: map of 'MappingStringToIInterface' that Link's the added IConstEnvBase, and Release's on element removal.
-    mutable Mutex safeCache;
+    mutable Mutex safeCache{SYNC_LOCATION};
     mutable bool dropZoneCacheBuilt;
     mutable bool machineCacheBuilt;
     mutable bool sparkThorCacheBuilt;
@@ -650,7 +650,7 @@ public:
 
 private:
     SubscriptionId sub_id;
-    Mutex  m_mutexEnv;
+    Mutex m_mutexEnv{SYNC_LOCATION};
     bool   m_constEnvUpdated;
     IEnvironmentFactory &factory;
 };
@@ -664,7 +664,7 @@ public:
     IMPLEMENT_IINTERFACE;
     typedef ArrayOf<SubscriptionId> SubscriptionIDs;
     SubscriptionIDs subIDs;
-    Mutex mutex;
+    Mutex mutex{SYNC_LOCATION};
     Owned<CSdsSubscription> subscription;
 
     CEnvironmentFactory()
@@ -2489,7 +2489,7 @@ unsigned CConstInstanceInfoIterator::count() const
 //==========================================================================================
 
 
-static CriticalSection getEnvSect;
+static CriticalSection getEnvSect{SYNC_LOCATION};
 
 extern ENVIRONMENT_API IEnvironmentFactory * getEnvironmentFactory(bool update)
 {

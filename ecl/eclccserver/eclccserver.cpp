@@ -200,7 +200,7 @@ public:
         pipes.zap(pipe);
     }
 private:
-    CriticalSection crit;
+    CriticalSection crit{SYNC_LOCATION};
     unsigned timeLimit = 0;
     bool timedOut = false;
     IPointerArrayOf<IPipeProcess> pipes;
@@ -677,7 +677,7 @@ class EclccCompiler : implements IErrorReporter
             unsigned firstCompile = lineIdx;
             while (lines.isItem(lineIdx) && lines.item(lineIdx)[0] != '#')
                 lineIdx++;
-            CriticalSection crit;
+            CriticalSection crit{SYNC_LOCATION};
             DBGLOG("Compiling %u files, %u at once", lineIdx-firstCompile, maxThreads);
             asyncFor(lineIdx-firstCompile, maxThreads, [this, firstCompile, &lines, &numFailed, &crit, &output, &abortWaiter](unsigned i)
             {
@@ -1457,11 +1457,11 @@ class EclccServer : public CInterface, implements IThreadFactory, implements IAb
     Owned<IThreadPool> pool;
 
     unsigned threadsActive;
-    CriticalSection threadActiveCrit;
+    CriticalSection threadActiveCrit{SYNC_LOCATION};
     std::atomic<bool> running;
     CSDSServerStatus serverstatus;
     Owned<IJobQueue> queue;
-    CriticalSection queueUpdateCS;
+    CriticalSection queueUpdateCS{SYNC_LOCATION};
     StringAttr updatedQueueNames;
     CConfigUpdateHook reloadConfigHook;
 

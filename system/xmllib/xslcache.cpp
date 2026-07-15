@@ -187,7 +187,7 @@ class CXslCache : public CInterface, implements IXslCache
 {
 private:
     MapStringToMyClass<CXslEntry> xslMap;
-    Mutex m_mutex;
+    Mutex m_mutex{SYNC_LOCATION};
     int m_cachetimeout;
 
 public:

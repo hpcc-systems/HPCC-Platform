@@ -46,7 +46,7 @@ private:
     ISortKeySerializer * keyserializer;
     mptag_t mpTagRPC;
     Owned<IJoinHelper> joinhelper;
-    mutable CriticalSection joinHelperCrit;
+    mutable CriticalSection joinHelperCrit{SYNC_LOCATION};
     Owned<IBarrier> barrier;
     SocketEndpoint server;
 

@@ -740,7 +740,7 @@ void SharedVolumeDllServer::registerDll(const char * name, const char * kind, co
 //---------------------------------------------------------------------------
 
 static IDllServer * dllServer;
-CriticalSection dllServerCrit;
+CriticalSection dllServerCrit{SYNC_LOCATION};
 
 IDllServer & queryDllServer()
 {

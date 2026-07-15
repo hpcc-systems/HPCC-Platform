@@ -82,7 +82,7 @@ private:
     static Mutex s_mutex;
 };
 
-Mutex CMachineInfoThreadParam::s_mutex;
+Mutex CMachineInfoThreadParam::s_mutex(SYNC_LOCATION);
 
 class CRoxieStateInfoThreadParam : public CWsMachineThreadParam
 {

@@ -225,7 +225,7 @@ inline void notifyMemoryUnused(void * address, memsize_t size)
 #endif
 }
 
-static CriticalSection heapBitCrit;
+static CriticalSection heapBitCrit{SYNC_LOCATION};
 
 static void notifyAllUnusedRoxieMem();
 
@@ -3456,7 +3456,7 @@ protected:
     CChunkingRowManager * rowManager;
     const IRowAllocatorCache *allocatorCache;
     const IContextLogger & logctx;
-    mutable CriticalSection heapletLock;
+    mutable CriticalSection heapletLock{SYNC_LOCATION};
     std::atomic_uint headMaybeSpace{BLOCKLIST_NULL};  // The head of the list of heaplets which potentially have some space.  When adding must use mo_release, when removing must use mo_acquire
     std::atomic_uint possibleEmptyPages{false};  // Are there any pages with 0 records.  Primarily here to avoid walking long page chains.
     HeapletStats stats;
@@ -3466,7 +3466,7 @@ protected:
 
 //---------------------------------------------------------------------------------------------------------------------
 
-static CriticalSection compactCs;
+static CriticalSection compactCs{SYNC_LOCATION};
 class HeapCompactState
 {
 public:
@@ -4134,9 +4134,9 @@ class BufferedRowCallbackManager
 
     private:
         BufferedRowCallbackManager & owner;
-        CriticalSection cs;
-        Semaphore goSem;
-        Semaphore doneSem;
+        CriticalSection cs{SYNC_LOCATION};
+        Semaphore goSem{SYNC_LOCATION};
+        Semaphore doneSem{SYNC_LOCATION};
         struct
         {
             unsigned slaveId;
@@ -4481,8 +4481,8 @@ protected:
     }
 
 protected:
-    mutable CriticalSection callbackCrit;
-    Semaphore releaseBuffersSem;
+    mutable CriticalSection callbackCrit{SYNC_LOCATION};
+    Semaphore releaseBuffersSem{SYNC_LOCATION};
     CIArrayOf<CallbackItem> rowBufferCallbacks;
     PointerArrayOf<IBufferedRowCallback> activeCallbacks;
     Owned<BackgroundReleaseBufferThread> backgroundReleaseBuffersThread;
@@ -4571,9 +4571,9 @@ class CChunkingRowManager : public CRowManager
     friend class CChunkedHeap;
     friend class CFixedChunkedHeap;
 private:
-    CriticalSection activeBufferCS; // Potentially slow
-    mutable NonReentrantSpinLock peakSpinLock; // Very small window, low contention so fine to be a spin lock
-    mutable SpinLock fixedSpinLock; // Main potential for contention releasingEmptyHeaps and gathering peak usage.  Shouldn't be likely.
+    CriticalSection activeBufferCS{SYNC_LOCATION}; // Potentially slow
+    mutable NonReentrantSpinLock peakSpinLock{SYNC_LOCATION}; // Very small window, low contention so fine to be a spin lock
+    mutable SpinLock fixedSpinLock{SYNC_LOCATION}; // Main potential for contention releasingEmptyHeaps and gathering peak usage.  Shouldn't be likely.
                                     // Should possibly be a ReadWriteLock - better with high contention, worse with low
     CIArrayOf<CFixedChunkedHeap> normalHeaps;
     CHugeHeap hugeHeap;
@@ -6623,7 +6623,7 @@ void DataBuffer::noteLinked(const void *ptr)
 class CDataBufferManager : implements IDataBufferManager, public CInterface
 {
     friend class DataBufferBottom;
-    CriticalSection crit;
+    CriticalSection crit{SYNC_LOCATION};
     DataBufferBottom *curBlock;
     DataBufferBottom *freeChain;
     char * nextBase = nullptr;
@@ -7747,7 +7747,7 @@ protected:
         heapNotifyUnusedEachFree = false; // prevent calls to map out random chunks of memory!
         heapNotifyUnusedEachBlock = false;
 
-        Semaphore sem;
+        Semaphore sem{SYNC_LOCATION};
         BitmapAllocatorThread * threads[maxBitmapThreads];
         for (unsigned i1 = 0; i1 < numThreads; i1++)
             threads[i1] = new BitmapAllocatorThread(sem, size, numThreads);
@@ -8269,7 +8269,7 @@ protected:
         CFixedChunkedHeap dummyHeap((CChunkingRowManager*)rowManager.get(), logctx, &rowCache, 32, 0, SpillAllCost);
         FixedSizeHeaplet * heaplet = new (memory) FixedSizeHeaplet(&dummyHeap, &rowCache, 32, heapFlags);
         heaplet->precreateFreeChain();
-        Semaphore sem;
+        Semaphore sem{SYNC_LOCATION};
         CasAllocatorThread * threads[numCasThreads];
         for (unsigned i1 = 0; i1 < numThreads; i1++)
             threads[i1] = new HeapletCasAllocatorThread(heaplet, sem, rowManager, i1);
@@ -8304,7 +8304,7 @@ protected:
         CountingRowAllocatorCache rowCache;
         Owned<IRowManager> rowManager = createRowManager(0, NULL, logctx, &rowCache, false);
         Owned<IFixedRowHeap> rowHeap = rowManager->createFixedRowHeap(8, ACTIVITY_FLAG_ISREGISTERED|0, RHFhasdestructor|RHFoldfixed);
-        Semaphore sem;
+        Semaphore sem{SYNC_LOCATION};
         CasAllocatorThread * threads[numCasThreads];
         for (unsigned i1 = 0; i1 < numCasThreads; i1++)
             threads[i1] = new FixedCasAllocatorThread(rowHeap, sem, rowManager, i1);
@@ -8319,7 +8319,7 @@ protected:
         Owned<IRowManager> rowManager = createRowManager(0, NULL, logctx, &rowCache, false);
         //For this test the row heap is assign to a variable that will be destroyed after the manager, to ensure that works.
         rowHeap.setown(rowManager->createFixedRowHeap(8, ACTIVITY_FLAG_ISREGISTERED|0, RHFhasdestructor|flags));
-        Semaphore sem;
+        Semaphore sem{SYNC_LOCATION};
         CasAllocatorThread * threads[numCasThreads];
         for (unsigned i1 = 0; i1 < numCasThreads; i1++)
             threads[i1] = new FixedCasAllocatorThread(rowHeap, sem, rowManager, i1);
@@ -8332,7 +8332,7 @@ protected:
     {
         CountingRowAllocatorCache rowCache;
         Owned<IRowManager> rowManager = createRowManager(0, NULL, logctx, &rowCache, false);
-        Semaphore sem;
+        Semaphore sem{SYNC_LOCATION};
         CasAllocatorThread * threads[numCasThreads];
         for (unsigned i1 = 0; i1 < numCasThreads; i1++)
         {
@@ -8371,7 +8371,7 @@ protected:
     {
         CountingRowAllocatorCache rowCache;
         Owned<IRowManager> rowManager = createRowManager(0, NULL, logctx, &rowCache, false);
-        Semaphore sem;
+        Semaphore sem{SYNC_LOCATION};
         CasAllocatorThread * threads[numCasThreads];
         for (unsigned i1 = 0; i1 < numCasThreads; i1++)
             threads[i1] = new GeneralCasAllocatorThread(rowManager, sem, i1);
@@ -8409,7 +8409,7 @@ protected:
     {
         CountingRowAllocatorCache rowCache;
         Owned<IRowManager> rowManager = createRowManager(0, NULL, logctx, &rowCache, false);
-        Semaphore sem;
+        Semaphore sem{SYNC_LOCATION};
         CasAllocatorThread * threads[numCasThreads];
         for (unsigned i1 = 0; i1 < numCasThreads; i1++)
             threads[i1] = new VariableCasAllocatorThread(rowManager, sem, i1, i1);
@@ -8584,7 +8584,7 @@ protected:
         rowManager->setMinimizeFootprint(true, true);
         rowManager->setReleaseWhenModifyCallback(true, true);
 
-        Semaphore sem;
+        Semaphore sem{SYNC_LOCATION};
         CasAllocatorThread * threads[numCasThreads];
         size32_t allocSize = (HEAP_ALIGNMENT_SIZE - 0x200) / numPerPage;
         for (unsigned i1 = 0; i1 < numCasThreads; i1++)
@@ -9083,7 +9083,7 @@ protected:
         memsize_t max = 0;
         std::atomic<memsize_t> count = {0};
         const void * * rows = nullptr;
-        CriticalSection cs;
+        CriticalSection cs{SYNC_LOCATION};
     };
     const static unsigned maxAlloc = 1000;
     const static unsigned step = 10;

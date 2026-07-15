@@ -165,7 +165,7 @@ private:
 //------------------------------------------------------------------------------------------------------------
 
 //Unlikely to be contended - so have a single shared static
-static CriticalSection isLocalCrit;
+static CriticalSection isLocalCrit(SYNC_LOCATION);
 class CStoragePlane final : public CInterfaceOf<IStoragePlane>
 {
 public:
@@ -408,7 +408,7 @@ private:
 
 // {prefix, {key1: value1, key2: value2, ...}}
 static std::unordered_map<std::string, Owned<CStoragePlane>> storagePlaneMap;
-static CriticalSection storagePlaneMapCrit;
+static CriticalSection storagePlaneMapCrit(SYNC_LOCATION);
 MODULE_INIT(INIT_PRIORITY_STANDARD)
 {
     auto updateFunc = [&](const IPropertyTree *oldComponentConfiguration, const IPropertyTree *oldGlobalConfiguration)
@@ -682,7 +682,7 @@ size32_t getForeignBlockedIOSize(bool isFiltered)
 // This is the block size to use for index reads, conditional on whether reading with/without filtered. If filtered, use the random IO size, otherwise the sequential IO size.
 size32_t getIndexBlockedIOSize(const char *planeName, bool isFiltered)
 {
-    static CriticalSection missingBlockedIOWarnCrit;
+    static CriticalSection missingBlockedIOWarnCrit(SYNC_LOCATION);
     static std::unordered_map<std::string, unsigned> warnedMissingBlockedIOByPlane;
 
     // If unfiltered, use the sequential block size if defined in the plane, or component config.
@@ -842,12 +842,12 @@ public:
 // Canonical mutable map. Only ever accessed by writers while holding writeSyncWriteCrit; readers never touch it.
 static std::unordered_map<std::string, WriteSyncEntry> writeSyncDeadlineMap;
 
-static CriticalSection writeSyncWriteCrit; // serializes writers and guards writeSyncDeadlineMap + the snapshot build
+static CriticalSection writeSyncWriteCrit(SYNC_LOCATION); // serializes writers and guards writeSyncDeadlineMap + the snapshot build
 
 // Published immutable snapshot. Swapping this pointer is the only thing that contends with readers, so
 // writeSyncDeadlineCrit is held for the minimum possible time - just the swap, never the rebuild.
 static Owned<const CWriteSyncSnapshot> writeSyncDeadlineSnapshot;
-static CriticalSection writeSyncDeadlineCrit;
+static CriticalSection writeSyncDeadlineCrit(SYNC_LOCATION);
 
 // Lock-free fast path: the cache is almost always empty, so readers can skip taking the lock entirely.
 static std::atomic<size_t> writeSyncDeadlineCount{0};
@@ -963,7 +963,7 @@ size32_t roundIndexBlockedIOSize(size32_t blockedIOSize, size32_t pageSize)
 }
 
 static std::atomic<int> avoidRename{-1};
-static CriticalSection avoidRenameCS;
+static CriticalSection avoidRenameCS(SYNC_LOCATION);
 // returns true if configured and should use 'result'
 static bool checkComponentAndGlobalAvoidRename(bool &result)
 {

@@ -105,7 +105,7 @@ std::shared_ptr<Azure::Storage::StorageSharedKeyCredential> getAzureSharedKeyCre
 }
 
 static std::shared_ptr<Azure::Core::Credentials::TokenCredential> cachedManagedIdentityCredential;
-static CriticalSection managedIdentityCredentialCS;
+static CriticalSection managedIdentityCredentialCS{SYNC_LOCATION};
 
 std::shared_ptr<Azure::Core::Credentials::TokenCredential> getAzureManagedIdentityCredential()
 {
@@ -174,7 +174,7 @@ std::shared_ptr<Azure::Core::Credentials::TokenCredential> getAzureManagedIdenti
 // Global transport instance for connection reuse across all Azure blob operations
 // This allows HTTP connection pooling to work effectively across different blobs/containers/accounts
 static std::shared_ptr<Azure::Core::Http::HttpTransport> globalAzureTransport;
-static CriticalSection globalTransportCS;
+static CriticalSection globalTransportCS{SYNC_LOCATION};
 
 std::shared_ptr<Azure::Core::Http::HttpTransport> getHttpTransport()
 {

@@ -91,7 +91,7 @@
 
 #define _TRACING
 
-static  CriticalSection childprocesssect;
+static  CriticalSection childprocesssect{SYNC_LOCATION};
 #ifdef _WIN32
 static  Unsigned64Array childprocesslist;
 #else
@@ -271,7 +271,7 @@ class CBufferQueueWaiting
 {
 public:
     enum QWenum { QWcontinue, QWdequeue, QWprobe };
-    Semaphore sem;
+    Semaphore sem{SYNC_LOCATION};
     CBufferQueueNotify &waiting;
     bool probe;
     CBufferQueueWaiting(CBufferQueueNotify& _waiting,bool _probe) : waiting(_waiting) { probe = _probe; }
@@ -302,7 +302,7 @@ class CBufferQueue
 {
     QueueOf<CMessageBuffer, false> received;
     CWaitingArray waiting;
-    CriticalSection sect;
+    CriticalSection sect{SYNC_LOCATION};
 
 public:
 
@@ -446,7 +446,7 @@ class CMPServer;
 class CMPChannel;
 
 
-static CriticalSection portProbeCS;
+static CriticalSection portProbeCS{SYNC_LOCATION};
 static cycle_t portProbeLastLog = 0;
 enum CloseType { CloseType_graceful, CloseType_error, CloseType_timeout, CloseType_COUNT };
 static std::array<unsigned __int64, CloseType_COUNT> portProbeCloseCounts = {};
@@ -541,7 +541,7 @@ class CMPConnectThread: public Thread
             ConnectHdr hdr;
             cycle_t createTime = 0;
             size32_t readSoFar = 0;
-            CriticalSection crit;
+            CriticalSection crit{SYNC_LOCATION};
             bool closedOrHandled = false;
         public:
             CSocketHandler(CConnectSelectHandler &_selectHandler, ISocket *_sock) : selectHandler(_selectHandler), sock(_sock)
@@ -631,10 +631,10 @@ class CMPConnectThread: public Thread
         // with a pointer, it will auto instantiate a OWned<CSocketHandler> and cause -ve leak.
         std::list<Linked<CSocketHandler>> handlers;
 
-        CriticalSection handlersCS;
+        CriticalSection handlersCS{SYNC_LOCATION};
 
         std::thread maintenanceThread;
-        Semaphore maintenanceSem;
+        Semaphore maintenanceSem{SYNC_LOCATION};
 
         void clearupSocketHandlers()
         {
@@ -831,7 +831,7 @@ class CMPServer: private CMPChannelHT, implements IMPServer
     CMPConnectThread            *connectthread;
     CBufferQueue                receiveq;
     CMPNotifyClosedThread       *notifyclosedthread;
-    CriticalSection sect;
+    CriticalSection sect{SYNC_LOCATION};
 protected:
     unsigned __int64            role;
     unsigned short              port;
@@ -886,7 +886,7 @@ protected:
 
     IMPLEMENT_SUPERHASHTABLEOF_REF_FIND(CMPChannel,SocketEndpoint);
 
-    CriticalSection replyTagSect;
+    CriticalSection replyTagSect{SYNC_LOCATION};
     int rettag;
     INode *myNode;
 
@@ -946,11 +946,11 @@ public:
 class CMPNotifyClosedThread: public Thread
 {
     IArrayOf<IConnectionMonitor> connectionmonitors;
-    CriticalSection conmonsect;
+    CriticalSection conmonsect{SYNC_LOCATION};
     SimpleInterThreadQueueOf<INode, false> workq;
     bool stopping;  
     CMPServer *parent;
-    CriticalSection stopsect;
+    CriticalSection stopsect{SYNC_LOCATION};
 public:
     CMPNotifyClosedThread(CMPServer *_parent)
         : Thread("CMPNotifyClosedThread")
@@ -1038,16 +1038,16 @@ class CMPChannel: public CInterface
 {
     ISocket *channelsock = nullptr;
     CMPServer *parent;
-    TimedMutex sendmutex;
-    Semaphore sendwaitingsig;
+    TimedMutex sendmutex{SYNC_LOCATION};
+    Semaphore sendwaitingsig{SYNC_LOCATION};
     unsigned sendwaiting = 0;           // number waiting on sendwaitingsem (for multi/single clashes to resolve)
-    CriticalSection connectsect;
+    CriticalSection connectsect{SYNC_LOCATION};
     CMPPacketReader *reader;
     bool master = false;                // i.e. connected originally
     mptag_t multitag = TAG_NULL;        // current multi send in progress
     bool closed = false;
     IArrayOf<ISocket> keptsockets;
-    CriticalSection attachsect;
+    CriticalSection attachsect{SYNC_LOCATION};
     unsigned __int64 attachaddrval = 0;
     SocketEndpoint attachep, attachPeerEp;
     std::atomic<unsigned> attachchk;
@@ -1381,7 +1381,7 @@ protected: friend class CMPPacketReader;
 
 public:
 
-    Semaphore pingsem;
+    Semaphore pingsem{SYNC_LOCATION};
 
     CMPChannel(CMPServer *_parent,SocketEndpoint &_remoteep);
     ~CMPChannel();
@@ -1668,7 +1668,7 @@ public:
 class MultiPacketHandler // TAG_SYS_MULTI
 {
     CIArrayOf<CMultiPacketReceiver> inprogress; // should be ok as not many in progress hopefully (TBD orphans)
-    CriticalSection sect;
+    CriticalSection sect{SYNC_LOCATION};
     unsigned lastErrMs;
 
     void logError(unsigned code, MultiPacketHeader &mhdr, CMessageBuffer &msg, MultiPacketHeader *otherMhdr)
@@ -1827,7 +1827,7 @@ class CMPPacketReader: public ISocketSelectNotify, public CInterface
     byte * activeptr = nullptr;
     size32_t remaining = 0;
     CMPChannel *parent = nullptr;
-    CriticalSection sect;
+    CriticalSection sect{SYNC_LOCATION};
     bool gotPacketHdr = false;
 public:
     IMPLEMENT_IINTERFACE;
@@ -3005,7 +3005,7 @@ void CMPServer::notifyClosed(SocketEndpoint &ep, bool trace)
 class CInterCommunicator: public IInterCommunicator, public CInterface
 {
     CMPServer *parent;
-    CriticalSection verifysect;
+    CriticalSection verifysect{SYNC_LOCATION};
 
 public:
     IMPLEMENT_IINTERFACE;
@@ -3219,7 +3219,7 @@ class CCommunicator: public ICommunicator, public CInterface
     CMPServer *parent;
     bool outer;
     rank_t myrank;
-    CriticalSection verifysect;
+    CriticalSection verifysect{SYNC_LOCATION};
 
     const SocketEndpoint &queryEndpoint(rank_t rank)
     {
@@ -3353,7 +3353,7 @@ public:
         CriticalBlock block(verifysect);
         CTimeMon totalTM(totalTimeout);
 
-        Semaphore sem;
+        Semaphore sem{SYNC_LOCATION};
         sem.signal(getAffinityCpus());
         std::atomic<bool> abort{false};
         
@@ -3640,7 +3640,7 @@ public:
     void setPaused(bool onOff) { paused = onOff; }
     void setDumpQueue(bool onOff) { dumpQueue = onOff; }
 };
-CriticalSection CGlobalMPServer::sect;
+CriticalSection CGlobalMPServer::sect(SYNC_LOCATION);
 static CGlobalMPServer *globalMPServer;
 
 MODULE_INIT(INIT_PRIORITY_STANDARD)

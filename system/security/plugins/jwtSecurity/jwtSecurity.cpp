@@ -1055,8 +1055,8 @@ public:
 
 
 private:
-    mutable CriticalSection     jwtCrit;                    //!< Protects access to JWT secret file contents
-    mutable CriticalSection     daliFetchCrit;              //!< Protects access to Dali's key/value store
+    mutable CriticalSection jwtCrit{SYNC_LOCATION};                    //!< Protects access to JWT secret file contents
+    mutable CriticalSection daliFetchCrit{SYNC_LOCATION};              //!< Protects access to Dali's key/value store
     std::string                 clientID;                   //!< URL or unique name of the current cluster; from configuration
     std::string                 loginEndpoint;              //!< Full URL to login endpoint; from configuration
     std::string                 refreshEndpoint;            //!< Full URL to refresh endpoint; from configuration

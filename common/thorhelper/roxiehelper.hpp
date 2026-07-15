@@ -411,7 +411,7 @@ protected:
     PointerArray queued;
     UnsignedArray lengths;
     unsigned sent;
-    CriticalSection crit;
+    CriticalSection crit{SYNC_LOCATION};
 
 public:
     IMPLEMENT_IINTERFACE;
@@ -453,7 +453,7 @@ protected:
     unsigned rowCount;
     unsigned emptyLength;
     const IContextLogger &logctx;
-    CriticalSection crit;
+    CriticalSection crit{SYNC_LOCATION};
     PointerArray queued;
     UnsignedArray lengths;
     bool first = true;

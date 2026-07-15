@@ -165,7 +165,7 @@ private:
     CWsException( const CWsException& );
     IArrayOf<IException> exceptions;
     StringBuffer         exSource;
-    mutable Mutex        mutex;
+    mutable Mutex mutex{SYNC_LOCATION};
     WsErrorType          exErrorType;
 };
 

@@ -87,7 +87,7 @@ class CThorEndHandler : implements IThreaded
     unsigned timeout = 30000;
     std::atomic<bool> started{false};
     std::atomic<bool> stopped{false};
-    Semaphore sem;
+    Semaphore sem{SYNC_LOCATION};
 public:
     CThorEndHandler() : threaded("CThorEndHandler")
     {
@@ -149,7 +149,7 @@ MODULE_EXIT()
 class CRegistryServer : public CSimpleInterface
 {
     unsigned msgDelay, workersRegistered;
-    CriticalSection crit;
+    CriticalSection crit{SYNC_LOCATION};
     bool stopped = false;
     static CriticalSection regCrit;
     static CRegistryServer *registryServer;
@@ -547,7 +547,7 @@ public:
     }
 };
 
-CriticalSection CRegistryServer::regCrit;
+CriticalSection CRegistryServer::regCrit(SYNC_LOCATION);
 CRegistryServer *CRegistryServer::registryServer = NULL;
 
 

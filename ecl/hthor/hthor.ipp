@@ -2128,7 +2128,7 @@ protected:
     IHThorWebServiceCallActionArg & helper;
     IHThorWebServiceCallArg *   callHelper;
     StringBuffer authToken;
-    CriticalSection crit;
+    CriticalSection crit{SYNC_LOCATION};
 
     void init();
 };
@@ -2857,7 +2857,7 @@ class CHThorLibraryCallActivity : public CHThorSimpleActivityBase
 
     IHThorLibraryCallArg &helper;
     rtlRowBuilder extractBuilder;
-    CriticalSection cs;
+    CriticalSection cs{SYNC_LOCATION};
     Owned<IHThorGraphResults> results;
     ActivityState state;
     StringAttr libraryName;

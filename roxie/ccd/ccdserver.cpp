@@ -129,7 +129,7 @@ class RestartableThread : public CInterface
     };
     friend class MyThread;
     Owned<MyThread> thread;
-    CriticalSection crit;
+    CriticalSection crit{SYNC_LOCATION};
     StringAttr name;
 public:
     RestartableThread(const char *_name) : name(_name)
@@ -1139,8 +1139,8 @@ protected:
     CachedOutputMetaData meta;
     IHThorArg *colocalParent;
     IEngineRowAllocator *rowAllocator;
-    CriticalSection statecrit;
-    mutable CriticalSection statscrit;
+    CriticalSection statecrit{SYNC_LOCATION};
+    mutable CriticalSection statscrit{SYNC_LOCATION};
 
     mutable CRuntimeStatisticCollection stats;
     MapStringToMyClass<ThorSectionTimer> functionTimers;
@@ -2789,7 +2789,7 @@ class CRoxieServerReadAheadInput : implements IEngineRowStream, implements IFina
     QueueOf<const void, true> buffer;
     InterruptableSemaphore ready;
     InterruptableSemaphore space;
-    CriticalSection crit;
+    CriticalSection crit{SYNC_LOCATION};
     bool eof;
     bool disabled;
     IRoxieAgentContext *ctx;
@@ -3306,7 +3306,7 @@ protected:
     unsigned numOutputs;
     bool executed;
     bool *stopped;
-    CriticalSection ecrit;
+    CriticalSection ecrit{SYNC_LOCATION};
     Owned<IException> exception;
 
 public:
@@ -4263,7 +4263,7 @@ class CRemoteResultAdaptor : implements IEngineRowStream, implements IFinalRoxie
         bool needsFlush;
         InterruptableSemaphore flowController;
         const CRemoteResultAdaptor &owner;
-        CriticalSection crit;
+        CriticalSection crit{SYNC_LOCATION};
 
     public:
         ChannelBuffer(const CRemoteResultAdaptor &_owner, unsigned _channel) : channel(_channel), flowController(perChannelFlowLimit), owner(_owner)
@@ -4380,7 +4380,7 @@ private:
     unsigned resendSequence;
     IHThorArg *colocalArg;
     IArrayOf<IRoxieServerQueryPacket> pending;
-    CriticalSection pendingCrit;
+    CriticalSection pendingCrit{SYNC_LOCATION};
     unsigned sentSequence;
     Owned<IOutputRowDeserializer> deserializer;
     Owned<IEngineRowAllocator> rowAllocator;
@@ -4412,7 +4412,7 @@ public:
     MemoryBuffer cachedContext;
     const RemoteActivityId &remoteId;
     ruid_t ruid;
-    mutable CriticalSection buffersCrit;
+    mutable CriticalSection buffersCrit{SYNC_LOCATION};
     unsigned processed;
     cycle_t totalCycles;
     cycle_t unpackerWaitCycles;
@@ -6619,7 +6619,7 @@ IRoxieServerActivityFactory *createRoxieServerInlineTableActivityFactory(unsigne
 class CRoxieServerWorkUnitReadActivity : public CRoxieServerActivity
 {
     IHThorWorkunitReadArg &helper;
-    CriticalSection readerCrit;
+    CriticalSection readerCrit{SYNC_LOCATION};
     Owned<IWorkUnitRowReader> wuReader;
 public:
     CRoxieServerWorkUnitReadActivity(IRoxieAgentContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
@@ -6786,7 +6786,7 @@ public:
     }
 
 private:
-    CriticalSection cs;
+    CriticalSection cs{SYNC_LOCATION};
     Linked<IFinalRoxieInput> input;
     Linked<IEngineRowStream> inputStream;
     Owned<IStrandJunction> junction;
@@ -6971,7 +6971,7 @@ public:
 
 class CGraphResult : implements IGraphResult, public CInterface
 {
-    CriticalSection cs;
+    CriticalSection cs{SYNC_LOCATION};
     const byte **rowset;
     size32_t count;
     bool complete;
@@ -7075,7 +7075,7 @@ protected:
 class CRoxieServerLocalResultReadActivity : public CRoxieServerActivity
 {
     IHThorLocalResultReadArg &helper;
-    CriticalSection iterCrit;
+    CriticalSection iterCrit{SYNC_LOCATION};
     Owned<IEngineRowStream> iter;
     ILocalGraphEx * graph;
     unsigned graphId;
@@ -7382,7 +7382,7 @@ class CRoxieServerGraphLoopResultReadActivity : public CRoxieServerActivity
 {
 protected:
     IHThorGraphLoopResultReadArg &helper;
-    CriticalSection iterCrit;
+    CriticalSection iterCrit{SYNC_LOCATION};
     Owned<IFinalRoxieInput> iterInput;
     Owned<IEngineRowStream> iterStream;
     Owned<IStrandJunction> iterJunction;
@@ -9313,8 +9313,8 @@ public:
     unsigned numOriginalOutputs;
 
     QueueOf<const void, true> buffer;
-    CriticalSection crit;
-    CriticalSection crit2;
+    CriticalSection crit{SYNC_LOCATION};
+    CriticalSection crit2{SYNC_LOCATION};
     unsigned tailIdx;
     unsigned headIdx;
     Owned<IException> readError;
@@ -10792,7 +10792,7 @@ IRoxieServerActivityFactory *createRoxieServerFilterGroupActivityFactory(unsigne
 class CRoxieServerSideEffectActivity : public CRoxieServerActivity
 {
     IHThorSideEffectArg &helper;
-    CriticalSection ecrit;
+    CriticalSection ecrit{SYNC_LOCATION};
     Owned<IException> exception;
     bool executed;
 public:
@@ -15416,7 +15416,7 @@ class CRoxieServerPrefetchProjectActivity : public CRoxieServerActivity, impleme
         rtlRowBuilder extract;
     };
     QueueOf<PrefetchInfo, true> pulled;
-    CriticalSection pulledCrit;
+    CriticalSection pulledCrit{SYNC_LOCATION};
 
 public:
     CRoxieServerPrefetchProjectActivity(IRoxieAgentContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
@@ -15951,7 +15951,7 @@ protected:
     Owned<CSafeRoxieInput> safeInput;
     CRoxieServerParallelLoopActivity * activity;
     bool eof;
-    CriticalSection crit;
+    CriticalSection crit{SYNC_LOCATION};
     unsigned flags;
     SafeRowQueue tempResults[2];
     unsigned savedParentExtractSize;
@@ -16010,13 +16010,13 @@ class CRoxieServerParallelLoopActivity : public CRoxieServerLoopActivity
     friend class LoopExecutorThread;
 
     QueueOf<const void, true> ready;
-    CriticalSection helperCS;
-    CriticalSection cs;
+    CriticalSection helperCS{SYNC_LOCATION};
+    CriticalSection cs{SYNC_LOCATION};
     unsigned defaultNumParallel;
     LoopExecutorThread executor;
     IProbeManager* probeManager;
-    CriticalSection canAccess;
-    CriticalSection scrit;
+    CriticalSection canAccess{SYNC_LOCATION};
+    CriticalSection scrit{SYNC_LOCATION};
     InterruptableSemaphore readySpace;
     InterruptableSemaphore recordsReady;
 
@@ -16974,7 +16974,7 @@ class CRoxieServerLibraryCallActivity : public CRoxieServerActivity
     bool * inputUsed;
     bool * outputUsed;
     Owned<IException> error;
-    CriticalSection crit;
+    CriticalSection crit{SYNC_LOCATION};
     rtlRowBuilder libraryExtractBuilder;
     Owned<IQueryFactory> libraryQuery;  // Release after libraryGraph...
     Owned<IActivityGraph> libraryGraph;
@@ -21465,7 +21465,7 @@ IRoxieServerActivityFactory *createRoxieServerIfActivityFactory(unsigned _id, un
 
 class CRoxieServerActionBaseActivity : public CRoxieServerActivity
 {
-    CriticalSection ecrit;
+    CriticalSection ecrit{SYNC_LOCATION};
     Owned<IException> exception;
     bool executed;
 
@@ -26581,7 +26581,7 @@ protected:
     bool isLocal;
     ThorActivityKind activityKind;
     CJoinGroup *groupStart;
-    CriticalSection groupsCrit;
+    CriticalSection groupsCrit{SYNC_LOCATION};
     QueueOf<CJoinGroup, false> groups;
     IFinalRoxieInput *indexReadInput;
     unsigned indexReadIdx = 0;
@@ -27541,7 +27541,7 @@ protected:
     IHThorSoapActionArg & helper;
     StringBuffer authToken;
     bool eof;
-    CriticalSection crit;
+    CriticalSection crit{SYNC_LOCATION};
     ClientCertificate *pClientCert;
 
 public:
@@ -27669,7 +27669,7 @@ public:
 protected:
     bool executed = false;
     Linked<IException> exception;
-    CriticalSection ecrit;
+    CriticalSection ecrit{SYNC_LOCATION};
 };
 //---------------------------------------------------------------------------
 
@@ -27943,7 +27943,7 @@ IRoxieServerActivityFactory *createRoxieServerSoapDatasetActionActivityFactory(u
 class CGraphResults : implements IRoxieGraphResults, public CInterface
 {
     IArrayOf<IGraphResult> results;
-    CriticalSection cs;
+    CriticalSection cs{SYNC_LOCATION};
 
     IGraphResult & select(unsigned idx)
     {
@@ -28092,7 +28092,7 @@ class CActivityGraph : implements IActivityGraph, implements IThorChildGraph, im
 protected:
     class ActivityGraphAgentContext : public IndirectAgentContext
     {
-        SpinLock abortLock;
+        SpinLock abortLock{SYNC_LOCATION};
         std::atomic<bool> aborted;
         Owned<IException> exception;
     public:
@@ -28260,7 +28260,7 @@ protected:
     Owned<CGraphResults> results;
     CGraphResults graphLoopResults;
     const ActivityArray & graphDefinition;
-    CriticalSection evaluateCrit;
+    CriticalSection evaluateCrit{SYNC_LOCATION};
 
     IProbeManager *probeManager;
     IRoxieServerActivity *parentActivity;
@@ -28416,7 +28416,7 @@ public:
     }
 
     Linked<IException> exception;
-    CriticalSection eCrit;
+    CriticalSection eCrit{SYNC_LOCATION};
 
     virtual void noteException(IException *E)
     {
@@ -28846,7 +28846,7 @@ protected:
     const IRoxieContextLogger &logctx;
     unsigned numParallel;
     IHThorArg *colocalArg = nullptr;
-    mutable CriticalSection graphCrit;
+    mutable CriticalSection graphCrit{SYNC_LOCATION};
     CIArrayOf<CActivityGraph> stack;
 };
 

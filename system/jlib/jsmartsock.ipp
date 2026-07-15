@@ -63,7 +63,7 @@ class jlib_decl CSmartSocketFactory: public Thread,
 {
 protected:
     SmartSocketEndpointArray sockArray;
-    Mutex lock;
+    Mutex lock{SYNC_LOCATION};
 
     unsigned nextEndpointIndex;
     bool retry;

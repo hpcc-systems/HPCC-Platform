@@ -54,7 +54,7 @@ class CDaliAuditServer: public IDaliServer, public Thread
 {  // Server side
 
     bool stopped;
-    CriticalSection handlemessagesect;
+    CriticalSection handlemessagesect{SYNC_LOCATION};
     StringAttr auditdir;
 
     static int compfile(IInterface * const *v1, IInterface * const *v2) // for bAdd only

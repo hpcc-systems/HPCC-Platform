@@ -69,7 +69,7 @@ class CEspHttpServer : implements IHttpServerService, public CInterface
 {
     bool isSSL = false;
     bool shouldClose = false;
-    CriticalSection critDaliSession;
+    CriticalSection critDaliSession{SYNC_LOCATION};
     ISocketReturner* m_socketReturner = nullptr;
 protected:
     ISocket&                m_socket;

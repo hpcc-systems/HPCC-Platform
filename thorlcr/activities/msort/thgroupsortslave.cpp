@@ -41,7 +41,7 @@ class CLocalSortSlaveActivity : public CSlaveActivity
     IRowStream *curRowStream = nullptr;   // current stream (raw): either ownedRowStream.get() or loader-owned per-group stream
     bool unstable, eoi = false;
     bool grouped = false;             // hoisted container.queryGrouped() to avoid per-row indirection
-    CriticalSection loaderCs; // Ensure iLoader remains valid for the duration of mergeStats()
+    CriticalSection loaderCs{SYNC_LOCATION}; // Ensure iLoader remains valid for the duration of mergeStats()
 
 public:
     CLocalSortSlaveActivity(CGraphElementBase *_container)

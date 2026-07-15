@@ -107,7 +107,7 @@ class CDaliUidAllocator: public CInterface
     SocketEndpoint  node;
     unsigned        banksize;
 public:
-    CriticalSection crit;
+    CriticalSection crit{SYNC_LOCATION};
 
     CDaliUidAllocator()
     {
@@ -209,7 +209,7 @@ MODULE_EXIT()
     delete foreignDaliVersionCache;
 }
 
-static CriticalSection foreignDaliVersionCacheCrit;
+static CriticalSection foreignDaliVersionCacheCrit{SYNC_LOCATION};
 void checkForeignDaliVersionInfo(const INode *foreignDali, CDaliVersion &serverVersion, CDaliVersion &minClientVersion)
 {
     StringBuffer foreignDaliStr;
@@ -383,7 +383,7 @@ public:
 };
 
 
-CriticalSection CCovenBase::uidcrit;
+CriticalSection CCovenBase::uidcrit(SYNC_LOCATION);
 CIArrayOf<CDaliUidAllocator> CCovenBase::foreginUidallocators;
 CDaliUidAllocator CCovenBase::localUidAlloctor;
 
@@ -416,8 +416,8 @@ class CCovenServer: public CCovenBase
     bool            stopped;
     StringAttr      storename;
     StringAttr      backupname;
-    CriticalSection updatestorecrit;
-    Semaphore       done;
+    CriticalSection updatestorecrit{SYNC_LOCATION};
+    Semaphore done{SYNC_LOCATION};
 
     IPropertyTree   *store;
 

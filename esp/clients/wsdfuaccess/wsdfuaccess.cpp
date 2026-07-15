@@ -47,7 +47,7 @@ namespace wsdfuaccess
 //#define TEST_RETURNTEXTRESPONSE
 
 static std::vector<std::string> dfuServiceUrls;
-static CriticalSection dfuServiceUrlCrit;
+static CriticalSection dfuServiceUrlCrit{SYNC_LOCATION};
 static std::atomic<unsigned> currentDfuServiceUrl{0};
 static std::atomic<bool> dfuServiceUrlsDiscovered{false};
 

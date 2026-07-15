@@ -30,9 +30,9 @@ class CEspProtocolThread: public Thread, implements ISocketReturner
 protected:
    bool terminating;
     
-   CriticalSection sect;
+   CriticalSection sect{SYNC_LOCATION};
     
-   Semaphore ticksem;
+   Semaphore ticksem{SYNC_LOCATION};
     
    Owned<ISocket> m_socket;
 

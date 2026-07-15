@@ -269,7 +269,7 @@ public:
     std::atomic<sequence_t> nextSendSequence{0};
     std::atomic<sequence_t> activeFlowSequence{0};
     std::atomic<sequence_t> activePermitSeq{0};      // Used to prevent a request to send once a permit has been received
-    CriticalSection activeCrit;
+    CriticalSection activeCrit{SYNC_LOCATION};
 
     unsigned nextFlowSequence()
     {
@@ -814,7 +814,7 @@ class CUdpSendManager : implements ISendManager, public CInterface
     class StartedThread : public Thread
     {
     private:
-        Semaphore started;
+        Semaphore started{SYNC_LOCATION};
         virtual int run()
         {
             started.signal();
@@ -851,7 +851,7 @@ class CUdpSendManager : implements ISendManager, public CInterface
     {
         // Check if any senders have timed out
         CUdpSendManager &parent;
-        Semaphore terminated;
+        Semaphore terminated{SYNC_LOCATION};
 
         virtual int doRun() override
         {

@@ -36,7 +36,7 @@ typedef std::unordered_map<std::string, Owned<IKeyIndex>> CKeyIndexCache;
 class CKeyStore
 {
 private:
-    Mutex mutex;
+    Mutex mutex{SYNC_LOCATION};
     CKeyIndexCache keyIndexCache;
     std::atomic<unsigned> nextId { 0x80000000 };
 
@@ -86,7 +86,7 @@ private:
 protected:
     unsigned iD;
     StringAttr name;
-    mutable CriticalSection cacheCrit;
+    mutable CriticalSection cacheCrit{SYNC_LOCATION};
     Owned<const CJHBlobNode> cachedBlobNode;
     CIArrayOf<IndexBloomFilter> bloomFilters;
     std::atomic<bool> bloomFiltersLoaded = {0};

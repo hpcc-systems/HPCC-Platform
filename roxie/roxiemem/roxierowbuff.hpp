@@ -107,7 +107,7 @@ protected:
     rowidx_t commitRows;  // can only be updated by writing thread within a critical section
     unsigned allocatorId;
     const size32_t commitDelta;  // How many rows need to be written before they are added to the committed region?
-    mutable CriticalSection cs;
+    mutable CriticalSection cs{SYNC_LOCATION};
 };
 
 class roxiemem_decl DynamicRoxieOutputRowArray : public RoxieOutputRowArray

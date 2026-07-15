@@ -308,7 +308,7 @@ IEspCorsHelper *createEspCorsHelper(IPropertyTree *cors)
 }
 
 static std::map<std::string, Owned<ISecManager>> ldapInstances;
-static CriticalSection ldapInstancesCS;
+static CriticalSection ldapInstancesCS{SYNC_LOCATION};
 
 
 static void formatVersion(double version, StringBuffer& out)

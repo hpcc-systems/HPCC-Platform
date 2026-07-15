@@ -77,12 +77,12 @@ class CSmartRowBuffer: public CSimpleInterface, implements ISmartRowBuffer, impl
     ThorRowQueue *out;
     CFileOwner tmpFileOwner;
     Owned<IFileIO> tempFileIO;
-    mutable CriticalSection critTmpFileIO;
-    SpinLock lock;
+    mutable CriticalSection critTmpFileIO{SYNC_LOCATION};
+    SpinLock lock{SYNC_LOCATION};
     bool waiting;
-    Semaphore waitsem;
+    Semaphore waitsem{SYNC_LOCATION};
     bool waitflush;
-    Semaphore waitflushsem;
+    Semaphore waitflushsem{SYNC_LOCATION};
     size32_t blocksize;
     unsigned numblocks;
     Owned<IBitSet> diskfree;
@@ -457,11 +457,11 @@ class CSmartRowInMemoryBuffer: public CSimpleInterface, implements ISmartRowBuff
     IThorRowInterfaces *rowIf;
     ThorRowQueue *in;
     size32_t insz;
-    SpinLock lock; // MORE: This lock is held for quite long periods.  I suspect it could be significantly optimized.
+    SpinLock lock{SYNC_LOCATION}; // MORE: This lock is held for quite long periods.  I suspect it could be significantly optimized.
     bool waitingin;
-    Semaphore waitinsem;
+    Semaphore waitinsem{SYNC_LOCATION};
     bool waitingout;
-    Semaphore waitoutsem;
+    Semaphore waitoutsem{SYNC_LOCATION};
     size32_t blocksize;
     bool eoi;
 #ifdef _DEBUG
@@ -741,7 +741,7 @@ class CCompressedSpillingRowStream: public CSimpleInterfaceOf<ISmartRowBuffer>, 
     // in-memory related members
     CSPSCQueue<RowEntry> inMemRows;
     std::atomic<memsize_t> inMemRowsMemoryUsage = 0; // NB updated from writer and reader threads
-    Semaphore moreRows;
+    Semaphore moreRows{SYNC_LOCATION};
     std::atomic<bool> readerWaitingForQ = false; // set by reader, cleared by writer
 
     // temp write related members
@@ -750,8 +750,8 @@ class CCompressedSpillingRowStream: public CSimpleInterfaceOf<ISmartRowBuffer>, 
     memsize_t pendingFlushToDiskSz = 0;
     CFileOwner *currentOwnedOutputFile = nullptr;
     Owned<IFileIO> currentOutputIFileIO; // keep for stats
-    mutable CriticalSection critCurrentOutputIFileIO;
-    CriticalSection outputFilesQCS;
+    mutable CriticalSection critCurrentOutputIFileIO{SYNC_LOCATION};
+    CriticalSection outputFilesQCS{SYNC_LOCATION};
     std::queue<CFileOwner *> outputFiles;
     unsigned writeTempFileNum = 0;
     std::atomic<rowcount_t> nextOutputRow = 0; // read by reader, updated by writer
@@ -761,7 +761,7 @@ class CCompressedSpillingRowStream: public CSimpleInterfaceOf<ISmartRowBuffer>, 
     bool lastWriteWasEog = false;
     bool outputComplete = false; // only accessed and modified by writer or reader within readerWriterCS
     bool recentlyQueued = false;
-    CriticalSection outputStreamCS;
+    CriticalSection outputStreamCS{SYNC_LOCATION};
 
     // temp read related members
     std::atomic<rowcount_t> currentTempFileEndRow = 0;
@@ -778,14 +778,14 @@ class CCompressedSpillingRowStream: public CSimpleInterfaceOf<ISmartRowBuffer>, 
     // misc
     CRuntimeStatisticCollection inactiveStats;
     bool grouped = false; // ctor input parameter
-    CriticalSection readerWriterCS;
+    CriticalSection readerWriterCS{SYNC_LOCATION};
 #ifdef STRESSTEST_SPILLING_ROWSTREAM
     bool stressTest = false;
 #endif
 
     // annoying flush semantics
     bool flushWaiting = false;
-    Semaphore flushWaitSem;
+    Semaphore flushWaitSem{SYNC_LOCATION};
 
 
     void trace(const char *format, ...)
@@ -1328,7 +1328,7 @@ class CRowSet : public CSimpleInterface, implements IInterface
     unsigned chunk;
     CThorExpandingRowArray rows;
     CSharedWriteAheadBase &sharedWriteAhead;
-    mutable CriticalSection crit;
+    mutable CriticalSection crit{SYNC_LOCATION};
 public:
     CRowSet(CSharedWriteAheadBase &_sharedWriteAhead, unsigned _chunk, unsigned maxRows);
     virtual void Link() const
@@ -1399,7 +1399,7 @@ class CSharedWriteAheadBase : public CSimpleInterface, implements ISharedSmartBu
     IArrayOf<IRowStream> outputs;
     unsigned readersWaiting;
     mutable IArrayOf<CRowSet> cachedRowSets;
-    CriticalSection rowSetCacheCrit;
+    CriticalSection rowSetCacheCrit{SYNC_LOCATION};
 
     void reuse(CRowSet *rowset)
     {
@@ -1473,7 +1473,7 @@ protected:
         unsigned output;
         rowcount_t rowsRead;
         bool eof, readerWaiting;
-        Semaphore readWaitSem;
+        Semaphore readWaitSem{SYNC_LOCATION};
         Owned<CRowSet> outputOwnedRows;
         CRowSet *rowSet;
         unsigned row, rowsInRowSet;
@@ -1560,7 +1560,7 @@ protected:
     rowidx_t maxRows;
     bool stopped;
     Owned<CRowSet> inMemRows;
-    CriticalSection crit;
+    CriticalSection crit{SYNC_LOCATION};
     Linked<IOutputMetaData> meta;
     Linked<IOutputRowSerializer> serializer;
     QueueOf<CRowSet, false> chunkPool;
@@ -2256,7 +2256,7 @@ ISharedSmartBuffer *createSharedSmartDiskBuffer(CActivityBase *activity, const c
 
 class CSharedWriteAheadMem : public CSharedWriteAheadBase
 {
-    Semaphore poolSem;
+    Semaphore poolSem{SYNC_LOCATION};
     bool writerBlocked;
 
     virtual void markStop()
@@ -2534,7 +2534,7 @@ class CSharedFullSpillingWriteAhead : public CInterfaceOf<ISharedRowStreamReader
     memsize_t rowsMemUsage = 0;
     std::atomic<rowcount_t> totalInputRowsRead = 0; // not used until spilling begins, represents count of all rows read
     rowcount_t inMemTotalRows = 0; // whilst in memory, represents count of all rows seen
-    CriticalSection readAheadCS; // ensure single reader (leader), reads ahead (updates rows/totalInputRowsRead/inMemTotalRows)
+    CriticalSection readAheadCS{SYNC_LOCATION}; // ensure single reader (leader), reads ahead (updates rows/totalInputRowsRead/inMemTotalRows)
     Owned<CFileOwner> tempFileOwner;
     Owned<IFileIO> iFileIO;
     Owned<IBufferedSerialOutputStream> outputStream;
@@ -2830,7 +2830,7 @@ class CRowMultiWriterReader : public CSimpleInterface, implements IRowMultiWrite
     CActivityBase &activity;
     IThorRowInterfaces *rowIf;
     bool readerBlocked, eos, eow;
-    Semaphore emptySem, fullSem;
+    Semaphore emptySem{SYNC_LOCATION}, fullSem{SYNC_LOCATION};
     unsigned numWriters, writersComplete, writersBlocked;
 
     class CAWriter : public CSimpleInterface, implements IRowWriter

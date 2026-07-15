@@ -147,7 +147,7 @@ private:
     };
     using PluginMap = std::map<std::string, Plugin>;
     PluginMap       m_plugins;
-    CriticalSection m_lock;
+    CriticalSection m_lock{SYNC_LOCATION};
     StringBuffer    m_libraryXPath;
     StringBuffer    m_libraryDefault;
     StringBuffer    m_entryPointXPath;

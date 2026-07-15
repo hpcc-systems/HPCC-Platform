@@ -135,10 +135,10 @@ static void initBuildVars()
 
 MODULE_INIT(INIT_PRIORITY_SYSTEM)
 {
-    cvtLock = new NonReentrantSpinLock;
+    cvtLock = new NonReentrantSpinLock(SYNC_LOCATION);
 #ifdef _WIN32
     protectedGenerator = createRandomNumberGenerator();
-    protectedGeneratorCs = new CriticalSection;
+    protectedGeneratorCs = new CriticalSection(SYNC_LOCATION);
 #endif
 #if defined (__APPLE__)
     if (mach_timebase_info(&timebase_info) != KERN_SUCCESS)
@@ -983,7 +983,7 @@ public:
 
 } RandomMain;
 
-static CriticalSection gobalRandomSect;
+static CriticalSection gobalRandomSect(SYNC_LOCATION);
 
 unsigned getRandom()
 {
@@ -2049,7 +2049,7 @@ static inline void encode3_64(byte *in,StringBuffer &out)
 
 
 
-static NonReentrantSpinLock uuidLock;
+static NonReentrantSpinLock uuidLock(SYNC_LOCATION);
 static unsigned uuidbin[5] = {0,0,0,0,0};
 StringBuffer &genUUID(StringBuffer &out, bool nocase)
 { // returns a 24 char UUID for nocase=false or 32 char for nocase=true
@@ -2342,7 +2342,7 @@ StringBuffer & fillConfigurationDirectoryEntry(const char *dir,const char *name,
 }
 
 static Owned<IPropertyTree> cachedEnvironment;
-static CriticalSection envCrit;
+static CriticalSection envCrit(SYNC_LOCATION);
 MODULE_INIT(INIT_PRIORITY_STANDARD)
 {
     return true;
@@ -2385,7 +2385,7 @@ IPropertyTree *getHPCCEnvironment()
 }
 
 static Owned<IProperties> envConfFile;
-static CriticalSection envConfCrit;
+static CriticalSection envConfCrit(SYNC_LOCATION);
 
 jlib_decl const IProperties &queryEnvironmentConf()
 {
@@ -2404,7 +2404,7 @@ jlib_decl const IProperties &queryEnvironmentConf()
 
 
 static StringBuffer DAFSpassPhraseDec;//deprecated
-static CriticalSection DAFSpassPhraseCrit;
+static CriticalSection DAFSpassPhraseCrit(SYNC_LOCATION);
 //Deprecated, please use queryHPCCPKIKeyFiles() instead
 jlib_decl bool querySecuritySettings(DAFSConnectCfg *_connectMethod,
                                      unsigned short *_port,
@@ -2841,7 +2841,7 @@ bool validateConfigurationDirectory(const IPropertyTree* useTree, const char* ca
     return hasPrefix(dirToValidate, configDir, true);
 }
 
-static CriticalSection sect;
+static CriticalSection sect(SYNC_LOCATION);
 static StringAttr processPath;
 const char * queryCurrentProcessPath()
 {

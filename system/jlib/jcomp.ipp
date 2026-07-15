@@ -96,7 +96,7 @@ protected:
     bool            precompileHeader;
     bool            linkFailed;
     IAbortRequestCallback * abortChecker;
-    CriticalSection cs;
+    CriticalSection cs{SYNC_LOCATION};
     IArrayOf<IException> exceptions;
 };
 

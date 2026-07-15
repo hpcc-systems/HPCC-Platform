@@ -518,7 +518,7 @@ public:
 class DefaultTimeReporter : implements ITimeReporter, public CInterface
 {
     StringMapOf<TimeSectionInfo> *sections;
-    CriticalSection c;
+    CriticalSection c{SYNC_LOCATION};
     TimeSectionInfo &findSection(unsigned idx)
     {
         CriticalBlock b(c);
@@ -886,7 +886,7 @@ static struct CNtKernelInformation
 
 static std::atomic<bool> gatheredGroup{false};
 static StringAttr cgroup;
-static CriticalSection csgroupCs;
+static CriticalSection csgroupCs(SYNC_LOCATION);
 static const char * queryCGroup()
 {
     if (!gatheredGroup)
@@ -1943,7 +1943,7 @@ class CProcessMonitor
     CIArrayOf<CProcInfo> processes;
     unsigned tot_time;
     bool busy;
-    CriticalSection sect;
+    CriticalSection sect{SYNC_LOCATION};
 
     static int compare(CInterface * const *i1, CInterface * const *i2)
     {
@@ -2938,7 +2938,7 @@ static class CMemoryUsageReporter: public Thread
 {
     bool term;
     unsigned  interval;
-    Semaphore sem;
+    Semaphore sem{SYNC_LOCATION};
     PerfMonMode traceMode;
     Linked<IPerfMonHook> hook;
     unsigned latestCPU;
@@ -2952,7 +2952,7 @@ static class CMemoryUsageReporter: public Thread
 #endif
     StringBuffer                   primaryfs;
     StringBuffer                   secondaryfs;
-    CriticalSection                sect; // for getSystemTraceInfo
+    CriticalSection                sect{SYNC_LOCATION}; // for getSystemTraceInfo
 
     CSnmpStatsReporter             snmpStats;
     CUdpStatsReporter              udpStats;
@@ -4028,7 +4028,7 @@ void printAllocationSummary()
 // Note memory hooks should not be enabled for release (as not re-entrant in linux)
 
 
-static CriticalSection hookSect;
+static CriticalSection hookSect(SYNC_LOCATION);
 
 #ifdef __linux__
 
@@ -4552,7 +4552,7 @@ private:
     bool useVforkAndGcore{false};
     bool suspendParent{false};
     unsigned currentThresholdMB{0};
-    Semaphore stopSemaphore;
+    Semaphore stopSemaphore{SYNC_LOCATION};
     std::atomic<bool> stopped{true};
 
     unsigned checkAndCoreDump()

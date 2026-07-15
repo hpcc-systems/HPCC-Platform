@@ -387,7 +387,7 @@ protected:
 
 protected:
     EclRepositoryManager repositoryManager;
-    mutable CriticalSection dfsCrit;
+    mutable CriticalSection dfsCrit{SYNC_LOCATION};
     mutable MapStringToMyClass<IHqlExpression> fileCache;
     mutable MapStringTo<int> fileMissCache;  // values are the error code
     mutable Owned<IUserDescriptor> udesc;    // For file lookups
@@ -3432,7 +3432,7 @@ void EclCC::processBatchFiles()
 {
     Thread * * threads = NULL;
     RegressQueue queue;
-    Semaphore fileReady;
+    Semaphore fileReady{SYNC_LOCATION};
     unsigned startAllTime = msTick();
     if (optThreads > 0)
     {

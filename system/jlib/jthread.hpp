@@ -125,10 +125,10 @@ protected:
     SavedThreadContext savedCtx;
 public:
 #ifndef _WIN32
-    Semaphore suspend;
-    Semaphore starting;
+    Semaphore suspend{SYNC_LOCATION};
+    Semaphore starting{SYNC_LOCATION};
 #endif
-    Semaphore stopped;
+    Semaphore stopped{SYNC_LOCATION};
 
     IMPLEMENT_IINTERFACE;
 
@@ -195,7 +195,7 @@ class jlib_decl CThreadedPersistent
     } athread;
     Owned<IException> exception;
     IThreaded *owner;
-    Semaphore sem, joinSem;
+    Semaphore sem{SYNC_LOCATION}, joinSem{SYNC_LOCATION};
     std::atomic_uint state;
     bool halt;
     enum ThreadStates { s_ready, s_running, s_joining };

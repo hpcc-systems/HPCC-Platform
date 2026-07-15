@@ -84,7 +84,7 @@ public:
     }
 };
 
-CriticalSection CFirstNActivityMaster::singlefirstnterm;
+CriticalSection CFirstNActivityMaster::singlefirstnterm(SYNC_LOCATION);
 
 CActivityBase *createFirstNActivityMaster(CMasterGraphElement *container)
 {

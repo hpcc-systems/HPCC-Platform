@@ -972,6 +972,12 @@ CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( PipeRunTest, "PipeRunTest" );
 
 class RelaxedAtomicTimingTest : public CppUnit::TestFixture
 {
+    class TestCriticalSection : public CriticalSection
+    {
+    public:
+        TestCriticalSection() : CriticalSection(SYNC_LOCATION) {}
+    };
+
     CPPUNIT_TEST_SUITE( RelaxedAtomicTimingTest  );
         CPPUNIT_TEST(testRun);
     CPPUNIT_TEST_SUITE_END();
@@ -990,7 +996,7 @@ class RelaxedAtomicTimingTest : public CppUnit::TestFixture
         CCycleTimer timer;
         unsigned count = 100000000;
         RelaxedAtomic<int> ra[201];
-        CriticalSection lock[201];
+        TestCriticalSection lock[201];
 
         for (int a = 0; a < 201; a++)
             ra[a] = 0;

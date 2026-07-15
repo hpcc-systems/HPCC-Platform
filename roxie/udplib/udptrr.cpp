@@ -581,7 +581,7 @@ class CUdpReceiveManager : implements IReceiveManager, public CInterface
         unsigned lastPermitTime = 0;           // When was the last permit granted?
         unsigned numPermits = 0;               // How many permits allocated?
 
-        mutable CriticalSection psCrit;
+        mutable CriticalSection psCrit{SYNC_LOCATION};
         PacketTracker packetsSeen;
 
         SendPermit permits[MaxPermitsPerSender];
@@ -1313,7 +1313,7 @@ class CUdpReceiveManager : implements IReceiveManager, public CInterface
         ISocket *receive_socket = nullptr;
         ISocket *selfFlowSocket = nullptr;
         std::atomic<bool> running = { false };
-        Semaphore started;
+        Semaphore started{SYNC_LOCATION};
         UdpRdTracker timeTracker;
         
     public:
@@ -1539,7 +1539,7 @@ class CUdpReceiveManager : implements IReceiveManager, public CInterface
     Owned<roxiemem::IDataBufferManager> udpBufferManager;
     typedef std::unordered_map<ruid_t, CMessageCollator*> uid_map;
     uid_map         collators;
-    CriticalSection collatorsLock; // protects access to collators map
+    CriticalSection collatorsLock{SYNC_LOCATION}; // protects access to collators map
 
 public:
     IMPLEMENT_IINTERFACE;

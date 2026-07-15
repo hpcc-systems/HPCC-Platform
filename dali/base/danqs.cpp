@@ -55,7 +55,7 @@ class CQueueChannel;
 class CNamedQueueConnection: implements INamedQueueConnection, public CInterface
 {
     SecurityToken tok;
-    CheckedCriticalSection sect;
+    CheckedCriticalSection sect{SYNC_LOCATION};
     DALI_UID transactionId;
 public:
     IMPLEMENT_IINTERFACE;
@@ -232,7 +232,7 @@ class CQueueChannel: implements IQueueChannel, public CInterface
     StringAttr name;
     Owned<CNamedQueueConnection> parent;
     SubscriptionId getsid;
-    CheckedCriticalSection proxysect;
+    CheckedCriticalSection proxysect{SYNC_LOCATION};
     IArrayOf<CNamedQueueSubscriptionProxy> proxies;
 
 
@@ -288,7 +288,7 @@ public:
                 parent = _parent;
                 timeout = _timeout;
             }
-            Semaphore sem;
+            Semaphore sem{SYNC_LOCATION};
             int run()
             {
                 if (!sem.wait(timeout)) {
@@ -478,7 +478,7 @@ class CDaliNamedQueueServer: public IDaliServer, public Thread, implements IConn
 
     bool stopped;
     CIArrayOf<CNamedQueueSubscriptionStub> stubs; // kept in priority order
-    CheckedCriticalSection subsect;
+    CheckedCriticalSection subsect{SYNC_LOCATION};
     int fn = 0;
 public:
     IMPLEMENT_IINTERFACE_USING(Thread);

@@ -1234,7 +1234,7 @@ void traceMemUsage()
 }
 
 /////
-static CriticalSection tempFileSizeTrackerCrit; // shared amongst all, because very unlikely to contend
+static CriticalSection tempFileSizeTrackerCrit{SYNC_LOCATION}; // shared amongst all, because very unlikely to contend
 
 CGraphBase::CGraphBase(CJobChannel &_jobChannel) : jobChannel(_jobChannel), job(_jobChannel.queryJob()), progressUpdated(false)
 {
@@ -1925,7 +1925,7 @@ void CGraphBase::createFromXGMML(IPropertyTree *_node, CGraphBase *_owner, CGrap
     class CChildParallelFactory : public CGraphStub
     {
         Linked<CGraphBase> originalChildGraph;
-        CriticalSection crit;
+        CriticalSection crit{SYNC_LOCATION};
         CIArrayOf<CGraphBase> stack;
         CIArrayOf<CGraphBase> active;
         bool originalAvailable = true;
@@ -2426,8 +2426,8 @@ class CGraphExecutor : implements IGraphExecutor, public CInterface
     bool stopped;
     unsigned limit;
     unsigned waitOnRunning;
-    CriticalSection crit;
-    Semaphore runningSem;
+    CriticalSection crit{SYNC_LOCATION};
+    Semaphore runningSem{SYNC_LOCATION};
     Owned<IThreadPool> graphPool;
 
     class CGraphExecutorFactory : implements IThreadFactory, public CInterface

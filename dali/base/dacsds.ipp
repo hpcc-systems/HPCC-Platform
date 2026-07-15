@@ -90,7 +90,7 @@ public:
     virtual IPropertyTreeIterator *getElements(const char *xpath, IPTIteratorCodes flags = iptiter_null);
 
 private:
-    CriticalSection lockCrit;
+    CriticalSection lockCrit{SYNC_LOCATION};
     unsigned lockCount;
     bool lazyFetch;
     bool stateChanges;      // =false when client applying server received changes
@@ -425,9 +425,9 @@ public:
 private:
     void noteDisconnected(CRemoteConnection &connection);
 
-    CriticalSection crit;
+    CriticalSection crit{SYNC_LOCATION};
     CCopyConnectionHashTable connections;
-    Semaphore concurrentRequests;
+    Semaphore concurrentRequests{SYNC_LOCATION};
     mutable IPropertyTree *properties;
     bool childrenCanBeMissing; // for backward compat servers <= 2.0
     unsigned lazyExtFlag; // for backward compat servers <= 3.3

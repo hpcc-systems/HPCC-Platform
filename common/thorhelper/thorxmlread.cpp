@@ -1221,7 +1221,7 @@ class CColumnProvider : implements IColumnProvider, public CInterface
     bool content;
     offset_t contentStartOffset;
     void *utf8Translator;
-    CriticalSection crit;
+    CriticalSection crit{SYNC_LOCATION};
     MemoryBuffer tmpMb;
     MemoryBuffer sharedResult;
     StringAttr xpath;

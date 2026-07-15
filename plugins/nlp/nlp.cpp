@@ -55,7 +55,7 @@ namespace nlp
     static constexpr int NLPERR_NO_RESOURCES_IN_MANIFEST = 20001;
 
     IPluginContext *parentCtx = NULL;
-    static CriticalSection cs;
+    static CriticalSection cs{SYNC_LOCATION};
     static NLPEng *nlpEng = NULL;
     void ensureNLPEng(ICodeContext *ctx)
     {

@@ -162,7 +162,7 @@ public:
     void queryThrowError()  { if (error) throw error.getLink(); }
 
 protected:
-    Semaphore                   sem;
+    Semaphore sem{SYNC_LOCATION};
     Linked<IException>          error;
     FilePartInfoArray &         queue;
     CriticalSection &           cs;
@@ -331,8 +331,8 @@ protected:
     bool                    unknownTargetFormat;
     Owned<IException>       error;
     TransferArray           transferSlaves;
-    CriticalSection         soFarCrit;
-    CriticalSection         errorCS;
+    CriticalSection soFarCrit{SYNC_LOCATION};
+    CriticalSection errorCS{SYNC_LOCATION};
     Owned<IPropertyTree>    srcAttr;
     unsigned                lastAbortCheckTick;
     unsigned                lastSDSTick;

@@ -202,7 +202,7 @@ public:
 typedef const IInterface *CIptr;
 typedef MapBetween<unsigned, unsigned, CIptr, CIptr> ProxyMap;
 static ProxyMap *registeredProxies;
-static CriticalSection proxyLock;
+static CriticalSection proxyLock{SYNC_LOCATION};
 static memsize_t nextProxyId = 1;
 
 static memsize_t registerProxyId(const IInterface * object)

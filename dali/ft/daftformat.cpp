@@ -371,7 +371,7 @@ CInputBasePartitioner::CInputBasePartitioner(unsigned _headerSize, unsigned expe
 }
 
 IFileIOCache *CInputBasePartitioner::openfilecache = NULL;
-CriticalSection CInputBasePartitioner::openfilecachesect;
+CriticalSection CInputBasePartitioner::openfilecachesect(SYNC_LOCATION);
 
 CInputBasePartitioner::~CInputBasePartitioner()
 {
@@ -1883,7 +1883,7 @@ CJsonInputPartitioner::CJsonInputPartitioner(const FileFormat & _format)
 }
 
 IFileIOCache *CJsonInputPartitioner::openfilecache = NULL;
-CriticalSection CJsonInputPartitioner::openfilecachesect;
+CriticalSection CJsonInputPartitioner::openfilecachesect(SYNC_LOCATION);
 
 CJsonInputPartitioner::~CJsonInputPartitioner()
 {

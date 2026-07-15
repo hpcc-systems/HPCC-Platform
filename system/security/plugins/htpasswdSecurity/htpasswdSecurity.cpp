@@ -290,7 +290,7 @@ private:
                                                           SMF_GetPasswordExpirationDays | SMF_AuthorizeEx_Named | SMF_GetAccessFlagsEx |
                                                           SMF_AuthorizeFileScope_Named | SMF_AuthorizeWorkUnitScope_Named;
     static const SecFeatureSet s_safeFeatureMask = s_implementedFeatureMask | SMF_CreateSettingMap;
-    mutable CriticalSection crit;
+    mutable CriticalSection crit{SYNC_LOCATION};
     StringBuffer    pwFile;
     CDateTime       pwFileLastMod;
 	bool            apr_initialized;

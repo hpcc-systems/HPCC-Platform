@@ -84,7 +84,7 @@ class CTcpReceiveManager : implements IReceiveManager, public CInterface
     Owned<roxiemem::IDataBufferManager> udpBufferManager;
     typedef std::unordered_map<ruid_t, CMessageCollator*> uid_map;
     uid_map         collators;
-    CriticalSection collatorsLock; // protects access to collators map
+    CriticalSection collatorsLock{SYNC_LOCATION}; // protects access to collators map
 
     class PacketListener : public CSocketConnectionListener
     {

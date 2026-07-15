@@ -1675,8 +1675,8 @@ protected:
     Linked<IThreadPool> threadPool;
     PooledThreadHandle threadHandle = 0;
     QueueOf<ROW, true> pending;
-    CriticalSection crit;
-    Semaphore limit;
+    CriticalSection crit{SYNC_LOCATION};
+    Semaphore limit{SYNC_LOCATION};
     bool started = false;
     Owned<IDistributedFilePart> part;
     IThreadedExceptionHandler *handler;
@@ -1684,7 +1684,7 @@ protected:
 public:
     typedef ThreadedPartHandler<ROW> SELF;
     ThreadedPartHandler(IDistributedFilePart *_part, IThreadedExceptionHandler *_handler, IThreadPool * _threadPool)
-        : threadPool(_threadPool), limit(MAX_FETCH_LOOKAHEAD), part(_part), handler(_handler)
+        : threadPool(_threadPool), limit(SYNC_LOCATION, MAX_FETCH_LOOKAHEAD), part(_part), handler(_handler)
     {
     }
 
@@ -1978,7 +1978,7 @@ protected:
     }
 
 protected:
-    CriticalSection exceptionCrit;
+    CriticalSection exceptionCrit{SYNC_LOCATION};
     IException * exception;
 };
 
@@ -2152,7 +2152,7 @@ public:
     virtual IOutputMetaData * queryOutputMeta() const { return CHThorActivityBase::outputMeta; }
 
 protected:
-    Semaphore avail;
+    Semaphore avail{SYNC_LOCATION};
     bool stopped;
     bool started;
     bool aborting;
@@ -2162,7 +2162,7 @@ protected:
     unsigned __int64 rowLimit;
     bool isCodeSigned = false;
     Owned<IThreadPool> threadPool;
-    CriticalSection pendingCrit;
+    CriticalSection pendingCrit{SYNC_LOCATION};
     IException *exception;
 
 public:
@@ -2512,7 +2512,7 @@ protected:
     }
 
 protected:
-    CriticalSection transformCrit;
+    CriticalSection transformCrit{SYNC_LOCATION};
     IHThorFetchArg & helper;
 };
 
@@ -2616,7 +2616,7 @@ public:
 
 protected:
     CSVSplitter csvSplitter;    
-    CriticalSection transformCrit;
+    CriticalSection transformCrit{SYNC_LOCATION};
     IHThorCsvFetchArg & helper;
 };
 
@@ -2755,7 +2755,7 @@ public:
     }
 
 protected:
-    CriticalSection transformCrit;
+    CriticalSection transformCrit{SYNC_LOCATION};
     IHThorXmlFetchArg & helper;
 };
 
@@ -2950,7 +2950,7 @@ protected:
     CIArrayOf<MatchSet> matchsets;
     std::atomic<unsigned> endMarkersPending;
     IJoinProcessor *join = nullptr;
-    mutable CriticalSection crit;
+    mutable CriticalSection crit{SYNC_LOCATION};
     CJoinGroup *groupStart;
     unsigned candidates;
 };
@@ -2992,7 +2992,7 @@ class JoinGroupPool : public CInterface
     CJoinGroup *groupStart;
 public:
     CJoinGroup head;
-    CriticalSection crit;
+    CriticalSection crit{SYNC_LOCATION};
     bool preserveGroups;
 
     JoinGroupPool(bool _preserveGroups)
@@ -3103,7 +3103,7 @@ class DistributedKeyLookupHandler : public CInterface, implements IThreadedExcep
     IArrayOf<IDistributedFile> keyFiles;
     IArrayOf<IDistributedFilePart> tlks;
     IJoinProcessor &owner;
-    CriticalSection exceptionCrit;
+    CriticalSection exceptionCrit{SYNC_LOCATION};
     IException *exception;
     Linked<IDistributedFile> file;
     PartHandlerThreadFactory<MatchSet> threadFactory;
@@ -3427,7 +3427,7 @@ class CHThorKeyedJoinActivity  : public CHThorThreadedActivityBase, implements I
     bool preserveGroups;
     Owned<JoinGroupPool> pool;
     QueueOf<const void, true> pending;
-    CriticalSection statsCrit, imatchCrit, fmatchCrit;
+    CriticalSection statsCrit{SYNC_LOCATION}, imatchCrit{SYNC_LOCATION}, fmatchCrit{SYNC_LOCATION};
     RelaxedAtomic<unsigned> prefiltered;
     RelaxedAtomic<unsigned> postfiltered;
     RelaxedAtomic<unsigned> skips;

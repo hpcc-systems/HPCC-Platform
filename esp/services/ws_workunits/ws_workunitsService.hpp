@@ -41,16 +41,16 @@ static const __uint64 defaultWUResultMaxSize = 0x100000*10; //10M
 
 class QueryFilesInUse : public CInterface, implements ISDSSubscription, implements IThreaded
 {
-    mutable CriticalSection crit;
+    mutable CriticalSection crit{SYNC_LOCATION};
     CThreaded threaded;
-    Semaphore sem;
+    Semaphore sem{SYNC_LOCATION};
     MapStringTo<IUserDescriptor *> roxieUserMap;
 
     Owned<IPropertyTree> tree;
     SubscriptionId qsChange;
     SubscriptionId pmChange;
     SubscriptionId psChange;
-    mutable CriticalSection dirtyCrit; //if there were an atomic_or I would just use atomic
+    mutable CriticalSection dirtyCrit{SYNC_LOCATION}; //if there were an atomic_or I would just use atomic
     unsigned dirty;
     std::atomic_bool aborting;
 private:

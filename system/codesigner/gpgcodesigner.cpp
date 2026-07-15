@@ -47,7 +47,7 @@ private:
     void importVerifyKeysFromSecrets();
     bool getKeyGrip(const char * user, StringBuffer & keygrip);
     void clearPassphrase(const char * key);
-    CriticalSection crit;
+    CriticalSection crit{SYNC_LOCATION};
     std::atomic<bool> isGpgV1{false};
     std::atomic<bool> isInitialized{false};
     std::atomic<bool> getSignKeysFromSecrets {false};

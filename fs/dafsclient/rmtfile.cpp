@@ -55,7 +55,7 @@
 //#define TEST_DAFILESRV_FOR_UNIX_PATHS     // probably not needed
 
 static std::atomic<unsigned> dafilesrvPort{(unsigned)-1};
-static CriticalSection dafilesrvCs;
+static CriticalSection dafilesrvCs{SYNC_LOCATION};
 unsigned short getDaliServixPort()
 {
     if (dafilesrvPort == (unsigned)-1)
@@ -227,7 +227,7 @@ class CDaliServixIntercept: public CInterface, implements IDaFileSrvHook
 {
     CIArrayOf<CDaliServixFilter> filters;
     StringAttr forceRemotePattern;
-    CriticalSection secretCrit;
+    CriticalSection secretCrit{SYNC_LOCATION};
     struct EndpointData
     {
         unsigned count;
@@ -681,7 +681,7 @@ class CEndpointCS : public CriticalSection, public CInterface
     CCritTable &table;
     const SocketEndpoint ep;
 public:
-    CEndpointCS(CCritTable &_table, const SocketEndpoint &_ep) : table(_table), ep(_ep) { }
+    CEndpointCS(CCritTable &_table, const SocketEndpoint &_ep) : CriticalSection(SYNC_LOCATION), table(_table), ep(_ep) { }
     const void *queryFindParam() const { return &ep; }
 
     virtual void beforeDispose();
@@ -690,7 +690,7 @@ public:
 class CCritTable : private SimpleHashTableOf<CEndpointCS, const SocketEndpoint>
 {
     typedef SimpleHashTableOf<CEndpointCS, const SocketEndpoint> PARENT;
-    CriticalSection crit;
+    CriticalSection crit{SYNC_LOCATION};
 public:
     CEndpointCS *getCrit(const SocketEndpoint &ep)
     {
@@ -1742,7 +1742,7 @@ struct CLocalMountRec: public CInterface
 };
 
 static CIArrayOf<CLocalMountRec> localMounts;
-static CriticalSection           localMountCrit;
+static CriticalSection           localMountCrit{SYNC_LOCATION};
 
 void setDafsLocalMountRedirect(const IpAddress &ip,const char *dir,const char *mountdir)
 {
@@ -1936,7 +1936,7 @@ unsigned validateNodes(const SocketEndpointArray &epso,const char *dataDir, cons
         }
     }
 
-    CriticalSection sect;
+    CriticalSection sect{SYNC_LOCATION};
     class casyncfor: public CAsyncFor
     {
         const SocketEndpointArray &eps;

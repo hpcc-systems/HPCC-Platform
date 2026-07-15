@@ -235,7 +235,7 @@ public:
     virtual unsigned __int64 getSequence(unsigned int num) const override;
 
 protected:
-    mutable CriticalSection cs;
+    mutable CriticalSection cs{SYNC_LOCATION};
     mutable std::weak_ptr<byte[]> expandedPayload;
 };
 

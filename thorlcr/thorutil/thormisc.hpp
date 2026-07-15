@@ -206,7 +206,7 @@ class CReplyCancelHandler
     ICommunicator *comm;
     mptag_t mpTag;
     bool cancelled;
-    SpinLock lock;
+    SpinLock lock{SYNC_LOCATION};
 
     void clear()
     {
@@ -274,8 +274,8 @@ public:
 class graph_decl CTimeoutTrigger : public CInterface, implements IThreaded
 {
     std::atomic<bool> running;
-    Semaphore todo;
-    CriticalSection crit;
+    Semaphore todo{SYNC_LOCATION};
+    CriticalSection crit{SYNC_LOCATION};
     unsigned timeout;
     StringAttr description;
     CThreaded threaded;

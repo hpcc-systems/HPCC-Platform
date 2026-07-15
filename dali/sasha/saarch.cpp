@@ -34,7 +34,7 @@
 
 //#define TESTING
 
-static CriticalSection archivingSect;
+static CriticalSection archivingSect{SYNC_LOCATION};
 static const bool keepOldVersions=true;
 
 
@@ -1408,7 +1408,7 @@ class CSashaArchiverServerBase : public CSimpleInterfaceOf<ISashaServer>, implem
     CThreaded threaded;
 protected:
     std::atomic<bool> stopped{false};
-    Semaphore stopsem;
+    Semaphore stopsem{SYNC_LOCATION};
     Linked<IPropertyTree> archprops;
 public:
     CSashaArchiverServerBase(IPropertyTree *_config) : threaded("CSashaArchiverServerBase", this), archprops(_config)

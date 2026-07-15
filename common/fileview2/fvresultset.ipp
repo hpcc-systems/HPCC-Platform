@@ -177,7 +177,7 @@ protected:
     CResultSetMetaData  meta;
     Linked<IFvDataSource> dataSource;
     BoolArray mappedFields;
-    CriticalSection cs;
+    CriticalSection cs{SYNC_LOCATION};
 };
 
 

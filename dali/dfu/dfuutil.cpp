@@ -154,8 +154,8 @@ public:
     void physicalCopyFile(IFileDescriptor *srcdesc,IFileDescriptor *dstdesc)
     {
 
-        CriticalSection crit;
-        Semaphore sem(10); // parallel local
+        CriticalSection crit{SYNC_LOCATION};
+        Semaphore sem(SYNC_LOCATION, 10); // parallel local
         StringArray tmpnames;
         StringArray dstnames;
         Owned<IException> exc;
@@ -300,8 +300,8 @@ public:
     {
 
         // now replicate
-        CriticalSection crit;
-        Semaphore sem(10); // parallel local
+        CriticalSection crit{SYNC_LOCATION};
+        Semaphore sem(SYNC_LOCATION, 10); // parallel local
         class casyncfor2: public CAsyncFor
         {
             CriticalSection &crit;

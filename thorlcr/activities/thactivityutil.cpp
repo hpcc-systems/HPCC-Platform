@@ -64,7 +64,7 @@ class CRowStreamLookAhead : public CSimpleInterfaceOf<IStartableEngineRowStream>
     std::atomic<bool> running{false};
     bool started = false;
     rowcount_t required;
-    Semaphore startSem;
+    Semaphore startSem{SYNC_LOCATION};
     Owned<IException> getexception;
     LookAheadOptions options;
     bool newLookAhead = false;

@@ -20,8 +20,8 @@ static constexpr unsigned defaultHouseKeepingIntervalHours = 24;
 class CSashaDebugPlaneHousekeepingServer : public ISashaServer, public Thread
 {
     std::atomic<bool> stopped{true};
-    Semaphore stopSem;
-    Mutex runMutex;
+    Semaphore stopSem{SYNC_LOCATION};
+    Mutex runMutex{SYNC_LOCATION};
     StringBuffer debugDir;
     unsigned expiryDays{0};
     unsigned interval{0};

@@ -58,7 +58,7 @@ constexpr unsigned defaultMaxRetries = 3;
 
 // Global AWS initialization with reference counting
 static unsigned awsInitRefCount = 0;
-static CriticalSection awsCS;
+static CriticalSection awsCS{SYNC_LOCATION};
 static Aws::SDKOptions awsOptions;
 
 static void initAWS()
@@ -121,7 +121,7 @@ namespace std {
 class S3ClientManager
 {
 private:
-    mutable CriticalSection cs;
+    mutable CriticalSection cs{SYNC_LOCATION};
     std::unordered_map<S3ClientKey, std::unique_ptr<Aws::S3::S3Client>> clients;
     bool initialized = false;
 
@@ -309,7 +309,7 @@ class S3FileReadIO : implements CInterfaceOf<IFileIO>
 private:
     Linked<S3File> file;
     FileIOStats stats;
-    CriticalSection ioCS;
+    CriticalSection ioCS{SYNC_LOCATION};
     offset_t cachedFileSize;
 
 public:
@@ -383,7 +383,7 @@ private:
     Linked<S3File> file;
     FileIOStats stats;
     std::unique_ptr<S3MultipartUpload> multipartUpload;
-    CriticalSection ioCS;
+    CriticalSection ioCS{SYNC_LOCATION};
     bool closed = false;
     offset_t currentPos = 0;
 
@@ -426,7 +426,7 @@ private:
     unsigned device = 1;
 
     // Cached metadata
-    mutable CriticalSection metaCS;
+    mutable CriticalSection metaCS{SYNC_LOCATION};
     mutable bool haveMeta = false;
     mutable bool fileExists = false;
     mutable bool isDir = false;
@@ -1089,7 +1089,7 @@ public:
 };
 
 static S3FileHook* s3FileHook = nullptr;
-static CriticalSection hookCS;
+static CriticalSection hookCS{SYNC_LOCATION};
 
 //---------------------------------------------------------------------------------------------------------------------
 // Exported functions

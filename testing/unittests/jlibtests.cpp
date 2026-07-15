@@ -1165,7 +1165,7 @@ protected:
     void testSimple()
     {
         //Some very basic semaphore tests.
-        Semaphore sem;
+        Semaphore sem{SYNC_LOCATION};
         sem.signal();
         sem.wait();
         testTimedElapsed(sem, 100);
@@ -1224,7 +1224,7 @@ protected:
     void testSimple()
     {
         //Very basic semaphore stress tests.
-        Semaphore sem;
+        Semaphore sem{SYNC_LOCATION};
         sem.signal();
         if (!sem.wait(1000))
         {
@@ -2106,9 +2106,9 @@ public:
         const size_t testSize = sizePerProducer * numProducers;
 
         OwnedMalloc<byte> buffer(bufferSize, true);
-        Semaphore startSem;
-        Semaphore writerDoneSem;
-        Semaphore stopSem;
+        Semaphore startSem{SYNC_LOCATION};
+        Semaphore writerDoneSem{SYNC_LOCATION};
+        Semaphore stopSem{SYNC_LOCATION};
 
         Reader * * consumers = new Reader *[numConsumers];
         for (unsigned i2 = 0; i2 < numConsumers; i2++)
@@ -4578,8 +4578,8 @@ public:
 
     protected:
         IArrayOf<LockTestThread> threads;
-        Semaphore startSem;
-        Semaphore endSem;
+        Semaphore startSem{SYNC_LOCATION};
+        Semaphore endSem{SYNC_LOCATION};
         LOCK lock;
         COUNTER value1;
         COUNTER extraValues[NUMVALUES];
@@ -4606,7 +4606,31 @@ public:
         contendedTimes.append(0);\
     }
 
-
+    class TestCriticalSection : public CriticalSection
+    {
+    public:
+        TestCriticalSection() : CriticalSection(SYNC_LOCATION) {}
+    };
+    class TestMutex : public Mutex
+    {
+    public:
+        TestMutex() : Mutex(SYNC_LOCATION) {}
+    };
+    class TestSimpleMutex : public SimpleMutex
+    {
+    public:
+        TestSimpleMutex() : SimpleMutex(SYNC_LOCATION) {}
+    };
+    class TestTimedMutex : public TimedMutex
+    {
+    public:
+        TestTimedMutex() : TimedMutex(SYNC_LOCATION) {}
+    };
+    class TestSpinLock : public SpinLock
+    {
+    public:
+        TestSpinLock() : SpinLock(SYNC_LOCATION) {}
+    };
     class Null
     {};
 
@@ -4614,26 +4638,26 @@ public:
     const unsigned numCores = std::max(getAffinityCpus(), 16U);
     void runAllTests()
     {
-        DO_TEST(CriticalSection, CriticalBlock, unsigned __int64, 1, 1);
-        DO_TEST(CriticalSection, CriticalBlock, unsigned __int64, 2, 1);
-        DO_TEST(CriticalSection, CriticalBlock, unsigned __int64, 5, 1);
-        DO_TEST(CriticalSection, CriticalBlock, unsigned __int64, 1, 2);
-        DO_TEST(Mutex, synchronized, unsigned __int64, 1, 1);
-        DO_TEST(Mutex, synchronized, unsigned __int64, 2, 1);
-        DO_TEST(Mutex, synchronized, unsigned __int64, 5, 1);
-        DO_TEST(Mutex, synchronized, unsigned __int64, 1, 2);
-        DO_TEST(SimpleMutex, MutexBlock<SimpleMutex>, unsigned __int64, 1, 1);
-        DO_TEST(SimpleMutex, MutexBlock<SimpleMutex>, unsigned __int64, 2, 1);
-        DO_TEST(SimpleMutex, MutexBlock<SimpleMutex>, unsigned __int64, 5, 1);
-        DO_TEST(SimpleMutex, MutexBlock<SimpleMutex>, unsigned __int64, 1, 2);
-        DO_TEST(TimedMutex, TimedMutexBlock, unsigned __int64, 1, 1);
-        DO_TEST(TimedMutex, TimedMutexBlock, unsigned __int64, 2, 1);
-        DO_TEST(TimedMutex, TimedMutexBlock, unsigned __int64, 5, 1);
-        DO_TEST(TimedMutex, TimedMutexBlock, unsigned __int64, 1, 2);
-        DO_TEST(SpinLock, SpinBlock, unsigned __int64, 1, 1);
-        DO_TEST(SpinLock, SpinBlock, unsigned __int64, 2, 1);
-        DO_TEST(SpinLock, SpinBlock, unsigned __int64, 5, 1);
-        DO_TEST(SpinLock, SpinBlock, unsigned __int64, 1, 2);
+        DO_TEST(TestCriticalSection, CriticalBlock, unsigned __int64, 1, 1);
+        DO_TEST(TestCriticalSection, CriticalBlock, unsigned __int64, 2, 1);
+        DO_TEST(TestCriticalSection, CriticalBlock, unsigned __int64, 5, 1);
+        DO_TEST(TestCriticalSection, CriticalBlock, unsigned __int64, 1, 2);
+        DO_TEST(TestMutex, synchronized, unsigned __int64, 1, 1);
+        DO_TEST(TestMutex, synchronized, unsigned __int64, 2, 1);
+        DO_TEST(TestMutex, synchronized, unsigned __int64, 5, 1);
+        DO_TEST(TestMutex, synchronized, unsigned __int64, 1, 2);
+        DO_TEST(TestSimpleMutex, MutexBlock<SimpleMutex>, unsigned __int64, 1, 1);
+        DO_TEST(TestSimpleMutex, MutexBlock<SimpleMutex>, unsigned __int64, 2, 1);
+        DO_TEST(TestSimpleMutex, MutexBlock<SimpleMutex>, unsigned __int64, 5, 1);
+        DO_TEST(TestSimpleMutex, MutexBlock<SimpleMutex>, unsigned __int64, 1, 2);
+        DO_TEST(TestTimedMutex, TimedMutexBlock, unsigned __int64, 1, 1);
+        DO_TEST(TestTimedMutex, TimedMutexBlock, unsigned __int64, 2, 1);
+        DO_TEST(TestTimedMutex, TimedMutexBlock, unsigned __int64, 5, 1);
+        DO_TEST(TestTimedMutex, TimedMutexBlock, unsigned __int64, 1, 2);
+        DO_TEST(TestSpinLock, SpinBlock, unsigned __int64, 1, 1);
+        DO_TEST(TestSpinLock, SpinBlock, unsigned __int64, 2, 1);
+        DO_TEST(TestSpinLock, SpinBlock, unsigned __int64, 5, 1);
+        DO_TEST(TestSpinLock, SpinBlock, unsigned __int64, 1, 2);
         DO_TEST(Null, Null, std::atomic<unsigned __int64>, 1, 1);
         DO_TEST(Null, Null, std::atomic<unsigned __int64>, 2, 1);
         DO_TEST(Null, Null, std::atomic<unsigned __int64>, 5, 1);
@@ -4830,8 +4854,8 @@ public:
     unsigned __int64 run(const char * title, unsigned numThreads, unsigned numWriteThreads, unsigned numIterations)
     {
         IArrayOf<Thread> threads;
-        Semaphore startSem;
-        Semaphore endSem;
+        Semaphore startSem{SYNC_LOCATION};
+        Semaphore endSem{SYNC_LOCATION};
         ReadWriteLock lock;
         unsigned __int64 value;
 
@@ -6191,7 +6215,7 @@ void testDefaultMasking()
         writeTestingSecret("concurrent", "value", "hello");
 
         unsigned numReaders = 5;
-        Semaphore startSem;
+        Semaphore startSem{SYNC_LOCATION};
         CIArrayOf<SecretReader> readers;
 
         for (unsigned i = 0; i < numReaders; i++)

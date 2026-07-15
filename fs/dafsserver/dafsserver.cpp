@@ -131,7 +131,7 @@ MODULE_INIT(INIT_PRIORITY_STANDARD)
 
 #endif
 
-static CriticalSection              secureContextCrit;
+static CriticalSection              secureContextCrit{SYNC_LOCATION};
 static Owned<ISecureSocketContext>  secureContextServer;
 
 #ifdef _USE_OPENSSL
@@ -420,9 +420,9 @@ struct CTreeCopyItem: public CInterface
 };
 
 static CIArrayOf<CTreeCopyItem>  treeCopyArray;
-static CriticalSection           treeCopyCrit;
+static CriticalSection           treeCopyCrit{SYNC_LOCATION};
 static unsigned                  treeCopyWaiting=0;
-static Semaphore                 treeCopySem;
+static Semaphore                 treeCopySem{SYNC_LOCATION};
 
 /////////////////////////
 
@@ -513,10 +513,10 @@ class CAsyncCommandManager
         offset_t fromOfs;
         offset_t size;
         CFPmode mode; // not yet supported
-        CriticalSection sect;
+        CriticalSection sect{SYNC_LOCATION};
         offset_t done;
         offset_t total;
-        Semaphore finished;
+        Semaphore finished{SYNC_LOCATION};
         AsyncCommandStatus status;
         Owned<IException> exc;
     public:
@@ -587,8 +587,8 @@ class CAsyncCommandManager
     };
 
     CMinHashTable<CAsyncJob> jobtable;
-    CriticalSection sect;
-    Semaphore threadsem;
+    CriticalSection sect{SYNC_LOCATION};
+    Semaphore threadsem{SYNC_LOCATION};
     unsigned limit;
 
 public:
@@ -678,7 +678,7 @@ inline void appendErr(MemoryBuffer &reply, unsigned e)
 
 static unsigned ClientCount = 0;
 static unsigned MaxClientCount = 0;
-static CriticalSection ClientCountSect;
+static CriticalSection ClientCountSect{SYNC_LOCATION};
 
 #define DEFAULT_THROTTLOG_LOG_INTERVAL_SECS 60 // log total throttled delay period
 
@@ -711,7 +711,7 @@ public:
 class CClientStatsTable : public OwningStringSuperHashTableOf<CClientStats>
 {
     typedef OwningStringSuperHashTableOf<CClientStats> PARENT;
-    CriticalSection crit;
+    CriticalSection crit{SYNC_LOCATION};
     unsigned cmdStats[RFCmax];
 
     static int compareElement(void* const *ll, void* const *rr)
@@ -3308,7 +3308,7 @@ class CRemoteFileServer : implements IRemoteFileServer, public CInterface
 
     class CThrottler
     {
-        Semaphore sem;
+        Semaphore sem{SYNC_LOCATION};
         CriticalSection crit, configureCrit;
         StringAttr title;
         unsigned limit, delayMs, cpuThreshold, queueLimit;
@@ -3319,7 +3319,7 @@ class CRemoteFileServer : implements IRemoteFileServer, public CInterface
         unsigned statsIntervalSecs;
 
     public:
-        CThrottler(const char *_title) : title(_title)
+        CThrottler(const char *_title) : crit(SYNC_LOCATION), configureCrit(SYNC_LOCATION), title(_title)
         {
             totalThrottleDelay = 0;
             limit = 0;
@@ -3587,7 +3587,7 @@ class CRemoteFileServer : implements IRemoteFileServer, public CInterface
     };
 
     int                 lasthandle;
-    CriticalSection     sect;
+    CriticalSection sect{SYNC_LOCATION};
     Owned<ISocket>      acceptsock;
     Owned<ISocket>      securesock;
     Owned<ISocket>      rowServiceSock;
@@ -3619,7 +3619,7 @@ class CRemoteFileServer : implements IRemoteFileServer, public CInterface
     class CHandleTracer
     {
         CTimeMon timer;
-        CriticalSection crit;
+        CriticalSection crit{SYNC_LOCATION};
         Owned<IFile> stdIOIFile;
         std::vector<Owned<IFileIO>> reservedHandles;
         unsigned handlesToReserve = 3; // need a few for pipe process to succeed
@@ -6363,7 +6363,7 @@ protected:
         {
             CThreaded threaded;
             StringAttr filePath;
-            Semaphore doneSem;
+            Semaphore doneSem{SYNC_LOCATION};
         public:
             CDelayedFileCreate(const char *_filePath) : threaded("CDelayedFileCreate"), filePath(_filePath)
             {

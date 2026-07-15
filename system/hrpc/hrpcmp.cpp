@@ -85,7 +85,7 @@ public:
 
 };
 
-CriticalSection MpTransportStateCommon::critsect;
+CriticalSection MpTransportStateCommon::critsect(SYNC_LOCATION);
 
 class MpIntraClientState: public MpTransportStateCommon
 {
@@ -392,7 +392,7 @@ protected:
 
     int                         timeoutms;          
     int                         connecttimeoutms;           
-    Mutex                       mx;
+    Mutex mx{SYNC_LOCATION};
 
 public:
     IMPLEMENT_IINTERFACE;

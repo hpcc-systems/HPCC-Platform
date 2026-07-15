@@ -47,7 +47,7 @@ extern char *esp_def_export_tag;
 int gOutfile = -1;
 bool extendedAttributes = true;
 
-CriticalSection ESDLcompiler::m_critSect;
+CriticalSection ESDLcompiler::m_critSect(SYNC_LOCATION);
 //-------------------------------------------------------------------------------------------------------------
 // Utility struct and function
 

@@ -241,7 +241,7 @@ public:
     ISortKeySerializer *keyserializer;  // used on partition calculation
     PartitionInfo *partitioninfo;
     bool resultorderset;
-    Mutex slavemutex;
+    Mutex slavemutex{SYNC_LOCATION};
     char *cosortfilenames;
     size32_t estrecsize;            // serialized
     size32_t maxdeviance;
@@ -249,6 +249,12 @@ public:
     Linked<IThorRowInterfaces> auxrowif;
     Linked<IThorRowInterfaces> keyIf;
     Owned<roxiemem::IVariableRowHeap> partitionHeap;
+
+    class SortSemaphore : public Semaphore
+    {
+    public:
+        SortSemaphore(unsigned initialCount=0) : Semaphore(SYNC_LOCATION, initialCount) {}
+    };
 
     int AddSlave(ICommunicator *comm,rank_t rank,SocketEndpoint &endpoint,mptag_t mpTagRPC)
     {
@@ -513,7 +519,7 @@ public:
         }
         unsigned averagesamples = OVERSAMPLE*numnodes;  
         rowcount_t averagerecspernode = (rowcount_t)(total/numnodes);
-        CriticalSection asect;
+        CriticalSection asect{SYNC_LOCATION};
         CThorExpandingRowArray sample(*activity, keyIf, ers_allow);
         class casyncfor1: public CAsyncFor
         {
@@ -732,8 +738,8 @@ public:
                     }
                 } afor(slaves,mbmn,mbmx);
                 afor.For(numnodes, 20, true);
-                Semaphore *nextsem = new Semaphore[numnodes];
-                CriticalSection nextsect;
+                SortSemaphore *nextsem = new SortSemaphore[numnodes];
+                CriticalSection nextsect{SYNC_LOCATION};
 
                 totmid.kill();
                 class casyncfor2: public CAsyncFor
@@ -1418,7 +1424,7 @@ public:
 
 CThorExpandingRowArray *CSortMaster::ECFarray;
 ICompare *CSortMaster::ECFcompare;
-CriticalSection CSortMaster::ECFcrit; 
+CriticalSection CSortMaster::ECFcrit{SYNC_LOCATION};
 
 
 IThorSorterMaster *CreateThorSorterMaster(CActivityBase *activity)

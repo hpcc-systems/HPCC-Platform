@@ -356,7 +356,7 @@ protected:
     __uint64 calcActiveTime(cycle_t tally, unsigned active) const;
 
 private:
-    mutable CriticalSection cs;
+    mutable CriticalSection cs{SYNC_LOCATION};
     unsigned numStarted = 0;
     unsigned numFinished = 0;
     cycle_t timeStampTally = 0;

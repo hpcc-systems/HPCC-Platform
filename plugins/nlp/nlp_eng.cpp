@@ -38,7 +38,7 @@
 
 static NLP_ENGINE *nlpEngine = NULL;
 
-static CriticalSection csNLP;
+static CriticalSection csNLP{SYNC_LOCATION};
 
 NLPEng::NLPEng(const char *_manifestFolder) : manifestFolder(_manifestFolder) {}
 

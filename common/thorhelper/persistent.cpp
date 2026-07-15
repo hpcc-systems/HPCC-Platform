@@ -181,11 +181,11 @@ private:
     int m_maxReqs = DEFAULT_MAX_PERSISTENT_REQUESTS;
     Owned<ISocketSelectHandler> m_selectHandler;
     IPersistentSelectNotify* m_notify;
-    Semaphore m_waitsem;
+    Semaphore m_waitsem{SYNC_LOCATION};
     bool m_stop = false;
     SockInfoMap m_infomap;
     CAvailKeeper m_availkeeper;
-    CriticalSection m_critsect;
+    CriticalSection m_critsect{SYNC_LOCATION};
     PersistentLogLevel m_loglevel = PersistentLogLevel::PLogNormal;
     static int CurID;
     int m_id = 0;

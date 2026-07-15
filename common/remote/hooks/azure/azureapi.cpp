@@ -49,7 +49,7 @@ struct CreatedDirsCache
         dirs.insert(path);
     }
 private:
-    mutable CriticalSection lock;
+    mutable CriticalSection lock{SYNC_LOCATION};
     std::set<std::string> dirs;
 };
 
@@ -464,7 +464,7 @@ protected:
 
     Linked<IStorageApiInfo> sourceApiInfo, targetApiInfo;
     mutable CreatedDirsCache createdDirsCache;
-    mutable CriticalSection delegationKeyCS;
+    mutable CriticalSection delegationKeyCS{SYNC_LOCATION};
     mutable std::map<std::string, CachedDelegationKey> delegationKeyCache;
 };
 

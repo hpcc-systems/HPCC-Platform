@@ -624,7 +624,7 @@ public:
         {
         }
 
-        Semaphore go;
+        Semaphore go{SYNC_LOCATION};
         Semaphore & started;
         Semaphore & ready;
         std::atomic<offset_t> & available;
@@ -707,8 +707,8 @@ public:
     {
         try
         {
-            Semaphore ready;
-            Semaphore started;
+            Semaphore ready{SYNC_LOCATION};
+            Semaphore started{SYNC_LOCATION};
             std::atomic<offset_t> available{0};
 
             Owned<IBufferedSerialOutputStream> out = createOutput(filename, bufferSize, compressHandler, compressedBufferSize, threadedWrite);

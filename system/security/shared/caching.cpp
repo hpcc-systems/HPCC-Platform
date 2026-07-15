@@ -25,9 +25,9 @@ using namespace cryptohelper;
 
 //define a container for multiple instances of a security manager cache
 typedef map<string, CPermissionsCache*> MapCache;
-static CriticalSection mapCacheCS;//guards modifications to the cache map
+static CriticalSection mapCacheCS{SYNC_LOCATION};//guards modifications to the cache map
 static MapCache g_mapCache;
-static CriticalSection syncDefaultScopePermissions;//for cached default file scope permissions
+static CriticalSection syncDefaultScopePermissions{SYNC_LOCATION};//for cached default file scope permissions
 
 /**********************************************************
  *     CResPermissionsCache                               *

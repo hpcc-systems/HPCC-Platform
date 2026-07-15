@@ -265,7 +265,7 @@ protected:
     IArrayOf<IEngineRowAllocator> children;
 };
 
-CriticalSection RoxieEngineRowAllocatorBase::cs;
+CriticalSection RoxieEngineRowAllocatorBase::cs(SYNC_LOCATION);
 
 template <class CHECKER>
 class RoxieEngineFixedRowAllocator : public RoxieEngineRowAllocatorBase
@@ -466,7 +466,7 @@ class CAllocatorCache : public CSimpleInterfaceOf<IRowAllocatorMetaActIdCache>
 {
     OwningSimpleHashTableOf<CAllocatorCacheItem, AllocatorKey> cache;
     IArrayOf<IEngineRowAllocator> allAllocators;
-    mutable SpinLock allAllocatorsLock;
+    mutable SpinLock allAllocatorsLock{SYNC_LOCATION};
     Owned<roxiemem::IRowManager> rowManager;
     IRowAllocatorMetaActIdCacheCallback *callback;
 

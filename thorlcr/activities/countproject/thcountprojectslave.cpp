@@ -103,7 +103,7 @@ class CountProjectActivity : public BaseCountProjectActivity, implements ILookAh
 {
     typedef BaseCountProjectActivity PARENT;
     bool first = false; // until start
-    Semaphore prevRecCountSem;
+    Semaphore prevRecCountSem{SYNC_LOCATION};
     rowcount_t prevRecCount = 0;
     std::atomic<rowcount_t> localRecCount = {RCUNSET};
     bool onInputFinishSends = false;

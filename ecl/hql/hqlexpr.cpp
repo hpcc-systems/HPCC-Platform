@@ -433,15 +433,15 @@ void setActiveSource(const char * filename)
 
 MODULE_INIT(INIT_PRIORITY_HQLINTERNAL)
 {
-    transformMutex = new Mutex;
-    transformCS = new CriticalSection;
-    transformSemaphore = new Semaphore(NUM_PARALLEL_TRANSFORMS);
-    exprCacheCS = new CriticalSection;
-    crcCS = new CriticalSection;
+    transformMutex = new Mutex(SYNC_LOCATION);
+    transformCS = new CriticalSection(SYNC_LOCATION);
+    transformSemaphore = new Semaphore(SYNC_LOCATION, NUM_PARALLEL_TRANSFORMS);
+    exprCacheCS = new CriticalSection(SYNC_LOCATION);
+    crcCS = new CriticalSection(SYNC_LOCATION);
     exprCache = new HqlExprCache;
-    nullIntCS = new CriticalSection;
-    unadornedCS = new CriticalSection;
-    sourcePathCS = new CriticalSection;
+    nullIntCS = new CriticalSection(SYNC_LOCATION);
+    unadornedCS = new CriticalSection(SYNC_LOCATION);
+    sourcePathCS = new CriticalSection(SYNC_LOCATION);
 
     nullType = makeNullType();
     sourcePaths = new KeptAtomTable;

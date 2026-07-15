@@ -1027,7 +1027,7 @@ public:
 
 protected:
     MAP map;
-    mutable CriticalSection cs;
+    mutable CriticalSection cs{SYNC_LOCATION};
 };
 
 class SymbolTableLock
@@ -1291,7 +1291,7 @@ protected:
     IProperties* props;
     Owned<IHqlScope> resolved;
     Linked<IEclSource> eclSource;
-    CriticalSection generalCS;
+    CriticalSection generalCS{SYNC_LOCATION};
     bool loadedAllSymbols;
 
 protected:
@@ -1418,7 +1418,7 @@ public:
     virtual IEclPackage * queryPackage() const override { return rootRepository; }
 
 protected:
-    CriticalSection cs;
+    CriticalSection cs{SYNC_LOCATION};
     HqlScopeArray mergedScopes;
     CHqlMergedScope * parent;
     IEclPackage * rootRepository;

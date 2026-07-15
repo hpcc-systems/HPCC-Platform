@@ -1005,7 +1005,7 @@ int dfsverify(const char *name,CDateTime *cutoff, IUserDescriptor *user)
         return 0;
     OUTLOG("VERIFY: start file %s",name);
     file.clear();
-    CriticalSection crit;
+    CriticalSection crit{SYNC_LOCATION};
     class casyncfor: public CAsyncFor
     {
         CFileList  &list;

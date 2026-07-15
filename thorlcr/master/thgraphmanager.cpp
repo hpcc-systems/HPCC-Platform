@@ -106,7 +106,8 @@ class CJobManager : public CSimpleInterface, implements IJobManager, implements 
     bool stopped, handlingConversation;
     Owned<IConversation> conversation;
     StringAttr queueName;
-    CriticalSection replyCrit, jobCrit;
+    CriticalSection replyCrit{SYNC_LOCATION};
+    CriticalSection jobCrit{SYNC_LOCATION};
     CFifoFileCache querySoCache;
     Owned<IJobQueue> jobq;
     ICopyArrayOf<CJobMaster> jobs;
@@ -505,7 +506,7 @@ void CJobManager::deltaPostmortemInProgress(int v)
 class CIdleShutdown : public CSimpleInterface, implements IThreaded
 {
     unsigned timeout;
-    Semaphore sem;
+    Semaphore sem{SYNC_LOCATION};
     CThreaded threaded;
 public:
     CIdleShutdown(unsigned _timeout) : timeout(_timeout*60000), threaded("CIdleShutdown") { threaded.init(this, false); }
@@ -1266,7 +1267,7 @@ class CDaliConnectionValidator : public CSimpleInterface, implements IThreaded
 {
     bool stopped;
     unsigned pollDelay;
-    Semaphore poll;
+    Semaphore poll{SYNC_LOCATION};
     CThreaded threaded;
 public:
     CDaliConnectionValidator(unsigned _pollDelay) : threaded("CDaliConnectionValidator") { pollDelay = _pollDelay*1000; stopped = false; threaded.init(this, false); }

@@ -56,7 +56,7 @@
 #endif
 
 static memsize_t MTthreshold=0; 
-static CriticalSection MTcritsect;  // held when blocked 
+static CriticalSection MTcritsect{SYNC_LOCATION};  // held when blocked 
 static Owned<ILargeMemLimitNotify> MTthresholdnotify;
 static bool MTlocked = false;
 

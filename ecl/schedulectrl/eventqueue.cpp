@@ -172,7 +172,7 @@ private:
     Owned<IScheduleReader> schedule;
     Owned<ICronTable> crontab;
     bool more;
-    Semaphore waiter;
+    Semaphore waiter{SYNC_LOCATION};
 };
 
 class CScheduleEventProcessor : public CInterface, implements IScheduleEventProcessor

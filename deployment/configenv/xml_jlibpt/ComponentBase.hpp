@@ -57,7 +57,7 @@ public:
    bool isNodeMatch(IPropertyTree *pNode, IPropertyTree *pAttrs);
 
 protected:
-   Mutex mutex;
+   Mutex mutex{SYNC_LOCATION};
    EnvHelper * m_envHelper;
    StringBuffer m_name;
 };

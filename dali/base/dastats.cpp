@@ -460,8 +460,8 @@ protected:
     virtual void publish(const CRuntimeStatisticCollection & diffStats) = 0;
 
 protected:
-    CriticalSection crit;
-    Semaphore stopSem;
+    CriticalSection crit{SYNC_LOCATION};
+    Semaphore stopSem{SYNC_LOCATION};
     const char * category;
     MetricsDimensionList dimensions;
     unsigned publishPeriodMs;

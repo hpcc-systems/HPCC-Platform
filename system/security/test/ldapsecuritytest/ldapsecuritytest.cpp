@@ -31,7 +31,7 @@
 #include <unistd.h>
 #endif
 
-Mutex m_mutex;
+Mutex m_mutex{SYNC_LOCATION};
 
 void usage()
 {

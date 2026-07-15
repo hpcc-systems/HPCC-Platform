@@ -92,7 +92,7 @@ RONameTable *AttrStrUnionWithValueTable::roValueTable = nullptr;
 static AtomRefTable *keyTable = nullptr;
 static AtomRefTable *keyTableNC = nullptr;
 
-static CriticalSection hashcrit;
+static CriticalSection hashcrit(SYNC_LOCATION);
 static CAttrValHashTable *attrHT = nullptr;
 static AttrValue **freelist = nullptr;
 static unsigned freelistmax = 0;
@@ -652,7 +652,7 @@ public:
 class CQualifierMap
 {
     std::unordered_map<std::string, CValueMap *> attrValueMaps;
-    CriticalSection crit;
+    CriticalSection crit{SYNC_LOCATION};
 
 public:
     CQualifierMap()
@@ -8957,7 +8957,7 @@ static void applyCommandLineOption(IPropertyTree * config, const char * option, 
     applyCommandLineOption(config, option, val);
 }
 
-static CriticalSection configCS;
+static CriticalSection configCS(SYNC_LOCATION);
 static Owned<IPropertyTree> componentConfiguration;
 static Owned<IPropertyTree> globalConfiguration;
 static Owned<IPropertyTree> nullConfiguration;
@@ -9099,7 +9099,7 @@ class CConfigUpdater : public CInterface
     IPropertyTree * (*mapper)(IPropertyTree *);
     StringAttr altNameAttribute;
     Owned<IFileEventWatcher> fileWatcher; // null if updates to the config file are not allowed
-    CriticalSection notifyFuncCS;
+    CriticalSection notifyFuncCS{SYNC_LOCATION};
     unsigned notifyFuncId = 0;
     std::unordered_map<unsigned, ConfigUpdateFunc> notifyConfigUpdates;
     std::unordered_map<unsigned, ConfigModifyFunc> modifyConfigUpdates;

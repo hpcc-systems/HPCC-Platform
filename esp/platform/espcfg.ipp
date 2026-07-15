@@ -106,7 +106,7 @@ struct esp_option
 class CSessionCleaner : public Thread
 {
     bool       stopping = false;
-    Semaphore  sem;
+    Semaphore sem{SYNC_LOCATION};
 
     StringAttr espSessionSDSPath;
     int        checkSessionTimeoutSeconds; //the duration to clean timed out sesssions
@@ -126,7 +126,7 @@ public:
     void stop();
 };
 
-static CriticalSection attachcrit;
+static CriticalSection attachcrit{SYNC_LOCATION};
 
 #ifdef ESPCFG_EXPORTS
     #define esp_cfg_decl DECL_EXPORT
@@ -163,7 +163,7 @@ private:
     int  serverSessionTimeoutSeconds = 120 * ESP_SESSION_TIMEOUT;//2 x clientSessionTimeoutSeconds
     std::list<int> bindingPorts;
     std::list<int> bindingPortsNotInSDSSession;
-    CriticalSection bindingPortCrit;
+    CriticalSection bindingPortCrit{SYNC_LOCATION};
 
 private:
     CEspConfig(CEspConfig &);

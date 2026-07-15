@@ -30,9 +30,9 @@ class CXRefExBuilderThread : public Thread
 {
     bool stopThread = false;
     bool xRefRunning = false;
-    CriticalSection critRunningStatus;
-    CriticalSection critQueue;
-    Semaphore m_sem;
+    CriticalSection critRunningStatus{SYNC_LOCATION};
+    CriticalSection critQueue{SYNC_LOCATION};
+    Semaphore m_sem{SYNC_LOCATION};
     SafeQueueOf<IXRefNode, false> nodeQueue;
     StringBuffer currentClusterName;
 

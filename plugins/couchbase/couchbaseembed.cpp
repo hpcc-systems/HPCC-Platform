@@ -617,7 +617,7 @@ namespace couchbaseembed
 
             ObjMap          idleConnections;    //!< std::map of created CouchbaseConnection object pointers
             ObjMap          activeConnections;  //!< std::map of created CouchbaseConnection object pointers
-            CriticalSection cacheLock;          //!< Mutex guarding modifications to connection pools
+            CriticalSection cacheLock{SYNC_LOCATION};          //!< Mutex guarding modifications to connection pools
     } *connectionCache;
 
     static class ConnectionCacheExpirerObj : public Thread

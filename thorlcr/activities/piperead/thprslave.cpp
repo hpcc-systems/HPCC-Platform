@@ -331,8 +331,8 @@ class CPipeThroughSlaveActivity : public CPipeSlaveBase
     bool recreate, anyThisGroup, inputExhausted, firstRead, grouped;
     PipeWriterThread *pipeWriter;
     Owned<IPipeWriteXformHelper> writeTransformer;
-    Semaphore pipeOpened;
-    Semaphore pipeVerified;
+    Semaphore pipeOpened{SYNC_LOCATION};
+    Semaphore pipeVerified{SYNC_LOCATION};
 
     void openPipe(char const *cmd, const char *pipeTrace)
     {

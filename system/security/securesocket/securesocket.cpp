@@ -1045,7 +1045,7 @@ CAsyncTLSWriteHandler::CAsyncTLSWriteHandler(CSecureSocket * _secureSocket, SSL 
 }
 
 #ifdef USERECVSEM
-Semaphore CSecureSocket::receiveblocksem(2);
+Semaphore CSecureSocket::receiveblocksem({SYNC_LOCATION}, 2);
 #endif
 
 /**************************************************************************
@@ -2668,7 +2668,7 @@ private:
     bool m_address_match = false;
     Owned<CStringSet> m_peers;
     StringAttr password;
-    CriticalSection cs;
+    CriticalSection cs{SYNC_LOCATION};
     Linked<const ISyncedPropertyTree> syncedConfig;
     unsigned configVersion = 0;
 

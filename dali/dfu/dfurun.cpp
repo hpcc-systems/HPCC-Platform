@@ -577,8 +577,8 @@ class CDFUengine: public CInterface, implements IDFUengine
     Owned<IScheduleEventPusher> eventpusher;
     IArrayOf<cDFUlistener> listeners;
 
-    CriticalSection monitorsect;
-    CriticalSection subcopysect;
+    CriticalSection monitorsect{SYNC_LOCATION};
+    CriticalSection subcopysect{SYNC_LOCATION};
     std::atomic<unsigned> runningflag;
 
 public:

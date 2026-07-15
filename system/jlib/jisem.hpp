@@ -38,10 +38,10 @@ class jlib_decl InterruptableSemaphore : public Semaphore
 {
 private:
     Owned<IException> error;
-    CriticalSection crit;
+    CriticalSection crit{SYNC_LOCATION};
 
 public:
-    InterruptableSemaphore(unsigned _initialCount = 0U) : Semaphore(_initialCount) {}
+    InterruptableSemaphore(unsigned _initialCount = 0U) : Semaphore(SYNC_LOCATION, _initialCount) {}
 
     void interrupt(IException *_error = NULL, unsigned count=1)
     {
@@ -89,8 +89,8 @@ public:
 
 class jlib_decl TokenBucket : public CInterface
 {
-    SpinLock crit; // MORE: I suspect this should be a critical section
-    Semaphore tokens;
+    SpinLock crit{SYNC_LOCATION}; // MORE: I suspect this should be a critical section
+    Semaphore tokens{SYNC_LOCATION};
     unsigned tokensAvailable;
     unsigned maxBucketSize;
     unsigned tokensPerPeriod;
@@ -123,7 +123,7 @@ class jlib_decl TokenBucket : public CInterface
 
 public:
     TokenBucket(unsigned _tokensPerPeriod, unsigned _period, unsigned _maxBucketSize)
-        : tokens(_maxBucketSize), maxBucketSize(_maxBucketSize), tokensPerPeriod(_tokensPerPeriod), period(_period)
+        : tokens(SYNC_LOCATION, _maxBucketSize), maxBucketSize(_maxBucketSize), tokensPerPeriod(_tokensPerPeriod), period(_period)
     {
         tokensAvailable = _maxBucketSize;
         then = msTick();

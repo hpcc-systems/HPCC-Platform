@@ -46,7 +46,7 @@ private:
     static const SecFeatureSet s_safeFeatures = SUF_ALL_FEATURES;
     static const SecFeatureSet s_implementedFeatures = (s_safeFeatures & ~(SUF_GetDataElement | SUF_GetDataElements | SUF_SetData));
 
-    CriticalSection crit;
+    CriticalSection crit{SYNC_LOCATION};
 public:
     IMPLEMENT_IINTERFACE
 

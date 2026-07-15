@@ -113,12 +113,12 @@ IHRPCtransport * TryMakeServerTransport(unsigned port, const char * errorMessage
 
 #define MAXCONNECTIONS 16
 
-static CriticalSection mcsect;
+static CriticalSection mcsect{SYNC_LOCATION};
 
 
 bool FastMultipleConnect(unsigned n,HRPCmodule **modules,bool *done,int timeout)
 {
-    CriticalSection sect;
+    CriticalSection sect{SYNC_LOCATION};
     IPointerArrayOf<ISocket> sockets;
     SocketEndpointArray eps;
     unsigned i;

@@ -2070,7 +2070,7 @@ public:
 protected:
     Linked<IFileIO> fileio;
     CompressedFileTrailer trailer;
-    CriticalSection crit;
+    CriticalSection crit{SYNC_LOCATION};
     size32_t sizeIoBuffer = 0;
     unsigned numBlocksToBuffer = 1; // default to buffering 1 block
 };

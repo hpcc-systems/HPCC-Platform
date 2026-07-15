@@ -466,7 +466,7 @@ void runKubectlCommand(const char *title, const char *cmd, const char *input, St
 }
 
 static CTimeLimitedCache<std::string, std::pair<std::string, unsigned>> externalServiceCache;
-static CriticalSection externalServiceCacheCrit;
+static CriticalSection externalServiceCacheCrit(SYNC_LOCATION);
 std::pair<std::string, unsigned> getExternalService(const char *serviceName)
 {
 #ifndef _CONTAINERIZED

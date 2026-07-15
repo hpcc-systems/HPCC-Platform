@@ -162,7 +162,7 @@ protected:
 
 private:
     bool uptodate;
-    CriticalSection crit;
+    CriticalSection crit{SYNC_LOCATION};
     unsigned linkCount;
     Owned<IScheduleSubscriber> subscriber;
     Owned<SubscriptionProxy> subsProxy;
@@ -356,7 +356,7 @@ protected:
 private:
     StringAttr serverName;
     StringBuffer rootPath;
-    CriticalSection treeCrit;
+    CriticalSection treeCrit{SYNC_LOCATION};
     Owned<IPropertyTree> scheduleBranch;
 };
 
@@ -420,7 +420,7 @@ private:
     StringBuffer xpath; // name
     StringBuffer fullPath; // /Schedule/server/name
     Owned<IPropertyTree> nameBranch;
-    CriticalSection treeCrit;
+    CriticalSection treeCrit{SYNC_LOCATION};
 };
 
 IScheduleReader * getScheduleReader(char const * serverName, char const * eventName)

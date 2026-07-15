@@ -15,7 +15,7 @@
 #define PLUGIN_CGEN_COMP_LIST  "cgencomplist.xml"
 #define ENV_GEN_RULES_DO_NOT_GENERATE_PROP "do_not_generate"
 
-CriticalSection CConfigHelper::m_critSect;
+CriticalSection CConfigHelper::m_critSect(SYNC_LOCATION);
 
 CConfigHelper::CConfigHelper(IDeploymentCallback *pCallBack): m_pDefBldSet(NULL)
 {

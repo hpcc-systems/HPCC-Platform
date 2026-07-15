@@ -41,7 +41,7 @@ class IndexWriteSlaveActivity : public ProcessSlaveActivity, public ILookAheadSt
     Owned<IPartDescriptor> partDesc, tlkDesc;
     IHThorIndexWriteArg *helper;
     Owned<IKeyBuilder> builder;
-    mutable CriticalSection builderCS;
+    mutable CriticalSection builderCS{SYNC_LOCATION};
     Owned<IRowStream> myInputStream;
     Owned<IPropertyTree> metadata;
     Linked<IEngineRowAllocator> outRowAllocator;

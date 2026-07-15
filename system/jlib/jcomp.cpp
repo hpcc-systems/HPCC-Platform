@@ -512,7 +512,7 @@ bool CppCompiler::compile()
     addCompileOption(COMPILE_ONLY[targetCompiler]);
 
     bool ret = false;
-    Semaphore finishedCompiling;
+    Semaphore finishedCompiling(SYNC_LOCATION);
     int numSubmitted = 0;
     numFailed.store(0);
 

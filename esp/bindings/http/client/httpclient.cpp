@@ -33,7 +33,7 @@
 static Owned<CHttpClientContext> theHttpClientContext;
 static MapStringToMyClass<CHttpClientContext> httpClientContextsUsingSecrets;
 static Owned<IEspPlugin> theSSLPlugin;
-static CriticalSection httpCrit;
+static CriticalSection httpCrit{SYNC_LOCATION};
 
 MODULE_INIT(INIT_PRIORITY_STANDARD)
 {

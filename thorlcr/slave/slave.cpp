@@ -276,7 +276,7 @@ class CGenericSlaveGraphElement : public CSlaveGraphElement
     bool wuidread2diskread; // master decides after interrogating result and sneaks in info before slave creates
     StringAttr wuidreadFilename;
     Owned<CActivityBase> nullActivity;
-    CriticalSection nullActivityCs;
+    CriticalSection nullActivityCs{SYNC_LOCATION};
 public:
     CGenericSlaveGraphElement(CGraphBase &_owner, IPropertyTree &xgmml, CGraphBase *resultsGraph) : CSlaveGraphElement(_owner, xgmml, resultsGraph)
     {

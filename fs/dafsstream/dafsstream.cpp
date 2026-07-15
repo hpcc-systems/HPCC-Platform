@@ -130,7 +130,7 @@ class CDFUFile : public CSimpleInterfaceOf<IDFUFileAccess>, implements IDFUFileA
 
     StringBuffer groupName;
     mutable MemoryBuffer binLayout;
-    mutable CriticalSection decodeJsonCrit;
+    mutable CriticalSection decodeJsonCrit{SYNC_LOCATION};
     mutable bool gotJsonTypeInfo = false;
     mutable StringBuffer jsonLayout;
     StringAttr metaInfoBlobB64;

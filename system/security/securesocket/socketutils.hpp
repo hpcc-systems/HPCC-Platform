@@ -97,7 +97,7 @@ protected:
     size32_t minSize = 0;               // The minimum size to read before the request is valid
     size32_t maxReadSize = 0;           // The maximum that should be read when incoming size is not known
     size32_t requiredSize = 0;          // How much data should be read - set for fixed or variable size
-    CriticalSection crit;
+    CriticalSection crit{SYNC_LOCATION};
 };
 
 //This class uses a select handler to maintain a list of sockets that are being listened to
@@ -128,10 +128,10 @@ protected:
     // which can be problematic/confusing, for example if Owned and std::list->remove is called
     // with a pointer, it will auto instantiate a OWned<CReadSocketHandler> and cause -ve leak.
     std::list<Linked<CReadSocketHandler>> handlers;
-    CriticalSection handlersCS;
+    CriticalSection handlersCS{SYNC_LOCATION};
 
     std::thread maintenanceThread;
-    Semaphore maintenanceSem;
+    Semaphore maintenanceSem{SYNC_LOCATION};
     cycle_t timeoutCycles;
     unsigned maxListenHandlerSockets;
     std::atomic<bool> aborting{false};
@@ -183,7 +183,7 @@ private:
     std::atomic<bool> aborting{false};
     std::atomic<AcceptMethod> acceptMethod{AcceptMethod::SelectThread};
     std::atomic<unsigned> pendingAcceptCallbacks{0};
-    Semaphore shutdownSem;
+    Semaphore shutdownSem{SYNC_LOCATION};
 };
 
 struct HashSocketEndpoint
@@ -245,14 +245,14 @@ protected:
 
 
 protected:
-    CriticalSection crit;
+    CriticalSection crit{SYNC_LOCATION};
     CTcpSender & sender;
     const SocketEndpoint ep;
     Owned<ISocket> socket;
     struct sockaddr * addr = nullptr;   // This must persist until after the connect completes
     unsigned threadsWaiting{0};
     unsigned numConnects{0};
-    Semaphore waitSem;
+    Semaphore waitSem{SYNC_LOCATION};
     State state{State::Unconnected};
     void * buffers[maxQueueDepth];
     WriteRequest requests[maxQueueDepth];
@@ -276,7 +276,7 @@ protected:
     virtual void releaseBuffer(void * buffer);      // Default implementation throws an exception - i.e. aync send is not supported
 
 protected:
-    CriticalSection crit;
+    CriticalSection crit{SYNC_LOCATION};
     std::unordered_map<SocketEndpoint, Owned<CSocketTarget>, HashSocketEndpoint> workerSockets;
     Owned<IAsyncProcessor> asyncSender;
     const bool lowLatency;

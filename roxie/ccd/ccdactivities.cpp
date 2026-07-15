@@ -873,7 +873,7 @@ protected:
     Linked<IInMemoryIndexManager> manager;
     Linked<ITranslatorSet> translators;
     Owned<IInMemoryFileProcessor> processor;
-    CriticalSection pcrit;
+    CriticalSection pcrit{SYNC_LOCATION};
 
 public:
     CRoxieDiskReadBaseActivity(AgentContextLogger &_logctx, IRoxieQueryPacket *_packet, HelperFactory *_hFactory, const CAgentActivityFactory *_aFactory,
@@ -1891,7 +1891,7 @@ class CParallelRoxieActivity : public CRoxieAgentActivity
 protected:
     IBasedArrayOf<CRoxieDiskReadBaseActivity, IRoxieAgentActivity> parts;
     unsigned numParallel;
-    CriticalSection parCrit;
+    CriticalSection parCrit{SYNC_LOCATION};
     Owned<IOutputRowDeserializer> deserializer;
 
 public:

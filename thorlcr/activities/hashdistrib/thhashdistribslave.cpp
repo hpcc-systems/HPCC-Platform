@@ -86,7 +86,8 @@ class CDistributorBase : implements IHashDistributor, implements IExceptionHandl
     IHash *ihash;
     Owned<IRowStream> input;
 
-    Semaphore distribDoneSem, localFinishedSem;
+    Semaphore distribDoneSem{SYNC_LOCATION};
+    Semaphore localFinishedSem{SYNC_LOCATION};
     ICompare *iCompare, *keepBestCompare;
     size32_t bucketSendSize;
     bool doDedup, allowSpill, connected, selfstopped, isAll;
@@ -95,7 +96,7 @@ class CDistributorBase : implements IHashDistributor, implements IExceptionHandl
     size32_t fixedEstSize;
     Owned<IRowWriter> pipewr;
     Owned<ISmartRowBuffer> piperd;
-    mutable CriticalSection critPiperd;
+    mutable CriticalSection critPiperd{SYNC_LOCATION};
 
 protected:
     /*
@@ -301,7 +302,7 @@ protected:
         unsigned destination = 0; // NB: not used in ALL case
         std::atomic<unsigned> activeWriters{0};
         CSendBucketQueue pendingBuckets;
-        mutable CriticalSection crit;
+        mutable CriticalSection crit{SYNC_LOCATION};
         Owned<CSendBucket> bucket;
         StringAttr info;
         bool self = false;
@@ -486,14 +487,14 @@ protected:
         };
 
         CDistributorBase &owner;
-        mutable CriticalSection activeWritersLock;
-        mutable SpinLock totalSzLock; // MORE: Could possibly use an atomic to reduce the scope of this spin lock
-        SpinLock doDedupLock;
+        mutable CriticalSection activeWritersLock{SYNC_LOCATION};
+        mutable SpinLock totalSzLock{SYNC_LOCATION}; // MORE: Could possibly use an atomic to reduce the scope of this spin lock
+        SpinLock doDedupLock{SYNC_LOCATION};
         IPointerArrayOf<CSendBucket> buckets;
         PointerArrayOf<CTarget> candidates;
         size32_t totalSz;
         bool senderFull, doDedup, aborted, initialized;
-        Semaphore senderFullSem;
+        Semaphore senderFullSem{SYNC_LOCATION};
         Linked<IException> exception;
         std::atomic<unsigned> numFinished;
         std::atomic<unsigned> stoppedTargets;
@@ -1079,7 +1080,7 @@ protected:
     unsigned writerPoolSize;
     unsigned self;
     unsigned numnodes;
-    CriticalSection putsect;
+    CriticalSection putsect{SYNC_LOCATION};
     bool pull, aborted;
     CSender sender;
     unsigned candidateLimit;
@@ -1687,7 +1688,7 @@ class CRowPullDistributor: public CDistributorBase
 
     ICommunicator &comm;
     mptag_t tag;
-    CriticalSection sect;
+    CriticalSection sect{SYNC_LOCATION};
     cBuf **diskcached;
     CMessageBuffer *bufs;
     bool *hasbuf;
@@ -1697,8 +1698,8 @@ class CRowPullDistributor: public CDistributorBase
     mptag_t *waiting;
     bool *donerecv;
     bool *donesend;
-    Semaphore selfready;
-    Semaphore selfdone;
+    Semaphore selfready{SYNC_LOCATION};
+    Semaphore selfdone{SYNC_LOCATION};
     bool stopping;
     bool stopped = true;
 
@@ -2143,7 +2144,7 @@ class HashDistributeSlaveBase : public CSlaveActivity, implements IStopInput
     typedef CSlaveActivity PARENT;
 
     IHashDistributor *distributor = nullptr;
-    CriticalSection stopsect;
+    CriticalSection stopsect{SYNC_LOCATION};
     mptag_t mptag = TAG_NULL;
 protected:
     Owned<IRowStream> out;
@@ -2848,7 +2849,7 @@ class CBucket : public CSimpleInterface
     IEngineRowAllocator *keyAllocator;
     CHashTableRowTable *htRows;
     bool extractKey, spilt;
-    CriticalSection lock;
+    CriticalSection lock{SYNC_LOCATION};
     unsigned bucketN;
     CSpill rowSpill, keySpill;
     bool keepBest;
@@ -2926,7 +2927,7 @@ private:
     mutable rowidx_t peakKeyCount;
     bool callbacksInstalled = false;
     unsigned nextBestBucket = 0;
-    CriticalSection spillCrit;
+    CriticalSection spillCrit{SYNC_LOCATION};
     CRuntimeStatisticCollection stats;
 
     rowidx_t getTotalBucketCount() const
@@ -3127,7 +3128,7 @@ protected:
     IThorRowInterfaces *keyRowInterfaces;
     Owned<CBucketHandler> bucketHandler;
     IArrayOf<CBucketHandler> bucketHandlerStack;
-    CriticalSection stopsect;
+    CriticalSection stopsect{SYNC_LOCATION};
     PointerArrayOf<CHashTableRowTable> _hashTables;
     CHashTableRowTable **hashTables;
     unsigned numHashTables, initialNumBuckets;
@@ -3973,8 +3974,8 @@ class HashJoinSlaveActivity : public CSlaveActivity, implements IStopInput
     bool eof;
     Owned<IRowStream> strmL;
     Owned<IRowStream> strmR;
-    mutable CriticalSection joinHelperCrit;
-    CriticalSection stopsect;
+    mutable CriticalSection joinHelperCrit{SYNC_LOCATION};
+    CriticalSection stopsect{SYNC_LOCATION};
     rowcount_t lhsProgressCount;
     rowcount_t rhsProgressCount;
     bool leftdone;

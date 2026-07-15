@@ -91,7 +91,7 @@ enum MDFSRequestKind
 };
 
 // Mutex for physical operations (remove/rename)
-static CriticalSection physicalChange;
+static CriticalSection physicalChange{SYNC_LOCATION};
 
 #define MDFS_GET_FILE_TREE_V2 ((unsigned)1)
 
@@ -2917,7 +2917,7 @@ class CDistributedFilePart: public CInterface, implements IDistributedFilePart
     unsigned partIndex;
     CDistributedFile &parent;
     Owned<IPropertyTree> attr;
-    CriticalSection sect;
+    CriticalSection sect{SYNC_LOCATION};
     StringAttr overridename;    // may or not be relative to directory
     bool            dirty;      // whether needs updating in tree
     std::vector<unsigned> stripeNumber;
@@ -3327,7 +3327,7 @@ protected:
     Owned<IPropertyTree> root;
     Owned<IRemoteConnection> conn;                  // kept connected during lifetime for attributes
     CDfsLogicalFileName logicalName;
-    mutable CriticalSection sect;
+    mutable CriticalSection sect{SYNC_LOCATION};
     CDistributedFileDirectory *parent;
     unsigned proplockcount;
     unsigned transactionnest;
@@ -3948,7 +3948,7 @@ class CDistributedFile: public CDistributedFileBase<IDistributedFile>
 {
 protected:
     CDistributedFilePartArray parts;            // use queryParts to access
-    CriticalSection sect;
+    CriticalSection sect{SYNC_LOCATION};
     StringAttr directory;
     StringAttr partmask;
     FileClusterInfoArray clusters;
@@ -4868,7 +4868,7 @@ public:
     virtual bool existsPhysicalPartFiles(unsigned short port) override
     {
         unsigned width = numParts();
-        CriticalSection errcrit;
+        CriticalSection errcrit{SYNC_LOCATION};
         class casyncfor: public CAsyncFor
         {
             IDistributedFile *file;
@@ -5046,7 +5046,7 @@ public:
 
         // first check file doestn't exist for any new part
 
-        CriticalSection crit;
+        CriticalSection crit{SYNC_LOCATION};
         class casyncforbase: public CAsyncFor
         {
         protected:
@@ -8306,7 +8306,7 @@ static unsigned loadGroup(const IPropertyTree *groupTree, SocketEndpointArray &e
 
 class CNamedGroupStore: implements INamedGroupStore, public CInterface
 {
-    CriticalSection cachesect;
+    CriticalSection cachesect{SYNC_LOCATION};
     CIArrayOf<CNamedGroupCacheEntry> cache;
     unsigned defaultTimeout;
     unsigned defaultRemoteTimeout;
@@ -8892,7 +8892,7 @@ private:
 };
 
 static std::atomic<CNamedGroupStore *> groupStore{nullptr};
-static CriticalSection groupsect;
+static CriticalSection groupsect{SYNC_LOCATION};
 
 
 bool CNamedGroupIterator::match()
@@ -9731,7 +9731,7 @@ void CDistributedFileDirectory::fixDates(IDistributedFile *file)
 {
     // should do in parallel
     unsigned width = file->numParts();
-    CriticalSection crit;
+    CriticalSection crit{SYNC_LOCATION};
     class casyncfor: public CAsyncFor
     {
         IDistributedFile *file;
@@ -9854,7 +9854,7 @@ GetFileClusterNamesType CDistributedFileDirectory::getFileClusterNames(const cha
 
 
 static std::atomic<CDistributedFileDirectory *> DFdir{nullptr};
-static CriticalSection dfdirCrit;
+static CriticalSection dfdirCrit{SYNC_LOCATION};
 
 /**
  * Public method to control DistributedFileDirectory access
@@ -11674,7 +11674,7 @@ class CDaliDFSServer: public Thread, public CTransactionLogTracker, implements I
     unsigned defaultTimeout;
     unsigned numThreads;
     Owned<INode> dafileSrvNode;
-    CriticalSection dafileSrvNodeCS;
+    CriticalSection dafileSrvNodeCS{SYNC_LOCATION};
 
 public:
 
@@ -12982,7 +12982,7 @@ DistributedFileCompareResult compareDistributedFiles(IDistributedFile *file1, ID
         bool differs = false;
         class casyncfor: public CAsyncFor
         {
-            CriticalSection crit;
+            CriticalSection crit{SYNC_LOCATION};
             DistributedFileCompareResult &ret;
             IDistributedFile *file1;
             IDistributedFile *file2;
@@ -13134,7 +13134,7 @@ bool CDistributedFileDirectory::filePhysicalVerify(const char *lfn, IUserDescrip
         unsigned np = file->numParts();
         class casyncfor: public CAsyncFor
         {
-            CriticalSection crit;
+            CriticalSection crit{SYNC_LOCATION};
             IDistributedFile *file;
             const char *lfn;
             StringBuffer &errstr;
@@ -14569,7 +14569,7 @@ bool CDistributedFileDirectory::removePhysicalPartFiles(const char *logicalName,
     class casyncfor: public CAsyncFor
     {
         IFileDescriptor *fileDesc;
-        CriticalSection errcrit;
+        CriticalSection errcrit{SYNC_LOCATION};
         IMultiException *mexcept;
     public:
         bool ok;

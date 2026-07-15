@@ -219,7 +219,7 @@ protected:
     Linked<const IPropertyTree> formatOptions;
     mutable Owned<const IDynamicTransform> translator;
     mutable Owned<const IKeyTranslator> keyedTranslator;
-    mutable SpinLock translatorLock; // use a spin lock since almost certainly not going to contend
+    mutable SpinLock translatorLock{SYNC_LOCATION}; // use a spin lock since almost certainly not going to contend
 };
 
 void DiskReadMapping::ensureTranslators() const

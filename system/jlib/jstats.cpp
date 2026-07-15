@@ -34,7 +34,7 @@
 #include <sys/timeb.h>
 #endif
 
-static CriticalSection statsNameCs;
+static CriticalSection statsNameCs(SYNC_LOCATION);
 static StringBuffer statisticsComponentName;
 static StatisticCreatorType statisticsComponentType = SCTunknown;
 const static unsigned currentStatisticsVersion = 1;
@@ -2691,7 +2691,7 @@ CNestedRuntimeStatisticMap & CRuntimeStatisticCollection::ensureNested()
     return *querySingleton(nested, nestlock, [this]{ return this->createNested(); });
 }
 
-CriticalSection CRuntimeStatisticCollection::nestlock;
+CriticalSection CRuntimeStatisticCollection::nestlock(SYNC_LOCATION);
 
 unsigned __int64 CRuntimeStatisticCollection::getSerialStatisticValue(StatisticKind kind) const
 {
@@ -4248,7 +4248,7 @@ public:
 };
 
 static CIArrayOf<CStatsCategory> statsCategories;
-static CriticalSection statsCategoriesCrit;
+static CriticalSection statsCategoriesCrit(SYNC_LOCATION);
 
 extern int registerStatsCategory(const char *longName, const char *shortName)
 {

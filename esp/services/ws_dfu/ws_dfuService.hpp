@@ -55,7 +55,7 @@ public:
 
 class CThorNodeGroupCache: public SuperHashTableOf<CThorNodeGroup, const char>
 {
-    CriticalSection sect;
+    CriticalSection sect{SYNC_LOCATION};
     CThorNodeGroup* readNodeGroup(const char* _groupName);
 
 public:
@@ -138,7 +138,7 @@ public:
 class CWsDfuEx : public CWsDfu
 {
     Owned<IXslProcessor> m_xsl;
-    Mutex m_superfilemutex;
+    Mutex m_superfilemutex{SYNC_LOCATION};
     unsigned nodeGroupCacheTimeout;
     Owned<CThorNodeGroupCache> thorNodeGroupCache;
     std::atomic<bool> m_daliDetached{false};

@@ -146,13 +146,13 @@ class CHThorDebugSocketListener : public Thread, implements IHThorDebugSocketLis
     unsigned port;
     std::atomic<bool> running;
     bool suspended;
-    Semaphore started;
+    Semaphore started{SYNC_LOCATION};
     Owned<ISocket> socket;
     Owned<IThreadPool> pool;
     Owned<CHThorDebugContext> debugContext;
     SocketEndpoint ep;
 
-    CriticalSection activeCrit;
+    CriticalSection activeCrit{SYNC_LOCATION};
 
 public:
     IMPLEMENT_IINTERFACE_USING(Thread);
@@ -3674,7 +3674,7 @@ extern int HTHOR_API eclagent_main(int argc, const char *argv[], Owned<ILocalWor
             class CDaliDownMonitor : public CSimpleInterfaceOf<IConnectionMonitor>
             {
                 const SocketEndpoint &daliEp;
-                Semaphore sem;
+                Semaphore sem{SYNC_LOCATION};
             public:
                 CDaliDownMonitor(const SocketEndpoint &_daliEp) : daliEp(_daliEp)
                 {

@@ -130,7 +130,7 @@ public:
     virtual void flush() override;
 
 protected:
-    CriticalSection cs;
+    CriticalSection cs{SYNC_LOCATION};
     offset_t offset = 0;
 };
 
@@ -365,7 +365,7 @@ protected:
     time_t lastModified = 0;
     time_t createdOn = 0;
     std::string blobUrl;
-    mutable CriticalSection cs;
+    mutable CriticalSection cs{SYNC_LOCATION};
     mutable std::shared_ptr<Azure::Storage::Blobs::BlockBlobClient> cachedBlobClient;  // Cache client for reuse per-file
     AzureAPIConfig config;
 };
@@ -964,7 +964,7 @@ void AzureBlob::setProperties(int64_t _blobSize, Azure::DateTime _lastModified, 
 
 //---------------------------------------------------------------------------------------------------------------------
 
-static CriticalSection azureConfigCS;
+static CriticalSection azureConfigCS{SYNC_LOCATION};
 static CConfigUpdateHook reloadConfigHook;
 static void updateFunc(const IPropertyTree *oldComponentConfiguration, const IPropertyTree *oldGlobalConfiguration)
 {

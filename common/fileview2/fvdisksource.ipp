@@ -41,7 +41,7 @@ public:
 public:
     Owned<IDistributedFile> df;
 
-    CriticalSection cs;
+    CriticalSection cs{SYNC_LOCATION};
     unsigned __int64 totalSize;
     unsigned cachedPart;
     OwnedIFile cachedFile;

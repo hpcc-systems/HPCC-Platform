@@ -83,7 +83,7 @@ static std::unordered_map<std::string, ExceptionInterceptClass> eClassTypes = {
 class CExceptionInterceptor : implements IExceptionIntercept
 {
     std::unordered_map<unsigned __int64, InterceptHandler> interceptHandlers;
-    mutable CriticalSection crit;
+    mutable CriticalSection crit{SYNC_LOCATION};
     StringBuffer debugDir;
     unsigned handledExceptionClassMask = 0;
     void ensureDebugDir()
@@ -750,7 +750,7 @@ private:
     CMultiException( const CMultiException& );
     IArrayOf<IException> array_;
     StringBuffer         source_;
-    mutable Mutex        m_mutex;
+    mutable Mutex        m_mutex{SYNC_LOCATION};
 };
 
 IMultiException *makeMultiException(const char* source/*=NULL*/)
@@ -1252,7 +1252,7 @@ public:
     { 
 #ifdef _DEBUG
         if (u == 0x80000003) return; // int 3 breakpoints
-        static CriticalSection crit;
+        static CriticalSection crit(SYNC_LOCATION);
         {
             CriticalBlock b(crit);
             PrintExceptionReport(pExp);
@@ -1320,7 +1320,7 @@ static constexpr unsigned SIGNAL_RAISE_DELAY_SECONDS = 20;
 #if defined(__linux__)
   static timer_t killTimerId;
   static std::atomic<bool> killTimerCreated { false };
-  static CriticalSection killTimerCS;
+    static CriticalSection killTimerCS(SYNC_LOCATION);
 #endif
 
 static void raiseKillSigInFuture(unsigned timeoutSec)

@@ -1375,7 +1375,7 @@ void FileSprayer::calculateSprayPartition()
 
     //Throttle maximum number of concurrent transfers by starting n threads, and
     //then waiting for one to complete before going on to the next
-    Semaphore sem;
+    Semaphore sem{SYNC_LOCATION};
     unsigned goIndex;
     for (goIndex=0; goIndex < numThreads; goIndex++)
         partitioners.item(goIndex).calcPartitions(&sem);
@@ -2134,7 +2134,7 @@ void FileSprayer::gatherFileSizes(FilePartInfoArray & fileSizeQueue, bool errorI
     if (fileSizeQueue.ordinality())
     {
         IArrayOf<FileSizeThread> threads;
-        CriticalSection fileSizeCS;
+        CriticalSection fileSizeCS{SYNC_LOCATION};
 
         //Is this a good guess?  start square root of number of files threads??
         unsigned numThreads = (unsigned)sqrt((float)fileSizeQueue.ordinality());
@@ -2671,7 +2671,7 @@ void FileSprayer::performTransfer()
     //Throttle maximum number of concurrent transfers by starting n threads, and
     //then waiting for one to complete before going on to the next
     lastProgressTick = msTick();
-    Semaphore sem;
+    Semaphore sem{SYNC_LOCATION};
     unsigned goIndex;
     for (goIndex=0; goIndex<numConcurrentTransfers; goIndex++)
         transferSlaves.item(goIndex).go(sem);

@@ -406,7 +406,7 @@ enum SOCKETMODE { sm_tcp_server, sm_tcp, sm_udp_server, sm_udp, sm_multicast_ser
 
 enum UseUDE { UNINIT, INITED };
 static std::atomic<UseUDE> expertTCPSettings { UNINIT };
-static CriticalSection queryTCPCS;
+static CriticalSection queryTCPCS(SYNC_LOCATION);
 
 static bool hasKeepAlive = false;
 static int keepAliveTime = -1;
@@ -509,7 +509,7 @@ void setKeepAlive(bool enabled, int time, int intvl, int probes)
 
 static int getAddressInfo(const char *name, unsigned *netaddr, bool okToLogErr);
 
-static CriticalSection queryDNSCS;
+static CriticalSection queryDNSCS(SYNC_LOCATION);
 
 #ifndef EAI_SYSTEM
 #   define EAI_SYSTEM -11
@@ -755,10 +755,10 @@ private:
 
 };
 
-CriticalSection CSocket::crit;
+CriticalSection CSocket::crit(SYNC_LOCATION);
 unsigned CSocket::connectingcount=0;
 #ifdef USERECVSEM
-Semaphore CSocket::receiveblocksem(2);
+Semaphore CSocket::receiveblocksem({SYNC_LOCATION}, 2);
 #endif
 
 
@@ -3465,7 +3465,7 @@ NO_SANITIZE("alignment") bool getInterfaceIp(IpAddress &ip,const char *ifname)
 static StringAttr cachehostname;
 static IpAddress cachehostip;
 static IpAddress localhostip;
-static CriticalSection hostnamesect;
+static CriticalSection hostnamesect(SYNC_LOCATION);
 
 const char * GetCachedHostName()
 {
@@ -4582,13 +4582,13 @@ class CSocketBaseThread: public Thread
 {
 protected:
     bool terminating;
-    CriticalSection sect;
-    Semaphore ticksem;
+    CriticalSection sect{SYNC_LOCATION};
+    Semaphore ticksem{SYNC_LOCATION};
     std::atomic_uint tickwait;
     unsigned offset;
     std::atomic<bool> selectvarschange;
     unsigned waitingchange;
-    Semaphore waitingchangesem;
+    Semaphore waitingchangesem{SYNC_LOCATION};
     int validateselecterror;
     unsigned validateerrcount;
     const char *selecttrace;
@@ -5284,7 +5284,7 @@ public:
 class CSocketSelectHandler: implements ISocketSelectHandler, public CInterface
 {
     IArrayOf<CSocketSelectThread> threads;
-    CriticalSection sect;
+    CriticalSection sect{SYNC_LOCATION};
     bool started;
     std::atomic<bool> stopped;
     StringAttr selecttrace;
@@ -5958,7 +5958,7 @@ public:
 class CSocketEpollHandler: implements ISocketSelectHandler, public CInterface
 {
     IArrayOf<CSocketEpollThread> threads;
-    CriticalSection sect;
+    CriticalSection sect{SYNC_LOCATION};
     bool started;
     std::atomic<bool> stopped;
     StringAttr epolltrace;
@@ -6058,7 +6058,7 @@ public:
 
 enum EpollMethod { EPOLL_INIT = 0, EPOLL_DISABLED, EPOLL_ENABLED };
 static EpollMethod epoll_method = EPOLL_INIT;
-static CriticalSection epollsect;
+static CriticalSection epollsect(SYNC_LOCATION);
 
 void check_epoll_cfg()
 {
@@ -6461,7 +6461,7 @@ class CSocketBufferReader: implements ISocketBufferReader, public CInterface
         CSocketBufferReader *parent;
         unsigned num;           // top bit used for ready
         MemoryAttr blk;
-        CriticalSection sect;
+        CriticalSection sect{SYNC_LOCATION};
         Linked<ISocket> sock;
         bool active;
         bool pending;
@@ -6527,8 +6527,8 @@ class CSocketBufferReader: implements ISocketBufferReader, public CInterface
     size32_t buffersize;
     size32_t buffermax;
     unsigned bufferwaiting;
-    CriticalSection buffersect;
-    Semaphore buffersem;
+    CriticalSection buffersect{SYNC_LOCATION};
+    Semaphore buffersem{SYNC_LOCATION};
     bool isdone;
 
 public:
@@ -6698,8 +6698,8 @@ void multiConnect(const SocketEndpointArray &eps,ISocketConnectNotify &inotify,u
         return;
     elems = new SocketElem[n];
     unsigned i;
-    CriticalSection sect;
-    Semaphore notifysem;
+    CriticalSection sect(SYNC_LOCATION);
+    Semaphore notifysem(SYNC_LOCATION);
     Owned<ISocketSelectHandler> selecthandler = createSocketSelectHandler(
 #ifdef _DEBUG
         "multiConnect"
@@ -6769,7 +6769,7 @@ void multiConnect(const SocketEndpointArray &eps, IPointerArrayOf<ISocket> &rets
     }   
     while (retsockets.ordinality()<n)
         retsockets.append(NULL);
-    CriticalSection sect;
+    CriticalSection sect(SYNC_LOCATION);
     class cNotify: implements ISocketConnectNotify
     {
         CriticalSection &sect;
@@ -7617,7 +7617,7 @@ class CAllowListHandler : public CSimpleInterfaceOf<IAllowListHandler>, implemen
     std::unordered_set<std::pair<std::string, unsigned __int64>, PairHasher> allowList;
     std::unordered_set<std::string> IPOnlyAllowList;
     bool allowAnonRoles = false;
-    mutable CriticalSection populatedCrit;
+    mutable CriticalSection populatedCrit{SYNC_LOCATION};
     mutable bool populated = false;
     mutable bool enabled = true;
 

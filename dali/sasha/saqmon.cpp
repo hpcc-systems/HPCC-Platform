@@ -31,7 +31,7 @@ class CSashaQMonitorServer: public ISashaServer, public Thread
 
     bool stopped;
     bool qinitdone;
-    Semaphore stopsem;
+    Semaphore stopsem{SYNC_LOCATION};
     StringArray qnames;
     StringArray cnames;
     IArrayOf<IJobQueue> queues;

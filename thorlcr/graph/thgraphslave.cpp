@@ -1455,7 +1455,7 @@ class CThorSlaveGraphResults : public CThorGraphResults
         while (globalResults.ordinality() < id)
         {
             globalResults.append(*new CThorUninitializedGraphResults(globalResults.ordinality()));
-            globalResultCrits.append(new CriticalSection);
+            globalResultCrits.append(new CriticalSection(SYNC_LOCATION));
         }
     }
 public:
@@ -1562,7 +1562,7 @@ class CThorCodeContextSlave : public CThorCodeContextBase, implements IEngineCon
     mptag_t mptag;
     Owned<IDistributedFileTransaction> superfiletransaction;
     mutable CIArrayOf<TerminationCallbackInfo> callbacks;
-    mutable CriticalSection callbacksCrit;
+    mutable CriticalSection callbacksCrit{SYNC_LOCATION};
 
     void invalidSetResult(const char * name, unsigned seq)
     {
@@ -2153,7 +2153,7 @@ class CLazyFileIO : public CInterfaceOf<IFileIO>
     Linked<IExpander> expander;
     bool compressed;
     CRuntimeStatisticCollection fileStats;
-    CriticalSection crit;
+    CriticalSection crit{SYNC_LOCATION};
     Owned<IFileIO> iFileIO; // real IFileIO
     CActivityBase *activity = nullptr;
     StringAttr filename, id;
@@ -2245,7 +2245,7 @@ class CFileCache : public CSimpleInterfaceOf<IThorFileCache>
     StringSuperHashTableOf<CLazyFileIO> files; // NB: table doesn't own entries, entries remove themselves on destruction.
     ICopyArrayOf<CLazyFileIO> openFiles;
     unsigned limit, purgeN;
-    CriticalSection crit;
+    CriticalSection crit{SYNC_LOCATION};
 
     void purgeOldest()
     {

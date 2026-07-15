@@ -40,13 +40,13 @@ static int readTimeout = 300;
 #define MAXTHREADS 50
 
 
-static Mutex readMutex;
-static Mutex writeMutex;
+static Mutex readMutex{SYNC_LOCATION};
+static Mutex writeMutex{SYNC_LOCATION};
 static StringBuffer hosts;
 static ISmartSocketFactory *smartSocketFactory = nullptr;
 static bool Aborting = false;
 static StringBuffer fatalError;
-static CriticalSection fatalErrorSect;
+static CriticalSection fatalErrorSect{SYNC_LOCATION};
 
 static bool useSSL = false;
 

@@ -99,7 +99,7 @@ protected:
 
 protected:
     IArrayOf<IEclSource> contents;
-    CriticalSection cs;
+    CriticalSection cs{SYNC_LOCATION};
     bool expandedChildren;
     bool fullyDefined;
 };

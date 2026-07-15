@@ -359,7 +359,7 @@ class BlackLister : public CInterface, implements IThreadFactory
 {
     SocketEndpointArray list;  // MORE - should match the options too? Should use a hash table?
     Owned<IThreadPool> pool;
-    CriticalSection crit;
+    CriticalSection crit{SYNC_LOCATION};
 
     struct DeblacklisterParams
     {
@@ -558,7 +558,7 @@ public:
         class SocketDeblacklister : public CInterface, implements IPooledThread
         {
             BlackLister &parent;
-            Semaphore stopped;
+            Semaphore stopped{SYNC_LOCATION};
             DeblacklisterParams p;
         public:
             IMPLEMENT_IINTERFACE;
@@ -610,7 +610,7 @@ public:
 
 static bool defaultUsePersistConnections = false;
 static IPersistentHandler* persistentHandler = nullptr;
-static CriticalSection globalFeatureCrit;
+static CriticalSection globalFeatureCrit{SYNC_LOCATION};
 static std::atomic<bool> globalFeaturesInitDone{false};
 static std::atomic<bool> mapUrlsToSecrets{false};
 static std::atomic<bool> warnIfUrlNotMappedToSecret{false};
@@ -987,8 +987,10 @@ class CWSCHelper : implements IWSCHelper, public CInterface
 {
 private:
     SimpleInterThreadQueueOf<const void, true> outputQ;
-    SpinLock outputQLock;
-    CriticalSection toXmlCrit, transformCrit, onfailCrit;
+    SpinLock outputQLock{SYNC_LOCATION};
+    CriticalSection toXmlCrit{SYNC_LOCATION};
+    CriticalSection transformCrit{SYNC_LOCATION};
+    CriticalSection onfailCrit{SYNC_LOCATION};
     unsigned done;
     Owned<IPropertyTree> xpathHints;
     Linked<ClientCertificate> clientCert;
@@ -1513,7 +1515,7 @@ protected:
     IXmlToRowTransformer * rowTransformer;
 };
 
-CriticalSection CWSCHelper::secureContextCrit;
+CriticalSection CWSCHelper::secureContextCrit(SYNC_LOCATION);
 Owned<ISecureSocketContext> CWSCHelper::tlsSecureContext; // created on first use
 Owned<ISecureSocketContext> CWSCHelper::localMtlsSecureContext; // created on first use
 Owned<ISecureSocketContext> CWSCHelper::remoteMtlsSecureContext; // created on first use
@@ -1888,7 +1890,7 @@ private:
     ConstPointerArray &inputRows;
     IXmlWriterExt &xmlWriter;
     IEngineRowAllocator * outputAllocator;
-    CriticalSection processExceptionCrit;
+    CriticalSection processExceptionCrit{SYNC_LOCATION};
     StringBuffer responsePath;
     Owned<CSocketDataProvider> dataProvider;
     PTreeReaderOptions options;

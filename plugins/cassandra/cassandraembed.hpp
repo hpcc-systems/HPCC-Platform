@@ -141,7 +141,7 @@ private:
     CassCluster *cluster;
     Owned<CassandraSession> session;
     mutable MapStringToMyClass<CassandraPrepared> preparedCache;
-    mutable CriticalSection cacheCrit;
+    mutable CriticalSection cacheCrit{SYNC_LOCATION};
     Semaphore *semaphore;
     unsigned maxFutures;
     unsigned maxRetries;

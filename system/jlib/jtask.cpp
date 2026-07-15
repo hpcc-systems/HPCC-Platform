@@ -27,7 +27,7 @@
 
 static std::atomic<ITaskScheduler *> taskScheduler{nullptr};
 static std::atomic<ITaskScheduler *> iotaskScheduler{nullptr};
-static CriticalSection singletonCs;
+static CriticalSection singletonCs(SYNC_LOCATION);
 
 MODULE_INIT(INIT_PRIORITY_STANDARD)
 {
@@ -339,8 +339,8 @@ protected:
     unsigned numThreads = 0;
     std::atomic<unsigned> processorsWaiting{0};
     CTaskProcessor * * processors = nullptr;
-    Semaphore avail;
-    CriticalSection cs;
+    Semaphore avail{SYNC_LOCATION};
+    CriticalSection cs{SYNC_LOCATION};
     DListOf<CTask> queue;
     std::atomic_bool aborting{false};
 };

@@ -29,7 +29,7 @@ class ESPMemCached : implements IEspCache, public CInterface
     memcached_pool_st* pool = nullptr;
     StringAttr options;
     bool initialized = false;
-    CriticalSection cacheCrit;
+    CriticalSection cacheCrit{SYNC_LOCATION};
 
     void setPoolSettings();
     void connect();

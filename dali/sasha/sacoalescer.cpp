@@ -18,7 +18,7 @@
 CriticalSection *suspendResumeCrit;
 MODULE_INIT(INIT_PRIORITY_STANDARD)
 {
-    suspendResumeCrit = new CriticalSection;
+    suspendResumeCrit = new CriticalSection(SYNC_LOCATION);
     return true;
 }
 MODULE_EXIT()
@@ -170,8 +170,8 @@ void coalesceDatastore(IPropertyTree *coalesceProps, bool force)
 class CSashaSDSCoalescingServer: public ISashaServer, public Thread
 {
     std::atomic<bool> stopped;
-    Semaphore stopsem;
-    CriticalSection suspendResumeCrit;
+    Semaphore stopsem{SYNC_LOCATION};
+    CriticalSection suspendResumeCrit{SYNC_LOCATION};
     Linked<IPropertyTree> coalesceProps;
 public:
     IMPLEMENT_IINTERFACE_USING(Thread);

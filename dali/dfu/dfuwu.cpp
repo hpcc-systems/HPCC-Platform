@@ -277,7 +277,7 @@ class CDFUWorkUnitBase: public CInterface, implements IDFUWorkUnit , implements 
 protected: friend class CLinkedDFUWUchild; friend class CDFUprogress; friend class CDFUfileSpec; friend class CDFUoptions; friend class CDFUmonitor;
     Owned<IRemoteConnection> conn;
     Owned<IPropertyTree> root;
-    mutable CriticalSection crit;
+    mutable CriticalSection crit{SYNC_LOCATION};
     virtual ~CDFUWorkUnitBase()
     {
         root.clear();
@@ -2392,12 +2392,12 @@ class CDFUWorkUnit: public CDFUWorkUnitBase
     mutable CDFUfileSpec destination;
     mutable CDFUoptions  options;
     mutable CDFUmonitor  monitor;
-    Mutex    updatelock;
+    Mutex updatelock{SYNC_LOCATION};
     bool     updating;
     Linked<IDFUprogressSubscriber> subscriber;
     Linked<IDFUabortSubscriber> abortsubscriber;
     SubscriptionId subscriberid;
-    Semaphore completed;
+    Semaphore completed{SYNC_LOCATION};
     unsigned localedition;
     Linked<IDFUWorkUnitFactory> parent;
 public:
@@ -3147,7 +3147,7 @@ public:
 
 class CDFUWorkUnitFactory : implements IDFUWorkUnitFactory, implements ISDSSubscription, public CInterface
 {
-    CriticalSection proxylock;
+    CriticalSection proxylock{SYNC_LOCATION};
     PointerArray subscribers;
     Int64Array subscriberids;
     Int64Array active;  // active TIDS

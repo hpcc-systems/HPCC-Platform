@@ -421,7 +421,7 @@ protected:
     EclRepositoryManager * container;
     Linked<IEclSourceCollection> collection;
     Owned<IHqlRemoteScope> rootScope;
-    CriticalSection cs;
+    CriticalSection cs{SYNC_LOCATION};
     bool addToArchive;
 };
 
@@ -571,7 +571,7 @@ public:
     virtual void ensureCollection() override;
 
 protected:
-    CriticalSection crit;
+    CriticalSection crit{SYNC_LOCATION};
     StringAttr repoPath;
     StringAttr urn;
     std::atomic<bool> resolved{false};

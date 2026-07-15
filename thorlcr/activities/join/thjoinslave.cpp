@@ -63,7 +63,7 @@ class JoinSlaveActivity : public CSlaveActivity, implements ILookAheadStopNotify
 
     Owned<IJoinHelper> joinhelper;
     rowcount_t lhsProgressCount = 0, rhsProgressCount = 0;
-    mutable CriticalSection joinHelperCrit;
+    mutable CriticalSection joinHelperCrit{SYNC_LOCATION};
     IHThorJoinBaseArg *helper;
     IHThorJoinArg *helperjn;
     IHThorDenormalizeArg *helperdn;

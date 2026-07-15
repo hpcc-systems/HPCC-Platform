@@ -259,7 +259,7 @@ public:
 
 #define DEFAULT_CACHE_MAX_SIZE 500
 static CLRUCache<hash64_t, std::shared_ptr<RegexCacheEntry>> compiledStrRegExprCache(DEFAULT_CACHE_MAX_SIZE);
-static CriticalSection compiledStrRegExprLock;
+static CriticalSection compiledStrRegExprLock{SYNC_LOCATION};
 enum class CompiledCacheState : int
 {
     Uninitialized = 0,

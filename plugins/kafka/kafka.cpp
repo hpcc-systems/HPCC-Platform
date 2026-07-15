@@ -945,7 +945,7 @@ namespace KafkaPlugin
         private:
 
             ObjMap          cachedPublishers;   //!< std::map of created Publisher object pointers
-            CriticalSection lock;               //!< Mutex guarding modifications to cachedPublishers
+            CriticalSection lock{SYNC_LOCATION};               //!< Mutex guarding modifications to cachedPublishers
     };
 
     //--------------------------------------------------------------------------

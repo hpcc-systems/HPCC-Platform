@@ -288,7 +288,7 @@ protected:
 
 protected:
     std::vector<Bucket> buckets;
-    mutable CriticalSection cs;
+    mutable CriticalSection cs{SYNC_LOCATION};
     Bucket inf{0};
     __uint64 sum{0};
 };
@@ -354,7 +354,7 @@ protected:
     std::thread collectThread;
     std::atomic<bool> stopCollectionFlag{false};
     bool isCollecting = false;
-    Semaphore waitSem;
+    Semaphore waitSem{SYNC_LOCATION};
 };
 
 

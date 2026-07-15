@@ -1199,7 +1199,7 @@ private:
     KeyDiffHeader const & header;
     StringAttr filename;
     Owned<CKeyWriter> writer;
-    CriticalSection crit;
+    CriticalSection crit{SYNC_LOCATION};
     NodeInfoArray TLKnodes;
 };
 

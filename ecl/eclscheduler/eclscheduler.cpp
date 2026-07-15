@@ -321,12 +321,12 @@ private:
 
     unsigned updateConfigCBId{0};
 
-    CriticalSection updateSchedulersCS;
+    CriticalSection updateSchedulersCS{SYNC_LOCATION};
     CIArrayOf<EclScheduler> schedulers;
     std::unordered_set<std::string> schedulerQueues;
 
     std::atomic<bool> running{false};
-    Semaphore configChangeOrAbort;
+    Semaphore configChangeOrAbort{SYNC_LOCATION};
 };
 
 //=========================================================================================

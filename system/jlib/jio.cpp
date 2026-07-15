@@ -97,7 +97,7 @@ extern jlib_decl size32_t checked_read(const char * filename, int file, void *bu
 
 #ifdef WIN32
 static bool atomicsupported = true;
-static CriticalSection atomicsection;
+static CriticalSection atomicsection{SYNC_LOCATION};
 #endif
 
 extern jlib_decl size32_t checked_pread(const char * filename, int file, void *buffer, size32_t len, offset_t pos)

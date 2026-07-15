@@ -92,7 +92,7 @@ static IHqlScope * cppSystemScope;
 
 MODULE_INIT(INIT_PRIORITY_STANDARD)
 {
-    systemCS = new CriticalSection;
+    systemCS = new CriticalSection(SYNC_LOCATION);
     return true;
 }
 MODULE_EXIT()

@@ -4446,7 +4446,7 @@ bool RtlComplexIfBlockTypeInfo::getCondition(const RtlRow & selfrow) const
 }
 
 
-static CriticalSection ifcs;
+static CriticalSection ifcs{SYNC_LOCATION};
 RtlSerialIfBlockTypeInfo::~RtlSerialIfBlockTypeInfo()
 {
     ::Release(filter);

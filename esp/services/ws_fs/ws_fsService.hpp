@@ -28,7 +28,7 @@
 class Schedule : public Thread
 {
     bool stopping;
-    Semaphore semSchedule;
+    Semaphore semSchedule{SYNC_LOCATION};
     IEspContainer* m_container;
     bool detached;
 public:

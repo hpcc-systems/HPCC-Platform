@@ -131,8 +131,8 @@ public:
     }
     
 protected:
-    CriticalSection crit;
-    Semaphore sem;
+    CriticalSection crit{SYNC_LOCATION};
+    Semaphore sem{SYNC_LOCATION};
     std::vector<Linked<T> > resources;
     Linked<IResourceFactory<T> > factory;
 };

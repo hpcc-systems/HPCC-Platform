@@ -82,7 +82,7 @@ class DLLSERVER_API SafePluginMap : public CInterface
 {
     IPluginContextEx * pluginCtx;
     MapStringToMyClass<ILoadedDllEntry> map;
-    CriticalSection crit;
+    CriticalSection crit{SYNC_LOCATION};
     bool trace;
 public:
     SafePluginMap(IPluginContextEx * _pluginCtx, bool _trace) 

@@ -290,7 +290,7 @@ void CESPComponentStatusInfo::mergeCachedComponentStatus(IESPComponentStatusInfo
         appendUnchangedComponentStatus(csList.item(i));
 }
 
-static CriticalSection componentStatusSect;
+static CriticalSection componentStatusSect{SYNC_LOCATION};
 
 IESPComponentStatusInfo* CComponentStatusFactory::getComponentStatus()
 {
@@ -329,7 +329,7 @@ void CComponentStatusFactory::updateComponentStatus(const char* reporter, IArray
 
 static CComponentStatusFactory *csFactory = NULL;
 
-static CriticalSection getComponentStatusSect;
+static CriticalSection getComponentStatusSect{SYNC_LOCATION};
 
 IComponentStatusFactory* getComponentStatusFactory()
 {

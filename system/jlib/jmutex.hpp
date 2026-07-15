@@ -51,7 +51,7 @@ class jlib_decl LegacyMutex
 {
 friend class Monitor;
 protected:
-    LegacyMutex(const char *name)
+    LegacyMutex([[maybe_unused]] const char *syncName, const char *name)
     {
         mutex = CreateMutex(NULL, FALSE, name);
         assertex(mutex);
@@ -59,7 +59,7 @@ protected:
         owner = 0;
     }
 public:
-    LegacyMutex()
+    LegacyMutex([[maybe_unused]] const char *syncName)
     {
         mutex = CreateMutex(NULL, FALSE, NULL);
         lockcount = 0;
@@ -131,7 +131,7 @@ class jlib_decl LegacyMutex
 {
     friend class Monitor;
 public:
-    LegacyMutex();
+    LegacyMutex([[maybe_unused]] const char *syncName);
     ~LegacyMutex();
     void lock();
     bool lockWait(unsigned timeout);
@@ -150,6 +150,9 @@ private:
 class jlib_decl SimpleMutex
 {
 public:
+    SimpleMutex([[maybe_unused]] const char *syncName)
+    {
+    }
     void lock() { mutex.lock(); };
     void unlock() { mutex.unlock(); };
 private:
@@ -159,6 +162,9 @@ private:
 class jlib_decl Mutex
 {
 public:
+    Mutex([[maybe_unused]] const char *syncName)
+    {
+    }
     void lock() { mutex.lock(); };
     void unlock() { mutex.unlock(); };
 private:
@@ -168,6 +174,9 @@ private:
 class jlib_decl TimedMutex
 {
 public:
+    TimedMutex([[maybe_unused]] const char *syncName)
+    {
+    }
     void lock() { mutex.lock(); };
     bool lockWait(unsigned timeout);
     void unlock() { mutex.unlock(); };
@@ -178,13 +187,13 @@ private:
 class jlib_decl NamedMutex
 {
 public:
-    NamedMutex(const char *name);   
+    NamedMutex([[maybe_unused]] const char *syncName, const char *name);
     ~NamedMutex();
     void lock();
     bool lockWait(unsigned timeout);
     void unlock();
 private:
-    TimedMutex threadmutex;
+    TimedMutex threadmutex{SYNC_LOCATION};
     char *mutexfname;
 };
 
@@ -232,7 +241,7 @@ private:
 #endif
     inline CriticalSection(CriticalSection &) = delete;
 public:
-    inline CriticalSection()
+        inline CriticalSection([[maybe_unused]] const char *syncName)
     {
         InitializeCriticalSection(&flags);
 #ifdef _ASSERT_LOCK_SUPPORT
@@ -311,7 +320,7 @@ private:
 #endif
     CriticalSection (const CriticalSection &);  
 public:
-    inline CriticalSection()
+        inline CriticalSection([[maybe_unused]] const char *syncName)
     {
         pthread_mutexattr_t attr;
         pthread_mutexattr_init(&attr);
@@ -460,8 +469,11 @@ public:
 
 class  SpinLock
 {
-    CriticalSection sect;
+    CriticalSection sect{SYNC_LOCATION};
 public:
+    inline SpinLock([[maybe_unused]] const char *syncName)
+    {
+    }
     inline void enter()       
     { 
         sect.enter();
@@ -481,8 +493,8 @@ class jlib_decl  SpinLock
     std::atomic<ThreadId> owner{0};
     inline SpinLock(SpinLock & value __attribute__((unused))) = delete; // to prevent inadvertent use as block
 public:
-    inline SpinLock()
-    {   
+    inline SpinLock([[maybe_unused]] const char *syncName)
+    {
     }
 #ifdef _DEBUG
     ~SpinLock()             
@@ -553,6 +565,10 @@ public:
 #ifdef NRESPINLOCK_USE_SPINLOCK
 class jlib_decl NonReentrantSpinLock: public SpinLock
 {
+public:
+    NonReentrantSpinLock([[maybe_unused]] const char *syncName) : SpinLock(syncName)
+    {
+    }
 };
 #else
 #ifdef _DEBUG
@@ -562,7 +578,7 @@ class jlib_decl NonReentrantSpinLock
     std::atomic<ThreadId> owner;
     inline NonReentrantSpinLock(NonReentrantSpinLock & value __attribute__((unused))) = delete; // to prevent inadvertent use as block
 public:
-    inline NonReentrantSpinLock() : value(false), owner(0)
+    inline NonReentrantSpinLock([[maybe_unused]] const char *syncName) : value(false), owner(0)
     {
     }
     inline void enter()       
@@ -588,7 +604,7 @@ class jlib_decl  NonReentrantSpinLock
     std::atomic_uint value;
     inline NonReentrantSpinLock(NonReentrantSpinLock & value __attribute__((unused))) = delete; // to prevent inadvertent use as block
 public:
-    inline NonReentrantSpinLock() : value(false)
+    inline NonReentrantSpinLock([[maybe_unused]] const char *syncName) : value(false)
     {   
     }
     inline void enter()       
@@ -632,9 +648,9 @@ class jlib_decl Monitor
     Semaphore *sem;
     int waiting;
     void *last;
-    LegacyMutex mutex;
+    LegacyMutex mutex{SYNC_LOCATION};
 public:
-    Monitor() { sem = new Semaphore(); waiting = 0; last = NULL; }
+    Monitor() { sem = new Semaphore(SYNC_LOCATION); waiting = 0; last = NULL; }
 //  Monitor(const char *name) : Mutex(name) { sem = new Semaphore(name); waiting = 0; last = NULL; } // not supported
     ~Monitor() {delete sem;};
 
@@ -773,9 +789,9 @@ public:
 
     //MORE: May want to use the pthread implementations under linux.
 protected:
-    CriticalSection     cs;
-    Semaphore           readSem;
-    Semaphore           writeSem;
+    CriticalSection     cs{SYNC_LOCATION};
+    Semaphore           readSem{SYNC_LOCATION};
+    Semaphore           writeSem{SYNC_LOCATION};
     unsigned            readLocks;
     unsigned            writeLocks;
     unsigned            readWaiting;
@@ -845,9 +861,9 @@ public:
 
 class Barrier
 {
-    CriticalSection crit;
+    CriticalSection crit{SYNC_LOCATION};
     int limit, remaining, waiting;
-    Semaphore sem;
+    Semaphore sem{SYNC_LOCATION};
 public:
     Barrier(int _limit) { init(_limit); }
     Barrier() { init(0); }
@@ -993,7 +1009,7 @@ void jlib_decl checkedWriteLockEnter(ReadWriteLock &l, unsigned timeout, const c
 class CSingletonLock        // a lock that will generally only be locked once (for locking singleton objects - see below for examples
 {
     std::atomic<bool> needlock;
-    CriticalSection  sect;
+    CriticalSection  sect{SYNC_LOCATION};
 public:
     inline CSingletonLock()
     {
@@ -1039,7 +1055,7 @@ public:
  * A template function for implementing a singleton object.  Using the same example as above would require:
 
     static std::atomic<void *> sobj;
-    static CriticalSection slock;
+    static CriticalSection slock{SYNC_LOCATION};
     void *get()
     {
         return querySingleton(sobj, slock, []{ return createSObj; });
@@ -1115,7 +1131,7 @@ public:
 private:
     std::atomic<X *> singleton = {nullptr};
     std::atomic<bool> initialized = {false};
-    CriticalSection cs;
+    CriticalSection cs{SYNC_LOCATION};
 };
 
 // Similar to class Shared<X>, but thread safe versions of the functions (avoid the need for critical sections)
