@@ -70,7 +70,7 @@ class Cws_accessEx : public Cws_access
     Owned<IPropertyTree> m_servicecfg;
     IArrayOf<IEspDnStruct> m_basedns;
     IArrayOf<IEspDnStruct> m_rawbasedns;
-    CriticalSection basednsCrit;
+    CriticalSection basednsCrit{SYNC_LOCATION};
     SecResourceType str2type(const char* rtstr);
 
     void setBasedns(IEspContext &context);

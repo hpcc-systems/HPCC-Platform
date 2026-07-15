@@ -66,7 +66,7 @@ protected:
     }
 
 protected:
-    Semaphore producerStopSem;
+    Semaphore producerStopSem{SYNC_LOCATION};
     IArrayOf<CThreaded> threads;
 };
 
@@ -172,8 +172,8 @@ protected:
 
 private:
     const unsigned numProducers;
-    Semaphore producerStopSem;
-    Semaphore producerStoppedSem;
+    Semaphore producerStopSem{SYNC_LOCATION};
+    Semaphore producerStoppedSem{SYNC_LOCATION};
     IArrayOf<CThreaded> threads;
     std::atomic<bool> stopping;
     bool started;
@@ -554,7 +554,7 @@ protected:
 class SingleItemBlockQueue
 {
 public:
-    SingleItemBlockQueue() : space(1U), avail(0U)
+    SingleItemBlockQueue() : space(SYNC_LOCATION, 1U), avail(SYNC_LOCATION, 0U)
     {
     }
 

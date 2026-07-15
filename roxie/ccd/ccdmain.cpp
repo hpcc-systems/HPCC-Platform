@@ -119,7 +119,7 @@ unsigned myChannel;
 IPropertyTree *topology;
 MapStringTo<int> *preferredClusters;
 StringBuffer topologyFile;
-CriticalSection ccdChannelsCrit;
+CriticalSection ccdChannelsCrit{SYNC_LOCATION};
 StringArray allQuerySetNames;
 
 bool alwaysTrustFormatCrcs;
@@ -296,7 +296,7 @@ void init_signals()
 
 class Waiter : public CInterface, implements IAbortHandler
 {
-    Semaphore aborted;
+    Semaphore aborted{SYNC_LOCATION};
 public:
     IMPLEMENT_IINTERFACE;
 
@@ -320,7 +320,7 @@ public:
     }
 } waiter;
 
-static Semaphore closedDown;
+static Semaphore closedDown{SYNC_LOCATION};
 
 void closedown()
 {

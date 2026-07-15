@@ -40,7 +40,7 @@ protected:
     const char *kindStr;
     CRuntimeStatisticCollection closedPartFileStats;
     CDiskReadSlaveActivityBase &activity;
-    CriticalSection inputCs; // Prevent input from being changed while mergeStats() or other functions are executing
+    CriticalSection inputCs{SYNC_LOCATION}; // Prevent input from being changed while mergeStats() or other functions are executing
 
     bool eoi;
 public:

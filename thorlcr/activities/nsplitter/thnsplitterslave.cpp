@@ -29,7 +29,7 @@ class NSplitterSlaveActivity;
 class CSplitterOutput : public CSimpleInterfaceOf<IStartableEngineRowStream>, public CEdgeProgress, public COutputTiming, implements IThorDataLink
 {
     NSplitterSlaveActivity &activity;
-    Semaphore writeBlockSem;
+    Semaphore writeBlockSem{SYNC_LOCATION};
     bool started = false, stopped = false;
     IRowStream *splitterStream = nullptr;
 
@@ -87,7 +87,9 @@ class NSplitterSlaveActivity : public CSlaveActivity, implements ISharedSmartBuf
     bool newSplitter = false;
     bool eofHit = false;
     bool writeBlocked = false, pagedOut = false;
-    CriticalSection connectLock, prepareInputLock, writeAheadCrit;
+    CriticalSection connectLock{SYNC_LOCATION};
+    CriticalSection prepareInputLock{SYNC_LOCATION};
+    CriticalSection writeAheadCrit{SYNC_LOCATION};
     PointerArrayOf<Semaphore> stalledWriters;
     UnsignedArray stalledWriterIdxs;
     unsigned stoppedOutputs = 0;
@@ -125,7 +127,7 @@ class NSplitterSlaveActivity : public CSlaveActivity, implements ISharedSmartBuf
         virtual void threadmain() override
         {
             // NB: This thread will not get started if there was a failure during prepareInput()
-            Semaphore writeBlockSem;
+            Semaphore writeBlockSem{SYNC_LOCATION};
             while (!stopped && !parent.eofHit)
                 current = parent.writeahead(current, stopped, writeBlockSem, UINT_MAX);
         }

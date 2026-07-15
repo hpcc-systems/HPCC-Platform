@@ -75,7 +75,7 @@ private:
     Owned<ISocket> listenSocket;
     std::atomic<bool> running{true};
     unsigned short port;
-    Semaphore started;
+    Semaphore started{SYNC_LOCATION};
     
 public:
     SimpleEchoServer() : Thread("SimpleEchoServer"), port(0)
@@ -173,7 +173,7 @@ private:
     std::atomic<bool> running{true};
     std::atomic<unsigned> connectCount{0};
     unsigned short port;
-    Semaphore started;
+    Semaphore started{SYNC_LOCATION};
     
 public:
     DisconnectingServer() : Thread("DisconnectingServer"), port(0)
@@ -270,7 +270,7 @@ private:
     std::atomic<unsigned> messageCount{0};
     std::atomic<unsigned> disconnectCount{0};
     unsigned short port;
-    Semaphore started;
+    Semaphore started{SYNC_LOCATION};
     unsigned messagesBeforeDisconnect;
     
 public:
@@ -390,7 +390,7 @@ public:
 class OneShotAsyncCallback final : public IAsyncCallback
 {
 public:
-    Semaphore completed;
+    Semaphore completed{SYNC_LOCATION};
     int result = -999;
 
     virtual bool onAsyncComplete(int _result) override

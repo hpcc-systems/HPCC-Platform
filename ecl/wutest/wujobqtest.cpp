@@ -79,7 +79,7 @@ void testEnqueue(unsigned nthreads,const char *qname)
 
                 class cPollThread: public Thread
                 {
-                    Semaphore sem;
+                    Semaphore sem{SYNC_LOCATION};
                     bool stopped;
                     unsigned starttime;
                     IJobQueue *jq;
@@ -187,7 +187,7 @@ void testEnqueue(unsigned nthreads,const char *qname)
 
     class cPollThread: public Thread
     {
-        Semaphore sem;
+        Semaphore sem{SYNC_LOCATION};
         bool stopped;
         unsigned starttime;
         IJobQueue *jq;

@@ -35,6 +35,11 @@
 //----------------------------------------------------------------------------
 
 //#define PLINK_USE_CMD
+class RemoteSemaphore : public Semaphore
+{
+public:
+    RemoteSemaphore(unsigned initialCount=0) : Semaphore(SYNC_LOCATION, initialCount) {}
+};
 
 class CFRunSSH: public CInterface, implements IFRunSSH
 {
@@ -60,9 +65,7 @@ class CFRunSSH: public CInterface, implements IFRunSSH
     bool dryrun;
     bool useplink;
     int replicationoffset;
-    CriticalSection sect;
-
-
+    CriticalSection sect{SYNC_LOCATION};
 
     StringBuffer &expandCmd(StringBuffer &cmdbuf, unsigned nodenum, unsigned treefrom)
     {
@@ -484,7 +487,7 @@ public:
             {
                 treemode = !parent.treeroot.isEmpty();
                 if (treemode) {
-                    treesem = new Semaphore[parent.slaves.ordinality()+1];  // don't actually use all 
+                    treesem = new RemoteSemaphore[parent.slaves.ordinality()+1];  // don't actually use all 
                     treesem[0].signal();
                 }
                 else

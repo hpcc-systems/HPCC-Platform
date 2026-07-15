@@ -132,7 +132,7 @@ static void setServerAccess(CClientFileSpray &server, IConstWorkUnit * wu)
 }
 
 static StringArray availableWsFS;
-static CriticalSection espURLcrit;
+static CriticalSection espURLcrit{SYNC_LOCATION};
 
 static void addConfiguredWsFSUrl(const char * url)
 {
@@ -4247,7 +4247,7 @@ FILESERVICES_API void FILESERVICES_CALL fsClearExpireDays(ICodeContext * ctx, co
         throw makeStringExceptionV(0, "ClearExpireDays: Could not find logical file %s", lfn.str());
 }
 
-static CriticalSection noCommonDefCrit;
+static CriticalSection noCommonDefCrit{SYNC_LOCATION};
 static int noCommonDef = NotFound;
 FILESERVICES_API bool FILESERVICES_CALL fsGetNoCommonDefault()
 {

@@ -2054,7 +2054,7 @@ public:
     {
         m_pTask->copyFile( m_pTask->getFlags() );
 
-        static Mutex m;
+        static Mutex m{SYNC_LOCATION};
         m.lock();
         try
         {

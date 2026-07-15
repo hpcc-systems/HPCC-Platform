@@ -329,7 +329,7 @@ protected:
     IXslProcessor*          m_processor;
     IXslTransform*          m_transform;
    const char*             m_curInstance;
-   CriticalSection         m_critSec;
+   CriticalSection m_critSec{SYNC_LOCATION};
    static CDeploymentEngine* s_xsltDepEngine;//deployment engine context for XSLT
    static bool s_bCacheableDynFile;
 

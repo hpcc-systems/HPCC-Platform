@@ -93,7 +93,7 @@ protected:
     Owned<IFile> logical;
     Linked<IFileIO> current;
     Owned<IMemoryMappedFile> mmapped;
-    mutable CriticalSection crit;
+    mutable CriticalSection crit{SYNC_LOCATION};
     offset_t fileSize{0};
     unsigned currentIdx{0};
     std::atomic<unsigned __int64> lastAccess{0};
@@ -923,16 +923,16 @@ class CRoxieFileCache : implements IRoxieFileCache, implements ICopyFileProgress
     InterruptableSemaphore toClose;
     InterruptableSemaphore cidtSleep;
     mutable CopyMapStringToMyClassViaBase<CRoxieLazyFileIO, ILazyFileIO> files;
-    mutable CriticalSection crit;
+    mutable CriticalSection crit{SYNC_LOCATION};
     bool started;
     bool aborting;
     std::atomic<bool> closing;
     std::atomic<bool> closePending[2];
     StringAttrMapping fileErrorList;
     bool cidtActive = false;
-    Semaphore cidtStarted;
-    Semaphore bctStarted;
-    Semaphore hctStarted;
+    Semaphore cidtStarted{SYNC_LOCATION};
+    Semaphore bctStarted{SYNC_LOCATION};
+    Semaphore hctStarted{SYNC_LOCATION};
 
     // Read-tracking code for pre-warming OS caches
 
@@ -2469,7 +2469,7 @@ extern IFilePartMap *createFilePartMap(const char *fileName, IFileDescriptor &fd
 
 class CFileIOArray : implements IFileIOArray, public CInterface
 {
-    mutable CriticalSection crit;
+    mutable CriticalSection crit{SYNC_LOCATION};
     mutable unsigned __int64 totalSize = (unsigned __int64) -1;  // Calculated on demand, and cached
     mutable StringAttr id;               // Calculated on demand, and cached
     IPointerArrayOf<IFileIO> files;
@@ -2833,7 +2833,7 @@ protected:
     }
 
     // We cache all the file maps/arrays etc here. 
-    mutable CriticalSection lock;
+    mutable CriticalSection lock{SYNC_LOCATION};
     mutable Owned<IFilePartMap> fileMap;
     mutable PerChannelCacheOf<IInMemoryIndexManager> indexMap;
     mutable PerChannelCacheOf<IFileIOArray> ioArrayMap;
@@ -3668,7 +3668,7 @@ extern IResolvedFile *createResolvedFile(const char *lfn, const char *physical, 
 class CAgentDynamicFileCache : implements IAgentDynamicFileCache, public CInterface
 {
     unsigned tableSize;
-    mutable CriticalSection crit;
+    mutable CriticalSection crit{SYNC_LOCATION};
     CIArrayOf<CAgentDynamicFile> files; // expect numbers to be small - probably not worth hashing
 
 public:
@@ -3734,7 +3734,7 @@ public:
     }
 };
 
-static CriticalSection agentDynamicFileCacheCrit;
+static CriticalSection agentDynamicFileCacheCrit{SYNC_LOCATION};
 static Owned<IAgentDynamicFileCache> agentDynamicFileCache;
 
 extern IAgentDynamicFileCache *queryAgentDynamicFileCache()

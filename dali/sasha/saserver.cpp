@@ -55,7 +55,7 @@ extern void LDStest();
 static IArrayOf<ISashaServer> servers;
 static std::atomic<unsigned> StopSuspendCount{0};
 static bool stopped{false};
-static Semaphore stopSem;
+static Semaphore stopSem{SYNC_LOCATION};
 static bool isDaliClient{false};
 
 static void requestStop(IException *e); // forward declaration

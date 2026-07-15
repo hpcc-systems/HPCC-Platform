@@ -185,8 +185,8 @@ class CWorkUnitWriteLocalActivityMaster : public CWorkUnitWriteMasterBase
         CThreaded threaded;
         UnsignedArray senders;
         bool stopped, waiting, started;
-        CriticalSection crit;
-        Semaphore sem;
+        CriticalSection crit{SYNC_LOCATION};
+        Semaphore sem{SYNC_LOCATION};
 
     public:
         CMessageHandler(CWorkUnitWriteLocalActivityMaster &_act) : act(_act), threaded("CWorkUnitWriteLocalActivityMaster::CMessageHandler")

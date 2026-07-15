@@ -67,7 +67,7 @@ class CWriteIntercept : public CSimpleInterface
     // sampling adapter
 
     CActivityBase &activity;
-    CriticalSection crit;
+    CriticalSection crit{SYNC_LOCATION};
     IThorRowInterfaces *rowIf;
     Owned<CFileOwner> dataFile, idxFile;
     Owned<IFileIO> dataFileIO, idxFileIO;
@@ -319,6 +319,12 @@ public:
 
 class CMiniSort
 {
+    class MiniSortSemaphore : public Semaphore
+    {
+    public:
+        MiniSortSemaphore(unsigned initialCount=0) : Semaphore(SYNC_LOCATION, initialCount) {}
+    };
+
     CActivityBase &activity;
     IThorRowInterfaces &rowIf;
     IOutputRowDeserializer *deserializer;
@@ -527,12 +533,12 @@ public:
             class casyncfor: public CAsyncFor
             {
                 CMiniSort &base;
-                Semaphore *nextsem;
+                MiniSortSemaphore *nextsem;
             public:
                 casyncfor(CMiniSort &_base, unsigned numNodes)
                     : base(_base)
                 {
-                    nextsem = new Semaphore[numNodes];  // 1 extra
+                    nextsem = new MiniSortSemaphore[numNodes];  // 1 extra
                     nextsem[0].signal();
                 }
                 ~casyncfor()
@@ -637,7 +643,9 @@ class CThorSorter : public CSimpleInterface, implements IThorSorter, implements 
     Owned<IThorRowInterfaces> keyIf;
     Owned<IOutputRowSerializer> rowToKeySerializer;
     void *midkeybuf;
-    Semaphore startgathersem, finishedmergesem, closedownsem;
+    Semaphore startgathersem{SYNC_LOCATION};
+    Semaphore finishedmergesem{SYNC_LOCATION};
+    Semaphore closedownsem{SYNC_LOCATION};
     InterruptableSemaphore startmergesem;
     size32_t transferblocksize, midkeybufsize;
     CRuntimeStatisticCollection spillStats;

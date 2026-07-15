@@ -564,7 +564,7 @@ void ObservedHashTable::onRemove(void * et)
 
 //===========================================================================
 
-static CriticalSection atomCrit;
+static CriticalSection atomCrit(SYNC_LOCATION);
 static KeptLowerCaseAtomTable *globalAtomTable = NULL;
 inline KeptLowerCaseAtomTable * queryGlobalAtomTable()
 {
@@ -596,7 +596,7 @@ extern jlib_decl IAtom * createAtom(const char *value, size32_t len)
 
 //===========================================================================
 
-static CriticalSection caseAtomCrit;
+static CriticalSection caseAtomCrit(SYNC_LOCATION);
 static KeptCaseAtomTable *globalCaseAtomTable = NULL;
 inline KeptCaseAtomTable * queryGlobalCaseAtomTable()
 {

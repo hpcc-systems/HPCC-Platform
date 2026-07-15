@@ -105,7 +105,7 @@ class SendAsFastAsPossible : public Thread
     static unsigned totalSent;
 
 public:
-    SendAsFastAsPossible(unsigned port, unsigned sendSize)
+    SendAsFastAsPossible(unsigned port, unsigned sendSize) : Thread("SendAsFastAsPossible")
     {
         SocketEndpoint ep(port, allNodes.item(0));
         flowSocket = ISocket::udp_connect(ep);
@@ -139,16 +139,16 @@ public:
     }
 };
 
-SpinLock SendAsFastAsPossible::ratelock;
+SpinLock SendAsFastAsPossible::ratelock{SYNC_LOCATION};
 unsigned SendAsFastAsPossible::lastReport = 0;
 unsigned SendAsFastAsPossible::totalSent = 0;
 
 class Receiver : public Thread
 {
     std::atomic<bool> running;
-    Semaphore started;
+    Semaphore started{SYNC_LOCATION};
     offset_t allReceived;
-    CriticalSection arsect;
+    CriticalSection arsect{SYNC_LOCATION};
 public:
     Receiver() : Thread("Receiver")
     {
@@ -400,13 +400,20 @@ void rawSendTest()
     }
 }
 
+class SortSemaphore : public Semaphore
+{
+public:
+    SortSemaphore(unsigned initialCount=0) : Semaphore(SYNC_LOCATION, initialCount) {}
+};
+
+
 class SortMaster 
 {
     unsigned __int64 receivingMask;
     unsigned __int64 sendingMask;
     unsigned __int64 *nodeData;
     int numSlaves;
-    CriticalSection masterCrit;
+    CriticalSection masterCrit{SYNC_LOCATION};
 
     int *nextNode;
     Semaphore *receiveSem;
@@ -428,7 +435,7 @@ public:
         if (simpleSequential)
         {
             nextNode = new int[numSlaves];
-            receiveSem = new Semaphore[numSlaves];
+            receiveSem = new SortSemaphore[numSlaves];
             for (int i = 0; i < numSlaves; i++)
             {
                 nextNode[i] = i+1;
@@ -549,7 +556,7 @@ class SortSlave : public Thread
     }
 
 public:
-    SortSlave()
+    SortSlave() : Thread("SortSlave")
     {
         master = NULL;
         myIdx = -1;

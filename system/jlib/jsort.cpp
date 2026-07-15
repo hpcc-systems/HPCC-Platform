@@ -266,9 +266,9 @@ class cParQSortBase
         unsigned num;
     };
 
-    NonReentrantSpinLock joblock;
+    NonReentrantSpinLock joblock{SYNC_LOCATION};
     QueueOf<sJobItem,false> jobq;
-    Semaphore jobqsem;
+    Semaphore jobqsem{SYNC_LOCATION};
     unsigned waiting;
     unsigned numsubthreads;
     bool done;

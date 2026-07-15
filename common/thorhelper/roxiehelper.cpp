@@ -2664,7 +2664,7 @@ class COrderedOutputSerializer : implements IOrderedOutputSerializer, public CIn
     CIArrayOf<COrderedResult> COrderedResultArr;
     int lastSeqFlushed;
     FILE * outFile;
-    CriticalSection crit;
+    CriticalSection crit{SYNC_LOCATION};
 
     COrderedResult * getResult(size32_t seq)
     {

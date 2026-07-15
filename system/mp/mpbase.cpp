@@ -61,7 +61,7 @@ public:
 
 class MPNodeCache: public SuperHashTableOf<MPNode,SocketEndpoint>
 {
-    CriticalSection sect;
+    CriticalSection sect{SYNC_LOCATION};
 public:
     ~MPNodeCache()
     {

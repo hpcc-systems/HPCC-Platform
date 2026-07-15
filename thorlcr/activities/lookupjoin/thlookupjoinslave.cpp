@@ -99,7 +99,8 @@ class CBroadcaster : public CSimpleInterface
     unsigned myNode, nodes, mySlave, slaves, senders, mySender;
     IBCastReceive *recvInterface;
     InterruptableSemaphore allDoneSem;
-    CriticalSection allDoneLock, stopCrit;
+    CriticalSection allDoneLock{SYNC_LOCATION};
+    CriticalSection stopCrit{SYNC_LOCATION};
     CriticalSection *broadcastLock;
     bool allRequestStop, stopping, stopRecv, receiving, nodeBroadcast;
     unsigned waitingAtAllDoneCount;
@@ -715,7 +716,7 @@ public:
 class CMarker
 {
     CActivityBase &activity;
-    NonReentrantSpinLock lock;
+    NonReentrantSpinLock lock{SYNC_LOCATION};
     ICompare *cmp;
     OwnedConstThorRow bitSetMem; // for thread unsafe version
     Owned<IBitSet> bitSet;
@@ -1092,7 +1093,7 @@ protected:
         }
     } *rowProcessor;
 
-    mutable CriticalSection rhsRowLock;
+    mutable CriticalSection rhsRowLock{SYNC_LOCATION};
     Owned<CBroadcaster> broadcaster;
     CBroadcaster *channel0Broadcaster;
     CriticalSection *broadcastLock;
@@ -1643,7 +1644,7 @@ public:
             if (0 == queryJobChannelNumber())
             {
                 rowProcessor = new CRowProcessor(*this);
-                broadcastLock = new CriticalSection;
+                broadcastLock = new CriticalSection(SYNC_LOCATION);
                 if (queryJob().queryJobChannels()>1)
                     rhsChannelStop.setown(createThreadSafeBitSet());
             }
@@ -1953,7 +1954,7 @@ protected:
     Owned<IHashDistributor> lhsDistributor, rhsDistributor;
     ICompare *compareLeft;
     std::atomic<bool> failedOverToLocal{false}, failedOverToStandard{false};
-    CriticalSection broadcastSpillingLock;
+    CriticalSection broadcastSpillingLock{SYNC_LOCATION};
     Owned<IJoinHelper> joinHelper;
     std::atomic<unsigned> aggregateFailoversToLocal{0}; // total number of times this activity has failed over to local smart join (0/1 unless in loop)
     std::atomic<unsigned> aggregateFailoversToStandard{0}; // total number of times this activity has failed over to standard hash join (0/1 unless in loop)
@@ -1962,7 +1963,7 @@ protected:
     Owned<CFileOwner> overflowWriteFile;
     Owned<ILogicalRowWriter> overflowWriteStream;
     OwnedIFileIO overflowWriteFileIO;
-    mutable CriticalSection critOverflowWriteFileIO;
+    mutable CriticalSection critOverflowWriteFileIO{SYNC_LOCATION};
     rowcount_t overflowWriteCount;
     OwnedMalloc<IChannelDistributor *> channelDistributors;
     unsigned nextRhsToSpill = 0;
@@ -2466,7 +2467,7 @@ protected:
             Owned<IRowWriter> channelCollectorWriter;
             IChannelDistributor **channelDistributors;
             unsigned nextSpillChannel;
-            CriticalSection crit;
+            CriticalSection crit{SYNC_LOCATION};
             std::atomic<unsigned> spilt;
         public:
             CChannelDistributor(CLookupJoinActivityBase &_owner, ICompare *cmp) : owner(_owner)

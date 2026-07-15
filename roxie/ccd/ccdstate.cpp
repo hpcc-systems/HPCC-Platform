@@ -68,6 +68,13 @@ public:
 
 SafePluginMap *plugins;
 
+
+class ResolveFileCriticalSection : public CriticalSection
+{
+public:
+    ResolveFileCriticalSection() : CriticalSection(SYNC_LOCATION) {}
+};
+
 //================================================================================================
 
 // In legacy state files, the original file names passed in _fileName or _indexFileName may have been translated into _superFileName or _superKeyName,
@@ -158,9 +165,9 @@ class DelayedReleaserThread : public Thread
 private:
     std::atomic<bool> closing;
     bool started;
-    CriticalSection lock;
+    CriticalSection lock{SYNC_LOCATION};
     IArrayOf<DelayedReleaseQueueItem> queue;
-    Semaphore sem;
+    Semaphore sem{SYNC_LOCATION};
 public:
     DelayedReleaserThread() : Thread("DelayedReleaserThread")
     {
@@ -363,7 +370,7 @@ public:
 
 class CResolvedFileCache : implements IResolvedFileCache
 {
-    CriticalSection cacheLock;
+    CriticalSection cacheLock{SYNC_LOCATION};
     CopyMapStringToMyClass<IResolvedFile> files;
 
 public:
@@ -415,7 +422,7 @@ public:
 // prior to a package reload, but the hits need not be (as the file will be locked as long as it
 // is in the cache)
 
-static CriticalSection daliMissesCrit;
+static CriticalSection daliMissesCrit{SYNC_LOCATION};
 static Owned<KeptLowerCaseAtomTable> daliMisses;
 
 static void noteDaliMiss(const char *filename)
@@ -448,7 +455,7 @@ class CRoxiePackageNode : extends CPackageNode, implements IRoxiePackage
 {
 protected:
     static CResolvedFileCache daliFiles;
-    static CriticalSection daliLookupCrits[NUM_DALI_CRITS];
+    static ResolveFileCriticalSection daliLookupCrits[NUM_DALI_CRITS];
     mutable CResolvedFileCache fileCache;
     IArrayOf<IResolvedFile> files;  // Used when preload set
     IArrayOf<IKeyArray> keyArrays;  // Used when preload set
@@ -810,7 +817,7 @@ public:
 };
 
 CResolvedFileCache CRoxiePackageNode::daliFiles;
-CriticalSection CRoxiePackageNode::daliLookupCrits[NUM_DALI_CRITS];
+ResolveFileCriticalSection CRoxiePackageNode::daliLookupCrits[NUM_DALI_CRITS];
 
 typedef CResolvedPackage<CRoxiePackageNode> CRoxiePackage;
 
@@ -878,7 +885,7 @@ public:
 
 static CRoxiePackageMap *emptyPackageMap;
 static CRoxiePackage *rootPackage;
-static SpinLock emptyPackageMapCrit;
+static SpinLock emptyPackageMapCrit{SYNC_LOCATION};
 static IRoxieDebugSessionManager *debugSessionManager;
 
 extern const IRoxiePackage &queryRootRoxiePackage()
@@ -952,7 +959,7 @@ protected:
     unsigned channelNo;
     bool active;
     StringAttr querySetName;
-    CriticalSection crit;   // For parallel load
+    CriticalSection crit{SYNC_LOCATION};   // For parallel load
 
     void addQuery(const char *id, IQueryFactory *n)
     {
@@ -1039,7 +1046,7 @@ public:
                 //Load all the dlls in parallel, gathering a list of filenames for each package
                 //Currently keep a single critical section for all packages - could be optimized if necessary
                 CCycleTimer resolveTimer;
-                CriticalSection filenameCrit;
+                CriticalSection filenameCrit{SYNC_LOCATION};
                 std::map<const IRoxiePackage *, SummaryMap> filenameSummaryMap;
 
                 asyncFor(numQueries, parallelQueryLoadThreads, [this, querySet, &queryDlls, &filenameCrit, &filenameSummaryMap, &packages](unsigned i)
@@ -1104,7 +1111,7 @@ public:
 
                 struct
                 {
-                    CriticalSection cs;
+                    CriticalSection cs{SYNC_LOCATION};
                     unsigned numActiveIndexes{0};
                     unsigned numIndexesOpened{0};
                     unsigned totalParts{0};
@@ -1583,7 +1590,7 @@ protected:
     }
 
 private:
-    mutable CriticalSection updateCrit;  // protects updates of agentManagers and serverManager, and queryHash. Must be held ONLY to link, release, or overwrite these values.
+    mutable CriticalSection updateCrit{SYNC_LOCATION};  // protects updates of agentManagers and serverManager, and queryHash. Must be held ONLY to link, release, or overwrite these values.
     Owned<CRoxieAgentQuerySetManagerSet> agentManagers;
     Owned<IRoxieQuerySetManager> serverManager;
     hash64_t queryHash = 0;
@@ -1853,7 +1860,7 @@ public:
     }
 };
 
-static SpinLock roxieDebugSessionManagerLock;
+static SpinLock roxieDebugSessionManagerLock{SYNC_LOCATION};
 extern IRoxieDebugSessionManager &queryRoxieDebugSessionManager()
 {
     SpinBlock b(roxieDebugSessionManagerLock);
@@ -2266,8 +2273,8 @@ private:
     InterruptableSemaphore controlSem;
     Owned<CRoxiePackageSetWatcher> allQueryPackages;
 
-    Semaphore autoReloadTrigger;
-    Semaphore autoReloadComplete;
+    Semaphore autoReloadTrigger{SYNC_LOCATION};
+    Semaphore autoReloadComplete{SYNC_LOCATION};
     std::atomic<unsigned> autoSignalsPending{0};
     std::atomic<unsigned> autoPending{0};
     std::atomic<bool> autoAllIncremental{true};

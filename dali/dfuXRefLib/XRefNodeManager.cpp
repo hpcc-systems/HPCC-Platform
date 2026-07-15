@@ -332,7 +332,7 @@ static bool deleteEmptyDir(IFile *dir)
     }
     if (!candelete)
         return false;
-    static CriticalSection sect;
+    static CriticalSection sect{SYNC_LOCATION};
     CriticalBlock block(sect);      // don't want to actually remove in parallel
     dir->remove();
     return !dir->exists();

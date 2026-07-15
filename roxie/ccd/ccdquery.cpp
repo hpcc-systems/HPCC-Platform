@@ -180,7 +180,7 @@ public:
         return wu;
     }
 };
-CriticalSection CQueryDll::dllCacheLock;
+CriticalSection CQueryDll::dllCacheLock(SYNC_LOCATION);
 CopyMapStringToMyClass<CQueryDll> CQueryDll::dllCache;
 
 extern const IQueryDll *createQueryDll(const char *dllName)
@@ -301,7 +301,7 @@ public:
     }
 
 protected:
-    mutable CriticalSection onceCrit;
+    mutable CriticalSection onceCrit{SYNC_LOCATION};
     mutable Owned<IRowAllocatorMetaActIdCache> onceAllocatorCache; // release AFTER row manager
     mutable Owned<roxiemem::IRowManager> onceManager; // release AFTER resultStore
     mutable Owned<IPropertyTree> onceContext;
@@ -642,7 +642,7 @@ protected:
     static CopyMapXToMyClass<hash64_t, hash64_t, CQueryFactory> queryCache;       // Active and loading queries
 
     mutable CIArrayOf<TerminationCallbackInfo> callbacks;
-    mutable CriticalSection callbacksCrit;
+    mutable CriticalSection callbacksCrit{SYNC_LOCATION};
     mutable CRuntimeStatisticCollection stats;
 public:
     static CriticalSection queryCacheCrit;
@@ -1791,10 +1791,10 @@ protected:
     }
 };
 
-CriticalSection CQueryFactory::activeQueriesCrit;
+CriticalSection CQueryFactory::activeQueriesCrit(SYNC_LOCATION);
 CopyMapXToMyClass<hash64_t, hash64_t, CQueryFactory> CQueryFactory::activeQueries;     // Used to map hashes in packets to query factories
 
-CriticalSection CQueryFactory::queryCacheCrit;
+CriticalSection CQueryFactory::queryCacheCrit(SYNC_LOCATION);
 CopyMapXToMyClass<hash64_t, hash64_t, CQueryFactory> CQueryFactory::queryCache;   // Used to ensure a given query is only created once
 
 extern IQueryFactory *getQueryFactory(hash64_t hashvalue, unsigned channel)

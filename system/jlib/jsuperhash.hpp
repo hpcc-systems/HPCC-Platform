@@ -362,7 +362,7 @@ class ThreadSafeSimpleHashTableOf : private SuperHashTable
 protected:
     using SuperHashTable::_releaseAll;
 public:
-    mutable CriticalSection crit;
+    mutable CriticalSection crit{SYNC_LOCATION};
 
     ThreadSafeSimpleHashTableOf(void) : SuperHashTable() { }
     ThreadSafeSimpleHashTableOf(unsigned initsize) : SuperHashTable(initsize) { }
@@ -529,7 +529,7 @@ public:
     }
 
 protected:
-    CriticalSection crit;
+    CriticalSection crit{SYNC_LOCATION};
     bool nocase;
 
     inline HashKeyElement *createKeyElement(const char *key)

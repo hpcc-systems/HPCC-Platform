@@ -50,7 +50,7 @@ private:
     StringBuffer m_StatusMessage;
     
     WsEclClientRequestState m_state;
-    Semaphore m_semSink;
+    Semaphore m_semSink{SYNC_LOCATION};
     Owned<IClientWsEclEvents> m_eventSink;
     
     unsigned long m_client_value;
@@ -394,7 +394,7 @@ private:
     unsigned long m_client_value;
     
     Owned<IClientWsEclEvents> m_eventSink;
-    Semaphore m_semWorkerThread;
+    Semaphore m_semWorkerThread{SYNC_LOCATION};
     void *m_hThunk;
     
     PointerArray m_arrays;

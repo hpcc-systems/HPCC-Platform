@@ -84,7 +84,7 @@ unsigned timeoutHeartbeatAgent = 20000;     // How long before an agent is marke
 unsigned removeHeartbeatInterval = 120000;  // How long before a node is removed from list
 unsigned topologyReportInterval = 60000;    // How often topology is reported to logging (if traceLevel >= 2)
 bool aborted = false;
-Semaphore stopping;
+Semaphore stopping{SYNC_LOCATION};
 StringBuffer topologyFile;
 
 extern "C" void caughtSIGPIPE(int sig)

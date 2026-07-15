@@ -54,8 +54,8 @@ class CLockState: public CInterface
 {
 public:
     Int64Array owners;
-    Semaphore sem;
-    CriticalSection sect;
+    Semaphore sem{SYNC_LOCATION};
+    CriticalSection sect{SYNC_LOCATION};
     unsigned short waiting;
     unsigned exclusivenest;
     DistributedLockId id;
@@ -134,7 +134,7 @@ public:
 
 class CLockStateTable: private SuperHashTableOf<CLockState,DistributedLockId>
 {
-    CriticalSection sect;
+    CriticalSection sect{SYNC_LOCATION};
 
 
     void onAdd(void *)

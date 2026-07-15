@@ -216,8 +216,8 @@ class CFirstNSlaveGlobal : public CFirstNSlaveBase, implements ILookAheadStopNot
 {
     typedef CFirstNSlaveBase PARENT;
 
-    Semaphore limitgot;
-    CriticalSection crit;
+    Semaphore limitgot{SYNC_LOCATION};
+    CriticalSection crit{SYNC_LOCATION};
     rowcount_t maxres = RCUNBOUND, skipped = 0, totallimit = RCUNBOUND;
     bool firstget = true;
     ThorDataLinkMetaInfo inputMeta;

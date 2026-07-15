@@ -37,7 +37,7 @@ class CParallelFunnel : implements IRowStream, public CSimpleInterface
     {
         CThreadedPersistent threaded;
         CParallelFunnel &funnel;
-        CriticalSection stopCrit;
+        CriticalSection stopCrit{SYNC_LOCATION};
         StringAttr idStr;
         unsigned inputIndex;
         rowcount_t readThisInput; // purely for tracing
@@ -137,10 +137,10 @@ class CParallelFunnel : implements IRowStream, public CSimpleInterface
     unsigned eoss;
     StringAttr idStr;
 
-    CriticalSection crit;
-    CriticalSection writerCrit;
+    CriticalSection crit{SYNC_LOCATION};
+    CriticalSection writerCrit{SYNC_LOCATION};
     SimpleInterThreadQueueOf<const void, true> rows;
-    Semaphore fullSem;
+    Semaphore fullSem{SYNC_LOCATION};
     size32_t totSize;
     unsigned waiting = 0;
     bool stopped;

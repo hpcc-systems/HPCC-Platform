@@ -206,6 +206,10 @@ class MySQLConnectionCloserThread : public Thread
 {
     virtual int run() override;
 public:
+    MySQLConnectionCloserThread() : Thread("MySQLConnectionCloserThread")
+    {
+    }
+
     static Semaphore closing;
 } *connectionCloserThread = nullptr;
 
@@ -465,9 +469,9 @@ private:
 };
 
 CIArrayOf<MySQLConnection> MySQLConnection::globalCachedConnections;
-CriticalSection MySQLConnection::globalCacheCrit;
+CriticalSection MySQLConnection::globalCacheCrit(SYNC_LOCATION);
 
-Semaphore MySQLConnectionCloserThread::closing;
+Semaphore MySQLConnectionCloserThread::closing(SYNC_LOCATION);
 
 int MySQLConnectionCloserThread::run()
 {
@@ -1580,7 +1584,7 @@ protected:
 
 static bool mysqlInitialized = false;
 static __thread bool mysqlThreadInitialized = false;
-static CriticalSection initCrit;
+static CriticalSection initCrit{SYNC_LOCATION};
 
 static bool terminateMySqlThread(bool isPooled)
 {

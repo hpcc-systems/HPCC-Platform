@@ -792,12 +792,16 @@ unsigned udpTestSocketDelay = 0;
 bool udpTestVariableDelay = false;
 
 
-static CriticalSection allWriteSocketsCrit;
+static CriticalSection allWriteSocketsCrit{SYNC_LOCATION};
 static ICopyArrayOf<CSimulatedQueueWriteSocket> allWriteSockets;
 
 class DelayedSocketWriter : public Thread
 {
 public:
+    DelayedSocketWriter() : Thread("DelayedSocketWriter")
+    {
+    }
+
     virtual int run() override
     {
         while (running)
@@ -923,7 +927,7 @@ size32_t CSimulatedQueueWriteSocket::write(void const* buf, size32_t size)
 }
 
 std::map<SocketEndpoint, CSimulatedQueueReadSocket *> CSimulatedQueueReadSocket::allReaders;
-CriticalSection CSimulatedQueueReadSocket::allReadersCrit;
+CriticalSection CSimulatedQueueReadSocket::allReadersCrit(SYNC_LOCATION);
 
 CSimulatedQueueReadSocket::CSimulatedQueueReadSocket(const SocketEndpoint &_me) : me(_me)
 {

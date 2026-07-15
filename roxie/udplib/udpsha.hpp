@@ -91,9 +91,9 @@ class queue_t
     RelaxedAtomic<unsigned> count{0};       // always updated inside a critical section, only atomic to guarantee it can be read outside the crit sec.
     unsigned limit = 0;
     
-    CriticalSection c_region;
+    CriticalSection c_region{SYNC_LOCATION};
     InterruptableSemaphore data_avail;
-    Semaphore       free_sl;                // Signalled when (a) someone is waiting for it and (b) count changes from >= limit to < limit
+    Semaphore free_sl{SYNC_LOCATION};                // Signalled when (a) someone is waiting for it and (b) count changes from >= limit to < limit
     unsigned        signal_free_sl = 0;     // Number of people waiting in free_sl. Only updated within critical section
     
 public: 
@@ -127,9 +127,9 @@ class simple_queue
     unsigned        first = 0;
     unsigned        last = 0;
     unsigned        active_buffers = 0;
-    CriticalSection c_region;
-    Semaphore       data_avail;
-    Semaphore       free_space;
+    CriticalSection c_region{SYNC_LOCATION};
+    Semaphore data_avail{SYNC_LOCATION};
+    Semaphore free_space{SYNC_LOCATION};
     
 public: 
     bool push(const _et &element, unsigned timeout = (unsigned)-1)
@@ -428,8 +428,8 @@ class CSimulatedQueueReadSocket : public CSocketSimulator
     unsigned max = 131072;
     unsigned used = 0;
     SocketEndpoint me;
-    CriticalSection crit;
-    Semaphore avail;
+    CriticalSection crit{SYNC_LOCATION};
+    Semaphore avail{SYNC_LOCATION};
 
     void writeSimulatedPacket(void const* buf, size32_t size);
     void writeOwnSimulatedPacket(void const* buf, size32_t size);
@@ -457,7 +457,7 @@ class CSimulatedQueueWriteSocket : public CSocketSimulator
     CSimulatedQueueWriteSocket(const SocketEndpoint &ep);
     ~CSimulatedQueueWriteSocket();
     const SocketEndpoint destEp;
-    CriticalSection crit;
+    CriticalSection crit{SYNC_LOCATION};
     std::queue<unsigned> dueTimes;
     std::queue<unsigned> packetSizes;
     std::queue<const void *> packets;

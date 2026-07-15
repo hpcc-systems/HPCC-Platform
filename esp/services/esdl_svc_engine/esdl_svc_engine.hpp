@@ -25,7 +25,7 @@
 class CEsdlSvcEngine : public EsdlServiceImpl
 {
 private:
-    CriticalSection trxIdCritSec;
+    CriticalSection trxIdCritSec{SYNC_LOCATION};
 
 public:
     Owned<IPropertyTree> m_service_ctx;

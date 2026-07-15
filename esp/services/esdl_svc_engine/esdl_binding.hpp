@@ -243,8 +243,8 @@ private:
     StringAttr                              m_espServiceName; //previously held the esdl service name, we are now
                                                               //supporting mismatched ESP Service name assigned to a different named ESDL service definition
     Owned<IEsdlStore>                       m_pCentralStore;
-    CriticalSection                         configurationLoadCritSec;
-    CriticalSection                         detachCritSec;
+    CriticalSection configurationLoadCritSec{SYNC_LOCATION};
+    CriticalSection detachCritSec{SYNC_LOCATION};
     StringBuffer                            m_esdlStateFilesLocation;
     bool                                    m_isAttached;
     StringAttr                              m_bindingId;

@@ -58,9 +58,9 @@ class TPWRAPPER_API CInfoCacheReaderThread : public CSimpleInterfaceOf<IThreaded
     unsigned forceRebuildSeconds = defaultInfoCacheForceBuildSecond;
     Owned<CInfoCache> infoCache;
     CInfoCacheReader* infoCacheReader;
-    Semaphore sem;
-    Semaphore firstSem;
-    CriticalSection crit;
+    Semaphore sem{SYNC_LOCATION};
+    Semaphore firstSem{SYNC_LOCATION};
+    CriticalSection crit{SYNC_LOCATION};
     CThreaded threaded;
     std::atomic<bool> waiting{false};
 

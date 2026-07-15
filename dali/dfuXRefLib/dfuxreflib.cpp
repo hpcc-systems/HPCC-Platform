@@ -420,7 +420,7 @@ public:
     IArrayOf<IGroup> knowngroups;
     StringAttrArray knowngroupnames;
     Linked<IXRefProgressCallback> msgcallback;
-    CriticalSection logsect;
+    CriticalSection logsect{SYNC_LOCATION};
     unsigned totalCompressed;
     __int64 totalUncompressedSize;
     __int64 totalCompressedSize;
@@ -437,7 +437,7 @@ public:
     CEndpointTable EndpointTable;
     CIArrayOf<cMessage> errors;
     CIArrayOf<cMessage> warnings;
-    CriticalSection inprogresssect;
+    CriticalSection inprogresssect{SYNC_LOCATION};
     SocketEndpointArray inprogress;
 
 
@@ -1612,7 +1612,7 @@ class CPhysicalXREF
 {
     unsigned numdirs;
     const char **dirbaselist;
-    CriticalSection xrefsect;
+    CriticalSection xrefsect{SYNC_LOCATION};
     CXRefManagerBase &manager;
 
 public:
@@ -1842,7 +1842,7 @@ class CXRefManager: public CXRefManagerBase
             const char *dirlist;
             bool abort;
             CXRefManagerBase &manager;
-            CriticalSection crit;
+            CriticalSection crit{SYNC_LOCATION};
             unsigned numfails;
         public:
             casyncfor(IGroup *_g, const char *_dirlist, CPhysicalXREF &_cxref, CXRefManagerBase *_manager)
@@ -1991,7 +1991,7 @@ class CXRefManager: public CXRefManagerBase
     }
 
 
-    CriticalSection xrefsect;
+    CriticalSection xrefsect{SYNC_LOCATION};
 
 
     void addn(StringBuffer &b,unsigned p,unsigned &firstp,unsigned &lastp)

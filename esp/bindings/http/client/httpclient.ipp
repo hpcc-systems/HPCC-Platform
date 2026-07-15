@@ -31,7 +31,7 @@ class CHttpClientContext : public CInterface, implements IHttpClientContext
 private:
     Owned<ISecureSocketContext> m_ssctx;
     Owned<IPropertyTree> m_config;
-    CriticalSection m_sscrit;
+    CriticalSection m_sscrit{SYNC_LOCATION};
     Owned<IPersistentHandler> m_persistentHandler;
     StringAttr m_mtls_secret;
 

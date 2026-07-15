@@ -746,7 +746,7 @@ namespace DataMasking
         MaskStyleMap<maskstyle_t>     maskStyles;
         MaskStyleInfo                 defaultMask;
         mutable std::set<std::string> badMasks;
-        mutable CriticalSection       badMasksLock;
+        mutable CriticalSection       badMasksLock{SYNC_LOCATION};
     public:
         TValueType(const Versioned& _container)
             : CProfileEntity(_container, true)
@@ -1082,7 +1082,7 @@ namespace DataMasking
         uint8_t                                   defaultVersion = 0;
     private:
         mutable Owned<IDataMaskingProfileContext> defaultCtx;
-        mutable CriticalSection                   defaultCtxLock;
+        mutable CriticalSection                   defaultCtxLock{SYNC_LOCATION};
         Linked<ITracer>                           tracer;
         std::string                               name;
         std::set<std::string>                     domainIds;

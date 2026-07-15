@@ -2212,7 +2212,7 @@ public:
 
 };
 
-CriticalSection cSort::sortsect;
+CriticalSection cSort::sortsect(SYNC_LOCATION);
 cSort *cSort::sortthis;
 
 
@@ -2325,8 +2325,8 @@ public:
 
 
     CIArrayOf<CTimedCacheItem> items;
-    CriticalSection sect;
-    Semaphore sem;
+    CriticalSection sect{SYNC_LOCATION};
+    Semaphore sem{SYNC_LOCATION};
     bool stopping;
 
     CTimedCache()
@@ -2391,7 +2391,7 @@ public:
     }
 };
 
-static CriticalSection pagedElementsCacheSect;
+static CriticalSection pagedElementsCacheSect{SYNC_LOCATION};
 static CTimedCache *pagedElementsCache=NULL;
 
 
@@ -2954,8 +2954,8 @@ public:
 class CDaliMutex: implements IDaliMutex, public CInterface
 {
     StringAttr name;
-    CriticalSection crit;
-    Semaphore sem;
+    CriticalSection crit{SYNC_LOCATION};
+    Semaphore sem{SYNC_LOCATION};
     unsigned count;
     Owned<IRemoteConnection> oconn;
     SessionId mysession;
@@ -3107,7 +3107,7 @@ public:
 
     } *maps;
     unsigned nmaps;
-    CriticalSection sect;
+    CriticalSection sect{SYNC_LOCATION};
     unsigned linked;
 
     CDFSredirection()
@@ -3658,7 +3658,7 @@ void addStripeDirectory(StringBuffer &out, const char *directory, const char *pl
 }
 
 static CConfigUpdateHook directIOUpdateHook;
-static CriticalSection dafileSrvNodeCS;
+static CriticalSection dafileSrvNodeCS{SYNC_LOCATION};
 static Owned<INode> tlsDirectIONode, nonTlsDirectIONode;
 
 unsigned getPreferredDaFsServerPort()
@@ -3751,7 +3751,7 @@ void remapGroupsToDafilesrv(IPropertyTree *file, bool foreign, bool secure)
 }
 
 #ifdef NULL_DALIUSER_STACKTRACE
-static CriticalSection nullUserLogCS;
+static CriticalSection nullUserLogCS{SYNC_LOCATION};
 static std::map<std::string, time_t> nullUserLogMap;
 void doLogNullUser(IUserDescriptor * userDesc, const char *location)
 {

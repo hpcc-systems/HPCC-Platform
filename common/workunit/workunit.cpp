@@ -4707,7 +4707,7 @@ class CLocalWUQuery : implements IWUQuery, public CInterface
 {
     Owned<IPropertyTree> p;
     mutable IArrayOf<IConstWUAssociatedFile> associated;
-    mutable CriticalSection crit;
+    mutable CriticalSection crit{SYNC_LOCATION};
     mutable bool associatedCached;
 
 private:
@@ -4747,7 +4747,7 @@ public:
 class CLocalWUWebServicesInfo : implements IWUWebServicesInfo, public CInterface
 {
     Owned<IPropertyTree> p;
-    mutable CriticalSection crit;
+    mutable CriticalSection crit{SYNC_LOCATION};
 
 private:
 
@@ -4774,7 +4774,7 @@ class CLocalWUResult : implements IWUResult, public CInterface
 {
     friend class CLocalWorkUnit;
 
-    mutable CriticalSection crit;
+    mutable CriticalSection crit{SYNC_LOCATION};
     Owned<IPropertyTree> p;
     Owned<IProperties> xmlns;
 
@@ -6010,7 +6010,7 @@ void CWorkUnitFactory::reportAbnormalTermination(const char *wuid, WUState &stat
     e->setExceptionMessage(exceptionText);
 }
 
-static CriticalSection deleteDllLock;
+static CriticalSection deleteDllLock{SYNC_LOCATION};
 static IWorkQueueThread *deleteDllWorkQ = nullptr;
 
 MODULE_INIT(INIT_PRIORITY_STANDARD)
@@ -6349,7 +6349,7 @@ public:
             UniqueScopes done;
             ISecManager *secmgr;
             ISecUser *secuser;
-            CriticalSection crit;
+            CriticalSection crit{SYNC_LOCATION};
         public:
             IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
@@ -6658,7 +6658,7 @@ extern WORKUNIT_API IConstWorkUnitIterator *createSecureConstWUIterator(IPropert
 }
 
 
-static CriticalSection factoryCrit;
+static CriticalSection factoryCrit{SYNC_LOCATION};
 static Owned<IWorkUnitFactory> globalFactory;
 
 void CDaliWorkUnitFactory::clientShutdown()
@@ -14931,7 +14931,7 @@ void executeThorGraph(const char * graphName, IConstWorkUnit &workunit, const IP
 
         class cPollThread: public Thread  // MORE - why do we ned a thread here?
         {
-            Semaphore sem;
+            Semaphore sem{SYNC_LOCATION};
             bool stopped;
             IJobQueue *jq;
             IConstWorkUnit *wu;
@@ -14940,7 +14940,7 @@ void executeThorGraph(const char * graphName, IConstWorkUnit &workunit, const IP
             bool timedout;
             CTimeMon tm;
             cPollThread(IJobQueue *_jq, IConstWorkUnit *_wu, unsigned timelimit)
-                : tm(timelimit)
+                : Thread("cPollThread"), tm(timelimit)
             {
                 stopped = false;
                 jq = _jq;

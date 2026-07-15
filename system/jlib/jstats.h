@@ -1115,7 +1115,7 @@ public:
 private:
     // Memory layout: group frequently accessed data together
     RelaxedAtomic<__uint64> count{0};  // Most frequently accessed, keep first
-    mutable CriticalSection cs;        // Only for coordinated mean/M2 updates
+    mutable CriticalSection cs{SYNC_LOCATION};        // Only for coordinated mean/M2 updates
     // Welford algorithm state - accessed together under same lock
     double mean{0.0};                  // Running mean
     double M2{0.0};                    // Running sum of squared differences

@@ -98,7 +98,7 @@ namespace GraphStatsCollection
 class DeMonServer : public CSimpleInterface, implements IDeMonServer
 {
 private:
-    Mutex mutex;
+    Mutex mutex{SYNC_LOCATION};
     unsigned lastReportedMsTick;
     unsigned reportRateMSecs;
     CIArrayOf<CGraphBase> activeGraphs;

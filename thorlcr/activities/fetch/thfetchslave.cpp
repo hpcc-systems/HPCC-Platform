@@ -59,7 +59,7 @@ class CFetchStream : public IRowStream, implements IStopInput, implements IFetch
 
     FPosTableEntryIFileIO *fPosMultiPartTable;
     unsigned files, offsetCount;
-    CriticalSection stopsect;
+    CriticalSection stopsect{SYNC_LOCATION};
     CPartDescriptorArray parts;
     FPosTableEntry *offsetTable;
 
@@ -316,7 +316,7 @@ class CFetchSlaveBase : public CSlaveActivity, implements IFetchHandler
 protected:
     Owned<IThorRowInterfaces> fetchDiskRowIf;
     Owned<IFetchStream> fetchStream;
-    mutable CriticalSection fetchStreamCS;
+    mutable CriticalSection fetchStreamCS{SYNC_LOCATION};
     IHThorFetchBaseArg *fetchBaseHelper;
     unsigned files = 0;
     CPartDescriptorArray parts;

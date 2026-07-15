@@ -1039,7 +1039,7 @@ class cNotify: public CInterface, implements ISessionNotify
 {
 public:
     IMPLEMENT_IINTERFACE;
-    Semaphore sem;
+    Semaphore sem{SYNC_LOCATION};
     void closed(SessionId id)
     {
         PROGLOG("Session closed %" I64F "d",id);
@@ -1315,7 +1315,7 @@ class CChange : public Thread
     StringAttr path;
 
 public:
-    CChange(const char *_path) : path(_path)
+    CChange(const char *_path) : Thread("CChange"), path(_path)
     {
         conn.setown(querySDS().connect(_path, myProcessSession(), RTM_CREATE_QUERY, 1000000));
 
@@ -1819,7 +1819,7 @@ void TestExternal()
 class CSubTest : public Thread
 {
 public:
-    CSubTest(const char *_path) : path(_path) { start(false); }
+    CSubTest(const char *_path) : Thread("CSubTest"), path(_path) { start(false); }
 
     virtual int run()
     {
@@ -2722,7 +2722,7 @@ void TestNodeSubs()
             }
         };
         SubscriptionId sid;
-        CriticalSection sidCrit;
+        CriticalSection sidCrit{SYNC_LOCATION};
         Owned<ISDSNodeSubscription> subscriber;
 
         void test()
@@ -3176,7 +3176,7 @@ static void TestCriticalSection()
         itoa(j,num,10);
         strcpy(id,"CCS");
         strcat(id,num);
-        CCS[j] = new CriticalSection();
+        CCS[j] = new CriticalSection(SYNC_LOCATION);
     }
     unsigned k;
     for (k=0;k<NCCSTHREAD; k++) 

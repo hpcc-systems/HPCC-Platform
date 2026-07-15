@@ -2524,7 +2524,7 @@ void EspMessageInfo::write_esp_ipp()
     outs("\tStringBuffer m_msgName;\n");
 
     outs("\n\tlong soap_reqid = 0;\n");
-    outs("\tMutex m_mutex;\n");
+    outs("\tMutex m_mutex{SYNC_LOCATION};\n");
     outs("public:\n");
     outs("\tIMPLEMENT_IINTERFACE;\n");
 

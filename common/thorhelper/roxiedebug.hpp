@@ -220,7 +220,7 @@ protected:
         WatchStateContinue
     };
 
-    CriticalSection breakCrit;
+    CriticalSection breakCrit{SYNC_LOCATION};
 
     mutable MapStringToMyClass<IGlobalEdgeRecord> globalCounts;
 
@@ -251,11 +251,11 @@ protected:
     Linked<IActivityDebugContext> currentActivity;
     Linked<IActivityDebugContext> nextActivity; // Hmmm - needs to be cleared on slave when cleared on server though...
     Linked<IException> currentException; // ditto
-    mutable CriticalSection debugCrit;
+    mutable CriticalSection debugCrit{SYNC_LOCATION};
     const IContextLogger &logctx;
     DebugState currentState; // What program was doing when it was interrupted
     unsigned debuggerActive;
-    Semaphore debuggerSem;
+    Semaphore debuggerSem{SYNC_LOCATION};
     cycle_t debugCyclesAdjust;
 
     static const char * queryStateString(DebugState state);
@@ -303,7 +303,7 @@ protected:
     StringAttr debugId;
 
     Owned<IPropertyTree> queryXGMML;
-    Semaphore debugeeSem;
+    Semaphore debugeeSem{SYNC_LOCATION};
 
     StringAttr queryName;
     unsigned previousSequence;
@@ -393,7 +393,7 @@ protected:
 
     IDebuggableContext *debugContext;
     StringAttr graphName;
-    mutable CriticalSection crit;
+    mutable CriticalSection crit{SYNC_LOCATION};
     unsigned id;
     StringBuffer idString;
     mutable memsize_t proxyId; // MORE - does it need to be threadsafe?

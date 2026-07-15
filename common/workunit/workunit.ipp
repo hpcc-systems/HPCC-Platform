@@ -147,7 +147,7 @@ class WORKUNIT_API CLocalWorkUnit : implements IWorkUnit , implements IExtendedW
 
 protected:
     Owned<IPropertyTree> p;
-    mutable CriticalSection crit;
+    mutable CriticalSection crit{SYNC_LOCATION};
     mutable Owned<IWUQuery> query;
     mutable Owned<IWUWebServicesInfo> webServicesInfo;
     mutable Owned<IWorkflowItemIterator> workflowIterator;
@@ -174,7 +174,7 @@ protected:
     mutable CachedWUAppValues appvalues;
     mutable CachedStatistics statistics;
     mutable Owned<IUserDescriptor> userDesc;
-    Mutex locked;
+    Mutex locked{SYNC_LOCATION};
     Owned<ISecManager> secMgr;
     Owned<ISecUser> secUser;
 
@@ -687,7 +687,7 @@ protected:
 class WORKUNIT_API CWorkUnitWatcher : public CInterface, implements IWorkUnitWatcher, implements ISDSSubscription
 {
 protected:
-    CriticalSection crit;
+    CriticalSection crit{SYNC_LOCATION};
     IWorkUnitSubscriber *subscriber; // not linked - it will generally link me
     SubscriptionId abortId, stateId, actionId;
 public:
@@ -700,7 +700,7 @@ public:
 
 class WorkUnitWaiter : public CInterface, implements IAbortHandler, implements IWorkUnitSubscriber
 {
-    Semaphore changed;
+    Semaphore changed{SYNC_LOCATION};
     Owned<IWorkUnitWatcher> watcher;
     mutable bool aborted = false;
     mutable bool abortDirty = false;

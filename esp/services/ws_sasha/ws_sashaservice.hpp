@@ -25,7 +25,7 @@
 
 class CWSSashaEx : public CWSSasha
 {
-    CriticalSection sect;
+    CriticalSection sect{SYNC_LOCATION};
     Owned<ISashaCmdExecutor> eclWUSashaCommandExecutor, dfuWUSashaCommandExecutor;
 
     ISashaCmdExecutor* createSashaCommandExecutor(const char* archiverType);

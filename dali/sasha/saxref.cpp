@@ -406,9 +406,9 @@ public:
     unsigned hash;
     std::unordered_map<std::string, std::unique_ptr<cDirDesc>> dirs;
     std::unordered_map<std::string, std::unique_ptr<cFileDesc>> files;
-    CriticalSection dirsCrit;
-    CriticalSection filesCrit;
-    CriticalSection dirDescCrit;
+    CriticalSection dirsCrit{SYNC_LOCATION};
+    CriticalSection filesCrit{SYNC_LOCATION};
+    CriticalSection dirDescCrit{SYNC_LOCATION};
     std::atomic<unsigned> activeReferences{0};
     offset_t totalsize[2];              //  across all nodes
     offset_t minsize[2];                //  smallest node size
@@ -890,7 +890,7 @@ public:
     }
 
 private:
-    CriticalSection timerSect;
+    CriticalSection timerSect{SYNC_LOCATION};
     const char *clustname = nullptr; // Cluster name for logging
     cycle_t startCycles = 0;
 };
@@ -898,7 +898,7 @@ private:
 class CNewXRefManagerBase
 {
 public:
-    CriticalSection logsect;
+    CriticalSection logsect{SYNC_LOCATION};
     Owned<IRemoteConnection> logconn;
     StringAttr logcache;
     StringAttr clustname;
@@ -2961,8 +2961,8 @@ static constexpr float maxMemPercentage = 0.9; // In containerized, leave some h
 class CSashaXRefServer: public ISashaServer, public Thread
 {
     bool stopped;
-    Semaphore stopsem;
-    Mutex runmutex;
+    Semaphore stopsem{SYNC_LOCATION};
+    Mutex runmutex{SYNC_LOCATION};
     bool ignorelazylost, suspendCoalescer;
     Owned<IPropertyTree> props;
     std::unordered_map<std::string, Linked<IPropertyTree>> storagePlanes;
@@ -2974,7 +2974,7 @@ class CSashaXRefServer: public ISashaServer, public Thread
         StringAttr filterScopes;
     public:
         cRunThread(CSashaXRefServer &_parent,const char *_servers, const char *_filterScopes)
-            : parent(_parent), servers(_servers), filterScopes(_filterScopes)
+         : Thread("SashaXRefServerThread"), parent(_parent), servers(_servers), filterScopes(_filterScopes)
         {
         }
         int run()
@@ -3307,8 +3307,8 @@ void processXRefRequest(ISashaCommand *cmd)
 class CSashaExpiryServer: public ISashaServer, public Thread
 {
     bool stopped;
-    Semaphore stopsem;
-    Mutex runmutex;
+    Semaphore stopsem{SYNC_LOCATION};
+    Mutex runmutex{SYNC_LOCATION};
     Owned<IUserDescriptor> udesc;
     Linked<IPropertyTree> props;
     bool dryRun = false;

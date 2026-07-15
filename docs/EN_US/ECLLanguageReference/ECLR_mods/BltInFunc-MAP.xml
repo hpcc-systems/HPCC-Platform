@@ -17,9 +17,9 @@
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
-      <colspec colwidth="79.75pt" />
+      <colspec colwidth="79.75pt"/>
 
-      <colspec />
+      <colspec/>
 
       <tbody>
         <row>
@@ -81,6 +81,12 @@
   order in which they appear, but if all the return
   <emphasis>values</emphasis> are scalar, the code optimizer may change that
   order.</para>
+
+  <para><emphasis role="bold">Note:</emphasis> In both CASE and MAP, returned
+  string values are converted to a common result type/length, so shorter
+  values may be right-padded with spaces. If you need an unpadded value, apply
+  TRIM to the result (for example, <literal>TRIM(result, RIGHT)</literal> or
+  <literal>TRIM(result, LEFT, RIGHT))</literal>.</para>
 
   <para>Example:</para>
 

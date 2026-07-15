@@ -77,7 +77,7 @@ class CascadeManager : public CInterface
     bool entered;
     bool connected;
     bool isOriginal;
-    CriticalSection revisionCrit;
+    CriticalSection revisionCrit{SYNC_LOCATION};
     int myEndpoint;
     const IRoxieContextLogger &logctx;
     ISyncedPropertyTree *tlsConfig = nullptr;
@@ -234,7 +234,7 @@ private:
         for (;;)
         {
             int got = 1;
-            CriticalSection cs;
+            CriticalSection cs{SYNC_LOCATION};
             try
             {
                 class casyncfor: public CAsyncFor
@@ -444,7 +444,7 @@ public:
             IPropertyTree *mergedReply;
             CascadeMergeType mergeType;
             StringBuffer &reply;
-            CriticalSection crit;
+            CriticalSection crit{SYNC_LOCATION};
             SocketEndpoint &ep;
             unsigned numChildren;
             const IRoxieContextLogger &logctx;
@@ -531,7 +531,7 @@ public:
 
 };
 
-Semaphore CascadeManager::globalLock(1);
+Semaphore CascadeManager::globalLock(SYNC_LOCATION, 1);
 
 //================================================================================================================
 
@@ -543,7 +543,7 @@ class AccessTableEntry : public CInterface
     StringBuffer errorMsg;
     int errorCode;
     StringBuffer queryText;
-    SpinLock crappyUnsafeRegexLock;
+    SpinLock crappyUnsafeRegexLock{SYNC_LOCATION};
 
 public:
     AccessTableEntry(bool _allow, bool _allowBlind, const char *_base, const char *_mask, const char *_queries, const char *_errorMsg, int _errorCode)
@@ -884,12 +884,12 @@ protected:
     unsigned poolSize;
     std::atomic<bool> running;
     bool suspended;
-    Semaphore started;
+    Semaphore started{SYNC_LOCATION};
     Owned<IThreadPool> pool;
 
     unsigned threadsActive;
     unsigned maxThreadsActive;
-    CriticalSection activeCrit;
+    CriticalSection activeCrit{SYNC_LOCATION};
 
 #ifdef CPU_ZERO
     static cpu_set_t cpuMask;
@@ -1773,7 +1773,7 @@ public:
 
 class RoxieProtocolMsgSink : implements IHpccNativeProtocolMsgSink, public CInterface
 {
-    CriticalSection activeCrit;
+    CriticalSection activeCrit{SYNC_LOCATION};
     SocketEndpoint ep;
     CIArrayOf<AccessTableEntry> accessTable;
     unsigned threadsActive;

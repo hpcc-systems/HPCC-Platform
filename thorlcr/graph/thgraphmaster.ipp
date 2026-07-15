@@ -101,14 +101,14 @@ class CMasterGraphElement;
 class graphmaster_decl CMasterGraph : public CGraphBase
 {
     CJobMaster *jobM;
-    CriticalSection createdCrit;
+    CriticalSection createdCrit{SYNC_LOCATION};
     Owned<IFatalHandler> fatalHandler;
-    CriticalSection exceptCrit;
+    CriticalSection exceptCrit{SYNC_LOCATION};
     bool sentGlobalInit = false;
     CThorStatsCollection graphStats;
     CReplyCancelHandler activityInitMsgHandler, bcastMsgHandler, executeReplyMsgHandler;
     AtomicShared<IFileReadPropertiesUpdater> fileReadPropsUpdater;
-    CriticalSection fileReadPropsUpdaterCrit;
+    CriticalSection fileReadPropsUpdaterCrit{SYNC_LOCATION};
 
     void sendQuery();
     void jobDone();
@@ -184,7 +184,8 @@ class graphmaster_decl CJobMaster : public CJobBase
     StringArray createdFiles;
     Owned<CSlaveMessageHandler> slaveMsgHandler;
     SocketEndpoint agentEp;
-    CriticalSection sendQueryCrit, spillCrit;
+    CriticalSection sendQueryCrit{SYNC_LOCATION};
+    CriticalSection spillCrit{SYNC_LOCATION};
     graph_id currentSubGraphId = 0;
 
     void initNodeDUCache();
@@ -231,7 +232,7 @@ public:
     virtual IGraphTempHandler *createTempHandler(bool errorOnMissing);
 
     CGraphTableCopy executed;
-    CriticalSection exceptCrit;
+    CriticalSection exceptCrit{SYNC_LOCATION};
 
     virtual __int64 getWorkUnitValueInt(const char *prop, __int64 defVal) const override;
     virtual StringBuffer &getWorkUnitValue(const char *prop, StringBuffer &str) const override;
@@ -267,7 +268,7 @@ class graphmaster_decl CMasterActivity : public CActivityBase, implements IThrea
     CThreaded threaded;
     bool asyncStart;
     MemoryBuffer *data;
-    CriticalSection progressCrit;
+    CriticalSection progressCrit{SYNC_LOCATION};
     std::vector<Owned<IDistributedFile>> readFiles;
     std::unordered_map<std::string, unsigned> readFilesMap; // NB: IDistributedFile pointers are owned by readFiles
     std::vector<unsigned> fileStatsTable;

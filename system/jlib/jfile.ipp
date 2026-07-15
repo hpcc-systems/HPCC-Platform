@@ -113,7 +113,7 @@ public:
     }
 
 protected:
-    CriticalSection     cs;
+    CriticalSection     cs{SYNC_LOCATION};
     Linked<IFile>       creator;
     HANDLE              file;
     bool                throwOnError;
@@ -204,7 +204,7 @@ protected:
     void report(const char * format, ...) __attribute__((format(printf, 2, 3)));
 
 protected:
-    CriticalSection cs;
+    CriticalSection cs{SYNC_LOCATION};
     StringAttr filename;
     bool closed = false;
     bool traced = false;
@@ -239,7 +239,7 @@ public:
 
 protected: friend class CFileAsyncResult;
 
-    CriticalSection         cs;
+    CriticalSection         cs{SYNC_LOCATION};
     HANDLE              file;
     bool                    throwOnError;
     IArrayOf<IFileAsyncResult>  results;

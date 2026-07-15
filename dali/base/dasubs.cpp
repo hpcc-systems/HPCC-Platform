@@ -142,8 +142,8 @@ class CDaliPublisherServer: public IDaliServer, public Thread, public CDaliPubli
     ICopyArrayOf<CSubscriptionStub> stubs;
     IArrayOf<ISubscriptionManager> managers;
     UnsignedArray tags;
-    CheckedCriticalSection tagsect;
-    CheckedCriticalSection stubsect;
+    CheckedCriticalSection tagsect{SYNC_LOCATION};
+    CheckedCriticalSection stubsect{SYNC_LOCATION};
     ReadWriteLock processlock;
 public:
     IMPLEMENT_IINTERFACE_USING(Thread);
@@ -444,7 +444,7 @@ class CDaliSubscriptionManagerStub: implements ISubscriptionManager, public CInt
     unsigned tag;
     IArrayOf<ISubscription> subscriptions;
     Int64Array ids;
-    CriticalSection subscriptionsect;
+    CriticalSection subscriptionsect{SYNC_LOCATION};
 public:
     IMPLEMENT_IINTERFACE;
     CDaliSubscriptionManagerStub(unsigned _tag)
@@ -546,7 +546,7 @@ class CDaliPublisherClient: public Thread, public CDaliPublisher
 
     CIArrayOf<CDaliSubscriptionManagerStub> managers;
     UnsignedArray tags;
-    CheckedCriticalSection tagsect;
+    CheckedCriticalSection tagsect{SYNC_LOCATION};
 
 public:
 
@@ -648,7 +648,7 @@ IDaliServer *createDaliPublisherServer()
     return daliPublisherServer;
 }
 
-static CriticalSection subscriptionCrit;
+static CriticalSection subscriptionCrit{SYNC_LOCATION};
 
 
 ISubscriptionManager *querySubscriptionManager(unsigned tag)

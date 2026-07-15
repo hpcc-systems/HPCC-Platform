@@ -44,7 +44,7 @@
 
 class CFuseBase // base NB singleton
 {
-    static CriticalSection crit;
+    static CriticalSection crit{SYNC_LOCATION};
     static CFuseBase *self;
 
 protected:
@@ -338,7 +338,7 @@ public:
     }
 };
 
-CriticalSection CFuseBase::crit;
+CriticalSection CFuseBase::crit(SYNC_LOCATION);
 CFuseBase *CFuseBase::self=NULL;
 
 #define FH_SALT 100

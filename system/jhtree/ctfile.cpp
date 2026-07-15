@@ -1045,7 +1045,7 @@ int CJHLegacySearchNode::compareValueAt(const char *src, unsigned int index) con
 }
 
 //This critical section will be shared by all legacy nodes, but it is only used when recording events, so the potential contention is not a problem.
-static CriticalSection payloadExpandCs;
+static CriticalSection payloadExpandCs{SYNC_LOCATION};
 
 bool CJHLegacySearchNode::fetchPayload(unsigned int index, char *dst, PayloadReference & activePayload) const
 {

@@ -323,7 +323,7 @@ class CFitArray
 {
     unsigned size;
     CRemoteTreeBase **ptrs; // offset 0 not used
-    CriticalSection crit;
+    CriticalSection crit{SYNC_LOCATION};
     unsigned nextId, chk;
     unsigned freeChainHead;
 
@@ -425,7 +425,7 @@ StringBuffer &constructStoreName(const char *storeBase, unsigned e, StringBuffer
 }
 
 ////////////////
-static CheckedCriticalSection saveStoreCrit, saveIncCrit, nfyTableCrit, extCrit, blockedSaveCrit;
+static CheckedCriticalSection saveStoreCrit{SYNC_LOCATION}, saveIncCrit{SYNC_LOCATION}, nfyTableCrit{SYNC_LOCATION}, extCrit{SYNC_LOCATION}, blockedSaveCrit{SYNC_LOCATION};
 class CCovenSDSManager;
 static CCovenSDSManager *SDSManager;
 
@@ -1136,18 +1136,18 @@ class CDeltaWriter : implements IThreaded
 
     std::queue<Owned<CTransactionItem>> pending;
     memsize_t pendingSz = 0;
-    CriticalSection pendingCrit;
+    CriticalSection pendingCrit{SYNC_LOCATION};
     CCycleTimer timer;
     StringBuffer deltaXml;
     CThreaded threaded;
-    Semaphore pendingTransactionsSem;
+    Semaphore pendingTransactionsSem{SYNC_LOCATION};
     cycle_t timeThrottled = 0;
     unsigned throttleCounter = 0;
     bool writeRequested = false;
     bool backupOutOfSync = false;
     std::atomic<bool> aborted = false;
     bool signalWhenAllWritten = false;
-    Semaphore allWrittenSem;
+    Semaphore allWrittenSem{SYNC_LOCATION};
 
     void validateDeltaBackup()
     {
@@ -1784,7 +1784,7 @@ public:
 
 private:
     SubConnMap subConnMap;
-    CheckedCriticalSection crit;
+    CheckedCriticalSection crit{SYNC_LOCATION};
 };
 
 //////////
@@ -1875,7 +1875,7 @@ interface INodeSubscriptionManager : extends ISubscriptionManager
 
 class CExtCache
 {
-    CriticalSection crit;
+    CriticalSection crit{SYNC_LOCATION};
     std::list<Linked<CTransactionItem>> order;
     std::unordered_map<std::string, std::list<Linked<CTransactionItem>>::iterator> extTable;
     memsize_t cachedSz = 0;
@@ -2100,12 +2100,12 @@ public:
 
 public: // data
     mutable ReadWriteLock dataRWLock;
-    CheckedCriticalSection connectCrit;
-    CheckedCriticalSection connDestructCrit;
-    CheckedCriticalSection cTableCrit;
-    CheckedCriticalSection sTableCrit;
-    CheckedCriticalSection lockCrit;
-    CheckedCriticalSection treeRegCrit;
+    CheckedCriticalSection connectCrit{SYNC_LOCATION};
+    CheckedCriticalSection connDestructCrit{SYNC_LOCATION};
+    CheckedCriticalSection cTableCrit{SYNC_LOCATION};
+    CheckedCriticalSection sTableCrit{SYNC_LOCATION};
+    CheckedCriticalSection lockCrit{SYNC_LOCATION};
+    CheckedCriticalSection treeRegCrit{SYNC_LOCATION};
     Owned<Thread> unhandledThread;
     unsigned writeTransactions;
     std::atomic<bool> ignoreExternals;
@@ -2575,7 +2575,7 @@ CRemoteTreeBase *CRemoteTreeBase::createChild(int pos, const char *childName)
 
 ///////////
 
-static CheckedCriticalSection suppressedOrphanUnlockCrit; // to temporarily suppress unlockall
+static CheckedCriticalSection suppressedOrphanUnlockCrit{SYNC_LOCATION}; // to temporarily suppress unlockall
 static bool suppressedOrphanUnlock=false;
 
 //Do not override the packing for this class - otherwise the fixed size allocator will allocate
@@ -2950,7 +2950,7 @@ public:
     CCovenSDSManager &owner;
     OwningSimpleHashTableOf<CNodeSubscriberContainer, SubscriptionId> subscribersById;
     OwningSimpleHashTableOf<CNodeSubscriberContainerList, CServerRemoteTree *> subscriberListByNode;
-    mutable CriticalSection subscriberListCrit;
+    mutable CriticalSection subscriberListCrit{SYNC_LOCATION};
 
     void _notify(CServerRemoteTree *node, PDState state, IArrayOf<CNodeSubscriberContainer> &subscribers)
     {
@@ -3451,8 +3451,8 @@ class CLock : implements IInterface, public CInterface
     unsigned sub, readLocks, holdLocks, pending, waiting;
     IdPath idPath;
     ConnectionInfoMap connectionInfo;
-    mutable CheckedCriticalSection crit;
-    Semaphore sem;
+    mutable CheckedCriticalSection crit{SYNC_LOCATION};
+    Semaphore sem{SYNC_LOCATION};
     StringAttr xpath;
     __int64 treeId;
     bool exclusive;
@@ -5053,12 +5053,12 @@ class CLightCoalesceThread : implements ICoalesce, public CInterface
 {
     bool stopped = false;
     bool within24 = false;
-    Semaphore sem;
+    Semaphore sem{SYNC_LOCATION};
     unsigned lastSaveWriteTransactions = 0;
     unsigned lastWarning = 0;
     unsigned idlePeriodSecs, minimumSecsBetweenSaves, idleRate;
     Owned<IJlibDateTime> quietStartTime, quietEndTime;
-    CheckedCriticalSection crit;
+    CheckedCriticalSection crit{SYNC_LOCATION};
     IStoreHelper *iStoreHelper;
 
     class CThreaded : public Thread
@@ -9000,7 +9000,7 @@ void CCovenSDSManager::remove(SubscriptionId id)
 // IExceptionHandler
 static bool processingUnhandled = false;
 static bool handled = false;
-static CheckedCriticalSection unhandledCrit;
+static CheckedCriticalSection unhandledCrit{SYNC_LOCATION};
 bool CCovenSDSManager::fireException(IException *e)
 {
     //This code is rather dodgy (and causes more problems than it solves)
@@ -9372,7 +9372,7 @@ public:
 private:
     CCovenSDSManager *manager;
     bool cancelLoad, storeLoaded;
-    CriticalSection crit;
+    CriticalSection crit{SYNC_LOCATION};
 };
 
 unsigned SDSLockTimeoutCount = 0;

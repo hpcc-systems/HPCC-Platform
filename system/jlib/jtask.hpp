@@ -226,7 +226,7 @@ public:
 
 protected:
     ITaskScheduler & scheduler;
-    Semaphore sem;
+    Semaphore sem{SYNC_LOCATION};
     bool tasksLinkedOnSchedule{true};
 };
 

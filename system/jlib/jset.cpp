@@ -358,7 +358,7 @@ size32_t getBitSetMemoryRequirement(unsigned numBits)
 class CBitSetThreadSafe : public CBitSetBase<CBitSetArrayHelper>
 {
     typedef CBitSetBase<CBitSetArrayHelper> PARENT;
-    mutable CriticalSection crit;
+    mutable CriticalSection crit{SYNC_LOCATION};
     void deserialize(MemoryBuffer &buffer)
     {
         CriticalBlock block(crit);

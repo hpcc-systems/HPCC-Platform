@@ -587,8 +587,8 @@ protected:
     std::atomic<cycle_t> startCycles{0};
     std::atomic<__uint64> startTimestamp{0};
     MemoryAttr buffer;
-    CriticalSection cs;
-    Semaphore okToWriteSem;
+    CriticalSection cs{SYNC_LOCATION};
+    Semaphore okToWriteSem{SYNC_LOCATION};
     unsigned sizeMessageHeaderFooter{0};
     unsigned options{0};
     EventContext contextFlags{EventCtxAll};

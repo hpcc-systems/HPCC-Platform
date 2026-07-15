@@ -45,7 +45,7 @@ class CKeepAliveThread : public CSimpleInterface, implements IThreaded
 {
     CThreaded threaded;
     unsigned periodMs;
-    Semaphore sem;
+    Semaphore sem{SYNC_LOCATION};
 public:
     CKeepAliveThread(unsigned _periodSecs) : threaded("CKeepAliveThread", this), periodMs(_periodSecs * 1000)
     {
@@ -660,7 +660,7 @@ static void configureClientSSL(IEspClientRpcSettings &rpc, const char *secretNam
     setRpcSSLOptionsBuf(rpc, true, certSecretBuf.str(), privKeySecretBuf.str(), caCertBuf.str(), false);
 }
 
-static CriticalSection serviceLeaseMapCS;
+static CriticalSection serviceLeaseMapCS{SYNC_LOCATION};
 static std::unordered_map<std::string, unsigned __int64> serviceLeaseMap;
 unsigned __int64 ensureClientLease(IClientWsDfs *dfsClient, const char *service, const char *secretName, IUserDescriptor *userDesc)
 {
@@ -707,7 +707,7 @@ unsigned __int64 ensureClientLease(IClientWsDfs *dfsClient, const char *service,
 
 #ifndef _CONTAINERIZED
 static std::vector<std::string> dfsServiceUrls;
-static CriticalSection dfsServiceUrlCrit;
+static CriticalSection dfsServiceUrlCrit{SYNC_LOCATION};
 static std::atomic<unsigned> currentDfsServiceUrl{0};
 static bool dfsServiceUrlsDiscovered = false;
 #endif

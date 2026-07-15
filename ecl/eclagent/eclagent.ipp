@@ -378,9 +378,9 @@ private:
     Owned<IUserDescriptor> standAloneUDesc;
     outputFmts outputFmt = ofSTD;
     unsigned __int64 stopAfter;
-    mutable CriticalSection wusect;
+    mutable CriticalSection wusect{SYNC_LOCATION};
     std::set<std::string> tempFileSet; // Set of actual temp file names on disk
-    CriticalSection tfsect;
+    CriticalSection tfsect{SYNC_LOCATION};
     IArray persistReadLocks;
     StringArray processedPersists;
 
@@ -390,7 +390,7 @@ private:
     unsigned int clusterWidth;
     Owned<IDistributedFileTransaction> superfiletransaction;
     mutable Owned<IRowAllocatorMetaActIdCache> allocatorMetaCache;
-    CriticalSection activeGraphCritSec;
+    CriticalSection activeGraphCritSec{SYNC_LOCATION};
     PointerArrayOf<EclGraph> activeGraphs;
     Owned<CHThorDebugContext> debugContext;
     Owned<IProbeManager> probeManager;
@@ -444,7 +444,7 @@ private:
     {
         EclAgent &parent;
     public:
-        Semaphore sem;
+        Semaphore sem{SYNC_LOCATION};
         bool stopping;
         unsigned guillotinetimeout = 0;
         cost_type guillotineCost = 0;
@@ -925,7 +925,7 @@ protected:
 
 protected:
     IArrayOf<IHThorGraphResult> results;
-    CriticalSection cs;
+    CriticalSection cs{SYNC_LOCATION};
 };
 
 
@@ -1041,7 +1041,7 @@ public:
     IAgentContext * agent;
     CHThorDebugContext * debugContext;
     IProbeManager * probeManager;
-    CriticalSection evaluateCrit;
+    CriticalSection evaluateCrit{SYNC_LOCATION};
     bool isChildGraph;
     bool isLoopBody;
 };
@@ -1053,7 +1053,7 @@ typedef MapBetween<graphid_t, graphid_t, EclSubGraphPtr, EclSubGraphPtr> SubGrap
 class EclGraph : public CInterface
 {
     AtomicShared<IFileReadPropertiesUpdater> fileReadPropsUpdater;
-    CriticalSection fileReadPropsUpdaterCrit;
+    CriticalSection fileReadPropsUpdaterCrit{SYNC_LOCATION};
 
     RedirectedAgentContext graphAgentContext;
     class SubGraphCodeContext : public IndirectCodeContextEx

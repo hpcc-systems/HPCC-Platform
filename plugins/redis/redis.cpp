@@ -57,7 +57,7 @@ static __thread Connection * cachedSubscriptionConnection = nullptr;
 #define DUMMY_IP 0
 #define DUMMY_PORT 0
 
-static CriticalSection critsec;
+static CriticalSection critsec{SYNC_LOCATION};
 static __thread bool threadHooked = false;
 static int connectionCachingLevel = ALLOW_CONNECTION_CACHING;
 static std::atomic<bool> connectionCachingLevelChecked(false);

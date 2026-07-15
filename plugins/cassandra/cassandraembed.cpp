@@ -143,7 +143,7 @@ void CassandraClusterSession::setOptions(const StringArray &options)
                 {
                     maxFutures=getUnsignedOption(val, "maxFutures");
                     if (maxFutures)
-                        semaphore = new Semaphore(maxFutures);
+                        semaphore = new Semaphore(SYNC_LOCATION, maxFutures);
                 }
             }
             else if (stricmp(optName, "maxRetries")==0)
@@ -359,7 +359,7 @@ void CassandraClusterSession::executeAsync(CIArrayOf<CassandraStatement> &batch,
 
 typedef CassandraClusterSession *CassandraClusterSessionPtr;
 typedef MapBetween<hash64_t, hash64_t, CassandraClusterSessionPtr, CassandraClusterSessionPtr> ClusterSessionMap;
-static CriticalSection clusterCacheCrit;
+static CriticalSection clusterCacheCrit{SYNC_LOCATION};
 static ClusterSessionMap cachedSessions;
 
 CassandraClusterSession *lookupCachedSession(hash64_t hash, const StringArray &opts)

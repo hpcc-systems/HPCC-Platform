@@ -195,7 +195,7 @@ private:
     LPSTR findWhat;
     BOOL matchCase;
     BOOL wholeWord;
-    Semaphore hold;
+    Semaphore hold{SYNC_LOCATION};
     bool terminate;
     HTREEITEM matchedItem;
 

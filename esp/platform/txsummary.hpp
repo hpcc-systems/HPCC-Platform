@@ -269,7 +269,7 @@ private:
         EntriesInOrder m_children;
     };
 
-    mutable CriticalSection m_sync;
+    mutable CriticalSection m_sync{SYNC_LOCATION};
     unsigned m_creationTime;
     EntriesInOrder m_entries;
     Linked<ITxSummaryProfile> m_profile;

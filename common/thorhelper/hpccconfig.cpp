@@ -94,7 +94,7 @@ void getMemorySpecifications(std::unordered_map<std::string, __uint64> &memorySp
 static unsigned pipeProgramUpdateHookCBId = 0;
 static const char *builtInPrograms = "roxiepipe"; // csv list
 static StringBuffer allowedPipePrograms, allowedPipeProgramsWithBuiltIns;
-static CriticalSection allowedPipeCS;
+static CriticalSection allowedPipeCS{SYNC_LOCATION};
 
 MODULE_INIT(INIT_PRIORITY_STANDARD)
 {

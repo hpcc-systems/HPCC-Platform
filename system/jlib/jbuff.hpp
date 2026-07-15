@@ -552,7 +552,7 @@ class  jlib_decl CFixedSizeAllocator
 private:
     void *freelist;
     void *chunklist;
-    NonReentrantSpinLock lock;
+    NonReentrantSpinLock lock{SYNC_LOCATION};
     unsigned numalloc;
     unsigned numfree;
     size32_t allocsize;

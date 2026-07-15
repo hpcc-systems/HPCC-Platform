@@ -59,7 +59,7 @@ class CDafsThread: public Thread
 
 public:
     CDafsThread(SocketEndpoint &_listenep,bool requireauthenticate)
-        : listenep(_listenep)
+     : Thread("CDafsThread"), listenep(_listenep)
     {
         if (listenep.port==0)
             listenep.port = securitySettings.queryDaliServixPort();

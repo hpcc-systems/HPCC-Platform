@@ -269,7 +269,7 @@ public:
     void                      addToPTree(IPropertyTree * tree) const;
     bool                      queryLocalFlag() const { return localFlag; }
 private:
-    mutable SpinLock          lock; // Regexpr is not threadsafe when called from multiple threads
+    mutable SpinLock          lock{SYNC_LOCATION}; // Regexpr is not threadsafe when called from multiple threads
     StringAttr                regexText;
     RegExpr                   regex;
     bool                      localFlag;
@@ -442,7 +442,7 @@ public:
 protected:
     FILE *                    handle;
     unsigned                  messageFields;
-    mutable CriticalSection   crit;
+    mutable CriticalSection   crit{SYNC_LOCATION};
     StringBuffer              curMsgText;
 };
 
@@ -504,7 +504,7 @@ protected:
     StringAttr                headerText;
     bool                      append;
     bool                      flushes;
-    mutable CriticalSection   crit;
+    mutable CriticalSection   crit{SYNC_LOCATION};
     StringBuffer              curMsgText;
 };
 
@@ -572,7 +572,7 @@ protected:
     mutable FILE *handle = nullptr;
     StringAttr filebase;
     mutable StringBuffer filename;
-    mutable CriticalSection crit;
+    mutable CriticalSection crit{SYNC_LOCATION};
     StringBuffer curMsgText;
     const unsigned maxLinesToKeep = 0;
     unsigned messageFields = MSGFIELD_all;
@@ -629,7 +629,7 @@ protected:
     StringBuffer              curMsgText;
     bool                      append;
     bool                      flushes;
-    mutable CriticalSection   crit;
+    mutable CriticalSection   crit{SYNC_LOCATION};
     mutable struct tm         startTime;
     bool printHeader = true;
     long                      maxLogFileSize = 0;
@@ -662,7 +662,7 @@ protected:
     OwnedIFileIO              fio;
     OwnedIFileIOStream        fstr;
     mutable MemoryBuffer      mbuff;
-    mutable CriticalSection   crit;
+    mutable CriticalSection   crit{SYNC_LOCATION};
 };
 
 // Implementation of handler which uses the audit event logger
@@ -737,7 +737,7 @@ private:
         CallbackInterThreadQueueOf<LogMsg, MsgProcessor, false> q;
         unsigned droppingLimit;
         unsigned numToDrop = 1;
-        TimedMutex pullCycleMutex;
+        TimedMutex pullCycleMutex{SYNC_LOCATION};
     };
     Owned<MsgProcessor> processor;
 
@@ -813,10 +813,10 @@ private:
     bool                      suspendedChildren;
     unsigned                  port;
     LogMsgSessionId           session;
-    CriticalSection           modeLock;
+    CriticalSection           modeLock{SYNC_LOCATION};
     std::atomic<LogMsgJobId>  nextJobId = { 0 };
     mutable MapLogMsgJobIdToStr jobIds;
-    mutable CriticalSection   jobIdLock;
+    mutable CriticalSection   jobIdLock{SYNC_LOCATION};
 };
 
 // Message indicating messages have been dropped
@@ -853,7 +853,7 @@ private:
     bool                      dataLogUsed;
     char *                    dataLogName;
     int                       dataLogFile;
-    CriticalSection           dataLogLock;
+    CriticalSection           dataLogLock{SYNC_LOCATION};
 #endif
 };
 

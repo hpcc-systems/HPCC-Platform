@@ -58,7 +58,7 @@ extern LOGGINGCOMMON_API IUpdateLogThread* createUpdateLogThread(IPropertyTree* 
 }
 
 CLogThread::CLogThread(IPropertyTree* _cfg , const char* _service, const char* _agentName, IEspLogAgent* _logAgent, const char* _tankFileDir)
-    : stopping(false), agentName(_agentName), tankFileDir(_tankFileDir)
+    : Thread("CLogThread"), stopping(false), agentName(_agentName), tankFileDir(_tankFileDir)
 {
     if(!_agentName || !*_agentName)
         throw MakeStringException(-1,"No Logging agent name defined");

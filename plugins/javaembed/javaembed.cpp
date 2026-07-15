@@ -882,7 +882,7 @@ public:
             queryJNIEnv()->DeleteGlobalRef(instance);
         }
     }
-    CriticalSection crit;
+    CriticalSection crit{SYNC_LOCATION};
     jobject instance = nullptr;
     StringAttr name;
     virtual const void * getKey() const { return name; }
@@ -1101,7 +1101,7 @@ public:
     static void unregister(const char *key);
     JavaVM *javaVM;       /* denotes a Java VM */
 private:
-    CriticalSection hashCrit;
+    CriticalSection hashCrit{SYNC_LOCATION};
     StringMapOf<PersistedObject> persistedObjects;
 
 } *globalState;

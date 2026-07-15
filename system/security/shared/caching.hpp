@@ -210,7 +210,7 @@ private:
     mutable ReadWriteLock       m_scopesRWLock;//guards m_managedFileScopesMap
     ISecManager *               m_secMgr;
 
-    Semaphore m_exitFileScopeCacheFillThreadSem;
+    Semaphore m_exitFileScopeCacheFillThreadSem{SYNC_LOCATION};
 
     std::thread m_fileScopeCacheFillThread;
     std::atomic<bool> m_fileScopeCacheReady = false;         // initial fill complete

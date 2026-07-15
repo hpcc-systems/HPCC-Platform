@@ -150,12 +150,12 @@ class CSortMerge: public CSimpleInterface, implements ISocketSelectNotify
     bool started;
     CSortTransferServerThread *parent;
     std::atomic_bool done;
-    Semaphore donesem;
+    Semaphore donesem{SYNC_LOCATION};
     Owned<IException> exception;
     ISocketSelectHandler *selecthandler;
 protected:
     Owned<ISocket> socket;
-    CriticalSection crit;
+    CriticalSection crit{SYNC_LOCATION};
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
@@ -290,15 +290,15 @@ protected: friend class CSortMerge;
     ISortSlaveBase &slave;
     std::atomic_bool term;
     Owned<ISocket> server;
-    CriticalSection childsect;
+    CriticalSection childsect{SYNC_LOCATION};
     CSortMergeArray children;
     Owned<ISocketSelectHandler> selecthandler;
     Linked<IThorRowInterfaces> rowif;
-    CriticalSection rowifsect;
-    CriticalSection serversect;
-    CriticalSection acceptsect;
+    CriticalSection rowifsect{SYNC_LOCATION};
+    CriticalSection serversect{SYNC_LOCATION};
+    CriticalSection acceptsect{SYNC_LOCATION};
     Linked<ISocket> pendingSocket;
-    Semaphore rowifsem;
+    Semaphore rowifsem{SYNC_LOCATION};
     Owned<ISecureSocketContext> secureContextServer;
     Owned<ISecureSocketContext> secureContextClients;
     size32_t mergeBufSize;

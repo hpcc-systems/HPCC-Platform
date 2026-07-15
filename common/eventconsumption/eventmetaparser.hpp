@@ -43,6 +43,15 @@ public:
         IndexFileProperties(std::string _path, uint32_t _id) : path(std::move(_path)), id(_id) {}
     };
 
+    struct IndexFilePropertiesCompare
+    {
+        using is_transparent = void;
+
+        bool operator () (const IndexFileProperties& left, const IndexFileProperties& right) const { return left.path < right.path; }
+        bool operator () (const char* left, const IndexFileProperties& right) const { return left < right.path; }
+        bool operator () (const IndexFileProperties& left, const char* right) const { return left.path < right; }
+    };
+
     struct PlaneInformation
     {
         std::string plane;
@@ -164,7 +173,7 @@ private:
     // Note: fileIdToPath stores pointers to the string buffers owned by indexFiles.
     // This is safe because std::set is a node-based container which guarantees
     // memory stability; element pointers are never invalidated when the set grows.
-    std::set<IndexFileProperties, std::less<>> indexFiles;
+    std::set<IndexFileProperties, IndexFilePropertiesCompare> indexFiles;
     std::unordered_map<SourceFileKey, const IndexFileProperties*, SourceFileKeyHash> sourceToProps;
     std::unordered_map<__uint64, const char*> fileIdToPath;
 

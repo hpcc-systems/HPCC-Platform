@@ -90,7 +90,7 @@ static ITranslationInfo * ebcdic2ascii;
 
 MODULE_INIT(INIT_PRIORITY_DEFTYPE)
 {
-    typeCS = new CriticalSection;
+    typeCS = new CriticalSection(SYNC_LOCATION);
     asciiAtom = createLowerCaseAtom("ascii");
     dataAtom = createLowerCaseAtom("data");
     ebcdicAtom = createLowerCaseAtom("ebcdic");

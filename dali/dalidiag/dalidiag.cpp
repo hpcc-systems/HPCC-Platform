@@ -79,7 +79,7 @@ void usage(const char *exe)
 class CTestSDSSubscription : public CInterface, implements ISDSSubscription
 {
 public:
-    Semaphore notifysem;
+    Semaphore notifysem{SYNC_LOCATION};
     IMPLEMENT_IINTERFACE;
     virtual void notify(SubscriptionId id, const char *xpath, SDSNotifyFlags flags, unsigned valueLen, const void *valueData)
     {
@@ -424,6 +424,10 @@ void nqPingPong(const char *q,const char *q2)
     class cThread: public Thread
     {
     public:
+    cThread() : Thread("cThread")
+    {
+    }
+
         const char *q;
         int num;
         int run() {

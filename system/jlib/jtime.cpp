@@ -79,7 +79,7 @@ void setLocalTZ()
 
 #endif //_WIN32
 
-Mutex timeMutex;
+Mutex timeMutex(SYNC_LOCATION);
 
 struct tm * gmtime_r(time_t const * simple, struct tm * utc)
 {
@@ -1385,7 +1385,7 @@ private:
     friend class XFrame;
     CronTableItem * head;
     CronTableItem * tail;
-    CriticalSection crit;
+    CriticalSection crit{SYNC_LOCATION};
     bool hasframe;
 };
 

@@ -6097,7 +6097,7 @@ IPropertyTree* CWsDeployFileInfo::queryComputersForCloud()
 
 void CCloudTaskThread::threadmain()
 {
-  static Mutex m;
+  static Mutex m{SYNC_LOCATION};
   m.lock();
   try
   {

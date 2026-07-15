@@ -461,7 +461,7 @@ namespace mongodbembed
 
         std::unique_ptr<mongocxx::instance> instance = nullptr;        //!< Unique pointer to the single mongocxx::instance for the program.
         ObjMap clientConnections;                                       //!< Hashmap of MongoDB client connections.
-        CriticalSection connLock;                                       //!< Mutex guarding modifications to the connection map.
+        CriticalSection connLock{SYNC_LOCATION};                                       //!< Mutex guarding modifications to the connection map.
     };
 
     /**

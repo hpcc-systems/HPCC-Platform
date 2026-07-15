@@ -267,7 +267,7 @@ void CThorKeyArray::deserialize(MemoryBuffer &mb,bool append)
 
 
 
-static CriticalSection kcsect;
+static CriticalSection kcsect{SYNC_LOCATION};
 static CThorKeyArray * kcthis;
 static int keyCompare(const void *a,const void *b)
 {

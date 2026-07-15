@@ -374,8 +374,8 @@ class CParallelReadAheadInputStream final : public CInterfaceOf<IBufferedSerialI
         // Each chunk has its own synchronization via semaphores.
         // readerReadySem starts at 1 (chunk is initially empty, reader can proceed).
         // consumerSem starts at 0 (consumer must wait for data to be ready).
-        Semaphore readerReadySem{1};
-        Semaphore consumerSem;
+        Semaphore readerReadySem{SYNC_LOCATION, 1};
+        Semaphore consumerSem{SYNC_LOCATION};
     public: // data
         offset_t fileOffset = 0;        // Absolute offset in the file this chunk represents
         size32_t dataSize = 0;          // Actual bytes read (may be < chunkSize at EOF)
@@ -1645,8 +1645,8 @@ protected:
 protected:
     CThreaded threaded;
     CBlockedSerialOutputStream stream[2];
-    Semaphore go;
-    Semaphore done;
+    Semaphore go{SYNC_LOCATION};
+    Semaphore done{SYNC_LOCATION};
     Owned<IException> pendingException;
     bool running{false};
     std::atomic<bool> abort{false};

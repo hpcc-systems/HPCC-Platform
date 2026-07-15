@@ -92,7 +92,7 @@ static cycle_t traceNodeLoadThreshold{0};
 
 MODULE_INIT(INIT_PRIORITY_JHTREE_JHTREE)
 {
-    initCrit = new CriticalSection;
+    initCrit = new CriticalSection(SYNC_LOCATION);
     fetchThresholdCycles = nanosec_to_cycle(defaultFetchThresholdNs);
     traceCacheLockingFrequency = millisec_to_cycle(60000);          // Report locking delays at most once per minute
     traceNodeLoadFrequency = millisec_to_cycle(60000);              // Report slow loads at most once per minute
@@ -638,7 +638,7 @@ constexpr StatisticKind fetchTimeId[CacheMax] = { StCycleNodeFetchCycles, StCycl
 class CNodeCacheEntry : public CInterface
 {
 public:
-    CriticalSection cs;
+    CriticalSection cs{SYNC_LOCATION};
 private:
     std::atomic<const CJHTreeNode *> node{nullptr};
 public:
@@ -755,7 +755,7 @@ class CNodeMRUSubCache final : public CMRUCacheOf<CKeyIdAndPos, CNodeCacheEntry,
     std::atomic<size_t> sizeInMem{0};
     size_t memLimit = 0;
 public:
-    mutable CriticalSection lock;
+    mutable CriticalSection lock{SYNC_LOCATION};
     RelaxedAtomic<__uint64> numHits{0};
     RelaxedAtomic<__uint64> numAdds{0};
     RelaxedAtomic<__uint64> numDups{0};
@@ -2117,7 +2117,7 @@ static void doInitializeDiskPageCache(const IPropertyTree *config)
 
 
 static std::atomic<bool> diskPageCacheInitialized{false};
-static CriticalSection pageCacheInitCS;
+static CriticalSection pageCacheInitCS{SYNC_LOCATION};
 
 extern jhtree_decl void ensureDiskPageCacheInitialized(bool propagateInitError)
 {
@@ -3156,7 +3156,7 @@ class CLazyKeyIndex final : implements IKeyIndex, public CInterface
     Linked<IDelayedFile> delayedFile;
     mutable Owned<IFileIO> iFileIO;
     mutable Owned<IKeyIndex> realKey;
-    mutable CriticalSection c;
+    mutable CriticalSection c{SYNC_LOCATION};
     bool isTLK;
     size32_t blockedIOSize = 0;
 

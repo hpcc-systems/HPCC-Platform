@@ -2252,7 +2252,7 @@ static EsdlTypeList esdlTypeList;
 
 void init_type_list(EsdlTypeList &list)
 {
-    static CriticalSection crit;
+    static CriticalSection crit{SYNC_LOCATION};
     CriticalBlock block(crit);
     if (!type_list_inited)
     {

@@ -200,7 +200,7 @@ class CKJService : public CSimpleInterfaceOf<IKJService>, implements IThreaded, 
 
         ICodeContext *codeCtx;
 
-        CriticalSection crit;
+        CriticalSection crit{SYNC_LOCATION};
         StringArray fetchFilenames;
         IPointerArrayOf<IFileIO> openFetchFiles;
         size32_t fetchInMinSz = 0;
@@ -1001,7 +1001,8 @@ class CKJService : public CSimpleInterfaceOf<IKJService>, implements IThreaded, 
     std::unordered_map<unsigned, Owned<CFetchContext>> activeFetchContextsByHandle;
     CICopyArrayOf<CKMContainer> cachedKMsMRU;
     CICopyArrayOf<CFetchContext> cachedFCsMRU;
-    CriticalSection kMCrit, lCCrit;
+    CriticalSection kMCrit{SYNC_LOCATION};
+    CriticalSection lCCrit{SYNC_LOCATION};
     Owned<IThreadPool> processorPool;
 
     IHThorKeyedJoinArg *createHelper(CJobBase &job, activity_id id, MemoryBuffer &createCtxMb)
@@ -1606,7 +1607,7 @@ public:
 class CJobListener : public CSimpleInterface
 {
     bool &stopped;
-    CriticalSection crit;
+    CriticalSection crit{SYNC_LOCATION};
     OwningStringSuperHashTableOf<CJobSlave> jobs;
     CFifoFileCache querySoCache; // used to mirror master cache
     IArrayOf<IMPServer> mpServers;
@@ -2226,7 +2227,7 @@ public:
 };
 class CFileInProgressHandler : public CSimpleInterface, implements IFileInProgressHandler
 {
-    CriticalSection crit;
+    CriticalSection crit{SYNC_LOCATION};
     StringSuperHashTableOf<CStringAttr> lookup;
     QueueOf<CStringAttr, false> fipList;
     OwnedIFileIO iFileIO;

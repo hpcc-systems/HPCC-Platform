@@ -56,7 +56,7 @@ using roxiemem::OwnedRoxieString;
 static CriticalSection *jobManagerCrit;
 MODULE_INIT(INIT_PRIORITY_STANDARD)
 {
-    jobManagerCrit = new CriticalSection;
+    jobManagerCrit = new CriticalSection(SYNC_LOCATION);
     return true;
 }
 MODULE_EXIT()
@@ -1992,7 +1992,7 @@ bool CJobMaster::go()
         CJobMaster &job;
         IConstWorkUnit &wu;
         Owned<IWorkUnitWatcher> watcher;
-        CriticalSection crit;
+        CriticalSection crit{SYNC_LOCATION};
     public:
         IMPLEMENT_IINTERFACE;
 
@@ -2080,7 +2080,7 @@ bool CJobMaster::go()
         unsigned periodMs = 0;
         CThreaded threaded;
         std::atomic<bool> stopped{true};
-        Semaphore sem;
+        Semaphore sem{SYNC_LOCATION};
     public:
         CAgentSessionWatcher(CJobMaster &_job, unsigned _periodMs) : job(_job), periodMs(_periodMs), threaded("AgentSessionWatcher", this)
         {
@@ -2380,7 +2380,7 @@ class CCollatedResult : implements IThorResult, public CSimpleInterface
     CActivityBase &activity;
     IThorRowInterfaces *rowIf;
     unsigned id;
-    CriticalSection crit;
+    CriticalSection crit{SYNC_LOCATION};
     PointerArrayOf<CThorExpandingRowArray> results;
     Owned<IThorResult> result;
     unsigned spillPriority;

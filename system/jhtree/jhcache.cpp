@@ -159,6 +159,12 @@ static_assert(alignof(BucketCounter) == CACHE_LINE_SIZE);
 
 //--------------------------------------------------------------------------------------------------------------------
 
+class PageCacheCriticalSection : public CriticalSection
+{
+public:
+    PageCacheCriticalSection() : CriticalSection(SYNC_LOCATION) {}
+};
+
 class CDiskPageCache final : public CInterfaceOf<IPageCache>
 {
 public:
@@ -219,7 +225,7 @@ public:
         CDiskPageCache & parent;
         unsigned intervalMs;
         std::atomic<bool> stopping { false };
-        Semaphore wakeSem;
+        Semaphore wakeSem{SYNC_LOCATION};
     };
 
     CDiskPageCache(const IPropertyTree * config)
@@ -310,7 +316,7 @@ public:
         if (numCrits > maxCriticalSections)
             numCrits = maxCriticalSections;
 
-        fCrit = std::make_unique<CriticalSection []>(numCrits);
+        fCrit = std::make_unique<PageCacheCriticalSection []>(numCrits);
 
         openPageCacheFile(cacheFilePath, openFlags);
 
@@ -779,9 +785,9 @@ protected:
     int statsIntervalMs{0};
     int pageSizeExp{0};
     int cacheFd{-1};
-    std::unique_ptr <CriticalSection []> fCrit;
+    std::unique_ptr <PageCacheCriticalSection []> fCrit;
     IOMethod ioMethod{NORMAL};
-    CriticalSection crit;
+    CriticalSection crit{SYNC_LOCATION};
     bool cacheOK{false};
     Owned<PageCacheStatsThread> statsThread;
 
@@ -992,7 +998,7 @@ protected:
     }
 
 protected:
-    CriticalSection crit;
+    CriticalSection crit{SYNC_LOCATION};
     offset_t size;
     size32_t pageSize{0};
     size32_t readSize{0};

@@ -135,7 +135,7 @@ class SoapDatasetCallSlaveActivity : public CSlaveActivity, implements IWSCRowPr
     bool eof;
     StringBuffer authToken;
     Owned<IWSCHelper> wscHelper;
-    CriticalSection crit;
+    CriticalSection crit{SYNC_LOCATION};
     CStatsContextLogger contextLogger;
     CStatsCtxLoggerDeltaUpdater statsUpdater;
 
@@ -290,7 +290,7 @@ class SoapDatasetActionSlaveActivity : public ProcessSlaveActivity, implements I
 
     Owned<IWSCHelper> wscHelper;
     StringBuffer authToken;
-    CriticalSection crit;
+    CriticalSection crit{SYNC_LOCATION};
     CStatsContextLogger contextLogger;
     CStatsCtxLoggerDeltaUpdater statsUpdater;
 

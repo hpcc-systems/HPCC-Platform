@@ -27,7 +27,7 @@ class CSelectNthSlaveActivity : public CSlaveActivity, implements ILookAheadStop
     rowcount_t lookaheadN, N, startN;
     bool createDefaultIfFail;
     IHThorSelectNArg *helper;
-    SpinLock spin; // MORE: Remove this and use an atomic variable for lookaheadN
+    SpinLock spin{SYNC_LOCATION}; // MORE: Remove this and use an atomic variable for lookaheadN
 
     void initN()
     {

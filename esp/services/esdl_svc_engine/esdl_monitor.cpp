@@ -46,7 +46,7 @@ class CEsdlShare : implements IEsdlShare, public Thread
 {
 public:
     IMPLEMENT_IINTERFACE_USING(Thread);
-    CEsdlShare() : m_stop(false)
+    CEsdlShare() : Thread("CEsdlShare"), m_stop(false)
     {
     }
     virtual ~CEsdlShare() {}
@@ -133,19 +133,19 @@ public:
         join();
     }
 private:
-    CriticalSection m_critSect;
+    CriticalSection m_critSect{SYNC_LOCATION};
     MapStringTo<Owned<CEsdlInstance>> m_esdlInstanceMap;
-    Semaphore m_waitsem;
+    Semaphore m_waitsem{SYNC_LOCATION};
     bool m_stop;
 };
 
-static CriticalSection gEsdlMonitorCritSection;
+static CriticalSection gEsdlMonitorCritSection{SYNC_LOCATION};
 
 class CEsdlMonitor : implements IEsdlMonitor, public CInterface, implements IEsdlListener
 {
 private:
     MapStringTo<EsdlBindingImpl*> m_esdlBindingMap;
-    CriticalSection m_CritSect;
+    CriticalSection m_CritSect{SYNC_LOCATION};
     Owned<IPropertyTree> m_envptTemplate;
     Owned<IEsdlStore> m_pCentralStore;
     Owned<IEsdlSubscription> m_pSubscription;

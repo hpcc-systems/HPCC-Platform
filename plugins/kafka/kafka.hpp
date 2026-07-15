@@ -211,7 +211,7 @@ extern "C++"
                 std::string                     topic;          //!< The name of the topic to publish to
                 RdKafka::Producer*              producerPtr;    //!< Pointer to librdkafka producer object
                 std::atomic<RdKafka::Topic*>    topicPtr;       //!< Pointer to librdkafka topic object
-                CriticalSection                 lock;           //!< Mutex to ensure that only one thread creates the librdkafka object pointers
+                CriticalSection lock{SYNC_LOCATION};           //!< Mutex to ensure that only one thread creates the librdkafka object pointers
                 Poller*                         pollerPtr;      //!< Pointer to the threaded Poller object that gives time to librdkafka
                 __int32                         pollTimeout;    //!< The amount of time (in ms) we give to librdkafka's poll() function
                 time_t                          timeCreated;    //!< The time at which this object was created
@@ -295,7 +295,7 @@ extern "C++"
                 StringBuffer                    offsetPath;     //!< Full path to the Kafka topic offset file
                 RdKafka::Consumer*              consumerPtr;    //!< Pointer to librdkafka consumer object
                 std::atomic<RdKafka::Topic*>    topicPtr;       //!< Pointer to librdkafka topic object
-                CriticalSection                 lock;           //!< Mutex to ensure that only one thread creates the librdkafka object pointers or starts/stops the queue
+                CriticalSection lock{SYNC_LOCATION};           //!< Mutex to ensure that only one thread creates the librdkafka object pointers or starts/stops the queue
                 __int32                         partitionNum;   //!< The partition within the topic from which we will be pulling messages
         };
 

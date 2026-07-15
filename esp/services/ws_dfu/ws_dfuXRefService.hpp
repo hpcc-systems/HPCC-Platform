@@ -30,9 +30,9 @@ class CXRefExBuilderThread : public Thread
 {
     bool stopThread = false;
     bool xRefRunning = false;
-    CriticalSection critRunningStatus;
-    CriticalSection critQueue;
-    Semaphore m_sem;
+    CriticalSection critRunningStatus{SYNC_LOCATION};
+    CriticalSection critQueue{SYNC_LOCATION};
+    Semaphore m_sem{SYNC_LOCATION};
     SafeQueueOf<IXRefNode, false> nodeQueue;
     StringBuffer currentClusterName;
 
@@ -65,7 +65,7 @@ class CXRefExBuilderThread : public Thread
         nodeQueue.enqueue(LINK(xRefNode));
     }
 public:
-    CXRefExBuilderThread() { };
+    CXRefExBuilderThread() : Thread("CXRefExBuilderThread") { };
     ~CXRefExBuilderThread(){DBGLOG("Destroyed XRef thread");};
 
     virtual void queueRequest(IXRefNode* xRefNode, const char* cluster)

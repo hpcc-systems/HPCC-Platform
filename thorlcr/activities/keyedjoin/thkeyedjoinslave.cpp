@@ -190,7 +190,7 @@ class CJoinGroup : public CSimpleInterfaceOf<IInterface>
 {
 protected:
     OwnedConstThorRow leftRow;
-    mutable CriticalSection crit;
+    mutable CriticalSection crit{SYNC_LOCATION};
     std::atomic<unsigned> pending{0};
     std::atomic<unsigned> candidates{0};
     IJoinProcessor *join = nullptr;
@@ -829,8 +829,8 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
         unsigned leewayPercent = 0; // leeway allows a gap to occur between time blocking starts and time blocking is released, to avoid thrashing.
         unsigned blocked = 0;       // number of callers blocked due to exceeding max+leewayPercent(%).
         unsigned leeway = 0;
-        Semaphore sem;
-        CriticalSection crit;
+        Semaphore sem{SYNC_LOCATION};
+        CriticalSection crit{SYNC_LOCATION};
         bool enabled = true;
 
         void unblock()
@@ -966,7 +966,8 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
         IHThorKeyedJoinArg *helper = nullptr;
         std::vector<CThorExpandingRowArray *> queues;
         unsigned totalQueued = 0;
-        CriticalSection queueCrit, batchCrit;
+        CriticalSection queueCrit{SYNC_LOCATION};
+        CriticalSection batchCrit{SYNC_LOCATION};
         CThreaded threaded;
         std::atomic<bool> running{false};
         std::atomic<bool> stopping{false};
@@ -2308,9 +2309,11 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
     bool endOfInput = false; // marked true when input exhausted, but may be groups in flight
     bool eos = false; // marked true when everything processed
     IArrayOf<IKeyManager> tlkKeyManagers;
-    CriticalSection onCompleteCrit, queuedCrit, runningLookupThreadsCrit;
+    CriticalSection onCompleteCrit{SYNC_LOCATION};
+    CriticalSection queuedCrit{SYNC_LOCATION};
+    CriticalSection runningLookupThreadsCrit{SYNC_LOCATION};
     std::atomic<bool> waitingForDoneGroups{false};
-    Semaphore waitingForDoneGroupsSem;
+    Semaphore waitingForDoneGroupsSem{SYNC_LOCATION};
     CJoinGroupList pendingJoinGroupList, doneJoinGroupList;
     Owned<CJoinGroup> currentJoinGroup;
     unsigned currentMatchIdx = 0;
@@ -2329,7 +2332,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
     Owned<IThorRowInterfaces> fetchOutputMetaRowIf; // fetch request reply rows, header + [join fields as child row]
     Owned<IEngineRowAllocator> fetchInputMetaAllocator;
 
-    CriticalSection fetchFileCrit;
+    CriticalSection fetchFileCrit{SYNC_LOCATION};
     std::vector<PartIO> openFetchParts;
     unsigned indexFileStatsTableEntry = NotFound;
     unsigned dataFileStatsTableEntry = NotFound;

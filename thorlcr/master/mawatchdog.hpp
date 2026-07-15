@@ -30,7 +30,7 @@ class CMasterWatchdog : public CSimpleInterface, implements IThreaded
 {
     PointerArray state;
     SocketEndpoint master;
-    Mutex mutex;
+    Mutex mutex{SYNC_LOCATION};
     int retrycount = 0;
     CThreaded threaded;
 protected:

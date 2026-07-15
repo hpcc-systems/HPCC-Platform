@@ -395,7 +395,7 @@ protected:
     }
 public:
     sQueueData *qdata;
-    CriticalSection crit;
+    CriticalSection crit{SYNC_LOCATION};
 
     IMPLEMENT_IINTERFACE;
 
@@ -806,7 +806,7 @@ public:
         //If this semaphone is in the CJobQueue class then there is a race condition
         //A callback may be at this point while the CJobQueue is deleted - causing it to signal
         //a deleted semaphore
-        Semaphore notifysem;
+        Semaphore notifysem{SYNC_LOCATION};
     public:
         IMPLEMENT_IINTERFACE;
 

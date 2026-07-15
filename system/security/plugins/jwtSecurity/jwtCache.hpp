@@ -451,7 +451,7 @@ class JWTUserCache
 
     private:
 
-        mutable CriticalSection     crit;           //!< Used to prevent thread collisions during userPermMap modification
+        mutable CriticalSection crit{SYNC_LOCATION};           //!< Used to prevent thread collisions during userPermMap modification
         UserPermissionMap           userPermMap;    //!< Map of UserName -> Permissions
 };
 

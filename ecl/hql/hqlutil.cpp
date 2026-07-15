@@ -71,7 +71,7 @@ MODULE_INIT(INIT_PRIORITY_STANDARD)
 {
     sizetType = makeIntType(sizeof(size32_t), false);
     signedType = makeIntType(sizeof(signed), true);
-    sizetCacheCs = new CriticalSection;
+    sizetCacheCs = new CriticalSection(SYNC_LOCATION);
     constUnknownVarStringType = makeConstantModifier(makeVarStringType(UNKNOWN_LENGTH));
     defaultMaxRecordLengthExpr = createQuoted("<default-max-length>", makeIntType(sizeof(size32_t), false));
     cacheAlignedAttr = createAttribute(_propAligned_Atom);

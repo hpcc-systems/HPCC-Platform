@@ -117,7 +117,7 @@ class CEsdlSDSStore : implements IEsdlStore, public CInterface
 {
 private:
     bool m_isAttached;
-    CriticalSection m_attachCrit;
+    CriticalSection m_attachCrit{SYNC_LOCATION};
 public:
     IMPLEMENT_IINTERFACE;
 
@@ -1307,7 +1307,7 @@ class CEsdlSDSSubscription : implements IEsdlSubscription, public CInterface, im
 {
 private:
     IEsdlListener* mListener;
-    CriticalSection daliSubscriptionCritSec;
+    CriticalSection daliSubscriptionCritSec{SYNC_LOCATION};
     SubscriptionId sub_id;
 public:
     IMPLEMENT_IINTERFACE;

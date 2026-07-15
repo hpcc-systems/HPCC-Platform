@@ -48,7 +48,7 @@ class CDaliPackageWatcher : public CInterface, implements ISafeSDSSubscription, 
     ISafeSDSSubscription *notifier;
     StringAttr id;
     StringAttr xpath;
-    mutable CriticalSection crit;
+    mutable CriticalSection crit{SYNC_LOCATION};
     bool isExact;
 public:
     IMPLEMENT_IINTERFACE;
@@ -171,10 +171,10 @@ private:
     static std::atomic<bool> isConnected;
     static CRoxieDaliHelper *daliHelper;  // Note - this does not own the helper
     static CriticalSection daliHelperCrit;
-    CriticalSection daliConnectionCrit;
+    CriticalSection daliConnectionCrit{SYNC_LOCATION};
     Owned<IUserDescriptor> userdesc;
     InterruptableSemaphore disconnectSem;
-    CriticalSection watchersCrit;
+    CriticalSection watchersCrit{SYNC_LOCATION};
     IArrayOf<IDaliPackageWatcher> watchers;
     CSDSServerStatus *serverStatus;
 
@@ -182,11 +182,11 @@ private:
     {
     private:
         CRoxieDaliHelper *owner;
-        Semaphore abortSem;
+        Semaphore abortSem{SYNC_LOCATION};
         bool aborted;
         bool wasConnected;
     public:
-        CRoxieDaliConnectWatcher(CRoxieDaliHelper *_owner) : owner(_owner)
+        CRoxieDaliConnectWatcher(CRoxieDaliHelper *_owner) : Thread("CRoxieDaliConnectWatcher"), owner(_owner)
         {
             aborted = false;
             wasConnected = owner->isConnected;
@@ -1028,13 +1028,13 @@ public:
 
 std::atomic<bool> CRoxieDaliHelper::isConnected(false);
 CRoxieDaliHelper * CRoxieDaliHelper::daliHelper;
-CriticalSection CRoxieDaliHelper::daliHelperCrit;
+CriticalSection CRoxieDaliHelper::daliHelperCrit(SYNC_LOCATION);
 #ifdef ROXIE_DALI_CACHE
-CriticalSection CRoxieDaliHelper::cacheCrit;
+CriticalSection CRoxieDaliHelper::cacheCrit(SYNC_LOCATION);
 Owned<IPropertyTree> CRoxieDaliHelper::cache;
 #endif
 
-CriticalSection CRoxieDllServer::crit;
+CriticalSection CRoxieDllServer::crit(SYNC_LOCATION);
 
 IRoxieDaliHelper *connectToDali(unsigned waitToConnect)
 {

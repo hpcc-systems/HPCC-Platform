@@ -499,7 +499,7 @@ void loadLFS(const char * lfs, IUserDescriptor * user, StringBuffer &sb)
 class CDSMCache
 {
 private:
-    CriticalSection csDSMCache;//guards modifications to the cache map
+    CriticalSection csDSMCache{SYNC_LOCATION};//guards modifications to the cache map
     typedef std::unordered_map<string, Owned<IDigitalSignatureManager>> DSMCache;
     DSMCache dsmCache;
 

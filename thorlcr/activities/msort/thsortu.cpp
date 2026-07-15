@@ -1542,7 +1542,7 @@ public:
     unsigned numworkers;
     ThorActivityKind kind;
     Owned<IException> exc;
-    CriticalSection sect;
+    CriticalSection sect{SYNC_LOCATION};
     bool eos, selfJoin;
     JoinMatchStats matchStats;
 
@@ -1749,8 +1749,8 @@ class CMultiCoreJoinHelper: public CMultiCoreJoinHelperBase
         CMultiCoreJoinHelper *parent;
     public:
         cWorkItem work;
-        Semaphore workready;
-        Semaphore workwait;
+        Semaphore workready{SYNC_LOCATION};
+        Semaphore workwait{SYNC_LOCATION};
         Owned<ISmartRowBuffer> rowStream;
         bool stopped;
 

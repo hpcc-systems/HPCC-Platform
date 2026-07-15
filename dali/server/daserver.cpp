@@ -60,7 +60,7 @@ static IArrayOf<IDaliServer> servers;
 static CriticalSection *stopServerCrit;
 MODULE_INIT(INIT_PRIORITY_DALI_DASERVER)
 {
-    stopServerCrit = new CriticalSection;
+    stopServerCrit = new CriticalSection(SYNC_LOCATION);
     return true;
 }
 MODULE_EXIT()
@@ -659,7 +659,7 @@ int main(int argc, const char* argv[])
 
 #ifndef _CONTAINERIZED
         write_pidfile(serverConfig->queryProp("@name"));
-        NamedMutex globalNamedMutex("DASERVER");
+        NamedMutex globalNamedMutex(SYNC_LOCATION, "DASERVER");
         if (!serverConfig->getPropBool("allowMultipleDalis"))
         {
             PROGLOG("Checking for existing daserver instances");

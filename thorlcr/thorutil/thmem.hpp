@@ -417,7 +417,7 @@ class graph_decl CThorSpillableRowArray : private CThorExpandingRowArray, implem
     size32_t commitDelta = CommitStep;  // How many rows need to be written before they are added to the committed region?
     rowidx_t firstRow = 0; // Only rows firstRow..numRows are considered initialized.  Only read/write within cs.
     rowidx_t commitRows = 0;  // can only be updated by writing thread within a critical section
-    mutable CriticalSection cs;
+    mutable CriticalSection cs{SYNC_LOCATION};
     ICopyArrayOf<IWritePosCallback> writeCallbacks;
     size32_t compBlkSz = 0; // means use default
     CRuntimeStatisticCollection stats; // reset after each kill

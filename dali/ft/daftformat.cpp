@@ -371,7 +371,7 @@ CInputBasePartitioner::CInputBasePartitioner(unsigned _headerSize, unsigned expe
 }
 
 IFileIOCache *CInputBasePartitioner::openfilecache = NULL;
-CriticalSection CInputBasePartitioner::openfilecachesect;
+CriticalSection CInputBasePartitioner::openfilecachesect(SYNC_LOCATION);
 
 CInputBasePartitioner::~CInputBasePartitioner()
 {
@@ -1883,7 +1883,7 @@ CJsonInputPartitioner::CJsonInputPartitioner(const FileFormat & _format)
 }
 
 IFileIOCache *CJsonInputPartitioner::openfilecache = NULL;
-CriticalSection CJsonInputPartitioner::openfilecachesect;
+CriticalSection CJsonInputPartitioner::openfilecachesect(SYNC_LOCATION);
 
 CJsonInputPartitioner::~CJsonInputPartitioner()
 {
@@ -2032,7 +2032,7 @@ void CXmlQuickPartitioner::findSplitPoint(offset_t splitOffset, PartitionCursor 
 //----------------------------------------------------------------------------
 
 CRemotePartitioner::CRemotePartitioner(FileSprayer &_sprayer, const SocketEndpoint & _ep, const FileFormat & _srcFormat, const FileFormat & _tgtFormat, const char * _slave, const char *_wuid)
-    : sprayer(_sprayer), wuid(_wuid)
+    : Thread("RemotePartitioner"), sprayer(_sprayer), wuid(_wuid)
 {
     if (doTrace(tracePartitionDetails, traceDetailed))
         LOG(MCdebugProgressDetail, "CRemotePartitioner::CRemotePartitioner(_srcFormat.type :'%s', _tgtFormat.type:'%s', _slave:'%s', _wuid:'%s')", _srcFormat.getFileFormatTypeString(), _tgtFormat.getFileFormatTypeString(), _slave, _wuid);

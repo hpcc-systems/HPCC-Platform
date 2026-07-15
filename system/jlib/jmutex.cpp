@@ -28,7 +28,7 @@
 //===========================================================================
 #ifndef _WIN32
 
-LegacyMutex::LegacyMutex()
+LegacyMutex::LegacyMutex([[maybe_unused]] const char *syncName)
 {
     pthread_mutex_init(&mutex, NULL);
     pthread_cond_init(&lock_free, NULL);
@@ -198,9 +198,9 @@ static void unlock_file(const char *lfpath)
     IERRLOG("NamedMutex cannot unlock file (%d)",errno);
 }
 
-static CriticalSection lockPrefixCS;
+static CriticalSection lockPrefixCS(SYNC_LOCATION);
 static StringBuffer lockPrefix;
-NamedMutex::NamedMutex(const char *name)
+NamedMutex::NamedMutex([[maybe_unused]] const char *syncName, const char *name)
 {
     {
         CriticalBlock b(lockPrefixCS);

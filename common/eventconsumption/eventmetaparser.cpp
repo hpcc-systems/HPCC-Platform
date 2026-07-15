@@ -19,21 +19,6 @@
 #include "eventiterator.h"
 #include "jevent.hpp"
 
-bool operator < (const CMetaInfoState::IndexFileProperties& left, const CMetaInfoState::IndexFileProperties& right)
-{
-    return left.path < right.path;
-}
-
-bool operator < (const char* left, const CMetaInfoState::IndexFileProperties& right)
-{
-    return left < right.path;
-}
-
-bool operator < (const CMetaInfoState::IndexFileProperties& left, const char* right)
-{
-    return left.path < right;
-}
-
 void CMetaInfoState::CCollector::setNextLink(IEventVisitor& visitor)
 {
     nextLink.set(&visitor);

@@ -22,6 +22,12 @@
 #endif
 
 #include "nlp_engine.h"
+#ifdef DECL_EXPORT
+#undef DECL_EXPORT
+#endif
+#ifdef DECL_IMPORT
+#undef DECL_IMPORT
+#endif
 #include "nlp_eng.hpp"
 #include "jfile.hpp"
 #include "jlog.hpp"
@@ -32,7 +38,7 @@
 
 static NLP_ENGINE *nlpEngine = NULL;
 
-static CriticalSection csNLP;
+static CriticalSection csNLP{SYNC_LOCATION};
 
 NLPEng::NLPEng(const char *_manifestFolder) : manifestFolder(_manifestFolder) {}
 

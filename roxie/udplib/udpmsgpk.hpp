@@ -35,7 +35,7 @@ private:
     RelaxedAtomic<bool> activity;
     bool                memLimitExceeded;
     bool                encrypted;
-    CriticalSection     queueCrit;
+    CriticalSection     queueCrit{SYNC_LOCATION};
     InterruptableSemaphore sem;
     ruid_t ruid;
     std::atomic<unsigned> totalBytesReceived = {0};

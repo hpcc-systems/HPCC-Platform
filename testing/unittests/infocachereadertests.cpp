@@ -61,8 +61,8 @@ public:
     std::atomic<bool> debug{false};
     std::atomic<bool> signalReadStart{false};
     std::atomic<bool> holdReadAtStart{false};
-    Semaphore readStartedSem;
-    Semaphore releaseReadSem;
+    Semaphore readStartedSem{SYNC_LOCATION};
+    Semaphore releaseReadSem{SYNC_LOCATION};
     StringAttr nextData;
     
     CTestInfoCacheReader(const char* name, unsigned autoRebuild, unsigned forceRebuild, bool enableAuto, bool debug = false)

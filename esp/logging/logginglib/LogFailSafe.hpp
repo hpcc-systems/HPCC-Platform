@@ -63,7 +63,7 @@ class CLogFailSafe : implements ILogFailSafe, public CInterface
     StringBuffer m_LogService;//
     StringArray oldLogs;
 
-    CriticalSection m_critSec;//
+    CriticalSection m_critSec{SYNC_LOCATION};//
     GuidMap m_PendingLogs;//
     unsigned long safeRolloverReqThreshold = DEFAULT_SAFE_ROLLOVER_REQ_THRESHOLD;
     unsigned long safeRolloverSizeThreshold = 0;

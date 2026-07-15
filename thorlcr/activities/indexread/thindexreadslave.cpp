@@ -78,7 +78,7 @@ protected:
     rowcount_t rowLimit = RCMAX;
     bool useRemoteStreaming = false;
     Owned<IFileIO> lazyIFileIO;
-    mutable CriticalSection keyManagersCS;  // CS for any updates to keyManagers
+    mutable CriticalSection keyManagersCS{SYNC_LOCATION};  // CS for any updates to keyManagers
     unsigned fileTableStart = NotFound;
     std::vector<Owned<CStatsContextLogger>> contextLoggers;
     size32_t foreignBlockedIOSize = (size32_t)-1;

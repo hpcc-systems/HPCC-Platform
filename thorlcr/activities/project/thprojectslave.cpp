@@ -151,8 +151,9 @@ class CPrefetchProjectSlaveActivity : public CSlaveActivity
         bool eoi = true;
         bool eoq = true;
         QueueOf<PrefetchInfo, true> prefetchQueue;
-        CriticalSection crit;
-        Semaphore blockedSem, fullSem;
+        CriticalSection crit{SYNC_LOCATION};
+        Semaphore blockedSem{SYNC_LOCATION};
+        Semaphore fullSem{SYNC_LOCATION};
 
     public:
         CPrefetcher(CPrefetchProjectSlaveActivity &_parent) : threaded("CPrefetcher", this), parent(_parent)

@@ -127,7 +127,7 @@ private:
     Owned<ISecureSocketContext> secureContext;
     std::atomic<bool> running{true};
     unsigned short port;
-    Semaphore started;
+    Semaphore started{SYNC_LOCATION};
     std::atomic<bool> startupSucceeded{false};
     CTLSTestCertificate cert;
     std::atomic<unsigned> acceptCount{0};
@@ -306,7 +306,7 @@ private:
     Linked<IAsyncProcessor> processor;  // Use Linked<> not Owned<> - we don't own it
     std::atomic<bool> running{true};
     unsigned short port;
-    Semaphore started;
+    Semaphore started{SYNC_LOCATION};
     std::atomic<bool> startupSucceeded{false};
     CTLSTestCertificate cert;
     std::atomic<unsigned> acceptCount{0};
@@ -483,12 +483,12 @@ private:
     Linked<IAsyncProcessor> processor;
     std::atomic<bool> running{true};
     unsigned short port = 0;
-    Semaphore started;
+    Semaphore started{SYNC_LOCATION};
     std::atomic<bool> startupSucceeded{false};
     CTLSTestCertificate cert;
     std::atomic<unsigned> acceptCount{0};
-    Semaphore messageHandled;
-    CriticalSection workerThreadsCrit;
+    Semaphore messageHandled{SYNC_LOCATION};
+    CriticalSection workerThreadsCrit{SYNC_LOCATION};
     std::vector<std::thread> workerThreads;
 
     class AsyncAcceptHandler : public CSimpleInterfaceOf<IAsyncCallback>
@@ -1694,7 +1694,7 @@ public:
             {
             public:
                 
-                Semaphore completed;
+                Semaphore completed{SYNC_LOCATION};
                 int result = -999;
 
                 virtual bool onAsyncComplete(int _result) override
@@ -1747,7 +1747,7 @@ public:
             {
             public:
                 
-                Semaphore completed;
+                Semaphore completed{SYNC_LOCATION};
                 int result = -999;
 
                 virtual bool onAsyncComplete(int _result) override
@@ -1814,7 +1814,7 @@ public:
                 {
                 public:
                     
-                    Semaphore completed;
+                    Semaphore completed{SYNC_LOCATION};
                     int result = -999;
 
                     virtual bool onAsyncComplete(int _result) override
@@ -1873,7 +1873,7 @@ public:
             class ConnectCallback : public CSimpleInterfaceOf<IAsyncCallback>
             {
             public:
-                Semaphore completed;
+                Semaphore completed{SYNC_LOCATION};
                 int result = -999;
 
                 virtual bool onAsyncComplete(int _result) override
@@ -2005,7 +2005,7 @@ public:
             {
             public:
                 
-                Semaphore completed;
+                Semaphore completed{SYNC_LOCATION};
                 int result = -999;
 
                 virtual bool onAsyncComplete(int _result) override
@@ -2070,7 +2070,7 @@ public:
             {
             public:
                 
-                Semaphore completed;
+                Semaphore completed{SYNC_LOCATION};
                 int result = -999;
 
                 virtual bool onAsyncComplete(int _result) override
@@ -2157,7 +2157,7 @@ public:
                 {
                 public:
                     
-                    Semaphore completed;
+                    Semaphore completed{SYNC_LOCATION};
                     int result = -999;
 
                     virtual bool onAsyncComplete(int _result) override
@@ -2241,7 +2241,7 @@ public:
             {
             public:
                 
-                Semaphore completed;
+                Semaphore completed{SYNC_LOCATION};
                 int result = -999;
 
                 virtual bool onAsyncComplete(int _result) override
@@ -2317,7 +2317,7 @@ public:
             {
             public:
                 
-                Semaphore completed;
+                Semaphore completed{SYNC_LOCATION};
                 int result = -999;
 
                 virtual bool onAsyncComplete(int _result) override
@@ -2383,7 +2383,7 @@ public:
             {
             public:
                 
-                Semaphore completed;
+                Semaphore completed{SYNC_LOCATION};
                 int result = -999;
 
                 virtual bool onAsyncComplete(int _result) override
@@ -2456,7 +2456,7 @@ public:
             {
             public:
 
-                Semaphore completed;
+                Semaphore completed{SYNC_LOCATION};
                 int result = -999;
 
                 virtual bool onAsyncComplete(int _result) override
@@ -2485,7 +2485,7 @@ public:
                 {
                 public:
                     
-                    Semaphore completed;
+                    Semaphore completed{SYNC_LOCATION};
                     int result = -999;
 
                     virtual bool onAsyncComplete(int _result) override
@@ -2560,7 +2560,7 @@ public:
             {
             public:
 
-                Semaphore completed;
+                Semaphore completed{SYNC_LOCATION};
                 int result = -999;
 
                 virtual bool onAsyncComplete(int _result) override
@@ -2590,7 +2590,7 @@ public:
             {
             public:
                 
-                Semaphore completed;
+                Semaphore completed{SYNC_LOCATION};
                 int result = -999;
 
                 virtual bool onAsyncComplete(int _result) override
@@ -2654,7 +2654,7 @@ public:
             {
             public:
                 
-                Semaphore completed;
+                Semaphore completed{SYNC_LOCATION};
                 int result = -999;
                 virtual bool onAsyncComplete(int _result) override
                 {
@@ -2736,7 +2736,7 @@ public:
                 {
                 public:
                     
-                    Semaphore completed;
+                    Semaphore completed{SYNC_LOCATION};
                     int result = -999;
                     virtual bool onAsyncComplete(int _result) override
                     {
@@ -2836,7 +2836,7 @@ public:
                 {
                 public:
                     
-                    Semaphore completed;
+                    Semaphore completed{SYNC_LOCATION};
                     int result = -999;
                     virtual bool onAsyncComplete(int _result) override
                     {
@@ -2925,7 +2925,7 @@ public:
             {
             public:
                 
-                Semaphore completed;
+                Semaphore completed{SYNC_LOCATION};
                 int result = -999;
 
                 virtual bool onAsyncComplete(int _result) override

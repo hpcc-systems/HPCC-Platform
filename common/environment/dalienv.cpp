@@ -90,7 +90,7 @@ class CIpOsHashTable: public CMinHashTable<CIpOsInstance>
 
 //---------------------------------------------------------------------------
 
-static CriticalSection ipcachesect;
+static CriticalSection ipcachesect{SYNC_LOCATION};
 static CIpOsHashTable *ipToOsCache = NULL;
 
 EnvMachineOS queryOS(const IpAddress & ip)

@@ -40,13 +40,13 @@ static int readTimeout = 300;
 #define MAXTHREADS 50
 
 
-static Mutex readMutex;
-static Mutex writeMutex;
+static Mutex readMutex{SYNC_LOCATION};
+static Mutex writeMutex{SYNC_LOCATION};
 static StringBuffer hosts;
 static ISmartSocketFactory *smartSocketFactory = nullptr;
 static bool Aborting = false;
 static StringBuffer fatalError;
-static CriticalSection fatalErrorSect;
+static CriticalSection fatalErrorSect{SYNC_LOCATION};
 
 static bool useSSL = false;
 
@@ -94,7 +94,7 @@ public:
     unsigned recordsRead = 0;
     unsigned recordsWritten = 0;
 
-    RoxieThread(const char *_query, const char *_resultName, const char * _traceParent) : query(_query), resultName(_resultName), traceParent(_traceParent)
+    RoxieThread(const char *_query, const char *_resultName, const char * _traceParent) : Thread("RoxieThread"), query(_query), resultName(_resultName), traceParent(_traceParent)
     {
         recordsRead = recordsWritten = 0;
         bytesPerQuery = recordsPerQuery * in_width;

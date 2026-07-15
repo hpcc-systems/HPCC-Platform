@@ -186,7 +186,7 @@ public:
 
 protected:
     std::atomic<bool> running;
-    Semaphore started;
+    Semaphore started{SYNC_LOCATION};
     Owned<IThreadPool> pool;
 
     Linked<IHpccNativeProtocolMsgSink> sink;
@@ -524,7 +524,7 @@ class CHpccNativeResultsWriter : implements IHpccNativeProtocolResultsWriter, pu
 {
 protected:
     SafeSocket *client;
-    CriticalSection resultsCrit;
+    CriticalSection resultsCrit{SYNC_LOCATION};
     IPointerArrayOf<FlushingStringBuffer> resultMap;
 
     StringAttr queryName;
@@ -1001,7 +1001,7 @@ protected:
     PTreeReaderOptions xmlReadFlags;
     Owned<CHpccNativeResultsWriter> results; //hpcc results section
     IPointerArrayOf<FlushingStringBuffer> contentsMap; //other sections
-    CriticalSection contentsCrit;
+    CriticalSection contentsCrit{SYNC_LOCATION};
     unsigned protocolFlags;
     bool isHTTP;
 
@@ -1357,7 +1357,7 @@ private:
     unsigned &agentReplyLen;
     unsigned &agentDuplicates;
     unsigned &agentResends;
-    CriticalSection crit;
+    CriticalSection crit{SYNC_LOCATION};
     unsigned flags;
 
 public:

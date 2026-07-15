@@ -244,7 +244,7 @@ class SafeQueueOf : private QueueOf<BASE, ALLOWNULLS>
     typedef SafeQueueOf<BASE, ALLOWNULLS> SELF;
     typedef QueueOf<BASE, ALLOWNULLS> PARENT;
 protected:
-    mutable CriticalSection crit;
+    mutable CriticalSection crit{SYNC_LOCATION};
     inline void unsafeenqueue(BASE *e) { QueueOf<BASE, ALLOWNULLS>::enqueue(e); }
     inline void unsafeenqueueHead(BASE *e) { QueueOf<BASE, ALLOWNULLS>::enqueue(e); }
     inline void unsafeenqueue(BASE *e,priorityGreaterFunction p) { QueueOf<BASE, ALLOWNULLS>::enqueue(e,p); }
@@ -279,9 +279,9 @@ class SimpleInterThreadQueueOf : protected SafeQueueOf<BASE, ALLOWNULLS>
 {
     typedef SimpleInterThreadQueueOf<BASE, ALLOWNULLS> SELF;
 protected:
-    Semaphore deqwaitsem;
+    Semaphore deqwaitsem{SYNC_LOCATION};
     unsigned deqwaiting;
-    Semaphore enqwaitsem;
+    Semaphore enqwaitsem{SYNC_LOCATION};
     unsigned enqwaiting;
     bool stopped;
     unsigned limit;
@@ -592,8 +592,8 @@ class ReallySimpleInterThreadQueueOf : protected SafeQueueOf<BASE, ALLOWNULLS>
     typedef ReallySimpleInterThreadQueueOf<BASE, ALLOWNULLS> SELF;
     typedef SafeQueueOf<BASE, ALLOWNULLS> PARENT;
 protected:
-    Semaphore space;
-    Semaphore avail;
+    Semaphore space{SYNC_LOCATION};
+    Semaphore avail{SYNC_LOCATION};
     unsigned limit = 0;
     std::atomic<bool> stopped{false};
 

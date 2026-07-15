@@ -122,7 +122,7 @@ StringBuffer &getShortNodeName(IGroup* grp,unsigned i,StringBuffer &buf)
     return buf;
 }
 
-static CriticalSection recvsect;
+static CriticalSection recvsect{SYNC_LOCATION};
 
 class CRecvThread: public Thread
 {
@@ -646,7 +646,7 @@ bool runSlaves(IGroup *grp,const char *progname,const char *daliserver,const cha
     public:
         IGroup *grp;
         bool error;
-        CriticalSection statesect;
+        CriticalSection statesect{SYNC_LOCATION};
         casyncfor(IGroup *_grp,const char *_remoteexe,const char *_params)
             : remoteexe(_remoteexe), params(_params)
         {
@@ -731,7 +731,7 @@ class CLoopbackServer: public Thread
 {
     bool stopping;
     Owned<ICommunicator> comm;
-    Semaphore sem;
+    Semaphore sem{SYNC_LOCATION};
     IGroup *grp;
     __int64 &total;
 

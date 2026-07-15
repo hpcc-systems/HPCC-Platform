@@ -120,7 +120,7 @@ unsigned applyNodes(const char *grpip, ApplyMode mode, unsigned ver, bool isdali
     if (!quiet&&(n>1))
         PROGLOG("Scanning %s...",grpip);
     multiConnect(eps,sockets,to);
-    CriticalSection sect;
+    CriticalSection sect{SYNC_LOCATION};
     class casyncfor: public CAsyncFor
     {
         SocketEndpointArray &eps;

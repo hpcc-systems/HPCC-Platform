@@ -328,7 +328,7 @@ bool CXRefFilesNode::RemovePhysical(const char *Partmask,IUserDescriptor* udesc,
         remoteFile.setLength(rootLen);
     }
         
-    CriticalSection crit;
+    CriticalSection crit{SYNC_LOCATION};
 
     class casyncfor: public CAsyncFor
     {

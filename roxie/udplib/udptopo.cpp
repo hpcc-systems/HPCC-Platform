@@ -409,7 +409,7 @@ public:
 private:
     void _setRoles(const std::vector<RoxieEndpointInfo> &myRoles, bool remove);
     Owned<const ITopologyServer> currentTopology;
-    SpinLock lock;
+    SpinLock lock{SYNC_LOCATION};
     StringArray topoServers;
     time_t myInstance = 0;
     const unsigned topoConnectTimeout = 1000;
@@ -595,7 +595,7 @@ extern UDPLIB_API void createStaticTopology(const std::vector<RoxieEndpointInfo>
 #endif
 
 static std::thread topoThread;
-static Semaphore abortTopo;
+static Semaphore abortTopo{SYNC_LOCATION};
 unsigned heartbeatInterval = 10000;   // How often roxie servers update topo server
 
 extern UDPLIB_API void initializeTopology(const StringArray &topoValues, const std::vector<RoxieEndpointInfo> &myRoles)

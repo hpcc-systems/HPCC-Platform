@@ -43,7 +43,7 @@ void getEndTime(timespec & abs, unsigned timeout)
 
 #ifndef USE_OLD_SEMAPHORE_CODE
 
-Semaphore::Semaphore(unsigned initialCount)
+Semaphore::Semaphore([[maybe_unused]] const char *syncName, unsigned initialCount)
 {
     sem_init(&sem, 0, initialCount);
 }
@@ -108,7 +108,7 @@ void Semaphore::signal(unsigned n)
 
 //Old semaphore code based on condition variables.
 
-Semaphore::Semaphore(unsigned initialCount)
+Semaphore::Semaphore([[maybe_unused]] const char *syncName, unsigned initialCount)
 {
     init();
     count = initialCount;

@@ -290,7 +290,7 @@ class HelperDll : implements ILoadedDllEntry, public CInterface
     Linked<const IFileIO> dllFile;
     Owned<IMemoryMappedFile> mappedDll;
     mutable std::atomic<IPropertyTree *> manifest {nullptr};
-    mutable CriticalSection manifestLock;
+    mutable CriticalSection manifestLock{SYNC_LOCATION};
     mutable StringMapOf<ManifestFileList> manifestFiles;
 
 protected:

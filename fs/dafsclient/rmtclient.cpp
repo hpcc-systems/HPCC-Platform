@@ -126,11 +126,11 @@ protected:
     const char *    privateKey;
     const char *    passPhrase;
     std::atomic<bool> init{false};
-    CriticalSection cs;
+    CriticalSection cs{SYNC_LOCATION};
 } securitySettings;
 
 
-static CriticalSection              secureContextCrit;
+static CriticalSection              secureContextCrit{SYNC_LOCATION};
 static Owned<ISecureSocketContext>  secureContextClient;
 static std::unordered_map<std::string, Owned<ISecureSocketContext>> secureCtxClientIssuerMap;
 
@@ -652,7 +652,7 @@ public:
 } *ConnectionTable = NULL;
 
 
-CriticalSection CConnectionTable::crit;
+CriticalSection CConnectionTable::crit(SYNC_LOCATION);
 
 void clientSetDaliServixSocketCaching(bool on)
 {
@@ -1116,7 +1116,7 @@ const SocketEndpoint &CRemoteBase::queryEp() const
 
 SocketEndpoint CRemoteBase::lastfailep;
 unsigned CRemoteBase::lastfailtime;
-CriticalSection CRemoteBase::lastFailEpCrit;
+CriticalSection CRemoteBase::lastFailEpCrit(SYNC_LOCATION);
 
 
 
@@ -1629,7 +1629,7 @@ public:
 };
 
 
-CriticalSection CDafsOsCache::crit;
+CriticalSection CDafsOsCache::crit(SYNC_LOCATION);
 
 
 DAFS_OS getDaliServixOs(const SocketEndpoint &ep,ISocket *socket)

@@ -70,7 +70,7 @@ static const CCharacterSet wsCharSet([](unsigned char c) { return isspace(c); })
 class NullPTreeIterator final : implements IPropertyTreeIterator
 {
 public:
-    virtual ~NullPTreeIterator() {}
+    virtual ~NullPTreeIterator() = default;
     virtual void Link() const override {}
     virtual bool Release() const override { return true; }
 // IPropertyTreeIterator
@@ -98,7 +98,7 @@ static_assert((kNameShards & (kNameShards - 1)) == 0 && kNameShards > 0, "kNameS
 template <class ATOM_TYPE>
 struct alignas(64) CAtomShard
 {
-    CriticalSection crit;
+    CriticalSection crit{SYNC_LOCATION};
     CMinHashTable<ATOM_TYPE> ht;
 
     inline AtomStr *add(const char *v, size32_t len, unsigned hash)
@@ -781,7 +781,7 @@ public:
 class CQualifierMap
 {
     std::unordered_map<std::string, CValueMap *> attrValueMaps;
-    CriticalSection crit;
+    CriticalSection crit{SYNC_LOCATION};
 
 public:
     CQualifierMap()
@@ -9025,7 +9025,7 @@ static void applyCommandLineOption(IPropertyTree * config, const char * option, 
     applyCommandLineOption(config, option, val);
 }
 
-static CriticalSection configCS;
+static CriticalSection configCS(SYNC_LOCATION);
 static Owned<IPropertyTree> componentConfiguration;
 static Owned<IPropertyTree> globalConfiguration;
 static Owned<IPropertyTree> nullConfiguration;
@@ -9167,7 +9167,7 @@ class CConfigUpdater : public CInterface
     IPropertyTree * (*mapper)(IPropertyTree *);
     StringAttr altNameAttribute;
     Owned<IFileEventWatcher> fileWatcher; // null if updates to the config file are not allowed
-    CriticalSection notifyFuncCS;
+    CriticalSection notifyFuncCS{SYNC_LOCATION};
     unsigned notifyFuncId = 0;
     std::unordered_map<unsigned, ConfigUpdateFunc> notifyConfigUpdates;
     std::unordered_map<unsigned, ConfigModifyFunc> modifyConfigUpdates;

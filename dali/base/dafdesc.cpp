@@ -2914,7 +2914,7 @@ static StringAttr unixBaseDirectories[MAX_REPLICATION_LEVELS];
 
 static StringAttr defaultpartmask("$L$._$P$_of_$N$");
 
-static CriticalSection ldbCs;
+static CriticalSection ldbCs{SYNC_LOCATION};
 static std::atomic<bool> ldbDone{false};
 static void loadDefaultBases()
 {
@@ -3348,7 +3348,7 @@ void removePartFiles(IFileDescriptor *desc,IMultiException *mexcept)
 {
     if (!desc)
         return;
-    CriticalSection crit;
+    CriticalSection crit{SYNC_LOCATION};
     class casyncfor: public CAsyncFor
     {
         CriticalSection &crit;
@@ -3974,7 +3974,7 @@ void applyPlaneTransformations(IPropertyTree * storage)
 
 static CConfigUpdateHook configUpdateHook;
 static std::atomic<unsigned> normalizeHostGroupUpdateCBId{(unsigned)-1};
-static CriticalSection storageCS;
+static CriticalSection storageCS{SYNC_LOCATION};
 static void doInitializeStorageGroups(bool createPlanesFromGroups, IPropertyTree * newGlobalConfiguration)
 {
     CriticalBlock block(storageCS);

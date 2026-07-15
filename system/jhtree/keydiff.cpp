@@ -1127,7 +1127,7 @@ private:
 class CTLKGenerator : public Thread
 {
 public:
-    CTLKGenerator(INodeReceiver * receiver, unsigned numParts, KeyDiffHeader const & _header) : tlkReceiver(receiver), remaining(numParts), header(_header)
+    CTLKGenerator(INodeReceiver * receiver, unsigned numParts, KeyDiffHeader const & _header) : Thread("CTLKGenerator"), tlkReceiver(receiver), remaining(numParts), header(_header)
     {
     }
 
@@ -1199,7 +1199,7 @@ private:
     KeyDiffHeader const & header;
     StringAttr filename;
     Owned<CKeyWriter> writer;
-    CriticalSection crit;
+    CriticalSection crit{SYNC_LOCATION};
     NodeInfoArray TLKnodes;
 };
 

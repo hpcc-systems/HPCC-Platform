@@ -1245,7 +1245,7 @@ void AgentContextLogger::flush()
 
 //=================================================================================
 
-static SpinLock onDemandQueriesCrit;
+static SpinLock onDemandQueriesCrit{SYNC_LOCATION};
 static MapXToMyClass<hash64_t, hash64_t, IQueryFactory> onDemandQueryCache;
 
 void sendUnloadMessage(hash64_t hash, const char *id, const IRoxieContextLogger &logctx)
@@ -1356,9 +1356,9 @@ class RoxieQueue : public CInterface, implements IThreadFactory
 {
     Owned <IThreadPool> workers;
     QueueOf<ISerializedRoxieQueryPacket, true> waiting;
-    Semaphore available;
-    CriticalSection availCrit;    // Semaphore post may be slow with a lot of waiters - this crit may be used to limit to a single waiter
-    CriticalSection qcrit;
+    Semaphore available{SYNC_LOCATION};
+    CriticalSection availCrit{SYNC_LOCATION};    // Semaphore post may be slow with a lot of waiters - this crit may be used to limit to a single waiter
+    CriticalSection qcrit{SYNC_LOCATION};
     unsigned numWorkers;
     RelaxedAtomic<unsigned> started;
     std::atomic<unsigned> idle;
@@ -1570,7 +1570,7 @@ public:
 class CRoxieWorker : public CInterface, implements IPooledThread
 {
     RoxieQueue *queue;
-    CriticalSection actCrit;
+    CriticalSection actCrit{SYNC_LOCATION};
     std::atomic<bool> stopped;
     std::atomic<bool> abortLaunch;
     std::atomic<bool> workerThreadBusy;
@@ -2024,7 +2024,7 @@ public:
     }
 
     IArrayOf<CallbackEntry> callbacks;
-    CriticalSection callbacksCrit;
+    CriticalSection callbacksCrit{SYNC_LOCATION};
 
     virtual IPendingCallback *notePendingCallback(const RoxiePacketHeader &header, const char *lfn)
     {
@@ -2110,7 +2110,7 @@ class RoxieThrottledPacketSender : public Thread
 {
     TokenBucket &bucket;
     InterruptableSemaphore queued;
-    Semaphore started;
+    Semaphore started{SYNC_LOCATION};
     SafeQueueOf<IRoxieQueryPacket, false> queue;
 
     class DECL_EXCEPTION StoppedException: public IException, public CInterface
@@ -2462,7 +2462,7 @@ protected:
     unsigned maxPacketSize = 0;
     StringContextLogger logctx;
     DelayedPacketQueueManager delayed;
-    CriticalSection ibytiCrit; // Protect the ibyti structures against concurrent access - could reduce granularity later
+    CriticalSection ibytiCrit{SYNC_LOCATION}; // Protect the ibyti structures against concurrent access - could reduce granularity later
     class WorkerReceiverTracker : public TimeDivisionTracker<6, false>
     {
     public:
@@ -2563,7 +2563,7 @@ protected:
 
     protected:
         RoxieSocketQueueManager & parent;
-        Semaphore wakeEarly;
+        Semaphore wakeEarly{SYNC_LOCATION};
         std::atomic<unsigned> firstWakeTime{0};
         std::atomic<bool> abort{false};
 
@@ -3559,7 +3559,7 @@ class CLocalMessageCollator : implements ILocalMessageCollator, public CInterfac
 {
     InterruptableSemaphore sem;
     QueueOf<IMessageResult, false> pending;
-    CriticalSection crit;
+    CriticalSection crit{SYNC_LOCATION};
     Linked<IRowManager> rowManager; // Linked to ensure it lives longer than me
     Linked<ILocalReceiveManager> receiveManager;
     ruid_t id;
@@ -3641,7 +3641,7 @@ public:
 class RoxieLocalReceiveManager : implements ILocalReceiveManager, public CInterface
 {
     MapXToMyClass<ruid_t, ruid_t, ILocalMessageCollator> collators;
-    CriticalSection crit;
+    CriticalSection crit{SYNC_LOCATION};
 
 public:
     IMPLEMENT_IINTERFACE;
@@ -3878,7 +3878,7 @@ class PacketDiscarder : public Thread, implements IPacketDiscarder
 public:
     IMPLEMENT_IINTERFACE_USING(Thread);
 
-    PacketDiscarder()
+    PacketDiscarder() : Thread("PacketDiscarder")
     {
         aborted = false;
     };

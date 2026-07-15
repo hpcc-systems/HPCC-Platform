@@ -336,7 +336,7 @@ inline UChar u16toupper(UChar c)
 }
 
 static icu::Transliterator* deAccenter = NULL;
-static CriticalSection accenterCrit;
+static CriticalSection accenterCrit{SYNC_LOCATION};
 
 inline unsigned char min3(unsigned char a, unsigned char b, unsigned char c)
 {
@@ -1294,7 +1294,7 @@ private:
 
 typedef MapStringTo<CBILocale, char const *> MapStrToCBI;
 static MapStrToCBI * localeCBiMap;
-static CriticalSection localeCBiCrit;
+static CriticalSection localeCBiCrit{SYNC_LOCATION};
 
 static BreakIterator * queryCharacterBreakIterator(const char * localename)
 {
@@ -1345,7 +1345,7 @@ private:
 
 typedef MapStringTo<RBCLocale, char const *> MapStrToRBC;
 static MapStrToRBC * localeMap;
-static CriticalSection localeCrit;
+static CriticalSection localeCrit{SYNC_LOCATION};
 
 static RuleBasedCollator * queryRBCollator(const char * localename)
 {

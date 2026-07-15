@@ -607,7 +607,7 @@ class CQueryStatsAggregator : public CInterface, implements IQueryStatsAggregato
         }
     };
 
-    CriticalSection statsLock;  // Protects multithreaded access to recent and aggregated structures
+    CriticalSection statsLock{SYNC_LOCATION};  // Protects multithreaded access to recent and aggregated structures
     std::deque<QueryStatsRecord> recent;
     std::deque<QueryStatsAggregateRecord> aggregated; // stored with most recent first
     unsigned expirySeconds;  // time to keep exact info (rather than just aggregated)

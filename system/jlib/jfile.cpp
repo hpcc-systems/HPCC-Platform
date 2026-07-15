@@ -1481,7 +1481,7 @@ static bool parseShare(const char *filename,IpAddress &machine,StringBuffer &sha
     return true;
 }
 
-static CriticalSection connectcrit;
+static CriticalSection connectcrit(SYNC_LOCATION);
 
 static bool connectToExternalDrive(const char * const filename)
 {
@@ -3329,7 +3329,7 @@ public:
 
 enum GblFlushEnum { FLUSH_INIT, FLUSH_DISALLOWED, FLUSH_ALLOWED };
 static GblFlushEnum gbl_flush_allowed = FLUSH_INIT;
-static CriticalSection flushsect;
+static CriticalSection flushsect(SYNC_LOCATION);
 
 static inline bool isPCFlushAllowed()
 {
@@ -4053,7 +4053,7 @@ class CLinuxDirectoryIterator : public CDirectoryIterator
     DIR *           handle;
     struct stat     st;
     bool            gotst;
-    CriticalSection sect;
+    CriticalSection sect{SYNC_LOCATION};
 
     bool loadst()
     {
@@ -7001,7 +7001,7 @@ void asyncClose(IFileIO *io)
 {
     if (!io)
         return;
-    static CriticalSection ADsect;
+    static CriticalSection ADsect(SYNC_LOCATION);
     CriticalBlock block(ADsect);
     static Owned<IWorkQueueThread> adwp = createWorkQueueThread();
     class cWQI: public CInterface,implements IWorkQueueItem
@@ -7143,7 +7143,7 @@ public:
 
 class CLazyFileIOCache: implements IFileIOCache, public CInterface
 {
-    CriticalSection sect;
+    CriticalSection sect{SYNC_LOCATION};
     unsigned max;
     IPointerArrayOf<CCachedFileIO> cache;
 public:
@@ -7480,7 +7480,7 @@ class CFileEventWatcher : public CInterfaceOf<IFileEventWatcher>, implements ITh
     std::unordered_map<int, Linked<CMonitoredItem>> monitoredFilesByFd;
     std::unordered_map<std::string, Linked<CMonitoredItem>> monitoredFiles;
     std::unordered_set<int> pendingRemovals;
-    CriticalSection crit;
+    CriticalSection crit{SYNC_LOCATION};
     FileWatchFunc callback;
     CThreaded threaded;
     std::atomic<bool> stopped{true};

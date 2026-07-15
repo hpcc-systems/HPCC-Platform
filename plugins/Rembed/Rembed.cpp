@@ -205,7 +205,7 @@ private:
     MapStringToMyClass<REnvironment> preservedScopes;
 }* globalState = NULL;
 
-static CriticalSection RCrit;  // R is single threaded - need to own this before making any call to R
+static CriticalSection RCrit{SYNC_LOCATION};  // R is single threaded - need to own this before making any call to R
 
 void RGlobalState::unregister(const char *key)
 {

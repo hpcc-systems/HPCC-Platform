@@ -66,8 +66,8 @@ class CLogRequestReader : public CInterface, implements ILogRequestReader
     CThreaded threaded;
     bool stopping = false;
     bool paused = false;
-    Semaphore sem;
-    CriticalSection crit;
+    Semaphore sem{SYNC_LOCATION};
+    CriticalSection crit{SYNC_LOCATION};
 
     void readAcked(const char* fileName, std::set<std::string>& acked);
     void readLogRequest();
@@ -128,8 +128,8 @@ class CLogThread : public Thread , implements IUpdateLogThread
 
     Owned<IEspLogAgent> logAgent;
     QueueOf<IInterface, false> logQueue;
-    CriticalSection logQueueCrit;
-    Semaphore       m_sem;
+    CriticalSection logQueueCrit{SYNC_LOCATION};
+    Semaphore m_sem{SYNC_LOCATION};
 
     bool ensureFailSafe;
     Owned<ILogFailSafe> logFailSafe;

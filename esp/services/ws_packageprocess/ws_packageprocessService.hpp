@@ -34,8 +34,8 @@ class PackageMapAndSet : public CInterface, implements ISDSSubscription
     Owned<IPropertyTree> tree;
     SubscriptionId pmChange;
     SubscriptionId psChange;
-    mutable CriticalSection crit;
-    mutable CriticalSection dirtyCrit; //if there were an atomic_or I would just use atomic
+    mutable CriticalSection crit{SYNC_LOCATION};
+    mutable CriticalSection dirtyCrit{SYNC_LOCATION}; //if there were an atomic_or I would just use atomic
     unsigned dirty;
 
     void load(unsigned flags);

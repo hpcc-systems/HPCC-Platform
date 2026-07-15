@@ -193,7 +193,7 @@ class CSlaveGraphElement;
 class graphslave_decl CSlaveActivity : public CActivityBase, public CEdgeProgress, public COutputTiming, implements IThorDataLink, implements IEngineRowStream, implements IThorSlaveActivity
 {
     mutable MemoryBuffer *data;
-    mutable CriticalSection crit;
+    mutable CriticalSection crit{SYNC_LOCATION};
 
 protected:
     CThorInputArray inputs;
@@ -208,7 +208,7 @@ protected:
     bool optStableInput = true; // is the input forced to ordered?
     bool optUnstableInput = false;  // is the input forced to unordered?
     bool optUnordered = false; // is the output specified as unordered?
-    CriticalSection statsCs; // to be used to protect objects refernce during stat. collection
+    CriticalSection statsCs{SYNC_LOCATION}; // to be used to protect objects refernce during stat. collection
     CRuntimeStatisticCollection inactiveStats; // stats collected from previous iteration, to be combined with current 'stats'
     // fileStats is mutable as it is updated by gatherActiveStats (const member func)
     // fileStats is in this base class as it used by multiple derived classes (both slave and master) but not all.
@@ -525,8 +525,8 @@ class CJobSlave;
 class graphslave_decl CSlaveGraph : public CGraphBase
 {
     CJobSlave *jobS;
-    Semaphore getDoneSem;
-    CriticalSection progressCrit;
+    Semaphore getDoneSem{SYNC_LOCATION};
+    CriticalSection progressCrit{SYNC_LOCATION};
     bool doneInit = false;
     std::atomic_bool progressActive;
     ProcessInfo processStartInfo;
@@ -616,7 +616,7 @@ public:
 
 class graphslave_decl CJobSlaveChannel : public CJobChannel
 {
-    CriticalSection graphRunCrit;
+    CriticalSection graphRunCrit{SYNC_LOCATION};
 public:
     CJobSlaveChannel(CJobBase &job, IMPServer *mpServer, unsigned channel);
 

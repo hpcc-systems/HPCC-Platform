@@ -25,7 +25,7 @@ class BaseEnthActivity : public CSlaveActivity, implements ILookAheadStopNotify
 
 protected:
     StringBuffer actStr;
-    Semaphore finishedSem;
+    Semaphore finishedSem{SYNC_LOCATION};
     rowcount_t counter = 0, localRecCount = 0;
     rowcount_t denominator = 0, numerator = 0;
 
@@ -181,7 +181,7 @@ class CEnthSlaveActivity : public BaseEnthActivity
 {
     typedef BaseEnthActivity PARENT;
 
-    Semaphore prevRecCountSem;
+    Semaphore prevRecCountSem{SYNC_LOCATION};
     rowcount_t prevRecCount;
     bool first = false; // until start
 

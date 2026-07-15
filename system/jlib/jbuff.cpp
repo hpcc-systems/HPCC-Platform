@@ -1065,7 +1065,7 @@ const char * MemoryAttr2IStringVal::str() const
 
 static memsize_t LMsemlimit=0;
 static memsize_t LMtotal=0;
-static CriticalSection LMsemsect;
+static CriticalSection LMsemsect(SYNC_LOCATION);
 static Owned<ILargeMemLimitNotify> LMnotify;
 static bool LMlocked = false;
 

@@ -583,8 +583,8 @@ extern const StatisticsMapping accumulatedStatistics;
 class ContextLogger : implements IRoxieContextLogger, public CInterface
 {
 protected:
-    mutable CriticalSection crit;
-    mutable CriticalSection statsCrit;
+    mutable CriticalSection crit{SYNC_LOCATION};
+    mutable CriticalSection statsCrit{SYNC_LOCATION};
     unsigned start;
     unsigned ctxTraceLevel;
     mutable CRuntimeStatisticCollection stats;

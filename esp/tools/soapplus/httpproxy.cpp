@@ -271,7 +271,7 @@ private:
     ISocket*  m_w;
     FILE*     m_ofile;
 public:
-    CReadWriteThread(ISocket* r, ISocket* w, FILE* ofile)
+    CReadWriteThread(ISocket* r, ISocket* w, FILE* ofile) : Thread("CReadWriteThread")
     {
         m_r = r;
         m_w = w;
@@ -308,6 +308,7 @@ public:
 
 
 CHttpProxyThread::CHttpProxyThread(ISocket* client, FILE* ofile)
+    : Thread("CHttpProxyThread")
 {
     m_client.set(client);
     m_ofile = ofile;
@@ -635,7 +636,7 @@ private:
     Owned<ISocket>  m_remotesocket;
 
 public:
-    CSocksProxyThread(ISocket* client, FILE* ofile)
+    CSocksProxyThread(ISocket* client, FILE* ofile) : Thread("CSocksProxyThread")
     {
         m_client.set(client);
         m_ofile = ofile;

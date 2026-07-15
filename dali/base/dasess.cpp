@@ -144,7 +144,7 @@ interface ISessionManagerServer: implements IConnectionMonitor
 static SessionId mySessionId=0;
 static ISessionManager *SessionManager=NULL;
 static ISessionManagerServer *SessionManagerServer=NULL;
-static CriticalSection sessionCrit;
+static CriticalSection sessionCrit{SYNC_LOCATION};
 
 #define SESSIONREPLYTIMEOUT (3*60*1000)
 
@@ -195,7 +195,7 @@ class CdelayedTerminate: public Thread // slightly obfuscated stop code
     }
 
 public:
-    CdelayedTerminate(byte _err) 
+    CdelayedTerminate(byte _err) : Thread("DelayedTerminate")
     {
         err = _err;
         start(false);
@@ -225,7 +225,7 @@ public:
 
 class CSessionStateTable: private SuperHashTableOf<CSessionState,SessionId>
 {
-    CheckedCriticalSection sessstatesect;
+    CheckedCriticalSection sessstatesect{SYNC_LOCATION};
 
     void onAdd(void *) {}
 
@@ -353,7 +353,7 @@ public:
 
 class CMapProcessToSession: private SuperHashTableOf<CProcessSessionState,INode>
 {
-    CheckedCriticalSection mapprocesssect;
+    CheckedCriticalSection mapprocesssect{SYNC_LOCATION};
 
 
     void onAdd(void *) {}
@@ -499,7 +499,7 @@ class CSessionRequestServer: public Thread
 {
     bool stopped;
     ISessionManagerServer &manager;
-    Semaphore acceptConnections;
+    Semaphore acceptConnections{SYNC_LOCATION};
 
 public:
     CSessionRequestServer(ISessionManagerServer &_manager) 
@@ -708,7 +708,7 @@ public:
 class CSessionManagerBase: implements ISessionManager, public CInterface
 {
 protected:
-    CheckedCriticalSection sessmanagersect;
+    CheckedCriticalSection sessmanagersect{SYNC_LOCATION};
 public:
     IMPLEMENT_IINTERFACE;
 
@@ -827,7 +827,7 @@ public:
     {
     public:
         IMPLEMENT_IINTERFACE;
-        Semaphore sem;
+        Semaphore sem{SYNC_LOCATION};
         void closed(SessionId id)
         {
             //PROGLOG("Session closed %" I64F "x",id);
@@ -1139,13 +1139,12 @@ class CLdapWorkItem : public Thread
     Linked<IDaliLdapConnection> ldapconn;
     unsigned flags;
     std::atomic<bool> running;
-    Semaphore contsem;
-    Semaphore ready;
+    Semaphore contsem{SYNC_LOCATION};
+    Semaphore ready{SYNC_LOCATION};
     Semaphore &threaddone;
     int ret;
 public:
-    CLdapWorkItem(IDaliLdapConnection *_ldapconn,Semaphore &_threaddone)
-        : ldapconn(_ldapconn), threaddone(_threaddone)
+    CLdapWorkItem(IDaliLdapConnection *_ldapconn,Semaphore &_threaddone) : Thread("CLdapWorkItem"), ldapconn(_ldapconn), threaddone(_threaddone)
     {
         running = false;
     }
@@ -1223,9 +1222,9 @@ class CCovenSessionManager: public CSessionManagerBase, implements ISessionManag
     CMapProcessToSession    processlookup;
     Owned<IDaliLdapConnection> ldapconn;
     Owned<CLdapWorkItem> ldapworker;
-    Semaphore ldapsig;
+    Semaphore ldapsig{SYNC_LOCATION};
     std::atomic<unsigned> ldapwaiting{0};
-    Semaphore workthreadsem;
+    Semaphore workthreadsem{SYNC_LOCATION};
     bool stopping;
 
     void remoteAddProcessSession(rank_t dst,SessionId id,INode *node, DaliClientRole role)
@@ -1884,7 +1883,7 @@ bool registerClientProcess(ICommunicator *comm, IGroup *& retcoven,unsigned time
         else {
             struct cThread: public Thread
             {
-                Semaphore sem;
+                Semaphore sem{SYNC_LOCATION};
                 Linked<ICommunicator> comm;
                 bool ok;
                 Owned<IException> exc;

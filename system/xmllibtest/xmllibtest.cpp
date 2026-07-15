@@ -231,7 +231,7 @@ private:
     char** argv;
     
 public:
-    XsltThread(int _argc, char** _argv)
+    XsltThread(int _argc, char** _argv) : Thread("XsltThread")
     {
         argc = _argc;
         argv = _argv;

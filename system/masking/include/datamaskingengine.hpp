@@ -139,7 +139,7 @@ namespace DataMasking
         using PluginMap = std::map<std::string, Plugin>;
         Linked<ITracer>        tracer;
         PluginMap              plugins;
-        CriticalSection        lock;
+        CriticalSection lock{SYNC_LOCATION};
         std::string            libraryXPath;
         std::string            libraryDefault;
         std::string            entryPointXPath;

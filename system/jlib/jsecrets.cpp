@@ -347,7 +347,7 @@ extern jlib_decl StringBuffer &generateDynamicUrlSecretName(StringBuffer &secret
 //---------------------------------------------------------------------------------------------------------------------
 
 static StringBuffer secretDirectory;
-static CriticalSection secretCS;
+static CriticalSection secretCS(SYNC_LOCATION);
 
 //there are various schemes for renewing kubernetes secrets and they are likely to vary greatly in how often
 //  a secret gets updated this timeout determines the maximum amount of time before we'll pick up a change
@@ -613,7 +613,7 @@ public:
     }
 
 private:
-    CriticalSection cs;
+    CriticalSection cs{SYNC_LOCATION};
     std::unordered_map<std::string, std::unique_ptr<SecretCacheEntry>> secrets;
 };
 
@@ -723,7 +723,7 @@ protected:
 protected:
     CVaultKind kind;
     VaultType vaultType = VaultType::hashicorp;
-    CriticalSection vaultCS;
+    CriticalSection vaultCS{SYNC_LOCATION};
     StringBuffer category;
     StringBuffer schemeHostPort;
     StringBuffer path;
@@ -1675,7 +1675,7 @@ IVaultManager *getVaultManager()
 //---------------------------------------------------------------------------------------------------------------------
 
 static SecretCache globalSecretCache;
-static CriticalSection mtlsInfoCacheCS;
+static CriticalSection mtlsInfoCacheCS(SYNC_LOCATION);
 static std::unordered_map<std::string, Linked<ISyncedPropertyTree>> mtlsInfoCache;
 
 MODULE_INIT(INIT_PRIORITY_SYSTEM)
@@ -1900,7 +1900,7 @@ protected:
     void checkUptoDate() const;
 
 protected:
-    mutable CriticalSection secretCs;
+    mutable CriticalSection secretCs{SYNC_LOCATION};
     mutable SecretCacheEntry * secret;
 };
 
@@ -1954,6 +1954,9 @@ static cache_timestamp refreshLookaheadNs = 0;
 class SecretRefreshThread : public Thread
 {
 public:
+    SecretRefreshThread() : Thread("SecretRefreshThread")
+    {
+    }
     virtual int run() override
     {
         std::vector<SecretCacheEntry *> pending;
@@ -1989,7 +1992,7 @@ public:
 
 public:
     std::atomic<bool> abort{false};
-    Semaphore sem;
+    Semaphore sem{SYNC_LOCATION};
 };
 static Owned<SecretRefreshThread> refreshThread;
 
@@ -2154,7 +2157,7 @@ protected:
 protected:
     StringAttr issuer;
     Owned<ISyncedPropertyTree> secret;
-    mutable CriticalSection secretCs;
+    mutable CriticalSection secretCs{SYNC_LOCATION};
     mutable Linked<IPropertyTree> config;
     mutable std::atomic<unsigned> secretHash{0};
 };
@@ -2338,7 +2341,7 @@ bool hasIssuerTlsConfig(const char *issuer)
 enum UseMTLS { UNINIT, DISABLED, ENABLED };
 static UseMTLS useMtls = UNINIT;
 
-static CriticalSection queryMtlsCS;
+static CriticalSection queryMtlsCS(SYNC_LOCATION);
 
 jlib_decl bool queryMtls()
 {

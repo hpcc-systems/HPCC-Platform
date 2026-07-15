@@ -12830,7 +12830,7 @@ IHqlExpression * PseudoPatternScope::lookupSymbol(IIdAtom * name, unsigned looku
 
 //---------------------------------------------------------------------------------------------------------------------
 #ifndef HQLEXPR_MULTI_THREADED
-static CriticalSection parseQueryCrit;
+static CriticalSection parseQueryCrit{SYNC_LOCATION};
 #endif
 
 extern HQL_API IHqlExpression * parseQuery(IHqlScope *scope, IFileContents * contents, HqlLookupContext & ctx, IXmlScope *xmlScope, IProperties * macroParams, bool loadImplicit, bool isRoot)

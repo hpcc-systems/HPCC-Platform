@@ -109,7 +109,7 @@ public:
     virtual void flush() override;
 
 protected:
-    CriticalSection cs;
+    CriticalSection cs{SYNC_LOCATION};
     offset_t offset = 0;
 };
 
@@ -321,7 +321,7 @@ protected:
     time_t lastModified = 0;
     time_t createdOn = 0;
     std::string fileUrl;
-    CriticalSection cs;
+    CriticalSection cs{SYNC_LOCATION};
 };
 
 //---------------------------------------------------------------------------------------------------------------------

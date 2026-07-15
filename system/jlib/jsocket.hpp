@@ -775,7 +775,7 @@ public:
     enum { Snone, Saccept, Sconnect, Srecv, Ssend, Scancelled } state;
     bool cancelling = false;
     SocketEndpoint ep;
-    CriticalSection crit;
+    CriticalSection crit{SYNC_LOCATION};
     IMPLEMENT_IINTERFACE;
 
     CSingletonSocketConnection() {}

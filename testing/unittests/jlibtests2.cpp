@@ -312,7 +312,7 @@ public:
     class EventReporterThread : public Thread
     {
     public:
-        EventReporterThread(unsigned _id, unsigned _count) : id(_id), count(_count) {}
+        EventReporterThread(unsigned _id, unsigned _count) : Thread("EventReporterThread"), id(_id), count(_count) {}
 
         virtual int run()
         {
@@ -1624,7 +1624,7 @@ public:
             pool->setPoolSize(2, 0);  // Set pool size to 2 to create burst conditions
 
             // Set up shared semaphores and counters
-            Semaphore startSem, stopSem;
+            Semaphore startSem{SYNC_LOCATION}, stopSem{SYNC_LOCATION};
             std::atomic<unsigned> startCount{0};
             std::atomic<unsigned> stopCount{0};
             void *params[] = {&startSem, &stopSem, &startCount, &stopCount};
@@ -1900,7 +1900,7 @@ class IOURingTest : public CppUnit::TestFixture
         };
 
     public:
-        Semaphore sem;
+        Semaphore sem{SYNC_LOCATION};
     };
 
 public:

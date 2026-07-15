@@ -200,15 +200,15 @@ protected:
     Owned<IWorkflowItemArray> workflow;
     Owned<PersistVersion> persist;
     //this protects the global persist variable
-    CriticalSection persistCritSec;
+    CriticalSection persistCritSec{SYNC_LOCATION};
     //this protects the persist lock array from race conditions
-    CriticalSection finishPersistCritSec;
+    CriticalSection finishPersistCritSec{SYNC_LOCATION};
     //contains extra workflow items that are created at runtime. These support logical successorships
     std::vector<Shared<IRuntimeWorkflowItem>> logicalWorkflow;
     std::queue<unsigned> wfItemQueue;
-    Semaphore wfItemQueueSem;
+    Semaphore wfItemQueueSem{SYNC_LOCATION};
     //used to pop/add items to the queue
-    CriticalSection queueCritSec;
+    CriticalSection queueCritSec{SYNC_LOCATION};
     //optional debug value "parallelThreads" to select number of threads
     unsigned numThreads = 1U;
     //the wfid of the parent item. It has no successors, only dependents.
@@ -223,9 +223,9 @@ protected:
     //flag is set when a workflowItem fails and is not successfully recovered
     std::atomic<bool> abort{false};
     //This protects against a race condition between activate() and deactivate()
-    CriticalSection activationCritSec;
+    CriticalSection activationCritSec{SYNC_LOCATION};
     //This protects each item from having its exception set twice, in a race condition
-    CriticalSection exceptionCritSec;
+    CriticalSection exceptionCritSec{SYNC_LOCATION};
     //This counts the active contingency clauses (that haven't finished being executed)
     //This ensures that the query doesn't finish without completing the contingencies.
     std::atomic<unsigned> activeContingencies{0U};
@@ -247,7 +247,7 @@ protected:
     unsigned itemsUnblocked;
 
     //allows the condition result to be returned from a process in a thread-safe way
-    CriticalSection conditionCritSec;
+    CriticalSection conditionCritSec{SYNC_LOCATION};
     unsigned condition;
 };
 

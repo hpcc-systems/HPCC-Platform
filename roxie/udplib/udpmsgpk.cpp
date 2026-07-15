@@ -427,7 +427,7 @@ public:
 class CMessageResult : public IMessageResult, CInterface {
     PackageSequencer    *pkSequencer;
     mutable MemoryBuffer metaInfo;
-    mutable CriticalSection metaCrit;
+    mutable CriticalSection metaCrit{SYNC_LOCATION};
     
 public:
     IMPLEMENT_IINTERFACE;

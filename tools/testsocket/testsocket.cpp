@@ -73,11 +73,11 @@ Owned<ISecureSocket> persistSSock;
 int repeats = 0;
 StringBuffer queryPrefix;
 
-Semaphore okToSend;
-Semaphore done;
-Semaphore finishedReading;
+Semaphore okToSend{SYNC_LOCATION};
+Semaphore done{SYNC_LOCATION};
+Semaphore finishedReading{SYNC_LOCATION};
 FILE * trace;
-CriticalSection traceCrit;
+CriticalSection traceCrit{SYNC_LOCATION};
 
 unsigned queryDelayMS = 0;
 unsigned queryAbsDelayMS = 0;  // ex: -u0 -qd 1000 for 1 q/s ...
@@ -654,6 +654,10 @@ int readResults(ISocket * socket, bool readBlocked, bool useHTTP, StringBuffer &
 class ReceiveThread : public Thread
 {
 public:
+    ReceiveThread() : Thread("ReceiveThread")
+    {
+    }
+
     virtual int run();
 };
 
@@ -712,7 +716,7 @@ retry:
                 if (lastnum > firstnum)
                 {
                     static unsigned counter;
-                    static CriticalSection counterCrit;
+                    static CriticalSection counterCrit{SYNC_LOCATION};
                     CriticalBlock b(counterCrit);
                     ipstr.append(startrange - ip, ip).append((counter++ % (lastnum+1-firstnum)) + firstnum).append(endptr);
                     ip = ipstr.str();
@@ -1029,7 +1033,7 @@ retry:
 class QueryThread : public Thread
 {
 public:
-    QueryThread(const char * _ip, unsigned _port, const char * _base) : ip(_ip),port(_port),base(_base) {}
+    QueryThread(const char * _ip, unsigned _port, const char * _base) : Thread("QueryThread"), ip(_ip),port(_port),base(_base) {}
 
     virtual int run()
     {

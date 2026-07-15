@@ -2128,7 +2128,7 @@ public:
 
         class casyncfor: public CAsyncFor
         {
-            CriticalSection synchronizeCrit;
+            CriticalSection synchronizeCrit{SYNC_LOCATION};
             IPointerArray &preps;
             IArrayOf<IEsdlTransformOperation> &children;
             IEsdlScriptContext *scriptContext = nullptr;

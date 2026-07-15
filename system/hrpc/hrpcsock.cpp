@@ -474,10 +474,10 @@ protected:
     unsigned timeoutms;
     unsigned connecttimeout;
     int      stopped;
-    Mutex mx;
+    Mutex mx{SYNC_LOCATION};
 };
 
-CriticalSection HRPCsockettransport::critsect;
+CriticalSection HRPCsockettransport::critsect(SYNC_LOCATION);
 
 
 IHRPCtransport *MakeTcpTransport(   const char *target, // NULL for server, "" for not yet named

@@ -40,7 +40,7 @@ class CCassandraLogAgent : public CDBLogAgentBase
 {
     StringBuffer dbServer, dbUserID, dbPassword;
     Owned<CassandraClusterSession> cassSession;
-    CriticalSection transactionSeedCrit;
+    CriticalSection transactionSeedCrit{SYNC_LOCATION};
 
     void initKeySpace();
     void ensureDefaultKeySpace();

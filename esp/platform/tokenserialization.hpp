@@ -111,9 +111,9 @@ public:
             }
             else
             {
-                if (std::is_integral<TValue>())
+                if constexpr (std::is_integral<TValue>())
                 {
-                    if (std::is_signed<TValue>())
+                    if constexpr (std::is_signed<TValue>())
                     {
                         result = deserializeSigned(ptr, value);
                     }
@@ -122,7 +122,7 @@ public:
                         result = deserializeUnsigned(ptr, value);
                     }
                 }
-                else if (std::is_floating_point<TValue>())
+                else if constexpr (std::is_floating_point<TValue>())
                 {
                     result = deserializeFloatingPoint(ptr, value);
                 }

@@ -205,7 +205,7 @@ class InMemoryIndex : public CInterface, implements IInterface, implements IComp
     unsigned numPtrs = 0;
     unsigned maxPtrs = 0;
     unsigned totalScore = 0;
-    CriticalSection stateCrit;
+    CriticalSection stateCrit{SYNC_LOCATION};
     const RtlRecord &recInfo;
 
 public:
@@ -883,7 +883,7 @@ class InMemoryIndexManager : implements IInMemoryIndexManager, public CInterface
 
     friend class InMemoryIndexTest;
 
-    mutable CriticalSection activeCrit;
+    mutable CriticalSection activeCrit{SYNC_LOCATION};
     InMemoryIndexSet activeIndexes;
 
     unsigned recordCount;

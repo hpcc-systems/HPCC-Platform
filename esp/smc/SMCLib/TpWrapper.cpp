@@ -2193,7 +2193,7 @@ extern TPWRAPPER_API unsigned getThorClusterNames(StringArray& targetNames, Stri
 }
 
 static std::set<std::string> validTargets;
-static CriticalSection validTargetSect;
+static CriticalSection validTargetSect{SYNC_LOCATION};
 
 // called within validTargetSect lock
 static void refreshValidTargets()

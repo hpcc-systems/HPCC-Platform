@@ -788,7 +788,7 @@ class ThreadedPersistStressTest : public CppUnit::TestFixture
         class MyThread : public Thread
         {
         public:
-            MyThread(unsigned _count) : count(_count) {}
+            MyThread(unsigned _count) : Thread("MyThread"), count(_count) {}
             virtual int run() override
             {
                 ret = call_from_thread(count);
@@ -972,6 +972,12 @@ CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( PipeRunTest, "PipeRunTest" );
 
 class RelaxedAtomicTimingTest : public CppUnit::TestFixture
 {
+    class TestCriticalSection : public CriticalSection
+    {
+    public:
+        TestCriticalSection() : CriticalSection(SYNC_LOCATION) {}
+    };
+
     CPPUNIT_TEST_SUITE( RelaxedAtomicTimingTest  );
         CPPUNIT_TEST(testRun);
     CPPUNIT_TEST_SUITE_END();
@@ -990,7 +996,7 @@ class RelaxedAtomicTimingTest : public CppUnit::TestFixture
         CCycleTimer timer;
         unsigned count = 100000000;
         RelaxedAtomic<int> ra[201];
-        CriticalSection lock[201];
+        TestCriticalSection lock[201];
 
         for (int a = 0; a < 201; a++)
             ra[a] = 0;
@@ -1027,7 +1033,7 @@ class RelaxedAtomicTimingTest : public CppUnit::TestFixture
             }
             void test2()
             {
-                int &a = (int &) ra;
+                RelaxedAtomic<int> &a = ra;
                 while (count--)
                 {
                     CriticalBlock b(lock);
@@ -1045,13 +1051,12 @@ class RelaxedAtomicTimingTest : public CppUnit::TestFixture
             }
             void test4()
             {
-                int &a = (int &) ra;
+                RelaxedAtomic<int> &a = ra;
                 while (count--)
                 {
                     if (a != count)
                         a++;
                 }
-                ra = a;
             }
 
             unsigned mode;

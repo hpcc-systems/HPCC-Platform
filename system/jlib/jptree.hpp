@@ -372,7 +372,7 @@ jlib_decl void refreshConfiguration();  // (Optionally) reload the configuration
 class jlib_decl CConfigUpdateHook
 {
     std::atomic<unsigned> configCBId{(unsigned)-1};
-    CriticalSection crit;
+    CriticalSection crit{SYNC_LOCATION};
 public:
     ~CConfigUpdateHook() { clear(); }
     void clear();

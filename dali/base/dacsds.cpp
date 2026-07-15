@@ -40,7 +40,7 @@
 static unsigned clientThrottleLimit;
 static unsigned clientThrottleDelay;
 
-static CriticalSection SDScrit;
+static CriticalSection SDScrit{SYNC_LOCATION};
 
 #define CHECK_CONNECTED(XSTR)                                                                                        \
     if (!connected)                                                                                                   \

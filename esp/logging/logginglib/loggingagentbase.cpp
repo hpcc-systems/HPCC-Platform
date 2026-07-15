@@ -372,7 +372,7 @@ String* CEspLogAgentVariant::normalize(const char* token)
     };
     using PooledStrings = std::set<Owned<String>, PoolComparator>;
     static PooledStrings pool;
-    static CriticalSection poolLock;
+    static CriticalSection poolLock{SYNC_LOCATION};
 
     Owned<String> tmp(new String(StringBuffer(token).trim().toLowerCase()));
     CriticalBlock block(poolLock);
