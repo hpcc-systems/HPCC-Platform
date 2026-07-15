@@ -3398,7 +3398,7 @@ class BatchThread : public Thread
 {
 public:
     BatchThread(EclCC & _compiler, RegressQueue & _queue, Semaphore & _fileReady)
-        : compiler(_compiler), queue(_queue), fileReady(_fileReady)
+     : Thread("BatchThread"), compiler(_compiler), queue(_queue), fileReady(_fileReady)
     {
     }
     virtual int run()

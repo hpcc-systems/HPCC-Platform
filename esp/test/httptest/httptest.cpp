@@ -369,7 +369,7 @@ private:
     HttpClient* m_client;
 
 public:
-    CHttpClientThread(int times, HttpClient* client, StringBuffer& req): m_request(req)
+    CHttpClientThread(int times, HttpClient* client, StringBuffer& req) : Thread("CHttpClientThread"), m_request(req)
     {
         m_times = times;
         m_client = client;
@@ -905,7 +905,7 @@ private:
     ISocket*  m_w;
 
 public:
-    CReadWriteThread(ISocket* r, ISocket* w)
+    CReadWriteThread(ISocket* r, ISocket* w) : Thread("CReadWriteThread")
     {
         m_r = r;
         m_w = w;
@@ -938,7 +938,7 @@ public:
 //=======================================================================================================
 // class CHttpProxyThread
 
-CHttpProxyThread::CHttpProxyThread(ISocket* client, FILE* ofile)
+CHttpProxyThread::CHttpProxyThread(ISocket* client, FILE* ofile) : Thread("CHttpProxyThread")
 {
     m_client.set(client);
     m_ofile = ofile;

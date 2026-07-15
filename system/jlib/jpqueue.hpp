@@ -196,7 +196,7 @@ private:
     class WorkerThread: public Thread
     {
     public:
-        WorkerThread(TaskQueue& _tq): tq(_tq), stopped(false) 
+        WorkerThread(TaskQueue& _tq) : Thread("WorkerThread"), tq(_tq), stopped(false)
         {
         }
 

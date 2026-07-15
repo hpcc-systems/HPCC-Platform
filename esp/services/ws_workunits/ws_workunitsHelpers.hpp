@@ -762,7 +762,7 @@ class WUSchedule : public Thread
     bool detached;
 
 public:
-    WUSchedule()
+    WUSchedule() : Thread("WUSchedule")
     {
         stopping = false;
         detached = false;

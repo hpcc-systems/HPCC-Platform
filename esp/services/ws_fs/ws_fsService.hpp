@@ -32,7 +32,7 @@ class Schedule : public Thread
     IEspContainer* m_container;
     bool detached;
 public:
-    Schedule()
+    Schedule() : Thread("Schedule")
     {
         stopping = false;
         detached = false;

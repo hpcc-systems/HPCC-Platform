@@ -65,7 +65,7 @@ class CXRefExBuilderThread : public Thread
         nodeQueue.enqueue(LINK(xRefNode));
     }
 public:
-    CXRefExBuilderThread() { };
+    CXRefExBuilderThread() : Thread("CXRefExBuilderThread") { };
     ~CXRefExBuilderThread(){DBGLOG("Destroyed XRef thread");};
 
     virtual void queueRequest(IXRefNode* xRefNode, const char* cluster)

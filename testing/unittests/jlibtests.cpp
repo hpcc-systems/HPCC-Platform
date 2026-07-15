@@ -4504,7 +4504,7 @@ public:
         {
         public:
             LockTestThread(Semaphore & _startSem, Semaphore & _endSem, LOCK & _lock1, COUNTER & _value1, LOCK & _lock2, COUNTER * _extraValues, unsigned _numIterations)
-                : startSem(_startSem), endSem(_endSem),
+                : Thread("LockTestThread"), startSem(_startSem), endSem(_endSem),
                   lock1(_lock1), lock2(_lock2),
                   value1(_value1), extraValues(_extraValues),
                   numIterations(_numIterations)
@@ -4760,12 +4760,11 @@ class RWLockStressTest : public CppUnit::TestFixture
     CPPUNIT_TEST_SUITE_END();
 
 public:
-
     class RWLockReadTestThread : public Thread
     {
     public:
         RWLockReadTestThread(Semaphore & _startSem, Semaphore & _endSem, ReadWriteLock & _lock, unsigned __int64 &_value, unsigned _numIterations)
-                : startSem(_startSem), endSem(_endSem),
+                : Thread("RWLockReadTestThread"), startSem(_startSem), endSem(_endSem),
                   lock(_lock),
                   value(_value),
                   numIterations(_numIterations)
@@ -4801,7 +4800,7 @@ public:
     {
     public:
         RWLockWriteTestThread(bool &_finished, ReadWriteLock & _lock, unsigned __int64 &_value)
-                : lock(_lock),
+                : Thread("RWLockWriteTestThread"), lock(_lock),
                   value(_value),
                   finished (_finished)
         {
@@ -6162,7 +6161,7 @@ void testDefaultMasking()
     class SecretReader : public Thread
     {
     public:
-        SecretReader(Semaphore & _startSem) : startSem(_startSem) {}
+        SecretReader(Semaphore & _startSem) : Thread("SecretReader"), startSem(_startSem) {}
 
         virtual int run()
         {

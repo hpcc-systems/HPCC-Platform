@@ -1315,7 +1315,7 @@ class CChange : public Thread
     StringAttr path;
 
 public:
-    CChange(const char *_path) : path(_path)
+    CChange(const char *_path) : Thread("CChange"), path(_path)
     {
         conn.setown(querySDS().connect(_path, myProcessSession(), RTM_CREATE_QUERY, 1000000));
 
@@ -1819,7 +1819,7 @@ void TestExternal()
 class CSubTest : public Thread
 {
 public:
-    CSubTest(const char *_path) : path(_path) { start(false); }
+    CSubTest(const char *_path) : Thread("CSubTest"), path(_path) { start(false); }
 
     virtual int run()
     {

@@ -1954,6 +1954,9 @@ static cache_timestamp refreshLookaheadNs = 0;
 class SecretRefreshThread : public Thread
 {
 public:
+    SecretRefreshThread() : Thread("SecretRefreshThread")
+    {
+    }
     virtual int run() override
     {
         std::vector<SecretCacheEntry *> pending;

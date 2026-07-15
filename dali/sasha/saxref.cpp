@@ -2974,7 +2974,7 @@ class CSashaXRefServer: public ISashaServer, public Thread
         StringAttr filterScopes;
     public:
         cRunThread(CSashaXRefServer &_parent,const char *_servers, const char *_filterScopes)
-            : parent(_parent), servers(_servers), filterScopes(_filterScopes)
+         : Thread("SashaXRefServerThread"), parent(_parent), servers(_servers), filterScopes(_filterScopes)
         {
         }
         int run()

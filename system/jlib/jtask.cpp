@@ -351,7 +351,7 @@ protected:
 static constexpr unsigned maxChildTasks = 1024;
 
 CTaskProcessor::CTaskProcessor(TaskScheduler * _scheduler, unsigned _id)
-: scheduler(_scheduler), tasks(maxChildTasks), id(_id)
+: Thread("TaskProcessor"), scheduler(_scheduler), tasks(maxChildTasks), id(_id)
 {
 }
 

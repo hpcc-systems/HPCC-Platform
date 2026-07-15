@@ -234,7 +234,7 @@ private:
     SimpleServer m_server;
 
 public:
-    ThreadedSimpleServer(IProperties* globals, int port, const char* inputpath = NULL, const char* outputdir = NULL, bool writeToFiles = false, int iterations = -1) : m_server(globals, port, inputpath, outputdir, writeToFiles, iterations) {}
+    ThreadedSimpleServer(IProperties* globals, int port, const char* inputpath = NULL, const char* outputdir = NULL, bool writeToFiles = false, int iterations = -1) : Thread("ThreadedSimpleServer"), m_server(globals, port, inputpath, outputdir, writeToFiles, iterations) {}
     int run()
     {
         m_server.start();

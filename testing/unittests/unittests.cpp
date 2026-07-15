@@ -788,7 +788,7 @@ class ThreadedPersistStressTest : public CppUnit::TestFixture
         class MyThread : public Thread
         {
         public:
-            MyThread(unsigned _count) : count(_count) {}
+            MyThread(unsigned _count) : Thread("MyThread"), count(_count) {}
             virtual int run() override
             {
                 ret = call_from_thread(count);

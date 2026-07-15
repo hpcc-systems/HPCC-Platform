@@ -133,6 +133,10 @@ public:
         bool stopped = true;
         Linked<IOutputRowSerializer> serializer;
     public:
+        cProvider() : Thread("GlobalMergeSlaveActivity Provider")
+        {
+        }
+
         void init(GlobalMergeSlaveActivity *_parent, IOutputRowSerializer *_serializer,mptag_t _tag)
         {
             serializer.set(_serializer);

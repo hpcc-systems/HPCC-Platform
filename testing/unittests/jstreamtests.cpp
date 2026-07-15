@@ -620,7 +620,9 @@ public:
     {
     public:
         ParallelWorker(Semaphore & _started, Semaphore & _ready, std::atomic<offset_t> & _available)
-        : started(_started), ready(_ready), available(_available) {}
+         : Thread("ParallelWorker"), started(_started), ready(_ready), available(_available)
+        {
+        }
 
         Semaphore go;
         Semaphore & started;

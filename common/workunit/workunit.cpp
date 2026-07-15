@@ -14832,7 +14832,7 @@ void executeThorGraph(const char * graphName, IConstWorkUnit &workunit, const IP
             bool timedout;
             CTimeMon tm;
             cPollThread(IJobQueue *_jq, IConstWorkUnit *_wu, unsigned timelimit)
-                : tm(timelimit)
+                : Thread("cPollThread"), tm(timelimit)
             {
                 stopped = false;
                 jq = _jq;

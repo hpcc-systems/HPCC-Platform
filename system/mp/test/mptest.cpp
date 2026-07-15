@@ -435,7 +435,7 @@ void MultiTest(ICommunicator *_comm)
     {
     public:
         Owned<ICommunicator> comm;
-        Server(ICommunicator *_comm) { comm.set(_comm); }
+        Server(ICommunicator *_comm) : Thread("Server") { comm.set(_comm); }
         int run()
         {
             unsigned n=(comm->queryGroup().ordinality()-1)*N;
@@ -643,7 +643,7 @@ void MPAlltoAll(IGroup *group, ICommunicator *mpicomm, size32_t buffsize=0, unsi
         rank_t myrank;
         size32_t buffsize;
         unsigned iters;
-        Sender(ICommunicator *_mpicomm, rank_t _numranks, rank_t _myrank, size32_t _buffsize, unsigned _iters) : mpicomm(_mpicomm), numranks(_numranks), myrank(_myrank), buffsize(_buffsize), iters(_iters)
+        Sender(ICommunicator *_mpicomm, rank_t _numranks, rank_t _myrank, size32_t _buffsize, unsigned _iters) : Thread("Sender"), mpicomm(_mpicomm), numranks(_numranks), myrank(_myrank), buffsize(_buffsize), iters(_iters)
         {
         }
 
@@ -906,7 +906,7 @@ void MPMultiMTSendRecv(ICommunicator* comm, int counter)
             ICommunicator* comm;
             int* counter;
         public:
-            SWorker(ICommunicator* _comm, int* _counter):comm(_comm), counter(_counter){}
+            SWorker(ICommunicator* _comm, int* _counter) : Thread("SWorker"), comm(_comm), counter(_counter){}
             int run()
             {
                 IGroup *group = comm->getGroup();
@@ -943,7 +943,7 @@ void MPMultiMTSendRecv(ICommunicator* comm, int counter)
             int maxCounter;
 
         public:
-            RWorker(ICommunicator* _comm, int* _counter):comm(_comm), counter(_counter), maxCounter(*_counter){}
+            RWorker(ICommunicator* _comm, int* _counter) : Thread("RWorker"), comm(_comm), counter(_counter), maxCounter(*_counter){}
             int run()
             {
                 IGroup *group = comm->getGroup();

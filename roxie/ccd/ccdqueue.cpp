@@ -3878,7 +3878,7 @@ class PacketDiscarder : public Thread, implements IPacketDiscarder
 public:
     IMPLEMENT_IINTERFACE_USING(Thread);
 
-    PacketDiscarder()
+    PacketDiscarder() : Thread("PacketDiscarder")
     {
         aborted = false;
     };

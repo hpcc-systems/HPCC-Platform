@@ -424,6 +424,10 @@ void nqPingPong(const char *q,const char *q2)
     class cThread: public Thread
     {
     public:
+    cThread() : Thread("cThread")
+    {
+    }
+
         const char *q;
         int num;
         int run() {

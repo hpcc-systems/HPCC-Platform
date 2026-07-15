@@ -312,7 +312,7 @@ public:
     class EventReporterThread : public Thread
     {
     public:
-        EventReporterThread(unsigned _id, unsigned _count) : id(_id), count(_count) {}
+        EventReporterThread(unsigned _id, unsigned _count) : Thread("EventReporterThread"), id(_id), count(_count) {}
 
         virtual int run()
         {

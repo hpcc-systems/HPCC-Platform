@@ -37,6 +37,10 @@ private:
     Linked<IPipeProcess> pipe;
 
 public:
+    CPipeErrorHelper() : Thread("CPipeErrorHelper")
+    {
+    }
+
     IMPLEMENT_IINTERFACE_USING(Thread);
 
     int run()

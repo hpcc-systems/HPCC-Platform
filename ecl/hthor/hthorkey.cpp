@@ -2063,7 +2063,7 @@ class CHThorThreadedActivityBase : public CHThorActivityBase, implements IThread
         CHThorThreadedActivityBase *parent;
 
     public:
-        InputHandler(CHThorThreadedActivityBase  *_parent) : parent(_parent)
+        InputHandler(CHThorThreadedActivityBase  *_parent) : Thread("Threaded Activity InputHandler"), parent(_parent)
         {
         }
 

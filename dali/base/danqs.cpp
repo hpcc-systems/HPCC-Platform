@@ -168,7 +168,7 @@ class CNamedQueueSubscriptionProxy: public Thread
 public:
 
     CNamedQueueSubscriptionProxy(CQueueChannel *_owner,INamedQueueSubscription *_subs,const char *_name, int _priority, bool _oneshot, SessionId _transaction)
-        : subs(_subs), handler(_name, _priority, _oneshot, _transaction)
+     : Thread("CNamedQueueSubscriptionProxy"), subs(_subs), handler(_name, _priority, _oneshot, _transaction)
     {
         owner = _owner;
         finished = false;

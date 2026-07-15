@@ -186,7 +186,7 @@ private:
         bool aborted;
         bool wasConnected;
     public:
-        CRoxieDaliConnectWatcher(CRoxieDaliHelper *_owner) : owner(_owner)
+        CRoxieDaliConnectWatcher(CRoxieDaliHelper *_owner) : Thread("CRoxieDaliConnectWatcher"), owner(_owner)
         {
             aborted = false;
             wasConnected = owner->isConnected;

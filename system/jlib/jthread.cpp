@@ -1899,7 +1899,7 @@ class CLinuxPipeProcess: implements IPipeProcess, public CInterface
     {
         CLinuxPipeProcess *parent;
     public:
-        cForkThread(CLinuxPipeProcess *_parent)
+        cForkThread(CLinuxPipeProcess *_parent) : Thread("cForkThread")
         {
             parent = _parent;
         }
@@ -1922,7 +1922,7 @@ class CLinuxPipeProcess: implements IPipeProcess, public CInterface
         int &hError;
     public:
         cStdErrorBufferThread(size32_t maxbufsize,int &_hError,CriticalSection &_sect)
-            : sect(_sect), hError(_hError)
+            : Thread("cStdErrorBufferThread"),sect(_sect), hError(_hError)
         {
             buf.allocate(maxbufsize);
             bufsize = 0;
@@ -2586,7 +2586,7 @@ public:
         CriticalSection &crit;
     public:
         cWorkerThread(CWorkQueueThread *_parent,CriticalSection &_crit,unsigned _persisttime)
-            : crit(_crit)
+            : Thread("WorkQueueThread::cWorkerThread"),crit(_crit)
         {
             parent = _parent;
             persisttime = _persisttime;

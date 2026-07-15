@@ -206,6 +206,10 @@ class MySQLConnectionCloserThread : public Thread
 {
     virtual int run() override;
 public:
+    MySQLConnectionCloserThread() : Thread("MySQLConnectionCloserThread")
+    {
+    }
+
     static Semaphore closing;
 } *connectionCloserThread = nullptr;
 

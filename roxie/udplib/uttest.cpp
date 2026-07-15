@@ -105,7 +105,7 @@ class SendAsFastAsPossible : public Thread
     static unsigned totalSent;
 
 public:
-    SendAsFastAsPossible(unsigned port, unsigned sendSize)
+    SendAsFastAsPossible(unsigned port, unsigned sendSize) : Thread("SendAsFastAsPossible")
     {
         SocketEndpoint ep(port, allNodes.item(0));
         flowSocket = ISocket::udp_connect(ep);
@@ -549,7 +549,7 @@ class SortSlave : public Thread
     }
 
 public:
-    SortSlave()
+    SortSlave() : Thread("SortSlave")
     {
         master = NULL;
         myIdx = -1;

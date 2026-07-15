@@ -1058,7 +1058,7 @@ public:
 
         public:
             Semaphore stopsem;
-            CChange(unsigned _n)
+            CChange(unsigned _n) : Thread("CChange")
             {
                 n = _n;
                 StringBuffer s("/DAREGRESS/CONSUB");
@@ -3721,7 +3721,7 @@ class DaliJobQueueTester : public CppUnit::TestFixture
     {
     public:
         JobProcessor(Semaphore & _startedSem, Semaphore & _processedSem, IJobQueue * _queue, unsigned _id)
-         : startedSem(_startedSem), processedSem(_processedSem), queue(_queue), id(_id)
+         : Thread("JobProcessor"), startedSem(_startedSem), processedSem(_processedSem), queue(_queue), id(_id)
         {
         }
 
@@ -4577,7 +4577,8 @@ testCategory2[] (1999011313..1999011313) => {TimeLocalExecute=40}
     class GlobalMetricReporter : public Thread
     {
     public:
-        GlobalMetricReporter(const char * _queueName, unsigned _numIterations) : queueName(_queueName), numIterations(_numIterations)
+        GlobalMetricReporter(const char * _queueName, unsigned _numIterations)
+         : Thread("GlobalMetricReporter"), queueName(_queueName), numIterations(_numIterations)
         {
         }
 

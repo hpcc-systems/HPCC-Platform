@@ -94,7 +94,7 @@ public:
     unsigned recordsRead = 0;
     unsigned recordsWritten = 0;
 
-    RoxieThread(const char *_query, const char *_resultName, const char * _traceParent) : query(_query), resultName(_resultName), traceParent(_traceParent)
+    RoxieThread(const char *_query, const char *_resultName, const char * _traceParent) : Thread("RoxieThread"), query(_query), resultName(_resultName), traceParent(_traceParent)
     {
         recordsRead = recordsWritten = 0;
         bytesPerQuery = recordsPerQuery * in_width;

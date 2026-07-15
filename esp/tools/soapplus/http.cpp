@@ -900,7 +900,7 @@ private:
     HttpClient* m_client;
 
 public:
-    CHttpStressThread(HttpClient* client): m_client(client)
+    CHttpStressThread(HttpClient* client) : Thread("CHttpStressThread"), m_client(client)
     {
         m_stat.setown(new HttpStat());
     }

@@ -654,6 +654,10 @@ int readResults(ISocket * socket, bool readBlocked, bool useHTTP, StringBuffer &
 class ReceiveThread : public Thread
 {
 public:
+    ReceiveThread() : Thread("ReceiveThread")
+    {
+    }
+
     virtual int run();
 };
 
@@ -1029,7 +1033,7 @@ retry:
 class QueryThread : public Thread
 {
 public:
-    QueryThread(const char * _ip, unsigned _port, const char * _base) : ip(_ip),port(_port),base(_base) {}
+    QueryThread(const char * _ip, unsigned _port, const char * _base) : Thread("QueryThread"), ip(_ip),port(_port),base(_base) {}
 
     virtual int run()
     {

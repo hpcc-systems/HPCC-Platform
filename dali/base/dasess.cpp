@@ -195,7 +195,7 @@ class CdelayedTerminate: public Thread // slightly obfuscated stop code
     }
 
 public:
-    CdelayedTerminate(byte _err) 
+    CdelayedTerminate(byte _err) : Thread("DelayedTerminate")
     {
         err = _err;
         start(false);
@@ -1144,8 +1144,7 @@ class CLdapWorkItem : public Thread
     Semaphore &threaddone;
     int ret;
 public:
-    CLdapWorkItem(IDaliLdapConnection *_ldapconn,Semaphore &_threaddone)
-        : ldapconn(_ldapconn), threaddone(_threaddone)
+    CLdapWorkItem(IDaliLdapConnection *_ldapconn,Semaphore &_threaddone) : Thread("CLdapWorkItem"), ldapconn(_ldapconn), threaddone(_threaddone)
     {
         running = false;
     }

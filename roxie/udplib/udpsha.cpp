@@ -798,6 +798,10 @@ static ICopyArrayOf<CSimulatedQueueWriteSocket> allWriteSockets;
 class DelayedSocketWriter : public Thread
 {
 public:
+    DelayedSocketWriter() : Thread("DelayedSocketWriter")
+    {
+    }
+
     virtual int run() override
     {
         while (running)

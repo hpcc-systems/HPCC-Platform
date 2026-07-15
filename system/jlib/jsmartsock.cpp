@@ -210,6 +210,7 @@ void CSmartSocket::close()
 }
 
 CSmartSocketFactory::CSmartSocketFactory(IPropertyTree &service, bool _retry, unsigned _retryInterval, unsigned _dnsInterval)
+: Thread("SmartSocketFactory retry")
 {
     const char *name = service.queryProp("@name");
     const char *port = service.queryProp("@port");
@@ -242,6 +243,7 @@ CSmartSocketFactory::CSmartSocketFactory(IPropertyTree &service, bool _retry, un
 }
 
 CSmartSocketFactory::CSmartSocketFactory(const char *_socklist, IPropertyTree* _tlsConfig, bool _retry, unsigned _retryInterval, unsigned _dnsInterval)
+: Thread("SmartSocketFactory retry")
 {
     PROGLOG("CSmartSocketFactory::CSmartSocketFactory(%s, tlsConfig(%s))",_socklist?_socklist:"NULL", _tlsConfig?"yes":"no");
     SmartSocketListParser slp(_socklist);

@@ -133,7 +133,7 @@ public:
     IMPLEMENT_IINTERFACE;
 
     Thread(const char *_name) { init(_name); }
-    Thread() { init(NULL); }
+    Thread() = delete;
     ~Thread();
 
     void adjustPriority(int delta);

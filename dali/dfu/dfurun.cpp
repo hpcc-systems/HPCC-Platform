@@ -216,7 +216,7 @@ class CDFUengine: public CInterface, implements IDFUengine
 
     public:
         cDFUlistener(CDFUengine *_parent,const char *_queuename, bool _ismon, CSDSServerStatus *_serverstatus, unsigned _timeout=WAIT_FOREVER)
-            : queuename(_queuename)
+         : Thread("cDFUlistener"), queuename(_queuename)
         {
             serverstatus = _serverstatus;
             ismon = _ismon;

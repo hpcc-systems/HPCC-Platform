@@ -46,7 +46,7 @@ class CEsdlShare : implements IEsdlShare, public Thread
 {
 public:
     IMPLEMENT_IINTERFACE_USING(Thread);
-    CEsdlShare() : m_stop(false)
+    CEsdlShare() : Thread("CEsdlShare"), m_stop(false)
     {
     }
     virtual ~CEsdlShare() {}
