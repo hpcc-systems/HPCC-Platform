@@ -41,7 +41,7 @@ private:
     CriticalSection crit{SYNC_LOCATION};
 
 public:
-    InterruptableSemaphore(unsigned _initialCount = 0U) : Semaphore(SYNC_LOCATION, _initialCount) {}
+    InterruptableSemaphore(const char * name, unsigned _initialCount = 0U) : Semaphore(name, _initialCount) {}
 
     void interrupt(IException *_error = NULL, unsigned count=1)
     {

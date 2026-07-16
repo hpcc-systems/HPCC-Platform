@@ -98,7 +98,7 @@ class CBroadcaster : public CSimpleInterface
     mptag_t mpTag;
     unsigned myNode, nodes, mySlave, slaves, senders, mySender;
     IBCastReceive *recvInterface;
-    InterruptableSemaphore allDoneSem;
+    InterruptableSemaphore allDoneSem{SYNC_LOCATION};
     CriticalSection allDoneLock{SYNC_LOCATION};
     CriticalSection stopCrit{SYNC_LOCATION};
     CriticalSection *broadcastLock;
@@ -1143,7 +1143,7 @@ protected:
 
     std::atomic<unsigned> interChannelToNotifyCount{0}; // only used on channel 0
     Owned<IBitSet> rhsChannelStop; // only used on channel 0
-    InterruptableSemaphore interChannelBarrierSem;
+    InterruptableSemaphore interChannelBarrierSem{SYNC_LOCATION};
     bool channelActivitiesAssigned;
 
     inline bool isLocal() const { return local; }

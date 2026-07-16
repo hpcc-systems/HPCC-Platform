@@ -173,7 +173,7 @@ private:
     static CriticalSection daliHelperCrit;
     CriticalSection daliConnectionCrit{SYNC_LOCATION};
     Owned<IUserDescriptor> userdesc;
-    InterruptableSemaphore disconnectSem;
+    InterruptableSemaphore disconnectSem{SYNC_LOCATION};
     CriticalSection watchersCrit{SYNC_LOCATION};
     IArrayOf<IDaliPackageWatcher> watchers;
     CSDSServerStatus *serverStatus;

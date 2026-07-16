@@ -646,7 +646,7 @@ class CThorSorter : public CSimpleInterface, implements IThorSorter, implements 
     Semaphore startgathersem{SYNC_LOCATION};
     Semaphore finishedmergesem{SYNC_LOCATION};
     Semaphore closedownsem{SYNC_LOCATION};
-    InterruptableSemaphore startmergesem;
+    InterruptableSemaphore startmergesem{SYNC_LOCATION};
     size32_t transferblocksize, midkeybufsize;
     CRuntimeStatisticCollection spillStats;
     rowcount_t globalCount = 0;

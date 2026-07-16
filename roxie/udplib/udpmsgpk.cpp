@@ -75,7 +75,7 @@ class PackageSequencer : public CInterface, implements IInterface
     bool outOfBand = false;
 
     MemoryBuffer metadata;
-    InterruptableSemaphore dataAvailable; // MORE - need to work out when to interrupt it!
+    InterruptableSemaphore dataAvailable{SYNC_LOCATION}; // MORE - need to work out when to interrupt it!
     bool encrypted = false;
 
 public:

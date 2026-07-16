@@ -1709,8 +1709,8 @@ class CHThorPipeThroughActivity : public CHThorSimpleActivityBase, implements IP
     CPipeRecordPullerThread puller;
     Owned<IPipeProcess> pipe;
     StringAttr pipeCommand;
-    InterruptableSemaphore pipeVerified;
-    InterruptableSemaphore pipeOpened;
+    InterruptableSemaphore pipeVerified{SYNC_LOCATION};
+    InterruptableSemaphore pipeOpened{SYNC_LOCATION};
     CachedOutputMetaData inputMeta;
     Owned<IOutputRowSerializer> rowSerializer;
     Owned<IOutputRowDeserializer> rowDeserializer;

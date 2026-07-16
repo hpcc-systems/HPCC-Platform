@@ -1938,7 +1938,7 @@ class CallbackEntry : implements IPendingCallback, public CInterface
 {
     const RoxiePacketHeader &header;
     StringAttr lfn;
-    InterruptableSemaphore ready;
+    InterruptableSemaphore ready{SYNC_LOCATION};
     MemoryBuffer data;
     bool gotData;
 public:
@@ -2109,7 +2109,7 @@ static void throwPacketTooLarge(IRoxieQueryPacket *x, unsigned maxPacketSize)
 class RoxieThrottledPacketSender : public Thread
 {
     TokenBucket &bucket;
-    InterruptableSemaphore queued;
+    InterruptableSemaphore queued{SYNC_LOCATION};
     Semaphore started{SYNC_LOCATION};
     SafeQueueOf<IRoxieQueryPacket, false> queue;
 
@@ -3557,7 +3557,7 @@ public:
 
 class CLocalMessageCollator : implements ILocalMessageCollator, public CInterface
 {
-    InterruptableSemaphore sem;
+    InterruptableSemaphore sem{SYNC_LOCATION};
     QueueOf<IMessageResult, false> pending;
     CriticalSection crit{SYNC_LOCATION};
     Linked<IRowManager> rowManager; // Linked to ensure it lives longer than me
