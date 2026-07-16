@@ -61,4 +61,8 @@ target_link_libraries ( LdapSecurity
          PkgConfig::OPENLDAP
     )
 
+IF (USE_OPENSSL)
+    target_link_libraries ( LdapSecurity ${OPENSSL_LIBRARIES} )
+ENDIF (USE_OPENSSL)
+
 

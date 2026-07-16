@@ -221,6 +221,12 @@ public:
         return m_hostArray.item(m_curHostIdx);
     }
 
+    const char * queryHost(int idx)
+    {
+        synchronized block(m_HMMutex);
+        return m_hostArray.item(idx);
+    }
+
     void rejectHost(const char * rejectedHost)
     {
         synchronized block(m_HMMutex);
@@ -260,6 +266,8 @@ private:
     StringBuffer         m_adminGroupDN;//fully qualified DN of the HPCC administrator
     StringBuffer         m_protocol;
     StringBuffer         m_cipherSuite;
+    StringBuffer         m_tlsValidation;
+    StringBuffer         m_caCertFile;
     StringBuffer         m_basedn;
     StringBuffer         m_domain;
     StringBuffer         m_authmethod;
@@ -375,6 +383,9 @@ public:
         }
         
         cfg->getProp(".//@ldapCipherSuite", m_cipherSuite);
+        cfg->getProp(".//@ldapTLSValidation", m_tlsValidation);
+        m_tlsValidation.toLowerCase().trim();
+        cfg->getProp(".//@ldapCACertFile", m_caCertFile);
 
         StringBuffer portbuf;
         cfg->getProp(".//@ldapPort", portbuf);
@@ -462,7 +473,7 @@ public:
             for(int retries = 0; retries <= LDAPSEC_MAX_RETRIES; retries++)
             {
                 getLdapHost(hostbuf);//get next available AD, as it may have changed
-                rc = LdapUtils::getServerInfo(hostbuf.str(), sysUserDN.str(), m_sysuser_password.str(), m_protocol, port, m_cipherSuite, dcbuf, m_serverType, ldapDomain, m_timeout);
+                rc = LdapUtils::getServerInfo(hostbuf.str(), sysUserDN.str(), m_sysuser_password.str(), m_protocol, port, m_cipherSuite, dcbuf, m_serverType, ldapDomain, m_timeout, m_tlsValidation.str(), m_caCertFile.str());
                 if(rc != LDAP_TIMEOUT || retries >= LDAPSEC_MAX_RETRIES)
                     break;
                 sleep(LDAPSEC_RETRY_WAIT);
@@ -480,6 +491,58 @@ public:
         {
             throw MakeStringException(-1, "getServerInfo error - %s", ldap_err2string(rc));
         }
+
+#ifndef _WIN32
+        // In strict/permissive mode over ldaps, probe every configured host for TLS cert validity.
+        // The check above only validates the first reachable host. Since connections are round-robined
+        // across all configured hosts, a cert problem on any one host may not surface until that host
+        // happens to be selected - potentially hours later. Probing all hosts at startup surfaces
+        // misconfigurations early at a known time.
+        if (strieq(m_protocol, "ldaps") && isTLSValidationActive(m_tlsValidation))
+        {
+            bool isStrictProbe = isTLSValidationStrict(m_tlsValidation);
+            for (int hostIdx = 0; hostIdx < s_hostManager.queryNumHosts(); hostIdx++)
+            {
+                const char * probeHost = s_hostManager.queryHost(hostIdx);
+                LDAP * probe_ld = LdapUtils::LdapInit(m_protocol.str(), probeHost, m_ldapport, m_ldap_secure_port, m_cipherSuite.str(), m_tlsValidation.str(), m_caCertFile.str(), isStrictProbe);
+                if (!probe_ld)
+                {
+                    // LdapInit failure indicates a configuration/library error (e.g. invalid URI),
+                    // not a network or TLS problem — treat it distinctly from an unreachable host.
+                    if (isStrictProbe)
+                        throwStringExceptionV(-1, "LDAP TLS cert probe: failed to initialise LDAP handle for host '%s'", probeHost);
+                    else
+                        WARNLOG("LDAP TLS cert probe: failed to initialise LDAP handle for host '%s', skipping cert check", probeHost);
+                    continue;
+                }
+
+                // Use a short probe timeout: TLS handshake probes only need to complete
+                // the TLS negotiation, so cap at 10s to avoid numHosts * m_timeout startup stalls
+                // when probing large or partially-unreachable host pools.
+                int probeTimeout = m_timeout < 10 ? m_timeout : 10;
+                int probeErr = LdapUtils::LdapSimpleBind(probe_ld, probeTimeout, nullptr, nullptr);
+                LDAP_UNBIND(probe_ld);
+
+                if (LdapServerDown(probeErr))
+                {
+                    WARNLOG("LDAP TLS cert probe: host '%s' is unreachable, skipping cert check", probeHost);
+                }
+                else if (probeErr == LDAP_CONNECT_ERROR)
+                {
+                    // Server reachable but TLS handshake failed - likely a cert validation error
+                    if (isStrictProbe)
+                        throwStringExceptionV(-1, "LDAP TLS cert probe: host '%s' failed certificate validation - %s", probeHost, ldap_err2string(probeErr));
+                    else
+                        WARNLOG("LDAP TLS cert probe: host '%s' failed certificate validation - %s", probeHost, ldap_err2string(probeErr));
+                }
+                else
+                {
+                    // LDAP_SUCCESS or an auth-level rejection - TLS handshake succeeded
+                    PROGLOG("LDAP TLS cert probe: host '%s' passed certificate validation", probeHost);
+                }
+            }
+        }
+#endif
 
         //------------------------------------------------
         //Get optional HPCC Admin account username
@@ -738,6 +801,16 @@ public:
         return m_cipherSuite.str();
     }
 
+    virtual const char* getTLSValidation()
+    {
+        return m_tlsValidation.str();
+    }
+
+    virtual const char* getCACertFile()
+    {
+        return m_caCertFile.str();
+    }
+
     virtual const char* getBasedn()
     {
         return m_basedn.str();
@@ -928,7 +1001,7 @@ private:
             return -1;
 
         m_connectedHost.clear();
-        m_ld = LdapUtils::LdapInit(protocol, ldapserver, m_ldapconfig->getLdapPort(), m_ldapconfig->getLdapSecurePort(), m_ldapconfig->getCipherSuite());
+        m_ld = LdapUtils::LdapInit(protocol, ldapserver, m_ldapconfig->getLdapPort(), m_ldapconfig->getLdapSecurePort(), m_ldapconfig->getCipherSuite(), m_ldapconfig->getTLSValidation(), m_ldapconfig->getCACertFile());
         int rc = LDAP_SUCCESS;
         if(m_ldapconfig->sysuserSpecified())
             rc =  LdapUtils::LdapBind(m_ld, m_ldapconfig->getLdapTimeout(), m_ldapconfig->getDomain(), m_ldapconfig->getSysUser(), m_ldapconfig->getSysUserPassword(), m_ldapconfig->getSysUserDn(), m_ldapconfig->getServerType(), m_ldapconfig->getAuthMethod());
@@ -1944,7 +2017,7 @@ public:
                     m_ldapconfig->getLdapHost(hostbuf);//get next available AD, as it may have changed
                     DBGLOG("LdapBind for user %s (retries=%d) on host %s.", username, retries, hostbuf.str());
                     {
-                        LDAP* user_ld = LdapUtils::LdapInit(m_ldapconfig->getProtocol(), hostbuf.str(), m_ldapconfig->getLdapPort(), m_ldapconfig->getLdapSecurePort(), m_ldapconfig->getCipherSuite());
+                        LDAP* user_ld = LdapUtils::LdapInit(m_ldapconfig->getProtocol(), hostbuf.str(), m_ldapconfig->getLdapPort(), m_ldapconfig->getLdapSecurePort(), m_ldapconfig->getCipherSuite(), m_ldapconfig->getTLSValidation(), m_ldapconfig->getCACertFile());
                         rc = LdapUtils::LdapBind(user_ld, m_ldapconfig->getLdapTimeout(), m_ldapconfig->getDomain(), username, password, userdnbuf.str(), m_ldapconfig->getServerType(), m_ldapconfig->getAuthMethod());
                         if(rc != LDAP_SUCCESS)
                             ldap_get_option(user_ld, LDAP_OPT_ERROR_STRING, &ldap_errstring);
@@ -1976,7 +2049,7 @@ public:
                 if(dc.length() > 0)
                 {
                     WARNLOG("Using automatically obtained LDAP Server %s", dc.str());
-                    LDAP* user_ld = LdapUtils::LdapInit(m_ldapconfig->getProtocol(), dc.str(), m_ldapconfig->getLdapPort(), m_ldapconfig->getLdapSecurePort(), m_ldapconfig->getCipherSuite());
+                    LDAP* user_ld = LdapUtils::LdapInit(m_ldapconfig->getProtocol(), dc.str(), m_ldapconfig->getLdapPort(), m_ldapconfig->getLdapSecurePort(), m_ldapconfig->getCipherSuite(), m_ldapconfig->getTLSValidation(), m_ldapconfig->getCACertFile());
                     rc = LdapUtils::LdapBind(user_ld, m_ldapconfig->getLdapTimeout(), m_ldapconfig->getDomain(), username, password, userdnbuf.str(), m_ldapconfig->getServerType(), m_ldapconfig->getAuthMethod());
                     if(rc != LDAP_SUCCESS)
                         ldap_get_option(user_ld, LDAP_OPT_ERROR_STRING, &ldap_errstring);
@@ -3348,7 +3421,7 @@ public:
         StringBuffer hostbuf;
         m_ldapconfig->getLdapHost(hostbuf);
 
-        LDAP* user_ld = LdapUtils::LdapInit(m_ldapconfig->getProtocol(), hostbuf.str(), m_ldapconfig->getLdapPort(), m_ldapconfig->getLdapSecurePort(), m_ldapconfig->getCipherSuite());
+        LDAP* user_ld = LdapUtils::LdapInit(m_ldapconfig->getProtocol(), hostbuf.str(), m_ldapconfig->getLdapPort(), m_ldapconfig->getLdapSecurePort(), m_ldapconfig->getCipherSuite(), m_ldapconfig->getTLSValidation(), m_ldapconfig->getCACertFile());
         int rc = LdapUtils::LdapBind(user_ld, m_ldapconfig->getLdapTimeout(),m_ldapconfig->getDomain(), username, password, userdn, m_ldapconfig->getServerType(), m_ldapconfig->getAuthMethod());
         if(rc != LDAP_SUCCESS)
             ldap_get_option(user_ld, LDAP_OPT_ERROR_STRING, &ldap_errstring);

@@ -215,6 +215,8 @@ interface ILdapConfig : extends IInterface
     virtual int getLdapTimeout() = 0;
     virtual bool isAzureAD() = 0;
     virtual void setUserBasedn(const char * basedn) = 0;
+    virtual const char* getTLSValidation() = 0;
+    virtual const char* getCACertFile() = 0;
 };
 
 

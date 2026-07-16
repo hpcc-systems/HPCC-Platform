@@ -37,18 +37,30 @@
 class LdapUtils
 {
 public:
-    static LDAP* LdapInit(const char* protocol, const char* host, int port, int secure_port, const char * cipherSuite, bool throwOnError = true);
+    static LDAP* LdapInit(const char* protocol, const char* host, int port, int secure_port, const char * cipherSuite, const char* tlsValidation, const char* caCertFile, bool throwOnError = true);
     static int LdapSimpleBind(LDAP* ld, int ldapTimeout, char* userdn, char* password);
     // userdn is required for ldap_simple_bind_s, not really necessary for ldap_bind_s.
     static int LdapBind(LDAP* ld, int ldapTimeout, const char* domain, const char* username, const char* password, const char* userdn, LdapServerType server_type, const char* method="");
     static void bin2str(MemoryBuffer& from, StringBuffer& to);
-    static LDAP* ldapInitAndSimpleBind(const char* ldapserver, const char* userDN, const char* pwd, const char* ldapprotocol, int ldapport, const char * cipherSuite, int timeout, int * err);
-    static int getServerInfo(const char* ldapserver, const char * user, const char *pwd, const char* ldapprotocol, int ldapport, const char * cipherSuite, StringBuffer& domainDN, LdapServerType& stype, const char* domainname, int timeout);
+    static LDAP* ldapInitAndSimpleBind(const char* ldapserver, const char* userDN, const char* pwd, const char* ldapprotocol, int ldapport, const char * cipherSuite, int timeout, int * err, const char* tlsValidation, const char* caCertFile);
+    static int getServerInfo(const char* ldapserver, const char * user, const char *pwd, const char* ldapprotocol, int ldapport, const char * cipherSuite, StringBuffer& domainDN, LdapServerType& stype, const char* domainname, int timeout, const char* tlsValidation, const char* caCertFile);
     static void normalizeDn(const char* dn, const char* basedn, StringBuffer& dnbuf);
     static bool containsBasedn(const char* str);
     static void cleanupDn(const char* dn, StringBuffer& dnbuf);
     static bool getDcName(const char* domain, StringBuffer& dc);
     static void getName(const char* dn, StringBuffer& name);
 };
+
+// Returns true if any TLS certificate validation is active (strict or permissive).
+// Null or empty tlsValidation is treated as "disabled".
+inline bool isTLSValidationActive(const char* tlsValidation)
+{
+    return !isEmptyString(tlsValidation) && (strieq(tlsValidation, "strict") || strieq(tlsValidation, "permissive"));
+}
+
+inline bool isTLSValidationStrict(const char* tlsValidation)
+{
+    return !isEmptyString(tlsValidation) && strieq(tlsValidation, "strict");
+}
 
 #endif
