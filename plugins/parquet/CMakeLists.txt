@@ -36,6 +36,7 @@ if(PARQUETEMBED OR USE_PARQUET)
         set(
             SRCS
             parquetembed.cpp
+            arrowio.cpp
         )
 
         INCLUDE_DIRECTORIES(
@@ -45,7 +46,9 @@ if(PARQUETEMBED OR USE_PARQUET)
             ${HPCC_SOURCE_DIR}/rtl/nbcd
             ${HPCC_SOURCE_DIR}/common/deftype
             ${HPCC_SOURCE_DIR}/system/jlib
+            ${HPCC_SOURCE_DIR}/system/mp
             ${HPCC_SOURCE_DIR}/roxie/roxiemem
+            ${HPCC_SOURCE_DIR}/dali/base
         )
 
         add_definitions(-D_USRDLL -DPARQUETEMBED_PLUGIN_EXPORTS)

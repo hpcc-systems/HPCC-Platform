@@ -12,6 +12,7 @@
 ############################################################################## */
 
 #include "parquetembed.hpp"
+#include "arrowio.hpp"
 #include "arrow/result.h"
 #include "parquet/arrow/schema.h"
 #include "arrow/io/api.h"
@@ -24,6 +25,8 @@
 #include "jfile.hpp"
 #include "jutil.hpp"
 #include "rtlrecord.hpp"
+#include "jplane.hpp"
+#include "dautils.hpp"
 
 static constexpr const char *MODULE_NAME = "parquet";
 static constexpr const char *MODULE_DESCRIPTION = "Parquet Embed Helper";
@@ -57,6 +60,39 @@ extern "C" DECL_EXPORT bool getECLPluginDefinition(ECLPluginDefinitionBlock *pb)
 namespace parquetembed
 {
 
+/**
+ * @brief When the path targets a striped storage plane, redirect it to this worker's device.
+ * An apitype:planename/scope/file path is rewritten as apitype:planename/d{N}/scope/file where N
+ * is derived from the part number and a hash of the scope+filename (excluding the extension - the
+ * first '.' marks the end of the user scope and the start of the platform-added part info). Paths
+ * that do not reference a striped plane are left unchanged.
+ */
+static void resolvePlaneStripePath(std::string &path, unsigned partNum)
+{
+    // Expected format: apitype:planename/scope/file
+    const char *base = path.c_str();
+    const char *colon = strchr(base, ':');
+    if (!colon)
+        return;
+    const char *slash = strchr(colon + 1, '/');
+    if (!slash || !slash[1] || slash == colon + 1)
+        return;
+
+    StringBuffer planeName(slash - (colon + 1), colon + 1);
+    Owned<const IStoragePlane> plane = getStoragePlaneByName(planeName.str(), false);
+    unsigned numDevices = plane ? plane->queryNumStripes() : 0;
+    if (numDevices <= 1)
+        return; // not striped
+
+    const char *logicalFilename = slash + 1;
+    const char *ext = strchr(logicalFilename, '.');
+    size32_t hashLen = ext ? (size32_t)(ext - logicalFilename) : (size32_t)strlen(logicalFilename);
+    unsigned deviceNum = calcStripeNumber(partNum, getLfnHashFromPath(hashLen, logicalFilename), numDevices);
+
+    StringBuffer resolved(slash - base, base); // apitype:planename
+    resolved.appendf("/d%u/%s", deviceNum, logicalFilename);
+    path.assign(resolved.str(), resolved.length());
+}
 
 // Represents a Parquet field with its ECL-compatible name and compatibility status
 // Used to track field name transformations when converting from Parquet schema to ECL record structure
@@ -422,6 +458,10 @@ ParquetReader::ParquetReader(const char *option, const char *_location, int _max
     maxRowCountInTable = _maxRowCountInTable;
     activityCtx = _activityCtx;
     pool = arrow::default_memory_pool();
+
+    // Redirect the path to this worker's device when the target plane is striped
+    resolvePlaneStripePath(location, activityCtx ? activityCtx->querySlave() : 0);
+
     if (_partitionFields)
     {
         std::stringstream ss(_partitionFields);
@@ -448,7 +488,18 @@ ParquetReader::~ParquetReader()
 arrow::Status ParquetReader::constructParquetFileReader(const char *fullPath)
 {
     std::shared_ptr<arrow::io::RandomAccessFile> input;
-    ARROW_ASSIGN_OR_RAISE(input, arrow::io::ReadableFile::Open(fullPath));
+    try
+    {
+        Owned<IFile> ifile = createIFile(fullPath);
+        Owned<IFileIO> ifileio = ifile->open(IFOread);
+        if (!ifileio)
+            return arrow::Status::IOError("Failed to open file for reading: ", fullPath);
+        input = std::make_shared<HpccRandomAccessFile>(ifileio.getClear());
+    }
+    catch (IException *e)
+    {
+        return hpccExceptionToStatus(e);
+    }
 
     std::unique_ptr<parquet::arrow::FileReader> parquetFileReader;
     ARROW_ASSIGN_OR_RAISE(parquetFileReader, parquet::arrow::OpenFile(std::move(input), pool));
@@ -464,9 +515,8 @@ arrow::Status ParquetReader::constructParquetFileReader(const char *fullPath)
  */
 arrow::Status ParquetReader::openPartitionedFile()
 {
-    // Create a filesystem
-    std::shared_ptr<arrow::fs::FileSystem> fs;
-    ARROW_ASSIGN_OR_RAISE(fs, arrow::fs::FileSystemFromUriOrPath(location));
+    // Create a filesystem backed by HPCC's IFile infrastructure
+    std::shared_ptr<arrow::fs::FileSystem> fs = std::make_shared<HpccFileSystem>();
 
     // FileSelector allows traversal of multi-file dataset
     arrow::fs::FileSelector selector;
@@ -1046,8 +1096,14 @@ std::shared_ptr<arrow::Schema> ParquetReader::getSchema()
 ParquetWriter::ParquetWriter(const char *option, const char *_destination, int _maxRowCountInBatch, bool _overwrite, arrow::Compression::type _compressionOption, const char *_partitionFields, const IThorActivityContext *_activityCtx)
     : maxRowCountInBatch(_maxRowCountInBatch), partOption(option), destination(_destination), overwrite(_overwrite), activityCtx(_activityCtx), compressionOption(_compressionOption)
 {
+    if (!activityCtx)
+         failx("Parquet write requires a valid IThorActivityContext");
+
     pool = arrow::default_memory_pool();
     dbgassertex(startsWithIgnoreCase(partOption.c_str(), "write"));
+
+    // Redirect the path to this worker's device when the target plane is striped
+    resolvePlaneStripePath(destination, activityCtx->querySlave());
 
     // Verify partition fields before calling checkDirContents and deleting existing files
     if (endsWithIgnoreCase(partOption.c_str(), "partition"))
@@ -1089,7 +1145,7 @@ arrow::Status ParquetWriter::openWriteFile()
     }
     if (endsWithIgnoreCase(partOption.c_str(), "partition"))
     {
-        ARROW_ASSIGN_OR_RAISE(auto filesystem, arrow::fs::FileSystemFromUriOrPath(destination));
+        auto filesystem = std::make_shared<HpccFileSystem>();
         auto format = std::make_shared<arrow::dataset::ParquetFileFormat>();
         writeOptions.file_write_options = format->DefaultWriteOptions();
         writeOptions.filesystem = std::move(filesystem);
@@ -1111,9 +1167,20 @@ arrow::Status ParquetWriter::openWriteFile()
             destination.insert(destination.find(".parquet"), partMask);
         }
 
-        recursiveCreateDirectoryForFile(destination.c_str());
-        std::shared_ptr<arrow::io::FileOutputStream> outfile;
-        PARQUET_ASSIGN_OR_THROW(outfile, arrow::io::FileOutputStream::Open(destination, false)); // false = do not append. Will truncate existing file to 0 bytes
+        std::shared_ptr<arrow::io::OutputStream> outfile;
+        try
+        {
+            recursiveCreateDirectoryForFile(destination.c_str());
+            Owned<IFile> ifile = createIFile(destination.c_str());
+            Owned<IFileIO> ifileio = ifile->open(IFOcreate);
+            if (!ifileio)
+                return arrow::Status::IOError("Failed to open file for writing: ", destination.c_str());
+            outfile = std::make_shared<HpccOutputStream>(ifileio.getClear());
+        }
+        catch (IException *e)
+        {
+            return hpccExceptionToStatus(e);
+        }
 
         // Choose compression
         std::shared_ptr<parquet::WriterProperties> props = parquet::WriterProperties::Builder().compression(compressionOption)->build();
@@ -1170,6 +1237,18 @@ void ParquetWriter::writeRecordBatch()
     {
         reportIfFailure(writer->WriteTable(*(table.get()), recordBatch->num_rows()));
     }
+}
+
+/**
+ * @brief Finalizes the output file after all record batches have been written.
+ *
+ * For the non-partitioned writer path, Arrow only writes the Parquet footer and
+ * flushes buffered data when the FileWriter is closed.
+ */
+void ParquetWriter::closeWriteFile()
+{
+    if (writer)
+        reportIfFailure(writer->Close());
 }
 
 /**
@@ -1453,13 +1532,14 @@ arrow::Status ParquetWriter::checkDirContents()
             // If a directory is found, clean up subdirs for writing partitioned dataset
             if (overwrite)
             {
-                DBGLOG("Parquet file write: deleting directory contents in '%s'", path.str());
-                ARROW_ASSIGN_OR_RAISE(auto filesystem, arrow::fs::FileSystemFromUriOrPath(destination));
-                reportIfFailure(filesystem->DeleteDirContents(path.str()));
+                const char *targetDirectory = exactFile->queryFilename();
+                DBGLOG("Parquet file write: deleting directory contents in '%s'", targetDirectory);
+                auto filesystem = std::make_shared<HpccFileSystem>();
+                reportIfFailure(filesystem->DeleteDirContents(targetDirectory));
                 return arrow::Status::OK();
             }
             else
-                failx("The target directory %s is not empty. To delete the contents of the directory set the overwrite option to true.", path.str());
+                failx("The target directory %s is not empty. To delete the contents of the directory set the overwrite option to true.", exactFile->queryFilename());
         }
         else if (overwrite)
         {
@@ -2887,6 +2967,8 @@ void ParquetDatasetBinder::executeAll()
 
     if (rowCount % maxRowCountInBatch != 0)
         parquetWriter->writeRecordBatch();
+
+    parquetWriter->closeWriteFile();
 }
 
 /**
