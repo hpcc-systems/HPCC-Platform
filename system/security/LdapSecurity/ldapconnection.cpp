@@ -348,12 +348,12 @@ public:
                 m_serverType = ACTIVE_DIRECTORY;
                 m_isAzureAD = true;
             }
-            else if (0 == stricmp(m_cfgServerType, "389DirectoryServer"))//uses iPlanet style ACI
-                m_serverType = OPEN_LDAP;
+            else if (0 == stricmp(m_cfgServerType, "389DirectoryServer"))
+                m_serverType = LDAP_389DS;
             else if (0 == stricmp(m_cfgServerType, "OpenLDAP"))
                 m_serverType = OPEN_LDAP;
             else if (0 == stricmp(m_cfgServerType, "Fedora389"))
-                m_serverType = OPEN_LDAP;
+                m_serverType = LDAP_389DS;
             else if (0 == stricmp(m_cfgServerType, "iPlanet"))
                 m_serverType = IPLANET;
             else
@@ -454,7 +454,7 @@ public:
 
             //Guesstimate system user baseDN based on config settings. It will be used if anonymous bind fails
             StringBuffer sysUserDN;
-            if(m_serverType == OPEN_LDAP)
+            if(m_serverType == OPEN_LDAP || m_serverType == LDAP_389DS)
                 sysUserDN.append("uid=").append(m_sysuser_commonname).append(",").append(sysBasedn);
             else
                 sysUserDN.append("cn=").append(m_sysuser_commonname).append(",").append(sysBasedn);
@@ -630,7 +630,7 @@ public:
                 LdapUtils::normalizeDn( "cn=Users", m_basedn.str(), m_sysuser_basedn);
             else if(m_serverType == IPLANET)
                 m_sysuser_basedn.append("ou=administrators,ou=topologymanagement,o=netscaperoot");
-            else if(m_serverType == OPEN_LDAP)
+            else if(m_serverType == OPEN_LDAP || m_serverType == LDAP_389DS)
                 m_sysuser_basedn.append(m_basedn.str());
         }
         else
@@ -647,7 +647,7 @@ public:
                 m_sysuser_dn.append("uid=").append(m_sysuser.str()).append(",").append(m_sysuser_basedn.str());
             else if(m_serverType == ACTIVE_DIRECTORY)
                 m_sysuser_dn.append("cn=").append(m_sysuser_commonname.str()).append(",").append(m_sysuser_basedn.str());
-            else if(m_serverType == OPEN_LDAP)
+            else if(m_serverType == OPEN_LDAP || m_serverType == LDAP_389DS)
             {
                 if (strstr(m_sysuser_commonname.str(), "Directory Manager"))
                     m_sysuser_dn.append("cn=Directory Manager");
@@ -669,9 +669,7 @@ public:
 
         if(m_serverType == ACTIVE_DIRECTORY)
             m_sdfieldname.append("ntSecurityDescriptor");
-        else if(m_serverType == IPLANET)
-            m_sdfieldname.append("aci");
-        else if(m_serverType == OPEN_LDAP)
+        else
             m_sdfieldname.append("aci");
 #ifdef _DEBUG
         debugPrintout();
@@ -950,6 +948,9 @@ private:
                 break;
             case OPEN_LDAP:
                 ldap = "OpenLDAP";
+                break;
+            case LDAP_389DS:
+                ldap = "389 Directory Server";
                 break;
             case IPLANET:
                 ldap = "iplanet";
@@ -1661,7 +1662,7 @@ public:
         CriticalBlock block(lcCrit);
         if (!createdOU)
         {
-            if(m_ldapconfig->getServerType() == OPEN_LDAP)
+            if(m_ldapconfig->getServerType() == OPEN_LDAP || m_ldapconfig->getServerType() == LDAP_389DS)
             {
                 try
                 {
@@ -4083,8 +4084,8 @@ public:
         }
         else
         {
-            if(m_ldapconfig->getServerType() == OPEN_LDAP)
-                throw MakeStringException(-1, "removing all permissions for openldap is currently not supported");
+            if(m_ldapconfig->getServerType() == OPEN_LDAP || m_ldapconfig->getServerType() == LDAP_389DS)
+                throw MakeStringException(-1, "removing all permissions for OpenLDAP and 389 Directory Server is currently not supported");
 
             sd_attr.mod_op = LDAP_MOD_DELETE;
             sd_attr.mod_type = (char*)m_ldapconfig->getSdFieldName();
@@ -4333,7 +4334,7 @@ public:
         Owned<ILdapConnection> lconn = m_connections->getConnection();
         LDAP* ld = lconn.get()->getLd();
         int rc = ldap_add_ext_s(ld, (char*)dn.str(), attrs, NULL, NULL);
-        if ( rc == LDAP_INVALID_SYNTAX  && m_ldapconfig->getServerType() == OPEN_LDAP)//Fedora389 does not 'seem' to need this, openLDAP does
+        if ( rc == LDAP_INVALID_SYNTAX  && m_ldapconfig->getServerType() == OPEN_LDAP)//openLDAP requires a member attribute; 389ds (LDAP_389DS) does not - confirmed on live server
         {
             attrs[ind++] = &member_attr;
             attrs[ind] = NULL;
@@ -4400,9 +4401,9 @@ public:
             filter.append("distinguishedName=");
             appendEscapedLdapFilter(grpdn.str(), filter);
         }
-        else if(m_ldapconfig->getServerType() == IPLANET)
+        else if(m_ldapconfig->getServerType() == IPLANET || m_ldapconfig->getServerType() == LDAP_389DS)
         {
-            filter.append("entrydn=");
+            filter.append("entrydn="); // match on full DN - unambiguous across OUs
             appendEscapedLdapFilter(grpdn.str(), filter);
         }
         else if(m_ldapconfig->getServerType() == OPEN_LDAP)
@@ -4704,7 +4705,7 @@ public:
     {
         if(m_pwscheme.length() == 0)
         {
-            if(m_ldapconfig->getServerType() == IPLANET)
+            if(m_ldapconfig->getServerType() == IPLANET || m_ldapconfig->getServerType() == LDAP_389DS)
             {
                 Owned<ILdapConnection> lconn = m_connections->getConnection();
                 LDAP* ld = lconn.get()->getLd();
@@ -4955,7 +4956,7 @@ private:
         {
             groupdn.append("cn=Builtin,").append(m_ldapconfig->getBasedn());
         }
-        else if((stype == IPLANET || stype == OPEN_LDAP) && stricmp(groupname, "Directory Administrators") == 0)
+        else if((stype == IPLANET || stype == OPEN_LDAP || stype == LDAP_389DS) && stricmp(groupname, "Directory Administrators") == 0)
         {
             groupdn.append(m_ldapconfig->getBasedn());
         }
@@ -4975,7 +4976,7 @@ private:
         {
             groupbasedn.append("cn=Builtin,").append(m_ldapconfig->getBasedn());
         }
-        else if((stype == IPLANET || stype == OPEN_LDAP) && stricmp(groupname, "Directory Administrators") == 0)
+        else if((stype == IPLANET || stype == OPEN_LDAP || stype == LDAP_389DS) && stricmp(groupname, "Directory Administrators") == 0)
         {
             groupbasedn.append(m_ldapconfig->getBasedn());
         }
@@ -5392,7 +5393,7 @@ private:
                     appendEscapedLdapFilter(dn.str(), filter);
                     filter.append(")");
                 }
-                else if(servertype == IPLANET)
+                else if(servertype == IPLANET || servertype == LDAP_389DS)
                 {
                     filter.append("(entrydn=");
                     appendEscapedLdapFilter(dn.str(), filter);
