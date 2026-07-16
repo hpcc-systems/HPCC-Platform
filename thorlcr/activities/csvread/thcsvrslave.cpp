@@ -77,7 +77,8 @@ class CCsvReadSlaveActivity : public CDiskReadSlaveActivityBase
                     pnum = lnum;
                 }
                 unsigned &headerLinesRemaining = activity.getHeaderLines(subFile);
-                if (headerLinesRemaining)
+                // Only the first part of each subfile owns the CSV header.
+                if (headerLinesRemaining && (0 == pnum))
                 {
                     do
                     {
