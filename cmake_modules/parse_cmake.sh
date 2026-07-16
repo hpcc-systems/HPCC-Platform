@@ -186,7 +186,8 @@ function do_tag()
       if [ "$FORCE" = "-f" ] ; then
         doit "git tag -d $HPCC_LONG_TAG"
       fi
-      doit "git tag $HPCC_LONG_TAG"
+      # Provide a tag message to avoid interactive editor prompts when tag.gpgSign is enabled.
+      doit "git tag -m \"$HPCC_NAME $HPCC_SHORT_TAG\" $HPCC_LONG_TAG"
       doit "git push $REMOTE $HPCC_LONG_TAG $FORCE"
     done
 }
