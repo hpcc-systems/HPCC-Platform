@@ -1085,7 +1085,8 @@ public:
             ret = qd.root->addPropTree("Client");
             ret->setPropInt64("@session",sessionid);
             StringBuffer eps;
-            ret->setProp("@node",queryMyNode()->endpoint().getEndpointHostText(eps).str());
+            getRemoteAccessibleHostText(eps, queryMyNode()->endpoint());
+            ret->setProp("@node", eps.str());
         }
         return ret;
     }
@@ -2170,7 +2171,7 @@ extern bool WORKUNIT_API runWorkUnit(const char *wuid, const char *queueName)
 #endif
 
     Owned<IJobQueue> queue = createJobQueue(agentQueue.str());
-    if (!queue.get()) 
+    if (!queue.get())
         throw MakeStringException(-1, "Could not create workunit queue");
 
     {

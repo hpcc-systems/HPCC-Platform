@@ -91,13 +91,13 @@ ldap_compare_ext_s LDAP_P((
 #define AAD_ADMINISTRATORS_GROUP "AAD DC Administrators"
 #define AAD_USERS_GROUPS_OU      "AADDC Users"
 
-// 1 for ActiveDirectory, 2 for iPlanet, 3 for openLdap
 enum LdapServerType
 {
     LDAPSERVER_UNKNOWN = 0,
     ACTIVE_DIRECTORY = 1,
     IPLANET = 2,
-    OPEN_LDAP = 3
+    OPEN_LDAP = 3,
+    LDAP_389DS = 4  // 389 Directory Server (Fedora DS / Red Hat DS) - iPlanet lineage
 };
 
 enum ACT_TYPE

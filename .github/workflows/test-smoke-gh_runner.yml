@@ -148,7 +148,7 @@ jobs:
           ulimit -c
           # force regression suite to timeout after 28 minutes, so it captures ZAP report of any inflight hung queries
           /opt/HPCCSystems/bin/timeoutcmd $((28 * 60)) \
-              /opt/HPCCSystems/testing/regress/ecl-test query --suiteDir /opt/HPCCSystems/testing/regress --preAbort '/opt/HPCCSystems/bin/smoketest-preabort.sh' --pq 2 --target ${{ matrix.engine }} --excludeclass python2,embedded-r,embedded-js,3rdpartyservice,mongodb --generateStackTrace ${{ steps.select-tests.outputs.queries }}
+              /opt/HPCCSystems/testing/regress/ecl-test query --suiteDir /opt/HPCCSystems/testing/regress --preAbort '/opt/HPCCSystems/bin/smoketest-preabort.sh' --pq 2 --target ${{ matrix.engine }} --excludeclass python2,embedded-r,embedded-js,3rdpartyservice,mongodb,need4workers --generateStackTrace ${{ steps.select-tests.outputs.queries }}
           grep Failure: /home/runner/HPCCSystems-regression/log/${{ matrix.engine }}.*.log
           if [[ "$(grep -oP '(?<=^Failure: )[0-9]+$' /home/runner/HPCCSystems-regression/log/${{ matrix.engine }}.*.log)" -gt 0 ]]; then cat /var/log/syslog ; exit 1; fi
 

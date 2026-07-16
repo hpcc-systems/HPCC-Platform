@@ -590,15 +590,10 @@ void CLdapSecManager::init(const char *serviceName, IPropertyTree* cfg)
     IPermissionProcessor* pp;
     if(ldap_client->getServerType() == ACTIVE_DIRECTORY)
         pp = new PermissionProcessor(cfg);
-    else if(ldap_client->getServerType() == IPLANET)
+    else if(ldap_client->getServerType() == IPLANET || ldap_client->getServerType() == LDAP_389DS)
         pp = new CIPlanetAciProcessor(cfg);
     else if(ldap_client->getServerType() == OPEN_LDAP)
-    {
-        if (0 == stricmp(ldap_client->getLdapConfig()->getCfgServerType(), "389DirectoryServer"))//uses iPlanet style ACI
-            pp = new CIPlanetAciProcessor(cfg);
-        else
-            pp = new COpenLdapAciProcessor(cfg);
-    }
+        pp = new COpenLdapAciProcessor(cfg);
     else
         throwUnexpected();
 

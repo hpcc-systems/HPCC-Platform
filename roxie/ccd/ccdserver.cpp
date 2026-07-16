@@ -2787,8 +2787,8 @@ public:
 class CRoxieServerReadAheadInput : implements IEngineRowStream, implements IFinalRoxieInput, implements IRecordPullerCallback, public CInterface
 {
     QueueOf<const void, true> buffer;
-    InterruptableSemaphore ready;
-    InterruptableSemaphore space;
+    InterruptableSemaphore ready{SYNC_LOCATION};
+    InterruptableSemaphore space{SYNC_LOCATION};
     CriticalSection crit{SYNC_LOCATION};
     bool eof;
     bool disabled;
@@ -4266,7 +4266,7 @@ class CRemoteResultAdaptor : implements IEngineRowStream, implements IFinalRoxie
         CriticalSection crit{SYNC_LOCATION};
 
     public:
-        ChannelBuffer(const CRemoteResultAdaptor &_owner, unsigned _channel) : channel(_channel), flowController(perChannelFlowLimit), owner(_owner)
+        ChannelBuffer(const CRemoteResultAdaptor &_owner, unsigned _channel) : channel(_channel), flowController("ChannelBuffer Sem", perChannelFlowLimit), owner(_owner)
         {
             overflowSequence = 0;
             needsFlush = false;
@@ -4370,7 +4370,7 @@ private:
     bool preserveOrder;
     bool eogSent = false;
 
-    InterruptableSemaphore sentsome;
+    InterruptableSemaphore sentsome{SYNC_LOCATION};
     Owned <IMessageCollator> mc;
     Owned<IMessageUnpackCursor> mu;
     Owned<IMessageResult> mr;
@@ -9964,8 +9964,8 @@ class CRoxieServerPipeThroughActivity : public CRoxieServerActivity, implements 
     RecordPullerThread puller;
     Owned<IPipeProcess> pipe;
     StringAttr pipeCommand;
-    InterruptableSemaphore pipeVerified;
-    InterruptableSemaphore pipeOpened;
+    InterruptableSemaphore pipeVerified{SYNC_LOCATION};
+    InterruptableSemaphore pipeOpened{SYNC_LOCATION};
     CachedOutputMetaData inputMeta;
     Owned<IOutputRowSerializer> rowSerializer;
     Owned<IOutputRowDeserializer> rowDeserializer;
@@ -13957,7 +13957,7 @@ public:
 
 protected:
     RecordPullerThread puller;
-    InterruptableSemaphore space;
+    InterruptableSemaphore space{SYNC_LOCATION};
     InterruptableSemaphore &ready;
     SafeQueueOf<const void, true> buffer;
     bool atEog;
@@ -13969,7 +13969,7 @@ typedef CopyReferenceArrayOf<CRoxieThreadedConcatReader> ReaderArray;
 
 class CRoxieServerThreadedConcatActivity : public CRoxieServerActivity
 {
-    InterruptableSemaphore ready;
+    InterruptableSemaphore ready{SYNC_LOCATION};
     ReaderArray pullers;
     unsigned numInputs;
     unsigned nextPuller; // for round robin
@@ -15392,8 +15392,8 @@ class CRoxieServerPrefetchProjectActivity : public CRoxieServerActivity, impleme
     unsigned __int64 recordCount = 0;
     IHThorPrefetchProjectArg &helper;
     RecordPullerThread puller;
-    InterruptableSemaphore ready;
-    InterruptableSemaphore space;
+    InterruptableSemaphore ready{SYNC_LOCATION};
+    InterruptableSemaphore space{SYNC_LOCATION};
 
     class PrefetchInfo : public CInterface
     {
@@ -16018,7 +16018,7 @@ class CRoxieServerParallelLoopActivity : public CRoxieServerLoopActivity
     CriticalSection canAccess{SYNC_LOCATION};
     CriticalSection scrit{SYNC_LOCATION};
     InterruptableSemaphore readySpace;
-    InterruptableSemaphore recordsReady;
+    InterruptableSemaphore recordsReady{SYNC_LOCATION};
 
 protected:
     bool includeInLoop(unsigned counter, const void * row)
@@ -16030,7 +16030,7 @@ protected:
 public:
     CRoxieServerParallelLoopActivity(IRoxieAgentContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, unsigned _loopGraphId, IOutputMetaData * _counterMeta)
         : CRoxieServerLoopActivity(_ctx, _factory, _probeManager, _loopGraphId, _counterMeta),
-          readySpace(parallelLoopFlowLimit)
+          readySpace("ParallelLoop ReadySpace", parallelLoopFlowLimit)
     {
         probeManager = _probeManager;
         defaultNumParallel = 0;

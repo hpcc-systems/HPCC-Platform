@@ -217,8 +217,8 @@ int LdapUtils::LdapBind(LDAP* ld, int ldapTimeout, const char* domain, const cha
             return LDAP_INVALID_CREDENTIALS;
 
         int rc = LdapSimpleBind(ld, ldapTimeout, (char*)userdn, (char*)password);
-        if (rc != LDAP_SUCCESS && server_type == OPEN_LDAP && strchr(userdn,','))
-        {   //Fedora389 is happier without the domain component specified
+        if (rc != LDAP_SUCCESS && (server_type == OPEN_LDAP || server_type == LDAP_389DS) && strchr(userdn,','))
+        {   //OpenLDAP and 389ds/Fedora389 are happier without the domain component specified
             StringBuffer cn(userdn);
             cn.toLowerCase();
             const char * pDC = strstr(cn.str(), ",dc=");

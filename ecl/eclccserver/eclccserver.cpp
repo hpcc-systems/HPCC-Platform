@@ -205,7 +205,7 @@ private:
     bool timedOut = false;
     IPointerArrayOf<IPipeProcess> pipes;
     IConstWorkUnit *wu;
-    InterruptableSemaphore sem;
+    InterruptableSemaphore sem{SYNC_LOCATION};
 };
 
 class AbortPipeWaiter

@@ -919,9 +919,9 @@ class CRoxieFileCache : implements IRoxieFileCache, implements ICopyFileProgress
     mutable ICopyArrayOf<ILazyFileIO> buddyCopying;
     mutable bool buddyChecking = false;
     bool reportedFilesToCopy = false;
-    InterruptableSemaphore toCopy;
-    InterruptableSemaphore toClose;
-    InterruptableSemaphore cidtSleep;
+    InterruptableSemaphore toCopy{SYNC_LOCATION};
+    InterruptableSemaphore toClose{SYNC_LOCATION};
+    InterruptableSemaphore cidtSleep{SYNC_LOCATION};
     mutable CopyMapStringToMyClassViaBase<CRoxieLazyFileIO, ILazyFileIO> files;
     mutable CriticalSection crit{SYNC_LOCATION};
     bool started;

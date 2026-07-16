@@ -36,7 +36,7 @@ private:
     bool                memLimitExceeded;
     bool                encrypted;
     CriticalSection     queueCrit{SYNC_LOCATION};
-    InterruptableSemaphore sem;
+    InterruptableSemaphore sem{SYNC_LOCATION};
     ruid_t ruid;
     std::atomic<unsigned> totalBytesReceived = {0};
     std::atomic<unsigned> totalDuplicates = {0};

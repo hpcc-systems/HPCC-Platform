@@ -49,6 +49,9 @@ Details about using Copilot for work on the HPCC Systems platform.
 [Prompt Tips](./userdoc/copilot/CopilotPromptTips.md)
 Tips for writing effective prompts for GitHub Copilot.
 
+For tips on using Copilot for ECL development, see [The `@ecl` Participant in Copilot](./userdoc/copilot/eclParticipantinCopilot.md).
+
+
 ## Containerized Deployment
 
 ### Docker

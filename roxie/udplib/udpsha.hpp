@@ -92,7 +92,7 @@ class queue_t
     unsigned limit = 0;
     
     CriticalSection c_region{SYNC_LOCATION};
-    InterruptableSemaphore data_avail;
+    InterruptableSemaphore data_avail{SYNC_LOCATION};
     Semaphore free_sl{SYNC_LOCATION};                // Signalled when (a) someone is waiting for it and (b) count changes from >= limit to < limit
     unsigned        signal_free_sl = 0;     // Number of people waiting in free_sl. Only updated within critical section
     

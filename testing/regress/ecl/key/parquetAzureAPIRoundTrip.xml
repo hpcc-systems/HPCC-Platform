@@ -1,0 +1,5 @@
+<Dataset name='ParquetAzureAPIRoundTrip'>
+ <Row><test>RowsRead</test><value>1000</value></Row>
+ <Row><test>MismatchCount</test><value>0</value></Row>
+ <Row><test>Status</test><value>Pass</value></Row>
+</Dataset>

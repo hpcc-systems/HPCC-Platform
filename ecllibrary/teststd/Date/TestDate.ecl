@@ -144,6 +144,28 @@ EXPORT TestDate := MODULE
     ASSERT( Date.ISOWeekDate(20100102, TRUE) = '2009-W53-6', CONST);
     ASSERT( Date.ISOWeekDate(20100103, TRUE) = '2009-W53-7', CONST);
 
+    ASSERT(NOT Date.IsUSDaylightSavingsInEffect(20240309), CONST);
+    ASSERT(Date.IsUSDaylightSavingsInEffect(20240310), CONST);
+    ASSERT(Date.IsUSDaylightSavingsInEffect(20241102), CONST);
+    ASSERT(NOT Date.IsUSDaylightSavingsInEffect(20241103), CONST);
+    ASSERT(NOT Date.IsUSDaylightSavingsInEffect(19870404), CONST);
+    ASSERT(Date.IsUSDaylightSavingsInEffect(19870405), CONST);
+    ASSERT(Date.IsUSDaylightSavingsInEffect(19871024), CONST);
+    ASSERT(NOT Date.IsUSDaylightSavingsInEffect(19871025), CONST);
+    ASSERT(NOT Date.IsUSDaylightSavingsInEffect(19740105), CONST);
+    ASSERT(Date.IsUSDaylightSavingsInEffect(19740106), CONST);
+    ASSERT(NOT Date.IsUSDaylightSavingsInEffect(19750222), CONST);
+    ASSERT(Date.IsUSDaylightSavingsInEffect(19750223), CONST);
+    ASSERT(NOT Date.IsUSDaylightSavingsInEffect(19420207), CONST);
+    ASSERT(Date.IsUSDaylightSavingsInEffect(19420208), CONST);
+    ASSERT(Date.IsUSDaylightSavingsInEffect(19450929), CONST);
+    ASSERT(NOT Date.IsUSDaylightSavingsInEffect(19450930), CONST);
+    ASSERT(NOT Date.IsUSDaylightSavingsInEffect(19460428), CONST);
+    ASSERT(NOT Date.IsUSDaylightSavingsInEffect(19180330), CONST);
+    ASSERT(Date.IsUSDaylightSavingsInEffect(19180331), CONST);
+    ASSERT(Date.IsUSDaylightSavingsInEffect(19181026), CONST);
+    ASSERT(NOT Date.IsUSDaylightSavingsInEffect(19181027), CONST);
+
     ASSERT(EXISTS(Date.TimeZone.TZ_Data), CONST);
 
     ASSERT(TRUE, CONST)

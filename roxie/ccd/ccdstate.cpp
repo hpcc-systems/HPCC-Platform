@@ -2270,7 +2270,7 @@ private:
     Owned<IDaliPackageWatcher> pSetsNotifier;
     Owned<IDaliPackageWatcher> pMapsNotifier;
     mutable ReadWriteLock packageCrit;
-    InterruptableSemaphore controlSem;
+    InterruptableSemaphore controlSem{SYNC_LOCATION};
     Owned<CRoxiePackageSetWatcher> allQueryPackages;
 
     Semaphore autoReloadTrigger{SYNC_LOCATION};

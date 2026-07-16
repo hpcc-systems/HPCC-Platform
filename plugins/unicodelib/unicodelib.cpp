@@ -246,10 +246,21 @@ bool extract(UnicodeString & out, UnicodeString const & in, unsigned instance)
 }
 
 
-int doUnicodeCompareAtStrength(unsigned src1Len, UChar const * src1, unsigned src2Len, UChar const * src2, Collator::ECollationStrength strength)
+static Collator * createCollator(const Locale & locale)
 {
     UErrorCode error = U_ZERO_ERROR;
-    Collator * coll = Collator::createInstance(error);
+    Collator * coll = Collator::createInstance(locale, error);
+    if (U_FAILURE(error) || !coll)
+    {
+        delete coll;
+        throw makeStringExceptionV(-1, "UnicodeLib: failed to create ICU collator: %s", u_errorName(error));
+    }
+    return coll;
+}
+
+int doUnicodeCompareAtStrength(unsigned src1Len, UChar const * src1, unsigned src2Len, UChar const * src2, Collator::ECollationStrength strength)
+{
+    Collator * coll = createCollator(Locale::getRoot());
     coll->setStrength(strength);
 #if U_ICU_VERSION_MAJOR_NUM>=59
     Collator::EComparisonResult ret = coll->compare((char16_t *)src1, src1Len, (char16_t *)src2, src2Len);
@@ -262,9 +273,8 @@ int doUnicodeCompareAtStrength(unsigned src1Len, UChar const * src1, unsigned sr
 
 int doUnicodeLocaleCompareAtStrength(unsigned src1Len, UChar const * src1, unsigned src2Len, UChar const * src2, char const * localename, Collator::ECollationStrength strength)
 {
-    UErrorCode error = U_ZERO_ERROR;
     Locale locale(localename);
-    Collator * coll = Collator::createInstance(locale, error);
+    Collator * coll = createCollator(locale);
     coll->setStrength(strength);
 #if U_ICU_VERSION_MAJOR_NUM>=59
     Collator::EComparisonResult ret = coll->compare((char16_t *)src1, src1Len, (char16_t *)src2, src2Len);
