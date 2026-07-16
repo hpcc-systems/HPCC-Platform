@@ -138,7 +138,7 @@
  * @param   features        A comma-delimited string listing the profiling
  *                          elements to be included in the output; OPTIONAL,
  *                          defaults to a comma-delimited string containing all
- *                          of the available keywords:
+ *                          of the available keywords except correlations:
  *                              KEYWORD                 AFFECTED OUTPUT
  *                              fill_rate               fill_rate
  *                                                      fill_count
@@ -167,7 +167,8 @@
  *                          are active; also note that enabling the
  *                          cardinality_breakdown feature will also enable
  *                          the cardinality feature, even if it is not
- *                          explicitly enabled
+ *                          explicitly enabled; correlations are disabled by
+ *                          default and must be explicitly requested
  * @param   sampleSize      A positive integer representing a percentage of
  *                          inFile to examine, which is useful when analyzing a
  *                          very large dataset and only an estimated data
@@ -190,7 +191,7 @@ EXPORT Profile(inFile,
                fieldListStr = '\'\'',
                maxPatterns = 100,
                maxPatternLen = 100,
-               features = '\'fill_rate,best_ecl_types,cardinality,cardinality_breakdown,modes,lengths,patterns,min_max,mean,std_dev,quartiles,correlations\'',
+               features = '\'fill_rate,best_ecl_types,cardinality,cardinality_breakdown,modes,lengths,patterns,min_max,mean,std_dev,quartiles\'',
                sampleSize = 100,
                lcbLimit = 64,
                allowZero = FALSE) := FUNCTIONMACRO
@@ -1131,11 +1132,11 @@ EXPORT Profile(inFile,
                         #UNIQUENAME(q3Pos1);
                         LOCAL %q3Pos1% := MAX(%q2Pos1%, %q2Pos2%) + (%halfNumRecs% DIV 2) + (%halfNumRecs% % 2);
                         #UNIQUENAME(q3Value1);
-                        LOCAL %q3Value1% := MIN(%uniqueNumericValuePos%(valueEndPos >= %q3Pos1%), value);
+                        LOCAL %q3Value1% := MIN(%uniqueNumericValuePos%(valueEndPos >= MIN(%q3Pos1%, %wholeNumRecs%)), value);
                         #UNIQUENAME(q3Pos2);
                         LOCAL %q3Pos2% := %q3Pos1% - ((%halfNumRecs% + 1) % 2);
                         #UNIQUENAME(q3Value2);
-                        LOCAL %q3Value2% := MIN(%uniqueNumericValuePos%(valueEndPos >= %q3Pos2%), value);
+                        LOCAL %q3Value2% := MIN(%uniqueNumericValuePos%(valueEndPos >= MIN(%q3Pos2%, %wholeNumRecs%)), value);
                         LOCAL #EXPAND(%_MakeAttr%(%'namePrefix'% + %'@name'% + '_q3_value')) := IF(%halfNumRecs% > 0, AVE(%q3Value1%, %q3Value2%), 0);
 
                         // Derive all unique data values and the number of times
@@ -1144,10 +1145,10 @@ EXPORT Profile(inFile,
                             (
                                 %filledDataInfoNumeric%(attribute = %'namePrefix'% + %'@name'%),
                                 {
-                                    string_value,
+                                    %StringValue_t% string_value := TRIM(string_value[.._maxPatternLen], RIGHT),
                                     %RecCount_t% rec_count := SUM(GROUP, value_count)
                                 },
-                                string_value,
+                                TRIM(string_value[.._maxPatternLen], RIGHT),
                                 MERGE
                             );
 
