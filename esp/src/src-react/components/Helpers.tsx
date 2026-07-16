@@ -229,6 +229,14 @@ export const Helpers: React.FunctionComponent<HelpersProps> = ({
             }
         },
         {
+            key: "file", text: nlsHPCC.File, disabled: checkedRows.filter(item => item.url !== "").length !== 1, iconProps: { iconName: "Download" },
+            onClick: () => {
+                checkedRows.forEach(item => {
+                    window.open(getURL(wuid, item, 1));
+                });
+            }
+        },
+        {
             key: "zip", text: nlsHPCC.Zip, disabled: checkedRows.length === 0, iconProps: { iconName: "Download" },
             onClick: () => downloadHelpers("zip")
         },
@@ -236,7 +244,7 @@ export const Helpers: React.FunctionComponent<HelpersProps> = ({
             key: "gzip", text: nlsHPCC.GZip, disabled: checkedRows.length === 0, iconProps: { iconName: "Download" },
             onClick: () => downloadHelpers("gz")
         }
-    ], [checkedItems.length, checkedRows, downloadHelpers, refreshData, treeItemLeafNodes]);
+    ], [checkedItems.length, checkedRows, downloadHelpers, refreshData, treeItemLeafNodes, wuid]);
 
     const rightButtons = React.useMemo((): ICommandBarItemProps[] => [
         {
