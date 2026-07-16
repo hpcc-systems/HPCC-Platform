@@ -105,7 +105,22 @@ export const DojoAdapter: React.FunctionComponent<DojoAdapterProps> = ({
         }
     }, [Wuid, widget, widgetClassID]);
 
-    widget?.resize();
+    React.useEffect(() => {
+        if (!myRef.current || !widget) return;
+        let timeoutId: ReturnType<typeof setTimeout> | undefined;
+        const resizeObserver = new ResizeObserver(() => {
+            window.clearTimeout(timeoutId);
+            timeoutId = window.setTimeout(() => {
+                widget?.resize();
+            }, 100);
+        });
+        resizeObserver.observe(myRef.current);
+        return () => {
+            window.clearTimeout(timeoutId);
+            resizeObserver.disconnect();
+        };
+    }, [widget]);
+
     return <div ref={myRef} style={{ width: "100%", height: "100%" }}>{nlsHPCC.Loading} {widgetClassID}...</div>;
 };
 
