@@ -5,6 +5,8 @@ Whether you're summarizing complex texts, brainstorming innovative ideas, or cre
 
 Dive in and discover how these simple yet powerful prompts can save you time and effort in your daily tasks.
 
+For tips on using Copilot for ECL development, see [The `@ecl` Participant in Copilot](eclParticipantinCopilot.md),
+
 ## Generic Prompts
 
 Here are a few simple prompts that can save time:
