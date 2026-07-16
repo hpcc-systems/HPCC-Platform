@@ -1244,9 +1244,11 @@ END;
 
 /**
  * Returns a boolean indicating whether daylight savings time is currently
- * in effect locally.
+ * in effect locally (on the HPCC environment that is running the code).
  *
  * @return      TRUE if daylight savings time is currently in effect, FALSE otherwise.
+ *
+ * @see         IsUSDaylightSavingsInEffect()
  */
 
 EXPORT BOOLEAN IsLocalDaylightSavingsInEffect() :=
@@ -1374,6 +1376,65 @@ EXPORT DatesForWeek(Date_t as_of_date = CurrentDate(FALSE)) := FUNCTION
     END;
 
     RETURN result;
+END;
+
+
+/**
+ * Returns TRUE if Daylight Saving Time (DST) is considered in effect for the given
+ * date under U.S. federal DST schedules (where they existed), otherwise FALSE.
+ *
+ * This function intentionally uses a date-only approximation:
+ *  - DST is treated as active starting on the start-transition date (inclusive)
+ *  - and inactive starting on the end-transition date (exclusive).
+ *
+ * This avoids ambiguity around the local 02:00 transition time (and the midnight–02:00
+ * window on the “fall back” day). If you need hour-level correctness, use a
+ * timestamp + timezone rules (e.g., IANA tzdata) instead.
+ *
+ * Historical notes / limitations:
+ *  - 1967+ follows the Uniform Time Act schedules (with the 1974–1975 exceptions and
+ *    the 1987 and 2007 rule changes).
+ *  - 1942–1945 models WWII “War Time” as continuous DST (starting 1942-02-09, ending 1945-09-30).
+ *  - 1920–1941 and 1946–1966 return FALSE because DST was not federally standardized
+ *    and varied by state/locality.
+ *  - This does NOT account for state/local exemptions (e.g., areas that do not observe DST).
+ *
+ * @param   date    The date in question, in YYYYMMDD format;
+ *                  OPTIONAL, defaults to the current (UTC) date.
+ *
+ * @return  TRUE if daylight saving time was in effect on that date, FALSE otherwise.
+ *
+ * @see     IsLocalDaylightSavingsInEffect()
+ */
+EXPORT BOOLEAN IsUSDaylightSavingsInEffect(Date_t date = CurrentDate(FALSE)) := DEFINE FUNCTION
+    // Helper functions
+    Date_t SundayDateBefore(Date_t d, UNSIGNED1 nthSunday = 1) := DEFINE FUNCTION
+        delta := (DayOfWeek(d) - 1) + ((nthSunday - 1) * 7);
+        RETURN AdjustDate(d, day_delta := -delta);
+    END;
+    Date_t SundayDateAfter(Date_t d, UNSIGNED1 nthSunday = 1) := DEFINE FUNCTION
+        delta := ((8 - DayOfWeek(d)) % 7) + ((nthSunday - 1) * 7);
+        RETURN AdjustDate(d, day_delta := delta);
+    END;
+
+    myYear := Year(date);
+
+    RETURN MAP
+        (
+            myYear >= 2007 => (date >= SundayDateAfter(DateFromParts(myYear, 3, 1), 2) AND date < SundayDateAfter(DateFromParts(myYear, 11, 1))),
+            myYear >= 1987 => (date >= SundayDateAfter(DateFromParts(myYear, 4, 1)) AND date < SundayDateBefore(DateFromParts(myYear, 10, 31))),
+            myYear >= 1976 => (date >= SundayDateBefore(DateFromParts(myYear, 4, 30)) AND date < SundayDateBefore(DateFromParts(myYear, 10, 31))),
+            myYear =  1975 => (date >= SundayDateBefore(DateFromParts(myYear, 2, 28)) AND date < SundayDateBefore(DateFromParts(myYear, 10, 31))),
+            myYear =  1974 => (date >= SundayDateAfter(DateFromParts(myYear, 1, 1)) AND date < SundayDateBefore(DateFromParts(myYear, 10, 31))),
+            myYear >= 1967 => (date >= SundayDateBefore(DateFromParts(myYear, 4, 30)) AND date < SundayDateBefore(DateFromParts(myYear, 10, 31))),
+            myYear >= 1946 => FALSE, // DST not federally mandated (varied by locality)
+            myYear =  1945 => (date < SundayDateBefore(DateFromParts(myYear, 9, 30))),
+            myYear >= 1943 => TRUE, // "war time" (continuous DST)
+            myYear =  1942 => (date >= SundayDateAfter(DateFromParts(myYear, 2, 1), 2)),
+            myYear >= 1920 => FALSE, // DST not federally mandated (varied by locality)
+            myYear >= 1918 => (date >= SundayDateBefore(DateFromParts(myYear, 3, 31)) AND date < SundayDateBefore(DateFromParts(myYear, 10, 31))),
+            FALSE
+        );
 END;
 
 
