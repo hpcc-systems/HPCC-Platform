@@ -101,7 +101,8 @@ if [ -e helm/hpcc/Chart.yaml ] ; then
   
   doit "git commit -a -s -m \"$HPCC_NAME Helm Charts $HPCC_SHORT_TAG-$HPCC_SEQUENCE\""
   if [[ "$HPCC_MAJOR" == "8" ]] && [[ "$HPCC_MINOR" == "10" ]] ; then
-    doit "git tag $FORCE $HPCC_MAJOR.$HPCC_MINOR.$HPCC_POINT && git push $REMOTE $HPCC_MAJOR.$HPCC_MINOR.$HPCC_POINT $FORCE"
+    # Provide a tag message to avoid interactive editor prompts when tag.gpgSign is enabled.
+    doit "git tag $FORCE -m \"$HPCC_NAME Helm Charts $HPCC_SHORT_TAG-$HPCC_SEQUENCE\" $HPCC_MAJOR.$HPCC_MINOR.$HPCC_POINT && git push $REMOTE $HPCC_MAJOR.$HPCC_MINOR.$HPCC_POINT $FORCE"
   fi
   doit "git push $REMOTE master $FORCE"
   doit2 "popd 2>&1 > /dev/null"
