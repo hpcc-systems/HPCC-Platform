@@ -2330,6 +2330,7 @@ void CEspHttpServer::sendSessionReloadHTMLPage(IEspContext* ctx, EspAuthRequest&
 EspAuthState CEspHttpServer::authExistingSession(EspAuthRequest& authReq, const char* sessionID)
 {
     ESPLOG(LogMax, "authExistingSession: %s<%s>", PropSessionID, sessionID);
+    bool redirectAllowed = canRedirect(*m_request);
 
     bool getLoginPage = false;
     if (authReq.authBinding->isDomainAuthResources(authReq.httpPath.str()))
@@ -2374,7 +2375,10 @@ EspAuthState CEspHttpServer::authExistingSession(EspAuthRequest& authReq, const 
     {
         authReq.ctx->setAuthStatus(AUTH_STATUS_FAIL);
         clearSessionCookies(authReq);
-        sendSessionReloadHTMLPage(m_request->queryContext(), authReq, "Authentication failed: invalid session.");
+        if (redirectAllowed)
+            sendSessionReloadHTMLPage(m_request->queryContext(), authReq, "Authentication failed: invalid session.");
+        else
+            m_response->sendBasicChallenge(authReq.authBinding->getChallengeRealm(), false);
         ESPLOG(LogMin, "Authentication failed: invalid session ID '%s'. clearSessionCookies() called for the session.", sessionID);
         return authFailed;
     }
@@ -2388,7 +2392,10 @@ EspAuthState CEspHttpServer::authExistingSession(EspAuthRequest& authReq, const 
 #else
         authReq.ctx->setAuthStatus(AUTH_STATUS_FAIL);
         clearSessionCookies(authReq);
-        sendSessionReloadHTMLPage(m_request->queryContext(), authReq, "Authentication failed: Network address for ESP session has been changed.");
+        if (redirectAllowed)
+            sendSessionReloadHTMLPage(m_request->queryContext(), authReq, "Authentication failed: Network address for ESP session has been changed.");
+        else
+            m_response->sendBasicChallenge(authReq.authBinding->getChallengeRealm(), false);
         ESPLOG(LogMin, "Authentication failed: session ID %s from IP %s. ", sessionID, peer.str());
         return authFailed;
 #endif
@@ -2510,6 +2517,7 @@ void CEspHttpServer::logoutSession(EspAuthRequest& authReq, const char* sessionI
 
 EspAuthState CEspHttpServer::handleAuthFailed(bool sessionAuth, EspAuthRequest& authReq, bool unlock, const char* msg)
 {
+    bool redirectAllowed = canRedirect(*m_request);
     ISecUser *user = authReq.ctx->queryUser();
     const char *loginMsg = msg;
     if (user)
@@ -2518,10 +2526,15 @@ EspAuthState CEspHttpServer::handleAuthFailed(bool sessionAuth, EspAuthRequest& 
         {
         case AS_PASSWORD_VALID_BUT_EXPIRED :
             ESPLOG(LogMin, "ESP password expired for %s. Asking update ...", authReq.ctx->queryUserId());
-            if (sessionAuth) //For session auth, store the userid to cookie for the updatepasswordinput form.
-                addTempCookie(authReq.ctx);
-            m_response->redirect(*m_request.get(), "/esp/updatepasswordinput");
-            return authSucceeded;
+            if (redirectAllowed)
+            {
+                if (sessionAuth)
+                    addTempCookie(authReq.ctx); //For session auth, store the userid to cookie for the updatepasswordinput form.
+
+                m_response->redirect(*m_request.get(), "/esp/updatepasswordinput");
+                return authSucceeded;
+            }
+            break;
         case AS_PASSWORD_EXPIRED :
             ESPLOG(LogMin, "ESP password expired for %s", authReq.ctx->queryUserId());
             break;
@@ -2550,12 +2563,16 @@ EspAuthState CEspHttpServer::handleAuthFailed(bool sessionAuth, EspAuthRequest& 
         return authTaskDone;
     }
 
-    authReq.ctx->addTraceSummaryValue(LogMin, "authAction", sessionAuth ? "askUserLogin" : "sendBasicChallenge", TXSUMMARY_GRP_CORE);
-
-    if (!sessionAuth)
-        m_response->sendBasicChallenge(authReq.authBinding->getChallengeRealm(), true);
-    else
+    if (sessionAuth && redirectAllowed)
+    {
+        authReq.ctx->addTraceSummaryValue(LogMin, "authAction", "askUserLogin", TXSUMMARY_GRP_CORE);
         askUserLogin(authReq, loginMsg);
+    }
+    else
+    {
+        authReq.ctx->addTraceSummaryValue(LogMin, "authAction", "sendBasicChallenge", TXSUMMARY_GRP_CORE);
+        m_response->sendBasicChallenge(authReq.authBinding->getChallengeRealm(), redirectAllowed);
+    }
 
     return authFailed;
 }
