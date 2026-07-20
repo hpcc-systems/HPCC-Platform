@@ -37,50 +37,45 @@ public:
 class jlib_decl InterruptableSemaphore : public Semaphore
 {
 private:
-    Owned<IException> error;
-    CriticalSection crit{SYNC_LOCATION};
+    AtomicShared<IException> error;
 
 public:
     InterruptableSemaphore(const char * name, unsigned _initialCount = 0U) : Semaphore(name, _initialCount) {}
 
     void interrupt(IException *_error = NULL, unsigned count=1)
     {
-        CriticalBlock b(crit);
-        if (error)
-            ::Release(_error);
-        else
-        {
-            if (!_error)
-                _error = new InterruptedSemaphoreException;
-            error.setown(_error);
+        if (!_error)
+            _error = new InterruptedSemaphoreException;
+
+        if (error.setownIfNull(_error))
             signal(count);
-        }
     }
 
     void wait()
     {
         Semaphore::wait();
-        CriticalBlock b(crit);
-        if (error)
+        if (error.isSet())
         {
-            throw error.getClear();
+            IException * e = error.getClear();
+            if (e)
+                throw e;
         }
     }
 
     bool wait(unsigned timeout)
     {
         bool ret = Semaphore::wait(timeout);
-        CriticalBlock b(crit);
-        if (error)
+        if (error.isSet())
         {
-            throw error.getClear();
+            IException * e = error.getClear();
+            if (e)
+                throw e;
         }
         return ret;
     }
 
     void reinit(unsigned _initialCount = 0U)
     {
-        CriticalBlock b(crit);
         error.clear();
         Semaphore::reinit(_initialCount);
     }
