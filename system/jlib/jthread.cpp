@@ -632,14 +632,14 @@ void CPooledPersistent::start(bool inheritThreadContext)
     joined = false;
 }
 
-bool CPooledPersistent::join(unsigned timeout, bool throwException)
+bool CPooledPersistent::join(unsigned timeout, [[maybe_unused]] bool throwException)
 {
-    if (!joined)
-    {
-        globalThreadPool.join(handle, timeout);
-        joined = true;
-    }
-    return true;
+    if (joined)
+        return true;
+
+    bool ok = globalThreadPool.join(handle, timeout);
+    joined = true;
+    return ok;
 }
 
 //------------------------------------------------------------------------------------------------------
