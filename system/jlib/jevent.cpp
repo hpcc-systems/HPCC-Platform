@@ -125,6 +125,12 @@ struct EventInformation
 #define TASKSTART_ATTRS        COMMON_ATTRS, EvAttrTask
 #define TASKSTOP_ATTRS         COMMON_ATTRS, EvAttrTask
 #define MUTEX_ATTRS            COMMON_ATTRS, EvAttrLockId
+#define MPREQUESTSEND_ATTRS    COMMON_ATTRS, EvAttrRequestId, EvAttrDataSize
+#define MPREQUESTRECEIVE_ATTRS COMMON_ATTRS, EvAttrRequestId
+#define MPRESPONSESEND_ATTRS   COMMON_ATTRS, EvAttrResponseId, EvAttrDataSize
+#define MPRESPONSERECEIVE_ATTRS COMMON_ATTRS, EvAttrResponseId
+#define ENQUEUE_ATTRS          COMMON_ATTRS, EvAttrElementId
+#define DEQUEUE_ATTRS          COMMON_ATTRS, EvAttrElementId
 
 
 static constexpr EventInformation eventInformation[] {
@@ -168,6 +174,12 @@ static constexpr EventInformation eventInformation[] {
     DEFINE_EVENT(LockTryWaitFail, EventCtxMutex, { MUTEX_ATTRS } ),
     DEFINE_EVENT(LockWaitTimeout, EventCtxMutex, { MUTEX_ATTRS } ),
     DEFINE_EVENT(SemWaitTimeout, EventCtxMutex, { MUTEX_ATTRS } ),
+    DEFINE_EVENT(MpRequestSend, EventCtxRemote, { MPREQUESTSEND_ATTRS } ),
+    DEFINE_EVENT(MpRequestReceive, EventCtxRemote, { MPREQUESTRECEIVE_ATTRS } ),
+    DEFINE_EVENT(MpResponseSend, EventCtxRemote, { MPRESPONSESEND_ATTRS } ),
+    DEFINE_EVENT(MpResponseReceive, EventCtxRemote, { MPRESPONSERECEIVE_ATTRS } ),
+    DEFINE_EVENT(Enqueue, EventCtxQuery, { ENQUEUE_ATTRS } ),
+    DEFINE_EVENT(Dequeue, EventCtxQuery, { DEQUEUE_ATTRS } ),
 };
 static_assert(_elements_in(eventInformation) == EventMax);
 
@@ -232,6 +244,7 @@ static constexpr EventAttrInformation attrInformation[] = {
     DEFINE_ATTR(ResponseSeq, u4, none),
     DEFINE_ATTR(Task, u1, none),
     DEFINE_ATTR(LockId, u4, none),
+    DEFINE_ATTR(ElementId, u8, none),
 };
 
 static_assert(_elements_in(attrInformation) == EvAttrMax);
@@ -1205,6 +1218,85 @@ void EventRecorder::recordResponseReceive(unsigned requestId, unsigned requestSe
     recordResponseEvent(EventResponseReceive, requestId, requestSeq, responseId, responseSeq);
 }
 
+void EventRecorder::recordMpDataEvent(EventType event, EventAttr attr, unsigned id, size32_t dataSize)
+{
+    if (!isRecording() || !isEventEnabled(EventCtxRemote))
+        return;
+
+    if (unlikely(outputToLog))
+        TRACEEVENT("{ \"name\": \"%s\", \"%s\": %u, \"DataSize\": %u }", queryEventName(event), queryEventAttributeName(attr), id, dataSize);
+
+    size32_t requiredSize = sizeMessageHeaderFooter + getSizeOfAttrs(id, dataSize);
+    offset_type writeOffset = reserveEvent(requiredSize);
+    offset_type pos = writeOffset;
+    writeEventHeader(event, pos);
+    write(pos, attr, id);
+    write(pos, EvAttrDataSize, dataSize);
+    writeEventFooter(pos, requiredSize, writeOffset);
+}
+
+void EventRecorder::recordMpIdEvent(EventType event, EventAttr attr, unsigned id)
+{
+    if (!isRecording() || !isEventEnabled(EventCtxRemote))
+        return;
+
+    if (unlikely(outputToLog))
+        TRACEEVENT("{ \"name\": \"%s\", \"%s\": %u }", queryEventName(event), queryEventAttributeName(attr), id);
+
+    size32_t requiredSize = sizeMessageHeaderFooter + getSizeOfAttrs(id);
+    offset_type writeOffset = reserveEvent(requiredSize);
+    offset_type pos = writeOffset;
+    writeEventHeader(event, pos);
+    write(pos, attr, id);
+    writeEventFooter(pos, requiredSize, writeOffset);
+}
+
+void EventRecorder::recordMpRequestSend(unsigned requestId, size32_t dataSize)
+{
+    recordMpDataEvent(EventMpRequestSend, EvAttrRequestId, requestId, dataSize);
+}
+
+void EventRecorder::recordMpRequestReceive(unsigned requestId)
+{
+    recordMpIdEvent(EventMpRequestReceive, EvAttrRequestId, requestId);
+}
+
+void EventRecorder::recordMpResponseSend(unsigned responseId, size32_t dataSize)
+{
+    recordMpDataEvent(EventMpResponseSend, EvAttrResponseId, responseId, dataSize);
+}
+
+void EventRecorder::recordMpResponseReceive(unsigned responseId)
+{
+    recordMpIdEvent(EventMpResponseReceive, EvAttrResponseId, responseId);
+}
+
+void EventRecorder::recordElementEvent(EventType event, __uint64 elementId)
+{
+    if (!isRecording() || !isEventEnabled(EventCtxQuery))
+        return;
+
+    if (unlikely(outputToLog))
+        TRACEEVENT("{ \"name\": \"%s\", \"ElementId\": %llu }", queryEventName(event), elementId);
+
+    size32_t requiredSize = sizeMessageHeaderFooter + getSizeOfAttrs(elementId);
+    offset_type writeOffset = reserveEvent(requiredSize);
+    offset_type pos = writeOffset;
+    writeEventHeader(event, pos);
+    write(pos, EvAttrElementId, elementId);
+    writeEventFooter(pos, requiredSize, writeOffset);
+}
+
+void EventRecorder::recordEnqueue(__uint64 elementId)
+{
+    recordElementEvent(EventEnqueue, elementId);
+}
+
+void EventRecorder::recordDequeue(__uint64 elementId)
+{
+    recordElementEvent(EventDequeue, elementId);
+}
+
 void EventRecorder::recordRecordingSource(const char *processDescriptor, byte channelId, byte replicaId, __uint64 instanceId)
 {
     if (!isStarted || isStopped)
@@ -2082,7 +2174,7 @@ protected:
         default:
             if (currentVersion == properties.version)
                 throw makeStringExceptionV(JLIBERR_SystemUnsupportedFileVersionURequiredU, "file consumer sync error - file '%s' version %u not accepted as current version", file.queryFilename(), properties.version);
-            throw makeStringExceptionV(JLIBERR_SystemUnsupportedFileVersionURequiredU, "file '%s' version %u is not supported (must be 1 or 2)", file.queryFilename(), properties.version);
+            throw makeStringExceptionV(JLIBERR_SystemUnsupportedFileVersionURequiredU, "file '%s' version %u is not supported (must be 1..2)", file.queryFilename(), properties.version);
         }
 
         byte compressionType;

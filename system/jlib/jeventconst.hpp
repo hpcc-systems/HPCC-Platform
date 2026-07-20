@@ -63,6 +63,12 @@ enum EventType : unsigned char
     EventLockTryWaitFail,
     EventLockWaitTimeout,
     EventSemWaitTimeout,
+    EventMpRequestSend,
+    EventMpRequestReceive,
+    EventMpResponseSend,
+    EventMpResponseReceive,
+    EventEnqueue,
+    EventDequeue,
     EventMax
 };
 
