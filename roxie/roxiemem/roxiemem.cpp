@@ -58,6 +58,11 @@
 #pragma warning(disable:4291)
 #endif
 
+#if defined(_DEBUG)
+//In debug check for multiple concurrent calls to blocked allocator - since it would cause major problems if possible
+#define CHECK_FOR_BLOCKED_MULTI_THREAD
+#endif
+
 namespace roxiemem {
 
 #define NOTIFY_UNUSED_PAGES_ON_FREE     // avoid linux swapping 'freed' pages to disk
@@ -76,7 +81,7 @@ static const unsigned ScanReportThreshold = 10; // If average more than 10 scans
 bool memTraceInconsistencies = true;
 static bool memTraceReleaseWhenFree = true;
 static constexpr unsigned maxBlockedRows = 16;   // Maximum number of rows to allocate at once.
-
+static unsigned maxLimitedCount = 8;            // Share a RHF limited count heap between up to this many allocators
 
 void setMemTraceLevel(unsigned value)
 {
@@ -2775,14 +2780,21 @@ public:
                     flags.append("H");
                 if (cur.heapFlags & RHForphaned)
                     flags.append("O");
+                if (cur.heapFlags & RHFlimitedcount)
+                    flags.append("L");
+                if (cur.heapFlags & RHFexactsize)
+                    flags.append("E");
+
                 if (cur.allocatorId)
                     flags.append("@").append(getRealActivityId(cur.allocatorId, allocatorCache));
 
                 //Should never be called with numPages == 0, but protect against divide by zero in case of race condition etc.
                 unsigned __int64 memReserved = cur.numPages * HEAP_ALIGNMENT_SIZE;
                 unsigned percentUsed = cur.numPages ? (unsigned)((cur.memUsed * 100) / memReserved) : 100;
-                logctx.CTXLOG("size: %" I64F "u [%s] reserved: %" I64F "up %u%% (%" I64F "u/%" I64F "u) used",
-                        (unsigned __int64) cur.allocatorSize, flags.str(), (unsigned __int64) cur.numPages, percentUsed, (unsigned __int64) cur.memUsed, (unsigned __int64) memReserved);
+                logctx.CTXLOG("size: %" I64F "u [%s] reserved: %" I64F "up %u%% (%" I64F "u/%" I64F "u %" I64F "u/%" I64F "u) used",
+                        (unsigned __int64) cur.allocatorSize, flags.str(), (unsigned __int64) cur.numPages, percentUsed,
+                        (unsigned __int64) cur.memUsed, (unsigned __int64) memReserved,
+                        (unsigned __int64) cur.memUsed/cur.allocatorSize, (unsigned __int64) memReserved/cur.allocatorSize);
                 totalHeapPages += cur.numPages;
                 totalHeapUsed += cur.memUsed;
             }
@@ -2944,14 +2956,37 @@ public:
     {
     }
 
+    ~CRoxieDirectFixedBlockedRowHeap()
+    {
+#if defined(_DEBUG)
+        if (curRow != numRows)
+            DBGLOG("Blocked Row Heap still contains %u rows", numRows - curRow);
+#endif
+        emptyCache();
+    }
+
     virtual void *allocate()
     {
+#if defined(CHECK_FOR_BLOCKED_MULTI_THREAD)
+        if (active++ != 0)
+        {
+            active--;
+            throw makeStringException(ROXIEMM_BLOCKED_MULTI_THREAD, "Multiple concurrent calls to CRoxieDirectFixedBlockedRowHeap::allocate");
+        }
+        //Potentially yield to make it more likely that another thread will call allocate() before this thread exits
+        MilliSleep(0);
+#endif
+
         if (curRow == numRows)
         {
             numRows = this->heap->allocateBlock(this->allocatorId, maxBlockedRows, rows);
             this->numAllocations += numRows; // not thread safe, but missing entries do not matter
             curRow = 0;
         }
+
+#if defined(CHECK_FOR_BLOCKED_MULTI_THREAD)
+        active--;
+#endif
         return rows[curRow++];
     }
 
@@ -2977,6 +3012,9 @@ protected:
     char * rows[maxBlockedRows]; // Deliberately uninitialized
     unsigned curRow = 0;
     unsigned numRows = 0;
+#if defined(CHECK_FOR_BLOCKED_MULTI_THREAD)
+    std::atomic<unsigned> active{0};
+#endif
 };
 
 //================================================================================
@@ -5311,7 +5349,7 @@ protected:
         if ((roxieHeapFlags & RHFoldfixed) || (fixedSize > FixedSizeHeaplet::maxHeapSize()))
             return new CRoxieFixedRowHeap(this, activityId, (RoxieHeapFlags)roxieHeapFlags, fixedSize);
 
-        unsigned heapFlags = roxieHeapFlags & (RHFunique|RHFpacked|RHFscanning|RHFdelayrelease);
+        unsigned heapFlags = roxieHeapFlags & (RHFunique|RHFpacked|RHFscanning|RHFdelayrelease|RHFlimitedcount|RHFexactsize);
         if (heapFlags & RHFpacked)
         {
             CPackedChunkingHeap * heap = createPackedHeap(fixedSize, activityId, heapFlags, maxSpillCost);
@@ -5336,7 +5374,17 @@ protected:
             if (heap.matches(chunkSize, activityId, flags))
             {
                 if (heap.isAliveAndLink())
+                {
+                    if (flags & RHFlimitedcount)
+                    {
+                        if ((unsigned)heap.getLinkCount() > maxLimitedCount)
+                        {
+                            heap.Release();
+                            continue;
+                        }
+                    }
                     return &heap;
+                }
             }
         }
         return NULL;
@@ -5361,22 +5409,31 @@ protected:
     CFixedChunkedHeap * createFixedHeap(size32_t size, unsigned activityId, unsigned flags, unsigned maxSpillCost)
     {
         dbgassertex(!(flags & RHFpacked));
-        size32_t rounded = roundup(size + FixedSizeHeaplet::chunkHeaderSize);
-
-        //If not unique I think it is quite possibly better to reuse one of the existing heaps used for variable length
-        //Advantage is fewer pages uses.  Disadvantage is greater likelihood of fragementation being unable to copy
-        //rows to consolidate them.  Almost certainly packed or unique will be set in that situation though.
-#ifdef ALWAYS_USE_SCAN_HEAP
-        if (!(flags & RHFunique))
-#else
-        if (!(flags & (RHFunique|RHFscanning)))
-#endif
+        size32_t rounded;
+        //Since unique heaps are not shared, there is no benefit in rounding them up to the next size
+        if (flags & (RHFexactsize|RHFunique))
         {
-            size32_t whichHeap = ROUNDEDHEAP(rounded);
-            return LINK(&normalHeaps.item(whichHeap));
+            rounded = align_pow2(size + FixedSizeHeaplet::chunkHeaderSize, EXACT_ALIGNMENT);
+        }
+        else
+        {
+            rounded = roundup(size + FixedSizeHeaplet::chunkHeaderSize);
+
+            //If not unique I think it is quite possibly better to reuse one of the existing heaps used for variable length
+            //Advantage is fewer pages uses.  Disadvantage is greater likelihood of fragmentation being unable to copy
+            //rows to consolidate them.  Almost certainly packed or unique will be set in that situation though.
+    #ifdef ALWAYS_USE_SCAN_HEAP
+            if (!(flags & (RHFlimitedcount)))
+    #else
+            if (!(flags & (RHFscanning|RHFlimitedcount)))
+    #endif
+            {
+                size32_t whichHeap = ROUNDEDHEAP(rounded);
+                return LINK(&normalHeaps.item(whichHeap));
+            }
         }
 
-        size32_t chunkSize = ROUNDEDSIZE(rounded);
+        size32_t chunkSize = ROUNDEDSIZE(rounded); // I am not sure why this is here - it should have no effect...
         //Not time critical, so don't worry about the scope of the spinblock around the new
         SpinBlock block(fixedSpinLock);
         if (!(flags & RHFunique))
@@ -5508,6 +5565,9 @@ protected:
         if (heapFlags & RHFpacked)
             return align_pow2(size32 + PackedFixedSizeHeaplet::chunkHeaderSize, PACKED_ALIGNMENT) - PackedFixedSizeHeaplet::chunkHeaderSize;
 
+        if (heapFlags & (RHFexactsize|RHFunique))
+            return align_pow2(size32 + FixedSizeHeaplet::chunkHeaderSize, EXACT_ALIGNMENT) - FixedSizeHeaplet::chunkHeaderSize;
+
         size32_t rounded = roundup(size32 + FixedSizeHeaplet::chunkHeaderSize);
         size32_t heapSize = ROUNDEDSIZE(rounded);
         return heapSize - FixedSizeHeaplet::chunkHeaderSize;
@@ -5524,6 +5584,9 @@ protected:
 
         if (heapFlags & RHFpacked)
             return align_pow2(size32 + PackedFixedSizeHeaplet::chunkHeaderSize, PACKED_ALIGNMENT);
+
+        if (heapFlags & (RHFexactsize|RHFunique))
+            return align_pow2(size32 + FixedSizeHeaplet::chunkHeaderSize, EXACT_ALIGNMENT);
 
         size32_t rounded = roundup(size32 + FixedSizeHeaplet::chunkHeaderSize);
         size32_t heapSize = ROUNDEDSIZE(rounded);
@@ -6964,6 +7027,7 @@ void setMemoryOptions(IPropertyTree * options)
         return;
     memTraceInconsistencies = options->getPropBool("@roxiememTraceInconsistencies", true);
     memTraceReleaseWhenFree = options->getPropBool("@roxiememTraceReleaseWhenFree", true);
+    maxLimitedCount = options->getPropInt("@roxiememMaxLimitedCount", maxLimitedCount);
     //MORE: Other options should probably be processed here - so they can be read consistently
 }
 
@@ -7341,7 +7405,7 @@ protected:
 
     void testFixedRowHeapStats()
     {
-        for (auto & flags : { RHFnone, RHFpacked, RHFunique, RHFunique|RHFpacked, RHFpacked|RHFblocked  })
+        for (auto & flags : { RHFnone, RHFpacked, RHFunique, RHFunique|RHFpacked, RHFpacked|RHFblocked, RHFexactsize })
             testFixedRowHeapStats(flags);
     }
 
@@ -8474,11 +8538,14 @@ protected:
                 ASSERT(RoxieRowCapacity(row) == rowManager->getExpectedCapacity(nextSize, 0));
                 ASSERT(RoxieRowCapacity(row) < rowManager->getExpectedFootprint(nextSize, 0));
             }
+
+            for (auto & flags : { RHFnone, RHFpacked, RHFunique, RHFunique|RHFpacked, RHFpacked|RHFblocked, RHFexactsize, RHFpacked|RHFhasdestructor })
             {
-                Owned<IFixedRowHeap> rowHeap = rowManager->createFixedRowHeap(nextSize, ACTIVITY_FLAG_ISREGISTERED|0, RHFpacked|RHFhasdestructor);
+                Owned<IFixedRowHeap> rowHeap = rowManager->createFixedRowHeap(nextSize, ACTIVITY_FLAG_ISREGISTERED|0, flags);
                 OwnedRoxieRow row = rowHeap->allocate();
-                ASSERT(RoxieRowCapacity(row) == rowManager->getExpectedCapacity(nextSize, RHFpacked));
-                ASSERT(RoxieRowCapacity(row) < rowManager->getExpectedFootprint(nextSize, RHFpacked));
+                ASSERT(RoxieRowCapacity(row) == rowManager->getExpectedCapacity(nextSize, flags));
+                ASSERT(RoxieRowCapacity(row) < rowManager->getExpectedFootprint(nextSize, flags));
+                rowHeap->emptyCache();
             }
         }
 

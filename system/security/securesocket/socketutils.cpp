@@ -931,6 +931,7 @@ void CSocketTarget::connect()
         {
             // Keep track of the number of connections - a useful stat, and to distinguish between initial connection and reconnection.
             numConnects++;
+            sender.configureConnectedSocket(socket);
             if (sender.lowLatency)
                 socket->set_nagle(false);
         }
@@ -1164,6 +1165,7 @@ bool CSocketTarget::onAsyncComplete(int result)
                 {
                     ISocket::completeAsyncConnect(socket, result);
                     numConnects++;
+                    sender.configureConnectedSocket(socket);
                     if (sender.lowLatency)
                         socket->set_nagle(false);
                         
@@ -1254,6 +1256,10 @@ CSocketTarget * CTcpSender::queryWorkerSocket(const SocketEndpoint &ep)
     Owned<CSocketTarget> workerSocket = new CSocketTarget(*this, ep);
     workerSockets.emplace(ep, workerSocket);
     return workerSocket;
+}
+
+void CTcpSender::configureConnectedSocket(ISocket * socket)
+{
 }
 
 void CTcpSender::releaseBuffer(void * buffer)

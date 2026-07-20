@@ -78,6 +78,12 @@ class PackageSequencer : public CInterface, implements IInterface
     InterruptableSemaphore dataAvailable{SYNC_LOCATION}; // MORE - need to work out when to interrupt it!
     bool encrypted = false;
 
+    // Currently next() is not called until all the packets have been received because CMessageCollator::collate
+    // only pushes it onto the queue once it is complete.  I am not sure that this was the original intention,
+    // but there is no need to use a semaphore if that is the case.
+    // Set this flag to true to allow processing streaming output.
+    static constexpr bool supportStreamedOutput = false;
+
 public:
     IMPLEMENT_IINTERFACE;
 
@@ -103,7 +109,16 @@ public:
     
     DataBuffer *next(DataBuffer *after)
     {
-        dataAvailable.wait(); // MORE - when do I interrupt? Should I time out? Will potentially block indefinitely if sender restarts (leading to an abandoned packet) or stalls.
+        if (after)
+        {
+            UdpPacketHeader * hdr = (UdpPacketHeader*) after->data;
+            if (hdr->pktSeq & UDP_PACKET_COMPLETE)
+                return nullptr;
+        }
+
+        if (supportStreamedOutput)
+            dataAvailable.wait(); // MORE - when do I interrupt? Should I time out? Will potentially block indefinitely if sender restarts (leading to an abandoned packet) or stalls.
+
         DataBuffer *ret;
         if (after)
             ret = after->msgNext;
@@ -246,12 +261,10 @@ public:
                     }
 
                     lastContiguousPacket = finger;
-                    dataAvailable.signal();
+                    if (supportStreamedOutput)
+                        dataAvailable.signal();
                     if (fingerHdr->pktSeq & UDP_PACKET_COMPLETE)
-                    {
                         res = true;
-                        dataAvailable.signal(); // allowing us to read the NULL that signifies end of message. May prefer to use the flag to stop?
-                    }
                 }
                 else
                     break;
@@ -521,7 +534,8 @@ unsigned CMessageCollator::queryResends() const
 bool CMessageCollator::attach_databuffer(DataBuffer *dataBuff)
 {
     UdpPacketHeader *pktHdr = (UdpPacketHeader*) dataBuff->data;
-    totalBytesReceived += pktHdr->length;
+    //This is always called from a single thread - so avoid an atomic increment
+    totalBytesReceived.fastAdd(pktHdr->length);
     if (pktHdr->node.isNull())   // Indicates a packet that has been identified as a duplicate to be logged and discarded
     {
         noteDuplicate((pktHdr->pktSeq & UDP_PACKET_RESENT) != 0);
@@ -549,7 +563,8 @@ bool CMessageCollator::attach_data(const void *data, unsigned len)
     // Simple code can allocate databuffer, copy data in, then call attach_databuffer
     // MORE - we can attach as we create may be more sensible (and simplify roxiemem rather if it was the ONLY way)
     activity = true;
-    totalBytesReceived += len;
+    //This is always called from a single thread - so avoid an atomic increment
+    totalBytesReceived.fastAdd(len);
     if (memLimitExceeded || roxiemem::memPoolExhausted())
     {
         DBGLOG("UdpCollator: mem limit exceeded");
@@ -571,36 +586,54 @@ bool CMessageCollator::attach_data(const void *data, unsigned len)
 
 void CMessageCollator::collate(DataBuffer *dataBuff)
 {
-    PUID puid = GETPUID(dataBuff);
-    // MORE - we leak (at least until query terminates) a PackageSequencer for messages that we only receive parts of - maybe only an issue for "catchall" case
-    PackageSequencer *pkSqncr = mapping.getValue(puid);
-    bool isNew = false;
-    if (!pkSqncr)
+    UdpPacketHeader *pktHdr = (UdpPacketHeader*) dataBuff->data;
+    // Special case for single packet messages - if the sequence number is 0 and the complete flag is set
+    // No need to check in the hash table - even if a retry.
+    // In the future this could also use a simpler package sequencer
+    PackageSequencer *pkSqncr;
+    if ((pktHdr->pktSeq & (UDP_PACKET_SEQUENCE_MASK|UDP_PACKET_COMPLETE)) == UDP_PACKET_COMPLETE)
     {
         pkSqncr = new PackageSequencer(encrypted);
-        isNew = true;
+        bool isComplete = pkSqncr->insert(dataBuff, totalDuplicates, totalResends);
+        assertex(isComplete);
     }
-    bool isComplete = pkSqncr->insert(dataBuff, totalDuplicates, totalResends);
-    if (isComplete)
+    else
     {
+        PUID puid = GETPUID(dataBuff);
+        // MORE - we leak (at least until query terminates) a PackageSequencer for messages that we only receive parts of - maybe only an issue for "catchall" case
+        pkSqncr = mapping.getValue(puid);
+        bool isNew = false;
+        if (!pkSqncr)
+        {
+            pkSqncr = new PackageSequencer(encrypted);
+            isNew = true;
+        }
+        bool isComplete = pkSqncr->insert(dataBuff, totalDuplicates, totalResends);
+        if (!isComplete)
+        {
+            if (isNew)
+            {
+                mapping.setValue(puid, pkSqncr);
+                pkSqncr->Release();
+            }
+            return;
+        }
+
         if (!isNew)
         {
             pkSqncr->Link();
             mapping.remove(puid);
         }
-        queueCrit.enter();
-        if (pkSqncr->isOutOfBand())
-            queue.push_front(pkSqncr);
-        else
-            queue.push_back(pkSqncr);
-        queueCrit.leave();
-        sem.signal();
     }
-    else if (isNew)
-    {
-        mapping.setValue(puid, pkSqncr);
-        pkSqncr->Release();
-    }
+
+    //At this point the packet sequence is complete - push it ready for processing
+    queueCrit.enter();
+    if (pkSqncr->isOutOfBand())
+        queue.push_front(pkSqncr);
+    else
+        queue.push_back(pkSqncr);
+    queueCrit.leave();
+    sem.signal();
 }
 
 IMessageResult *CMessageCollator::getNextResult(unsigned time_out, bool &anyActivity)

@@ -202,6 +202,8 @@ extern UDPLIB_API unsigned udpSendTraceThresholdMs;
 
 extern UDPLIB_API unsigned udpFlowSocketsSize;
 extern UDPLIB_API unsigned udpLocalWriteSocketSize;
+extern UDPLIB_API unsigned tcpServerWorkerSendBufferSize;
+extern UDPLIB_API unsigned tcpServerWorkerRecvBufferSize;
 
 extern UDPLIB_API unsigned udpMaxPermitDeadTimeouts;    // How many permit grants are allowed to expire (with no flow message) until sender is assumed down
 extern UDPLIB_API unsigned udpRequestDeadTimeout;       // Timeout for sender getting no response to request to send before assuming that the receiver is dead

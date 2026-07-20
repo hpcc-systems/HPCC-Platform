@@ -81,7 +81,6 @@ static CriticalSection *initCrit = NULL;
 static cycle_t fetchThresholdCycles = 0;
 
 bool useMemoryMappedIndexes = false;
-bool linuxYield = false;
 bool flushJHtreeCacheOnOOM = true;
 std::atomic<unsigned __int64> branchSearchCycles{0};
 std::atomic<unsigned __int64> leafSearchCycles{0};
@@ -635,46 +634,68 @@ constexpr StatisticKind fetchTimeId[CacheMax] = { StCycleNodeFetchCycles, StCycl
 ///////////////////////////////////////////////////////////////////////////////
 
 // For some reason #pragma pack does not seem to work here. Force all elements to 8 bytes
-class CNodeCacheEntry : public CInterface
+class CNodeCacheEntry
 {
-public:
-    CriticalSection cs{SYNC_LOCATION};
 private:
     std::atomic<const CJHTreeNode *> node{nullptr};
 public:
     ~CNodeCacheEntry()
     {
-        ::Release(node.load());
+        ::Release(node.load(std::memory_order_acquire));
     }
     inline bool isReady() const
     {
-        return node != nullptr;
+        return node.load(std::memory_order_acquire) != nullptr;
     }
     inline const CJHTreeNode *queryNode() const
     {
-        return node;
+        return node.load(std::memory_order_acquire);
     }
     inline const CJHTreeNode *getNode() const
     {
         assert(isReady());
-        return ::LINK(node.load());
+        return ::LINK(node.load(std::memory_order_acquire));
     }
     inline void noteReady(const CJHTreeNode *_node)
     {
-        node = _node;
+        node.store(_node, std::memory_order_release);
     }
 };
 
-class CNodeMapping : public HTMapping<CNodeCacheEntry, CKeyIdAndPos>
+class CNodeMapping final : public CInterface
 {
 public:
-    CNodeMapping(CKeyIdAndPos &fp, CNodeCacheEntry &et) : HTMapping<CNodeCacheEntry, CKeyIdAndPos>(et, fp) { }
-    ~CNodeMapping() { this->et.Release(); }
+    CNodeMapping(const CKeyIdAndPos & _fp) : fp(_fp) { }
     const CJHTreeNode *queryNode()
     {
-        return queryElement().queryNode();
+        return et.queryNode();
     }
-    CNodeCacheEntry &query() { return queryElement(); }
+    inline bool isReady() const
+    {
+        return et.isReady();
+    }
+    inline const CJHTreeNode *queryNode() const
+    {
+        return et.queryNode();
+    }
+    inline const CJHTreeNode *getNode() const
+    {
+        return et.getNode();
+    }
+    inline void noteReady(const CJHTreeNode *_node)
+    {
+        et.noteReady(_node);
+    }
+
+    const void *queryFindParam() const { return &fp; }
+    const CKeyIdAndPos &queryFindValue() const { return fp; }
+    CNodeCacheEntry &query() { return et; }
+    const CNodeCacheEntry & queryElement() const { return et; }
+
+    CKeyIdAndPos fp;
+    CNodeCacheEntry et;
+
+    CriticalSection cs{SYNC_LOCATION};
 
 //The following pointers are used to maintain the position in the LRU cache
     CNodeMapping * prev = nullptr;
@@ -717,7 +738,7 @@ public:
         CNodeMapping *mapping = reinterpret_cast<CNodeMapping *>(_mapping);
         unsigned keyId = mapping->queryFindValue().keyId;
         // Save the node onto a list, so it will be released when this object is released.
-        CJHTreeNode * node = const_cast<CJHTreeNode *>(mapping->query().getNode());
+        CJHTreeNode * node = const_cast<CJHTreeNode *>(mapping->getNode());
         // The key id needs to be stored separately because the node does not currently contain it.
         if (numFixed < maxFixed)
         {
@@ -749,7 +770,11 @@ protected:
 
 };
 
-typedef OwningSimpleHashTableOf<CNodeMapping, CKeyIdAndPos> CNodeTable;
+class CNodeTable : public OwningSimpleHashTableOf<CNodeMapping, CKeyIdAndPos>
+{
+    virtual unsigned getTableLimit(unsigned max) override { return max / 2; }
+};
+
 class CNodeMRUSubCache final : public CMRUCacheOf<CKeyIdAndPos, CNodeCacheEntry, CNodeMapping, CNodeTable>
 {
     std::atomic<size_t> sizeInMem{0};
@@ -859,11 +884,10 @@ public:
     }
 };
 
-// Maximum cost/benefit seen for 4 buckets, which does not skew the LRU list too much
-static constexpr unsigned cacheBits = 2;
+// See HPCC-35152 for a discussion of the tradeoffs over the number of bits
+// Increased to 32 since optimizations elsewhere have increased this as a potential bottleneck
+static constexpr unsigned cacheBits = 5;
 static constexpr unsigned cacheBuckets = 1U << cacheBits;
-static constexpr unsigned cacheShift = 32 - cacheBits;
-
 
 class CNodeMRUCache
 {
@@ -2680,10 +2704,6 @@ bool CKeyCursor::_lookup(bool exact, unsigned lastSeg, bool unfiltered, IContext
                 ret = true;
                 break;
             }
-#ifdef  __linux__
-            if (linuxYield)
-                sched_yield();
-#endif
             eof = !filter->incrementKey(i, recordBuffer);
             if (!exact)
             {
@@ -3421,7 +3441,11 @@ const CJHTreeNode *CNodeCache::getCachedNode(const INodeLoader & nodeLoader, uns
 
     CKeyIdAndPos key(iD, pos);
     unsigned hashcode = typeCache.getKeyHash(key);
-    unsigned subCache = cacheBits == 0 ? 0 : hashcode >> cacheShift;
+    //Include many bits in the subcache selection to try and ensure an even distribution
+    unsigned mangledCode = hashcode ^ (hashcode >> cacheBits);
+    mangledCode = mangledCode ^ (hashcode >> (2 * cacheBits));
+    mangledCode = mangledCode ^ (hashcode >> (4 * cacheBits));
+    unsigned subCache = mangledCode & (cacheBuckets - 1);
     CNodeMRUSubCache & curCache = typeCache.cache[subCache];
 
     //Previously, this was implemented as:
@@ -3430,17 +3454,19 @@ const CJHTreeNode *CNodeCache::getCachedNode(const INodeLoader & nodeLoader, uns
     //  Lock, add if missing, unlock.  Lock a page-dependent-cr load() release lock.
     //There will be the same number of critical section locks, but loading a page will contend on a different lock - so it should reduce contention.
     CriticalSection & cacheLock = curCache.lock;
-    Owned<CNodeCacheEntry> ownedCacheEntry; // ensure node gets cleaned up if it fails to load
+    Owned<CNodeMapping> ownedCacheEntry; // ensure node gets cleaned up if it fails to load
     bool alreadyExists = true;
     {
         DelayedCacheEntryReleaser delayedReleaser;
-        CNodeCacheEntry * cacheEntry;
+        CNodeMapping * cacheEntry;
 
         CLeavableCriticalBlock block(cacheLock);
-        cacheEntry = curCache.query(hashcode, &key);
+        // Increment numHits here, rather than inside the if, because the address of curCache is already in a register -
+        // so the code for the fastpath is more concise.
+        curCache.numHits.fastAdd(1);
+        cacheEntry = curCache.queryMapping(hashcode, &key);
         if (likely(cacheEntry))
         {
-            curCache.numHits.fastAdd(1);
             const CJHTreeNode * fastPathMatch = cacheEntry->queryNode();
             if (likely(fastPathMatch))
             {
@@ -3459,10 +3485,11 @@ const CJHTreeNode *CNodeCache::getCachedNode(const INodeLoader & nodeLoader, uns
         }
         else
         {
-            cacheEntry = new CNodeCacheEntry;
-            curCache.replace(key, *cacheEntry, &delayedReleaser);
-            alreadyExists = false;
+            // Undo to optimistic increment of the number of hits, and increment the adds
+            curCache.numHits.fastAdd(-1);
             curCache.numAdds.fastAdd(1);
+            cacheEntry = curCache.replace(key, &delayedReleaser);
+            alreadyExists = false;
         }
 
         //same as ownedcacheEntry.set(cacheEntry), but avoids a null check or two

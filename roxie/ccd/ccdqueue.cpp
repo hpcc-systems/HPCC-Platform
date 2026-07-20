@@ -450,6 +450,8 @@ public:
 
     virtual CReadSocketHandler *createSocketHandler(ISocket *sock) override
     {
+        if (tcpServerWorkerRecvBufferSize)
+            sock->set_receive_buffer_size(tcpServerWorkerRecvBufferSize);
         //Header size is 64B, max variable to read is 64K
         size32_t maxInitialReadSize = 0x10000; // 64K
         return new CReadSocketHandler(*this, asyncReader, sock, sizeof(RoxiePacketHeader), maxInitialReadSize);
@@ -464,10 +466,23 @@ protected:
     IRoxieWorkerRequestReceiver & receiver;
 };
 
+class RoxieTcpSender : public CTcpSender
+{
+public:
+    RoxieTcpSender() : CTcpSender(true) {}
+
+protected:
+    virtual void configureConnectedSocket(ISocket * socket) override
+    {
+        if (tcpServerWorkerSendBufferSize)
+            socket->set_send_buffer_size(tcpServerWorkerSendBufferSize);
+    }
+};
+
 class RoxieTcpWorkerCommunicator : public CInterfaceOf<IRoxieWorkerCommunicator>
 {
 public:
-    RoxieTcpWorkerCommunicator() : sender(true) {}
+    RoxieTcpWorkerCommunicator() {}
 
     virtual size32_t queryMaxPacketSize() const override
     {
@@ -500,7 +515,7 @@ public:
 
 protected:
     std::unique_ptr<RoxieTcpListener> listener;
-    CTcpSender sender;
+    RoxieTcpSender sender;
     size32_t maxPacketSize = 0x40000; // Allow up to 256KB.
     std::atomic<bool> running = { false };
 };
@@ -3040,7 +3055,7 @@ public:
         bool udpSendFlowOnDataPort = topology->getPropBool("@udpSendFlowOnDataPort", true);
         unsigned dataPort = topology->getPropInt("@dataPort", CCD_DATA_PORT);
         unsigned clientFlowPort = topology->getPropInt("@clientFlowPort", CCD_CLIENT_FLOW_PORT);
-        bool useIOUringForSend = topology->getPropBool("@workerSendUseIOUring", false);
+        bool useIOUringForSend = topology->getPropBool("@workerSendUseIOUring", true);
         receiveManager.setown(createReceiveManager(serverFlowPort, dataPort, clientFlowPort, udpQueueSize, encryptionInTransit));
         sendManager.setown(createSendManager(udpSendFlowOnDataPort ? dataPort : serverFlowPort, dataPort, clientFlowPort, udpSendQueueSize, fastLaneQueue ? 3 : 2, myNode.getIpAddress(), bucket, encryptionInTransit, useIOUringForSend));
     }

@@ -113,6 +113,32 @@ static const SmartStepExtra dummySmartStepExtra(SSEFreadAhead, NULL);
 
 //=================================================================================
 
+class PooledRestartableThread : public CInterface, public IThreaded
+{
+    CPooledPersistent thread;
+public:
+    PooledRestartableThread(const char *_name) : thread(_name, this)
+    {
+    }
+
+    virtual void start(const char *namePrefix, bool inheritThreadContext) final
+    {
+        thread.start(inheritThreadContext);
+    }
+
+    virtual void join() final
+    {
+        thread.join(INFINITE, false);
+    }
+
+    virtual void threadmain() override
+    {
+        run();
+    }
+
+    virtual int run() = 0;
+
+};
 class RestartableThread : public CInterface
 {
     class MyThread : public Thread
@@ -161,7 +187,6 @@ public:
     }
 
     virtual int run() = 0;
-
 };
 
 //================================================================================
@@ -550,6 +575,8 @@ extern SinkMode getSinkMode(const char *val)
         return SinkMode::Sequential;
     else if (strieq(val, "parallel"))
         return SinkMode::Parallel;
+    else if (strieq(val, "pooled"))
+        return SinkMode::AutomaticPooled;
     else if (strieq(val, "automatic-parallel"))
         return SinkMode::AutomaticParallel;
     else if (strieq(val, "automatic-persistent"))
@@ -621,6 +648,8 @@ public:
         forceStartInputsSequentially = _graphNode.getPropBool("hint[@name='startinputssequentially']/@value", _queryFactory.queryOptions().startInputsSequentially);
         defaultActivityCharacteristics = _graphNode.getPropBool("hint[@name='hasrowlatency']/@value", false) ? RSC::hasRowLatency : RSC::none;
         isCodeSigned = ::isActivityCodeSigned(_graphNode);
+
+        heapFlags |= roxiemem::RoxieHeapFlags::RHFblocked; // All activities use a blocked allocator, unless they explicitly disable
     }
     
     ~CRoxieServerActivityFactoryBase()
@@ -1254,7 +1283,7 @@ public:
 
     virtual void gatherStatistics(IStatisticGatherer * statsBuilder) const override
     {
-        if (!factory)
+        if (!factory || numStarts == 0)
             return;
 
         //Collate the stats for this activity from various different sources.
@@ -1855,6 +1884,8 @@ public:
                     dependencies.item(idx).reset();
                 if (input)
                     input->reset();
+                if (rowAllocator)
+                    rowAllocator->emptyCache();
             }
         }
         aborted = false;
@@ -2207,6 +2238,8 @@ public:
     }
     virtual void reset()
     {
+        if (rowAllocator)
+            rowAllocator->emptyCache();
         stopped = false;
         abortRequested.store(false, std::memory_order_relaxed);
     }
@@ -4374,7 +4407,7 @@ private:
     Owned <IMessageCollator> mc;
     Owned<IMessageUnpackCursor> mu;
     Owned<IMessageResult> mr;
-    ChannelBuffer **buffers;
+    std::atomic<ChannelBuffer *> * buffers;
     IHThorArg &helper;
     unsigned __int64 stopAfter;
     unsigned resendSequence;
@@ -4452,9 +4485,14 @@ private:
 
     ChannelBuffer *queryChannelBuffer(unsigned channel, bool force=false)
     {
+        ChannelBuffer *b = buffers[channel].load();
+        if (likely(b || !force))
+            return b;
+
         CriticalBlock cb(buffersCrit);
-        ChannelBuffer *b = buffers[channel];
-        if (!b && force)
+        b = buffers[channel].load();
+
+        if (!b)
         {
             if (!contextCached)
             {
@@ -4522,7 +4560,8 @@ private:
                 contextCached = true;
             }
 
-            b = buffers[channel] = new ChannelBuffer(*this, channel);
+            b = new ChannelBuffer(*this, channel);
+            buffers[channel].store(b);
         }
         return b;
     }
@@ -4559,8 +4598,9 @@ public:
         keyedLimit = (unsigned __int64) -1;
         contextCached = false;
         stopAfter = I64C(0x7FFFFFFFFFFFFFFF);
-        buffers = new ChannelBuffer*[numChannels+1];
-        memset(buffers, 0, (numChannels+1)*sizeof(ChannelBuffer *));
+        buffers = new std::atomic<ChannelBuffer *>[numChannels+1];
+        for (unsigned i=0; i <= numChannels; i++)
+            buffers[i].store(nullptr);
         parentExtractSize = 0;
         rowManager = NULL;
         parentExtract = NULL;
@@ -4587,7 +4627,7 @@ public:
         }
         for (unsigned channel = 0; channel <= numChannels; channel++)
         {
-            delete(buffers[channel]);
+            delete(buffers[channel].load());
         }
         delete [] buffers;
     }
@@ -4700,8 +4740,7 @@ public:
 
                 if (!deferredStart)
                     ROQ->sendPacket(p, activity.queryLogCtx());
-
-                buffers[0]->signal(); // since replies won't come back on that channel...
+                buffers[0].load()->signal(); // since replies won't come back on that channel...
                 p->Release();
             }
         }
@@ -4814,8 +4853,8 @@ public:
         sentSequence = 0;
         for (unsigned channel = 0; channel <= numChannels; channel++)
         {
-            delete(buffers[channel]);
-            buffers[channel] = NULL;
+            delete(buffers[channel].load());
+            buffers[channel].store(nullptr);
         }
         flush();
         parentExtractSize = _parentExtractSize;
@@ -4930,6 +4969,9 @@ public:
         mc.clear(); // Or we won't free memory for graphs that get recreated
         mu.clear(); //ditto
         deferredStart = false;
+        if (rowAllocator)
+            rowAllocator->emptyCache();
+
         // NOTE: do NOT clear mergeOrder - this is set at create time not per child query
     }
 
@@ -8177,7 +8219,11 @@ class CRoxieServerHashDedupActivity : public CRoxieServerActivity
 
         void reset()
         {
-            kill(); 
+            kill();
+            if (elementRowAllocator)
+                elementRowAllocator->emptyCache();
+            if (keyRowAllocator)
+                keyRowAllocator->emptyCache();
         }
 
         bool insert(const void * row)
@@ -13274,6 +13320,10 @@ public:
         defaultLeft.clear();
         sortedLeft.clear();
         groupedSortedRight.clear();
+        if (defaultRightAllocator)
+            defaultRightAllocator->emptyCache();
+        if (defaultLeftAllocator)
+            defaultLeftAllocator->emptyCache();
     }
 
     virtual void setInput(unsigned idx, unsigned _sourceIdx, IFinalRoxieInput *_in)
@@ -17897,6 +17947,15 @@ public:
         CRoxieServerNaryActivity::stop();
     }
 
+    virtual void reset()
+    {
+        CRoxieServerNaryActivity::reset();
+        if (inputAllocator)
+            inputAllocator->emptyCache();
+        if (outputAllocator)
+            outputAllocator->emptyCache();
+    }
+
     virtual bool gatherConjunctions(ISteppedConjunctionCollector & collector)
     {
         return processor.gatherConjunctions(collector);
@@ -18393,6 +18452,13 @@ public:
         size32_t thisSize = helper.createInitialRight(rowBuilder);
         initialRight.setown(rowBuilder.finalizeRowClear(thisSize));
         curRight.set(initialRight);
+    }
+
+    virtual void reset() override
+    {
+        CRoxieServerActivity::reset();
+        if (rightRowAllocator)
+            rightRowAllocator->emptyCache();
     }
 
     virtual const void * nextRow()
@@ -19020,6 +19086,8 @@ public:
         groupedInput.clear();
         defaultLeft.clear();
         defaultRight.clear();
+        if (defaultAllocator)
+            defaultAllocator->emptyCache();
     }
 
     virtual const void * nextRow()
@@ -19576,6 +19644,8 @@ public:
         ReleaseClearRoxieRow(left);
         defaultRight.clear();
         table.clear();
+        if (defaultRightAllocator)
+            defaultRightAllocator->emptyCache();
     }
 
     virtual bool needsAllocator() const { return true; }
@@ -20059,6 +20129,10 @@ public:
         }
         matchedRight.kill();
         CRoxieServerTwoInputActivity::reset();
+        if (defaultRightAllocator)
+            defaultRightAllocator->emptyCache();
+        if (defaultLeftAllocator)
+            defaultLeftAllocator->emptyCache();
     }
 
     virtual bool needsAllocator() const { return true; }
@@ -25623,6 +25697,8 @@ public:
             varFileInfo.clear();
             map.clear();
         }
+        if (extractAllocator)
+            extractAllocator->emptyCache();
     }
 
     virtual IFinalRoxieInput *queryOutput(unsigned idx)
@@ -25885,7 +25961,7 @@ interface IJoinProcessor
 //   
 //------------------------------------------------------------------------------------------------------
 
-class CJoinGroup : public CInterface
+class CJoinGroup
 {
 protected:
     const void *left;                   // LHS row
@@ -25940,6 +26016,12 @@ public:
             roxiemem::ReleaseRoxieRowArray(rows.ordinality(), (const void * *)rows.getArray());
             rows.kill();
         }
+    }
+
+    inline bool Release(void) const
+    {
+        delete this;
+        return true;
     }
 
     inline bool isHeadRecord() const
@@ -26115,6 +26197,8 @@ public:
             if (goer)
                 ReleaseRoxieRow(goer);
         }
+        if (ccdRecordAllocator)
+            ccdRecordAllocator->emptyCache();
     }
 
     inline void addResult(const void *row)
@@ -26363,6 +26447,8 @@ public:
             keySet.clear();
             varFileInfo.clear();
         }
+        if (indexReadAllocator)
+            indexReadAllocator->emptyCache();
     }
 
     virtual IFinalRoxieInput *queryOutput(unsigned idx)
@@ -26627,12 +26713,12 @@ public:
         rootIndex = NULL;
         atmostsTriggered = 0;
         // Allocate blocks of CJoinGroup objects to reduce overhead and potential contention between threads
-        unsigned allocatorFlags = roxiemem::RHFblocked;
+        unsigned allocatorFlags = roxiemem::RHFblocked|roxiemem::RHFscanning|roxiemem::RHFlimitedcount|roxiemem::RHFexactsize;
         joinGroupAllocator.setown(ctx->queryRowManager().createFixedRowHeap(sizeof(CJoinGroup), activityId, allocatorFlags));
 
         //Output rows are only created on a single thread, so it is safe to use a blocked allocator - reducing contention
         //and even if no contention it reduces the critical section overhead.
-        rowAllocator = createRowAllocatorEx(meta.queryOriginal(), roxiemem::RHFblocked);
+        rowAllocator = createRowAllocatorEx(meta.queryOriginal(), roxiemem::RHFblocked|roxiemem::RHFlimitedcount|roxiemem::RHFexactsize);
         // MORE - code would be easier to read if I got more values from helper rather than passing from factory
     }
 
@@ -26724,8 +26810,6 @@ public:
     {
         CRoxieServerActivity::reset();
         joinGroupAllocator->emptyCache();
-        if (rowAllocator)
-            rowAllocator->emptyCache();
         defaultRight.clear();
         if (indexReadInput)
             indexReadInput->reset();
@@ -26736,6 +26820,8 @@ public:
         {
             ::Release(groups.dequeue());
         }
+        if (defaultRightAllocator)
+            defaultRightAllocator->emptyCache();
     }
 
     virtual unsigned getTotalRowsProcessed() const override
@@ -27053,6 +27139,13 @@ public:
         puller.start(parentExtractSize, parentExtract, paused, ctx->queryOptions().keyedJoinPreload, false, ctx);
     }
 
+    virtual void reset()
+    {
+        CRoxieServerKeyedJoinBase::reset();
+        if (fetchInputAllocator)
+            fetchInputAllocator->emptyCache();
+    }
+
     virtual void setInput(unsigned idx, unsigned _sourceIdx, IFinalRoxieInput *_in)
     {
         head.setInput(idx, _sourceIdx, _in);
@@ -27227,6 +27320,8 @@ public:
         CRoxieServerKeyedJoinBase::reset();
         if (indexReadAllocator)
             indexReadAllocator->emptyCache();
+        if (joinFieldsAllocator)
+            joinFieldsAllocator->emptyCache();
         if (varFileInfo)
         {
             keySet.clear();
@@ -28249,6 +28344,41 @@ protected:
         unsigned parentExtractSize = 0;
     };
 
+    class SinkPooledThread : public CInterface, implements IThreaded
+    {
+    public:
+        SinkPooledThread(IActivityGraph &_parent, IRoxieServerActivity &_sink)
+        : thread("SinkPooledThread", this), parent(_parent), sink(_sink)
+        {}
+        virtual void threadmain() override
+        {
+            try
+            {
+                sink.execute(parentExtractSize, parentExtract);
+            }
+            catch (IException *E)
+            {
+                parent.noteException(E);
+                throw;
+            }
+        }
+        void start(unsigned _parentExtractSize, const byte * _parentExtract)
+        {
+            parentExtract = _parentExtract;
+            parentExtractSize = _parentExtractSize;
+            thread.start(true);
+        }
+        inline void join()
+        {
+            thread.join(INFINITE);
+        }
+    private:
+        CPooledPersistent thread;
+        IActivityGraph &parent;
+        IRoxieServerActivity &sink;
+        const byte * parentExtract = nullptr;
+        unsigned parentExtractSize = 0;
+    };
     // NOTE - destructor order is significant - need to destroy graphCodeContext and graphAgentContext last
 
     IArrayOf<IRoxieServerActivity> activities;
@@ -28415,17 +28545,17 @@ public:
         }
     }
 
-    Linked<IException> exception;
+    AtomicShared<IException> exception;  // Use AtomicShared, so it can be checked outside of the critical section
     CriticalSection eCrit{SYNC_LOCATION};
 
     virtual void noteException(IException *E)
     {
         CriticalBlock b(eCrit);
-        if (!exception)
+        if (!exception.isSet())
         {
             if (graphAgentContext.queryDebugContext())
             {
-                graphAgentContext.queryDebugContext()->checkBreakpoint(DebugStateException, NULL, exception);
+                graphAgentContext.queryDebugContext()->checkBreakpoint(DebugStateException, NULL, E);
             }
             exception.set(E);
         }
@@ -28433,9 +28563,11 @@ public:
 
     virtual void checkAbort() 
     {
+        if (likely(!exception.isSet()))
+            return;
+
         CriticalBlock b(eCrit);
-        if (exception)
-            throw exception.getLink();
+        throw exception.getLinkNonAtomic();
     }
     unsigned queryWorkflowId() const
     {
@@ -28560,6 +28692,37 @@ public:
                         IRoxieServerActivityCopyArray &sinks;
                     } afor(sinks, *this, parentExtractSize, parentExtract);
                     afor.For(sinks.ordinality(), sinks.ordinality());
+                }
+                else if (sinkMode == SinkMode::AutomaticPooled)
+                {
+                    CIArrayOf<SinkPooledThread> pooledThreads;
+                    for (unsigned i = 0; i < sinks.ordinality()-1; i++)
+                    {
+                        pooledThreads.append(*new SinkPooledThread(*this, sinks.item(i)));
+                        pooledThreads.item(i).start(parentExtractSize, parentExtract);
+                    }
+                    try
+                    {
+                        sinks.item(sinks.ordinality()-1).execute(parentExtractSize, parentExtract);
+                    }
+                    catch (IException *E)
+                    {
+                        noteException(E);
+                        E->Release();
+                    }
+                    for (unsigned i = 0; i < sinks.ordinality()-1; i++)
+                    {
+                        try
+                        {
+                            pooledThreads.item(i).join();
+                        }
+                        catch (IException *E)
+                        {
+                            noteException(E);
+                            E->Release();
+                        }
+                    }
+                    checkAbort();
                 }
                 else
                     throwUnexpected();

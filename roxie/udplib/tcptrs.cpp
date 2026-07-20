@@ -48,6 +48,12 @@ public:
     DataBufferTcpSender(bool _lowLatency) : CTcpSender(_lowLatency) {}
 
 protected:
+    virtual void configureConnectedSocket(ISocket * socket) override
+    {
+        if (tcpServerWorkerSendBufferSize)
+            socket->set_send_buffer_size(tcpServerWorkerSendBufferSize);
+    }
+
     virtual void releaseBuffer(void * buffer) override
     {
         DataBuffer * cast = static_cast<DataBuffer *>(buffer);

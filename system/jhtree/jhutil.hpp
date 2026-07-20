@@ -63,7 +63,7 @@ public:
     typedef SuperHashIteratorOf<MAPPING> CMRUIterator;
 
     CMRUCacheOf() : table(*this) { }
-    void replace(KEY key, ENTRY &entry)
+    void replace(const KEY & key, ENTRY &entry)
     {
         if (full())
             makeSpace(nullptr);
@@ -72,7 +72,7 @@ public:
         table.replace(*mapping);
         mruList.enqueueHead(mapping);
     }
-    void replace(KEY key, ENTRY &entry, IRemovedMappingCallback * callback)
+    void replace(const KEY & key, ENTRY &entry, IRemovedMappingCallback * callback)
     {
         if (full())
             makeSpace(callback);
@@ -80,6 +80,16 @@ public:
         MAPPING * mapping = new MAPPING(key, entry); // owns entry
         table.replace(*mapping);
         mruList.enqueueHead(mapping);
+    }
+    MAPPING * replace(const KEY & key, IRemovedMappingCallback * callback)
+    {
+        if (full())
+            makeSpace(callback);
+
+        MAPPING * mapping = new MAPPING(key); // owns entry
+        table.replace(*mapping);
+        mruList.enqueueHead(mapping);
+        return mapping;
     }
     unsigned getKeyHash(const KEY & key) const
     {
@@ -102,6 +112,15 @@ public:
         if (doPromote)
             promote(mapping);
         return &mapping->query(); // MAPPING must impl. query()
+    }
+    MAPPING *queryMapping(unsigned hashcode, KEY * key, bool doPromote=true)
+    {
+        MAPPING *mapping = table.find(hashcode, *key);
+        if (!mapping) return NULL;
+
+        if (doPromote)
+            promote(mapping);
+        return mapping;
     }
     ENTRY *get(KEY key, bool doPromote=true)
     {
@@ -127,6 +146,19 @@ public:
     void kill() { clear(-1, nullptr); }
     void promote(MAPPING *mapping)
     {
+        MAPPING * head = mruList.head();
+        dbgassertex(head); // If an items is being promoted within a list then there must be a head of the list
+        if (likely(head == mapping))
+            return;
+
+        // If an item is almost at the head of the list, then it may be worth avoiding moving it.
+        // There is a a trade off between the memory accessed by following pointers with the cost of moving the item
+        // Since head->next is likely to be in cache (from a previous update), it is likely to be worth avoiding moving
+        // the item if it is second.
+        MAPPING * headNext = head->next;
+        if (headNext == mapping)
+            return;
+
         mruList.moveToHead(mapping);
     }
     CMRUIterator *getIterator()

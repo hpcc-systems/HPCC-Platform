@@ -896,7 +896,7 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
 
         bool isBatchRoxie = strisame(roxieMode, "batch");
         useTcpTransport = strisame(protocol, "tcp");
-        bool usingRemoteStorage = (pageCache != nullptr);
+        [[maybe_unused]] bool usingRemoteStorage = (pageCache != nullptr);
 
         // --- These options have the following effects on the defaults:
 
@@ -1066,6 +1066,7 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         perChannelFlowLimit = topology->getPropInt("@perChannelFlowLimit", 10);
         copyResources = (!oneShotRoxie) && topology->getPropBool("@copyResources", true);
         useRemoteResources = oneShotRoxie || topology->getPropBool("@useRemoteResources", !isContainerized());
+        setCheckIndexCrcs(topology->getPropBool("@checkIndexCrcs", false));
         checkFileDate = topology->getPropBool("@checkFileDate", true);
         const char *lazyOpenMode = topology->queryProp("@lazyOpen");
         if (!lazyOpenMode || stricmp(lazyOpenMode, "smart")==0)
@@ -1095,6 +1096,17 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         blindLogging = topology->getPropBool("@blindLogging", false);
         preloadOnceData = topology->getPropBool("@preloadOnceData", true);
         reloadRetriesFailed  = topology->getPropBool("@reloadRetriesSuspended", true);
+
+        // Options that can override the default heap flags.
+        if (topology->getPropBool("@heapFlagsPacked", false))
+            defaultHeapFlags |= roxiemem::RHFpacked;
+        if (topology->getPropBool("@heapFlagsUnique", false))
+            defaultHeapFlags |= roxiemem::RHFunique;
+        if (topology->getPropBool("@heapFlagsExact", true))
+            defaultHeapFlags |= roxiemem::RHFexactsize;
+        if (topology->getPropBool("@heapFlagsLimited", true))
+            defaultHeapFlags |= roxiemem::RHFlimitedcount;
+
 #if defined(__linux__) && defined(SYS_ioprio_set)
         const char *backgroundCopyClassString = topology->queryProp("@backgroundCopyClass");
         if (!isEmptyString(backgroundCopyClassString))
@@ -1120,7 +1132,6 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
             backgroundCopyPrio = 0;
         }
 #endif
-        linuxYield = topology->getPropBool("@linuxYield", false);
         traceStrands = topology->getPropBool("@traceStrands", false);
 
         useMemoryMappedIndexes = topology->getPropBool("@useMemoryMappedIndexes", false);
@@ -1165,6 +1176,8 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
 
         udpFlowSocketsSize = topology->getPropInt("@udpFlowSocketsSize", udpFlowSocketsSize);
         udpLocalWriteSocketSize = topology->getPropInt("@udpLocalWriteSocketSize", udpLocalWriteSocketSize);
+        tcpServerWorkerSendBufferSize = topology->getPropInt("@tcpServerWorkerSendBufferSize", tcpServerWorkerSendBufferSize);
+        tcpServerWorkerRecvBufferSize = topology->getPropInt("@tcpServerWorkerRecvBufferSize", tcpServerWorkerRecvBufferSize);
 
         udpResendLostPackets = topology->getPropBool("@udpResendLostPackets", true);
         udpAssumeSequential = topology->getPropBool("@udpAssumeSequential", false);

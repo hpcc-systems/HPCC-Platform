@@ -2554,6 +2554,18 @@
           "minimum": 0,
           "description": "Controls the write socket buffer size of the local UDP sockets (Agent to Server on same node)"
         },
+        "tcpServerWorkerSendBufferSize": {
+          "type": "integer",
+          "default": 0,
+          "minimum": 0,
+          "description": "Controls the write socket buffer size of the TCP worker connection sockets"
+        },
+        "tcpServerWorkerRecvBufferSize": {
+          "type": "integer",
+          "default": 0,
+          "minimum": 0,
+          "description": "Controls the read socket buffer size of the TCP worker connection sockets"
+        },
         "udpAgentBufferSize": {
           "type": "integer",
           "default": 262142,
@@ -2710,11 +2722,6 @@
           "minimum": 1400,
           "maximum": 9000,
           "description": "Set higher than 1400 for networks with a larger MTU."
-        },
-        "linuxYield": {
-          "type": "boolean",
-          "default": false,
-          "description": "Yield to scheduler in some tight loops. May help latency on uniprocessor machines"
         },
         "maxBlockSize": {
           "type": "integer",
