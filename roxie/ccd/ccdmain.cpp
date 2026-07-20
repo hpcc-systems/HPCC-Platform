@@ -622,6 +622,7 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
     if (!checkCreateDaemon(argc, argv))
         return EXIT_FAILURE;
 
+    CCycleTimer startupTimer;
     EnableSEHtoExceptionMapping();
     setTerminateOnSEH();
     init_signals();
@@ -1751,7 +1752,7 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
 #else
                 writeSentinelFile(sentinelFile);
 #endif
-                DBGLOG("Startup completed - LPT=%u APT=%u", queryNumLocalTrees(), queryNumAtomTrees());
+                DBGLOG("Startup completed in %ums - LPT=%u APT=%u", startupTimer.elapsedMs(), queryNumLocalTrees(), queryNumAtomTrees());
                 if (recordStartupEvents)
                     stopRoxieEventRecording(nullptr);
 
