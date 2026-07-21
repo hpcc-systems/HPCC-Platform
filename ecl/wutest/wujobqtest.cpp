@@ -66,7 +66,7 @@ void testEnqueue(unsigned nthreads,const char *qname)
     {
     public:
         bool ok;
-        casyncfor()
+        casyncfor() : CAsyncFor(SYNC_LOCATION)
         {
         }
         void Do(unsigned i)

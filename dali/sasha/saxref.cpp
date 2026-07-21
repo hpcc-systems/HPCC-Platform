@@ -1771,7 +1771,7 @@ public:
         public:
             bool ok;
             casyncfor(CNewXRefManager &_parent,const char *_rootdir,bool &_abort)
-                : parent(_parent), abort(_abort)
+                : CAsyncFor(SYNC_LOCATION), parent(_parent), abort(_abort)
             {
                 rootdir = _rootdir;
                 n = parent.numuniqnodes;

@@ -1950,7 +1950,7 @@ unsigned validateNodes(const SocketEndpointArray &epso,const char *dataDir, cons
         const char *filename;
 public:
         casyncfor(const SocketEndpointArray &_eps,const IPointerArrayOf<ISocket> &_sockets,const char *_dataDir,const char *_mirrorDir,bool _chkv, const char *_filename,SocketEndpointArray &_failures, StringArray &_failedmessages,UnsignedArray &_failedcodes,CriticalSection &_sect)
-            : eps(_eps), sockets(_sockets), failures(_failures),
+            : CAsyncFor(SYNC_LOCATION), eps(_eps), sockets(_sockets), failures(_failures),
               failedmessages(_failedmessages), failedcodes(_failedcodes), sect(_sect),
               dataDir(_dataDir), mirrorDir(_mirrorDir)
         {

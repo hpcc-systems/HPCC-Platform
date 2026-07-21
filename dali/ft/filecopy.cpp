@@ -747,7 +747,7 @@ FileSprayer::FileSprayer(IPropertyTree * _options, IPropertyTree * _progress, IR
 class AsyncAfterTransfer : public CAsyncFor
 {
 public:
-    AsyncAfterTransfer(FileSprayer & _sprayer) : sprayer(_sprayer) {}
+    AsyncAfterTransfer(FileSprayer & _sprayer) : CAsyncFor(SYNC_LOCATION), sprayer(_sprayer) {}
 
     virtual void Do(unsigned idxTarget)
     {
@@ -936,7 +936,7 @@ void FileSprayer::assignPartitionFilenames()
 class CheckExists : public CAsyncFor
 {
 public:
-    CheckExists(TargetLocationArray & _targets, IDFPartFilter * _filter) : targets(_targets) { filter = _filter; }
+    CheckExists(TargetLocationArray & _targets, IDFPartFilter * _filter) : CAsyncFor(SYNC_LOCATION), targets(_targets) { filter = _filter; }
 
     virtual void Do(unsigned idx)
     {
@@ -1174,7 +1174,7 @@ class AsyncExtractBlobInfo : public CAsyncFor
 {
     friend class FileSprayer;
 public:
-    AsyncExtractBlobInfo(const char * _splitPrefix, FileSprayer & _sprayer) : sprayer(_sprayer)
+    AsyncExtractBlobInfo(const char * _splitPrefix, FileSprayer & _sprayer) : CAsyncFor(SYNC_LOCATION), sprayer(_sprayer)
     {
         extracted = new ExtractedBlobArray[sprayer.sources.ordinality()];
         splitPrefix = _splitPrefix;

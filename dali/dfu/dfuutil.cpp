@@ -172,7 +172,7 @@ public:
         public:
             Owned<IException> &exc;
             casyncfor(CriticalSection &_crit,Semaphore &_sem,IFileDescriptor *_srcdesc,IFileDescriptor *_dstdesc,Owned<IException> &_exc, StringArray &_tmpnames, StringArray &_dstnames)
-                : crit(_crit), sem(_sem), tmpnames(_tmpnames), dstnames(_dstnames), exc(_exc)
+                : CAsyncFor(SYNC_LOCATION), crit(_crit), sem(_sem), tmpnames(_tmpnames), dstnames(_dstnames), exc(_exc)
             {
                 srcdesc = _srcdesc;
                 dstdesc = _dstdesc;
@@ -245,7 +245,7 @@ public:
             public:
                 Owned<IException> &exc;
                 casyncfor2(CriticalSection &_crit,Semaphore &_sem,StringArray &_tmpnames,StringArray &_dstnames,Owned<IException> &_exc)
-                    : crit(_crit), sem(_sem), tmpnames(_tmpnames), dstnames(_dstnames), exc(_exc)
+                    : CAsyncFor(SYNC_LOCATION), crit(_crit), sem(_sem), tmpnames(_tmpnames), dstnames(_dstnames), exc(_exc)
                 {
                 }
                 void Do(unsigned pn)
@@ -311,7 +311,7 @@ public:
         public:
             Owned<IException> exc;
             casyncfor2(CriticalSection &_crit,Semaphore &_sem,IFileDescriptor *_desc, const char *_filename)
-                : crit(_crit), sem(_sem)
+                : CAsyncFor(SYNC_LOCATION), crit(_crit), sem(_sem)
             {
                 desc = _desc;
                 filename = _filename;

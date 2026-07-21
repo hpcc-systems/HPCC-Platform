@@ -366,7 +366,7 @@ class PtreeThreadingStressTest : public CppUnit::TestFixture
 
         public:
             casyncfor(const char *_desc, byte _flags, ContentionMode _mode, int _iter)
-            : flags(_flags), mode(_mode), iterations(_iter), desc(_desc)
+            : CAsyncFor(SYNC_LOCATION), flags(_flags), mode(_mode), iterations(_iter), desc(_desc)
             {
             };
             double For(unsigned num, unsigned maxatonce, double overhead = 0.0)
@@ -852,7 +852,7 @@ class ThreadedPersistStressTest : public CppUnit::TestFixture
                 class casyncfor: public CAsyncFor
                 {
                 public:
-                    casyncfor(unsigned _count) :count(_count), ret(0) {}
+                    casyncfor(unsigned _count) : CAsyncFor(SYNC_LOCATION),count(_count), ret(0) {}
                     void Do(unsigned i)
                     {
                         ret += call_from_thread(count);

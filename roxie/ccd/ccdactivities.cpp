@@ -1944,7 +1944,7 @@ public:
                 CParallelRoxieActivity &parent;
             public:
                 casyncfor(IBasedArrayOf<CRoxieDiskReadBaseActivity, IRoxieAgentActivity> &_parts, CParallelRoxieActivity &_parent)
-                    : parts(_parts), parent(_parent)
+                    : CAsyncFor(SYNC_LOCATION), parts(_parts), parent(_parent)
                 {
                 }
 

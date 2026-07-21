@@ -690,7 +690,7 @@ void CAsyncFor::For(unsigned num,unsigned maxatonce,bool abortFollowingException
                 unsigned idx;
                 CAsyncFor *self;
                 cdothread(CAsyncFor *_self,unsigned _idx,Semaphore &_ready,AtomicShared<IException> &_e)
-                    : Thread("CAsyncFor"),ready(_ready),erre(_e)
+                    : Thread(_self->queryName()),ready(_ready),erre(_e)
                 {
                     idx = _idx;
                     self = _self;
@@ -742,7 +742,7 @@ void CAsyncFor::For(unsigned num,unsigned maxatonce,bool abortFollowingException
                 unsigned idx;
                 CAsyncFor *self;
                 cdothread(CAsyncFor *_self,unsigned _idx,AtomicShared<IException>&_e)
-                    : Thread("CAsyncFor"),erre(_e)
+                    : Thread(_self->queryName()),erre(_e)
                 {
                     idx = _idx;
                     self = _self;

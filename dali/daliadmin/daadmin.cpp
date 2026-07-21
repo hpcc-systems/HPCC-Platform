@@ -1013,7 +1013,7 @@ int dfsverify(const char *name,CDateTime *cutoff, IUserDescriptor *user)
     public:
         bool ok;
         casyncfor(CFileList  &_list, CriticalSection &_crit)
-            : list(_list), crit(_crit)
+            : CAsyncFor(SYNC_LOCATION), list(_list), crit(_crit)
         {
             ok = true;
         }

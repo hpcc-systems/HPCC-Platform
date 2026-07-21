@@ -735,7 +735,7 @@ void testIPnodeHash()
     class casyncfor: public CAsyncFor
     {
     public:
-        casyncfor()
+        casyncfor() : CAsyncFor(SYNC_LOCATION)
         {
         }
         void Do(unsigned i)

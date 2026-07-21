@@ -269,7 +269,7 @@ public:
         class casyncfor: public CAsyncFor
         {
         public:
-            casyncfor(CSortMaster &_owner, NodeArray &_slaves) : owner(_owner), slaves(_slaves) { }
+            casyncfor(CSortMaster &_owner, NodeArray &_slaves) : CAsyncFor(SYNC_LOCATION), owner(_owner), slaves(_slaves) { }
             void Do(unsigned i)
             {
                 CSortNode &slave = slaves.item(i);
@@ -291,7 +291,7 @@ public:
         class casyncfor: public CAsyncFor
         {
         public:
-            casyncfor(NodeArray &_slaves) : slaves(_slaves) { }
+            casyncfor(NodeArray &_slaves) : CAsyncFor(SYNC_LOCATION), slaves(_slaves) { }
             void Do(unsigned i)
             {
                 CSortNode &slave = slaves.item(i);          
@@ -412,7 +412,7 @@ public:
         {
             CActivityBase &activity;
         public:
-            casyncfor(CActivityBase &_activity, NodeArray &_slaves) : activity(_activity), slaves(_slaves) { wait = false; }
+            casyncfor(CActivityBase &_activity, NodeArray &_slaves) : CAsyncFor(SYNC_LOCATION), activity(_activity), slaves(_slaves) { wait = false; }
             void Do(unsigned i)
             {
                 if (activity.queryAbortSoon())
@@ -532,7 +532,7 @@ public:
             roxiemem::IVariableRowHeap *heap;
         public:
             casyncfor1(CSortMaster &_owner, NodeArray &_slaves, CThorExpandingRowArray &_sample, unsigned _averagesamples, rowcount_t _averagerecspernode, CriticalSection &_asect, roxiemem::IVariableRowHeap *_heap)
-                : owner(_owner), slaves(_slaves), sample(_sample), asect(_asect), heap(_heap)
+                : CAsyncFor(SYNC_LOCATION), owner(_owner), slaves(_slaves), sample(_sample), asect(_asect), heap(_heap)
             { 
                 averagesamples = _averagesamples;
                 averagerecspernode = _averagerecspernode;
@@ -627,7 +627,7 @@ public:
             const byte *mdp;
         public:
             casyncfor2(NodeArray &_slaves,size32_t _mdl,const byte *_mdp)
-                : slaves(_slaves)
+                : CAsyncFor(SYNC_LOCATION), slaves(_slaves)
             { 
                 mdl = _mdl;
                 mdp = _mdp;
@@ -648,7 +648,7 @@ public:
             unsigned numsplits;
         public:
             casyncfor3(NodeArray &_slaves,rowcount_t *_splitmap,unsigned _numnodes,unsigned _numsplits)
-                : slaves(_slaves)
+                : CAsyncFor(SYNC_LOCATION), slaves(_slaves)
             { 
                 splitmap = _splitmap;
                 numnodes = _numnodes;
@@ -727,7 +727,7 @@ public:
                     const MemoryBuffer &mbmx;
                 public:
                     casyncfor(NodeArray &_slaves,const MemoryBuffer &_mbmn,const MemoryBuffer &_mbmx) 
-                        : slaves(_slaves),mbmn(_mbmn), mbmx(_mbmx)
+                        : CAsyncFor(SYNC_LOCATION), slaves(_slaves),mbmn(_mbmn), mbmx(_mbmx)
                     { 
                     }
                     void Do(unsigned i)
@@ -752,7 +752,7 @@ public:
                     roxiemem::IVariableRowHeap *heap;
                 public:
                     casyncfor2(NodeArray &_slaves, CThorExpandingRowArray &_totmid, unsigned _numsplits, Semaphore *_nextsem, IThorRowInterfaces *_keyIf, roxiemem::IVariableRowHeap *_heap)
-                        : slaves(_slaves), totmid(_totmid), keyIf(_keyIf), heap(_heap)
+                        : CAsyncFor(SYNC_LOCATION), slaves(_slaves), totmid(_totmid), keyIf(_keyIf), heap(_heap)
                     { 
                         nextsem = _nextsem;
                         numsplits = _numsplits;
@@ -1405,7 +1405,7 @@ public:
             rowcount_t totalrows;
         public:
             casyncfor1(NodeArray &_slaves,rowcount_t _totalrows) 
-                : slaves(_slaves) 
+                : CAsyncFor(SYNC_LOCATION), slaves(_slaves) 
             { 
                 totalrows = _totalrows;
             }

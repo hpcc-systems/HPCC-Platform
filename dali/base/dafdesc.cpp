@@ -3356,7 +3356,7 @@ void removePartFiles(IFileDescriptor *desc,IMultiException *mexcept)
         IFileDescriptor *parent;
     public:
         casyncfor(IFileDescriptor *_parent,IMultiException *_mexcept,CriticalSection &_crit)
-            : crit(_crit)
+            : CAsyncFor(SYNC_LOCATION), crit(_crit)
         {
             parent = _parent;
             mexcept = _mexcept;

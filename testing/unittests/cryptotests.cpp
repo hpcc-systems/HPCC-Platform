@@ -138,7 +138,7 @@ protected:
         {
             IDigitalSignatureManager * dsm;
         public:
-            casyncfor(IDigitalSignatureManager * _dsm)
+            casyncfor(IDigitalSignatureManager * _dsm) : CAsyncFor(SYNC_LOCATION)
             {
                 dsm = _dsm;
             }
@@ -167,7 +167,7 @@ protected:
             StringBuffer text;
             StringBuffer sig;
         public:
-            casyncfor(IDigitalSignatureManager * _dsm)
+            casyncfor(IDigitalSignatureManager * _dsm) : CAsyncFor(SYNC_LOCATION)
             {
                 dsm = _dsm;
                 text.set("I am here");
@@ -197,7 +197,7 @@ protected:
         {
             IDigitalSignatureManager * dsm;
         public:
-            casyncfor(IDigitalSignatureManager * _dsm)
+            casyncfor(IDigitalSignatureManager * _dsm) : CAsyncFor(SYNC_LOCATION)
             {
                 dsm = _dsm;
             }
@@ -443,7 +443,7 @@ protected:
         {
             std::function<void()> testFunc;
         public:
-            CAsyncfor(std::function<void()> _testFunc) : testFunc(_testFunc)
+            CAsyncfor(std::function<void()> _testFunc) : CAsyncFor(SYNC_LOCATION), testFunc(_testFunc)
             {
             }
             void Do(unsigned idx)
@@ -586,7 +586,7 @@ protected:
             char aesKey[aesMaxKeySize];
             char aesIV[aesBlockSize];
         public:
-            CAsyncfor()
+            CAsyncfor() : CAsyncFor(SYNC_LOCATION)
             {
                 // create random key
                 fillRandomData(aesMaxKeySize, aesKey);

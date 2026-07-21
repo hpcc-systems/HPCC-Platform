@@ -9482,7 +9482,7 @@ protected:
         class casyncfor: public CAsyncFor
         {
         public:
-            casyncfor(CDataBufferManager &_dm) : dm(_dm) {}
+            casyncfor(CDataBufferManager &_dm) : CAsyncFor(SYNC_LOCATION), dm(_dm) {}
 
             void Do(unsigned idx)
             {

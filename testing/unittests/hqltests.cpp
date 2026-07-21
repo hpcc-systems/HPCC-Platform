@@ -34,6 +34,8 @@ class ThreadedParseStressTest : public CppUnit::TestFixture
         class casyncfor: public CAsyncFor
         {
         public:
+            casyncfor() : CAsyncFor(SYNC_LOCATION) {}
+
             void Do(unsigned i)
             {
                 if (i & 1)
@@ -95,6 +97,8 @@ class ThreadedParseStressTest : public CppUnit::TestFixture
         class casyncfor: public CAsyncFor
         {
         public:
+            casyncfor() : CAsyncFor(SYNC_LOCATION) {}
+
             void Do(unsigned i)
             {
                 OwnedHqlExpr zero = createConstant(0);

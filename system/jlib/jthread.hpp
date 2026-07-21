@@ -214,16 +214,21 @@ interface ITaskScheduler;
 class jlib_decl CAsyncFor
 {
 public:
+    CAsyncFor(const char *_name) : name(_name) {}
     void For(unsigned num,unsigned maxatonce,bool abortFollowingException=false,bool shuffled=false);
     void TaskFor(unsigned num, ITaskScheduler & scheduler);
     virtual void Do(unsigned idx=0)=0;
+    const char *queryName() const { return !name.isEmpty() ? name.get() : "CAsyncFor"; }
+
+protected:
+    StringAttr name;
 };
 
 template <typename AsyncFunc>
 class CAsyncForFunc final : public CAsyncFor
 {
 public:
-    CAsyncForFunc(AsyncFunc _func) : func(_func) {}
+    CAsyncForFunc(const char *_name, AsyncFunc _func) : CAsyncFor(_name), func(_func) {}
     virtual void Do(unsigned idx=0) { func(idx); }
 private:
     AsyncFunc func;
@@ -232,25 +237,25 @@ private:
 //Utility functions for executing a lambda function in parallel, but allow the number of concurrent iterations
 //action on exception, and shuffling to be controlled.
 template <typename AsyncFunc>
-inline void asyncFor(unsigned num, unsigned maxAtOnce, bool abortFollowingException, bool shuffled, AsyncFunc func)
+inline void asyncFor(const char *asyncName, unsigned num, unsigned maxAtOnce, bool abortFollowingException, bool shuffled, AsyncFunc func)
 {
-    CAsyncForFunc<AsyncFunc> async(func);
+    CAsyncForFunc<AsyncFunc> async(asyncName, func);
     async.For(num, maxAtOnce, abortFollowingException, shuffled);
 }
 template <typename AsyncFunc>
-inline void asyncFor(unsigned num, unsigned maxAtOnce, bool abortFollowingException, AsyncFunc func)
+inline void asyncFor(const char *asyncName, unsigned num, unsigned maxAtOnce, bool abortFollowingException, AsyncFunc func)
 {
-    asyncFor(num, maxAtOnce, abortFollowingException, false, func);
+    asyncFor(asyncName, num, maxAtOnce, abortFollowingException, false, func);
 }
 template <typename AsyncFunc>
-inline void asyncFor(unsigned num, unsigned maxAtOnce, AsyncFunc func)
+inline void asyncFor(const char *asyncName, unsigned num, unsigned maxAtOnce, AsyncFunc func)
 {
-    asyncFor(num, maxAtOnce, false, false, func);
+    asyncFor(asyncName, num, maxAtOnce, false, false, func);
 }
 template <typename AsyncFunc>
-inline void asyncFor(unsigned num, AsyncFunc func)
+inline void asyncFor(const char *asyncName, unsigned num, AsyncFunc func)
 {
-    asyncFor(num, num, false, false, func);
+    asyncFor(asyncName, num, num, false, false, func);
 }
 
 // ---------------------------------------------------------------------------
