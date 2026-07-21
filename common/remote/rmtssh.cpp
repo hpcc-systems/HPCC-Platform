@@ -483,7 +483,7 @@ public:
             Semaphore *treesem;
         public:
             cRun(CFRunSSH &_parent)
-                : parent(_parent)
+                : CAsyncFor(SYNC_LOCATION), parent(_parent)
             {
                 treemode = !parent.treeroot.isEmpty();
                 if (treemode) {

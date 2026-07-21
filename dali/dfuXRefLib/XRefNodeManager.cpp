@@ -425,7 +425,7 @@ bool CXRefNode::removeEmptyDirectories(StringBuffer &errstr)
 
         public:
             casyncfor(IGroup *_grp,const char *_name)
-                : name(_name)
+                : CAsyncFor(SYNC_LOCATION), name(_name)
             {
                 grp = _grp;
             }

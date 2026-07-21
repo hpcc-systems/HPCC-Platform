@@ -1846,7 +1846,7 @@ class CXRefManager: public CXRefManagerBase
             unsigned numfails;
         public:
             casyncfor(IGroup *_g, const char *_dirlist, CPhysicalXREF &_cxref, CXRefManagerBase *_manager)
-                : cxref(_cxref), manager(*_manager)
+                : CAsyncFor(SYNC_LOCATION), cxref(_cxref), manager(*_manager)
             {
                 g = _g;
                 dirlist = _dirlist;

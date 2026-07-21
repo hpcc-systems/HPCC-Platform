@@ -89,7 +89,7 @@ class CascadeManager : public CInterface
             class casyncfor: public CAsyncFor
             {
             public:
-                casyncfor(CascadeManager *_parent) : parent(_parent) { }
+                casyncfor(CascadeManager *_parent) : CAsyncFor(SYNC_LOCATION), parent(_parent) { }
                 void Do(unsigned i)
                 {
                     parent->unlockChild(i);
@@ -241,7 +241,7 @@ private:
                 {
                 public:
                     casyncfor(CascadeManager *_parent, int &_got, CriticalSection &_cs)
-                        : parent(_parent), got(_got), cs(_cs){ }
+                        : CAsyncFor(SYNC_LOCATION), parent(_parent), got(_got), cs(_cs){ }
                     void Do(unsigned i)
                     {
                         int childLocks = parent->lockChild(i);
@@ -453,7 +453,7 @@ public:
         public:
             casyncfor(IPropertyTree *_xml, const char *_queryText, CascadeManager *_parent, IPropertyTree *_mergedReply, CascadeMergeType _mergeType,
                       StringBuffer &_reply, SocketEndpoint &_ep, unsigned _numChildren, const IRoxieContextLogger &_logctx)
-                : queryText(_queryText), parent(_parent), mergedReply(_mergedReply), mergeType(_mergeType), reply(_reply), ep(_ep), numChildren(_numChildren), logctx(_logctx), xml(_xml)
+                : CAsyncFor(SYNC_LOCATION), queryText(_queryText), parent(_parent), mergedReply(_mergedReply), mergeType(_mergeType), reply(_reply), ep(_ep), numChildren(_numChildren), logctx(_logctx), xml(_xml)
             {
             }
             void Do(unsigned i)

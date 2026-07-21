@@ -36,6 +36,7 @@ enum class EventTask : byte
     Readahead,     // A lookahead thread within a processing graph - e.g. within a keyed join
     Graph,         // Scope of executing a graph
     SubGraph,      // Scope of executing a subgraph
+    Running,       // A running thread not otherwise associated with a more specific task scope
     Max
 };
 
@@ -113,6 +114,7 @@ enum EventAttr : byte
     EvAttrResponseSeq,
     EvAttrTask,
     EvAttrLockId,
+    EvAttrElementId,
     EvAttrMax
 };
 
@@ -476,6 +478,12 @@ public:
     void recordWorkerStop(unsigned requestId, unsigned requestSeq);
     void recordResponseSend(unsigned requestId, unsigned requestSeq, unsigned responseId, unsigned responseSeq);
     void recordResponseReceive(unsigned requestId, unsigned requestSeq, unsigned responseId, unsigned responseSeq);
+    void recordMpRequestSend(unsigned requestId, size32_t dataSize);
+    void recordMpRequestReceive(unsigned requestId);
+    void recordMpResponseSend(unsigned responseId, size32_t dataSize);
+    void recordMpResponseReceive(unsigned responseId);
+    void recordEnqueue(__uint64 elementId);
+    void recordDequeue(__uint64 elementId);
 
     void recordTaskStart(EventTask task);
     void recordTaskStop(EventTask task);
@@ -503,6 +511,9 @@ protected:
     void recordLockEvent(EventType event, unsigned lockId);
     void recordRequestIdEvent(EventType event, unsigned requestId, unsigned requestSeq);
     void recordResponseEvent(EventType event, unsigned requestId, unsigned requestSeq, unsigned responseId, unsigned responseSeq);
+    void recordMpDataEvent(EventType event, EventAttr attr, unsigned id, size32_t dataSize);
+    void recordMpIdEvent(EventType event, EventAttr attr, unsigned id);
+    void recordElementEvent(EventType event, __uint64 elementId);
     void recordDaliEvent(EventType event, const char * xpath, __int64 id, stat_type elapsedNs, size32_t dataSize);
     void recordDaliEvent(EventType event, __int64 id, stat_type elapsedNs, size32_t dataSize);
 

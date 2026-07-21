@@ -2137,7 +2137,7 @@ public:
 
         public:
             casyncfor(IPointerArray &_preps, IArrayOf<IEsdlTransformOperation> &_children, IEsdlScriptContext *_scriptContext, IXpathContext *_targetContext, IXpathContext *_sourceContext)
-                : preps(_preps), children(_children), scriptContext(_scriptContext), targetContext(_targetContext), sourceContext(_sourceContext)
+                : CAsyncFor(SYNC_LOCATION), preps(_preps), children(_children), scriptContext(_scriptContext), targetContext(_targetContext), sourceContext(_sourceContext)
             {
             }
             void Do(unsigned i)

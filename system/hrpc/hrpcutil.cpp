@@ -168,7 +168,7 @@ void MultipleConnect(unsigned n,HRPCmodule **modules,int timeout,bool fast)
         bool *done;
         int timeout;
     public:
-        casyncfor(HRPCmodule **_modules,bool *_done,int _timeout)
+        casyncfor(HRPCmodule **_modules,bool *_done,int _timeout) : CAsyncFor(SYNC_LOCATION)
         { 
             modules = _modules;
             done = _done;

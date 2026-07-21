@@ -648,7 +648,7 @@ bool runSlaves(IGroup *grp,const char *progname,const char *daliserver,const cha
         bool error;
         CriticalSection statesect{SYNC_LOCATION};
         casyncfor(IGroup *_grp,const char *_remoteexe,const char *_params)
-            : remoteexe(_remoteexe), params(_params)
+            : CAsyncFor(SYNC_LOCATION), remoteexe(_remoteexe), params(_params)
         {
             grp = _grp;
             error = false;

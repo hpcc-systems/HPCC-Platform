@@ -258,7 +258,7 @@ void simulateTraffic()
         unsigned begin = msTick();
         std::atomic<unsigned> workValue{0};
 
-        asyncFor(numThreads+1, numThreads+1, [&workValue, &rm, &mc, &rowManager, maxSendQueueSize](unsigned i)
+        asyncFor(SYNC_LOCATION, numThreads+1, numThreads+1, [&workValue, &rm, &mc, &rowManager, maxSendQueueSize](unsigned i)
         {
             if (!i)
             {

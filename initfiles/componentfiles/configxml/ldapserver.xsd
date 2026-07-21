@@ -185,6 +185,29 @@
                     </xs:appinfo>
                 </xs:annotation>
             </xs:attribute>
+            <xs:attribute name="ldapTLSValidation" use="optional" default="disabled">
+                <xs:annotation>
+                    <xs:appinfo>
+                        <required>false</required>
+                        <tooltip>TLS certificate validation mode for LDAPS connections. 'strict' requires a valid, trusted certificate with matching hostname and throws on startup if any configured host fails validation. 'permissive' enforces the same certificate validation on connections but logs warnings instead of throwing during startup probes. 'disabled' performs no certificate validation (default, backward-compatible).</tooltip>
+                    </xs:appinfo>
+                </xs:annotation>
+                <xs:simpleType>
+                    <xs:restriction base="xs:string">
+                        <xs:enumeration value="disabled"/>
+                        <xs:enumeration value="permissive"/>
+                        <xs:enumeration value="strict"/>
+                    </xs:restriction>
+                </xs:simpleType>
+            </xs:attribute>
+            <xs:attribute name="ldapCACertFile" type="xs:string" use="optional" default="">
+                <xs:annotation>
+                    <xs:appinfo>
+                        <required>false</required>
+                        <tooltip>Path to the CA certificate file (PEM format) used to verify the LDAP server's TLS certificate. Strongly recommended when ldapTLSValidation is strict or permissive. If omitted, the system trust store is used.</tooltip>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:attribute>
             <xs:attribute name="cacheTimeout" type="xs:nonNegativeInteger" use="optional" default="60">
                 <xs:annotation>
                     <xs:appinfo>

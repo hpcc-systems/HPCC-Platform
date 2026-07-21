@@ -2495,7 +2495,8 @@ private:
     }
 
 public:
-    CWSCAsyncFor(CWSCHelper * _master, IXmlWriterExt &_xmlWriter, ConstPointerArray &_inputRows, PTreeReaderOptions _options): inputRows(_inputRows), xmlWriter(_xmlWriter), options(_options)
+    CWSCAsyncFor(CWSCHelper * _master, IXmlWriterExt &_xmlWriter, ConstPointerArray &_inputRows, PTreeReaderOptions _options)
+    : CAsyncFor("CWSCAsyncFor"), inputRows(_inputRows), xmlWriter(_xmlWriter), options(_options)
     {
         master = _master;
         outputAllocator = master->queryOutputAllocator();

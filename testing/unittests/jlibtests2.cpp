@@ -1342,6 +1342,8 @@ attribute: DataSize = 73
         // Task events
         recorder.recordTaskStart(EventTask::Sink);
         recorder.recordTaskStop(EventTask::Sink);
+        recorder.recordTaskStart(EventTask::Running);
+        recorder.recordTaskStop(EventTask::Running);
 
         // Lock and semaphore events
         constexpr unsigned lockId = 42;
@@ -1363,6 +1365,14 @@ attribute: DataSize = 73
         recorder.recordWorkerStop(1, 1);
         recorder.recordResponseSend(1, 1, 1, 1);
         recorder.recordResponseReceive(1, 1, 1, 1);
+        recorder.recordMpRequestSend(10, 1000);
+        recorder.recordMpRequestReceive(10);
+        recorder.recordMpResponseSend(20, 2000);
+        recorder.recordMpResponseReceive(20);
+
+        // Queue events
+        recorder.recordEnqueue(0x1122334455667788ULL);
+        recorder.recordDequeue(0x1122334455667788ULL);
 
         // Do not call Recording source (additional call to test multiple sources)
         // because this is done implicitly when recording is started and it is invalid to have two

@@ -1080,7 +1080,7 @@ public:
     unsigned parentExtractSize;
     const byte * parentExtract;
 
-    CParallelActivityExecutor(IRoxieServerActivityCopyArray & _activities, unsigned _parentExtractSize, const byte * _parentExtract) : 
+    CParallelActivityExecutor(IRoxieServerActivityCopyArray & _activities, unsigned _parentExtractSize, const byte * _parentExtract) : CAsyncFor(SYNC_LOCATION),
         parentExtractSize(_parentExtractSize), parentExtract(_parentExtract), activities(_activities) { }
     void Do(unsigned i)
     {
@@ -1692,7 +1692,7 @@ public:
             dependencies.item(i).execute(parentExtractSize, parentExtract);
         if (parallelDependencies.size() > 0)
         {
-            asyncFor(parallelDependencies.size(), parallelDependencies.size(), [this, &parallelDependencies, parentExtractSize, parentExtract](unsigned i)
+            asyncFor(SYNC_LOCATION, parallelDependencies.size(), parallelDependencies.size(), [this, &parallelDependencies, parentExtractSize, parentExtract](unsigned i)
             {
                 dependencies.item(parallelDependencies[i]).execute(parentExtractSize, parentExtract);
             });
@@ -3054,7 +3054,7 @@ public:
             in->start(parentExtractSize, parentExtract, paused);
         if (parallelInputs.size() > 0)
         {
-            asyncFor(parallelInputs.size(), parallelInputs.size(), [&parallelInputs, parentExtractSize, parentExtract, paused](unsigned i)
+            asyncFor(SYNC_LOCATION, parallelInputs.size(), parallelInputs.size(), [&parallelInputs, parentExtractSize, parentExtract, paused](unsigned i)
             {
                 parallelInputs[i]->start(parentExtractSize, parentExtract, paused);
             });
@@ -3307,7 +3307,7 @@ public:
             in->start(parentExtractSize, parentExtract, paused);
         if (parallelInputs.size() > 0)
         {
-            asyncFor(parallelInputs.size(), parallelInputs.size(), [&parallelInputs, parentExtractSize, parentExtract, paused](unsigned i)
+            asyncFor(SYNC_LOCATION, parallelInputs.size(), parallelInputs.size(), [&parallelInputs, parentExtractSize, parentExtract, paused](unsigned i)
             {
                 parallelInputs[i]->start(parentExtractSize, parentExtract, paused);
             });
@@ -28665,7 +28665,7 @@ public:
                         unsigned parentExtractSize;
                         const byte * parentExtract;
 
-                        casyncfor(IRoxieServerActivityCopyArray &_sinks, IActivityGraph &_parent, unsigned _parentExtractSize, const byte * _parentExtract) :
+                        casyncfor(IRoxieServerActivityCopyArray &_sinks, IActivityGraph &_parent, unsigned _parentExtractSize, const byte * _parentExtract) : CAsyncFor(SYNC_LOCATION),
                             parent(_parent), parentExtractSize(_parentExtractSize), parentExtract(_parentExtract), sinks(_sinks) { }
                         void Do(unsigned i)
                         {
@@ -29584,7 +29584,7 @@ protected:
         {
         public:
             casyncfor(ArrayOf<IFinalRoxieInput *> &_outputs, char const * const *_output, unsigned _repeat)
-            : outputs(_outputs), output(_output), repeat(_repeat)
+            : CAsyncFor(SYNC_LOCATION), outputs(_outputs), output(_output), repeat(_repeat)
             {}
             void Do(unsigned i)
             {

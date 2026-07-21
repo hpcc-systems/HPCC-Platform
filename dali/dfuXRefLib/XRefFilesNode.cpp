@@ -337,7 +337,7 @@ bool CXRefFilesNode::RemovePhysical(const char *Partmask,IUserDescriptor* udesc,
         CriticalSection &crit;
     public:
         casyncfor(RemoteFilenameArray &_files, StringBuffer &_errstr, CriticalSection &_crit)
-            : files(_files), errstr(_errstr), crit(_crit)
+            : CAsyncFor(SYNC_LOCATION), files(_files), errstr(_errstr), crit(_crit)
         {
         }
         void Do(unsigned idx)

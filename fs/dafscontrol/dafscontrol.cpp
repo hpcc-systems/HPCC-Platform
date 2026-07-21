@@ -132,7 +132,7 @@ unsigned applyNodes(const char *grpip, ApplyMode mode, unsigned ver, bool isdali
         CriticalSection &sect;
     public:
         casyncfor(ApplyMode _mode, unsigned _ver,SocketEndpointArray &_eps,IPointerArrayOf<ISocket> &_sockets,SocketEndpointArray &_result, StringAttrArray &_resultstr,CriticalSection &_sect) 
-            : eps(_eps), sockets(_sockets), result(_result), resultstr(_resultstr), sect(_sect)
+            : CAsyncFor(SYNC_LOCATION), eps(_eps), sockets(_sockets), result(_result), resultstr(_resultstr), sect(_sect)
         { 
             mode = _mode;
             ver = _ver;

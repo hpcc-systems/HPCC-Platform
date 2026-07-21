@@ -1049,7 +1049,7 @@ public:
                 CriticalSection filenameCrit{SYNC_LOCATION};
                 std::map<const IRoxiePackage *, SummaryMap> filenameSummaryMap;
 
-                asyncFor(numQueries, parallelQueryLoadThreads, [this, querySet, &queryDlls, &filenameCrit, &filenameSummaryMap, &packages](unsigned i)
+                asyncFor("Async Gather Filenames", numQueries, parallelQueryLoadThreads, [this, querySet, &queryDlls, &filenameCrit, &filenameSummaryMap, &packages](unsigned i)
                 {
                     VStringBuffer xpath("Query[%u]", i+1);
                     const IPropertyTree *query = querySet->queryPropTree(xpath);
@@ -1122,7 +1122,7 @@ public:
 
                 // Now resolve the filenames in parallel - on a system with remote files most of the time is spent retrieving the file sizes.
                 // The files will be added to the cache - so that the subsequent query load will match immediately
-                asyncFor(filenames.size(), numResolveFilenameThreads, [this, &filenames, &resolvedFiles, &packages, &stats](unsigned i)
+                asyncFor("Async Resolve Filenames", filenames.size(), numResolveFilenameThreads, [this, &filenames, &resolvedFiles, &packages, &stats](unsigned i)
                 {
                     try
                     {
@@ -1195,7 +1195,7 @@ public:
                         stats.numIndexesOpened, numResolveFilenameThreads, gatherNs, resolveNs);
             }
 
-            asyncFor(numQueries, parallelQueryLoadThreads, [this, querySet, &packages, &queryHashes, &queryDlls, forceRetry](unsigned i)
+            asyncFor("Async Load Query", numQueries, parallelQueryLoadThreads, [this, querySet, &packages, &queryHashes, &queryDlls, forceRetry](unsigned i)
             {
                 queryHashes[i] = 0;
                 VStringBuffer xpath("Query[%u]", i+1);
@@ -1245,7 +1245,7 @@ public:
         if (numAliases)
         {
             std::vector<hash64_t> aliasHashes(numAliases);
-            asyncFor(numAliases, parallelQueryLoadThreads, [this, querySet, &aliasHashes](unsigned i)
+            asyncFor(SYNC_LOCATION, numAliases, parallelQueryLoadThreads, [this, querySet, &aliasHashes](unsigned i)
             {
                 aliasHashes[i] = 0;
                 VStringBuffer xpath("Alias[%u]", i+1);

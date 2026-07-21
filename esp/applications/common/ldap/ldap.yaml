@@ -22,3 +22,5 @@ ldap:
   hpccAdminSecretKey: ""
   hpccAdminVaultId: ""
   checkScopeScans: true
+  ldapTLSValidation: "disabled"
+  ldapCACertFile: ""

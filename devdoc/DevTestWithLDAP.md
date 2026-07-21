@@ -24,6 +24,12 @@ We'll run our 389ds and PLA in a Docker container launched from platform source:
 
 These instructions create a persistent volume for the DS inside your directory, but you can customize the docker-compose file to use another location. All of the server state is stored in the mounted volume, so if you want to be able to easily switch between different configurations you can easily do so by switching the mounted directory at launch.
 
+> **Mounted data volume:** Throughout this document, `${HOME}/389ds` refers to the host directory
+> mounted into the 389ds container as `/data`. This is where all server state (database, TLS
+> certificates, configuration) is persisted between restarts. The default is `${HOME}/389ds` as
+> set in `docker-compose.yaml`. If you change it there, substitute your chosen path everywhere
+> `${HOME}/389ds` appears in the commands below.
+
 1. Copy the `dockerfiles/examples/ldap` folder to a location outside of your repo, say `${HOME}/ldap`. Edit the file `${HOME}/ldap/docker-compose.yaml`, customizing the admin password and PVC mount point:
     - Change `DS_DM_PASSWORD: "<directory_manager_pw>"` placeholder with the real password you want to use. This is the password that you will use in PLA to administer the DS, and that the HPCC platform will use to interact with it using LDAP.
     - Under volumes, replace `${HOME}/389ds` with the location of your choice.
@@ -60,7 +66,198 @@ These instructions create a persistent volume for the DS inside your directory, 
 
    You should now see the complete directory tree including `dc=example,dc=com` and all HPCC-created organizational units.
 
-## Fresh Start or Multiple Servers
+## Enable TLS on the Test Server (Optional)
+
+By default the 389ds test instance runs on plain LDAP (port 389). If you need to test LDAPS
+(port 636) with TLS certificate validation, follow these steps after completing the initial
+setup above. This uses a self-signed CA and server certificate.
+
+> **Note:** This is only needed if you are testing the `ldapTLSValidation` HPCC configuration
+> feature. See [LDAPCertificateValidation.md](LDAPCertificateValidation.md) for details on that
+> feature.
+
+### Step 1 — Generate Certificates
+
+Run these commands on the host (outside Docker). The server certificate must include a
+**Subject Alternative Name (SAN)** matching the hostname HPCC uses to connect to 389ds.
+HPCC's bundled OpenLDAP uses OpenSSL, which requires a SAN — a `CN`-only certificate will
+be rejected with a hostname mismatch error even if the `CN` matches.
+
+Choose a directory to store your certificates and substitute it for `<ldap-certs-dir>`
+throughout this section (e.g., `~/hpcc/ldap-certs`).
+
+```bash
+# Create your certificate directory
+mkdir -p <ldap-certs-dir> && cd <ldap-certs-dir>
+
+# Generate the CA private key and self-signed CA certificate
+openssl genrsa -out ca.key 4096
+openssl req -new -x509 -days 3650 -key ca.key -out ca.crt \
+  -subj "/CN=LDAP-CA/O=Example/C=US"
+
+# Generate the server private key
+openssl genrsa -out server.key 2048
+
+# Generate a CSR for the server with a SAN covering localhost
+openssl req -new -key server.key -out server.csr \
+  -subj "/CN=localhost/O=Example/C=US" \
+  -addext "subjectAltName=DNS:localhost,IP:127.0.0.1"
+
+# Sign the server certificate with the CA, preserving the SAN
+openssl x509 -req -days 3650 -in server.csr \
+  -CA ca.crt -CAkey ca.key -CAcreateserial \
+  -extfile <(echo "subjectAltName=DNS:localhost,IP:127.0.0.1") \
+  -out server.crt
+
+# Verify the SAN is present
+openssl x509 -in server.crt -noout -text | grep -A2 "Subject Alternative"
+```
+
+> **Hostname match:** The SAN in the server certificate must match the value HPCC uses to
+> connect to 389ds. This value comes from the `netAddress` of the `Hardware/Computer` entry
+> that the `LDAPServerProcess` instance points to in `environment.xml` — **not** the
+> `netAddress` on the `Instance` element itself.
+>
+> - `netAddress="127.0.0.1"` → SAN must include `IP:127.0.0.1` (as in the example above).
+>   This is the recommended setting for local development. **Do not use `netAddress="localhost"`**
+>   — OpenLDAP's DNS hostname matching has a known issue with the literal string `localhost` and
+>   will report a hostname mismatch even when the cert includes `DNS:localhost` in its SAN. Using
+>   `127.0.0.1` triggers the IP address matching path, which works correctly.
+> - `netAddress="."` → expands to the host machine's primary IP at runtime (e.g. `10.0.0.98`).
+>   The SAN must then cover that IP: `subjectAltName=IP:10.0.0.98,DNS:localhost`
+>
+> Do not change the existing shared `Hardware/Computer` entry's `netAddress` to accommodate LDAP
+> — that entry is used by all platform components. Instead add a dedicated `Computer` entry for
+> the LDAP instance (see the bare-metal configuration section below for details).
+
+> **CA cert file location:** The `ldapCACertFile` path must be readable by the `hpcc` user.
+> A file under your home directory may be inaccessible if the home directory has restricted
+> permissions (`drwxr-x---`), even if the file itself is world-readable. Place the CA cert in
+> a shared location:
+> ```bash
+> sudo mkdir -p /etc/HPCCSystems/certs
+> sudo cp <ldap-certs-dir>/ca.crt /etc/HPCCSystems/certs/ldap-ca.crt
+> sudo chown root:hpcc /etc/HPCCSystems/certs/ldap-ca.crt
+> sudo chmod 640 /etc/HPCCSystems/certs/ldap-ca.crt
+> ```
+> Then set `ldapCACertFile="/etc/HPCCSystems/certs/ldap-ca.crt"` in `environment.xml`.
+
+### Step 2 — Install the Certificate on 389ds
+
+389ds does not read PEM files directly — it stores TLS material in an NSS certificate database.
+The CA cert is imported with `certutil`, and the server cert + private key must be bundled into
+a PKCS12 file first, then imported with `pk12util`.
+
+> **Nickname:** Choose a nickname for your server certificate (e.g., `HPCC-389ds-cert`). The
+> `-name` value in the `openssl pkcs12` command sets this nickname and **must be used exactly**
+> in the `dsconf rsa set --nss-cert-name` command that follows. It is case-sensitive.
+
+```bash
+# Create the TLS subdirectory in the mounted data volume
+mkdir -p ${HOME}/389ds/tls
+
+# Copy certificates into the mounted data volume
+cp <ldap-certs-dir>/server.crt <ldap-certs-dir>/server.key <ldap-certs-dir>/ca.crt ${HOME}/389ds/tls/
+
+# Import the CA certificate into the NSS database
+# The NSS database is password-protected — pwdfile.txt holds the PIN
+docker exec 389ds certutil -A \
+  -d /etc/dirsrv/slapd-localhost \
+  -n "LDAP-CA" \
+  -t "CT,," \
+  -i /data/tls/ca.crt \
+  -f /etc/dirsrv/slapd-localhost/pwdfile.txt
+
+# Bundle the server certificate and private key into a PKCS12 file
+# The -name value becomes the NSS nickname — it must match --nss-cert-name below
+openssl pkcs12 -export \
+  -in <ldap-certs-dir>/server.crt -inkey <ldap-certs-dir>/server.key \
+  -out <ldap-certs-dir>/server.p12 \
+  -passout pass:"" \
+  -name "HPCC-389ds-cert"
+
+# Copy the bundle into the mounted volume
+cp <ldap-certs-dir>/server.p12 ${HOME}/389ds/tls/
+
+# Import the server certificate and private key into the NSS database
+docker exec 389ds pk12util \
+  -i /data/tls/server.p12 \
+  -d /etc/dirsrv/slapd-localhost \
+  -W "" \
+  -k /etc/dirsrv/slapd-localhost/pwdfile.txt
+
+# Verify both certificates appear in the NSS database
+docker exec 389ds certutil -L -d /etc/dirsrv/slapd-localhost
+# Expected output (or similar):
+# Certificate Nickname                                         Trust Attributes
+#                                                              SSL,S/MIME,JAR/XPI
+#
+# LDAP-CA                                                      CT,,
+# HPCC-389ds-cert                                              u,u,u
+
+# Tell 389ds which certificate to present for TLS
+# Must match the -name value used in the openssl pkcs12 command above
+docker exec 389ds dsconf localhost security rsa set \
+  --nss-cert-name "HPCC-389ds-cert"
+
+# Enable TLS on the directory server
+docker exec 389ds dsconf localhost security enable
+
+# Restart the container for TLS to take effect
+docker restart 389ds
+```
+
+The TLS configuration is persisted in the mounted volume (`${HOME}/389ds`). Subsequent
+`docker compose up` runs will have TLS enabled without repeating these steps.
+
+### Step 3 — Verify TLS is Working
+
+```bash
+openssl s_client -connect localhost:636 -CAfile <ldap-certs-dir>/ca.crt </dev/null 2>&1 | grep -E "subject|issuer|Verify return"
+```
+
+A successful result shows `Verify return code: 0 (ok)`, with `subject` matching your server
+cert CN and `issuer` matching your CA.
+
+> **Note:** `openssl s_client` without `</dev/null` will hang waiting for stdin. Always redirect
+> stdin to avoid this.
+
+### Step 4 — Configure HPCC to Validate the Certificate
+
+Copy `ca.crt` to a stable path accessible by the `hpcc` user on each HPCC node:
+
+```bash
+sudo mkdir -p /etc/HPCCSystems/certs
+sudo cp <ldap-certs-dir>/ca.crt /etc/HPCCSystems/certs/ldap-ca.crt
+sudo chown root:hpcc /etc/HPCCSystems/certs/ldap-ca.crt
+sudo chmod 640 /etc/HPCCSystems/certs/ldap-ca.crt
+```
+
+> **Note:** A file under your home directory may be inaccessible to the `hpcc` user if the home
+> directory has restricted permissions (`drwxr-x---`), even if the file itself is world-readable.
+> Use a shared location as shown above.
+
+In `environment.xml`, add `ldapTLSValidation` and `ldapCACertFile` to the `<ldap>` element:
+
+```xml
+<ldap ldapTLSValidation="strict"
+      ldapCACertFile="/etc/HPCCSystems/certs/ldap-ca.crt"
+      ... />
+```
+
+For a Kubernetes deployment, deliver the CA cert via a `Secret` or `ConfigMap` and mount it into
+the HPCC pods, then set the path in your Helm values:
+
+```yaml
+ldap:
+  ldapTLSValidation: "strict"
+  ldapCACertFile: "/etc/hpcc/certs/ldap-ca.crt"
+```
+
+Use `ldapTLSValidation="permissive"` first to diagnose any issues without hard-failing, then
+switch to `"strict"` once connectivity is confirmed.
+
+## Managing the Test Server Instance
 
 Assuming stock values from our example, the state for the Directory Server is stored `${HOME}/389ds`. If you want to wipe out your server and start fresh, delete the contents of `${HOME}/389ds` and begin again with the setup above from step 2.
 
@@ -93,8 +290,37 @@ These directions assume you're starting with a vanilla configuration from a fres
         - `systemUser = Directory Manager`
     - Navigate to the Instances tab:
         - Add an instance on:
-            - `computer = localhost`
-            - `netAddress = .`
+            - `computer = ldap-local`
+            - `netAddress = 127.0.0.1`
+
+    > **TLS note:** If using LDAPS with certificate validation (`ldapTLSValidation`), the address
+    > HPCC connects to is determined by the `netAddress` of the `Computer` entry in the
+    > `Hardware` section of `environment.xml` that the LDAP instance's `computer` attribute points
+    > to — **not** the `netAddress` on the `Instance` element itself. That `Hardware/Computer`
+    > `netAddress` must match the CN or SAN in the server certificate.
+    >
+    > **Important:** Do not simply change the existing `Hardware/Computer` entry's `netAddress`
+    > from `"."` to `"localhost"` — that entry is shared by all platform components and changing
+    > it will break them (e.g. dfuserver). Instead, add a **separate** `Computer` entry in the
+    > `Hardware` block dedicated to the LDAP instance:
+    >
+    > ```xml
+    > <!-- In the <Hardware> block — add this alongside the existing Computer entry -->
+    > <Computer computerType="linuxmachine"
+    >           domain="localdomain"
+    >           name="ldap-local"
+    >           netAddress="127.0.0.1"/>
+    > ```
+    >
+    > Then point the `LDAPServerProcess` instance at it:
+    >
+    > ```xml
+    > <Instance computer="ldap-local" name="s1" netAddress="."/>
+    > ```
+    >
+    > This writes `ldapAddress="127.0.0.1"` into the generated component config, matching the
+    > `IP:127.0.0.1` SAN in the server certificate.
+    > See [Step 1 of the TLS setup](#step-1--generate-certificates) for cert SAN requirements.
 2. In the component "Esp - myesp", navigate to the Authentication tab and change these properties:
     - `ldapServer = ldapserver`
     - `method = ldap`

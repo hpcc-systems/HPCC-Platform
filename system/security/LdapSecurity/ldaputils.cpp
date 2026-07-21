@@ -16,6 +16,7 @@
 ############################################################################## */
 
 // LDAP prototypes use char* where they should be using const char *, resulting in lots of spurious warnings
+#include "jstring.hpp"
 #pragma warning( disable : 4786 )
 #ifdef __GNUC__
 #pragma GCC diagnostic ignored "-Wwrite-strings"
@@ -25,12 +26,16 @@
 
 #ifndef _WIN32
 # include <signal.h>
+# ifdef _USE_OPENSSL
+#include <openssl/ssl.h>
+#include <openssl/x509.h>
+# endif
 #endif
 
 //------------------------------------
 // LdapUtils implementation
 //------------------------------------
-LDAP* LdapUtils::LdapInit(const char* protocol, const char* host, int port, int secure_port, const char * cipherSuite, bool throwOnError)
+LDAP* LdapUtils::LdapInit(const char* protocol, const char* host, int port, int secure_port, const char * cipherSuite, const char* tlsValidation, const char* caCertFile, bool throwOnError)
 {
     LDAP* ld = NULL;
     if(stricmp(protocol, "ldaps") == 0)
@@ -63,6 +68,16 @@ LDAP* LdapUtils::LdapInit(const char* protocol, const char* host, int port, int 
         }
 
         ldap_set_option(ld, LDAP_OPT_SERVER_CERTIFICATE, verifyServerCert);
+
+        // TLS certificate validation is not supported on Windows. The parameters are accepted
+        // in config for cross-platform compatibility but have no effect. Warn if they were set
+        // so the administrator knows the configuration is not being honoured.
+        if (isTLSValidationActive(tlsValidation))
+            WARNLOG("LdapUtils::LdapInit : ldapTLSValidation='%s' is not supported on Windows and will be ignored - certificate validation is disabled", tlsValidation);
+        if (!isEmptyString(caCertFile))
+            WARNLOG("LdapUtils::LdapInit : ldapCACertFile='%s' is not supported on Windows and will be ignored", caCertFile);
+        if (!isEmptyString(cipherSuite))
+            WARNLOG("LdapUtils::LdapInit : ldapCipherSuite='%s' is not supported on Windows and will be ignored", cipherSuite);
 #else
         // Initialize an LDAP session for TLS/SSL
 #ifndef HAVE_TLS
@@ -73,17 +88,43 @@ LDAP* LdapUtils::LdapInit(const char* protocol, const char* host, int port, int 
         if(rc != LDAP_SUCCESS)
             ERRLOG("LdapUtils::LdapInit : ldap_set_option(LDAP_OPT_X_TLS_CIPHER_SUITE) error - %s", ldap_err2string(rc));
 
-        int reqcert = LDAP_OPT_X_TLS_NEVER;
-        rc = ldap_set_option(nullptr, LDAP_OPT_X_TLS_REQUIRE_CERT, &reqcert);
-        if(rc != LDAP_SUCCESS)
-            ERRLOG("LdapUtils::LdapInit : ldap_set_option(LDAP_OPT_X_TLS_REQUIRE_CERT) error - %s", ldap_err2string(rc));
+        bool isStrict     = isTLSValidationStrict(tlsValidation);
+        bool isPermissive = !isStrict && isTLSValidationActive(tlsValidation);
+        if (!isStrict && !isPermissive && !isEmptyString(tlsValidation) && !strieq(tlsValidation, "disabled"))
+            WARNLOG("LdapUtils::LdapInit : unrecognised ldapTLSValidation value '%s', defaulting to disabled", tlsValidation);
 
+        if (isStrict || isPermissive)
+        {
+            // Set cert verification requirement globally so it applies as a default
+            // for any connections not going through the per-handle NEWCTX path below.
+            int reqcert = LDAP_OPT_X_TLS_DEMAND;
+            rc = ldap_set_option(nullptr, LDAP_OPT_X_TLS_REQUIRE_CERT, &reqcert);
+            if (rc != LDAP_SUCCESS)
+            {
+                if (isStrict && throwOnError)
+                    throw MakeStringException(-1, "LdapUtils::LdapInit : ldap_set_option(LDAP_OPT_X_TLS_REQUIRE_CERT) error - %s", ldap_err2string(rc));
+                else
+                    WARNLOG("LdapUtils::LdapInit : ldap_set_option(LDAP_OPT_X_TLS_REQUIRE_CERT) error - %s", ldap_err2string(rc));
+            }
+        }
+        else
+        {
+            int reqcert = LDAP_OPT_X_TLS_NEVER;
+            rc = ldap_set_option(nullptr, LDAP_OPT_X_TLS_REQUIRE_CERT, &reqcert);
+            if (rc != LDAP_SUCCESS)
+                ERRLOG("LdapUtils::LdapInit : ldap_set_option(LDAP_OPT_X_TLS_REQUIRE_CERT) error - %s", ldap_err2string(rc));
+        }
         StringBuffer uri("ldaps://");
         uri.appendf("%s:%d", host, secure_port);
-        if (isEmptyString(cipherSuite))
-            PROGLOG("Connecting to LDAPS Host '%s'", uri.str());
-        else
-            PROGLOG("Connecting to LDAPS Host '%s' with CipherSuite '%s'", uri.str(), cipherSuite);
+
+        StringBuffer tlsInfo;
+        tlsInfo.appendf("TLS validation: '%s'", isEmptyString(tlsValidation) ? "disabled" : tlsValidation);
+        if (!isEmptyString(caCertFile))
+            tlsInfo.appendf(", CA cert: '%s'", caCertFile);
+        if (!isEmptyString(cipherSuite))
+            tlsInfo.appendf(", cipher suite: '%s'", cipherSuite);
+        PROGLOG("Connecting to LDAPS Host '%s' (%s)", uri.str(), tlsInfo.str());
+
         rc = LDAP_INIT(&ld, uri.str());
         if(rc != LDAP_SUCCESS)
         {
@@ -91,6 +132,71 @@ LDAP* LdapUtils::LdapInit(const char* protocol, const char* host, int port, int 
                 throw MakeStringException(-1, "ldap_initialize error %s", ldap_err2string(rc));
             DBGLOG("ldap_initialize error %s", ldap_err2string(rc));
             return nullptr;
+        }
+        if (isStrict || isPermissive)
+        {
+            // Build a per-handle TLS context so each pooled connection has its own isolated
+            // SSL_CTX (thread-safe). REQUIRE_CERT is inherited from the global setting above;
+            // do NOT set it per-handle before NEWCTX as that alters OpenLDAP's hostname
+            // verification code path. The CA cert is loaded into the SSL_CTX below rather than
+            // via LDAP_OPT_X_TLS_CACERTFILE because per-handle NEWCTX does not automatically
+            // inherit the global CACERTFILE setting.
+            int newctx = 0;
+            rc = ldap_set_option(ld, LDAP_OPT_X_TLS_NEWCTX, &newctx);
+            if (rc != LDAP_SUCCESS)
+            {
+                if (isStrict && throwOnError)
+                {
+                    LDAP_UNBIND(ld);
+                    throw MakeStringException(-1, "LdapUtils::LdapInit : ldap_set_option(LDAP_OPT_X_TLS_NEWCTX) error - %s", ldap_err2string(rc));
+                }
+                else
+                    WARNLOG("LdapUtils::LdapInit : ldap_set_option(LDAP_OPT_X_TLS_NEWCTX) error - %s", ldap_err2string(rc));
+            }
+            if (!isEmptyString(caCertFile))
+            {
+#ifdef _USE_OPENSSL
+                // Per-handle NEWCTX does not inherit global LDAP_OPT_X_TLS_CACERTFILE, so
+                // load the CA cert directly into the per-handle SSL_CTX via OpenSSL.
+                SSL_CTX * sslCtx = nullptr;
+                ldap_get_option(ld, LDAP_OPT_X_TLS_CTX, &sslCtx);
+                if (sslCtx)
+                {
+                    if (SSL_CTX_load_verify_locations(sslCtx, caCertFile, nullptr) != 1)
+                    {
+                        if (isStrict && throwOnError)
+                        {
+                            LDAP_UNBIND(ld);
+                            throw MakeStringException(-1, "LdapUtils::LdapInit : SSL_CTX_load_verify_locations failed for '%s' - check the file is readable and is a valid PEM CA certificate", caCertFile);
+                        }
+                        else
+                            WARNLOG("LdapUtils::LdapInit : SSL_CTX_load_verify_locations failed for '%s' - check the file is readable and is a valid PEM CA certificate", caCertFile);
+                    }
+                    else
+                    {
+                        PROGLOG("LdapUtils::LdapInit : CA cert '%s' loaded successfully for %s", caCertFile, uri.str());
+                    }
+                }
+                else
+                {
+                    if (isStrict && throwOnError)
+                    {
+                        LDAP_UNBIND(ld);
+                        throw MakeStringException(-1, "LdapUtils::LdapInit : failed to retrieve SSL_CTX from LDAP handle for %s", uri.str());
+                    }
+                    else
+                        WARNLOG("LdapUtils::LdapInit : failed to retrieve SSL_CTX from LDAP handle for %s", uri.str());
+                }
+#else
+                if (isStrict && throwOnError)
+                {
+                    LDAP_UNBIND(ld);
+                    throw MakeStringException(-1, "LdapUtils::LdapInit : CA cert '%s' specified but OpenSSL support is not compiled in - cannot perform cert validation", caCertFile);
+                }
+                else
+                    WARNLOG("LdapUtils::LdapInit : CA cert '%s' specified but OpenSSL support is not compiled in - cert validation skipped", caCertFile);
+#endif
+            }
         }
 #endif
     }
@@ -261,54 +367,97 @@ int LdapUtils::LdapBind(LDAP* ld, int ldapTimeout, const char* domain, const cha
     return rc;
 }
 
-LDAP* LdapUtils::ldapInitAndSimpleBind(const char* ldapserver, const char* userDN, const char* pwd, const char* ldapprotocol, int ldapport, const char * cipherSuite, int timeout, int * err)
+LDAP* LdapUtils::ldapInitAndSimpleBind(const char* ldapserver, const char* userDN, const char* pwd, const char* ldapprotocol, int ldapport, const char * cipherSuite, int timeout, int * err, const char* tlsValidation, const char* caCertFile)
 {
-    LDAP* ld = LdapInit(ldapprotocol, ldapserver, ldapport, ldapport, cipherSuite, false);
+    LDAP* ld = LdapInit(ldapprotocol, ldapserver, ldapport, ldapport, cipherSuite, tlsValidation, caCertFile, isTLSValidationStrict(tlsValidation));
     if (ld == nullptr)
     {
         VStringBuffer uri("%s://%s:%d", ldapprotocol, ldapserver, ldapport);
-        ERRLOG("ldap init error(%s)",uri.str());
+        bool isPermissive = !isTLSValidationStrict(tlsValidation) && isTLSValidationActive(tlsValidation);
+        // In strict mode LdapInit throws rather than returning nullptr, so nullptr here
+        // with permissive validation is most likely a TLS soft-failure (e.g. cert error
+        // that was tolerated). Downgrade to WARNLOG in that case.
+        if (isPermissive)
+            WARNLOG("LDAP init error for %s", uri.str());
+        else
+            ERRLOG("LDAP init error for %s", uri.str());
         *err = -1;
         return nullptr;
     }
     *err = LdapSimpleBind(ld, timeout, (char*)userDN, (char*)pwd);
     if (*err != LDAP_SUCCESS)
     {
+#ifndef _WIN32
+        char* diagMsg = nullptr;
+        ldap_get_option(ld, LDAP_OPT_DIAGNOSTIC_MESSAGE, (void*)&diagMsg);
+        if (!isEmptyString(diagMsg))
+            WARNLOG("LDAP bind diagnostic for %s://%s:%d : %s", ldapprotocol, ldapserver, ldapport, diagMsg);
+        ldap_memfree(diagMsg);
+#endif
+        LDAP_UNBIND(ld);
         return nullptr;
     }
     return ld;
 }
 
-int LdapUtils::getServerInfo(const char* ldapserver, const char* userDN, const char* pwd, const char* ldapprotocol, int ldapport, const char * cipherSuite, StringBuffer& domainDN, LdapServerType& stype, const char* domainname, int timeout)
+int LdapUtils::getServerInfo(const char* ldapserver, const char* userDN, const char* pwd, const char* ldapprotocol, int ldapport, const char * cipherSuite, StringBuffer& domainDN, LdapServerType& stype, const char* domainname, int timeout, const char* tlsValidation, const char* caCertFile)
 {
     LdapServerType deducedSType = LDAPSERVER_UNKNOWN;
 
     //First try anonymous bind using selected protocol/port
     int err = -1;
-    LDAP* ld = ldapInitAndSimpleBind(ldapserver, nullptr, nullptr, ldapprotocol, ldapport, cipherSuite, timeout, &err);
+    LDAP* ld = ldapInitAndSimpleBind(ldapserver, nullptr, nullptr, ldapprotocol, ldapport, cipherSuite, timeout, &err, tlsValidation, caCertFile);
 
     //if that failed, try bind with credentials
     if (nullptr == ld)
     {
-        ld = ldapInitAndSimpleBind(ldapserver, userDN, pwd, ldapprotocol, ldapport, cipherSuite, timeout, &err);
+        ld = ldapInitAndSimpleBind(ldapserver, userDN, pwd, ldapprotocol, ldapport, cipherSuite, timeout, &err, tlsValidation, caCertFile);
 
         if (ld == nullptr)
         {
             if (err == LDAP_PROTOCOL_ERROR && stype != ACTIVE_DIRECTORY)
             {
-                WARNLOG("Unable to connect. If you're trying to connect to an OpenLdap server, make sure you have \"allow bind_v2\" enabled in slapd.conf");
+                WARNLOG("Unable to connect to %s://%s:%d (%s). If you're trying to connect to an OpenLdap server, make sure you have \"allow bind_v2\" enabled in slapd.conf",
+                    ldapprotocol, ldapserver, ldapport, ldap_err2string(err));
             }
             else
             {
-                // If no cipher suite is specified, tell user they may need to provide one, otherwise tell them they may need to provide a different one
-                if (isEmptyString(cipherSuite))
+                StringBuffer tlsMsg;
+                bool isTls = strieq(ldapprotocol, "ldaps");
+                bool hasTlsValidation = !isEmptyString(tlsValidation) && !strieq(tlsValidation, "disabled");
+                if (isTls)
                 {
-                    WARNLOG("Unable to connect. if you're trying to connect to an LDAPS server, you may need to specify a cipher suite using the 'ldapCipherSuite' attribute in the LDAP configuration.");
+                    if (err == LDAP_CONNECT_ERROR && hasTlsValidation)
+                    {
+                        // LDAP_CONNECT_ERROR on an ldaps connection with validation enabled
+                        // typically means the TLS handshake failed - likely a certificate problem.
+                        tlsMsg.appendf(" TLS certificate validation (ldapTLSValidation='%s') is enabled.", tlsValidation);
+                        if (!isEmptyString(caCertFile))
+                            tlsMsg.appendf(" Check that ldapCACertFile='%s' is readable and contains the correct CA certificate.", caCertFile);
+                        else
+                            tlsMsg.append(" No ldapCACertFile is configured - the server certificate must chain to a trusted CA in the system trust store. If the system trust store is not accessible to the hpcc user, set ldapCACertFile to the path of the CA certificate.");
+                    }
+                    else if (err == LDAP_SERVER_DOWN)
+                    {
+                        tlsMsg.append(" The server may have rejected the TLS handshake.");
+                        if (hasTlsValidation)
+                            tlsMsg.appendf(" TLS validation mode is '%s'.", tlsValidation);
+                        if (!isEmptyString(cipherSuite))
+                            tlsMsg.appendf(" Cipher suite configured: '%s'.", cipherSuite);
+                        else
+                            tlsMsg.append(" You may need to specify a cipher suite using the 'ldapCipherSuite' attribute in the LDAP configuration.");
+                    }
+                    else if (!isEmptyString(cipherSuite))
+                    {
+                        tlsMsg.appendf(" You may need to specify a different cipher suite (current: '%s').", cipherSuite);
+                    }
+                    else
+                    {
+                        tlsMsg.append(" You may need to specify a cipher suite using the 'ldapCipherSuite' attribute in the LDAP configuration.");
+                    }
                 }
-                else
-                {
-                    WARNLOG("Unable to connect. If you're trying to connect to an LDAPS server, you may need to specify a different cipher suite using the 'ldapCipherSuite' attribute in the LDAP configuration.");
-                }
+                WARNLOG("Unable to connect to %s://%s:%d - %s.%s",
+                    ldapprotocol, ldapserver, ldapport, ldap_err2string(err), tlsMsg.str());
             }
             return err;//unable to connect, give up
         }

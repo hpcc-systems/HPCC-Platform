@@ -1297,6 +1297,15 @@
           "type": "string",
           "description": "The optional Cipher Suite to be applied to LDAPS connections"
         },
+        "ldapTLSValidation": {
+          "type": "string",
+          "enum": ["disabled", "permissive", "strict"],
+          "description": "LDAP TLS certificate validation mode. 'disabled' (default) skips validation. 'permissive' enforces certificate validation on connections (invalid certs can still cause connection failures) but logs warnings instead of failing startup probes. 'strict' requires valid certificate or startup fails. ldapCACertFile is strongly recommended when not 'disabled'."
+        },
+        "ldapCACertFile": {
+          "type": "string",
+          "description": "Path to the CA certificate file used to validate the LDAP server's TLS certificate. Strongly recommended when ldapTLSValidation is 'strict' or 'permissive'. If omitted, the system trust store is used."
+        },
         "adminGroupName": {
           "type": "string",
           "description": "The Active Directory group containing HPCC Administrators"

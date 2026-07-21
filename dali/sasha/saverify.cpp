@@ -293,7 +293,7 @@ public:
         public:
             bool ok;
             casyncfor(CFileCrcList *_parent, CriticalSection &_crit)
-                : crit(_crit)
+                : CAsyncFor(SYNC_LOCATION), crit(_crit)
             {
                 parent = _parent;
                 ok = true;
@@ -524,7 +524,7 @@ public:
             const char *clustername;
         public:
             casyncfor(SocketEndpointArray &_eps,IPointerArrayOf<ISocket> &_sockets, CriticalSection &_sect, unsigned &_failurelimit,const char *_clustername) 
-                : eps(_eps), sockets(_sockets), sect(_sect), failurelimit(_failurelimit)
+                : CAsyncFor(SYNC_LOCATION), eps(_eps), sockets(_sockets), sect(_sect), failurelimit(_failurelimit)
             { 
                 clustername = _clustername;
             }

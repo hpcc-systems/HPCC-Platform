@@ -4878,7 +4878,7 @@ public:
         public:
             bool ok;
             casyncfor(IDistributedFile *_file,unsigned _width,unsigned short _port,CriticalSection &_errcrit)
-                : errcrit(_errcrit)
+                : CAsyncFor(SYNC_LOCATION), errcrit(_errcrit)
             {
                 file = _file;
                 port = _port;
@@ -5063,8 +5063,8 @@ public:
             bool * donerep;
             IException *except;
 
-            casyncforbase(IDistributedFile *_file,CIArrayOf<CIStringArray> &_newNames,unsigned _width,IMultiException *_mexcept,CriticalSection &_crit,bool *_ignoreprim,bool *_ignorerep)
-                : crit(_crit), newNames(_newNames)
+            casyncforbase(const char * _syncName, IDistributedFile *_file,CIArrayOf<CIStringArray> &_newNames,unsigned _width,IMultiException *_mexcept,CriticalSection &_crit,bool *_ignoreprim,bool *_ignorerep)
+                : CAsyncFor(_syncName), crit(_crit), newNames(_newNames)
             {
                 width = _width;
                 file = _file;
@@ -5147,7 +5147,7 @@ public:
         {
         public:
             casyncfor1(IDistributedFile *_file,CIArrayOf<CIStringArray> &_newNames,unsigned _width,IMultiException *_mexcept,CriticalSection &_crit,bool *_ignoreprim,bool *_ignorerep)
-                : casyncforbase(_file,_newNames,_width,_mexcept,_crit,_ignoreprim,_ignorerep)
+                : casyncforbase(SYNC_LOCATION, _file,_newNames,_width,_mexcept,_crit,_ignoreprim,_ignorerep)
             {
             }
             bool doPart(IDistributedFilePart *part,bool isrep,RemoteFilename &oldrfn,RemoteFilename &newrfn, bool &done)
@@ -5207,7 +5207,7 @@ public:
         {
         public:
             casyncfor2(IDistributedFile *_file,CIArrayOf<CIStringArray> &_newNames,unsigned _width,IMultiException *_mexcept,CriticalSection &_crit,bool *_ignoreprim,bool *_ignorerep)
-                : casyncforbase(_file,_newNames,_width,_mexcept,_crit,_ignoreprim,_ignorerep)
+                : casyncforbase(SYNC_LOCATION, _file,_newNames,_width,_mexcept,_crit,_ignoreprim,_ignorerep)
             {
             }
             bool doPart(IDistributedFilePart *part,bool isrep,RemoteFilename &oldrfn,RemoteFilename &newrfn, bool &done)
@@ -9740,7 +9740,7 @@ void CDistributedFileDirectory::fixDates(IDistributedFile *file)
     public:
         bool ok;
         casyncfor(IDistributedFile *_file,unsigned _width,CriticalSection &_errcrit)
-            : crit(_errcrit)
+            : CAsyncFor(SYNC_LOCATION), crit(_errcrit)
         {
             file = _file;
             ok = true;
@@ -12995,7 +12995,7 @@ DistributedFileCompareResult compareDistributedFiles(IDistributedFile *file1, ID
         public:
             casyncfor(IDistributedFile *_file1,IDistributedFile *_file2,DistributedFileCompareMode _mode,DistributedFileCompareResult &_ret,StringBuffer &_errstr,
                 CDateTime &_newestdt1,CDateTime &_newestdt2,bool &_differs)
-                : ret(_ret), errstr(_errstr),newestdt1(_newestdt1),newestdt2(_newestdt2),differs(_differs)
+                : CAsyncFor(SYNC_LOCATION), ret(_ret), errstr(_errstr),newestdt1(_newestdt1),newestdt2(_newestdt2),differs(_differs)
             {
                 file1 = _file1;
                 file2 = _file2;
@@ -13144,7 +13144,7 @@ bool CDistributedFileDirectory::filePhysicalVerify(const char *lfn, IUserDescrip
         public:
             casyncfor(const char *_lfn,IDistributedFile *_file,StringBuffer &_errstr, bool _includecrc,
                         bool &_differs, unsigned _defaultTimeout)
-                : errstr(_errstr), differs(_differs)
+                : CAsyncFor(SYNC_LOCATION), errstr(_errstr), differs(_differs)
             {
                 lfn = _lfn;
                 file = _file;
@@ -14574,7 +14574,7 @@ bool CDistributedFileDirectory::removePhysicalPartFiles(const char *logicalName,
     public:
         bool ok;
         bool islazy;
-        casyncfor(IFileDescriptor *_fileDesc, IMultiException *_mexcept)
+        casyncfor(IFileDescriptor *_fileDesc, IMultiException *_mexcept) : CAsyncFor(SYNC_LOCATION)
         {
             fileDesc = _fileDesc;
             ok = true;

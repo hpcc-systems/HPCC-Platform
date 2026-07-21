@@ -536,7 +536,7 @@ public:
                 MiniSortSemaphore *nextsem;
             public:
                 casyncfor(CMiniSort &_base, unsigned numNodes)
-                    : base(_base)
+                    : CAsyncFor(SYNC_LOCATION), base(_base)
                 {
                     nextsem = new MiniSortSemaphore[numNodes];  // 1 extra
                     nextsem[0].signal();
@@ -588,7 +588,7 @@ public:
                 size32_t blksize;
             public:
                 casyncfor2(CMiniSort &_base, CThorExpandingRowArray &_globalRows, unsigned *_points, size32_t _blksize)
-                    : base(_base), globalRows(_globalRows)
+                    : CAsyncFor(SYNC_LOCATION), base(_base), globalRows(_globalRows)
                 {
                     points = _points;
                     blksize = _blksize;

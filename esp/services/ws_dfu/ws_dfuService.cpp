@@ -6933,7 +6933,7 @@ void CWsDfuEx::setPublishFileSize(const char *lfn, IFileDescriptor *fileDesc)
     };
 
     //collect and set the sizes for file parts
-    CAsyncForFunc<decltype(funcFilePartSize)> async(funcFilePartSize);
+    CAsyncForFunc<decltype(funcFilePartSize)> async(SYNC_LOCATION, funcFilePartSize);
     async.For(fileDesc->numParts(), 100);
 }
 

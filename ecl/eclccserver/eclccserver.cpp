@@ -679,7 +679,7 @@ class EclccCompiler : implements IErrorReporter
                 lineIdx++;
             CriticalSection crit{SYNC_LOCATION};
             DBGLOG("Compiling %u files, %u at once", lineIdx-firstCompile, maxThreads);
-            asyncFor(lineIdx-firstCompile, maxThreads, [this, firstCompile, &lines, &numFailed, &crit, &output, &abortWaiter](unsigned i)
+            asyncFor(SYNC_LOCATION, lineIdx-firstCompile, maxThreads, [this, firstCompile, &lines, &numFailed, &crit, &output, &abortWaiter](unsigned i)
             {
                 try
                 {
