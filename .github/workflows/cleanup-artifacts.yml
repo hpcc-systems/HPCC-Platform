@@ -44,7 +44,7 @@ jobs:
               # sortBy, sortOrder necessary for offset=1 to remove latest point release from stack
               shell: bash
               run: |
-                declare -a versions=("8.6" "8.8" "8.10" "8.12" "9.0" "9.2" "9.4" "9.6" "9.8" "9.10")
+                declare -a versions=("8.6" "8.8" "8.10" "8.12" "9.0" "9.2" "9.4" "9.6" "9.8" "9.10" "9.12" "9.14" "10.0" "10.2" "10.4" "10.6")
                 for version in "${versions[@]}"
                 do
                   jf rt del --quiet --spec-vars "key1=${version}" --spec ${{ github.workspace }}/dockerfiles/rule-hpccpl-docker-local-point-over-6mo.spec --sort-by=created --sort-order=desc --offset=1 |& tee -a point-deletion-${version}.log
