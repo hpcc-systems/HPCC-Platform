@@ -547,10 +547,8 @@ class ECLFile:
             logger.debug("EXP: %s",  self.getExpected(),  extra={'taskId':self.taskId})
             logger.debug("REC: %s",  self.getResults(),  extra={'taskId':self.taskId})
             return False
-        finally:
-            if not self.diff:
-                return True
-            return False
+
+        return not self.diff
 
     def setElapsTime(self,  time):
         self.elapsTime = time

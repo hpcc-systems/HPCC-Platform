@@ -108,6 +108,7 @@ class ECLcmd(Shell):
         wuid = "N/A"
         state = ""
         results=''
+        test = False
         try:
             if eclfile.flushDiskCache():
                 # At the moment it is not a critical problem if the clearOSCache()
@@ -277,7 +278,5 @@ class ECLcmd(Shell):
                 else:
                     test = eclfile.testResults()
             report.addResult(eclfile)
-            if not test:
-                return False
-            else:
-                return True
+
+        return test
