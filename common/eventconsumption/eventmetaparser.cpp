@@ -19,6 +19,65 @@
 #include "eventiterator.h"
 #include "jevent.hpp"
 
+struct DerivedMetaAttrName
+{
+    unsigned attrId;
+    const char* canonicalName;
+    EventAttrUnit unit;
+};
+
+static constexpr DerivedMetaAttrName derivedMetaAttrNames[] = {
+    { EvAttrServiceName, EVENT_META_SERVICE_NAME, EAUnone },
+    { EvExtAttrLogicalFileName, EVENT_META_LOGICAL_FILE_NAME, EAUnone },
+    { EvAttrPath, EVENT_META_PATH, EAUnone },
+    { EvAttrPlane, EVENT_META_PLANE, EAUnone }
+};
+
+const char* queryDerivedMetaAttributeName(unsigned attrId)
+{
+    for (const auto& entry : derivedMetaAttrNames)
+    {
+        if (entry.attrId == attrId)
+            return entry.canonicalName;
+    }
+    return nullptr;
+}
+
+unsigned queryDerivedMetaAttributeId(const char* canonicalName)
+{
+    if (isEmptyString(canonicalName))
+        return EvAttrNone;
+
+    for (const auto& entry : derivedMetaAttrNames)
+    {
+        if (strieq(entry.canonicalName, canonicalName))
+            return entry.attrId;
+    }
+    return EvAttrNone;
+}
+
+unsigned queryDerivedMetaAttributeCount()
+{
+    return _elements_in(derivedMetaAttrNames);
+}
+
+const char* queryDerivedMetaAttributeNameByIndex(unsigned idx)
+{
+    if (idx < _elements_in(derivedMetaAttrNames))
+        return derivedMetaAttrNames[idx].canonicalName;
+    return nullptr;
+}
+
+EventAttrUnit queryDerivedMetaAttributeUnit(unsigned attrId)
+{
+    for (const auto& entry : derivedMetaAttrNames)
+    {
+        if (entry.attrId == attrId)
+            return entry.unit;
+    }
+    return EAUnone;
+}
+
 void CMetaInfoState::CCollector::setNextLink(IEventVisitor& visitor)
 {
     nextLink.set(&visitor);

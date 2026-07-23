@@ -31,6 +31,26 @@ constexpr char EVENT_META_LOGICAL_FILE_NAME[] = "meta.LogicalFileName";
 constexpr char EVENT_META_PATH[] = "meta.Path";
 constexpr char EVENT_META_PLANE[] = "meta.Plane";
 
+// Extended grouping attr id for a logical file name derived from FileId metadata.
+constexpr unsigned EvExtAttrLogicalFileName = EvAttrMax + 1;
+
+// Canonical mapping APIs for derived meta attributes used by describe/filter/dump/summarize.
+//
+// Contract:
+// - canonicalName refers to one of the canonical EVENT_META_* names in this file.
+// - queryDerivedMetaAttributeId() lookup is case-insensitive and returns EvAttrNone for
+//   null/empty/unknown names.
+// - queryDerivedMetaAttributeName() returns nullptr for ids that do not map to a derived
+//   meta attribute.
+// - queryDerivedMetaAttributeNameByIndex() returns nullptr for out-of-range idx.
+// - queryDerivedMetaAttributeUnit() returns EAUnone for derived string-like values.
+//   For ids that are not derived meta attributes, it also returns EAUnone.
+event_decl const char* queryDerivedMetaAttributeName(unsigned attrId);
+event_decl unsigned queryDerivedMetaAttributeId(const char* canonicalName);
+event_decl unsigned queryDerivedMetaAttributeCount();
+event_decl const char* queryDerivedMetaAttributeNameByIndex(unsigned idx);
+event_decl EventAttrUnit queryDerivedMetaAttributeUnit(unsigned attrId);
+
 // Visitor that parses and caches file ID to path mappings and trace ID to service name mappings
 class event_decl CMetaInfoState : public CInterface
 {

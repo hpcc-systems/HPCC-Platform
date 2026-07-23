@@ -99,8 +99,11 @@ plus a single sub-total row for each key group.
 R"!!!(    --group-by <attributes>   Summarize activity by the comma-separated list
                               of attributes. Attributes are either actual event
                               attribute names or reserved names representing
-                              derived values (e.g., "LogicalFileName"). May be
-                              repeated to define nested sub-groupings.
+                              derived values (e.g., "meta.LogicalFileName").
+                              Unprefixed aliases for derived values are
+                              accepted, but output headers use canonical
+                              prefixed names. May be repeated to define nested
+                              sub-groupings.
     -f                        Summarize activity by file.
     -k                        Summarize activity by node kind.
     -n                        Summarize activity by node.
@@ -150,17 +153,19 @@ R"!!!(Details:
     Limited support for grouping an event according to values that are implied
     by its content, rather than by its actual content, is offered.
 
-    - LogicalFileName is recognized for index events containing a FileId from
-      input files that include both FileInformation and PlaneInformation meta
-      events.
-    - Path is recognized for index events containing a FileId from input files
-      that include FileInformation meta events.
-    - Plane is recognized for index events containing a FileId from input files
-      that include both FileInformation and PlaneInformation meta events. Use
-      with an index event model that models alternate planes will not reflect
-      modeled locations.
-    - ServiceName is recognized for events containing an EventTraceId from
-      input files that include QueryStart events.
+        - meta.LogicalFileName (or LogicalFileName) is recognized for index events
+          containing a FileId from input files that include both FileInformation and
+          PlaneInformation meta events.
+        - meta.Path (or Path) is recognized for index events containing a FileId from
+          input files that include FileInformation meta events.
+        - meta.Plane (or Plane) is recognized for index events containing a FileId from
+          input files that include both FileInformation and PlaneInformation meta events.
+          Use with an index event model that models alternate planes will not reflect
+          modeled locations.
+        - meta.ServiceName (or ServiceName) is recognized for events containing an
+          EventTraceId from input files that include QueryStart events.
+
+        Output headers for these derived values use canonical prefixed names.
 )!!!";
         size32_t usageStrLength = size32_t(strlen(usageStr));
         out.put(usageStrLength, usageStr);
