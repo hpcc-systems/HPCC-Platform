@@ -86,7 +86,7 @@ export const WorkunitDetails: React.FunctionComponent<WorkunitDetailsProps> = ({
     }, [variables]);
 
     React.useEffect(() => {
-        const traceInfo: Variable = variables.filter(v => v.Name === "ottraceparent")[0];
+        const traceInfo = variables.find(v => v.Name.toLowerCase() === "ottraceparent");
         setOtTraceParent(traceInfo?.Value ?? "");
     }, [variables]);
 
