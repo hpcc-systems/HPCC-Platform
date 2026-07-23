@@ -27,13 +27,7 @@ inline const char* formatTimestampNsText(StringBuffer& out, __uint64 timestampNs
 {
     CDateTime dt;
     dt.setTimeStampNs(timestampNs);
-    dt.getString(out);
-
-    // CDateTime::getString() includes microseconds for all fractional seconds.
-    // Ensure all nanoseconds are represented.
-    if (timestampNs % 1000000000ULL)
-        out.appendf("%03llu", timestampNs % 1000ULL);
-
+    dt.getDateTimeString(out, true, true, DTP_Nanos, false);
     return out.str();
 }
 
