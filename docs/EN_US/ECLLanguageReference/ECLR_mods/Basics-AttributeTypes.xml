@@ -103,7 +103,7 @@ SetFloridaCities := ['Orlando', StateCapitol('FL'), 'Boca '+'Raton',
 
     <programlisting>SetDS := [ds1, ds2, ds3]; // a set of datasets</programlisting>
 
-    <para>You can construct a DATASET from a SET. </para>
+    <para>You can construct a DATASET from a SET.</para>
 
     <programlisting>SET OF STRING s := ['Jim','Bob','Richard','Tom'];
 DATASET(s,{STRING txt});</programlisting>
@@ -150,6 +150,13 @@ MySubString := MyString[2]; // MySubString is 'B'</programlisting>
 MySubString1 := MyString[2..4]; // MySubString1 is 'BCD'
 MySubString2 := MyString[ ..4]; // MySubString2 is 'ABCD'
 MySubString3 := MyString[2.. ]; // MySubString3 is 'BCDE'</programlisting>
+
+    <para>When a substring operation specifies an upper bound that exceeds the
+    actual length of the string (e.g., <literal>MyString[..100]</literal> when
+    <literal>MyString</literal> contains <literal>'ABCDE'</literal>), the
+    result is right-padded with spaces to the specified length. This is
+    equivalent to assigning the string to a fixed-length type:
+    <literal>STRING100 foo := MyString;</literal>.</para>
   </sect2>
 
   <sect2 id="Record_Set_Attributes">
@@ -217,7 +224,7 @@ MyRec4 := Person[2..];   // all recs except the first</programlisting>
     <programlisting>ds[1].x    //note that this returns 0 if ds contains no records.
 </programlisting>
 
-    <para></para>
+    <para/>
   </sect2>
 
   <sect2 id="TypeDef_Attributes">
