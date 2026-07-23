@@ -131,7 +131,7 @@ bool lazyOpen;
 bool localAgent = false;
 bool encryptInTransit;
 bool ignoreOrphans;
-bool doIbytiDelay = true; 
+bool doIbytiDelay = true;
 bool copyResources;
 bool chunkingHeap = true;
 bool logFullQueries;
@@ -290,7 +290,7 @@ void init_signals()
     signal(SIGALRM, caughtSIGALRM);
 
 #endif
-}   
+}
 
 //=========================================================================================
 
@@ -666,7 +666,7 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
             CppUnit::TestFactoryRegistry &registry = CppUnit::TestFactoryRegistry::getRegistry();
             runner.addTest( registry.makeTest() );
         }
-        else 
+        else
         {
             // MORE - maybe add a 'list' function here?
             for (int name = 2; name < argc; name++)
@@ -797,7 +797,7 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         }
         catch (IException *E)
         {
-#ifdef _DEBUG            
+#ifdef _DEBUG
             E->Release();   // Useful for some local testing to be able to ignore these configuration errors
 #else
             throw;
@@ -1357,8 +1357,8 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
 
         if (traceLevel)
         {
-            DBGLOG("Current Hardware Info: CPUs=%i, speed=%i MHz, Mem=%i MB , primDisk=%i GB, primFree=%i GB, secDisk=%i GB, secFree=%i GB, NIC=%i", 
-              hdwInfo.numCPUs, hdwInfo.CPUSpeed, hdwInfo.totalMemory, 
+            DBGLOG("Current Hardware Info: CPUs=%i, speed=%i MHz, Mem=%i MB , primDisk=%i GB, primFree=%i GB, secDisk=%i GB, secFree=%i GB, NIC=%i",
+              hdwInfo.numCPUs, hdwInfo.CPUSpeed, hdwInfo.totalMemory,
               hdwInfo.primDiskSize, hdwInfo.primFreeSize, hdwInfo.secDiskSize, hdwInfo.secFreeSize, hdwInfo.NICSpeed);
         }
         parallelAggregate = topology->getPropInt("@parallelAggregate", 0);
@@ -1369,7 +1369,7 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         simpleLocalKeyedJoins = topology->getPropBool("@simpleLocalKeyedJoins", true);
         inMemoryKeysEnabled = topology->getPropBool("@inMemoryKeysEnabled", true);
 
-        nodeCacheMB = topology->getPropInt("@nodeCacheMem", 100); 
+        nodeCacheMB = topology->getPropInt("@nodeCacheMem", 100);
         setNodeCacheMem(nodeCacheMB * 0x100000ULL);
         leafCacheMB = topology->getPropInt("@leafCacheMem", 50);
         setLeafCacheMem(leafCacheMB * 0x100000ULL);
@@ -1798,6 +1798,7 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         ::Release(globalPackageSetManager);
         globalPackageSetManager = NULL;
         setSEHtoExceptionHandler(NULL);
+        closedDown.signal();
         while (socketListeners.isItem(0))
         {
             socketListeners.item(0).stop();
@@ -1810,7 +1811,6 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         ROQ->Release();
         ROQ = NULL;
         stopDelayedReleaser();
-        closedDown.signal();
     }
     catch (IException *E)
     {
@@ -1855,7 +1855,7 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
     _CrtSetReportFile( _CRT_ERROR, h);
     _CrtSetReportMode( _CRT_ASSERT, _CRTDBG_MODE_FILE|_CRTDBG_MODE_DEBUG);
     _CrtSetReportFile( _CRT_ASSERT, h);
-//  _CrtDumpMemoryLeaks(); if you uncomment these lines you get to see the leaks sooner (so can look in debugger at full memory) 
+//  _CrtDumpMemoryLeaks(); if you uncomment these lines you get to see the leaks sooner (so can look in debugger at full memory)
 //   CloseHandle(h); but there will be additional leaks reported that are not really leaks
 #endif
 #endif
