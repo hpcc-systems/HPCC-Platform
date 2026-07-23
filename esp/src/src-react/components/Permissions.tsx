@@ -4,6 +4,7 @@ import { useConst } from "@fluentui/react-hooks";
 import { tokens } from "@fluentui/react-components";
 import { scopedLogger } from "@hpcc-js/util";
 import * as WsAccess from "src/ws_access";
+import { encodeHTML } from "src/Utility";
 import nlsHPCC from "src/nlsHPCC";
 import { ShortVerticalDivider } from "./Common";
 import { useConfirm } from "../hooks/confirm";
@@ -64,10 +65,12 @@ export const Permissions: React.FunctionComponent<PermissionsProps> = ({
             width: 360,
             label: nlsHPCC.Name,
             formatter: function (_name, idx) {
+                const safeName = encodeHTML(_name);
                 if (idx.__hpcc_parent) {
-                    return `<a href="#/${opsCategory}/security/permissions/${_name}/${idx.__hpcc_parent.name}" style="${linkStyle}">${_name}</a>`;
+                    const url = `#/${encodeURIComponent(opsCategory)}/security/permissions/${encodeURIComponent(_name)}/${encodeURIComponent(idx.__hpcc_parent.name)}`;
+                    return `<a href="${url}" style="${linkStyle}">${safeName}</a>`;
                 } else {
-                    return _name;
+                    return safeName;
                 }
             }
         }),

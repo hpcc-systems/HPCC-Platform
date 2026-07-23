@@ -79,7 +79,7 @@ define([
                     account_name: {
                         label: this.i18n.Account,
                         formatter: function (_name, row) {
-                            return _name;
+                            return Utility.encodeHTML(_name);
                         }
                     },
                     allow_access: editor({
