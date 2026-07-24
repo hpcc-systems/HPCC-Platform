@@ -9799,14 +9799,26 @@ bool CHThorCsvReadActivity::openNext()
 {
     if (CHThorDiskReadBaseActivity::openNext())
     {
-        unsigned lines = headerLines;
-        while (lines-- && !inputstream->eos())
+        unsigned skipLines = 0;
+        if (headerLines)
         {
+            unsigned currentPartNum = partNum - 1;
+            if (superfile)
+            {
+                unsigned subfile;
+                verifyex(superfile->mapSubPart(currentPartNum, subfile, currentPartNum));
+            }
+            // Skip headers only on the first part of the file (or first part of each subfile in a superfile).
+            if (currentPartNum == 0)
+                skipLines = headerLines;
+        }
+        while (skipLines && !inputstream->eos())
+        {
+            // Consume exactly skipLines records from the current part.
+            skipLines--;
             size32_t thisLineLength = csvSplitter.splitLine(inputstream, maxRowSize);
             inputstream->skip(thisLineLength);
         }
-        // only skip header in the first file - since spray doesn't duplicate the header.
-        headerLines = 0;
         return true;
     }
     return false;
