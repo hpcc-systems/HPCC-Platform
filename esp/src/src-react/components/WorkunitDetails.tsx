@@ -7,7 +7,7 @@ import nlsHPCC from "src/nlsHPCC";
 import { wuidToDate, wuidToTime } from "src/Utility";
 import { emptyFilter, formatQuery } from "src/ESPWorkunit";
 import { useLogAccessInfo, useLogicalClusters } from "../hooks/platform";
-import { Variable, useWorkunit, useWorkunitVariables } from "../hooks/workunit";
+import { useWorkunit, useWorkunitVariables } from "../hooks/workunit";
 import { DojoAdapter } from "../layouts/DojoAdapter";
 import { FullscreenFrame, FullscreenStack } from "../layouts/Fullscreen";
 import { parseQuery, pushUrl, updateFullscreen } from "../util/history";
