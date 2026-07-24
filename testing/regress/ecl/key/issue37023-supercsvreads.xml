@@ -1,0 +1,92 @@
+<Dataset name='Result 1'>
+</Dataset>
+<Dataset name='Result 2'>
+</Dataset>
+<Dataset name='count_without_heading_single'>
+ <Row><count_without_heading_single>40</count_without_heading_single></Row>
+</Dataset>
+<Dataset name='count_with_heading_single'>
+ <Row><count_with_heading_single>38</count_with_heading_single></Row>
+</Dataset>
+<Dataset name='rows_without_heading_single'>
+ <Row><entryid>entryid         </entryid><state_region>state_region                    </state_region><timezone>timezone                                                        </timezone></Row>
+ <Row><entryid>1               </entryid><state_region>AL                              </state_region><timezone>America/Chicago                                                 </timezone></Row>
+ <Row><entryid>2               </entryid><state_region>AK                              </state_region><timezone>America/Anchorage                                               </timezone></Row>
+ <Row><entryid>3               </entryid><state_region>AZ                              </state_region><timezone>America/Phoenix                                                 </timezone></Row>
+ <Row><entryid>4               </entryid><state_region>AR                              </state_region><timezone>America/Chicago                                                 </timezone></Row>
+ <Row><entryid>5               </entryid><state_region>CA                              </state_region><timezone>America/Los_Angeles                                             </timezone></Row>
+ <Row><entryid>6               </entryid><state_region>CO                              </state_region><timezone>America/Denver                                                  </timezone></Row>
+ <Row><entryid>7               </entryid><state_region>CT                              </state_region><timezone>America/New_York                                                </timezone></Row>
+ <Row><entryid>8               </entryid><state_region>DE                              </state_region><timezone>America/New_York                                                </timezone></Row>
+ <Row><entryid>9               </entryid><state_region>FL                              </state_region><timezone>America/New_York                                                </timezone></Row>
+ <Row><entryid>10              </entryid><state_region>GA                              </state_region><timezone>America/New_York                                                </timezone></Row>
+ <Row><entryid>11              </entryid><state_region>HI                              </state_region><timezone>Pacific/Honolulu                                                </timezone></Row>
+ <Row><entryid>12              </entryid><state_region>IA                              </state_region><timezone>America/Chicago                                                 </timezone></Row>
+ <Row><entryid>13              </entryid><state_region>ID                              </state_region><timezone>America/Boise                                                   </timezone></Row>
+ <Row><entryid>14              </entryid><state_region>IL                              </state_region><timezone>America/Chicago                                                 </timezone></Row>
+ <Row><entryid>15              </entryid><state_region>IN                              </state_region><timezone>America/Indiana/Indianapolis                                    </timezone></Row>
+ <Row><entryid>16              </entryid><state_region>KS                              </state_region><timezone>America/Chicago                                                 </timezone></Row>
+ <Row><entryid>17              </entryid><state_region>KY                              </state_region><timezone>America/New_York                                                </timezone></Row>
+ <Row><entryid>18              </entryid><state_region>LA                              </state_region><timezone>America/Chicago                                                 </timezone></Row>
+ <Row><entryid>19              </entryid><state_region>MA                              </state_region><timezone>America/New_York                                                </timezone></Row>
+ <Row><entryid>entryid         </entryid><state_region>state_region                    </state_region><timezone>timezone                                                        </timezone></Row>
+ <Row><entryid>20              </entryid><state_region>MD                              </state_region><timezone>America/New_York                                                </timezone></Row>
+ <Row><entryid>21              </entryid><state_region>ME                              </state_region><timezone>America/New_York                                                </timezone></Row>
+ <Row><entryid>22              </entryid><state_region>MI                              </state_region><timezone>America/Detroit                                                 </timezone></Row>
+ <Row><entryid>23              </entryid><state_region>MN                              </state_region><timezone>America/Chicago                                                 </timezone></Row>
+ <Row><entryid>24              </entryid><state_region>MO                              </state_region><timezone>America/Chicago                                                 </timezone></Row>
+ <Row><entryid>25              </entryid><state_region>MS                              </state_region><timezone>America/Chicago                                                 </timezone></Row>
+ <Row><entryid>26              </entryid><state_region>MT                              </state_region><timezone>America/Denver                                                  </timezone></Row>
+ <Row><entryid>27              </entryid><state_region>NC                              </state_region><timezone>America/New_York                                                </timezone></Row>
+ <Row><entryid>28              </entryid><state_region>ND                              </state_region><timezone>America/Chicago                                                 </timezone></Row>
+ <Row><entryid>29              </entryid><state_region>NE                              </state_region><timezone>America/Chicago                                                 </timezone></Row>
+ <Row><entryid>30              </entryid><state_region>NH                              </state_region><timezone>America/New_York                                                </timezone></Row>
+ <Row><entryid>31              </entryid><state_region>NJ                              </state_region><timezone>America/New_York                                                </timezone></Row>
+ <Row><entryid>32              </entryid><state_region>NM                              </state_region><timezone>America/Denver                                                  </timezone></Row>
+ <Row><entryid>33              </entryid><state_region>NV                              </state_region><timezone>America/Los_Angeles                                             </timezone></Row>
+ <Row><entryid>34              </entryid><state_region>NY                              </state_region><timezone>America/New_York                                                </timezone></Row>
+ <Row><entryid>35              </entryid><state_region>OH                              </state_region><timezone>America/New_York                                                </timezone></Row>
+ <Row><entryid>36              </entryid><state_region>OK                              </state_region><timezone>America/Chicago                                                 </timezone></Row>
+ <Row><entryid>37              </entryid><state_region>OR                              </state_region><timezone>America/Los_Angeles                                             </timezone></Row>
+ <Row><entryid>38              </entryid><state_region>PA                              </state_region><timezone>America/New_York                                                </timezone></Row>
+</Dataset>
+<Dataset name='rows_with_heading_single'>
+ <Row><entryid>1               </entryid><state_region>AL                              </state_region><timezone>America/Chicago                                                 </timezone></Row>
+ <Row><entryid>2               </entryid><state_region>AK                              </state_region><timezone>America/Anchorage                                               </timezone></Row>
+ <Row><entryid>3               </entryid><state_region>AZ                              </state_region><timezone>America/Phoenix                                                 </timezone></Row>
+ <Row><entryid>4               </entryid><state_region>AR                              </state_region><timezone>America/Chicago                                                 </timezone></Row>
+ <Row><entryid>5               </entryid><state_region>CA                              </state_region><timezone>America/Los_Angeles                                             </timezone></Row>
+ <Row><entryid>6               </entryid><state_region>CO                              </state_region><timezone>America/Denver                                                  </timezone></Row>
+ <Row><entryid>7               </entryid><state_region>CT                              </state_region><timezone>America/New_York                                                </timezone></Row>
+ <Row><entryid>8               </entryid><state_region>DE                              </state_region><timezone>America/New_York                                                </timezone></Row>
+ <Row><entryid>9               </entryid><state_region>FL                              </state_region><timezone>America/New_York                                                </timezone></Row>
+ <Row><entryid>10              </entryid><state_region>GA                              </state_region><timezone>America/New_York                                                </timezone></Row>
+ <Row><entryid>11              </entryid><state_region>HI                              </state_region><timezone>Pacific/Honolulu                                                </timezone></Row>
+ <Row><entryid>12              </entryid><state_region>IA                              </state_region><timezone>America/Chicago                                                 </timezone></Row>
+ <Row><entryid>13              </entryid><state_region>ID                              </state_region><timezone>America/Boise                                                   </timezone></Row>
+ <Row><entryid>14              </entryid><state_region>IL                              </state_region><timezone>America/Chicago                                                 </timezone></Row>
+ <Row><entryid>15              </entryid><state_region>IN                              </state_region><timezone>America/Indiana/Indianapolis                                    </timezone></Row>
+ <Row><entryid>16              </entryid><state_region>KS                              </state_region><timezone>America/Chicago                                                 </timezone></Row>
+ <Row><entryid>17              </entryid><state_region>KY                              </state_region><timezone>America/New_York                                                </timezone></Row>
+ <Row><entryid>18              </entryid><state_region>LA                              </state_region><timezone>America/Chicago                                                 </timezone></Row>
+ <Row><entryid>19              </entryid><state_region>MA                              </state_region><timezone>America/New_York                                                </timezone></Row>
+ <Row><entryid>20              </entryid><state_region>MD                              </state_region><timezone>America/New_York                                                </timezone></Row>
+ <Row><entryid>21              </entryid><state_region>ME                              </state_region><timezone>America/New_York                                                </timezone></Row>
+ <Row><entryid>22              </entryid><state_region>MI                              </state_region><timezone>America/Detroit                                                 </timezone></Row>
+ <Row><entryid>23              </entryid><state_region>MN                              </state_region><timezone>America/Chicago                                                 </timezone></Row>
+ <Row><entryid>24              </entryid><state_region>MO                              </state_region><timezone>America/Chicago                                                 </timezone></Row>
+ <Row><entryid>25              </entryid><state_region>MS                              </state_region><timezone>America/Chicago                                                 </timezone></Row>
+ <Row><entryid>26              </entryid><state_region>MT                              </state_region><timezone>America/Denver                                                  </timezone></Row>
+ <Row><entryid>27              </entryid><state_region>NC                              </state_region><timezone>America/New_York                                                </timezone></Row>
+ <Row><entryid>28              </entryid><state_region>ND                              </state_region><timezone>America/Chicago                                                 </timezone></Row>
+ <Row><entryid>29              </entryid><state_region>NE                              </state_region><timezone>America/Chicago                                                 </timezone></Row>
+ <Row><entryid>30              </entryid><state_region>NH                              </state_region><timezone>America/New_York                                                </timezone></Row>
+ <Row><entryid>31              </entryid><state_region>NJ                              </state_region><timezone>America/New_York                                                </timezone></Row>
+ <Row><entryid>32              </entryid><state_region>NM                              </state_region><timezone>America/Denver                                                  </timezone></Row>
+ <Row><entryid>33              </entryid><state_region>NV                              </state_region><timezone>America/Los_Angeles                                             </timezone></Row>
+ <Row><entryid>34              </entryid><state_region>NY                              </state_region><timezone>America/New_York                                                </timezone></Row>
+ <Row><entryid>35              </entryid><state_region>OH                              </state_region><timezone>America/New_York                                                </timezone></Row>
+ <Row><entryid>36              </entryid><state_region>OK                              </state_region><timezone>America/Chicago                                                 </timezone></Row>
+ <Row><entryid>37              </entryid><state_region>OR                              </state_region><timezone>America/Los_Angeles                                             </timezone></Row>
+ <Row><entryid>38              </entryid><state_region>PA                              </state_region><timezone>America/New_York                                                </timezone></Row>
+</Dataset>

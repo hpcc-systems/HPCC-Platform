@@ -1888,6 +1888,86 @@ CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(RegExprTest, "RegExprTest");
 
 //--------------------------------------------------------------------------------------------------
 
+class JlibDateTimeFormatTest : public CppUnit::TestFixture
+{
+    CPPUNIT_TEST_SUITE(JlibDateTimeFormatTest);
+        CPPUNIT_TEST(testExplicitPrecisionRange);
+        CPPUNIT_TEST(testBackwardCompatibleDefaults);
+    CPPUNIT_TEST_SUITE_END();
+
+public:
+    void testExplicitPrecisionRange()
+    {
+        START_TEST
+
+        CDateTime dt;
+        dt.set(2026, 7, 22, 3, 4, 5, 123456789, false);
+
+        constexpr const char * expected[] =
+        {
+            "2026-07-22T03:04:05",
+            "2026-07-22T03:04:05.1",
+            "2026-07-22T03:04:05.12",
+            "2026-07-22T03:04:05.123",
+            "2026-07-22T03:04:05.1234",
+            "2026-07-22T03:04:05.12345",
+            "2026-07-22T03:04:05.123456",
+            "2026-07-22T03:04:05.1234567",
+            "2026-07-22T03:04:05.12345678",
+            "2026-07-22T03:04:05.123456789"
+        };
+
+        StringBuffer out;
+        for (unsigned precision = DTP_Seconds; precision <= DTP_Nanos; ++precision)
+        {
+            out.clear();
+            dt.getDateTimeString(out, true, true, precision, false);
+            CPPUNIT_ASSERT_EQUAL_STR(expected[precision], out.str());
+        }
+
+        END_TEST
+    }
+
+    void testBackwardCompatibleDefaults()
+    {
+        START_TEST
+
+        StringBuffer out;
+
+        CDateTime noFraction;
+        noFraction.set(2026, 7, 22, 3, 4, 5, 0, false);
+        out.clear();
+        noFraction.getString(out, false);
+        CPPUNIT_ASSERT_EQUAL_STR("2026-07-22T03:04:05", out.str());
+
+        CDateTime withFraction;
+        withFraction.set(2026, 7, 22, 3, 4, 5, 123456789, false);
+
+        out.clear();
+        withFraction.getDateTimeString(out, true, true, DTP_MaybeMicros, false);
+        CPPUNIT_ASSERT_EQUAL_STR("2026-07-22T03:04:05.123456", out.str());
+
+        out.clear();
+        withFraction.getString(out, false);
+        CPPUNIT_ASSERT_EQUAL_STR("2026-07-22T03:04:05.123456", out.str());
+
+        out.clear();
+        withFraction.getTimeString(out, false);
+        CPPUNIT_ASSERT_EQUAL_STR("03:04:05.123456", out.str());
+
+        out.clear();
+        withFraction.getDateString(out, false);
+        CPPUNIT_ASSERT_EQUAL_STR("2026-07-22", out.str());
+
+        END_TEST
+    }
+};
+
+CPPUNIT_TEST_SUITE_REGISTRATION(JlibDateTimeFormatTest);
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(JlibDateTimeFormatTest, "JlibDateTimeFormatTest");
+
+//--------------------------------------------------------------------------------------------------
+
 #include "jiouring.hpp"
 #include <regex>
 

@@ -28,7 +28,7 @@
 #include "environment.hpp"
 #include "dafdesc.hpp"
 
-class CEclAgentExecutionServer : public CInterfaceOf<IThreadFactory>, implements IAbortHandler
+class CEclAgentExecutionServer : public CInterfaceOf<IThreadFactory>, implements IAbortHandler, implements IAbortRequestCallback
 {
 public:
     IMPLEMENT_IINTERFACE_USING(CInterfaceOf<IThreadFactory>);
@@ -39,6 +39,7 @@ public:
     int run();
     virtual IPooledThread *createNew() override;
     virtual bool onAbort() override;
+    virtual bool abortRequested() override;
 private:
     bool executeWorkunit(IJobQueueItem *item);
 
@@ -250,8 +251,8 @@ static std::atomic<unsigned> nextInstanceNumber{0};
 class WaitThread : public CInterfaceOf<IPooledThread>
 {
 public:
-    WaitThread(const char *_dali, const char *_apptype, const char *_queue)
-        : dali(_dali), apptype(_apptype), queue(_queue)
+    WaitThread(const char *_dali, const char *_apptype, const char *_queue, IAbortRequestCallback *_abortCheck)
+        : dali(_dali), apptype(_apptype), queue(_queue), abortCheck(_abortCheck)
     {
         isThorAgent = streq("thor", apptype);
         // nextInstanceNumber always increases
@@ -342,7 +343,7 @@ public:
                     workunit->setContainerizedProcessInfo("AgentExec", compConfig->queryProp("@name"), k8s::queryMyPodName(), k8s::queryMyContainerName(), graphName, nullptr);
                     addTimeStamp(workunit, wfid, graphName, StWhenK8sLaunched);
                 }
-                k8s::runJob(jobSpecName, isThorAgent ? nullptr : wuid.str(), jobName, params, wasScheduled);
+                k8s::runJob(jobSpecName, isThorAgent ? nullptr : wuid.str(), jobName, params, abortCheck, wasScheduled);
             }
             else
             {
@@ -373,6 +374,11 @@ public:
         }
         catch (IException *e)
         {
+            if (e->errorCode() == JLIBERR_UserAbort)
+            {
+                e->Release();
+                return; // User abort requested: avoid misreporting and unnecessary Dali I/O
+            }
             exception.setown(e);
         }
         if (exception)
@@ -424,6 +430,7 @@ private:
     StringAttr dali;
     StringAttr apptype;
     StringAttr queue;
+    IAbortRequestCallback *abortCheck = nullptr;
     Linked<IJobQueueItem> item;
     bool isThorAgent{false};
     unsigned myInstanceNumber{0};
@@ -433,7 +440,7 @@ IPooledThread *CEclAgentExecutionServer::createNew()
 {
     if (nullptr == pool)
         throwUnexpected();
-    return new WaitThread(daliServers, apptype, agentName);
+    return new WaitThread(daliServers, apptype, agentName, this);
 }
 
 bool CEclAgentExecutionServer::onAbort()
@@ -443,6 +450,11 @@ bool CEclAgentExecutionServer::onAbort()
     if (queue)
         queue->cancelAcceptConversation();
     return false;
+}
+
+bool CEclAgentExecutionServer::abortRequested()
+{
+    return !running;
 }
 
 bool CEclAgentExecutionServer::executeWorkunit(IJobQueueItem *item)

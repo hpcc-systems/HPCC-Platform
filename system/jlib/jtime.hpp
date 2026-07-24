@@ -61,6 +61,11 @@ interface IJlibDateTime : extends IJlibConstDateTime
     virtual void setLocalTime(unsigned _hour, unsigned _min, unsigned _sec, unsigned _nanosec) = 0;
 };
 
+static constexpr unsigned DTP_Seconds = 0;
+static constexpr unsigned DTP_Millis = 3;
+static constexpr unsigned DTP_Micros = 6;
+static constexpr unsigned DTP_Nanos = 9;
+static constexpr unsigned DTP_MaybeMicros = ~0U; // backwards compatibility, will use micros if there are any non-zero digits in the fractional part, otherwise seconds
 
 class jlib_decl CDateTime
 {
@@ -96,9 +101,10 @@ public:
     time_t getSimple() const;
     unsigned __int64 getTimeStamp() const;
     unsigned __int64 getTimeStampNs() const;
-    StringBuffer & getString(StringBuffer & str, bool local = false) const;
-    StringBuffer & getDateString(StringBuffer & str, bool local = false) const;
-    StringBuffer & getTimeString(StringBuffer & str, bool local = false) const;
+    StringBuffer & getString(StringBuffer & str, bool local = false) const { return getDateTimeString(str, true, true, DTP_MaybeMicros, local); }
+    StringBuffer & getDateString(StringBuffer & str, bool local = false) const { return getDateTimeString(str, true, false, DTP_Seconds, local); }
+    StringBuffer & getTimeString(StringBuffer & str, bool local = false) const { return getDateTimeString(str, false, true, DTP_MaybeMicros, local); }
+    StringBuffer & getDateTimeString(StringBuffer & str, bool includeDate, bool includeTime, unsigned precision, bool local) const;
 
     bool isNull() const;
     bool equals(CDateTime const & cdt, bool compareNanosec = true) const;

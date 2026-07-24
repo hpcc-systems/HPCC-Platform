@@ -1687,11 +1687,8 @@ const char* CEventAttribute::queryTextValue() const
     {
         CDateTime dt;
         dt.setTimeStampNs(number);
-        dt.getString(text);
-        // dt.getString() includes microseconds for all fractional seconds. Ensure all nanoseconds
-        // are represented.
-        if (number % 1000000000)
-            text.appendf("%03llu", number % 1000ULL);
+        text.clear();
+        dt.getDateTimeString(text, true, true, DTP_Nanos, false);
     }
     return text;
 }

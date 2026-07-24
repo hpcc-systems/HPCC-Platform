@@ -64,11 +64,12 @@ export const Permissions: React.FunctionComponent<PermissionsProps> = ({
             width: 360,
             label: nlsHPCC.Name,
             formatter: function (_name, idx) {
+                const safeName = encodeHTML(_name);
                 if (idx.__hpcc_parent) {
                     const url = `#/${encodeURIComponent(opsCategory)}/security/permissions/${encodeURIComponent(_name)}/${encodeURIComponent(idx.__hpcc_parent.name)}`;
-                    return `<a href="${url}" style="${linkStyle}">${encodeHTML(_name)}</a>`;
+                    return `<a href="${url}" style="${linkStyle}">${safeName}</a>`;
                 } else {
-                    return encodeHTML(_name);
+                    return safeName;
                 }
             }
         }),

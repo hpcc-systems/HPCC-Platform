@@ -8,7 +8,7 @@ import nlsHPCC from "src/nlsHPCC";
 import { wuidToDate, wuidToTime } from "src/Utility";
 import { emptyFilter, formatQuery } from "src/ESPWorkunit";
 import { useLogAccessInfo, useLogicalClusters } from "../hooks/platform";
-import { Variable, useWorkunit, useWorkunitVariables } from "../hooks/workunit";
+import { useWorkunit, useWorkunitVariables } from "../hooks/workunit";
 import { DojoAdapter } from "../layouts/DojoAdapter";
 import { FullscreenFrame, FullscreenStack } from "../layouts/Fullscreen";
 import { parseQuery, pushUrl, updateFullscreen } from "../util/history";
@@ -88,7 +88,7 @@ export const WorkunitDetails: React.FunctionComponent<WorkunitDetailsProps> = ({
     }, [variables]);
 
     React.useEffect(() => {
-        const traceInfo: Variable = variables.filter(v => v.Name === "ottraceparent")[0];
+        const traceInfo = variables.find(v => v.Name.toLowerCase() === "ottraceparent");
         setOtTraceParent(traceInfo?.Value ?? "");
     }, [variables]);
 

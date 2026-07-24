@@ -52,11 +52,6 @@ public:
     virtual void endReport() = 0;
 };
 
-enum EventGroupExtAttr : unsigned
-{
-    EvExtAttrLogicalFileName = EvAttrMax + 1
-};
-
 /**
  * @struct GroupAttribute
  * @brief Describes a single grouping attribute, including any scaling or bucketing modifier.
@@ -80,6 +75,7 @@ class event_decl GroupAttributeExtractor
 {
 public:
     static GroupAttribute parseAttribute(const char* attrDesc);
+    static const char* queryCanonicalName(unsigned attrId);
     static bool isApplicable(const GroupAttribute& attr, const CEvent& event);
     static std::string getValue(const GroupAttribute& attr, const CEvent& event, const CMetaInfoState* metaState);
     static std::string formatValue(const GroupAttribute& attr, const std::string& rawValue);

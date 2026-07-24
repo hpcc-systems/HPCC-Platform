@@ -51,12 +51,13 @@ public:
         std::vector<GroupAttribute> ids;
         for (const auto& a : attrs)
         {
-            ids.push_back(GroupAttributeExtractor::parseAttribute(a.c_str()));
-            size_t slashPos = a.find('/');
-            if (slashPos != std::string::npos)
-                strippedAttrs.push_back(a.substr(0, slashPos));
-            else
-                strippedAttrs.push_back(a);
+            GroupAttribute parsed = GroupAttributeExtractor::parseAttribute(a.c_str());
+            ids.push_back(parsed);
+            const char* canonicalName = GroupAttributeExtractor::queryCanonicalName(parsed.attrId);
+            if (!canonicalName)
+                throw makeStringExceptionV(0, "Unsupported grouping attribute '%s' (id=%u). Use a recognized grouping attribute or derived canonical name.", a.c_str(), parsed.attrId);
+
+            strippedAttrs.emplace_back(canonicalName);
         }
         groupAttributes.push_back(strippedAttrs);
         groupAttributeIds.push_back(ids);

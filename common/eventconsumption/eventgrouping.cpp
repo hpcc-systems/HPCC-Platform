@@ -22,6 +22,28 @@
 #include "jutil.hpp"
 
 // GroupAttributeExtractor implementation
+static StringBuffer& appendSupportedDerivedGroupNames(StringBuffer& text)
+{
+    unsigned numDerivedAttrs = queryDerivedMetaAttributeCount();
+    bool first = true;
+    for (unsigned idx = 0; idx < numDerivedAttrs; ++idx)
+    {
+        const char* name = queryDerivedMetaAttributeNameByIndex(idx);
+        if (!name)
+            continue;
+        if (!first)
+            text.append(", ");
+        text.append(name);
+        first = false;
+    }
+    return text;
+}
+
+static bool hasMetaPrefix(const std::string & attrName)
+{
+    constexpr size_t metaPrefixLength = sizeof(EVENT_META_PREFIX) - 1;
+    return attrName.length() >= metaPrefixLength && strnicmp(attrName.c_str(), EVENT_META_PREFIX, metaPrefixLength) == 0;
+}
 
 static inline __uint64 fnv1a(const void* data, size_t len, __uint64 hash = 0xcbf29ce484222325ULL) {
     const unsigned char* ptr = (const unsigned char*)data;
@@ -38,20 +60,34 @@ GroupAttribute GroupAttributeExtractor::parseAttribute(const char* attrDesc)
     std::string desc(attrDesc);
     size_t slashPos = desc.find('/');
     std::string attrName = (slashPos != std::string::npos) ? desc.substr(0, slashPos) : desc;
-
-    EventAttr attr = queryEventAttribute(attrName.c_str());
-    if (attr != EvAttrNone)
+    if (hasMetaPrefix(attrName))
     {
-        ret.attrId = attr;
-        ret.unit = queryEventAttributeUnit(attr);
-    }
-    else if (strieq(attrName.c_str(), "LogicalFileName"))
-    {
-        ret.attrId = EvExtAttrLogicalFileName;
-        ret.unit = EAUnone;
+        unsigned derivedAttrId = queryDerivedMetaAttributeId(attrName.c_str());
+        if (derivedAttrId == EvAttrNone)
+        {
+            StringBuffer supported;
+            appendSupportedDerivedGroupNames(supported);
+            throw makeStringExceptionV(0, "Unsupported grouping attribute '%s'. The meta. prefix is supported for derived attributes only: %s", attrName.c_str(), supported.str());
+        }
+        ret.attrId = derivedAttrId;
+        ret.unit = queryDerivedMetaAttributeUnit(ret.attrId);
     }
     else
-        throw makeStringExceptionV(0, "Unknown grouping attribute '%s'", attrName.c_str());
+    {
+        EventAttr attr = queryEventAttribute(attrName.c_str());
+        if (attr != EvAttrNone)
+        {
+            ret.attrId = attr;
+            ret.unit = queryEventAttributeUnit(attr);
+        }
+        else if (strieq(attrName.c_str(), "LogicalFileName"))
+        {
+            ret.attrId = EvExtAttrLogicalFileName;
+            ret.unit = EAUnone;
+        }
+        else
+            throw makeStringExceptionV(0, "Unknown grouping attribute '%s'", attrName.c_str());
+    }
 
     if (slashPos != std::string::npos)
     {
@@ -91,6 +127,16 @@ GroupAttribute GroupAttributeExtractor::parseAttribute(const char* attrDesc)
             throw makeStringExceptionV(0, "Bucket size cannot be 0 for '%s'", attrDesc);
     }
     return ret;
+}
+
+const char* GroupAttributeExtractor::queryCanonicalName(unsigned attrId)
+{
+    const char* derivedName = queryDerivedMetaAttributeName(attrId);
+    if (derivedName)
+        return derivedName;
+    if (attrId < EvAttrMax)
+        return queryEventAttributeName((EventAttr)attrId);
+    return nullptr;
 }
 
 std::string GroupAttributeExtractor::formatValue(const GroupAttribute& groupAttr, const std::string& rawValue)
@@ -385,16 +431,32 @@ const char* GroupAttributeExtractor::resolveStringAttribute(EventAttr attr, cons
 #ifdef _USE_CPPUNIT
 
 #include "eventunittests.hpp"
+#include "eventindexsummarize.h"
+
+class CIndexFileSummaryProbe : public CIndexFileSummary
+{
+public:
+    const std::vector<std::vector<std::string>>& queryGroupAttributes() const { return groupAttributes; }
+};
 
 class EventGroupingTest : public CppUnit::TestFixture
 {
     CPPUNIT_TEST_SUITE(EventGroupingTest);
     CPPUNIT_TEST(testParseAttribute_Valid);
+    CPPUNIT_TEST(testParseAttribute_MetaPrefixAlias);
     CPPUNIT_TEST(testParseAttribute_Invalid);
+    CPPUNIT_TEST(testCanonicalGroupNames);
+    CPPUNIT_TEST(testSummarizeCanonicalGroupHeaders);
     CPPUNIT_TEST(testFormatValue_Timestamp);
     CPPUNIT_TEST_SUITE_END();
 
 public:
+    static void assertParsedAttributeId(const char* name, unsigned expectedAttrId)
+    {
+        GroupAttribute attr = GroupAttributeExtractor::parseAttribute(name);
+        CPPUNIT_ASSERT_EQUAL(expectedAttrId, attr.attrId);
+    }
+
     void testParseAttribute_Valid()
     {
         GroupAttribute attr;
@@ -455,9 +517,26 @@ public:
         CPPUNIT_ASSERT_EQUAL(300000000000ULL, attr.bucketScale); // 5 * 60 * 10^9 ns
     }
 
+    void testParseAttribute_MetaPrefixAlias()
+    {
+        START_TEST
+
+        assertParsedAttributeId("meta.ServiceName", (unsigned)EvAttrServiceName);
+        assertParsedAttributeId("meta.Path", (unsigned)EvAttrPath);
+        assertParsedAttributeId("meta.Plane", (unsigned)EvAttrPlane);
+        assertParsedAttributeId("meta.LogicalFileName", (unsigned)EvExtAttrLogicalFileName);
+        assertParsedAttributeId("Meta.Path", (unsigned)EvAttrPath);
+        assertParsedAttributeId("META.ServiceName", (unsigned)EvAttrServiceName);
+
+        CPPUNIT_ASSERT_THROWS_IEXCEPTION(GroupAttributeExtractor::parseAttribute("meta.FileOffset/1ki"), "Expected exception for non-derived meta-prefixed attribute");
+
+        END_TEST
+    }
+
     void testParseAttribute_Invalid()
     {
         CPPUNIT_ASSERT_THROWS_IEXCEPTION(GroupAttributeExtractor::parseAttribute("UnknownAttr"), "Expected exception for unknown attribute");
+        CPPUNIT_ASSERT_THROWS_IEXCEPTION(GroupAttributeExtractor::parseAttribute("meta.UnknownAttr"), "Expected exception for unknown prefixed attribute");
         CPPUNIT_ASSERT_THROWS_IEXCEPTION(GroupAttributeExtractor::parseAttribute("NodeKind/10M"), "Expected exception for bucketing unbucketable attribute");
         CPPUNIT_ASSERT_THROWS_IEXCEPTION(GroupAttributeExtractor::parseAttribute("FileOffset/"), "Expected exception for missing modifier");
         CPPUNIT_ASSERT_THROWS_IEXCEPTION(GroupAttributeExtractor::parseAttribute("FileOffset/0"), "Expected exception for zero bucket scale");
@@ -468,6 +547,32 @@ public:
         CPPUNIT_ASSERT_THROWS_IEXCEPTION(GroupAttributeExtractor::parseAttribute("ElapsedTime/abc"), "Expected exception for non-numeric duration modifier");
         CPPUNIT_ASSERT_THROWS_IEXCEPTION(GroupAttributeExtractor::parseAttribute("FileOffset/5ms"), "Expected exception for duration unit on size attribute");
         CPPUNIT_ASSERT_THROWS_IEXCEPTION(GroupAttributeExtractor::parseAttribute("ElapsedTime/5KB"), "Expected exception for size unit on duration attribute");
+    }
+
+    void testCanonicalGroupNames()
+    {
+        CPPUNIT_ASSERT(streq(GroupAttributeExtractor::queryCanonicalName(EvAttrServiceName), EVENT_META_SERVICE_NAME));
+        CPPUNIT_ASSERT(streq(GroupAttributeExtractor::queryCanonicalName(EvAttrPath), EVENT_META_PATH));
+        CPPUNIT_ASSERT(streq(GroupAttributeExtractor::queryCanonicalName(EvAttrPlane), EVENT_META_PLANE));
+        CPPUNIT_ASSERT(streq(GroupAttributeExtractor::queryCanonicalName(EvExtAttrLogicalFileName), EVENT_META_LOGICAL_FILE_NAME));
+        CPPUNIT_ASSERT(streq(GroupAttributeExtractor::queryCanonicalName(EvAttrNodeKind), "NodeKind"));
+    }
+
+    void testSummarizeCanonicalGroupHeaders()
+    {
+        CIndexFileSummaryProbe summary;
+        summary.addGroupAttribute({ "Path", "FileOffset/1ki" });
+        summary.addGroupAttribute({ "META.ServiceName" });
+
+        const auto& headers = summary.queryGroupAttributes();
+        CPPUNIT_ASSERT_EQUAL((size_t)2, headers.size());
+
+        CPPUNIT_ASSERT_EQUAL((size_t)2, headers[0].size());
+        CPPUNIT_ASSERT_EQUAL(std::string(EVENT_META_PATH), headers[0][0]);
+        CPPUNIT_ASSERT_EQUAL(std::string("FileOffset"), headers[0][1]);
+
+        CPPUNIT_ASSERT_EQUAL((size_t)1, headers[1].size());
+        CPPUNIT_ASSERT_EQUAL(std::string(EVENT_META_SERVICE_NAME), headers[1][0]);
     }
 
     void testFormatValue_Timestamp()

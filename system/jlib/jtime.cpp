@@ -448,55 +448,51 @@ unsigned __int64 CDateTime::getTimeStampNs() const
     return (unsigned __int64)getSimple() * 1000000000 + nanosec;
 }
 
-StringBuffer & CDateTime::getString(StringBuffer & str, bool local) const
+StringBuffer & CDateTime::getDateTimeString(StringBuffer & str, bool includeDate, bool includeTime, unsigned precision, bool local) const
 {
-    if(isNull()) return str;
-    char buff[64]; // allow extra for invalid dates
-    char * finger = buff;
-    if(local)
-    {
-        time_t simple = getSimple();
-        struct tm local;
-        localtime_r(&simple, &local);
-        finger += sprintf(finger, "%04d-%02d-%02dT%02d:%02d:%02d", local.tm_year+1900, local.tm_mon+1, local.tm_mday, local.tm_hour, local.tm_min, local.tm_sec);
-    }
-    else
-        finger += sprintf(finger, "%04d-%02d-%02dT%02d:%02d:%02d", utc_year+1900, utc_mon+1, utc_mday, utc_hour, utc_min, utc_sec);
-    if(nanosec) finger += sprintf(finger, ".%06u", nanosec/1000);
-    return str.append(buff);
-}
+    // If neither date nor time is requested, return the string unchanged
+    if (!includeDate && !includeTime)
+        return str;
+    // If the date/time is null, return the string unchanged
+    if (isNull())
+        return str;
 
-StringBuffer & CDateTime::getDateString(StringBuffer & str, bool local) const
-{
-    if(isNull()) return str;
-    char buff[64]; // allow extra for invalid dates
-    if(local)
+    struct tm tm;
+    if (local)
     {
         time_t simple = getSimple();
-        struct tm local;
-        localtime_r(&simple, &local);
-        sprintf(buff, "%04d-%02d-%02d", local.tm_year+1900, local.tm_mon+1, local.tm_mday);
+        localtime_r(&simple, &tm);
     }
     else
-        sprintf(buff, "%04d-%02d-%02d", utc_year+1900, utc_mon+1, utc_mday);
-    return str.append(buff);
-}
+        getToUtcTm(tm);
 
-StringBuffer & CDateTime::getTimeString(StringBuffer & str, bool local) const
-{
-    if(isNull()) return str;
-    char buff[64];  // allow extra for invalid dates
-    char * finger = buff;
-    if(local)
+    char buff[64];
+    buff[0] = 0;
+    char *finger = buff;
+
+    if (includeDate)
+        finger += sprintf(finger, "%04d-%02d-%02d", tm.tm_year+1900, tm.tm_mon+1, tm.tm_mday);
+
+    if (includeTime)
     {
-        time_t simple = getSimple();
-        struct tm local;
-        localtime_r(&simple, &local);
-        finger += sprintf(finger, "%02d:%02d:%02d", local.tm_hour, local.tm_min, local.tm_sec);
+        if (includeDate)
+            *finger++ = 'T';
+        finger += sprintf(finger, "%02d:%02d:%02d", tm.tm_hour, tm.tm_min, tm.tm_sec);
+
+        if (DTP_MaybeMicros == precision) // backwards compatible default to microseconds only if fractional seconds are present
+            precision = (nanosec ? DTP_Micros : DTP_Seconds);
+        else if (precision > DTP_Nanos)
+            precision = DTP_Nanos;
+        if (precision != DTP_Seconds)
+        {
+            // divisors does not include an entry for DTP_Seconds, since the prior precision checks
+            // ensure that precision will be between 1 and DTP_Nanos.
+            static constexpr unsigned divisors[DTP_Nanos] = { 100'000'000U, 10'000'000U, 1'000'000U, 100'000U, 10'000U, 1'000U, 100U, 10U, 1U };
+            static_assert(DTP_Seconds == 0 && _elements_in(divisors) == DTP_Nanos, "divisors array must have an entry for each precision level except DTP_Seconds");
+            finger += sprintf(finger, ".%0*u", static_cast<int>(precision), nanosec / divisors[precision - 1]);
+        }
     }
-    else
-        finger += sprintf(finger, "%02d:%02d:%02d", utc_hour, utc_min, utc_sec);
-    if(nanosec) finger += sprintf(finger, ".%06u", nanosec/1000);
+
     return str.append(buff);
 }
 
