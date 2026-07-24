@@ -1018,6 +1018,16 @@ void CCsvPartitioner::setTarget(IOutputProcessor * _target)
 //- "","","","",""   - ditto
 //- """""""""""""!   - can only tell once you hit the first non quote
 //
+// A quick partition scan may start part way through a record, so it does not always have the left-hand context needed
+// to decide whether a quote opened a field, closed a field, or doubled a previous quote.  The sequence ",",",","," is
+// pathological when considered in isolation because each quote/comma pair can be interpreted more than one way.
+//
+// If the scan can prove it is outside quotes when a terminator is seen, that terminator is the next record boundary.
+// If the quote state remains ambiguous to the end of the scanned buffer, remember the first terminator seen while the
+// state was unknown and use it as the fallback boundary.  This matches the quick partitioner's intended bias: when
+// ambiguity cannot be resolved from the visible suffix, assume the first newline was the end of the first record rather
+// than reading indefinitely.
+//
 // As soon as a quote and a non quote/separator are in the same line you can tell which it is.
 
 // More: Clean this up - common up the case where the splitOffset is 0
@@ -1031,7 +1041,6 @@ size32_t CCsvPartitioner::deduceStartNextLine(const byte * start, unsigned maxTo
     bool quoteStateKnown = format.quote.isEmpty(); // if there are no quotes then we cannot be inside a quoted section!
     bool possibleDoubleQuote = true;
     TokenKind prevMatch = UNKNOWN;
-    bool seenQuote = false;
 
     while (cur != end)
     {
@@ -1068,7 +1077,7 @@ size32_t CCsvPartitioner::deduceStartNextLine(const byte * start, unsigned maxTo
             }
             else
             {
-                //Save the location after the first terminator just in case there are no quotes
+                //Save the first possible record boundary to use if the quote state remains ambiguous.
                 if (!endFirstTerminator)
                     endFirstTerminator = cur + matchLen;
             }
@@ -1084,8 +1093,8 @@ size32_t CCsvPartitioner::deduceStartNextLine(const byte * start, unsigned maxTo
                 const byte * next = cur + matchLen;
                 if (next != end)
                     nextMatch = matcher.getMatch((size32_t)(end-next), (const char *)next, nextMatchLen);
+                TokenKind nextKind = kind(nextMatch);
 
-                seenQuote = true;
                 if (quoteStateKnown)
                 {
                     if (quote == 0)
@@ -1140,7 +1149,7 @@ size32_t CCsvPartitioner::deduceStartNextLine(const byte * start, unsigned maxTo
                         // Unless it is a double quote - then nothing can be deduced yet
                         if (match != nextMatch)
                         {
-                            dbgassertex(kind(nextMatch) == NONE || kind(nextMatch) == TERMINATOR || kind(nextMatch) == SEPARATOR);
+                            dbgassertex(nextKind == NONE || nextKind == TERMINATOR || nextKind == SEPARATOR);
                             quoteStateKnown = true;
                             quote = 0;
                         }
@@ -1164,8 +1173,8 @@ size32_t CCsvPartitioner::deduceStartNextLine(const byte * start, unsigned maxTo
         cur += matchLen;
     }
 
-    //No quotes found - assume it was after the first newline we matched
-    if (!seenQuote && endFirstTerminator)
+    //If the quote state remains ambiguous, assume the first newline matched was the end of the first record.
+    if (!quoteStateKnown && endFirstTerminator)
         return endFirstTerminator - start;
 
     if (!ateof)
@@ -2674,6 +2683,8 @@ class CsvDeduceLineTest : public CppUnit::TestFixture
         CPPUNIT_TEST(testEmptyBuffer);
         CPPUNIT_TEST(testAlternatingQuoteNewline);
         CPPUNIT_TEST(testQuoteCommaNewlinePattern);
+        CPPUNIT_TEST(testQuotedSeparatorOnlyField);
+        CPPUNIT_TEST(testAmbiguousNewlineThenKnownQuotedState);
         CPPUNIT_TEST(testMultipleEmptyQuotedFields);
         CPPUNIT_TEST(testInvalidQuote);
     CPPUNIT_TEST_SUITE_END();
@@ -2785,16 +2796,14 @@ protected:
 
         const char * data = "\"\n\"\n\"\n\"\n";
 
-        //If the pattern is at the end of the file then it is valid
+        //If the quote state remains ambiguous, the quick splitter falls back to the first newline.
         size32_t result = partitioner.deduceStartNextLine((const byte *)data, strlen(data), true);
-        CPPUNIT_ASSERT_EQUAL_MESSAGE("Should handle alternating quote/newline pattern", (size32_t)strlen(data), result);
+        CPPUNIT_ASSERT_EQUAL_MESSAGE("Should fall back to the first newline", (size32_t)2, result);
 
         try
         {
             size32_t result = partitioner.deduceStartNextLine((const byte *)data, strlen(data), false);
-            // This is pathological and should either throw or handle gracefully
-            // The actual behavior depends on implementation
-            CPPUNIT_ASSERT_EQUAL_MESSAGE("Should handle alternating quote/newline pattern", (size32_t)-1, result);
+            CPPUNIT_ASSERT_EQUAL_MESSAGE("Should fall back to the first newline", (size32_t)2, result);
         }
         catch (IException * e)
         {
@@ -2830,6 +2839,44 @@ protected:
         }
     }
 
+    // Valid CSV fragment that can be seen when a quick partition scan starts mid-record before a quoted separator field
+    void testQuotedSeparatorOnlyField()
+    {
+        FileFormat format;
+        format.type = FFTcsv;
+        format.separate.set("\\,");
+        format.quote.set("\"");
+        format.terminate.set("\n");
+        format.maxRecordSize = 8192;
+
+        CCsvPartitioner partitioner(format);
+
+        const char * data = "13|13|13,974,3,\",\",1\n"
+                    "2,/2026-06/61_S/061_s_dc_010626.csv,,99,2026-06-01,6,2026,13|13|13|13,974,3,\",\",1\n";
+        size32_t result = partitioner.deduceStartNextLine((const byte *)data, strlen(data), false);
+
+        const char * expected = strchr(data, '\n') + 1;
+        CPPUNIT_ASSERT_EQUAL_MESSAGE("Should find newline after quoted separator-only field", (size32_t)(expected - data), result);
+    }
+
+    // If later tokens resolve the quote state, an earlier ambiguous newline must not be used as the fallback split.
+    void testAmbiguousNewlineThenKnownQuotedState()
+    {
+        FileFormat format;
+        format.type = FFTcsv;
+        format.separate.set("\\,");
+        format.quote.set("\"");
+        format.terminate.set("\n");
+        format.maxRecordSize = 8192;
+
+        CCsvPartitioner partitioner(format);
+
+        const char * data = "\"\n\"abc";
+        size32_t result = partitioner.deduceStartNextLine((const byte *)data, strlen(data), false);
+
+        CPPUNIT_ASSERT_EQUAL_MESSAGE("Should keep scanning once quote state is known", (size32_t)-1, result);
+    }
+
     // Pathological case: Multiple empty quoted fields - "","","","",""
     void testMultipleEmptyQuotedFields()
     {
@@ -2847,7 +2894,7 @@ protected:
         CPPUNIT_ASSERT_EQUAL_MESSAGE("Should handle multiple empty quoted fields", (size32_t)strlen(data), result);
 
         size32_t result2 = partitioner.deduceStartNextLine((const byte *)data, strlen(data), false);
-        CPPUNIT_ASSERT_EQUAL_MESSAGE("Should handle multiple empty quoted fields", (size32_t)-1, result2);
+        CPPUNIT_ASSERT_EQUAL_MESSAGE("Should fall back to the first newline", (size32_t)strlen(data), result2);
     }
 
     //This is one example seen in real life, where the fields are not quoted, but the options claimed it was

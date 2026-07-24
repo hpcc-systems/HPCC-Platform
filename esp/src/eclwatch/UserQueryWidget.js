@@ -19,6 +19,7 @@ define([
     "src/ws_account",
     "src/ESPBase",
     "src/ESPUtil",
+    "src/Utility",
     "hpcc/UserDetailsWidget",
     "hpcc/GroupDetailsWidget",
     "hpcc/ShowIndividualPermissionsWidget",
@@ -47,7 +48,7 @@ define([
 ], function (declare, lang, nlsHPCCMod, arrayUtil, domForm, all,
     registry, Menu, MenuItem, MenuSeparator,
     tree, selector,
-    _TabContainerWidget, WsAccess, WsAccount, ESPBaseMod, ESPUtil, UserDetailsWidget, GroupDetailsWidget, ShowIndividualPermissionsWidget,
+    _TabContainerWidget, WsAccess, WsAccount, ESPBaseMod, ESPUtil, Utility, UserDetailsWidget, GroupDetailsWidget, ShowIndividualPermissionsWidget,
     template) {
 
     var nlsHPCC = nlsHPCCMod.default;
@@ -517,7 +518,7 @@ define([
                     name: {
                         label: this.i18n.GroupName,
                         formatter: function (_name, idx) {
-                            return "<a href='#' onClick='return false;' class='dgrid-row-url'>" + _name + "</a>";
+                            return "<a href='#' onClick='return false;' class='dgrid-row-url'>" + Utility.encodeHTML(_name) + "</a>";
                         }
                     },
                     groupOwner: {
@@ -620,7 +621,7 @@ define([
                         label: this.i18n.Username,
                         sortable: true,
                         formatter: function (_name, idx) {
-                            return "<a href='#' onClick='return false;' class='dgrid-row-url'>" + _name + "</a>";
+                            return "<a href='#' onClick='return false;' class='dgrid-row-url'>" + Utility.encodeHTML(_name) + "</a>";
                         }
                     },
                     employeeID: {
@@ -761,9 +762,9 @@ define([
                         label: this.i18n.Name,
                         formatter: function (_name, idx) {
                             if (idx.__hpcc_parent) {
-                                return "<a href='#' onClick='return false;' class='dgrid-row-url'>" + _name + "</a>";
+                                return "<a href='#' onClick='return false;' class='dgrid-row-url'>" + Utility.encodeHTML(_name) + "</a>";
                             } else {
-                                return _name;
+                                return Utility.encodeHTML(_name);
                             }
                         }
                     }),
