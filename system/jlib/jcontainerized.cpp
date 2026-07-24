@@ -11,6 +11,7 @@
     limitations under the License.
 ############################################################################## */
 
+#include <algorithm>
 #include "jerror.hpp"
 #include "jexcept.hpp"
 #include "jfile.hpp"
@@ -53,7 +54,7 @@ bool isActiveService(const char *serviceName)
 {
     VStringBuffer getEndpoints("kubectl get endpoints %s \"--output=jsonpath={range .subsets[*].addresses[*]}{.ip}{'\\n'}{end}\"", serviceName);
     StringBuffer output;
-    runKubectlCommand("checkEndpoints", getEndpoints.str(), nullptr, &output);
+    runKubectlCommand("checkEndpoints", getEndpoints.str(), nullptr, &output, nullptr);
     // Output should be zero or more lines each with an IP
     return (output.length() && output.charAt(0) != '\n');
 }
@@ -63,7 +64,7 @@ void deleteResource(const char *componentName, const char *resourceType, const c
     VStringBuffer resourceName("%s-%s-%s", componentName, resourceType, job);
     resourceName.toLowerCase();
     VStringBuffer deleteResource("kubectl delete %s/%s", resourceType, resourceName.str());
-    runKubectlCommand(componentName, deleteResource, nullptr, nullptr);
+    runKubectlCommand(componentName, deleteResource, nullptr, nullptr, nullptr);
 
     // have to assume command succeeded (if didn't throw exception)
     // NB: file will only exist if autoCleanup used (it's okay not to exist)
@@ -106,7 +107,26 @@ bool checkExitCodes(StringBuffer &output, const char *podStatuses)
     return false;
 }
 
-void waitJob(const char *componentName, const char *resourceType, const char *job, unsigned pendingTimeoutSecs, unsigned totalWaitTimeSecs, KeepJobs keepJob, bool &wasScheduled)
+static void throwIfAbortRequested(IAbortRequestCallback *abortCheck)
+{
+    if ((abortCheck && abortCheck->abortRequested()) || isAborting())
+        throwAbortException();
+}
+
+static void delayWithAbortCheck(unsigned delayMs, IAbortRequestCallback *abortCheck)
+{
+    CTimeMon delayTimer(delayMs);
+    while (true)
+    {
+        throwIfAbortRequested(abortCheck);
+        unsigned remainingMs = 0;
+        if (delayTimer.timedout(&remainingMs))
+            break;
+        MilliSleep(std::min(remainingMs, 1000U));
+    }
+}
+
+void waitJob(const char *componentName, const char *resourceType, const char *job, unsigned pendingTimeoutSecs, unsigned totalWaitTimeSecs, KeepJobs keepJob, IAbortRequestCallback *abortCheck, bool &wasScheduled)
 {
     wasScheduled = false;
     VStringBuffer jobName("%s-%s-%s", componentName, resourceType, job);
@@ -124,24 +144,25 @@ void waitJob(const char *componentName, const char *resourceType, const char *jo
         for (;;)
         {
             StringBuffer output;
-            runKubectlCommand(componentName, waitJob, nullptr, &output);
+            runKubectlCommand(componentName, waitJob, nullptr, &output, abortCheck);
+
             if ((0 == output.length()) || streq(output, "0"))  // status.active value
             {
                 // Job is no longer active - we can terminate
                 DBGLOG("kubectl output (from %s): %s", waitJob.str(), output.str());
                 VStringBuffer checkJobExitStatus("kubectl get jobs %s '-o=jsonpath={range .status.conditions[*]}{.type}: {.status} - {.message}|{end}'", jobName.str());
-                runKubectlCommand(componentName, checkJobExitStatus, nullptr, &output.clear());
+                runKubectlCommand(componentName, checkJobExitStatus, nullptr, &output.clear(), abortCheck);
                 // Check for failure: k8s <1.31 uses "Failed: True", k8s >=1.31 uses "FailureTarget: True"
                 if (strstr(output.str(), "Failed: True") || strstr(output.str(), "FailureTarget: True"))
                 {
                     VStringBuffer errMsg("Job %s failed [%s].", jobName.str(), output.str());
                     VStringBuffer checkInitContainerExitCodes("kubectl get pods --selector=job-name=%s '-o=jsonpath={range .items[*].status.initContainerStatuses[*]}{.state.terminated.exitCode},{\"initContainer\"},{.name}{\"|\"}{end}'", jobName.str());
-                    runKubectlCommand(componentName, checkInitContainerExitCodes, nullptr, &output.clear());
+                    runKubectlCommand(componentName, checkInitContainerExitCodes, nullptr, &output.clear(), abortCheck);
                     if (!checkExitCodes(errMsg, output))
                     {
                         // no init container failures, check regular containers
                         VStringBuffer checkContainerExitCodes("kubectl get pods --selector=job-name=%s '-o=jsonpath={range .items[*].status.containerStatuses[*]}{.state.terminated.exitCode},{\"container\"},{.name}{\"|\"}{end}'", jobName.str());
-                        runKubectlCommand(componentName, checkContainerExitCodes, nullptr, &output.clear());
+                        runKubectlCommand(componentName, checkContainerExitCodes, nullptr, &output.clear(), abortCheck);
                         checkExitCodes(errMsg, output);
                     }
                     OERRLOG("%s", errMsg.str()); // report all k8s job failures to operator
@@ -175,7 +196,7 @@ void waitJob(const char *componentName, const char *resourceType, const char *jo
             }
             if (!wasScheduled)
             {
-                runKubectlCommand(nullptr, getScheduleStatus, nullptr, &output.clear());
+                runKubectlCommand(nullptr, getScheduleStatus, nullptr, &output.clear(), abortCheck);
 
                 // Check whether pod has been scheduled yet - if resources are not available pods may block indefinitely waiting to be scheduled, and
                 // we would prefer them to fail instead.
@@ -184,7 +205,7 @@ void waitJob(const char *componentName, const char *resourceType, const char *jo
                 {
                     schedulingTimeout = true;
                     VStringBuffer getReason("kubectl get pods --selector=job-name=%s \"--output=jsonpath={range .items[*].status.conditions[?(@.type=='PodScheduled')]}{.reason}{': '}{.message}{end}\"", jobName.str());
-                    runKubectlCommand(componentName, getReason, nullptr, &output.clear());
+                    runKubectlCommand(componentName, getReason, nullptr, &output.clear(), abortCheck);
                     throw makeStringExceptionV(JLIBERR_UtilFailedToRunSPodNot, "Failed to run %s - pod not scheduled after %u seconds: %s ", jobName.str(), pendingTimeoutSecs, output.str());
                 }
                 else if (streq(output, "True"))
@@ -195,16 +216,18 @@ void waitJob(const char *componentName, const char *resourceType, const char *jo
             if ((INFINITE != totalWaitTimeSecs) && msTick()-start > totalWaitTimeSecs*1000)
                 throw makeStringExceptionV(JLIBERR_UtilWaitJobTimeoutUSecsExpiredWhilst, "Wait job timeout (%u secs) expired, whilst running: %s", totalWaitTimeSecs, jobName.str());
 
-            MilliSleep(delay);
+            delayWithAbortCheck(delay, abortCheck);
             if (delay < 10000)
                 delay = delay * 2;
         }
     }
     catch (IException *e)
     {
-        EXCLOG(e, nullptr);
+        if (e->errorCode() != JLIBERR_UserAbort)
+            EXCLOG(e, nullptr);
         exception.setown(e);
     }
+
     if (keepJob != KeepJobs::all)
     {
         // Delete jobs unless the pod failed and keepJob==podfailures
@@ -284,7 +307,7 @@ bool applyYaml(const char *componentName, const char *wuid, const char *job, con
     jobYaml.replaceString("_HPCC_ARGS_", args.str());
 
     // retrySecs=0 - I am not sure want to retry this command systematically..
-    runKubectlCommand(componentName, "kubectl replace --force -f -", jobYaml, nullptr, 0);
+    runKubectlCommand(componentName, "kubectl replace --force -f -", jobYaml, nullptr, nullptr, 0U);
 
     if (autoCleanup)
     {
@@ -302,7 +325,7 @@ bool applyYaml(const char *componentName, const char *wuid, const char *job, con
 }
 
 static constexpr unsigned defaultPendingTimeSecs = 600;
-void runJob(const char *componentName, const char *wuid, const char *jobName, const std::list<std::pair<std::string, std::string>> &extraParams, bool &wasScheduled)
+void runJob(const char *componentName, const char *wuid, const char *jobName, const std::list<std::pair<std::string, std::string>> &extraParams, IAbortRequestCallback *abortCheck, bool &wasScheduled)
 {
     wasScheduled = false;
     Owned<IPropertyTree> compConfig = getComponentConfig();
@@ -320,11 +343,12 @@ void runJob(const char *componentName, const char *wuid, const char *jobName, co
     Owned<IException> exception;
     try
     {
-        waitJob(componentName, "job", jobName, pendingTimeoutSecs, INFINITE, keepJob, wasScheduled);
+        waitJob(componentName, "job", jobName, pendingTimeoutSecs, INFINITE, keepJob, abortCheck, wasScheduled);
     }
     catch (IException *e)
     {
-        EXCLOG(e, nullptr);
+        if (e->errorCode() != JLIBERR_UserAbort)
+            EXCLOG(e, nullptr);
         exception.setown(e);
     }
     if (removeNetwork)
@@ -370,7 +394,7 @@ std::vector<std::vector<std::string>> getPodNodes(const char *selector)
 {
     VStringBuffer getWorkerNodes("kubectl get pods --selector=job-name=%s \"--output=jsonpath={range .items[*]}{.metadata.name},{.spec.nodeName}{'\\n'}{end}\"", selector);
     StringBuffer result;
-    runKubectlCommand("get-worker-nodes", getWorkerNodes, nullptr, &result);
+    runKubectlCommand("get-worker-nodes", getWorkerNodes, nullptr, &result, nullptr);
 
     if (result.isEmpty())
         throw makeStringExceptionV(JLIBERR_UtilNoWorkerNodesFoundForSelectorS, "No worker nodes found for selector '%s'", selector);
@@ -417,7 +441,7 @@ std::vector<std::vector<std::string>> getPodNodes(const char *selector)
     }
 }
 
-void runKubectlCommand(const char *title, const char *cmd, const char *input, StringBuffer *output, unsigned retrySecs)
+void runKubectlCommand(const char *title, const char *cmd, const char *input, StringBuffer *output, IAbortRequestCallback *abortCheck, unsigned retrySecs)
 {
 #ifndef _CONTAINERIZED
     UNIMPLEMENTED_X("runKubectlCommand");
@@ -449,8 +473,13 @@ void runKubectlCommand(const char *title, const char *cmd, const char *input, St
         }
         catch (IException *e)
         {
-            if (0 == retrySecs || tm.timedout(&remainingMs))
+            if ((e->errorCode() == JLIBERR_UserAbort) ||
+                0 == retrySecs ||
+                tm.timedout(&remainingMs) ||
+                strstr(error.str(), "NotFound")) // "NotFound" means the job is already gone; don't retry. Using k8s API would provide a specific code.
+            {
                 throw;
+            }
             exception.setown(e);
         }
         unsigned sleepMs = remainingMs;
@@ -459,7 +488,7 @@ void runKubectlCommand(const char *title, const char *cmd, const char *input, St
             sleepMs = 10000;
         VStringBuffer msg("retrying %s in %u ms", cmd, sleepMs);
         OWARNLOG(exception, msg);
-        MilliSleep(sleepMs);
+        delayWithAbortCheck(sleepMs, abortCheck);
         error.clear();
         output->clear();
     }
@@ -483,7 +512,7 @@ std::pair<std::string, unsigned> getExternalService(const char *serviceName)
     try
     {
         VStringBuffer getServiceCmd("kubectl get svc --selector=server=%s --output=jsonpath={.items[0].status.loadBalancer.ingress[0].hostname},{.items[0].status.loadBalancer.ingress[0].ip},{.items[0].spec.ports[0].port}", serviceName);
-        k8s::runKubectlCommand("get-external-service", getServiceCmd, nullptr, &output);
+        k8s::runKubectlCommand("get-external-service", getServiceCmd, nullptr, &output, nullptr);
     }
     catch (IException *e)
     {

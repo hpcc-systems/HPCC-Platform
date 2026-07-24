@@ -310,7 +310,8 @@ public:
                 {
                     // NB: this is checking for error only, will throw an exception if any found.
                     bool wasScheduled = false;
-                    k8s::waitJob("thorworker", "job", cloudJobName.str(), pendingTimeoutSecs, 0, k8s::KeepJobs::all, wasScheduled);
+                    // TBD: Thor manages its own k8s lifecycle differently; abort callback not yet wired in here.
+                    k8s::waitJob("thorworker", "job", cloudJobName.str(), pendingTimeoutSecs, 0, k8s::KeepJobs::all, nullptr, wasScheduled);
                 }
 
                 // NB: will not reach here if waitJob fails.

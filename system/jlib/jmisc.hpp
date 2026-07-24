@@ -49,7 +49,7 @@ inline bool isValidAsciiLikeCharacter(unsigned char c) { return ((c < 0x80) || (
 #define _LOG_HIRESCLOCK MSGFIELD_nanoTime
 
 class StringBuffer;
-class ILogIntercept 
+class ILogIntercept
 {
 public:
     virtual void print(const char *fmt)=0;
@@ -119,7 +119,7 @@ extern jlib_decl void _rev(size32_t len, void * ptr);
 #define _WINREVN(l,p)
 #endif
 
-inline  void _cpyrev2(void * _tgt, const void * _src) { 
+inline  void _cpyrev2(void * _tgt, const void * _src) {
     //Technically undefined behaviour because the _src is likely to be a byte stream
     //but this will work on all known architectures
     unsigned value = *(const unsigned short *)_src;
@@ -128,8 +128,8 @@ inline  void _cpyrev2(void * _tgt, const void * _src) {
             ((value & 0x00FF) << 8);
     *(unsigned short *)_tgt = value;
 }
-inline  void _cpyrev3(void * _tgt, const void * _src) { 
-    char * tgt = (char *)_tgt; const char * src = (const char *)_src; 
+inline  void _cpyrev3(void * _tgt, const void * _src) {
+    char * tgt = (char *)_tgt; const char * src = (const char *)_src;
     tgt[2] = src[0]; tgt[1]=src[1]; tgt[0] = src[2];
 }
 inline  void _cpyrev4(void * _tgt, const void * _src) {
@@ -143,22 +143,22 @@ inline  void _cpyrev4(void * _tgt, const void * _src) {
             ((value & 0x000000FF) << 24);
     *(unsigned *)_tgt = value;
 }
-inline  void _cpyrev5(void * _tgt, const void * _src) { 
-    char * tgt = (char *)_tgt; const char * src = (const char *)_src; 
-    tgt[4]=src[0]; 
+inline  void _cpyrev5(void * _tgt, const void * _src) {
+    char * tgt = (char *)_tgt; const char * src = (const char *)_src;
+    tgt[4]=src[0];
     tgt[3]=src[1]; tgt[2] = src[2]; tgt[1]=src[3]; tgt[0] = src[4];
 }
-inline  void _cpyrev6(void * _tgt, const void * _src) { 
-    char * tgt = (char *)_tgt; const char * src = (const char *)_src; 
-    tgt[5]=src[0]; tgt[4] = src[1]; 
+inline  void _cpyrev6(void * _tgt, const void * _src) {
+    char * tgt = (char *)_tgt; const char * src = (const char *)_src;
+    tgt[5]=src[0]; tgt[4] = src[1];
     tgt[3]=src[2]; tgt[2] = src[3]; tgt[1]=src[4]; tgt[0] = src[5];
 }
-inline  void _cpyrev7(void * _tgt, const void * _src) { 
-    char * tgt = (char *)_tgt; const char * src = (const char *)_src; 
+inline  void _cpyrev7(void * _tgt, const void * _src) {
+    char * tgt = (char *)_tgt; const char * src = (const char *)_src;
     tgt[6] = src[0]; tgt[5]=src[1]; tgt[4]=src[2];
     tgt[3] = src[3]; tgt[2]=src[4]; tgt[1]=src[5]; tgt[0]=src[6];
 }
-inline  void _cpyrev8(void * _tgt, const void * _src) { 
+inline  void _cpyrev8(void * _tgt, const void * _src) {
     //Technically undefined behaviour because the _src is likely to be a byte stream
     //but this will work on all known architectures
     unsigned __int64 value = *(const unsigned __int64 *)_src;
@@ -173,8 +173,8 @@ inline  void _cpyrev8(void * _tgt, const void * _src) {
             ((value & 0x00000000000000FFULL) << 56);
     *(unsigned __int64 *)_tgt = value;
 }
-inline  void _cpyrevn(void * _tgt, const void * _src, unsigned len) { 
-    char * tgt = (char *)_tgt; const char * src = (const char *)_src; 
+inline  void _cpyrevn(void * _tgt, const void * _src, unsigned len) {
+    char * tgt = (char *)_tgt; const char * src = (const char *)_src;
     for (unsigned i = 0; i < len; i++) {
         tgt[i] = src[len - i - 1];
     }
@@ -285,7 +285,7 @@ interface IAbortHandler : public IInterface
     virtual bool onAbort() = 0;
 };
 
-#define JLIBERR_UserAbort       0xffffff00
+static constexpr int JLIBERR_UserAbort = -256; // 0xffffff00
 
 extern jlib_decl void addAbortHandler(AbortHandler handler=NULL);               // no parameter means just set the flag for later testing.
 extern jlib_decl void addAbortHandler(SimpleAbortHandler handler=NULL);

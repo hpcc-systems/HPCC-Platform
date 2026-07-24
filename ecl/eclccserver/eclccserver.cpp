@@ -1102,7 +1102,8 @@ public:
             jobName.append("eclcc-").append(instanceName).append("-").append(k8s::queryPodSuffix()).append("-").append(instanceNumber);
 
             bool wasScheduled = false;
-            k8s::runJob("compile", nullptr, jobName, params, wasScheduled);
+            // TBD: eclccserver does not yet wire an abort callback into runJob.
+            k8s::runJob("compile", nullptr, jobName, params, nullptr, wasScheduled);
         }
         catch (IException *E)
         {
