@@ -53,7 +53,7 @@ define([
                     DisplayName: tree({
                         label: this.i18n.Resource,
                         formatter: function (_name, row) {
-                            return _name;
+                            return Utility.encodeHTML(_name);
                         }
                     }),
                     allow_access: editor({

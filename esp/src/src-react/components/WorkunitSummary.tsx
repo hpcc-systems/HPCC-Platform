@@ -42,8 +42,8 @@ interface OtTraceSchema {
 
 const parseOtTraceParent = (parent: string = ""): OtTraceSchema => {
     const retVal = { traceId: "", spanId: "" };
-    const regex = /00\-([0-9a-z]+)\-([0-9a-z]+)\-01/;
-    const matches = parent.match(regex);
+    const regex = /[0-9a-f]{2}\-([0-9a-f]{32})\-([0-9a-f]{16})\-[0-9a-f]{2}/;
+    const matches = parent.trim().match(regex);
     if (matches) {
         retVal.traceId = matches[1] ?? "";
         retVal.spanId = matches[2] ?? "";

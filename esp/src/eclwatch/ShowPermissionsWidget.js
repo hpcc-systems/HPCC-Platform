@@ -47,13 +47,13 @@ define([
                     ResourceName: {
                         label: this.i18n.Resource,
                         formatter: function (_name, row) {
-                            return _name;
+                            return Utility.encodeHTML(_name);
                         }
                     },
                     PermissionName: {
                         label: this.i18n.Permissions,
                         formatter: function (_name, row) {
-                            return _name;
+                            return Utility.encodeHTML(_name);
                         }
                     },
                     allow_access: editor({
