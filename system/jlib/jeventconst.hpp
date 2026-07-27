@@ -45,12 +45,12 @@ enum EventType : unsigned char
     EventRecordingSource,         // information about the source of the recording
     EventIndexOpen,               // open an index ready for reading
     MetaPlaneInformation,         // information about a plane
-    EventRequestSend,           // remote request sent
-    EventRequestReceive,           // remote request received
+    EventRequestSend,             // remote request sent
+    EventRequestReceive,          // remote request received
     EventWorkerStart,             // remote processing started
     EventWorkerStop,              // remote processing completed
-    EventResponseSend,              // worker sent result
-    EventResponseReceive,           // worker result received
+    EventResponseSend,            // worker sent result
+    EventResponseReceive,         // worker result received
     EventTaskStart,               // task execution started
     EventTaskStop,                // task execution completed
     EventLockWait,
