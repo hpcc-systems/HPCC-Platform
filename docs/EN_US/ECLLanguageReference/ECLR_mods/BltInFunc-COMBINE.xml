@@ -27,9 +27,9 @@
 
   <para><informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
-        <colspec colwidth="80.50pt" />
+        <colspec colwidth="80.50pt"/>
 
-        <colspec />
+        <colspec/>
 
         <tbody>
           <row>
@@ -56,8 +56,11 @@
           <row>
             <entry><emphasis role="bold">LOCAL</emphasis></entry>
 
-            <entry>The LOCAL option is required when COMBINE is used on Thor
-            (and implicit in hThor/Roxie).</entry>
+            <entry>The LOCAL option is required when COMBINE Form 1 is used on
+            Thor. In Thor, COMBINE is evaluated locally, so matching is
+            performed within each node or partition, not only across the
+            global totals. In hThor and Roxie, LOCAL behavior is
+            ignored.</entry>
           </row>
 
           <row>
@@ -145,6 +148,19 @@
   <emphasis>leftrecset</emphasis> and <emphasis>rightrecset</emphasis> on a
   record-by-record basis in the order in which they appear in each.</para>
 
+  <note>
+    <para>On Thor, COMBINE only supports the LOCAL form; there is no global
+    (non-LOCAL) implementation and none is currently planned. This means the
+    <emphasis>leftrecset</emphasis> and <emphasis>rightrecset</emphasis> must
+    each contain the same number of records <emphasis>on each node</emphasis>,
+    not merely the same total number of records overall. A "mismatched input
+    row count for Combine" error indicates that the per-node record counts do
+    not match, even if the overall counts are equal. This restriction applies
+    to both Form 1 and Form 2 of COMBINE. On hThor and Roxie, LOCAL is ignored
+    (since those engines always operate on a single node), so the record
+    counts only need to match overall.</para>
+  </note>
+
   <sect2 id="TRANSFORM_Function_Requirements">
     <title>COMBINE TRANSFORM Function Requirements</title>
 
@@ -174,6 +190,18 @@
     occurs if <emphasis>leftrecset</emphasis> and
     <emphasis>rightrecset</emphasis> contain a different number of
     records.</para>
+
+    <para><emphasis role="bold">Important:</emphasis> Form 1 pairs records
+    strictly by ordinal position. Matching global record counts alone may not
+    be sufficient on distributed data. For LOCAL evaluation, each node or
+    partition must have the same local number of LEFT and RIGHT rows;
+    otherwise COMBINE fails because ordinal pairing cannot be completed
+    locally.</para>
+
+    <para><emphasis role="bold">Troubleshooting:</emphasis> If local ordinal
+    alignment cannot be guaranteed, reshape the inputs before COMBINE so
+    corresponding rows align per partition. A JOIN-based refactor is a common
+    workaround.</para>
 
     <para>Example:</para>
 
@@ -228,6 +256,11 @@ OUTPUT(combined2);
     preserved. An error occurs if the number of records in the
     <emphasis>leftrecset</emphasis> differs from the number of groups in the
     <emphasis>rightrecset</emphasis>.</para>
+
+    <para><emphasis role="bold">Important:</emphasis> Form 2 also uses ordinal
+    pairing, at group granularity. Each LEFT record is paired with the RIGHT
+    group in the same ordinal position. If the LEFT record count and RIGHT
+    group count do not match, COMBINE fails.</para>
 
     <para>Example:</para>
 
