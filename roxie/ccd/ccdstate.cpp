@@ -140,15 +140,18 @@ const char *queryNodeIndexName(const IPropertyTree &graphNode, ThorActivityKind 
 
 class DelayedReleaseQueueItem : public CInterfaceOf<IInterface>
 {
+    Owned<IInterface> holdAfter;
     Owned<IInterface> goer;
     time_t goTime;
+
 public:
-    DelayedReleaseQueueItem(IInterface *_goer, unsigned delaySeconds)
-    : goer(_goer)
+    DelayedReleaseQueueItem(IInterface *_goer, IInterface *_holdAfter, unsigned delaySeconds)
+    : holdAfter(_holdAfter), goer(_goer)
     {
         time(&goTime);
         goTime += delaySeconds;
     }
+
     unsigned remaining()
     {
         time_t now;
@@ -163,16 +166,14 @@ public:
 class DelayedReleaserThread : public Thread
 {
 private:
-    std::atomic<bool> closing;
-    bool started;
+    std::atomic<bool> closing{false};
+    bool started = false;
     CriticalSection lock{SYNC_LOCATION};
     IArrayOf<DelayedReleaseQueueItem> queue;
     Semaphore sem{SYNC_LOCATION};
 public:
     DelayedReleaserThread() : Thread("DelayedReleaserThread")
     {
-        closing = false;
-        started = false;
     }
 
     ~DelayedReleaserThread()
@@ -180,12 +181,18 @@ public:
         stop();
     }
 
+    bool hasPendingReleases()
+    {
+        CriticalBlock b(lock);
+        return queue.length() != 0;
+    }
+
     virtual int run()
     {
         if (traceLevel)
             DBGLOG("DelayedReleaserThread %p starting", this);
         unsigned nextTimeout = INFINITE;
-        while (!closing || queue.length())
+        while (!closing || hasPendingReleases())
         {
             sem.wait(nextTimeout);
             CriticalBlock b(lock);
@@ -210,26 +217,49 @@ public:
 
     void stop()
     {
-        if (started)
+        bool wasStarted = false;
         {
+            CriticalBlock b(lock);
             closing = true;
+            wasStarted = started;
+        }
+
+        if (wasStarted)
+        {
             sem.signal();
             join();
         }
     }
 
-    void delayedRelease(IInterface *goer, unsigned delaySeconds)
+    void delayedRelease(IInterface *goer, IInterface *holdAfter, unsigned delaySeconds)
     {
-        if (goer)
+        if (!goer)
+        {
+            ::Release(holdAfter);
+            return;
+        }
+
+        bool releaseNow = false;
         {
             CriticalBlock b(lock);
-            if (!started)
+            if (shuttingDown || closing)
+                releaseNow = true;
+            else
             {
-                start(false);
-                started = true;
+                if (!started)
+                {
+                    start(false);
+                    started = true;
+                }
+                queue.append(*new DelayedReleaseQueueItem(goer, holdAfter, delaySeconds));
+                sem.signal();
             }
-            queue.append(*new DelayedReleaseQueueItem(goer, delaySeconds));
-            sem.signal();
+        }
+
+        if (releaseNow)
+        {
+            ::Release(goer);
+            ::Release(holdAfter);
         }
     }
 };
@@ -997,6 +1027,20 @@ public:
         channelNo = _channelNo;
     }
 
+    ~CRoxieQuerySetManager()
+    {
+        if (shuttingDown.load())
+        {
+            CriticalBlock b(crit);
+            HashIterator elems(queries);
+            for (elems.first(); elems.isValid(); elems.next())
+            {
+                IMapping &cur = elems.query();
+                queries.mapToValue(&cur)->clearSharedOnceContext();
+            }
+        }
+    }
+
     virtual const char *queryId() const
     {
         return querySetName;
@@ -1559,8 +1603,7 @@ public:
 protected:
     ~CRoxieQueryPackageManagerBase()
     {
-        if (agentQueryReleaseDelaySeconds)
-            delayedReleaser->delayedRelease(agentManagers.getClear(), agentQueryReleaseDelaySeconds);
+        releaseManagersInOrder(agentManagers, serverManager);
     }
 
     // Derived classes wanting to read serverManager or agentManagers must call this function to safely obtain their current values
@@ -1585,11 +1628,21 @@ protected:
             serverManager.setown(newServerManager);
             queryHash = newHash;
         }
-        if (agentQueryReleaseDelaySeconds)
-            delayedReleaser->delayedRelease(oldAgentManagers.getClear(), agentQueryReleaseDelaySeconds);
+        releaseManagersInOrder(oldAgentManagers, oldServerManager);
     }
 
 private:
+    static void releaseManagersInOrder(Owned<CRoxieAgentQuerySetManagerSet> &_agentManagers, Owned<IRoxieQuerySetManager> &_serverManager)
+    {
+        if (agentQueryReleaseDelaySeconds && delayedReleaser && _agentManagers)
+            delayedReleaser->delayedRelease(_agentManagers.getClear(), _serverManager.getClear(), agentQueryReleaseDelaySeconds);
+        else
+        {
+            _agentManagers.clear();
+            _serverManager.clear();
+        }
+    }
+
     mutable CriticalSection updateCrit{SYNC_LOCATION};  // protects updates of agentManagers and serverManager, and queryHash. Must be held ONLY to link, release, or overwrite these values.
     Owned<CRoxieAgentQuerySetManagerSet> agentManagers;
     Owned<IRoxieQuerySetManager> serverManager;

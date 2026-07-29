@@ -279,6 +279,7 @@ inline unsigned __int32 low(__int64 n)
 enum ahType { ahTerminate, ahInterrupt};
 typedef bool (*AbortHandler)(ahType);                                       // return true to exit program
 typedef bool (*SimpleAbortHandler)();
+typedef void (*PostAbortSignalHandler)(ahType);
 
 interface IAbortHandler : public IInterface
 {
@@ -290,6 +291,8 @@ static constexpr int JLIBERR_UserAbort = -256; // 0xffffff00
 extern jlib_decl void addAbortHandler(AbortHandler handler=NULL);               // no parameter means just set the flag for later testing.
 extern jlib_decl void addAbortHandler(SimpleAbortHandler handler=NULL);
 extern jlib_decl void addAbortHandler(IAbortHandler & handler);
+// Called after the normal abort handlers from the signal/control handler context; keep handler signal-safe on Unix.
+extern jlib_decl void setPostAbortSignalHandler(PostAbortSignalHandler handler);
 extern jlib_decl void removeAbortHandler(AbortHandler handler);
 extern jlib_decl void removeAbortHandler(SimpleAbortHandler handler);
 extern jlib_decl void removeAbortHandler(IAbortHandler & handler);

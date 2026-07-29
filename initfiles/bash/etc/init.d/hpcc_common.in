@@ -652,6 +652,7 @@ stop_component() {
         local RESULT=1
         local WAITTIME=30
         [[ $compType = "dali" ]] && WAITTIME=720
+        [[ $compType = "roxie" ]] && WAITTIME=75
         if [[ "${HPCC_WAIT_TIME}" =~ ^[0-9]+$ ]]; then
             WAITTIME=${HPCC_WAIT_TIME}
         fi

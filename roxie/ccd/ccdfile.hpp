@@ -65,6 +65,8 @@ interface IRoxieFileCache : extends IInterface
     virtual RoxieFileStatus fileUpToDate(IFile *f, offset_t size, const CDateTime &modified, bool isCompressed, bool autoDisconnect=true) = 0;
     virtual int numFilesToCopy() = 0;
     virtual void closeExpired(bool remote) = 0;
+    virtual void closeOpenFiles() = 0;
+    virtual void stopCopyingAndCloseFiles() = 0;
     virtual StringAttrMapping *queryFileErrorList() = 0;  // returns list of files that could not be open
     virtual void flushUnusedDirectories(const char *origBaseDir, const char *directory, StringBuffer &info) = 0;
     virtual void start() = 0;

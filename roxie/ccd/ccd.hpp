@@ -35,6 +35,7 @@
 #include "rtlformat.hpp"
 #include "rtldynfield.hpp"
 #include "workunit.hpp"
+#include <atomic>
 
 #ifdef CCD_EXPORTS
 #define CCD_API DECL_EXPORT
@@ -282,7 +283,7 @@ enum class SinkMode : byte
 
 
 // Global configuration info
-extern bool shuttingDown;
+extern std::atomic<bool> shuttingDown;
 extern unsigned callbackRetries;
 extern unsigned callbackTimeout;
 extern unsigned lowTimeout;

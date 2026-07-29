@@ -2182,7 +2182,7 @@ extern jhtree_decl void ensureDiskPageCacheInitialized(bool propagateInitError)
     diskPageCacheInitialized = true;
 }
 
-void clearDiskPageCache()
+extern jhtree_decl void clearDiskPageCache()
 {
     IPageCache * cache = nullptr;
     std::swap(cache, activePageCache);

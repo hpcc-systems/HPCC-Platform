@@ -3886,7 +3886,7 @@ extern IRoxieOutputQueueManager *createOutputQueueManager(unsigned numWorkers, b
 
 class PacketDiscarder : public Thread, implements IPacketDiscarder
 {
-    bool aborted;
+    std::atomic<bool> aborted{false};
     Owned<IRowManager> rowManager;
     Owned<IMessageCollator> mc;
 
@@ -3966,9 +3966,9 @@ public:
 
     virtual void stop()
     {
+        aborted = true;
         if (mc)
             mc->interrupt();
-        aborted = true;
         join();
     }
 

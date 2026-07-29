@@ -154,6 +154,7 @@ interface IQueryFactory : extends IInterface
     virtual ILoadedDllEntry *queryDll() const = 0;
     virtual IConstWorkUnit *queryWorkUnit() const = 0;
     virtual ISharedOnceContext *querySharedOnceContext() const = 0;
+    virtual void clearSharedOnceContext() = 0;
     virtual IDeserializedResultStore &queryOnceResultStore() const = 0;
     virtual IPropertyTree &queryOnceContext(const IRoxieContextLogger &logctx) const = 0;
 

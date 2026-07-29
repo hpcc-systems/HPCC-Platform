@@ -1208,6 +1208,8 @@ public:
 
     ~CQueryFactory()
     {
+        // ONCE results may contain rows whose destructors depend on metadata owned by the activity factories.
+        sharedOnceContext.clear();
         HashIterator graphs(graphMap);
         for(graphs.first();graphs.isValid();graphs.next())
         {
@@ -1478,6 +1480,11 @@ static hash64_t getQueryHash(const char *id, const IQueryDll *dll, const IRoxieP
     virtual ISharedOnceContext *querySharedOnceContext() const override
     {
         return sharedOnceContext;
+    }
+
+    virtual void clearSharedOnceContext() override
+    {
+        sharedOnceContext.clear();
     }
 
     virtual IDeserializedResultStore &queryOnceResultStore() const override

@@ -62,7 +62,8 @@
 
 //=================================================================================
 
-bool shuttingDown = false;
+std::atomic<bool> shuttingDown{ false };
+static std::atomic<bool> sigShutdownRequested{ false };
 unsigned callbackRetries = 3;
 unsigned callbackTimeout = 5000;
 unsigned lowTimeout = 10000;
@@ -311,24 +312,90 @@ public:
     bool onAbort()
     {
         aborted.signal();
-        roxieMetrics.clear();
-#ifdef _DEBUG
-        return false; // we want full leak checking info
-#else
-        return true; // we don't care - just exit as fast as we can
-#endif
+        // Allow the normal shutdown path to run after INT/QUIT/TERM rather than exiting from the signal handler.
+        return false;
     }
 } waiter;
 
 static Semaphore closedDown{SYNC_LOCATION};
+static CriticalSection closedDownCrit{SYNC_LOCATION};
+// Guarded by closedDownCrit.
+static unsigned closedDownWaiters = 0;
+static bool closedDownSignalled = false;
+
+// Release any non-main threads that entered closedown() and are waiting for the
+// main shutdown path to reach a point where shared services can be stopped safely.
+static void signalClosedDown()
+{
+    unsigned waiters;
+    {
+        CriticalBlock b(closedDownCrit);
+        closedDownSignalled = true;
+        waiters = closedDownWaiters;
+        closedDownWaiters = 0;
+    }
+    if (waiters)
+        closedDown.signal(waiters);
+}
 
 void closedown()
 {
     waiter.onAbort();
-    closedDown.wait();
+    bool waitForClosedown;
+    {
+        CriticalBlock b(closedDownCrit);
+        waitForClosedown = !closedDownSignalled;
+        if (waitForClosedown)
+            ++closedDownWaiters;
+    }
+    if (waitForClosedown)
+        closedDown.wait();
     Owned<IFile> sentinelFile = createSentinelTarget();
     removeSentinelFile(sentinelFile);
 }
+
+// Signal handlers cannot run the normal shutdown sequence directly. This thread
+// converts an async signal request into an orderly call to closedown().
+class CSigShutdownPoller : public Thread
+{
+    std::atomic<bool> stopping;
+public:
+    CSigShutdownPoller()
+        : Thread("CSigShutdownPoller"), stopping(false)
+    {
+    }
+
+    virtual int run() override
+    {
+        while (!stopping)
+        {
+            if (sigShutdownRequested.load())
+            {
+                shuttingDown = true;
+                closedown();
+                break;
+            }
+            Sleep(200);
+        }
+        return 0;
+    }
+
+    void stop()
+    {
+        stopping = true;
+    }
+
+    void stopAndJoin(bool notifyClosedDown)
+    {
+        if (isAlive())
+        {
+            if (notifyClosedDown)
+                signalClosedDown();
+            stop();
+            join();
+        }
+    }
+};
 
 void getAccessList(const char *aclName, const IPropertyTree *topology, IPropertyTree *aclInfo)
 {
@@ -408,6 +475,15 @@ public:
         return false; // It returns to excsighandler() to abort!
     }
 } abortHandler;
+
+static void stopSocketListeners()
+{
+    while (socketListeners.isItem(0))
+    {
+        socketListeners.item(0).stop();
+        socketListeners.remove(0);
+    }
+}
 
 #ifdef _WIN32
 int myhook(int alloctype, void *, size_t nSize, int p1, long allocSeq, const unsigned char *file, int line)
@@ -611,10 +687,14 @@ void readStaticTopology()
 }
 #endif
 
-static bool roxieAbortHandler()
+static bool roxieNoExitAbortHandler([[maybe_unused]] ahType type)
 {
-    (void)stopRoxieEventRecording(nullptr);
-    return true;
+    return false;
+}
+
+static void roxieAbortHandler([[maybe_unused]] ahType type)
+{
+    sigShutdownRequested.store(true);
 }
 
 int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
@@ -623,6 +703,9 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         return EXIT_FAILURE;
 
     CCycleTimer startupTimer;
+
+    CSigShutdownPoller sigShutdownPoller;
+
     EnableSEHtoExceptionMapping();
     setTerminateOnSEH();
     init_signals();
@@ -655,7 +738,7 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
             argv[i] = "--raw";
     }
 
-    #ifdef _USE_CPPUNIT
+#ifdef _USE_CPPUNIT
     if (argc>=2 && (stricmp(argv[1], "-selftest")==0 || stricmp(argv[1], "--selftest")==0))
     {
         selfTestMode = true;
@@ -689,6 +772,7 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         return wasSucessful;
     }
 #endif
+
 #ifdef _DEBUG
 #ifdef _WIN32
     _CrtSetAllocHook(myhook);
@@ -708,7 +792,9 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
     codeDirectory.set(currentDirectory);
     addNonEmptyPathSepChar(codeDirectory);
     PerfTracer startupTracer;
-    addAbortHandler(roxieAbortHandler);
+    addAbortHandler(roxieNoExitAbortHandler); // to prevent UnixAbortHandler() calling _exit()
+    setPostAbortSignalHandler(roxieAbortHandler);
+    sigShutdownPoller.start(false);
 
     try
     {
@@ -1794,6 +1880,8 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
                     }
                 }
                 DBGLOG("Waiting for queries");
+                // If the signal is delivered to this thread, the local abort handler wakes it directly.
+                // If it is delivered to another thread, roxieAbortHandler wakes it via CSigShutdownPoller::closedown().
                 LocalIAbortHandler abortHandler(waiter);
                 waiter.wait();
             }
@@ -1804,26 +1892,28 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
                 E->Release();
             }
         }
+        shuttingDown = true;
         DBGLOG("Roxie closing down");
         logCacheState();
-        shuttingDown = true;
         stopTopoThread();
+        setSEHtoExceptionHandler(NULL);
+        queryFileCache().stopCopyingAndCloseFiles();
+        queryFileCache().closeOpenFiles();
+        // Signal before stopping socket listeners to avoid deadlocking control request handlers.
+        // This is needed here if any non-main thread has entered closedown() before the main
+        // shutdown path reaches cleanup code that joins/stops that same class of thread.
+        signalClosedDown();
+        stopSocketListeners();
+        stopDelayedReleaser();
         ::Release(globalPackageSetManager);
         globalPackageSetManager = NULL;
-        setSEHtoExceptionHandler(NULL);
-        closedDown.signal();
-        while (socketListeners.isItem(0))
-        {
-            socketListeners.item(0).stop();
-            socketListeners.remove(0);
-        }
         packetDiscarder->stop();
         packetDiscarder.clear();
         ROQ->stop();
         ROQ->join();
         ROQ->Release();
         ROQ = NULL;
-        stopDelayedReleaser();
+        sigShutdownPoller.stopAndJoin(false);
     }
     catch (IException *E)
     {
@@ -1832,9 +1922,13 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         if (!queryLogMsgManager()->isActiveMonitor(queryStderrLogMsgHandler()))
             fprintf(stderr, "EXCEPTION: (%d): %s\n", E->errorCode(), x.str());
         E->Release();
+        sigShutdownPoller.stopAndJoin(true);
     }
 
     stopSecretUpdateThread();
+    signalClosedDown();
+    stopSocketListeners();
+    clearDiskPageCache();
     roxieMetrics.clear();
 #ifndef _CONTAINERIZED
     stopPerformanceMonitor();

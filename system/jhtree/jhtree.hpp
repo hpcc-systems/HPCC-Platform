@@ -351,6 +351,7 @@ public:
 
 
 extern jhtree_decl void ensureDiskPageCacheInitialized(bool propagateInitError);
+extern jhtree_decl void clearDiskPageCache();
 extern jhtree_decl size32_t getPageCachePageSize();
 
 #endif

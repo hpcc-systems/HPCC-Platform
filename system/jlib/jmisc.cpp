@@ -21,6 +21,7 @@
 
 #include "platform.h"
 #include "stdio.h"
+#include <atomic>
 #include <time.h>
 #include "jmisc.hpp"
 #include "jmutex.hpp"
@@ -665,6 +666,7 @@ bool wait_program_timeout(HANDLE handle,DWORD &runcode,unsigned timeoutMs)
 
 static bool hadAbortSignal = false;
 static bool handlerInstalled = false;
+static std::atomic<PostAbortSignalHandler> postAbortSignalHandler{nullptr};
 CriticalSection abortCrit(SYNC_LOCATION);
 
 class AbortHandlerInfo : public CInterface
@@ -745,12 +747,18 @@ BOOL WINAPI WindowsAbortHandler ( DWORD dwCtrlType )
         {
             hadAbortSignal = true;
             bool doExit = notifyOnAbort(ahInterrupt);
+            PostAbortSignalHandler postHandler = postAbortSignalHandler.load();
+            if (postHandler)
+                postHandler(ahInterrupt);
             return !doExit; 
         }
         case CTRL_LOGOFF_EVENT:
         case CTRL_SHUTDOWN_EVENT:
             hadAbortSignal = true;
             notifyOnAbort(ahTerminate);
+            PostAbortSignalHandler postHandler = postAbortSignalHandler.load();
+            if (postHandler)
+                postHandler(ahTerminate);
             return FALSE;
     }
     return FALSE; 
@@ -777,7 +785,11 @@ static void UnixAbortHandler(int signo)
             type = ahTerminate;
 
     hadAbortSignal = true;
-    if (handlers.length()==0 || notifyOnAbort(type))
+    bool doExit = handlers.length()==0 || notifyOnAbort(type);
+    PostAbortSignalHandler postHandler = postAbortSignalHandler.load();
+    if (postHandler)
+        postHandler(type);
+    if (doExit)
     {
 #ifdef _COVERAGE
         ClearModuleObjects();
@@ -859,6 +871,13 @@ void addAbortHandler(IAbortHandler & handler)
     CriticalBlock c(abortCrit);
     queryInstallAbortHandler();
     handlers.append(*new AbortHandlerInfo(&handler));
+}
+
+void setPostAbortSignalHandler(PostAbortSignalHandler handler)
+{
+    CriticalBlock c(abortCrit);
+    queryInstallAbortHandler();
+    postAbortSignalHandler.store(handler);
 }
 
 void removeAbortHandler(AbortHandler handler)

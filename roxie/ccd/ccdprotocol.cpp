@@ -1832,6 +1832,12 @@ readAnother:
             return;
         }
 
+        if (shuttingDown.load(std::memory_order_relaxed))
+        {
+            client.clear();
+            return;
+        }
+
         SpanTimeStamp spanStartTimeStamp(true);
 
         PerfTracer perf;

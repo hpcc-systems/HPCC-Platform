@@ -46,6 +46,7 @@
 #include "thorcommon.hpp"
 #include "eclhelper_dyn.hpp"
 #include "rtldynfield.hpp"
+#include <algorithm>
 
 std::atomic<unsigned> numFilesOpen[2];
 std::atomic<unsigned> filesReopened = 0;
@@ -925,7 +926,9 @@ class CRoxieFileCache : implements IRoxieFileCache, implements ICopyFileProgress
     mutable CopyMapStringToMyClassViaBase<CRoxieLazyFileIO, ILazyFileIO> files;
     mutable CriticalSection crit{SYNC_LOCATION};
     bool started;
-    bool aborting;
+    std::atomic<bool> aborting{false};
+    std::atomic<unsigned> activeCopies{0};
+    Semaphore activeCopiesStopped{SYNC_LOCATION};
     std::atomic<bool> closing;
     std::atomic<bool> closePending[2];
     StringAttrMapping fileErrorList;
@@ -1271,8 +1274,26 @@ class CRoxieFileCache : implements IRoxieFileCache, implements ICopyFileProgress
         }
     }
 
-    static bool doCopyFile(ILazyFileIO *f, const char *targetFilename, const char *destPath, const char *msg, CFflags copyFlags=CFnone)
+    bool doCopyFile(ILazyFileIO *f, const char *targetFilename, const char *destPath, const char *msg, ICopyFileProgress *progress, CFflags copyFlags=CFnone)
     {
+        class ActiveCopyBlock
+        {
+            CRoxieFileCache &owner;
+        public:
+            ActiveCopyBlock(CRoxieFileCache &_owner) : owner(_owner)
+            {
+                ++owner.activeCopies;
+            }
+            ~ActiveCopyBlock()
+            {
+                if ((--owner.activeCopies == 0) && owner.aborting.load())
+                    owner.activeCopiesStopped.signal();
+            }
+        } activeCopy(*this);
+
+        if (aborting.load())
+            throw makeStringExceptionV(ROXIE_FILE_ERROR, "Copy cancelled during Roxie shutdown");
+
         bool fileCopied = false;
         IFile *sourceFile;
         try
@@ -1326,12 +1347,14 @@ class CRoxieFileCache : implements IRoxieFileCache, implements ICopyFileProgress
                         StringBuffer str;
                         str.appendf("doCopyFile %s", sourceFile->queryFilename());
                         TimeSection timing(str.str());
-                        sourceFile->copyTo(destFile,DEFAULT_COPY_BLKSIZE,NULL,true,copyFlags);
+                        sourceFile->copyTo(destFile,DEFAULT_COPY_BLKSIZE,progress,true,copyFlags);
                     }
                     else
                     {
-                        sourceFile->copyTo(destFile,DEFAULT_COPY_BLKSIZE,NULL,true,copyFlags);
+                        sourceFile->copyTo(destFile,DEFAULT_COPY_BLKSIZE,progress,true,copyFlags);
                     }
+                    if (progress && aborting.load())
+                        throw makeStringExceptionV(ROXIE_FILE_ERROR, "Copy cancelled during Roxie shutdown");
                 }
                 f->setCopying(false);
                 fileCopied = true;
@@ -1372,7 +1395,7 @@ class CRoxieFileCache : implements IRoxieFileCache, implements ICopyFileProgress
         return fileCopied;
     }
 
-    static bool doCopy(ILazyFileIO *f, bool background, CFflags copyFlags=CFnone)
+    bool doCopy(ILazyFileIO *f, bool background, CFflags copyFlags=CFnone)
     {
         if (!f->isRemote())
             f->copyComplete();
@@ -1391,7 +1414,7 @@ class CRoxieFileCache : implements IRoxieFileCache, implements ICopyFileProgress
             }
             
             const char *msg = background ? "Background copy" : "Copy";
-            return doCopyFile(f, targetFilename, destPath.str(), msg, copyFlags);
+            return doCopyFile(f, targetFilename, destPath.str(), msg, this, copyFlags);
         }
         return false;  // if we get here there was no file copied
     }
@@ -1403,7 +1426,6 @@ public:
                         cidt(*this),
                         bct(*this), hct(*this)
     {
-        aborting = false;
         closing = false;
         closePending[false] = false;
         closePending[true] = false;
@@ -1771,7 +1793,7 @@ public:
 
     virtual CFPmode onProgress(unsigned __int64 sizeDone, unsigned __int64 totalSize)
     {
-        return aborting ? CFPcancel : CFPcontinue;
+        return aborting.load() ? CFPcancel : CFPcontinue;
     }
 
     virtual void removeCache(ILazyFileIO *file) const
@@ -2076,6 +2098,97 @@ public:
             DBGLOG("closeExpired %s scheduled - %d files open", remote ? "remote" : "local", (int) numFilesOpen[remote]);
             toClose.signal();
         }
+    }
+
+    void closeFiles(IArrayOf<ILazyFileIO> &filesToClose, const char *description)
+    {
+        unsigned numFiles = filesToClose.ordinality();
+        if (!numFiles)
+            return;
+
+        // Close files here in parallel so they do not have to be closed serially by the kernel after exit()
+        // Closing several hundred thousand nfs files serially can take several minutes so we try to do this
+        // in parallel using 1000 files per thread, up to 100 threads max.
+        unsigned numThreads = std::min((numFiles + 999U) / 1000U, 100U);
+        PROGLOG("Closing %u %s during Roxie shutdown using %u threads", numFiles, description, numThreads);
+        asyncFor("Async Closing Files", numFiles, numThreads, false, [&filesToClose](unsigned idx)
+        {
+            try
+            {
+                ILazyFileIO &file = filesToClose.item(idx);
+                file.close();
+            }
+            catch (IException *E)
+            {
+                EXCLOG(MCoperatorError, E, "Error closing Roxie file during shutdown: ");
+                E->Release();
+            }
+            catch (...)
+            {
+                IERRLOG("Unknown exception closing Roxie file during shutdown");
+            }
+        });
+        PROGLOG("Closed %u %s", numFiles, description);
+    }
+
+    virtual void stopCopyingAndCloseFiles() override
+    {
+        IArrayOf<ILazyFileIO> filesToClose;
+        {
+            CriticalBlock b(crit);
+            aborting = true;
+            closing = true;
+            HashIterator h(files);
+            ForEach(h)
+            {
+                ILazyFileIO *match = files.mapToValue(&h.query());
+                if (match && match->isAliveAndLink())
+                {
+                    Owned<ILazyFileIO> f = match;
+                    if (f->isCopying())
+                        filesToClose.append(*f.getClear());
+                }
+            }
+        }
+
+        if (started)
+        {
+            toCopy.interrupt();
+            toClose.interrupt();
+            bct.join();
+            hct.join();
+        }
+        if (cidtActive)
+        {
+            cidtSleep.interrupt();
+            cidt.join();
+            cidtActive = false;
+        }
+
+        while (activeCopies.load())
+            activeCopiesStopped.wait();
+
+        closeFiles(filesToClose, "files that were being copied");
+    }
+
+    virtual void closeOpenFiles() override
+    {
+        IArrayOf<ILazyFileIO> filesToClose;
+        {
+            CriticalBlock b(crit);
+            HashIterator h(files);
+            ForEach(h)
+            {
+                ILazyFileIO *match = files.mapToValue(&h.query());
+                if (match && match->isAliveAndLink())
+                {
+                    Owned<ILazyFileIO> f = match;
+                    if (f->isOpen() && !f->isCopying())
+                        filesToClose.append(*f.getClear());
+                }
+            }
+        }
+        closeFiles(filesToClose, "open files");
     }
 
     static unsigned __int64 readPage(const char * &_t)

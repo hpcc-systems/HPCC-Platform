@@ -183,29 +183,45 @@ private:
     private:
         CRoxieDaliHelper *owner;
         Semaphore abortSem{SYNC_LOCATION};
-        bool aborted;
+        std::atomic<bool> aborted{false};
         bool wasConnected;
+
     public:
         CRoxieDaliConnectWatcher(CRoxieDaliHelper *_owner) : Thread("CRoxieDaliConnectWatcher"), owner(_owner)
         {
-            aborted = false;
             wasConnected = owner->isConnected;
         }
 
         virtual int run()
         {
-            while (!aborted)
+            while (!aborted && !shuttingDown)
             {
-                if (topology && topology->getPropBool("@lockDali", false))
+                try
                 {
+                    if (!topology || !topology->getPropBool("@lockDali", false))
+                    {
+                        wasConnected = owner->checkDaliConnectionValid();
+                        bool connected = owner->connect(ROXIE_DALI_CONNECT_TIMEOUT);
+                        if (connected && !wasConnected && traceLevel)
+                            DBGLOG("CRoxieDaliConnectWatcher reconnected");
+                        wasConnected = connected;
+                    }
                 }
-                else
+                catch (IException *E)
                 {
-                    wasConnected = owner->checkDaliConnectionValid();
-                    bool connected = owner->connect(ROXIE_DALI_CONNECT_TIMEOUT);
-                    if (connected && !wasConnected && traceLevel)
-                        DBGLOG("CRoxieDaliConnectWatcher reconnected");
-                    wasConnected = connected;
+                    if (aborted || shuttingDown || isAborting())
+                    {
+                        E->Release();
+                        break;
+                    }
+                    EXCLOG(MCoperatorError, E, "CRoxieDaliConnectWatcher: ");
+                    E->Release();
+                }
+                catch (...)
+                {
+                    if (aborted || shuttingDown || isAborting())
+                        break;
+                    IERRLOG("Unknown exception in CRoxieDaliConnectWatcher");
                 }
                 abortSem.wait(ROXIE_DALI_CONNECT_TIMEOUT);
             }
