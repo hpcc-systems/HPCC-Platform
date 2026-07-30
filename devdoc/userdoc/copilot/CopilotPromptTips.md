@@ -5,7 +5,7 @@ Whether you're summarizing complex texts, brainstorming innovative ideas, or cre
 
 Dive in and discover how these simple yet powerful prompts can save you time and effort in your daily tasks.
 
-For tips on using Copilot for ECL development, see [The `@ecl` Participant in Copilot](eclParticipantinCopilot.md),
+For tips on using Copilot for ECL development, see [The `@ecl` Participant in Copilot](eclParticipantinCopilot.md) and [Why `@workspace` matters in Copilot Chat](UsingWorkspace.md).
 
 ## Generic Prompts
 
