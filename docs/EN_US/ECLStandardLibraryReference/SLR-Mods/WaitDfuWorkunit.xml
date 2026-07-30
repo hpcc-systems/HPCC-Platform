@@ -10,10 +10,7 @@
       <primary>File.WaitDfuWorkunit</primary>
     </indexterm><indexterm>
       <primary>WaitDfuWorkunit</primary>
-    </indexterm>(</emphasis> <emphasis> dfuwuid</emphasis> <emphasis
-  role="bold"> [</emphasis> <emphasis>,timeout</emphasis> <emphasis
-  role="bold">] [</emphasis> <emphasis>,espserverIPport </emphasis> <emphasis
-  role="bold">] )</emphasis></para>
+    </indexterm>(</emphasis> <emphasis>wuid, timeOut, espServerIpPort</emphasis> <emphasis role="bold">)</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -23,7 +20,7 @@
 
       <tbody>
         <row>
-          <entry><emphasis>dfuwuid</emphasis></entry>
+          <entry><emphasis>wuid</emphasis></entry>
 
           <entry>A null-terminated string containing the DFU workunit ID
           (DFUWUID) for the job to wait for. This value is returned by the
@@ -32,7 +29,7 @@
         </row>
 
         <row>
-          <entry><emphasis>timeout</emphasis></entry>
+          <entry><emphasis>timeOut</emphasis></entry>
 
           <entry>Optional. An integer value indicating the timeout setting. If
           omitted, the default is -1. If set to zero (0), execution control
@@ -41,7 +38,7 @@
         </row>
 
         <row>
-          <entry><emphasis>espserverIPport</emphasis></entry>
+          <entry><emphasis>espServerIpPort</emphasis></entry>
 
           <entry>Optional. This should almost always be omitted, which then
           defaults to the value contained in the lib_system.ws_fs_server

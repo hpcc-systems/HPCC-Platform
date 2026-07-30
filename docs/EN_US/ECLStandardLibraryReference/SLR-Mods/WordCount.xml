@@ -10,16 +10,13 @@
       <primary>Str.WordCount</primary>
     </indexterm><indexterm>
       <primary>WordCount</primary>
-    </indexterm>(</emphasis> <emphasis>source</emphasis><emphasis role="bold">
-  )</emphasis></para>
+    </indexterm>(</emphasis> <emphasis>text</emphasis> <emphasis role="bold">)</emphasis></para>
 
   <para><emphasis role="bold">STD.Uni.WordCount<indexterm>
       <primary>STD.Uni.WordCount</primary>
     </indexterm><indexterm>
       <primary>Uni.WordCount</primary>
-    </indexterm>(</emphasis> <emphasis>source </emphasis><emphasis
-  role="bold">[</emphasis><emphasis>, locale </emphasis><emphasis role="bold">
-  ] )</emphasis></para>
+    </indexterm>(</emphasis> <emphasis>text, localename</emphasis> <emphasis role="bold">)</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -29,14 +26,14 @@
 
       <tbody>
         <row>
-          <entry><emphasis>source</emphasis></entry>
+          <entry><emphasis>text</emphasis></entry>
 
           <entry>A string containing the words to count. Words are delimited
           by spaces.</entry>
         </row>
 
         <row>
-          <entry><emphasis>locale</emphasis></entry>
+          <entry><emphasis>localename</emphasis></entry>
 
           <entry>A null-terminated string containing the language and country
           code to use to determine correct sort order and other

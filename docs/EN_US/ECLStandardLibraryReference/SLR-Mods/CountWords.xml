@@ -10,15 +10,13 @@
       <primary>Str.CountWords</primary>
     </indexterm><indexterm>
       <primary>CountWords</primary>
-    </indexterm>(</emphasis> <emphasis>source, separator, [allow_blank]
-  </emphasis><emphasis role="bold">)</emphasis></para>
+    </indexterm>(</emphasis> <emphasis>src, separator, allow_blank</emphasis> <emphasis role="bold">)</emphasis></para>
 
   <para><emphasis role="bold">STD.Uni.CountWords<indexterm>
       <primary>STD.Uni.CountWords</primary>
     </indexterm><indexterm>
       <primary>Uni.CountWords</primary>
-    </indexterm>(</emphasis> <emphasis>source, separator, [allow_blank]
-  </emphasis><emphasis role="bold">)</emphasis></para>
+    </indexterm>(</emphasis> <emphasis>src, separator, allow_blank</emphasis><emphasis role="bold">)</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -28,7 +26,7 @@
 
       <tbody>
         <row>
-          <entry><emphasis>source</emphasis></entry>
+          <entry><emphasis>src</emphasis></entry>
 
           <entry>A string containing the words to count.</entry>
         </row>

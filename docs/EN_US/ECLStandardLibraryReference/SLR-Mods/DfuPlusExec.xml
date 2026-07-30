@@ -10,7 +10,7 @@
       <primary>File.DfuPlusExec</primary>
     </indexterm><indexterm>
       <primary>DfuPlusExec</primary>
-    </indexterm>(</emphasis> <emphasis> commandline</emphasis> <emphasis
+    </indexterm>(</emphasis> <emphasis>cmdline</emphasis> <emphasis
   role="bold">] )</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
@@ -21,7 +21,7 @@
 
       <tbody>
         <row>
-          <entry><emphasis>commandline</emphasis></entry>
+          <entry><emphasis>cmdline</emphasis></entry>
 
           <entry>A null-terminated string containing the DFUPlus command line
           to execute. The valid arguments are documented in the Client Tools

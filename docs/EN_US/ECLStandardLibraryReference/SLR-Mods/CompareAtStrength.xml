@@ -10,7 +10,7 @@
       <primary>Uni.CompareAtStrength</primary>
     </indexterm><indexterm>
       <primary>CompareAtStrength</primary>
-    </indexterm>(</emphasis> <emphasis>source1, source2, strength</emphasis>
+    </indexterm>(</emphasis> <emphasis>src1, src2, strength</emphasis>
   <emphasis role="bold">)</emphasis> <emphasis role="bold"></emphasis></para>
 
   <para><emphasis role="bold">STD.Uni.LocaleCompareAtStrength<indexterm>
@@ -20,7 +20,7 @@
     </indexterm><indexterm>
       <primary>LocaleCompareAtStrength</primary>
     </indexterm>(</emphasis>
-  <emphasis>source1,source2,locale,strength</emphasis> <emphasis
+  <emphasis>src1, src2, locale_name, strength</emphasis> <emphasis
   role="bold">)</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
@@ -31,13 +31,13 @@
 
       <tbody>
         <row>
-          <entry><emphasis>source1</emphasis></entry>
+          <entry><emphasis>src1</emphasis></entry>
 
           <entry>A string containing the data to compare.</entry>
         </row>
 
         <row>
-          <entry><emphasis>source2</emphasis></entry>
+          <entry><emphasis>src2</emphasis></entry>
 
           <entry>A string containing the data to compare.</entry>
         </row>
@@ -86,7 +86,7 @@
         </row>
 
         <row>
-          <entry><emphasis>locale</emphasis></entry>
+          <entry><emphasis>locale_name</emphasis></entry>
 
           <entry>A null-terminated string containing the language and country
           code to use to determine correct sort order and other

@@ -10,8 +10,7 @@
       <primary>File.SuperFileExists</primary>
     </indexterm><indexterm>
       <primary>SuperFileExists</primary>
-    </indexterm>(</emphasis> <emphasis> filename </emphasis> <emphasis
-  role="bold">)</emphasis></para>
+    </indexterm>(</emphasis> <emphasis>superName</emphasis> <emphasis role="bold">)</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -21,7 +20,7 @@
 
       <tbody>
         <row>
-          <entry><emphasis>filename</emphasis></entry>
+          <entry><emphasis>superName</emphasis></entry>
 
           <entry>A null-terminated string containing the logical name of the
           superfile.</entry>

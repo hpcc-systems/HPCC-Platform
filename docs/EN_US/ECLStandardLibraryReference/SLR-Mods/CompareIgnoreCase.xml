@@ -10,14 +10,14 @@
       <primary>Str.CompareIgnoreCase</primary>
     </indexterm><indexterm>
       <primary>CompareIgnoreCase</primary>
-    </indexterm>(</emphasis> <emphasis>source1,source2</emphasis> <emphasis
+    </indexterm>(</emphasis> <emphasis>src1, src2</emphasis> <emphasis
   role="bold">)</emphasis> <emphasis role="bold"></emphasis></para>
 
   <para><emphasis role="bold">STD.Uni.CompareIgnoreCase<indexterm>
       <primary>STD.Uni.CompareIgnoreCase</primary>
     </indexterm><indexterm>
       <primary>Uni.CompareIgnoreCase</primary>
-    </indexterm>(</emphasis> <emphasis>source1,source2</emphasis> <emphasis
+    </indexterm>(</emphasis> <emphasis>src1, src2</emphasis> <emphasis
   role="bold">)</emphasis> <emphasis role="bold"></emphasis></para>
 
   <para><emphasis role="bold">STD.Uni.LocaleCompareIgnoreCase<indexterm>
@@ -26,7 +26,7 @@
       <primary>Uni.LocaleCompareIgnoreCase</primary>
     </indexterm><indexterm>
       <primary>LocaleCompareIgnoreCase</primary>
-    </indexterm>(</emphasis> <emphasis>source1,source2, locale</emphasis>
+    </indexterm>(</emphasis> <emphasis>src1, src2, locale_name</emphasis>
   <emphasis role="bold">)</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
@@ -37,19 +37,19 @@
 
       <tbody>
         <row>
-          <entry><emphasis>source1</emphasis></entry>
+          <entry><emphasis>src1</emphasis></entry>
 
           <entry>A string containing the data to compare.</entry>
         </row>
 
         <row>
-          <entry><emphasis>source2</emphasis></entry>
+          <entry><emphasis>src2</emphasis></entry>
 
           <entry>A string containing the data to compare.</entry>
         </row>
 
         <row>
-          <entry><emphasis>locale</emphasis></entry>
+          <entry><emphasis>locale_name</emphasis></entry>
 
           <entry>A null-terminated string containing the language and country
           code to use to determine correct sort order and other

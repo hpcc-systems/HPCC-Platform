@@ -10,8 +10,7 @@
       <primary>File.SetFileDescription</primary>
     </indexterm><indexterm>
       <primary>SetFileDescription</primary>
-    </indexterm>( </emphasis> <emphasis>filename , value </emphasis> <emphasis
-  role="bold">)</emphasis></para>
+    </indexterm>( </emphasis> <emphasis>lfn, val</emphasis> <emphasis role="bold">)</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -21,14 +20,14 @@
 
       <tbody>
         <row>
-          <entry><emphasis>filename</emphasis></entry>
+          <entry><emphasis>lfn</emphasis></entry>
 
           <entry>A null-terminated string containing the logical name of the
           file.</entry>
         </row>
 
         <row>
-          <entry><emphasis>value</emphasis></entry>
+          <entry><emphasis>val</emphasis></entry>
 
           <entry>A null-terminated string containing the description to place
           on the file.</entry>

@@ -10,7 +10,7 @@
       <primary>File.PlaneLogicalFileName</primary>
     </indexterm><indexterm>
       <primary>PlaneLogicalFileName</primary>
-    </indexterm>(</emphasis> <emphasis> planeName, path, abspath=TRUE </emphasis>
+    </indexterm>(</emphasis> <emphasis>planeName, path, abspath</emphasis>
   <emphasis role="bold">)</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">

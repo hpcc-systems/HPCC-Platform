@@ -10,9 +10,7 @@
       <primary>File.SetReadOnly</primary>
     </indexterm><indexterm>
       <primary>SetReadOnly</primary>
-    </indexterm>(</emphasis> <emphasis> filename </emphasis> <emphasis
-  role="bold">, </emphasis> <emphasis>flag </emphasis> <emphasis
-  role="bold">)</emphasis></para>
+    </indexterm>(</emphasis> <emphasis>lfn, ro</emphasis> <emphasis role="bold">)</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -22,14 +20,14 @@
 
       <tbody>
         <row>
-          <entry><emphasis>filename</emphasis></entry>
+          <entry><emphasis>lfn</emphasis></entry>
 
           <entry>A null-terminated string containing the logical name of the
           file.</entry>
         </row>
 
         <row>
-          <entry><emphasis>flag</emphasis></entry>
+          <entry><emphasis>ro</emphasis></entry>
 
           <entry>A boolean value indicating which way to set the read-only
           attribute of the <emphasis>filename</emphasis>.</entry>

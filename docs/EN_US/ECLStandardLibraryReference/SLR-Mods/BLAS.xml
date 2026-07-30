@@ -920,8 +920,7 @@ Test1_mat := STD.BLAS.dtrsm(Side.Ax, Triangle.Lower, FALSE, Diagonal.NotUnitTri,
         <primary>BLAS.extract_diag</primary>
       </indexterm><indexterm>
         <primary>extract_diag</primary>
-      </indexterm>(</emphasis> <emphasis>m.n.x);</emphasis>
-    <emphasis></emphasis></para>
+      </indexterm>(</emphasis> <emphasis>m, n, x</emphasis> <emphasis role="bold">)</emphasis></para>
 
     <para></para>
 

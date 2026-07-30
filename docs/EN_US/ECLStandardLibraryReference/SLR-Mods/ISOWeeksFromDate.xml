@@ -8,8 +8,7 @@
       <primary>STD.Date.ISOWeeksFromDate</primary>
     </indexterm><indexterm>
       <primary>ISOWeeksFromDate</primary>
-    </indexterm>(</emphasis> <emphasis>date</emphasis> <emphasis
-  role="bold">)</emphasis></para>
+    </indexterm>(</emphasis> <emphasis>d</emphasis> <emphasis role="bold">)</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -19,7 +18,7 @@
 
       <tbody>
         <row>
-          <entry><emphasis>date</emphasis></entry>
+          <entry><emphasis>d</emphasis></entry>
 
           <entry>A date value in the Date_t format.</entry>
         </row>

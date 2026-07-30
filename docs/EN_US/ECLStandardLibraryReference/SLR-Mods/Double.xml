@@ -10,11 +10,11 @@
       <primary>Metaphone.Double</primary>
     </indexterm><indexterm>
       <primary>Double</primary>
-    </indexterm>( </emphasis>source <emphasis role="bold">)</emphasis></para>
+    </indexterm>( </emphasis> <emphasis>src</emphasis> <emphasis role="bold">)</emphasis></para>
 
   <para><emphasis role="bold">STD.Metaphone3.Double<indexterm>
       <primary>Std.Metaphone3.Double</primary>
-    </indexterm>( </emphasis>source <emphasis role="bold">)</emphasis></para>
+    </indexterm>( </emphasis> <emphasis>src, encodeVowels, encodeExact, maxLength</emphasis> <emphasis role="bold">)</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">

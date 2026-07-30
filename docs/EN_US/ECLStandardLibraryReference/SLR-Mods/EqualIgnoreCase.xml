@@ -10,7 +10,7 @@
       <primary>Str.EqualIgnoreCase</primary>
     </indexterm><indexterm>
       <primary>EqualIgnoreCase</primary>
-    </indexterm>(</emphasis> <emphasis>source1,source2</emphasis> <emphasis
+    </indexterm>(</emphasis> <emphasis>src1, src2</emphasis> <emphasis
   role="bold">)</emphasis> <emphasis role="bold"></emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
@@ -21,13 +21,13 @@
 
       <tbody>
         <row>
-          <entry><emphasis>source1</emphasis></entry>
+          <entry><emphasis>src1</emphasis></entry>
 
           <entry>A string containing the data to compare.</entry>
         </row>
 
         <row>
-          <entry><emphasis>source2</emphasis></entry>
+          <entry><emphasis>src2</emphasis></entry>
 
           <entry>A string containing the data to compare.</entry>
         </row>

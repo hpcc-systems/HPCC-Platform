@@ -10,14 +10,13 @@
       <primary>Str.CleanSpaces</primary>
     </indexterm><indexterm>
       <primary>CleanSpaces</primary>
-    </indexterm>(</emphasis> <emphasis>source</emphasis> <emphasis
-  role="bold">)</emphasis></para>
+    </indexterm>(</emphasis> <emphasis>src</emphasis> <emphasis role="bold">)</emphasis></para>
 
   <para><emphasis role="bold">STD.Uni.CleanSpaces<indexterm>
       <primary>STD.Uni.CleanSpaces</primary>
     </indexterm><indexterm>
       <primary>Uni.CleanSpaces</primary>
-    </indexterm>(</emphasis> <emphasis>source</emphasis> <emphasis
+    </indexterm>(</emphasis> <emphasis>src</emphasis> <emphasis
   role="bold">)</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
@@ -28,7 +27,7 @@
 
       <tbody>
         <row>
-          <entry><emphasis>source</emphasis></entry>
+          <entry><emphasis>src</emphasis></entry>
 
           <entry>A string containing the data to clean.</entry>
         </row>

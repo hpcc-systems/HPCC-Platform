@@ -10,40 +10,10 @@
       <primary>File.RemotePull</primary>
     </indexterm><indexterm>
       <primary>RemotePull</primary>
-    </indexterm>(</emphasis> <emphasis> remoteURL, sourcelogicalname,
-  destinationGroup</emphasis> <emphasis role="bold">,</emphasis> <emphasis
-  role="bold"> </emphasis> <emphasis>destinationlogicalname, </emphasis>
-  <emphasis role="bold">[</emphasis> <emphasis>,timeout</emphasis> <emphasis
-  role="bold">] [</emphasis> <emphasis>,maxConnections</emphasis> <emphasis
-  role="bold">]</emphasis> <emphasis role="bold"> [</emphasis>
-  <emphasis>,allowoverwrite</emphasis> <emphasis role="bold">] [</emphasis>
-  <emphasis>,replicate</emphasis> <emphasis role="bold">] [</emphasis>
-  <emphasis>,asSuperfile</emphasis> <emphasis role="bold">]
-  [</emphasis><emphasis>,forcePush</emphasis> <emphasis role="bold">]
-  [</emphasis><emphasis>,transferBufferSize</emphasis> <emphasis role="bold">]
-  [</emphasis><emphasis>,wrap</emphasis> <emphasis role="bold">]
-  [</emphasis><emphasis>,compress</emphasis> <emphasis role="bold">]
-  [</emphasis> <emphasis>,noSplit</emphasis> <emphasis role="bold">]
-  [</emphasis> <emphasis>,expireDays</emphasis><emphasis
-  role="bold">])</emphasis> <emphasis></emphasis></para>
+    </indexterm>(</emphasis> <emphasis>remoteEspFsURL, sourceLogicalName, destinationGroup, destinationLogicalName, timeOut, maxConnections, allowOverwrite, replicate, asSuperfile, forcePush, transferBufferSize, wrap, compress, noSplit, expireDays, username, userPw</emphasis> <emphasis role="bold">)</emphasis></para>
 
   <para><emphasis>dfuwuid</emphasis> <emphasis role="bold"> :=
-  STD.File.fRemotePull(</emphasis> <emphasis> remoteURL,
-  sourcelogicalname,</emphasis> <emphasis> destinationGroup </emphasis>
-  <emphasis role="bold">, </emphasis> <emphasis>destinationlogicalname,
-  </emphasis> <emphasis role="bold">[</emphasis> <emphasis>,timeout</emphasis>
-  <emphasis role="bold">]</emphasis> <emphasis role="bold"> [</emphasis>
-  <emphasis>,maxConnections</emphasis> <emphasis role="bold">] [</emphasis>
-  <emphasis>,allowoverwrite</emphasis> <emphasis role="bold">] [</emphasis>
-  <emphasis>,replicate</emphasis> <emphasis role="bold">]</emphasis> <emphasis
-  role="bold"> [</emphasis> <emphasis>,asSuperfile</emphasis> <emphasis
-  role="bold">] [</emphasis><emphasis>,forcePush</emphasis> <emphasis
-  role="bold">] [</emphasis><emphasis>,transferBufferSize</emphasis> <emphasis
-  role="bold">] [</emphasis><emphasis>,wrap</emphasis> <emphasis role="bold">]
-  [</emphasis><emphasis>,compress</emphasis> <emphasis role="bold">]
-  [</emphasis> <emphasis>,noSplit</emphasis> <emphasis role="bold">]
-  [</emphasis> <emphasis>,expireDays</emphasis><emphasis
-  role="bold">]);</emphasis></para>
+  STD.File.fRemotePull(</emphasis> <emphasis>remoteEspFsURL, sourceLogicalName, destinationGroup, destinationLogicalName, timeOut, maxConnections, allowOverwrite, replicate, asSuperfile, forcePush, transferBufferSize, wrap, compress, noSplit, expireDays, username, userPw</emphasis> <emphasis role="bold">)</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -53,7 +23,7 @@
 
       <tbody>
         <row>
-          <entry><emphasis>remoteURL</emphasis></entry>
+          <entry><emphasis>remoteEspFsURL</emphasis></entry>
 
           <entry>A null-terminated string containing the protocol, IP, port,
           and directory, or the DNS equivalent, of the remote ESP server
@@ -62,7 +32,7 @@
         </row>
 
         <row>
-          <entry><emphasis>sourcelogicalname</emphasis></entry>
+          <entry><emphasis>sourceLogicalName</emphasis></entry>
 
           <entry>A null-terminated string containing the local logical name of
           the file.</entry>
@@ -76,7 +46,7 @@
         </row>
 
         <row>
-          <entry><emphasis>destinationlogicalname</emphasis></entry>
+          <entry><emphasis>destinationLogicalName</emphasis></entry>
 
           <entry>A null-terminated string containing the logical name to give
           the file on the remote cluster (this must be completely specified,
@@ -84,7 +54,7 @@
         </row>
 
         <row>
-          <entry><emphasis>timeout</emphasis></entry>
+          <entry><emphasis>timeOut</emphasis></entry>
 
           <entry>Optional. An integer value indicating the timeout setting. If
           omitted, the default is -1. If set to zero (0), execution control
@@ -102,7 +72,7 @@
         </row>
 
         <row>
-          <entry><emphasis>allowoverwrite</emphasis></entry>
+          <entry><emphasis>allowOverwrite</emphasis></entry>
 
           <entry>Optional. A boolean TRUE or FALSE flag indicating whether to
           allow the new file to overwrite an existing file of the same name.

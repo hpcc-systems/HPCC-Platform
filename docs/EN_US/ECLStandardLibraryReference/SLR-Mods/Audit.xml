@@ -10,7 +10,7 @@
       <primary>Audit.Audit</primary>
     </indexterm><indexterm>
       <primary>Audit</primary>
-    </indexterm>(</emphasis> <emphasis> type, message </emphasis> <emphasis
+    </indexterm>(</emphasis> <emphasis>audit_type, msg, data_block</emphasis> <emphasis
   role="bold">)</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
@@ -21,14 +21,14 @@
 
       <tbody>
         <row>
-          <entry><emphasis>type</emphasis></entry>
+          <entry><emphasis>audit_type</emphasis></entry>
 
           <entry>A string constant containing the type of audit entry.
           Currently, only INFO is provided.</entry>
         </row>
 
         <row>
-          <entry><emphasis>message</emphasis></entry>
+          <entry><emphasis>msg</emphasis></entry>
 
           <entry>A string containing the audit entry text.</entry>
         </row>

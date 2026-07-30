@@ -10,16 +10,10 @@
       <primary>File.Replicate</primary>
     </indexterm> <indexterm>
       <primary>Replicate</primary>
-    </indexterm> (</emphasis> <emphasis> filename </emphasis> <emphasis
-  role="bold">[</emphasis> <emphasis>, timeout </emphasis> <emphasis
-  role="bold">] [</emphasis> <emphasis>, espserverIPport</emphasis> <emphasis
-  role="bold">])</emphasis> <emphasis></emphasis></para>
+    </indexterm> (</emphasis> <emphasis>logicalName, timeOut, espServerIpPort</emphasis> <emphasis role="bold">)</emphasis></para>
 
   <para><emphasis>dfuwuid </emphasis> <emphasis role="bold">:=
-  STD.File.fReplicate(</emphasis> <emphasis> filename </emphasis> <emphasis
-  role="bold">[</emphasis> <emphasis>, timeout </emphasis> <emphasis
-  role="bold">] [</emphasis> <emphasis>, espserverIPport</emphasis> <emphasis
-  role="bold">]);</emphasis></para>
+  STD.File.fReplicate(</emphasis> <emphasis>logicalName, timeOut, espServerIpPort</emphasis> <emphasis role="bold">)</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -29,14 +23,14 @@
 
       <tbody>
         <row>
-          <entry><emphasis>filename</emphasis></entry>
+          <entry><emphasis>logicalName</emphasis></entry>
 
           <entry>A null-terminated string containing the logical name of the
           file.</entry>
         </row>
 
         <row>
-          <entry><emphasis>timeout</emphasis></entry>
+          <entry><emphasis>timeOut</emphasis></entry>
 
           <entry>Optional. An integer value indicating the timeout setting. If
           omitted, the default is -1. If set to zero (0), execution control
@@ -45,7 +39,7 @@
         </row>
 
         <row>
-          <entry><emphasis>espserverIPport</emphasis></entry>
+          <entry><emphasis>espServerIpPort</emphasis></entry>
 
           <entry>Optional. This should almost always be omitted, which then
           defaults to the value contained in the lib_system.ws_fs_server

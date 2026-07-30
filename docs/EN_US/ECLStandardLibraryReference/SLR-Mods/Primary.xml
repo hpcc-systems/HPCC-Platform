@@ -10,7 +10,7 @@
       <primary>Metaphone.Primary</primary>
     </indexterm><indexterm>
       <primary>Primary</primary>
-    </indexterm>( </emphasis>source<emphasis role="bold"> ) </emphasis></para>
+    </indexterm>( </emphasis> <emphasis>src</emphasis> <emphasis role="bold">)</emphasis></para>
 
   <para><emphasis role="bold">STD.Metaphone3.Primary<indexterm>
       <primary>Std.Metaphone.Primary</primary>
@@ -18,7 +18,7 @@
       <primary>Metaphone3.Primary</primary>
     </indexterm><indexterm>
       <primary></primary>
-    </indexterm>( </emphasis>source<emphasis role="bold"> ) </emphasis></para>
+    </indexterm>( </emphasis> <emphasis>src, encodeVowels, encodeExact, maxLength</emphasis> <emphasis role="bold">)</emphasis></para>
 
   <para></para>
 
@@ -30,7 +30,7 @@
 
         <tbody>
           <row>
-            <entry><emphasis>source</emphasis></entry>
+            <entry><emphasis>src</emphasis></entry>
 
             <entry>The string to process.</entry>
           </row>

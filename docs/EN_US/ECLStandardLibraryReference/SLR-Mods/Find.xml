@@ -10,14 +10,14 @@
       <primary>Str.Find</primary>
     </indexterm><indexterm>
       <primary>Find</primary>
-    </indexterm>(</emphasis> <emphasis>source, target, instance</emphasis>
+    </indexterm>(</emphasis> <emphasis>src, sought, instance</emphasis>
   <emphasis role="bold">)</emphasis> <emphasis role="bold"></emphasis></para>
 
   <para><emphasis role="bold">STD.Uni.Find<indexterm>
       <primary>STD.Uni.Find</primary>
     </indexterm><indexterm>
       <primary>Uni.Find</primary>
-    </indexterm>(</emphasis> <emphasis>source, target, instance</emphasis>
+    </indexterm>(</emphasis> <emphasis>src, sought, instance</emphasis>
   <emphasis role="bold">)</emphasis> <emphasis role="bold"></emphasis></para>
 
   <para><emphasis role="bold">STD.Uni.LocaleFind<indexterm>
@@ -26,8 +26,7 @@
       <primary>Uni.LocaleFind</primary>
     </indexterm><indexterm>
       <primary>LocaleFind</primary>
-    </indexterm>(</emphasis> <emphasis>source, target, instance,
-  locale</emphasis> <emphasis role="bold">)</emphasis></para>
+    </indexterm>(</emphasis> <emphasis>src, sought, instance, locale_name</emphasis> <emphasis role="bold">)</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -37,13 +36,13 @@
 
       <tbody>
         <row>
-          <entry><emphasis>source</emphasis></entry>
+          <entry><emphasis>src</emphasis></entry>
 
           <entry>A string containing the data to search.</entry>
         </row>
 
         <row>
-          <entry><emphasis>target </emphasis></entry>
+          <entry><emphasis>sought </emphasis></entry>
 
           <entry>A string containing the substring to search for.</entry>
         </row>
@@ -56,7 +55,7 @@
         </row>
 
         <row>
-          <entry><emphasis>locale</emphasis></entry>
+          <entry><emphasis>locale_name</emphasis></entry>
 
           <entry>A null-terminated string containing the language and country
           code to use to determine correct sort order and other

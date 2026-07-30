@@ -17,7 +17,7 @@
       <primary>STD.Uni.Translate</primary>
     </indexterm><indexterm>
       <primary>Uni.Translate</primary>
-    </indexterm>(</emphasis> <emphasis>src, search, replacement</emphasis>
+    </indexterm>(</emphasis> <emphasis>text, search, replacement</emphasis>
   <emphasis role="bold">)</emphasis> <emphasis role="bold"></emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
@@ -28,7 +28,7 @@
 
       <tbody>
         <row>
-          <entry><emphasis>src</emphasis></entry>
+          <entry><emphasis>src / text</emphasis></entry>
 
           <entry>A string containing the characters to search.</entry>
         </row>

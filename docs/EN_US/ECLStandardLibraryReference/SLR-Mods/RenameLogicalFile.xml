@@ -10,8 +10,7 @@
       <primary>File.RenameLogicalFile</primary>
     </indexterm><indexterm>
       <primary>RenameLogicalFile</primary>
-    </indexterm>(</emphasis> <emphasis> filename, newname,
-  </emphasis>[,allowOverwrite] <emphasis role="bold">)</emphasis></para>
+    </indexterm>(</emphasis> <emphasis>oldname, newname, allowOverwrite</emphasis> <emphasis role="bold">)</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -21,7 +20,7 @@
 
       <tbody>
         <row>
-          <entry><emphasis>filename</emphasis></entry>
+          <entry><emphasis>oldname</emphasis></entry>
 
           <entry>A null-terminated string containing the current logical name
           of the file.</entry>

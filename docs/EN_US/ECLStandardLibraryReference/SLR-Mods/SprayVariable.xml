@@ -12,44 +12,7 @@
       <primary>SprayVariable</primary>
     </indexterm><indexterm>
       <primary>SprayDelimited</primary>
-    </indexterm>(</emphasis> <emphasis> sourceIP </emphasis> <emphasis
-  role="bold">, </emphasis> <emphasis>sourcePath , </emphasis> <emphasis
-  role="bold">[</emphasis> <emphasis> sourceMaxRecordSize </emphasis>
-  <emphasis role="bold">] </emphasis> <emphasis>, </emphasis> <emphasis
-  role="bold"> [</emphasis> <emphasis> sourceCsvSeparate </emphasis> <emphasis
-  role="bold">] </emphasis> <emphasis>, </emphasis> <emphasis
-  role="bold">[</emphasis> <emphasis> sourceCsvTerminate </emphasis> <emphasis
-  role="bold">] </emphasis> <emphasis>, </emphasis> <emphasis
-  role="bold">[</emphasis> <emphasis> sourceCsvQuote </emphasis> <emphasis
-  role="bold">] </emphasis> <emphasis>, </emphasis> <emphasis role="bold">
-  </emphasis> <emphasis>destinationGroup, destinationLogicalName </emphasis>,
-  <emphasis role="bold">[</emphasis> <emphasis>timeout</emphasis> <emphasis
-  role="bold">]</emphasis> ,<emphasis role="bold"> [</emphasis>
-  <emphasis>espServerIpPort</emphasis> <emphasis role="bold">]</emphasis>
-  ,<emphasis> </emphasis> <emphasis role="bold">[</emphasis>
-  <emphasis>maxConnections</emphasis> <emphasis role="bold">]</emphasis>
-  ,<emphasis role="bold"> [</emphasis> <emphasis>allowOverwrite</emphasis>
-  <emphasis role="bold">] , [</emphasis> <emphasis>replicate</emphasis>
-  <emphasis role="bold">] , [</emphasis> <emphasis>compress
-  </emphasis><emphasis role="bold">]</emphasis> , <emphasis role="bold">
-  [</emphasis> <emphasis> sourceCsvEscape </emphasis> <emphasis
-  role="bold">]</emphasis>, <emphasis role="bold"> [</emphasis> <emphasis>
-  failIfNoSourceFile </emphasis> <emphasis role="bold">]</emphasis>, <emphasis
-  role="bold"> [</emphasis> <emphasis> recordStructurePresent </emphasis>
-  <emphasis role="bold">]</emphasis>, <emphasis role="bold"> [</emphasis>
-  <emphasis> quotedTerminator </emphasis> <emphasis role="bold">]</emphasis>,
-  <emphasis role="bold"> [</emphasis> <emphasis> encoding </emphasis>
-  <emphasis role="bold">]</emphasis><emphasis role="bold"> , [</emphasis>
-  <emphasis>expireDays</emphasis> <emphasis role="bold">] ,
-  </emphasis><emphasis role="bold">[</emphasis>
-  <emphasis>dfuServerQueue</emphasis><emphasis role="bold">] ,
-  </emphasis><emphasis role="bold">[</emphasis>
-  <emphasis>noSplit</emphasis><emphasis role="bold">] , </emphasis> <emphasis
-  role="bold">[</emphasis><emphasis>noCommon</emphasis> <emphasis
-  role="bold">],[</emphasis> <emphasis>sourcePlane</emphasis> <emphasis
-  role="bold">]<emphasis role="bold">,[</emphasis>
-  <emphasis>destinationNumParts</emphasis> <emphasis
-  role="bold">]</emphasis>)</emphasis></para>
+    </indexterm>(</emphasis> <emphasis>sourceIP, sourcePath, sourceMaxRecordSize, sourceCsvSeparate, sourceCsvTerminate, sourceCsvQuote, destinationGroup, destinationLogicalName, timeOut, espServerIpPort, maxConnections, allowOverwrite, replicate, compress, sourceCsvEscape, failIfNoSourceFile, recordStructurePresent, quotedTerminator, encoding, expireDays, dfuServerQueue, noSplit, sourcePlane, destinationNumParts, noCommon</emphasis> <emphasis role="bold">)</emphasis></para>
 
   <para><emphasis>dfuwuid</emphasis> <emphasis role="bold"> :=
   STD.File.fSprayDelimited<indexterm>
@@ -60,42 +23,7 @@
       <primary>fSprayVariable</primary>
     </indexterm><indexterm>
       <primary>fSprayDelimited</primary>
-    </indexterm>(</emphasis> <emphasis> sourceIP </emphasis> <emphasis
-  role="bold">, </emphasis> <emphasis>sourcePath , </emphasis> <emphasis
-  role="bold"> [</emphasis> <emphasis> sourceMaxRecordSize </emphasis>
-  <emphasis role="bold">] </emphasis> <emphasis>, </emphasis> <emphasis
-  role="bold">[</emphasis> <emphasis> sourceCsvSeparate </emphasis> <emphasis
-  role="bold">] </emphasis> <emphasis>, </emphasis> <emphasis
-  role="bold">[</emphasis> <emphasis> sourceCsvTerminate </emphasis> <emphasis
-  role="bold">] </emphasis> <emphasis>, </emphasis> <emphasis role="bold">
-  [</emphasis> <emphasis> sourceCsvQuote </emphasis> <emphasis role="bold">]
-  </emphasis> <emphasis>, destinationGroup, destinationLogicalName </emphasis>
-  <emphasis role="bold">, [</emphasis> <emphasis>timeout</emphasis> <emphasis
-  role="bold">] , [</emphasis> <emphasis>espServerIpPort</emphasis> <emphasis
-  role="bold">]</emphasis> ,<emphasis> </emphasis> <emphasis
-  role="bold">[</emphasis> <emphasis>maxConnections</emphasis> <emphasis
-  role="bold">]</emphasis> ,<emphasis role="bold"> [</emphasis>
-  <emphasis>allowOverwrite</emphasis> <emphasis role="bold">] , [</emphasis>
-  <emphasis>replicate</emphasis> <emphasis role="bold">] , [</emphasis>
-  <emphasis>compress </emphasis> <emphasis role="bold">]</emphasis> ,
-  <emphasis role="bold"> [</emphasis> <emphasis> sourceCsvEscape </emphasis>
-  <emphasis role="bold">]</emphasis>, <emphasis role="bold"> [</emphasis>
-  <emphasis> failIfNoSourceFile </emphasis> <emphasis
-  role="bold">]</emphasis>, <emphasis role="bold"> [</emphasis> <emphasis>
-  recordStructurePresent </emphasis> <emphasis role="bold">]</emphasis>,
-  <emphasis role="bold"> [</emphasis> <emphasis> quotedTerminator </emphasis>
-  <emphasis role="bold">]</emphasis> , <emphasis role="bold"> [</emphasis>
-  <emphasis> encoding </emphasis> <emphasis role="bold">]</emphasis> ,
-  <emphasis role="bold">[</emphasis> <emphasis>expireDays</emphasis> <emphasis
-  role="bold">] , </emphasis><emphasis role="bold">[</emphasis>
-  <emphasis>dfuServerQueue</emphasis><emphasis role="bold">] ,
-  </emphasis><emphasis role="bold">[</emphasis>
-  <emphasis>noSplit</emphasis><emphasis role="bold">] , </emphasis><emphasis
-  role="bold">[</emphasis><emphasis>noCommon</emphasis> <emphasis
-  role="bold">],[</emphasis> <emphasis>sourcePlane</emphasis> <emphasis
-  role="bold">],<emphasis role="bold">[</emphasis>
-  <emphasis>destinationNumParts</emphasis> <emphasis
-  role="bold">]</emphasis>)</emphasis></para>
+    </indexterm>(</emphasis> <emphasis>sourceIP, sourcePath, sourceMaxRecordSize, sourceCsvSeparate, sourceCsvTerminate, sourceCsvQuote, destinationGroup, destinationLogicalName, timeOut, espServerIpPort, maxConnections, allowOverwrite, replicate, compress, sourceCsvEscape, failIfNoSourceFile, recordStructurePresent, quotedTerminator, encoding, expireDays, dfuServerQueue, noSplit, sourcePlane, destinationNumParts, noCommon</emphasis> <emphasis role="bold">)</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -133,14 +61,14 @@
         </row>
 
         <row>
-          <entry><emphasis>sourceCSVterminate</emphasis></entry>
+          <entry><emphasis>sourceCsvTerminate</emphasis></entry>
 
           <entry>Optional. A null-terminated string containing the CSV record
           separator. If omitted, the default is '\\n,\\r\\n'</entry>
         </row>
 
         <row>
-          <entry><emphasis>sourceCSVquote</emphasis></entry>
+          <entry><emphasis>sourceCsvQuote</emphasis></entry>
 
           <entry>Optional. A null-terminated string containing the CSV quoted
           field delimiter. If omitted, the default is '\"'</entry>
@@ -161,7 +89,7 @@
         </row>
 
         <row>
-          <entry><emphasis>timeout</emphasis></entry>
+          <entry><emphasis>timeOut</emphasis></entry>
 
           <entry>Optional. An integer value indicating the timeout setting. If
           omitted, the default is -1. If set to zero (0), execution control

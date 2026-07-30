@@ -10,16 +10,7 @@
       <primary>File.PromoteSuperFileList</primary>
     </indexterm><indexterm>
       <primary>PromoteSuperFileList</primary>
-    </indexterm>(</emphasis> <emphasis> supernames </emphasis> <emphasis
-  role="bold">[</emphasis> <emphasis>, addhead </emphasis> <emphasis
-  role="bold">]</emphasis> <emphasis> </emphasis> <emphasis
-  role="bold">[</emphasis> <emphasis>, deltail </emphasis> <emphasis
-  role="bold">]</emphasis> <emphasis> </emphasis> <emphasis role="bold">
-  [</emphasis> <emphasis>, createjustone </emphasis> <emphasis
-  role="bold">]</emphasis> <emphasis> </emphasis> <emphasis
-  role="bold">[</emphasis> <emphasis>, reverse </emphasis> <emphasis
-  role="bold">]</emphasis> <emphasis> </emphasis> <emphasis
-  role="bold">)</emphasis></para>
+    </indexterm>(</emphasis> <emphasis>superNames, addHead, delTail, createOnlyOne, reverse</emphasis> <emphasis role="bold">)</emphasis></para>
 
   <para><emphasis>oldlist</emphasis> <emphasis role="bold"> :=
   STD.File.fPromoteSuperFileList<indexterm>
@@ -28,16 +19,7 @@
       <primary>File.fPromoteSuperFileList</primary>
     </indexterm><indexterm>
       <primary>fPromoteSuperFileList</primary>
-    </indexterm>(</emphasis> <emphasis> supernames </emphasis> <emphasis
-  role="bold">[</emphasis> <emphasis>, addhead </emphasis> <emphasis
-  role="bold">]</emphasis> <emphasis> </emphasis> <emphasis role="bold">
-  [</emphasis> <emphasis>, deltail </emphasis> <emphasis
-  role="bold">]</emphasis> <emphasis> </emphasis> <emphasis
-  role="bold">[</emphasis> <emphasis>, createjustone </emphasis> <emphasis
-  role="bold">]</emphasis> <emphasis> </emphasis> <emphasis
-  role="bold">[</emphasis> <emphasis>, reverse </emphasis> <emphasis
-  role="bold">]</emphasis> <emphasis> </emphasis> <emphasis
-  role="bold">);</emphasis></para>
+    </indexterm>(</emphasis> <emphasis>superNames, addHead, delTail, createOnlyOne, reverse</emphasis> <emphasis role="bold">)</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -47,7 +29,7 @@
 
       <tbody>
         <row>
-          <entry><emphasis>supernames</emphasis></entry>
+          <entry><emphasis>superNames</emphasis></entry>
 
           <entry>A set of null-terminated strings containing the logical names
           of the superfiles to act on. Any that don't exist will be created.
@@ -56,7 +38,7 @@
         </row>
 
         <row>
-          <entry><emphasis>addhead</emphasis></entry>
+          <entry><emphasis>addHead</emphasis></entry>
 
           <entry>Optional. A null-terminated string containing a
           comma-delimited list of logical file names to add to the first
@@ -65,7 +47,7 @@
         </row>
 
         <row>
-          <entry><emphasis>deltail</emphasis></entry>
+          <entry><emphasis>delTail</emphasis></entry>
 
           <entry>Optional. A boolean value specifying whether to physically
           delete the contents moved out of the last superfile. If omitted, the
@@ -73,7 +55,7 @@
         </row>
 
         <row>
-          <entry><emphasis>createjustone</emphasis></entry>
+          <entry><emphasis>createOnlyOne</emphasis></entry>
 
           <entry>Optional. A boolean value specifying whether to only create a
           single superfile (truncate the list at the first non-existent

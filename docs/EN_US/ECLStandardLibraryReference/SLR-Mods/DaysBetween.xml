@@ -8,8 +8,7 @@
       <primary>STD.Date.DaysBetween</primary>
     </indexterm><indexterm>
       <primary>DaysBetween</primary>
-    </indexterm>(</emphasis> <emphasis role="bold">fromDate,
-  toDate)</emphasis></para>
+    </indexterm>(</emphasis> <emphasis>from, to</emphasis> <emphasis role="bold">)</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -19,13 +18,13 @@
 
       <tbody>
         <row>
-          <entry><emphasis>fromDate</emphasis></entry>
+          <entry><emphasis>from</emphasis></entry>
 
           <entry>The first date value in Date_t format.</entry>
         </row>
 
         <row>
-          <entry><emphasis>toDate</emphasis></entry>
+          <entry><emphasis>to</emphasis></entry>
 
           <entry>The last date value in Date_t format.</entry>
         </row>
