@@ -257,16 +257,123 @@ ldap:
 Use `ldapTLSValidation="permissive"` first to diagnose any issues without hard-failing, then
 switch to `"strict"` once connectivity is confirmed.
 
+## Enable Password Expiration on the Test Server (Optional)
+
+By default, 389ds does not enforce a password expiration policy — passwords never expire.
+If you need to test HPCC's handling of expired 389ds passwords (tracked in
+[GH#36810](https://github.com/hpcc-systems/HPCC-Platform/issues/36810)), you must explicitly
+enable password policy on the test server.
+
+> **Note:** This is only needed if you are testing password expiration behavior. It has no
+> effect on any other part of the setup and can be skipped otherwise.
+
+### Enable the Global Password Policy
+
+Run these commands against your running 389ds container:
+
+```bash
+# Turn on password expiration and set the max age (in seconds).
+# 600 seconds (10 minutes) is short enough to observe expiration without a long wait,
+# while still leaving enough time to complete a manual test pass. Use a realistic value
+# (e.g. 7776000 = 90 days) for anything other than active testing.
+docker exec 389ds dsconf localhost pwpolicy set --pwdexpire on --pwdmaxage 600
+
+# Optional: control how long before expiration the server starts warning on bind,
+# and how many post-expiration "grace" binds are allowed before lockout.
+docker exec 389ds dsconf localhost pwpolicy set --pwdwarning 300 --pwdgracelimit 3
+
+# Verify the current policy
+docker exec 389ds dsconf localhost pwpolicy get
+```
+
+> **Units:** 389ds password policy durations (`--pwdmaxage`, `--pwdwarning`) are in
+> **seconds**, unlike Active Directory's `maxPwdAge` (100-nanosecond intervals). Don't reuse
+> AD-style values here.
+
+### Force an Existing Test User's Password to Expire Immediately
+
+The `passwordExpirationTime` attribute is computed from the password's last-changed time plus
+`--pwdmaxage`, so an already-set password won't reflect a newly-enabled or newly-changed
+policy until it is changed again. To make an existing user's password expire immediately for
+testing, either:
+
+- Set a very small `--pwdmaxage` (as above) and wait for it to elapse, or
+- Reset the user's password, which causes 389ds to recompute `passwordExpirationTime` using
+  the current policy. You can do this via ECL Watch's "Reset Password" admin function, or
+  directly against the test server:
+
+  ```bash
+  cat <<EOF | docker exec -i 389ds ldapmodify -x -D "cn=Directory Manager" -w <directory_manager_pw>
+  dn: uid=<test-username>,ou=users,ou=ecl,dc=example,dc=com
+  changetype: modify
+  replace: userPassword
+  userPassword: <new-password>
+  EOF
+  ```
+
+### Verifying the Policy Took Effect
+
+Use phpLDAPadmin (or `ldapsearch`) to inspect a test user's entry and confirm the
+`passwordExpirationTime` operational attribute is now present:
+
+```bash
+docker exec 389ds ldapsearch -x -D "cn=Directory Manager" -w <directory_manager_pw> \
+  -b "dc=example,dc=com" "(uid=<test-username>)" passwordExpirationTime
+```
+
+> **phpLDAPadmin note:** `passwordExpirationTime` is an operational attribute, so it is
+> hidden on a user entry's default view. Open the entry and click **"Show internal
+> attributes"** (near the bottom of the page) to reveal it.
+
+A user whose password has not yet expired will show a `passwordExpirationTime` value in
+generalized-time format (e.g. `20260101120000Z`, in UTC/GMT). If the attribute is absent,
+double check that `--pwdexpire` is `on` and that the user's password was set (or reset) after
+the policy was enabled.
+
+### Scope of the Policy
+
+The commands above set the **global** default policy (`cn=config`), which applies to all users
+unless a local (per-subtree) policy overrides it. This is sufficient for most test scenarios.
+See the [389ds password policy documentation](https://www.port389.org) for configuring local
+policies scoped to a specific OU if your testing requires different policies for different
+users.
+
+> **Note:** `cn=Directory Manager` (the root DN / superuser) is exempt from password policy by
+> design — it will never show a `passwordExpirationTime`, even with the policy enabled. Use a
+> regular test user to validate expiration behavior.
+
+### Disabling Password Expiration
+
+To turn expiration testing back off without rebuilding the server, disable the global policy:
+
+```bash
+docker exec 389ds dsconf localhost pwpolicy set --pwdexpire off
+```
+
+> **Note:** Disabling the policy stops *new* expirations from being computed, but does **not**
+> retroactively clear a `passwordExpirationTime` already stored on a test user — resetting the
+> user's password with the policy off does *not* clear it either (verified: the old value is
+> left untouched). To remove a stale `passwordExpirationTime` from a test user, delete the
+> attribute directly:
+>
+> ```bash
+> cat <<EOF | docker exec -i 389ds ldapmodify -x -D "cn=Directory Manager" -w <directory_manager_pw>
+> dn: uid=<test-username>,ou=users,ou=ecl,dc=example,dc=com
+> changetype: modify
+> delete: passwordExpirationTime
+> EOF
+> ```
+
 ## Managing the Test Server Instance
 
 Assuming stock values from our example, the state for the Directory Server is stored `${HOME}/389ds`. If you want to wipe out your server and start fresh, delete the contents of `${HOME}/389ds` and begin again with the setup above from step 2.
 
 If you'd like to create an additional server with different settings, then:
 
-6. Copy the `dockerfiles/examples/ldap` folder to a location outside of your repo to a new unique location, say `${HOME}/ldap-alternate`. Edit the file `${HOME}/ldap-alternate/docker-compose.yaml`, customizing the admin password and PVC mount point:
+1. Copy the `dockerfiles/examples/ldap` folder to a location outside of your repo to a new unique location, say `${HOME}/ldap-alternate`. Edit the file `${HOME}/ldap-alternate/docker-compose.yaml`, customizing the admin password and PVC mount point:
     - Change `DS_DM_PASSWORD: "<directory_manager_pw>"` placeholder with the real password you want to use. This is the password that you will use in PLA to administer the DS, and that the HPCC platform will use to interact with it using LDAP.
     - Under volumes, replace `${HOME}/389ds` with another new unique folder to hold the server state, say `${HOME}/389ds-alternate`.
-7. From `${HOME}/ldap-alternate`, run:
+2. From `${HOME}/ldap-alternate`, run:
 
     ```bash
     docker compose up -d

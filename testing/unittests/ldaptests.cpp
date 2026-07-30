@@ -18,6 +18,7 @@
 #ifdef _USE_CPPUNIT
 
 #include "ldapsanitization.hpp"
+#include "ldaptimeutils.hpp"
 #include "unittests.hpp"
 
 class LdapSanitizationTest : public CppUnit::TestFixture
@@ -201,5 +202,55 @@ public:
 
 CPPUNIT_TEST_SUITE_REGISTRATION(LdapSanitizationTest);
 CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(LdapSanitizationTest, "LdapSanitizationTest");
+
+class LdapTimeUtilsTest : public CppUnit::TestFixture
+{
+    CPPUNIT_TEST_SUITE(LdapTimeUtilsTest);
+    CPPUNIT_TEST(testValidGeneralizedTime);
+    CPPUNIT_TEST(testRejectsMalformedInput);
+    CPPUNIT_TEST_SUITE_END();
+
+public:
+    // Confirms the parsed date/time survives a round trip: undoing the UTC->local
+    // adjustment applied by parseLdapGeneralizedTime() should reproduce the original
+    // "YYYYMMDDHHMMSSZ" fields exactly, regardless of the local timezone under test.
+    void assertParsesTo(const char *val, const char *expectedGmt)
+    {
+        CDateTime dt;
+        CPPUNIT_ASSERT(parseLdapGeneralizedTime(dt, (unsigned)strlen(val), val));
+        dt.adjustTime(-dt.queryUtcToLocalDelta());
+        StringBuffer str;
+        dt.getString(str, false);
+        CPPUNIT_ASSERT_EQUAL_STR(expectedGmt, str.str());
+    }
+
+    void testValidGeneralizedTime()
+    {
+        // Standard case
+        assertParsesTo("20260115120000Z", "2026-01-15T12:00:00");
+        // Midnight/leap-year day
+        assertParsesTo("20240229000000Z", "2024-02-29T00:00:00");
+        // End-of-year boundary
+        assertParsesTo("20251231235959Z", "2025-12-31T23:59:59");
+    }
+
+    void testRejectsMalformedInput()
+    {
+        CDateTime dt;
+        // Too short
+        CPPUNIT_ASSERT(!parseLdapGeneralizedTime(dt, 5, "2026Z"));
+        // Missing trailing 'Z'
+        CPPUNIT_ASSERT(!parseLdapGeneralizedTime(dt, 15, "20260115120000X"));
+        // Non-digit embedded
+        CPPUNIT_ASSERT(!parseLdapGeneralizedTime(dt, 15, "2026011A120000Z"));
+        // Null value
+        CPPUNIT_ASSERT(!parseLdapGeneralizedTime(dt, 15, nullptr));
+        // Empty string
+        CPPUNIT_ASSERT(!parseLdapGeneralizedTime(dt, 0, ""));
+    }
+};
+
+CPPUNIT_TEST_SUITE_REGISTRATION(LdapTimeUtilsTest);
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(LdapTimeUtilsTest, "LdapTimeUtilsTest");
 
 #endif
