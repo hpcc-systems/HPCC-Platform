@@ -53,6 +53,7 @@ enum CompressionMethod : byte
     COMPRESS_METHOD_LAST_ALIAS,
 
 
+    COMPRESS_METHOD_MASK = 0x7F,   // AES is added as an extra bit, remove it to get the compression method
     COMPRESS_METHOD_AES = 0x80,
     COMPRESS_METHOD_DEFAULT = 0xFF,
     COMPRESS_METHOD_LZWLEGACY = 1,  // Matches value of boolean 'true' used to indicate LZW little endian compression by legacy compressToBuffer

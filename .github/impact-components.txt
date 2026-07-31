@@ -9,9 +9,12 @@ eclccserver
 eclwatch
 esp
 hthor
+none
 roxie
 sasha
+security
 stdlib
 testing
+tracing
 thor
 xref
