@@ -8616,7 +8616,11 @@ void CHThorDiskReadBaseActivity::resolve()
             fdesc.setown(ldFile->getFileDescriptor());
             gatherInfo(fdesc);
             if (ldFile->isExternalFile())
-                compressed = checkWriteIsCompressed(helper.getFlags());
+            {
+                //Do not overwrite compression being set because of the encryption key.
+                if (checkWriteIsCompressed(helper.getFlags()))
+                    compressed = true;
+            }
             IDistributedFile *dFile = ldFile->queryDistributedFile();
             if (dFile)  //only makes sense for distributed (non local) files
             {
@@ -8688,6 +8692,12 @@ void CHThorDiskReadBaseActivity::gatherInfo(IFileDescriptor * fileDesc)
     {
         compressed = checkReadIsCompressed(helper.getFlags());
     }
+
+    extractEncryptionKey();
+}
+
+void CHThorDiskReadBaseActivity::extractEncryptionKey()
+{
     void *k;
     size32_t kl;
     helper.getEncryptKey(kl,k);
