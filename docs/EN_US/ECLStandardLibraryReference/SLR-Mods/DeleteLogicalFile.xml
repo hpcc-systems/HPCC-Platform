@@ -10,9 +10,7 @@
       <primary>File.DeleteLogicalFile</primary>
     </indexterm><indexterm>
       <primary>DeleteLogicalFile</primary>
-    </indexterm>(</emphasis> <emphasis> filename </emphasis> <emphasis
-  role="bold">[</emphasis> <emphasis>, ifexists </emphasis> <emphasis
-  role="bold">] )</emphasis></para>
+    </indexterm>(</emphasis> <emphasis>lfn, allowMissing</emphasis> <emphasis role="bold">)</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -22,14 +20,14 @@
 
       <tbody>
         <row>
-          <entry><emphasis>filename</emphasis></entry>
+          <entry><emphasis>lfn</emphasis></entry>
 
           <entry>A null-terminated string containing the logical name of the
           file.</entry>
         </row>
 
         <row>
-          <entry><emphasis>ifexists</emphasis></entry>
+          <entry><emphasis>allowMissing</emphasis></entry>
 
           <entry>Optional. A boolean value indicating whether to post an error
           if the <emphasis>filename</emphasis> does not exist. If omitted, the

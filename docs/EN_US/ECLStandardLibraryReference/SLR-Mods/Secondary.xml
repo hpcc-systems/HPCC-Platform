@@ -10,11 +10,11 @@
       <primary>Metaphone.Secondary</primary>
     </indexterm><indexterm>
       <primary>Secondary</primary>
-    </indexterm>(</emphasis> source <emphasis role="bold">) </emphasis></para>
+    </indexterm>(</emphasis> <emphasis>src</emphasis> <emphasis role="bold">)</emphasis></para>
 
   <para><emphasis role="bold">STD.Metaphone3.Secondary<indexterm>
       <primary>Std.Metaphone3.Secondary</primary>
-    </indexterm>(</emphasis> source <emphasis role="bold">) </emphasis></para>
+    </indexterm>(</emphasis> <emphasis>src, encodeVowels, encodeExact, maxLength</emphasis> <emphasis role="bold">)</emphasis></para>
 
   <para></para>
 

@@ -10,14 +10,14 @@
       <primary>Str.Filter</primary>
     </indexterm><indexterm>
       <primary>Filter</primary>
-    </indexterm>(</emphasis> <emphasis>source, filterstring</emphasis>
+    </indexterm>(</emphasis> <emphasis>src, filter</emphasis>
   <emphasis role="bold">)</emphasis></para>
 
   <para><emphasis role="bold">STD.Uni.Filter<indexterm>
       <primary>STD.Uni.Filter</primary>
     </indexterm><indexterm>
       <primary>Uni.Filter</primary>
-    </indexterm>(</emphasis> <emphasis>source, filterstring</emphasis>
+    </indexterm>(</emphasis> <emphasis>src, filter</emphasis>
   <emphasis role="bold">)</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
@@ -28,13 +28,13 @@
 
       <tbody>
         <row>
-          <entry><emphasis>source</emphasis></entry>
+          <entry><emphasis>src</emphasis></entry>
 
           <entry>A string containing the data to filter.</entry>
         </row>
 
         <row>
-          <entry><emphasis>filterstring </emphasis></entry>
+          <entry><emphasis>filter </emphasis></entry>
 
           <entry>A string containing the characters to use as the
           filter.</entry>

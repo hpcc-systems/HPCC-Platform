@@ -10,8 +10,7 @@
       <primary>File.SwapSuperFile</primary>
     </indexterm><indexterm>
       <primary>SwapSuperFile</primary>
-    </indexterm>(</emphasis> <emphasis> superfile1, superfile2 </emphasis>
-  <emphasis role="bold">)</emphasis></para>
+    </indexterm>(</emphasis> <emphasis>superName1, superName2</emphasis> <emphasis role="bold">)</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -21,14 +20,14 @@
 
       <tbody>
         <row>
-          <entry><emphasis>superfile1</emphasis></entry>
+          <entry><emphasis>superName1</emphasis></entry>
 
           <entry>A null-terminated string containing the logical name of the
           superfile.</entry>
         </row>
 
         <row>
-          <entry><emphasis>superfile2</emphasis></entry>
+          <entry><emphasis>superName2</emphasis></entry>
 
           <entry>A null-terminated string containing the logical name of the
           superfile.</entry>

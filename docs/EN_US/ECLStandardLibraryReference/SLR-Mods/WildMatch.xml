@@ -10,14 +10,14 @@
       <primary>Str.WildMatch</primary>
     </indexterm><indexterm>
       <primary>WildMatch</primary>
-    </indexterm>(</emphasis> <emphasis>source, pattern, nocase</emphasis>
+    </indexterm>(</emphasis> <emphasis>src, _pattern, ignore_case</emphasis>
   <emphasis role="bold">)</emphasis></para>
 
   <para><emphasis role="bold">STD.Uni.WildMatch<indexterm>
       <primary>STD.Uni.WildMatch</primary>
     </indexterm><indexterm>
       <primary>Uni.WildMatch</primary>
-    </indexterm>(</emphasis> <emphasis>source, pattern, nocase</emphasis>
+    </indexterm>(</emphasis> <emphasis>src, _pattern, _noCase</emphasis>
   <emphasis role="bold">)</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
@@ -28,13 +28,13 @@
 
       <tbody>
         <row>
-          <entry><emphasis>source</emphasis></entry>
+          <entry><emphasis>src</emphasis></entry>
 
           <entry>A string containing the data to search.</entry>
         </row>
 
         <row>
-          <entry><emphasis>pattern </emphasis></entry>
+          <entry><emphasis>_pattern </emphasis></entry>
 
           <entry>A string containing the wildcard expression to match. Valid
           wildcards are ? (single character) and * (multiple
@@ -42,7 +42,7 @@
         </row>
 
         <row>
-          <entry><emphasis>nocase</emphasis></entry>
+          <entry><emphasis>ignore_case / _noCase</emphasis></entry>
 
           <entry>A boolean true or false indicating whether to ignore the
           case.</entry>

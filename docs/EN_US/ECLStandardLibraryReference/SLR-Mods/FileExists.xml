@@ -10,9 +10,7 @@
       <primary>File.FileExists</primary>
     </indexterm><indexterm>
       <primary>FileExists</primary>
-    </indexterm>(</emphasis> <emphasis> filename </emphasis> <emphasis
-  role="bold">[, </emphasis> <emphasis>physicalcheck</emphasis> <emphasis
-  role="bold">] )</emphasis></para>
+    </indexterm>(</emphasis> <emphasis>lfn, physical</emphasis> <emphasis role="bold">)</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -22,14 +20,14 @@
 
       <tbody>
         <row>
-          <entry><emphasis>filename</emphasis></entry>
+          <entry><emphasis>lfn</emphasis></entry>
 
           <entry>A null-terminated string containing the logical name of the
           file.</entry>
         </row>
 
         <row>
-          <entry><emphasis>physicalcheck</emphasis></entry>
+          <entry><emphasis>physical</emphasis></entry>
 
           <entry>Optional. A boolean TRUE/FALSE to indicate whether to check
           for the physical existence the <emphasis>filename</emphasis> on

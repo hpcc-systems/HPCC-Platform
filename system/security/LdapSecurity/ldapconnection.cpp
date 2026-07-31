@@ -26,6 +26,7 @@
 #include "aci.ipp"
 #include "ldapsecurity.ipp"
 #include "ldapsanitization.hpp"
+#include "ldaptimeutils.hpp"
 #include "jsmartsock.hpp"
 #include "jrespool.tpp"
 #include "mpbase.hpp"
@@ -1842,6 +1843,22 @@ public:
         dt.adjustTime(dt.queryUtcToLocalDelta());
     }
 
+    // Parses 389ds's precomputed "passwordExpirationTime" attribute (RFC 4517 GeneralizedTime)
+    // If no expiration set, NULL expiry returned, caller implements any policy for no expiration set.
+    bool getLdap389PasswordExpiration(LDAP *ld, LDAPMessage *entry, const char *attribute, const char *username, CDateTime &expiry)
+    {
+        CLDAPGetValuesLenWrapper valsLen(ld, entry, attribute);
+        if (!valsLen.hasValues())
+            return true;
+        struct berval * val = valsLen.queryBValues()[0];
+        if (!parseLdapGeneralizedTime(expiry, (unsigned)val->bv_len, val->bv_val))
+        {
+            DBGLOG("LDAP: Unable to parse passwordExpirationTime for user %s", username);
+            return false;
+        }
+        return true;
+    }
+
     virtual bool authenticate(ISecUser& user)
     {
         {
@@ -1866,7 +1883,7 @@ public:
                 filter.append("uid=");
             appendEscapedLdapFilter(username, filter);
 
-            char* attrs[] = {"cn", "userAccountControl", "pwdLastSet", "givenName", "sn", "employeeId", "distinguishedName", "employeeNumber", NULL};
+            char* attrs[] = {"cn", "userAccountControl", "pwdLastSet", "passwordExpirationTime", "givenName", "sn", "employeeId", "distinguishedName", "employeeNumber", NULL};
 
             Owned<ILdapConnection> lconn = m_connections->getConnection();
             LDAP* sys_ld = lconn.get()->getLd();
@@ -1974,6 +1991,16 @@ public:
                             DBGLOG("LDAP: Password never expires for user %s", username);
                         }
                         user.setPasswordExpiration(expiry);
+                    }
+                }
+                else if(stricmp(attribute, "passwordExpirationTime") == 0)
+                {
+                    //389ds pre-computes expiration; absence means the password never expires.
+                    if (m_ldapconfig->getServerType() == LDAP_389DS)
+                    {
+                        CDateTime expiry;
+                        if (getLdap389PasswordExpiration(sys_ld, entry, attribute, username, expiry))
+                            user.setPasswordExpiration(expiry); // null expiry means "never expires"
                     }
                 }
                 else if(stricmp(attribute, "employeeId") == 0)
@@ -2345,7 +2372,7 @@ public:
             Owned<ILdapConnection> lconn = m_connections->getConnection();
             LDAP* ld = lconn.get()->getLd();
 
-            char        *attrs[] = {"cn", "givenName", "sn", "gidnumber", "uidnumber", "homedirectory", "loginshell", "objectClass", "employeeId", "employeeNumber", "distinguishedName", "userAccountControl", "pwdLastSet", NULL};
+            char        *attrs[] = {"cn", "givenName", "sn", "gidnumber", "uidnumber", "homedirectory", "loginshell", "objectClass", "employeeId", "employeeNumber", "distinguishedName", "userAccountControl", "pwdLastSet", "passwordExpirationTime", NULL};
             CLDAPMessage searchResult;
             int rc = ldap_search_ext_s(ld, (char*)basedn, LDAP_SCOPE_SUBTREE, (char*)filter.str(), attrs, 0, NULL, NULL, &timeOut, LDAP_NO_LIMIT,   &searchResult.msg );
 
@@ -2401,6 +2428,16 @@ public:
                                 char * val = (char*)valsLen.queryCharValue(0);
                                 calcPWExpiry(expiry, (unsigned)strlen(val), val);
                                 ((CLdapSecUser*)&user)->setPasswordExpiration(expiry);
+                            }
+                        }
+                        else if(stricmp(attribute, "passwordExpirationTime") == 0)
+                        {
+                            //Attribute only present when the account's password is subject to expiry.
+                            if (m_ldapconfig->getServerType() == LDAP_389DS)
+                            {
+                                CDateTime expiry;
+                                if (getLdap389PasswordExpiration(ld, message, attribute, username, expiry))
+                                    ((CLdapSecUser*)&user)->setPasswordExpiration(expiry);
                             }
                         }
                         else if(stricmp(attribute, "objectClass") == 0)
@@ -2832,7 +2869,7 @@ public:
             filter.appendf(")(|(%s=*%s*)(%s=*%s*)(%s=*%s*)))", act_fieldname, escapedSearch.str(), "givenName", escapedSearch.str(), "sn", escapedSearch.str());
         }
 
-        char *attrs[] = {act_fieldname, sid_fieldname, "cn", "userAccountControl", "pwdLastSet", "employeeId", "employeeNumber", NULL};
+        char *attrs[] = {act_fieldname, sid_fieldname, "cn", "userAccountControl", "pwdLastSet", "passwordExpirationTime", "employeeId", "employeeNumber", NULL};
 
         CPagedLDAPSearch pagedSrch(ld, m_ldapconfig->getLdapTimeout(), (char*)m_ldapconfig->getUserBasedn(), LDAP_SCOPE_SUBTREE, (char*)filter.str(), attrs);
         for (message = pagedSrch.getFirstEntry(); message; message = pagedSrch.getNextEntry())
@@ -2877,6 +2914,16 @@ public:
                     else
                         expiry.clear();
                     user->setPasswordExpiration(expiry);
+                }
+                else if(stricmp(attribute, "passwordExpirationTime") == 0)
+                {
+                    //Attribute only present when the account's password is subject to expiry.
+                    if (m_ldapconfig->getServerType() == LDAP_389DS)
+                    {
+                        CDateTime expiry;
+                        if (getLdap389PasswordExpiration(ld, message, attribute, user->getName(), expiry))
+                            user->setPasswordExpiration(expiry);
+                    }
                 }
                 else if(stricmp(attribute, act_fieldname) == 0)
                 {

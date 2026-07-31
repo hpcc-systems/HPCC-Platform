@@ -10,11 +10,7 @@
       <primary>File.MonitorLogicalFileName</primary>
     </indexterm><indexterm>
       <primary>MonitorLogicalFileName</primary>
-    </indexterm>(</emphasis> <emphasis> event, </emphasis> <emphasis
-  role="bold"> </emphasis> <emphasis>filename, </emphasis> <emphasis
-  role="bold"> [</emphasis> <emphasis>, shotcount </emphasis> <emphasis
-  role="bold">] [</emphasis> <emphasis>, espserverIPport </emphasis> <emphasis
-  role="bold">] )</emphasis> <emphasis></emphasis></para>
+    </indexterm>(</emphasis> <emphasis>eventToFire, name, shotCount, espServerIpPort</emphasis> <emphasis role="bold">)</emphasis></para>
 
   <para><emphasis>dfuwuid </emphasis> <emphasis role="bold">:=
   STD.File.fMonitorLogicalFileName<indexterm>
@@ -23,11 +19,7 @@
       <primary>File.fMonitorLogicalFileName</primary>
     </indexterm><indexterm>
       <primary>fMonitorLogicalFileName</primary>
-    </indexterm>(</emphasis> <emphasis> event, </emphasis> <emphasis
-  role="bold"> </emphasis> <emphasis>filename, </emphasis> <emphasis
-  role="bold"> [</emphasis> <emphasis>, shotcount </emphasis> <emphasis
-  role="bold">] [</emphasis> <emphasis>, espserverIPport </emphasis> <emphasis
-  role="bold">] );</emphasis></para>
+    </indexterm>(</emphasis> <emphasis>eventToFire, name, shotCount, espServerIpPort</emphasis> <emphasis role="bold">)</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -37,7 +29,7 @@
 
       <tbody>
         <row>
-          <entry><emphasis>event</emphasis></entry>
+          <entry><emphasis>eventToFire</emphasis></entry>
 
           <entry>A null-terminated string containing the user-defined name of
           the event to fire when the <emphasis>filename</emphasis> appears.
@@ -46,14 +38,14 @@
         </row>
 
         <row>
-          <entry><emphasis>filename</emphasis></entry>
+          <entry><emphasis>name</emphasis></entry>
 
           <entry>A null-terminated string containing the name of the logical
           file in the DFU to monitor.</entry>
         </row>
 
         <row>
-          <entry><emphasis>shotcount</emphasis></entry>
+          <entry><emphasis>shotCount</emphasis></entry>
 
           <entry>Optional. An integer value indicating the number of times to
           generate the event before the monitoring job completes. A negative
@@ -62,7 +54,7 @@
         </row>
 
         <row>
-          <entry><emphasis>espserverIPport</emphasis></entry>
+          <entry><emphasis>espServerIpPort</emphasis></entry>
 
           <entry>Optional. This should almost always be omitted, which then
           defaults to the value contained in the lib_system.ws_fs_server

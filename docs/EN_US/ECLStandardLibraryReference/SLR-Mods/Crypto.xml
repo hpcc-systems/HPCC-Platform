@@ -528,14 +528,14 @@ OUTPUT(decryptedStr);</programlisting>
           </row>
 
           <row>
-            <entry><emphasis>publicKeyFile</emphasis></entry>
+            <entry><emphasis>publicKeyLFN / publicKeyBuff</emphasis></entry>
 
             <entry>The File Specification of the PEM formatted Public Key
             file</entry>
           </row>
 
           <row>
-            <entry><emphasis>privateKeyFile</emphasis></entry>
+            <entry><emphasis>privateKeyLFN / privateKeyBuff</emphasis></entry>
 
             <entry>The File Specification of the PEM formatted Private Key
             file</entry>
@@ -812,10 +812,7 @@ OUTPUT(TRUE = myPKEModule.VerifySignature(signature, (DATA)'The quick brown fox 
     <title>PublicKeyEncryptionFromBuffer Module</title>
 
     <para><emphasis>myPKEModule</emphasis> :=<emphasis role="bold">
-    STD.Crypto.PublicKeyEncryptionFromBuffer(</emphasis><emphasis>pkAlgorithm,
-    publicKeyFile, privateKeyFile, passphrase)<indexterm>
-        <primary>PublicKeyEncryption</primary>
-      </indexterm>;</emphasis></para>
+    STD.Crypto.PublicKeyEncryptionFromBuffer(</emphasis> <emphasis>pkAlgorithm, publicKeyBuff, privateKeyBuff, passphrase</emphasis> <emphasis role="bold">)</emphasis></para>
 
     <informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
@@ -1294,10 +1291,7 @@ OUTPUT(TRUE = myPKEModule.VerifySignature(signature, (DATA)'The quick brown fox 
     <title>PublicKeyEncryptionFromLFN Module</title>
 
     <para><emphasis>myPKEModule</emphasis> :=<emphasis role="bold">
-    STD.Crypto.PublicKeyEncryptionFromLFN(</emphasis><emphasis>pkAlgorithm,
-    publicKeyFile, privateKeyFile, passphrase)<indexterm>
-        <primary>PublicKeyEncryption</primary>
-      </indexterm>;</emphasis></para>
+    STD.Crypto.PublicKeyEncryptionFromLFN(</emphasis> <emphasis>pkAlgorithm, publicKeyLFN, privateKeyLFN, passphrase</emphasis> <emphasis role="bold">)</emphasis></para>
 
     <informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">

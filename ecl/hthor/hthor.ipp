@@ -2338,6 +2338,8 @@ protected:
         return agent.getLayoutTranslationMode();
     }
 
+    void extractEncryptionKey();
+
 public:
     CHThorDiskReadBaseActivity(IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorDiskReadBaseArg &_arg, ThorActivityKind _kind, IPropertyTree *node, EclGraph & _graph);
     ~CHThorDiskReadBaseActivity();

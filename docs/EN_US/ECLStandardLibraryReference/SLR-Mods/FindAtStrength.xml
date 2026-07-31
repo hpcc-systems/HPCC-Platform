@@ -11,7 +11,7 @@
     </indexterm><indexterm>
       <primary>LocaleFindAtStrength</primary>
     </indexterm>(</emphasis>
-  <emphasis>source,target,instance,locale,strength</emphasis> <emphasis
+  <emphasis>src, tofind, instance, locale_name, strength</emphasis> <emphasis
   role="bold">)</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
@@ -22,13 +22,13 @@
 
       <tbody>
         <row>
-          <entry><emphasis>source</emphasis></entry>
+          <entry><emphasis>src</emphasis></entry>
 
           <entry>A string containing the data to search.</entry>
         </row>
 
         <row>
-          <entry><emphasis>target </emphasis></entry>
+          <entry><emphasis>tofind </emphasis></entry>
 
           <entry>A string containing the substring to search for.</entry>
         </row>
@@ -41,7 +41,7 @@
         </row>
 
         <row>
-          <entry><emphasis>locale</emphasis></entry>
+          <entry><emphasis>locale_name</emphasis></entry>
 
           <entry>A null-terminated string containing the language and country
           code to use to determine correct sort order and other

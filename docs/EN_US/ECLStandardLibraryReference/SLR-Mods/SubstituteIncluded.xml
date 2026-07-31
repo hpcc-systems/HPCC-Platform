@@ -10,14 +10,14 @@
       <primary>Str.SubstituteIncluded</primary>
     </indexterm><indexterm>
       <primary>SubstituteIncluded</primary>
-    </indexterm>(</emphasis> <emphasis>source, target, replacement</emphasis>
+    </indexterm>(</emphasis> <emphasis>src, filter, replace_char</emphasis>
   <emphasis role="bold">)</emphasis> <emphasis role="bold"></emphasis></para>
 
   <para><emphasis role="bold">STD.Uni.SubstituteIncluded<indexterm>
       <primary>STD.Uni.SubstituteIncluded</primary>
     </indexterm><indexterm>
       <primary>Uni.SubstituteIncluded</primary>
-    </indexterm>(</emphasis> <emphasis>source, target, replacement</emphasis>
+    </indexterm>(</emphasis> <emphasis>src, filter, replace_char</emphasis>
   <emphasis role="bold">)</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
@@ -28,19 +28,19 @@
 
       <tbody>
         <row>
-          <entry><emphasis>source</emphasis></entry>
+          <entry><emphasis>src</emphasis></entry>
 
           <entry>A string containing the data to search.</entry>
         </row>
 
         <row>
-          <entry><emphasis>target </emphasis></entry>
+          <entry><emphasis>filter </emphasis></entry>
 
           <entry>A string containing the characters to search for.</entry>
         </row>
 
         <row>
-          <entry><emphasis>replacement </emphasis></entry>
+          <entry><emphasis>replace_char </emphasis></entry>
 
           <entry>A string containing the replacement character as its first
           character.</entry>

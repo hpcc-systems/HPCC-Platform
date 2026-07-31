@@ -10,8 +10,7 @@
       <primary>Str.FromHexPairs</primary>
     </indexterm><indexterm>
       <primary>FromHexPairs</primary>
-    </indexterm>(</emphasis> <emphasis>source</emphasis> <emphasis
-  role="bold">)</emphasis> <emphasis role="bold"></emphasis></para>
+    </indexterm>(</emphasis> <emphasis>hex_pairs</emphasis> <emphasis role="bold">)</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -21,7 +20,7 @@
 
       <tbody>
         <row>
-          <entry><emphasis>source</emphasis></entry>
+          <entry><emphasis>hex_pairs</emphasis></entry>
 
           <entry>The string containing the hex pairs to process.</entry>
         </row>

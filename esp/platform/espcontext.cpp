@@ -26,9 +26,12 @@
 #include "sechandler.hpp"
 #include "espprotocol.hpp"
 #include "espsecurecontext.hpp"
-#include "ldapsecurity.ipp"
 #include "dasds.hpp"
 #include "datamasking.h"
+
+#ifdef _USE_OPENLDAP
+#include "ldapsecurity.ipp"
+#endif
 
 class CEspContext : public CInterface, implements IEspContext
 {

@@ -36,3 +36,5 @@ If you ask about index compression options, the participant retrieves the exact 
 It also provides links to the relevant topics in the online ECL Language Reference.
 
 In short, **`@ecl`** acts as a bridge between the AI and the real ECL ecosystem — documentation, your cluster, and your code — so you get accurate, actionable answers.
+
+See also: [Why `@workspace` matters in Copilot Chat](UsingWorkspace.md).

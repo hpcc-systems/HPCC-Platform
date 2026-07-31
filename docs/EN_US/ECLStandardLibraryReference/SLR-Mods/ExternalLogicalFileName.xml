@@ -10,7 +10,7 @@
       <primary>File.ExternalLogicalFileName</primary>
     </indexterm><indexterm>
       <primary>ExternalLogicalFileName</primary>
-    </indexterm>(</emphasis> <emphasis> machineIP, filename </emphasis>
+    </indexterm>(</emphasis> <emphasis>location, path, abspath</emphasis>
   <emphasis role="bold">)</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
@@ -21,14 +21,14 @@
 
       <tbody>
         <row>
-          <entry><emphasis>machineIP</emphasis></entry>
+          <entry><emphasis>location</emphasis></entry>
 
           <entry>A null-terminated string containing the IP address of the
           remote machine.</entry>
         </row>
 
         <row>
-          <entry><emphasis>filename</emphasis></entry>
+          <entry><emphasis>path</emphasis></entry>
 
           <entry>A null-terminated string containing the path/name of the
           file.</entry>

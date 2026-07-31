@@ -86,6 +86,46 @@ static const char * queryIndexNodeTypeText(unsigned type)
 //
 // Meta information about events and attributes.
 
+// Attribute groupings used by EventType metadata.
+#define JEVENT_ATTR_HEADER             EvAttrEventTimestamp, EvAttrEventTraceId, EvAttrEventThreadId, EvAttrEventStackTrace
+#define JEVENT_SOURCE_ATTRS            EvAttrChannelId, EvAttrReplicaId, EvAttrInstanceId
+#define JEVENT_COMMON_ATTRS            JEVENT_ATTR_HEADER, JEVENT_SOURCE_ATTRS
+#define JEVENT_INDEX_HEADER            JEVENT_COMMON_ATTRS, EvAttrFileId, EvAttrFileOffset, EvAttrNodeKind
+#define JEVENT_INDEXCACHEHIT_ATTRS     JEVENT_INDEX_HEADER, EvAttrInMemorySize, EvAttrExpandTime
+#define JEVENT_INDEXCACHEMISS_ATTRS    JEVENT_INDEX_HEADER
+#define JEVENT_INDEXLOAD_ATTRS         JEVENT_INDEX_HEADER, EvAttrInMemorySize, EvAttrExpandTime, EvAttrReadTime
+#define JEVENT_INDEXEVICTION_ATTRS     JEVENT_INDEX_HEADER, EvAttrInMemorySize
+#define JEVENT_DALI_ATTRS              JEVENT_COMMON_ATTRS, EvAttrPath, EvAttrConnectId, EvAttrElapsedTime, EvAttrDataSize
+#define JEVENT_FILEINFORMATION_ATTRS   JEVENT_COMMON_ATTRS, EvAttrFileId, EvAttrPath
+#define JEVENT_RECORDINGACTIVE_ATTRS   JEVENT_COMMON_ATTRS, EvAttrEnabled
+#define JEVENT_INDEXPAYLOAD_ATTRS      JEVENT_COMMON_ATTRS, EvAttrFileId, EvAttrFileOffset, EvAttrFirstUse, EvAttrExpandTime
+#define JEVENT_QUERYSTART_ATTRS        JEVENT_COMMON_ATTRS, EvAttrServiceName
+#define JEVENT_QUERYSTOP_ATTRS         JEVENT_COMMON_ATTRS
+#define JEVENT_RECORDINGSOURCE_ATTRS   JEVENT_COMMON_ATTRS, EvAttrProcessDescriptor
+#define JEVENT_INDEXOPEN_ATTRS         JEVENT_COMMON_ATTRS, EvAttrFileId, EvAttrOpenTime
+#define JEVENT_PLANEINFORMATION_ATTRS  JEVENT_COMMON_ATTRS, EvAttrPlane, EvAttrPath, EvAttrIsStriped
+#define JEVENT_REMOTEREQUEST_ATTRS     JEVENT_COMMON_ATTRS, EvAttrRequestId, EvAttrRequestSeq
+#define JEVENT_REMOTERECEIVE_ATTRS     JEVENT_COMMON_ATTRS, EvAttrRequestId, EvAttrRequestSeq
+#define JEVENT_WORKERSTART_ATTRS       JEVENT_COMMON_ATTRS, EvAttrRequestId, EvAttrRequestSeq
+#define JEVENT_WORKERSTOP_ATTRS        JEVENT_COMMON_ATTRS, EvAttrRequestId, EvAttrRequestSeq
+#define JEVENT_WORKERSEND_ATTRS        JEVENT_COMMON_ATTRS, EvAttrRequestId, EvAttrRequestSeq, EvAttrResponseId, EvAttrResponseSeq
+#define JEVENT_WORKERRECEIVE_ATTRS     JEVENT_COMMON_ATTRS, EvAttrRequestId, EvAttrRequestSeq, EvAttrResponseId, EvAttrResponseSeq
+#define JEVENT_TASKSTART_ATTRS         JEVENT_COMMON_ATTRS, EvAttrTask
+#define JEVENT_TASKSTOP_ATTRS          JEVENT_COMMON_ATTRS, EvAttrTask
+#define JEVENT_MUTEX_ATTRS             JEVENT_COMMON_ATTRS, EvAttrLockId
+#define JEVENT_MPREQUESTSEND_ATTRS     JEVENT_COMMON_ATTRS, EvAttrRequestId, EvAttrDataSize
+#define JEVENT_MPREQUESTRECEIVE_ATTRS  JEVENT_COMMON_ATTRS, EvAttrRequestId
+#define JEVENT_MPRESPONSESEND_ATTRS    JEVENT_COMMON_ATTRS, EvAttrResponseId, EvAttrDataSize
+#define JEVENT_MPRESPONSERECEIVE_ATTRS JEVENT_COMMON_ATTRS, EvAttrResponseId
+#define JEVENT_ENQUEUE_ATTRS           JEVENT_COMMON_ATTRS, EvAttrElementId
+#define JEVENT_DEQUEUE_ATTRS           JEVENT_COMMON_ATTRS, EvAttrElementId
+
+// Table expansion helpers
+#define DEFINE_EVENT(name, ctx, attrs)           { Event##name, #name, false, EventNone, EventCtx##ctx, { attrs } },
+#define DEFINE_META(name, ctx, attrs)            { Meta##name, #name, true, EventNone, EventCtx##ctx | EventCtxMeta, { attrs } },
+#define DEFINE_EVENTATTR_INFO(name, type, unit)  { EvAttr##name, #name, EAT##type, attrTypeSizes[EAT##type], attrTypeClasses[EAT##type], EAU##unit },
+#define DEFINE_EVENTCONTEXT_INFO(name, bits)     { EventCtx##name, #name },
+
 struct EventInformation
 {
     EventType type;             // the enumeration value
@@ -96,92 +136,68 @@ struct EventInformation
     std::initializer_list<EventAttr> attributes;     // array of attributes
 };
 
-
-#define DEFINE_EVENT(event, ctx, attrs) { Event##event, #event, false, EventNone, ctx, attrs }
-#define DEFINE_META(meta, ctx, attrs) { Meta##meta, #meta, true, EventNone, ctx, attrs }
-#define ATTR_HEADER           EvAttrEventTimestamp, EvAttrEventTraceId, EvAttrEventThreadId, EvAttrEventStackTrace
-#define SOURCE_ATTRS          EvAttrChannelId, EvAttrReplicaId, EvAttrInstanceId
-#define COMMON_ATTRS          ATTR_HEADER, SOURCE_ATTRS
-#define INDEX_HEADER          COMMON_ATTRS, EvAttrFileId, EvAttrFileOffset, EvAttrNodeKind
-#define INDEXCACHEHIT_ATTRS   INDEX_HEADER, EvAttrInMemorySize, EvAttrExpandTime
-#define INDEXCACHEMISS_ATTRS  INDEX_HEADER
-#define INDEXLOAD_ATTRS       INDEX_HEADER, EvAttrInMemorySize, EvAttrExpandTime, EvAttrReadTime
-#define INDEXEVICTION_ATTRS   INDEX_HEADER, EvAttrInMemorySize
-#define DALI_ATTRS            COMMON_ATTRS, EvAttrPath, EvAttrConnectId, EvAttrElapsedTime, EvAttrDataSize
-#define FILEINFORMATION_ATTRS COMMON_ATTRS, EvAttrFileId, EvAttrPath
-#define RECORDINGACTIVE_ATTRS COMMON_ATTRS, EvAttrEnabled
-#define INDEXPAYLOAD_ATTRS    COMMON_ATTRS, EvAttrFileId, EvAttrFileOffset, EvAttrFirstUse, EvAttrExpandTime
-#define QUERYSTART_ATTRS      COMMON_ATTRS, EvAttrServiceName
-#define QUERYSTOP_ATTRS       COMMON_ATTRS
-#define RECORDINGSOURCE_ATTRS COMMON_ATTRS, EvAttrProcessDescriptor
-#define INDEXOPEN_ATTRS       COMMON_ATTRS, EvAttrFileId, EvAttrOpenTime
-#define PLANEINFORMATION_ATTRS COMMON_ATTRS, EvAttrPlane, EvAttrPath, EvAttrIsStriped
-#define REMOTEREQUEST_ATTRS    COMMON_ATTRS, EvAttrRequestId, EvAttrRequestSeq
-#define REMOTERECEIVE_ATTRS    COMMON_ATTRS, EvAttrRequestId, EvAttrRequestSeq
-#define WORKERSTART_ATTRS      COMMON_ATTRS, EvAttrRequestId, EvAttrRequestSeq
-#define WORKERSTOP_ATTRS       COMMON_ATTRS, EvAttrRequestId, EvAttrRequestSeq
-#define WORKERSEND_ATTRS       COMMON_ATTRS, EvAttrRequestId, EvAttrRequestSeq, EvAttrResponseId, EvAttrResponseSeq
-#define WORKERRECEIVE_ATTRS    COMMON_ATTRS, EvAttrRequestId, EvAttrRequestSeq, EvAttrResponseId, EvAttrResponseSeq
-#define TASKSTART_ATTRS        COMMON_ATTRS, EvAttrTask
-#define TASKSTOP_ATTRS         COMMON_ATTRS, EvAttrTask
-#define MUTEX_ATTRS            COMMON_ATTRS, EvAttrLockId
-#define MPREQUESTSEND_ATTRS    COMMON_ATTRS, EvAttrRequestId, EvAttrDataSize
-#define MPREQUESTRECEIVE_ATTRS COMMON_ATTRS, EvAttrRequestId
-#define MPRESPONSESEND_ATTRS   COMMON_ATTRS, EvAttrResponseId, EvAttrDataSize
-#define MPRESPONSERECEIVE_ATTRS COMMON_ATTRS, EvAttrResponseId
-#define ENQUEUE_ATTRS          COMMON_ATTRS, EvAttrElementId
-#define DEQUEUE_ATTRS          COMMON_ATTRS, EvAttrElementId
-
-
-static constexpr EventInformation eventInformation[] {
-    DEFINE_EVENT(None, EventCtxNone, { EvAttrNone } ),
-    DEFINE_EVENT(IndexCacheHit, EventCtxIndex, { INDEXCACHEHIT_ATTRS } ),
-    DEFINE_EVENT(IndexCacheMiss, EventCtxIndex, { INDEXCACHEMISS_ATTRS } ),
-    DEFINE_EVENT(IndexLoad, EventCtxIndex, { INDEXLOAD_ATTRS } ),
-    DEFINE_EVENT(IndexEviction, EventCtxIndex, { INDEXEVICTION_ATTRS } ),
-    DEFINE_EVENT(DaliChangeMode, EventCtxDali, { DALI_ATTRS } ),
-    DEFINE_EVENT(DaliCommit, EventCtxDali, { DALI_ATTRS } ),
-    DEFINE_EVENT(DaliConnect, EventCtxDali, { DALI_ATTRS } ),
-    DEFINE_EVENT(DaliEnsureLocal, EventCtxDali, { DALI_ATTRS } ),
-    DEFINE_EVENT(DaliGet, EventCtxDali, { DALI_ATTRS } ),
-    DEFINE_EVENT(DaliGetChildren, EventCtxDali, { DALI_ATTRS } ),
-    DEFINE_EVENT(DaliGetChildrenFor, EventCtxDali, { DALI_ATTRS } ),
-    DEFINE_EVENT(DaliGetElements, EventCtxDali, { DALI_ATTRS } ),
-    DEFINE_EVENT(DaliSubscribe, EventCtxDali, { DALI_ATTRS } ),
-    DEFINE_META(FileInformation, EventCtxIndex | EventCtxMeta, { FILEINFORMATION_ATTRS } ),
-    DEFINE_EVENT(RecordingActive, EventCtxOther, { RECORDINGACTIVE_ATTRS } ),
-    DEFINE_EVENT(IndexPayload, EventCtxIndex, { INDEXPAYLOAD_ATTRS } ),
-    DEFINE_EVENT(QueryStart, EventCtxQuery, { QUERYSTART_ATTRS } ),
-    DEFINE_EVENT(QueryStop, EventCtxQuery, { QUERYSTOP_ATTRS } ),
-    DEFINE_EVENT(RecordingSource, EventCtxNone, { RECORDINGSOURCE_ATTRS } ),
-    DEFINE_EVENT(IndexOpen, EventCtxIndex, { INDEXOPEN_ATTRS } ),
-    DEFINE_META(PlaneInformation, EventCtxIndex | EventCtxMeta, { PLANEINFORMATION_ATTRS } ),
-    DEFINE_EVENT(RequestSend, EventCtxRemote, { REMOTEREQUEST_ATTRS } ),
-    DEFINE_EVENT(RequestReceive, EventCtxRemote, { REMOTERECEIVE_ATTRS } ),
-    DEFINE_EVENT(WorkerStart, EventCtxRemote, { WORKERSTART_ATTRS } ),
-    DEFINE_EVENT(WorkerStop, EventCtxRemote, { WORKERSTOP_ATTRS } ),
-    DEFINE_EVENT(ResponseSend, EventCtxRemote, { WORKERSEND_ATTRS } ),
-    DEFINE_EVENT(ResponseReceive, EventCtxRemote, { WORKERRECEIVE_ATTRS } ),
-    DEFINE_EVENT(TaskStart, EventCtxQuery, { TASKSTART_ATTRS } ),
-    DEFINE_EVENT(TaskStop, EventCtxQuery, { TASKSTOP_ATTRS } ),
-    DEFINE_EVENT(LockWait, EventCtxMutex, { MUTEX_ATTRS } ),
-    DEFINE_EVENT(LockAcquire, EventCtxMutex, { MUTEX_ATTRS } ),
-    DEFINE_EVENT(LockRelease, EventCtxMutex, { MUTEX_ATTRS } ),
-    DEFINE_EVENT(SemWait, EventCtxMutex, { MUTEX_ATTRS } ),
-    DEFINE_EVENT(SemAcquire, EventCtxMutex, { MUTEX_ATTRS } ),
-    DEFINE_EVENT(SemSignal, EventCtxMutex, { MUTEX_ATTRS } ),
-    DEFINE_EVENT(LockTryWaitAcquire, EventCtxMutex, { MUTEX_ATTRS } ),
-    DEFINE_EVENT(LockTryWaitFail, EventCtxMutex, { MUTEX_ATTRS } ),
-    DEFINE_EVENT(LockWaitTimeout, EventCtxMutex, { MUTEX_ATTRS } ),
-    DEFINE_EVENT(SemWaitTimeout, EventCtxMutex, { MUTEX_ATTRS } ),
-    DEFINE_EVENT(MpRequestSend, EventCtxRemote, { MPREQUESTSEND_ATTRS } ),
-    DEFINE_EVENT(MpRequestReceive, EventCtxRemote, { MPREQUESTRECEIVE_ATTRS } ),
-    DEFINE_EVENT(MpResponseSend, EventCtxRemote, { MPRESPONSESEND_ATTRS } ),
-    DEFINE_EVENT(MpResponseReceive, EventCtxRemote, { MPRESPONSERECEIVE_ATTRS } ),
-    DEFINE_EVENT(Enqueue, EventCtxQuery, { ENQUEUE_ATTRS } ),
-    DEFINE_EVENT(Dequeue, EventCtxQuery, { DEQUEUE_ATTRS } ),
+static constexpr EventInformation eventInformation[] = {
+    DEFINE_EVENT(None,               None,   EvAttrNone)
+    DEFINE_EVENT(IndexCacheHit,      Index,  JEVENT_INDEXCACHEHIT_ATTRS)
+    DEFINE_EVENT(IndexCacheMiss,     Index,  JEVENT_INDEXCACHEMISS_ATTRS)
+    DEFINE_EVENT(IndexLoad,          Index,  JEVENT_INDEXLOAD_ATTRS)
+    DEFINE_EVENT(IndexEviction,      Index,  JEVENT_INDEXEVICTION_ATTRS)
+    DEFINE_EVENT(DaliChangeMode,     Dali,   JEVENT_DALI_ATTRS)
+    DEFINE_EVENT(DaliCommit,         Dali,   JEVENT_DALI_ATTRS)
+    DEFINE_EVENT(DaliConnect,        Dali,   JEVENT_DALI_ATTRS)
+    DEFINE_EVENT(DaliEnsureLocal,    Dali,   JEVENT_DALI_ATTRS)
+    DEFINE_EVENT(DaliGet,            Dali,   JEVENT_DALI_ATTRS)
+    DEFINE_EVENT(DaliGetChildren,    Dali,   JEVENT_DALI_ATTRS)
+    DEFINE_EVENT(DaliGetChildrenFor, Dali,   JEVENT_DALI_ATTRS)
+    DEFINE_EVENT(DaliGetElements,    Dali,   JEVENT_DALI_ATTRS)
+    DEFINE_EVENT(DaliSubscribe,      Dali,   JEVENT_DALI_ATTRS)
+    DEFINE_META(FileInformation,     Index,  JEVENT_FILEINFORMATION_ATTRS)
+    DEFINE_EVENT(RecordingActive,    Other,  JEVENT_RECORDINGACTIVE_ATTRS)
+    DEFINE_EVENT(IndexPayload,       Index,  JEVENT_INDEXPAYLOAD_ATTRS)
+    DEFINE_EVENT(QueryStart,         Query,  JEVENT_QUERYSTART_ATTRS)
+    DEFINE_EVENT(QueryStop,          Query,  JEVENT_QUERYSTOP_ATTRS)
+    DEFINE_EVENT(RecordingSource,    None,   JEVENT_RECORDINGSOURCE_ATTRS)
+    DEFINE_EVENT(IndexOpen,          Index,  JEVENT_INDEXOPEN_ATTRS)
+    DEFINE_META(PlaneInformation,    Index,  JEVENT_PLANEINFORMATION_ATTRS)
+    DEFINE_EVENT(RequestSend,        Remote, JEVENT_REMOTEREQUEST_ATTRS)
+    DEFINE_EVENT(RequestReceive,     Remote, JEVENT_REMOTERECEIVE_ATTRS)
+    DEFINE_EVENT(WorkerStart,        Remote, JEVENT_WORKERSTART_ATTRS)
+    DEFINE_EVENT(WorkerStop,         Remote, JEVENT_WORKERSTOP_ATTRS)
+    DEFINE_EVENT(ResponseSend,       Remote, JEVENT_WORKERSEND_ATTRS)
+    DEFINE_EVENT(ResponseReceive,    Remote, JEVENT_WORKERRECEIVE_ATTRS)
+    DEFINE_EVENT(TaskStart,          Query,  JEVENT_TASKSTART_ATTRS)
+    DEFINE_EVENT(TaskStop,           Query,  JEVENT_TASKSTOP_ATTRS)
+    DEFINE_EVENT(LockWait,           Mutex,  JEVENT_MUTEX_ATTRS)
+    DEFINE_EVENT(LockAcquire,        Mutex,  JEVENT_MUTEX_ATTRS)
+    DEFINE_EVENT(LockRelease,        Mutex,  JEVENT_MUTEX_ATTRS)
+    DEFINE_EVENT(SemWait,            Mutex,  JEVENT_MUTEX_ATTRS)
+    DEFINE_EVENT(SemAcquire,         Mutex,  JEVENT_MUTEX_ATTRS)
+    DEFINE_EVENT(SemSignal,          Mutex,  JEVENT_MUTEX_ATTRS)
+    DEFINE_EVENT(LockTryWaitAcquire, Mutex, JEVENT_MUTEX_ATTRS)
+    DEFINE_EVENT(LockTryWaitFail,    Mutex,  JEVENT_MUTEX_ATTRS)
+    DEFINE_EVENT(LockWaitTimeout,    Mutex,  JEVENT_MUTEX_ATTRS)
+    DEFINE_EVENT(SemWaitTimeout,     Mutex,  JEVENT_MUTEX_ATTRS)
+    DEFINE_EVENT(MpRequestSend,      Remote, JEVENT_MPREQUESTSEND_ATTRS)
+    DEFINE_EVENT(MpRequestReceive,   Remote, JEVENT_MPREQUESTRECEIVE_ATTRS)
+    DEFINE_EVENT(MpResponseSend,     Remote, JEVENT_MPRESPONSESEND_ATTRS)
+    DEFINE_EVENT(MpResponseReceive,  Remote, JEVENT_MPRESPONSERECEIVE_ATTRS)
+    DEFINE_EVENT(Enqueue,            Query,  JEVENT_ENQUEUE_ATTRS)
+    DEFINE_EVENT(Dequeue,            Query,  JEVENT_DEQUEUE_ATTRS)
 };
+
 static_assert(_elements_in(eventInformation) == EventMax);
+
+constexpr bool verifyEventInformationInitialized()
+{
+    for (unsigned i = 0; i < static_cast<unsigned>(EventMax); ++i)
+    {
+        const auto & info = eventInformation[i];
+        if (static_cast<unsigned>(info.type) != i)
+            return false;
+    }
+    return true;
+}
+static_assert(verifyEventInformationInitialized(), "EventInformation must initialize all EventType values in enum order");
 
 static constexpr unsigned attrTypeSizes[] = { 0, 1, 1, 2, 4, 8, 8, 0, 32 };
 static_assert(_elements_in(attrTypeSizes) == EATmax);
@@ -209,45 +225,27 @@ struct EventAttrInformation
     EventAttrUnit unit;
 };
 
-#define DEFINE_ATTR(tag, type, unit) { EvAttr##tag, #tag, EAT##type, attrTypeSizes[EAT##type], attrTypeClasses[EAT##type], EAU##unit }
-
 static constexpr EventAttrInformation attrInformation[] = {
-    DEFINE_ATTR(None, none, none),
-    DEFINE_ATTR(FileId, u4, none),
-    DEFINE_ATTR(FileOffset, u8, size),
-    DEFINE_ATTR(NodeKind, u1, none),
-    DEFINE_ATTR(ReadTime, u8, duration),
-    DEFINE_ATTR(ElapsedTime, u8, duration),
-    DEFINE_ATTR(InMemorySize, u4, size),
-    DEFINE_ATTR(Path, string, none),
-    DEFINE_ATTR(ConnectId, u8, none),
-    DEFINE_ATTR(Enabled, bool, none),
-    DEFINE_ATTR(FileSize, u8, size),
-    DEFINE_ATTR(EventTimestamp, timestamp, timestamp),
-    DEFINE_ATTR(EventTraceId, string, none),
-    DEFINE_ATTR(EventThreadId, u4, none),
-    DEFINE_ATTR(EventStackTrace, string, none),
-    DEFINE_ATTR(DataSize, u4, size),
-    DEFINE_ATTR(ExpandTime, u8, duration),
-    DEFINE_ATTR(FirstUse, bool, none),
-    DEFINE_ATTR(ServiceName, string, none),
-    DEFINE_ATTR(ChannelId, u1, none),
-    DEFINE_ATTR(ReplicaId, u1, none),
-    DEFINE_ATTR(InstanceId, u8, none),
-    DEFINE_ATTR(ProcessDescriptor, string, none),
-    DEFINE_ATTR(OpenTime, u8, duration),
-    DEFINE_ATTR(Plane, string, none),
-    DEFINE_ATTR(IsStriped, bool, none),
-    DEFINE_ATTR(RequestId, u4, none),
-    DEFINE_ATTR(RequestSeq, u4, none),
-    DEFINE_ATTR(ResponseId, u4, none),
-    DEFINE_ATTR(ResponseSeq, u4, none),
-    DEFINE_ATTR(Task, u1, none),
-    DEFINE_ATTR(LockId, u4, none),
-    DEFINE_ATTR(ElementId, u8, none),
+    { EvAttrNone, "None", EATnone, attrTypeSizes[EATnone], attrTypeClasses[EATnone], EAUnone },
+    FOR_EACH_EVENT_ATTR_VALUE(DEFINE_EVENTATTR_INFO)
 };
 
 static_assert(_elements_in(attrInformation) == EvAttrMax);
+
+struct EventContextInformation
+{
+    EventContext context;
+    const char * name;
+};
+
+static constexpr EventContextInformation contextInformation[] = {
+    FOR_EACH_EVENT_CONTEXT_VALUE(DEFINE_EVENTCONTEXT_INFO)
+};
+
+#undef DEFINE_EVENT
+#undef DEFINE_META
+#undef DEFINE_EVENTATTR_INFO
+#undef DEFINE_EVENTCONTEXT_INFO
 
 EventContext queryEventContext(EventType event)
 {
@@ -257,20 +255,11 @@ EventContext queryEventContext(EventType event)
 
 EventContext queryEventContext(const char* token)
 {
-    if (strieq(token, "dali"))
-        return EventCtxDali;
-    if (strieq(token, "index"))
-        return EventCtxIndex;
-    if (strieq(token, "other"))
-        return EventCtxOther;
-    if (strieq(token, "meta"))
-        return EventCtxMeta;
-    if (strieq(token, "remote"))
-        return EventCtxRemote;
-    if (strieq(token, "query"))
-        return EventCtxQuery;
-    if (strieq(token, "mutex"))
-        return EventCtxMutex;
+    for (const auto & info : contextInformation)
+    {
+        if (strieq(token, info.name))
+            return info.context;
+    }
     return EventCtxInvalid;
 }
 

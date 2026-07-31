@@ -10,8 +10,7 @@
       <primary>Str.ExtractMultiple</primary>
     </indexterm><indexterm>
       <primary>ExtractMultiple</primary>
-    </indexterm>(</emphasis> <emphasis>source, instance</emphasis> <emphasis
-  role="bold">)</emphasis></para>
+    </indexterm>(</emphasis> <emphasis>src, mask</emphasis> <emphasis role="bold">)</emphasis></para>
 
   <para><emphasis role="bold">STD.Uni.ExtractMultiple<indexterm>
       <primary>STD.Uni.ExtractMultiple</primary>
@@ -30,7 +29,7 @@
 
       <tbody>
         <row>
-          <entry><emphasis>source</emphasis></entry>
+          <entry><emphasis>src</emphasis></entry>
 
           <entry>A string containing a comma-delimited list of data.</entry>
         </row>

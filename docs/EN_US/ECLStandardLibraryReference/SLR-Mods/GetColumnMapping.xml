@@ -11,7 +11,7 @@
       <primary>File.GetColumnMapping</primary>
     </indexterm><indexterm>
       <primary>GetColumnMapping</primary>
-    </indexterm>(</emphasis> <emphasis> file </emphasis> <emphasis
+    </indexterm>(</emphasis> <emphasis>lfn</emphasis> <emphasis
   role="bold">);</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
@@ -22,7 +22,7 @@
 
       <tbody>
         <row>
-          <entry><emphasis>file</emphasis></entry>
+          <entry><emphasis>lfn</emphasis></entry>
 
           <entry>A null-terminated string containing the logical
           filename.</entry>

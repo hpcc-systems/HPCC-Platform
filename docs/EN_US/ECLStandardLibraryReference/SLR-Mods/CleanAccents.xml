@@ -10,7 +10,7 @@
       <primary>Uni.CleanAccents</primary>
     </indexterm><indexterm>
       <primary>CleanAccents</primary>
-    </indexterm>(</emphasis> <emphasis>source</emphasis> <emphasis
+    </indexterm>(</emphasis> <emphasis>src</emphasis> <emphasis
   role="bold">)</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
@@ -21,7 +21,7 @@
 
       <tbody>
         <row>
-          <entry><emphasis>source</emphasis></entry>
+          <entry><emphasis>src</emphasis></entry>
 
           <entry>A string containing the data to clean.</entry>
         </row>

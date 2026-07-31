@@ -33,6 +33,7 @@ set (    SRCS
          ../shared/caching.cpp 
          aci.cpp 
          ldapsanitization.cpp
+         ldaptimeutils.cpp
          ldapconnection.cpp 
          ldapsecurity.cpp 
          permissions.cpp 

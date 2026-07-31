@@ -10,9 +10,7 @@
       <primary>File.ProtectLogicalFile</primary>
     </indexterm><indexterm>
       <primary>ProtectLogicalFile</primary>
-    </indexterm>(</emphasis> <emphasis> logicalfilename </emphasis> <emphasis
-  role="bold">[ </emphasis> <emphasis>, value </emphasis> <emphasis
-  role="bold"> ] )</emphasis></para>
+    </indexterm>(</emphasis> <emphasis>lfn, value</emphasis> <emphasis role="bold">)</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -22,7 +20,7 @@
 
       <tbody>
         <row>
-          <entry><emphasis>logicalfilename</emphasis></entry>
+          <entry><emphasis>lfn</emphasis></entry>
 
           <entry>A null-terminated string containing the name of the logical
           file as it is known by the DFU.</entry>

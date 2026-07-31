@@ -10,14 +10,13 @@
       <primary>Str.Extract</primary>
     </indexterm><indexterm>
       <primary>Extract</primary>
-    </indexterm>(</emphasis> <emphasis>source, instance</emphasis> <emphasis
-  role="bold">)</emphasis></para>
+    </indexterm>(</emphasis> <emphasis>src, instance</emphasis> <emphasis role="bold">)</emphasis></para>
 
   <para><emphasis role="bold">STD.Uni.Extract<indexterm>
       <primary>STD.Uni.Extract</primary>
     </indexterm><indexterm>
       <primary>Uni.Extract</primary>
-    </indexterm>(</emphasis> <emphasis>source, instance</emphasis> <emphasis
+    </indexterm>(</emphasis> <emphasis>src, instance</emphasis> <emphasis
   role="bold">)</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
@@ -28,7 +27,7 @@
 
       <tbody>
         <row>
-          <entry><emphasis>source</emphasis></entry>
+          <entry><emphasis>src</emphasis></entry>
 
           <entry>A string containing a comma-delimited list of data.</entry>
         </row>

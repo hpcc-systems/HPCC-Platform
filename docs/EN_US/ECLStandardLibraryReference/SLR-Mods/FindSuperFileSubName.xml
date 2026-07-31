@@ -10,8 +10,7 @@
       <primary>File.FindSuperFileSubName</primary>
     </indexterm><indexterm>
       <primary>FindSuperFileSubName</primary>
-    </indexterm>(</emphasis> <emphasis> superfile, subfile </emphasis>
-  <emphasis role="bold">)</emphasis></para>
+    </indexterm>(</emphasis> <emphasis>superName, subName</emphasis> <emphasis role="bold">)</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -21,14 +20,14 @@
 
       <tbody>
         <row>
-          <entry><emphasis>superfile</emphasis></entry>
+          <entry><emphasis>superName</emphasis></entry>
 
           <entry>A null-terminated string containing the logical name of the
           superfile.</entry>
         </row>
 
         <row>
-          <entry><emphasis>subfile</emphasis></entry>
+          <entry><emphasis>subName</emphasis></entry>
 
           <entry>A null-terminated string containing the logical name of the
           sub-file.</entry>

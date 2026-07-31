@@ -10,15 +10,13 @@
       <primary>Str.EditDistanceWithinRadius</primary>
     </indexterm><indexterm>
       <primary>EditDistanceWithinRadius</primary>
-    </indexterm>(</emphasis> <emphasis>string1, string2, radius</emphasis>
-  <emphasis role="bold">)</emphasis></para>
+    </indexterm>(</emphasis> <emphasis>_left, _right, radius</emphasis> <emphasis role="bold">)</emphasis></para>
 
   <para><emphasis role="bold">STD.Uni.EditDistanceWithinRadius<indexterm>
       <primary>STD.Uni.EditDistanceWithinRadius</primary>
     </indexterm><indexterm>
       <primary>Uni.EditDistanceWithinRadius</primary>
-    </indexterm>(</emphasis> <emphasis>string1, string2, radius,
-  locale</emphasis> <emphasis role="bold">)</emphasis></para>
+    </indexterm>(</emphasis> <emphasis>_left, _right, radius, localename</emphasis> <emphasis role="bold">)</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -28,13 +26,13 @@
 
       <tbody>
         <row>
-          <entry><emphasis>string1</emphasis></entry>
+          <entry><emphasis>_left</emphasis></entry>
 
           <entry>The first of a pair of strings to compare.</entry>
         </row>
 
         <row>
-          <entry><emphasis>string2</emphasis></entry>
+          <entry><emphasis>_right</emphasis></entry>
 
           <entry>The second of a pair of strings to compare.</entry>
         </row>
@@ -47,7 +45,7 @@
         </row>
 
         <row>
-          <entry><emphasis>locale</emphasis></entry>
+          <entry><emphasis>localename</emphasis></entry>
 
           <entry>A null-terminated string containing the language and country
           code to use to determine correct sort order and other

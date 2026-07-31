@@ -29,6 +29,56 @@
 #include <condition_variable>
 #include <type_traits>
 
+//--------------------------------------------------------------------------------------------------
+// Event metadata definition tables (maintained values)
+
+// Reusable EventContext values for collection construction.
+// EventCtxNone and reserved/sentinel values are intentionally excluded.
+#define FOR_EACH_EVENT_CONTEXT_VALUE(DEFINE) \
+    DEFINE(Dali,   0x0001) \
+    DEFINE(Index,  0x0002) \
+    DEFINE(Other,  0x0004) \
+    DEFINE(Meta,   0x0008) \
+    DEFINE(Remote, 0x0010) \
+    DEFINE(Query,  0x0020) \
+    DEFINE(Mutex,  0x0040)
+
+// Reusable EventAttr values for collection construction.
+// EvAttrNone is intentionally excluded and remains explicitly defined in enum EventAttr.
+#define FOR_EACH_EVENT_ATTR_VALUE(DEFINE) \
+    DEFINE(FileId,            u4,        none) \
+    DEFINE(FileOffset,        u8,        size) \
+    DEFINE(NodeKind,          u1,        none) \
+    DEFINE(ReadTime,          u8,        duration) \
+    DEFINE(ElapsedTime,       u8,        duration) \
+    DEFINE(InMemorySize,      u4,        size) \
+    DEFINE(Path,              string,    none) \
+    DEFINE(ConnectId,         u8,        none) \
+    DEFINE(Enabled,           bool,      none) \
+    DEFINE(FileSize,          u8,        size) \
+    DEFINE(EventTimestamp,    timestamp, timestamp) \
+    DEFINE(EventTraceId,      string,    none) \
+    DEFINE(EventThreadId,     u4,        none) \
+    DEFINE(EventStackTrace,   string,    none) \
+    DEFINE(DataSize,          u4,        size) \
+    DEFINE(ExpandTime,        u8,        duration) \
+    DEFINE(FirstUse,          bool,      none) \
+    DEFINE(ServiceName,       string,    none) \
+    DEFINE(ChannelId,         u1,        none) \
+    DEFINE(ReplicaId,         u1,        none) \
+    DEFINE(InstanceId,        u8,        none) \
+    DEFINE(ProcessDescriptor, string,    none) \
+    DEFINE(OpenTime,          u8,        duration) \
+    DEFINE(Plane,             string,    none) \
+    DEFINE(IsStriped,         bool,      none) \
+    DEFINE(RequestId,         u4,        none) \
+    DEFINE(RequestSeq,        u4,        none) \
+    DEFINE(ResponseId,        u4,        none) \
+    DEFINE(ResponseSeq,       u4,        none) \
+    DEFINE(Task,              u1,        none) \
+    DEFINE(LockId,            u4,        none) \
+    DEFINE(ElementId,         u8,        none)
+
 // Tasks represent a logical step in processing.  They will always start and stop on the same thread.
 enum class EventTask : byte
 {
@@ -45,13 +95,9 @@ enum class EventTask : byte
 enum EventContext : uint16_t
 {
     EventCtxNone    = 0x0000,
-    EventCtxDali    = 0x0001,
-    EventCtxIndex   = 0x0002,
-    EventCtxOther   = 0x0004,
-    EventCtxMeta    = 0x0008,
-    EventCtxRemote  = 0x0010,
-    EventCtxQuery   = 0x0020,
-    EventCtxMutex   = 0x0040,
+#define DEFINE_EVENTCONTEXT_ENUM(name, bits) EventCtx##name = bits,
+    FOR_EACH_EVENT_CONTEXT_VALUE(DEFINE_EVENTCONTEXT_ENUM)
+#undef DEFINE_EVENTCONTEXT_ENUM
     // Add all new contexts above this line.
     // Dedicated sentinel for parse/validation failures. Not a context bit.
     EventCtxInvalid = 0x8000,
@@ -78,43 +124,14 @@ inline bool eventInAnyContext(EventType event, EventContext context)
     return (eventContext & (context & EventCtxAll)) != EventCtxNone;
 }
 
-// The attributes that can be associated with each event
-// The order should not be changed, or items removed.  New values should always be appended before EvAttrMax
+// The attributes that can be associated with each event.
+// The order should not be changed, or items removed. New values should always be appended before EvAttrMax.
 enum EventAttr : byte
 {
     EvAttrNone,
-    EvAttrFileId,
-    EvAttrFileOffset,
-    EvAttrNodeKind,
-    EvAttrReadTime,
-    EvAttrElapsedTime,
-    EvAttrInMemorySize,
-    EvAttrPath,
-    EvAttrConnectId,
-    EvAttrEnabled,
-    EvAttrFileSize,
-    EvAttrEventTimestamp,
-    EvAttrEventTraceId,
-    EvAttrEventThreadId,
-    EvAttrEventStackTrace,
-    EvAttrDataSize,
-    EvAttrExpandTime,
-    EvAttrFirstUse,
-    EvAttrServiceName,
-    EvAttrChannelId,
-    EvAttrReplicaId,
-    EvAttrInstanceId,
-    EvAttrProcessDescriptor,
-    EvAttrOpenTime,
-    EvAttrPlane,
-    EvAttrIsStriped,
-    EvAttrRequestId,
-    EvAttrRequestSeq,
-    EvAttrResponseId,
-    EvAttrResponseSeq,
-    EvAttrTask,
-    EvAttrLockId,
-    EvAttrElementId,
+#define DEFINE_EVENTATTR_ENUM(name, type, unit) EvAttr##name,
+    FOR_EACH_EVENT_ATTR_VALUE(DEFINE_EVENTATTR_ENUM)
+#undef DEFINE_EVENTATTR_ENUM
     EvAttrMax
 };
 

@@ -10,9 +10,7 @@
       <primary>File.GetSuperFileSubName</primary>
     </indexterm><indexterm>
       <primary>GetSuperFileSubName</primary>
-    </indexterm>(</emphasis> <emphasis> superfile, subfile </emphasis>
-  <emphasis role="bold">[,</emphasis> <emphasis>absolutepath</emphasis>
-  <emphasis role="bold">] )</emphasis></para>
+    </indexterm>(</emphasis> <emphasis>superName, fileNum, absPath</emphasis> <emphasis role="bold">)</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -22,14 +20,14 @@
 
       <tbody>
         <row>
-          <entry><emphasis>superfile</emphasis></entry>
+          <entry><emphasis>superName</emphasis></entry>
 
           <entry>A null-terminated string containing the logical name of the
           superfile.</entry>
         </row>
 
         <row>
-          <entry><emphasis>subfile</emphasis></entry>
+          <entry><emphasis>fileNum</emphasis></entry>
 
           <entry>An integer in the range of one (1) to the total number of
           sub-files in the <emphasis>superfile</emphasis> specifying the
@@ -37,7 +35,7 @@
         </row>
 
         <row>
-          <entry><emphasis>absolutepath</emphasis></entry>
+          <entry><emphasis>absPath</emphasis></entry>
 
           <entry>Optional. A boolean TRUE/FALSE to indicate whether to prepend
           a tilde (~) to the resulting foreign logical file name. If omitted,

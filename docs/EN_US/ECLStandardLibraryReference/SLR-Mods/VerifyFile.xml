@@ -10,7 +10,7 @@
       <primary>File.VerifyFile</primary>
     </indexterm><indexterm>
       <primary>VerifyFile</primary>
-    </indexterm>(</emphasis> <emphasis> file, usecrcs </emphasis> <emphasis
+    </indexterm>(</emphasis> <emphasis>lfn, usecrcs</emphasis> <emphasis
   role="bold">)</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
@@ -21,7 +21,7 @@
 
       <tbody>
         <row>
-          <entry><emphasis>file</emphasis></entry>
+          <entry><emphasis>lfn</emphasis></entry>
 
           <entry>A null-terminated string containing the logical name of the
           file.</entry>

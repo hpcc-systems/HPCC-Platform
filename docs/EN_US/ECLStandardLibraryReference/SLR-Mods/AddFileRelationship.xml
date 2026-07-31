@@ -10,12 +10,7 @@
       <primary>File.AddFileRelationship</primary>
     </indexterm><indexterm>
       <primary>AddFileRelationship</primary>
-    </indexterm>(</emphasis> <emphasis> primary, secondary,</emphasis>
-  <emphasis> primaryfields, secondaryfields, </emphasis> <emphasis
-  role="bold"> [ </emphasis> <emphasis>relationship </emphasis> <emphasis
-  role="bold">]</emphasis> <emphasis>, cardinality, payload </emphasis>
-  <emphasis role="bold"> [</emphasis> <emphasis>, description </emphasis>
-  <emphasis role="bold">] );</emphasis></para>
+    </indexterm>(</emphasis> <emphasis>primary, secondary, primaryflds, secondaryflds, kind, cardinality, payload, description</emphasis> <emphasis role="bold">)</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -39,7 +34,7 @@
         </row>
 
         <row>
-          <entry><emphasis>primaryfields</emphasis></entry>
+          <entry><emphasis>primaryflds</emphasis></entry>
 
           <entry>A null-terminated string containing the name of the primary
           key field for the <emphasis>primary</emphasis> file. The value
@@ -48,14 +43,14 @@
         </row>
 
         <row>
-          <entry><emphasis>secondaryfields</emphasis></entry>
+          <entry><emphasis>secondaryflds</emphasis></entry>
 
           <entry>A null-terminated string containing the name of the foreign
           key field relating to the <emphasis>primary</emphasis> file.</entry>
         </row>
 
         <row>
-          <entry><emphasis>relationship</emphasis></entry>
+          <entry><emphasis>kind</emphasis></entry>
 
           <entry>A null-terminated string containing either "link" or "view"
           indicating the type of relationship between the

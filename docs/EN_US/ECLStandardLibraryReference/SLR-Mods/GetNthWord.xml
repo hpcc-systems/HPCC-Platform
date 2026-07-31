@@ -10,16 +10,13 @@
       <primary>Str.GetNthWord</primary>
     </indexterm><indexterm>
       <primary>GetNthWord</primary>
-    </indexterm>(</emphasis> <emphasis>source, instance </emphasis><emphasis
-  role="bold">)</emphasis></para>
+    </indexterm>(</emphasis> <emphasis>text, n</emphasis> <emphasis role="bold">)</emphasis></para>
 
   <para><emphasis role="bold">STD.Uni.GetNthWord <indexterm>
       <primary>STD.Uni.GetNthWord</primary>
     </indexterm> <indexterm>
       <primary>Uni.GetNthWord</primary>
-    </indexterm> (</emphasis> <emphasis>source, instance </emphasis> <emphasis
-  role="bold">[</emphasis> <emphasis>, locale</emphasis><emphasis role="bold">
-  ] )</emphasis></para>
+    </indexterm> (</emphasis> <emphasis>text, n, localename</emphasis> <emphasis role="bold">)</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -29,19 +26,19 @@
 
       <tbody>
         <row>
-          <entry><emphasis>source</emphasis></entry>
+          <entry><emphasis>text</emphasis></entry>
 
           <entry>A string containing the space-delimited words.</entry>
         </row>
 
         <row>
-          <entry><emphasis>instance</emphasis></entry>
+          <entry><emphasis>n</emphasis></entry>
 
           <entry>An integer specifying the word to return.</entry>
         </row>
 
         <row>
-          <entry><emphasis>locale</emphasis></entry>
+          <entry><emphasis>localename</emphasis></entry>
 
           <entry>A null-terminated string containing the language and country
           code to use to determine correct sort order and other

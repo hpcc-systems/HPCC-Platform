@@ -10,14 +10,13 @@
       <primary>Str.ToLowerCase</primary>
     </indexterm><indexterm>
       <primary>ToLowerCase</primary>
-    </indexterm>(</emphasis> <emphasis>source</emphasis> <emphasis
-  role="bold">)</emphasis> <emphasis role="bold"></emphasis></para>
+    </indexterm>(</emphasis> <emphasis>src</emphasis> <emphasis role="bold">)</emphasis></para>
 
   <para><emphasis role="bold">STD.Uni.ToLowerCase<indexterm>
       <primary>STD.Uni.ToLowerCase</primary>
     </indexterm><indexterm>
       <primary>Uni.ToLowerCase</primary>
-    </indexterm>(</emphasis> <emphasis>source</emphasis> <emphasis
+    </indexterm>(</emphasis> <emphasis>src</emphasis> <emphasis
   role="bold">)</emphasis> <emphasis role="bold"></emphasis></para>
 
   <para><emphasis role="bold">STD.Uni.LocaleToLowerCase<indexterm>
@@ -26,7 +25,7 @@
       <primary>Uni.LocaleToLowerCase</primary>
     </indexterm><indexterm>
       <primary>LocaleToLowerCase</primary>
-    </indexterm>(</emphasis> <emphasis> source, locale </emphasis> <emphasis
+    </indexterm>(</emphasis> <emphasis>src, locale_name</emphasis> <emphasis
   role="bold">)</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
@@ -37,13 +36,13 @@
 
       <tbody>
         <row>
-          <entry><emphasis>source</emphasis></entry>
+          <entry><emphasis>src</emphasis></entry>
 
           <entry>A string containing the data to change case.</entry>
         </row>
 
         <row>
-          <entry><emphasis>locale</emphasis></entry>
+          <entry><emphasis>locale_name</emphasis></entry>
 
           <entry>A null-terminated string containing the language and country
           code to use to determine correct sort order and other

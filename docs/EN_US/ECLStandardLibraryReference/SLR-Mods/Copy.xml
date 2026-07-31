@@ -10,27 +10,7 @@
       <primary>File.Copy</primary>
     </indexterm><indexterm>
       <primary>Copy</primary>
-    </indexterm>(</emphasis> <emphasis> sourceLogicalName,
-  destinationGroup</emphasis> <emphasis role="bold">, </emphasis>
-  <emphasis>destinationLogicalName, </emphasis> <emphasis role="bold">
-  [</emphasis> <emphasis>,sourceDali</emphasis> <emphasis role="bold">]
-  [</emphasis> <emphasis>,timeOut</emphasis> <emphasis role="bold">]
-  [</emphasis> <emphasis>,espServerIPPort </emphasis> <emphasis
-  role="bold">]</emphasis> <emphasis role="bold"> [</emphasis>
-  <emphasis>,maxConnections</emphasis> <emphasis role="bold">] [</emphasis>
-  <emphasis>,allowOverwrite</emphasis> <emphasis role="bold">]</emphasis>
-  <emphasis role="bold"> [</emphasis> <emphasis>,replicate</emphasis>
-  <emphasis role="bold">] [</emphasis> <emphasis>,asSuperfile</emphasis>
-  <emphasis role="bold">] [</emphasis> <emphasis>,compress</emphasis>
-  <emphasis role="bold">] [</emphasis> <emphasis>,forcePush</emphasis>
-  <emphasis role="bold">] [</emphasis>
-  <emphasis>,transferBufferSize</emphasis> <emphasis role="bold">]
-  [</emphasis> <emphasis>,preserveCompression</emphasis> <emphasis
-  role="bold">] [</emphasis> <emphasis>,noSplit</emphasis> <emphasis
-  role="bold">] [</emphasis> <emphasis>,expireDays</emphasis> <emphasis
-  role="bold">] [</emphasis> <emphasis>,ensure</emphasis> <emphasis
-  role="bold">] [</emphasis> <emphasis>,wrap</emphasis> <emphasis
-  role="bold">] );</emphasis></para>
+    </indexterm>(</emphasis> <emphasis>sourceLogicalName, destinationGroup, destinationLogicalName, sourceDali, timeOut, espServerIpPort, maxConnections, allowOverwrite, replicate, asSuperfile, compress, forcePush, transferBufferSize, preserveCompression, noSplit, expireDays, ensure, wrap, keyCompression</emphasis> <emphasis role="bold">)</emphasis></para>
 
   <para><emphasis>dfuwuid</emphasis> <emphasis role="bold"> :=
   STD.File.fCopy<indexterm>
@@ -39,27 +19,7 @@
       <primary>File.fCopy</primary>
     </indexterm><indexterm>
       <primary>fCopy</primary>
-    </indexterm>(</emphasis> <emphasis> sourceLogicalName,
-  destinationGroup</emphasis> <emphasis role="bold">,</emphasis> <emphasis
-  role="bold"> </emphasis> <emphasis>destinationLogicalName, </emphasis>
-  <emphasis role="bold"> [</emphasis> <emphasis>,sourceDali</emphasis>
-  <emphasis role="bold">] [</emphasis> <emphasis>,timeOut</emphasis> <emphasis
-  role="bold">] [</emphasis> <emphasis>,espServerIPPort </emphasis> <emphasis
-  role="bold">]</emphasis> <emphasis role="bold"> [</emphasis>
-  <emphasis>,maxConnections</emphasis> <emphasis role="bold">] [</emphasis>
-  <emphasis>,allowOverwrite</emphasis> <emphasis role="bold">]</emphasis>
-  <emphasis role="bold"> [</emphasis> <emphasis>,replicate</emphasis>
-  <emphasis role="bold">] [</emphasis> <emphasis>,asSuperfile</emphasis>
-  <emphasis role="bold">] [</emphasis> <emphasis>,compress</emphasis>
-  <emphasis role="bold">] [</emphasis> <emphasis>,forcePush</emphasis>
-  <emphasis role="bold">] [</emphasis>
-  <emphasis>,transferBufferSize</emphasis> <emphasis role="bold">]
-  [</emphasis> <emphasis>,preserveCompression</emphasis> <emphasis
-  role="bold">] [</emphasis> <emphasis>,noSplit</emphasis> <emphasis
-  role="bold">] [</emphasis> <emphasis>,expireDays</emphasis> <emphasis
-  role="bold">] [</emphasis> <emphasis>,ensure</emphasis><emphasis
-  role="bold">] [</emphasis> <emphasis>,wrap</emphasis> <emphasis
-  role="bold">] );</emphasis></para>
+    </indexterm>(</emphasis> <emphasis>sourceLogicalName, destinationGroup, destinationLogicalName, sourceDali, timeOut, espServerIpPort, maxConnections, allowOverwrite, replicate, asSuperfile, compress, forcePush, transferBufferSize, preserveCompression, noSplit, expireDays, ensure, wrap, keyCompression</emphasis> <emphasis role="bold">)</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -107,7 +67,7 @@
         </row>
 
         <row>
-          <entry><emphasis>espServerIPPort</emphasis></entry>
+          <entry><emphasis>espServerIpPort</emphasis></entry>
 
           <entry>Optional. This should almost always be omitted, which then
           defaults to the value contained in the lib_system.ws_fs_server
