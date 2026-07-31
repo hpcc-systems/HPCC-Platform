@@ -1747,6 +1747,175 @@ CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(ThreadPoolSizeTest, "ThreadPoolSizeTest");
 
 //--------------------------------------------------------------------------------------------------
 
+class AsyncForTimingStressTest : public CppUnit::TestFixture
+{
+    CPPUNIT_TEST_SUITE(AsyncForTimingStressTest);
+        CPPUNIT_TEST(runAllTests);
+    CPPUNIT_TEST_SUITE_END();
+
+    enum class Workload : unsigned
+    {
+        noOp,
+        atomicSingle,
+        atomicTwenty
+    };
+
+    struct AsyncForCase
+    {
+        unsigned num;
+        unsigned maxAtOnce;
+    };
+
+public:
+    void runAllTests()
+    {
+        static constexpr Workload workloads[] = {
+            Workload::noOp,
+            Workload::atomicSingle,
+            Workload::atomicTwenty
+        };
+
+        static constexpr AsyncForCase cases[] = {
+            { 4'096, 1 },
+            { 4'096, 4 },
+            { 4'096, 16 },
+            { 32'768, 1 },
+            { 32'768, 4 },
+            { 32'768, 16 },
+            { 131'072, 1 },
+            { 131'072, 4 },
+            { 131'072, 16 }
+        };
+
+        DBGLOG("AsyncFor timing stress: repeats=%u warmup=%u", repeats, warmupRuns);
+        DBGLOG("%-10s %8s %10s %10s %12s %12s %12s %16s %15s %18s %13s",
+               "workload", "num", "maxAtOnce", "ratio", "serialNs", "asyncNs", "deltaNs",
+               "serialNsPerItem", "asyncNsPerItem", "overheadNsPerItem", "slowdownX1000");
+        for (Workload workload : workloads)
+        {
+            for (const auto & nextCase : cases)
+                runCase(workload, nextCase.num, nextCase.maxAtOnce);
+        }
+    }
+
+private:
+    static constexpr unsigned repeats = 7;
+    static constexpr unsigned warmupRuns = 1;
+
+    static const char * queryWorkloadName(Workload workload)
+    {
+        switch (workload)
+        {
+        case Workload::noOp:
+            return "no-op";
+        case Workload::atomicSingle:
+            return "atomic+1";
+        case Workload::atomicTwenty:
+            return "atomic+20";
+        }
+        return "unknown";
+    }
+
+    static unsigned __int64 queryExpectedValue(Workload workload, unsigned num)
+    {
+        switch (workload)
+        {
+        case Workload::noOp:
+            return 0;
+        case Workload::atomicSingle:
+            return num;
+        case Workload::atomicTwenty:
+            return (unsigned __int64) num * 20;
+        }
+        return 0;
+    }
+
+    static void executeWork(Workload workload, std::atomic<unsigned __int64> & counter)
+    {
+        switch (workload)
+        {
+        case Workload::noOp:
+            break;
+        case Workload::atomicSingle:
+            counter.fetch_add(1, std::memory_order_relaxed);
+            break;
+        case Workload::atomicTwenty:
+            for (unsigned i = 0; i < 20; i++)
+                counter.fetch_add(1, std::memory_order_relaxed);
+            break;
+        }
+    }
+
+    static unsigned __int64 runSerial(Workload workload, unsigned num)
+    {
+        std::atomic<unsigned __int64> counter{0};
+        CCycleTimer timer;
+        for (unsigned i = 0; i < num; i++)
+            executeWork(workload, counter);
+        unsigned __int64 elapsed = timer.elapsedNs();
+        CPPUNIT_ASSERT_EQUAL(queryExpectedValue(workload, num), counter.load(std::memory_order_relaxed));
+        return elapsed;
+    }
+
+    static unsigned __int64 runAsync(Workload workload, unsigned num, unsigned maxAtOnce)
+    {
+        std::atomic<unsigned __int64> counter{0};
+        CCycleTimer timer;
+        asyncFor("AsyncForTimingStressTest", num, maxAtOnce, [&counter, workload](unsigned)
+        {
+            executeWork(workload, counter);
+        });
+        unsigned __int64 elapsed = timer.elapsedNs();
+        CPPUNIT_ASSERT_EQUAL(queryExpectedValue(workload, num), counter.load(std::memory_order_relaxed));
+        return elapsed;
+    }
+
+    template <class Fn>
+    static unsigned __int64 measureMedianNs(Fn && fn)
+    {
+        for (unsigned i = 0; i < warmupRuns; i++)
+            fn();
+
+        std::vector<unsigned __int64> samples;
+        samples.reserve(repeats);
+        for (unsigned i = 0; i < repeats; i++)
+            samples.emplace_back(fn());
+
+        std::sort(samples.begin(), samples.end());
+        return samples[samples.size()/2];
+    }
+
+    static void runCase(Workload workload, unsigned num, unsigned maxAtOnce)
+    {
+        unsigned __int64 serialNs = measureMedianNs([workload, num]()
+        {
+            return runSerial(workload, num);
+        });
+
+        unsigned __int64 asyncNs = measureMedianNs([workload, num, maxAtOnce]()
+        {
+            return runAsync(workload, num, maxAtOnce);
+        });
+
+        __int64 deltaNs = (__int64)asyncNs - (__int64)serialNs;
+        unsigned ratio = num / maxAtOnce;
+        unsigned __int64 serialNsPerItem = serialNs / num;
+        unsigned __int64 asyncNsPerItem = asyncNs / num;
+        __int64 overheadNsPerItem = deltaNs / (__int64)num;
+        unsigned slowdownX1000 = serialNs ? (unsigned)(((unsigned __int64)asyncNs * 1000) / serialNs) : 0;
+
+         DBGLOG("%-10s %8u %10u %8u.0 %12" I64F "u %12" I64F "u %12" I64F "d %16" I64F "u %15" I64F "u %18" I64F "d %13u",
+             queryWorkloadName(workload), num, maxAtOnce, ratio,
+               serialNs, asyncNs, deltaNs,
+               serialNsPerItem, asyncNsPerItem, overheadNsPerItem, slowdownX1000);
+    }
+};
+
+CPPUNIT_TEST_SUITE_REGISTRATION(AsyncForTimingStressTest);
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(AsyncForTimingStressTest, "AsyncForTimingStressTest");
+
+//--------------------------------------------------------------------------------------------------
+
 #include "jregexp.hpp"
 #include <regex>
 

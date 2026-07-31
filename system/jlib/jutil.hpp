@@ -182,12 +182,11 @@ inline int fastRand()
 
 interface IShuffledIterator: extends IInterface
 {
-    virtual void seed(unsigned seedval)=0;  // ony required for repeatability
     virtual bool first()=0;
-    virtual bool isValid() = 0;
+    virtual bool isValid() const = 0;
     virtual bool next() = 0;
-    virtual unsigned get() = 0;
-    virtual unsigned lookup(unsigned idx) = 0;  // looks up idx'th entry
+    virtual unsigned get() const = 0;
+    virtual unsigned lookup(unsigned idx) const = 0;  // looks up idx'th entry
 };
 
 extern jlib_decl IShuffledIterator *createShuffledIterator(unsigned n); // returns iterator that returns 0..n-1 in shuffled order

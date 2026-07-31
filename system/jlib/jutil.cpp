@@ -1049,30 +1049,20 @@ jlib_decl int rand_r(unsigned int *seed)
 class CShuffledIterator: implements IShuffledIterator, public CInterface
 {
     CRandom rand;
-    unsigned *seq;
-    unsigned idx;
-    unsigned num;
+    unsigned * seq = nullptr;
+    unsigned idx = 0;
+    unsigned num = 0;
 public:
     IMPLEMENT_IINTERFACE;
 
-    CShuffledIterator(unsigned _num)
+    CShuffledIterator(unsigned _num) : num(_num)
     {
-        num = _num;
-        idx = 0;
-        seq = NULL;
-    }
-    ~CShuffledIterator()
-    {
-        delete [] seq;
-    }
-
-    bool first()
-    {
-        if (!seq)
-            seq = new unsigned[num];
-        idx = 0;
         if (!num)
-            return false;
+            return;
+
+        seq = new unsigned[num];
+        idx = 0;
+
         unsigned i;
         for (i=0;i<num;i++)
             seq[i] = i;
@@ -1083,10 +1073,19 @@ public:
             seq[j] = seq[i];
             seq[i] = t;
         }
-        return true;
+    }
+    ~CShuffledIterator()
+    {
+        delete [] seq;
     }
 
-    bool isValid()
+    bool first()
+    {
+        idx = 0;
+        return (num != 0);
+    }
+
+    bool isValid() const
     {
         return idx<num;
     }
@@ -1098,24 +1097,16 @@ public:
         return isValid();
     }
 
-    unsigned get()
+    unsigned get() const
     {
         return lookup(idx);
     }
 
-    unsigned lookup(unsigned i)
+    unsigned lookup(unsigned i) const
     {
-        if (!seq)
-            first();
-        return seq[i%num];
+        assertex(i<num);
+        return seq[i];
     }
-
-    void seed(unsigned su)
-    {
-        rand.seed(su);
-    }
-
-
 };
 
 extern jlib_decl IShuffledIterator *createShuffledIterator(unsigned n)

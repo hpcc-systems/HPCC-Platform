@@ -742,17 +742,24 @@ void CAsyncFor::For(unsigned num,unsigned maxatonce,bool abortFollowingException
             Do(0);
         return;
     }
+
+    if (maxatonce==0 || maxatonce > num)
+        maxatonce = num;
+
     AtomicShared<IException> e;
     Owned<IShuffledIterator> shuffler;
-    if (shuffled) {
+    //Only worth shuffling if there are not enough threads to do all at once
+    if (shuffled && (maxatonce < num))
         shuffler.setown(createShuffledIterator(num));
-        shuffler->first(); // prime (needed to make thread safe)
-    }
+
     unsigned i;
-    if (maxatonce==1) { // no need for threads
-        for (i=0;i<num;i++) {
+    if (maxatonce==1)
+    { // no need for threads
+        for (i=0;i<num;i++)
+        {
             unsigned idx = shuffled?shuffler->lookup(i):i;
-            try {
+            try
+            {
                 Do(idx);
             }
             catch (IException * _e)
@@ -763,52 +770,78 @@ void CAsyncFor::For(unsigned num,unsigned maxatonce,bool abortFollowingException
             }
         }
     }
-    else {
-        if (maxatonce==0 || maxatonce > num)
-            maxatonce = num;
+    else
+    {
         if (maxatonce < num)
         {
+            // Internal scheduling granularity for atomic work-claim path.
+            // Kept local (not public API) so it can be tuned later if needed.
+            // If there was lots of very fine-grained work it might be worth increasing the value, or making it a parameter.
+            constexpr unsigned chunkSize = 1;
+
             class cdothread: public Thread
             {
             public:
-                Semaphore &ready;
                 AtomicShared<IException> &erre;
-                unsigned idx;
-                CAsyncFor *self;
-                cdothread(CAsyncFor *_self,unsigned _idx,Semaphore &_ready,AtomicShared<IException> &_e)
-                    : Thread(_self->queryName()),ready(_ready),erre(_e)
+                std::atomic<unsigned> &next;
+                const unsigned limit;
+                const bool abortFollowingException;
+                const bool shuffled;
+                IShuffledIterator * const shuffler;
+                CAsyncFor * const self;
+                cdothread(CAsyncFor *_self,AtomicShared<IException> &_e, std::atomic<unsigned> &_next, unsigned _limit, bool _abortFollowingException, bool _shuffled, IShuffledIterator *_shuffler)
+                    : Thread(_self->queryName()),erre(_e), next(_next), limit(_limit), abortFollowingException(_abortFollowingException), shuffled(_shuffled), shuffler(_shuffler), self(_self)
                 {
-                    idx = _idx;
-                    self = _self;
                 }
                 int run()
                 {
-                    try {
-                        self->Do(idx);
-                    }
-                    catch (IException * _e)
+                    while (true)
                     {
-                        erre.setownIfNull(_e);
-                    }
+                        if (abortFollowingException && erre.isSet())
+                            break;
+
+                        unsigned logical = next.fetch_add(chunkSize, std::memory_order_relaxed);
+                        if (logical >= limit)
+                            break;
+
+                        unsigned end = logical + chunkSize;
+                        // This test supports the general case, but the check for chunkSize==1 should allow the following loop to be optimized away
+                        if ((chunkSize != 1) && (end > limit))
+                            end = limit;
+
+                        for (; logical < end; ++logical)
+                        {
+                            if (abortFollowingException && erre.isSet())
+                                return 0;
+                            try {
+                                unsigned idx = shuffled ? shuffler->lookup(logical) : logical;
+                                self->Do(idx);
+                            }
+                            catch (IException * _e)
+                            {
+                                erre.setownIfNull(_e);
+                                if (abortFollowingException)
+                                    return 0;
+                            }
     #ifndef NO_CATCHALL
-                    catch (...)
-                    {
-                        erre.setownIfNull(MakeStringException(JLIBERR_SystemUnknownExceptionInThreadS_1, "Unknown exception in Thread %s", getName()));
-                    }
+                            catch (...)
+                            {
+                                erre.setownIfNull(MakeStringException(JLIBERR_SystemUnknownExceptionInThreadS_1, "Unknown exception in Thread %s", getName()));
+                                if (abortFollowingException)
+                                    return 0;
+                            }
     #endif
-                    ready.signal();
+                        }
+                    }
                     return 0;
                 }
             };
-            Semaphore ready(SYNC_LOCATION);
-            for (i=0;(i<num)&&(i<maxatonce);i++)
-                ready.signal();
+
+            std::atomic<unsigned> next{0};
             IArrayOf<Thread> started;
-            started.ensureCapacity(num);
-            for (i=0;i<num;i++) {
-                ready.wait();
-                if (abortFollowingException && e.isSet()) break;
-                Owned<Thread> thread = new cdothread(this,shuffled?shuffler->lookup(i):i,ready,e);
+            started.ensureCapacity(maxatonce);
+            for (i=0;i<maxatonce;i++) {
+                Owned<Thread> thread = new cdothread(this,e,next,num,abortFollowingException,shuffled,shuffler);
                 thread->start(true);
                 started.append(*thread.getClear());
             }
@@ -825,13 +858,11 @@ void CAsyncFor::For(unsigned num,unsigned maxatonce,bool abortFollowingException
             {
             public:
                 AtomicShared<IException> &erre;
-                unsigned idx;
-                CAsyncFor *self;
+                const unsigned idx;
+                CAsyncFor * const self;
                 cdothread(CAsyncFor *_self,unsigned _idx,AtomicShared<IException>&_e)
-                    : Thread(_self->queryName()),erre(_e)
+                    : Thread(_self->queryName()),erre(_e), idx(_idx), self(_self)
                 {
-                    idx = _idx;
-                    self = _self;
                 }
                 int run()
                 {
@@ -860,7 +891,8 @@ void CAsyncFor::For(unsigned num,unsigned maxatonce,bool abortFollowingException
                 started.append(*thread.getClear());
             }
 
-            try {
+            try
+            {
                 Do(num-1);
             }
             catch (IException * _e)
