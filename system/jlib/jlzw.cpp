@@ -2784,6 +2784,7 @@ ICompressedFileIO *createCompressedFileWriter(IFileIO *fileio, bool append, bool
     if (!appending)
     {
         compMethod = compressor->getCompressionMethod();
+        compMethod = compMethod & COMPRESS_METHOD_MASK;
         assertex(compMethod < COMPRESS_METHOD_LAST_PERSISTED && compMethod != COMPRESS_METHOD_LZ4HC3);
 
         memset(&trailer,0,sizeof(trailer));
