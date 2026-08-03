@@ -378,6 +378,7 @@ protected:
     IContextLogger *activeCtx = nullptr;
     Owned <IIndexFilterList> filter;
     IKeyCursor *keyCursor;
+    IKeyIndexBase *key = nullptr;
     ConstPointerArray activeBlobs;
     __uint64 partitionFieldMask = 0;
     unsigned indexParts = 0;
@@ -417,12 +418,20 @@ public:
 
     void clearKey()
     {
+        key = nullptr;
         ::Release(keyCursor);
         keyCursor = NULL;
     }
 
     void setKey(IKeyIndexBase * _key, const RtlRecord & actualRecInfo)
     {
+        //If the same key is being set avoid unnecessary work
+        if (key == _key)
+        {
+            return;
+        }
+
+        key = _key;
         ::Release(keyCursor);
         keyCursor = NULL;
         if (_key)

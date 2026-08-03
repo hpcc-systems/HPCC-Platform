@@ -26577,12 +26577,10 @@ public:
                                 break;
                         }
                         tlk->releaseSegmentMonitors();
-                        tlk->clearKey();
                     }
                     catch (...)
                     {
                         tlk->releaseSegmentMonitors();
-                        tlk->clearKey();
                         throw;
                     }
                 }
@@ -27461,12 +27459,10 @@ public:
                                 break;
                         }
                         tlk->releaseSegmentMonitors();
-                        tlk->clearKey();
                     }
                     catch (...)
                     {
                         tlk->releaseSegmentMonitors();
-                        tlk->clearKey();
                         throw;
                     }
                 }
