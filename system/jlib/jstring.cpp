@@ -1605,6 +1605,19 @@ StringBuffer &  StringBuffer::appendhex(unsigned char c, bool lower)
     return *this;
 }
 
+StringBuffer &  StringBuffer::appendhex(size_t len, const void * data, bool lower)
+{
+    ensureCapacity(len * 2);
+    const unsigned char * bytes = static_cast<const unsigned char *>(data);
+    for (size_t i = 0; i < len; i++)
+    {
+        unsigned char c = bytes[i];
+        buffer[curLen++] = hex(c >> 4, lower);
+        buffer[curLen++] = hex(c & 0xF, lower);
+    }
+    return *this;
+}
+
 void appendURL(StringBuffer *dest, const char *src, size32_t len, char lower, bool keepUnderscore)
 {
   if (len == (size32_t)-1)

@@ -1137,8 +1137,8 @@ IStringVal & CResultSetCursor::getDisplayText(IStringVal &ret, int columnIndex)
         {
             len = getLength(type, cur);
             StringBuffer temp;
-            while (len--)
-                temp.appendhex(*cur++, true);
+            temp.appendhex(len, cur, true);
+            cur += len;
             ret.setLen(temp.str(), temp.length());
             break;
         }
