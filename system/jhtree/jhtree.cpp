@@ -71,6 +71,7 @@
 #include "eclhelper_base.hpp"
 #include "jmetrics.hpp"
 #include "jevent.hpp"
+#include "jprotrace.hpp"
 
 constexpr __uint64 defaultFetchThresholdNs = 20000; // Assume anything < 20us comes from the page cache, everything above probably went to disk
 
@@ -766,6 +767,7 @@ protected:
     void noteEviction(unsigned keyId, CJHTreeNode * node)
     {
         offset_t pos = node->getFpos();
+        protraceRecord(EventIndexEviction);
         queryRecorder().recordIndexEviction(keyId, pos, node->getNodeType(), node->getMemSize());
     }
 
@@ -1138,6 +1140,9 @@ unsigned CKeyStore::getUniqId(unsigned useId, const char * filename)
     //Index adds are unusual, so it is unlikely to cause problems in practice.
     //
     //It has to be in this function because creating a file class will generate some event data as a side-effect.
+
+    // Don't record the file information - because serializing the filename will be painful.  This could be done in a different way
+    // protraceRecord(MetaFileInformation);
     if (unlikely(recordingEvents()))
         queryRecorder().recordFileInformation(id, filename);
 
@@ -1205,11 +1210,13 @@ IKeyIndex *CKeyStore::doload(const char *fileName, unsigned crc, IReplicatedFile
         ensureDiskPageCacheInitialized(false);
 
     bool recording = recordingEvents();
-    CCycleTimer loadTimer(recording);
+    CCycleTimer loadTimer;
     //Check the index has been loaded - thread safe, only one thread will load if multiple threads get here at the same time.
     keyIndex->ensureReady();
+    cycle_t elapsedCycles = loadTimer.elapsedCycles();
+    protraceRecordAt(EventIndexOpen, loadTimer.startCycles(), getProtraceTicks(elapsedCycles));
     if (recording)
-        queryRecorder().recordIndexOpen(keyIndex->queryId(), loadTimer.elapsedNs());
+        queryRecorder().recordIndexOpen(keyIndex->queryId(), cycle_to_nanosec(elapsedCycles));
     return keyIndex;
 }
 
@@ -3427,6 +3434,8 @@ const CJHTreeNode *CNodeCache::getCachedNode(const INodeLoader & nodeLoader, uns
         cycle_t endLoadCycles = get_cycles_now();
         cycle_t loadCycles = endLoadCycles - startLoadCycles;
 
+        protraceRecordAt(EventIndexLoad, startLoadCycles, getProtraceTicks(loadCycles));
+
         if (unlikely(recordingEvents()))
         {
             stat_type fetchTimeNs = cycle_to_nanosec(fetchCycles);
@@ -3485,6 +3494,7 @@ const CJHTreeNode *CNodeCache::getCachedNode(const INodeLoader & nodeLoader, uns
                 block.ensureLeave();
 
                 //Update ctx stats outside of the critical section.
+                protraceRecord(EventIndexCacheHit);
                 if (unlikely(recordingEvents()))
                     queryRecorder().recordIndexCacheHit(iD, pos, type, fastPathMatch->getMemSize(), fastPathMatch->getLoadExpandTime());
                 if (ctx)
@@ -3506,6 +3516,7 @@ const CJHTreeNode *CNodeCache::getCachedNode(const INodeLoader & nodeLoader, uns
         ownedCacheEntry.setown(cacheEntry);
     }
 
+    protraceRecord(EventIndexCacheMiss);
     if (unlikely(recordingEvents()))
         queryRecorder().recordIndexCacheMiss(iD, pos, type);
 
@@ -3564,6 +3575,8 @@ const CJHTreeNode *CNodeCache::getCachedNode(const INodeLoader & nodeLoader, uns
         }
         cycle_t endLoadCycles = get_cycles_now();
         cycle_t actualLoadCycles = endLoadCycles - startLoadCycles;
+
+        protraceRecordAt(EventIndexLoad, startLoadCycles, getProtraceTicks(actualLoadCycles));
 
         if (unlikely(recordingEvents()))
         {

@@ -167,6 +167,11 @@ if (USE_NUMA)
     set(VCPKG_NUMA "${VCPKG_INCLUDE}")
 endif()
 
+set(VCPKG_PROTRACE "${VCPKG_SUPPRESS}")
+if (USE_PROTRACE)
+    set(VCPKG_PROTRACE "${VCPKG_INCLUDE}")
+endif()
+
 if (USE_OPENTEL_GRPC)
     set(VCPKG_OPENTEL_GRPC_FEATURE "\"otlp-grpc\",")
 else ()

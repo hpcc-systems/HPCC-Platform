@@ -24,6 +24,7 @@
 #include "jqueue.tpp"
 #include "jisem.hpp"
 #include "jevent.hpp"
+#include "jprotrace.hpp"
 
 #include "thorxmlread.hpp"
 #include "thorrparse.ipp"
@@ -2712,9 +2713,7 @@ public:
 
     virtual int run()
     {
-        const bool recordTask = recordingEvents();
-        if (recordTask)
-            queryRecorder().recordTaskStart(EventTask::Readahead);
+        TaskScopeTracker task(EventTask::Readahead);
 
         try
         {
@@ -2733,8 +2732,6 @@ public:
             helper->fireException(MakeStringException(ROXIE_INTERNAL_ERROR, "Unexpected exception caught in RecordPullerThread::run"));
         }
 
-        if (recordTask)
-            queryRecorder().recordTaskStop(EventTask::Readahead);
         return 0;
     }
 
@@ -4296,7 +4293,7 @@ class CRemoteResultAdaptor : implements IEngineRowStream, implements IFinalRoxie
         bool needsFlush;
         InterruptableSemaphore flowController;
         const CRemoteResultAdaptor &owner;
-        CriticalSection crit{SYNC_LOCATION};
+        CriticalSection crit{"ChannelBuffer Crit"};
 
     public:
         ChannelBuffer(const CRemoteResultAdaptor &_owner, unsigned _channel) : channel(_channel), flowController("ChannelBuffer Sem", perChannelFlowLimit), owner(_owner)
@@ -26665,7 +26662,7 @@ protected:
     bool isLocal;
     ThorActivityKind activityKind;
     CJoinGroup *groupStart;
-    CriticalSection groupsCrit{SYNC_LOCATION};
+    CriticalSection groupsCrit{"KeyedJoin GroupCrit"};
     QueueOf<CJoinGroup, false> groups;
     IFinalRoxieInput *indexReadInput;
     unsigned indexReadIdx = 0;
@@ -28303,9 +28300,8 @@ protected:
         {}
         virtual void threadmain() override
         {
-            const bool recordTask = (parentExtractSize == 0 && recordingEvents());
-            if (recordTask)
-                queryRecorder().recordTaskStart(EventTask::Sink);
+            const bool shouldRecordTask = (parentExtractSize == 0);
+            TaskScopeTracker task(EventTask::Sink, shouldRecordTask);
 
             try
             {
@@ -28314,13 +28310,8 @@ protected:
             catch (IException *E)
             {
                 parent.noteException(E);
-                if (recordTask)
-                    queryRecorder().recordTaskStop(EventTask::Sink);
                 throw;
             }
-
-            if (recordTask)
-                queryRecorder().recordTaskStop(EventTask::Sink);
         }
         void start(unsigned _parentExtractSize, const byte * _parentExtract)
         {
@@ -28348,6 +28339,9 @@ protected:
         {}
         virtual void threadmain() override
         {
+            const bool shouldRecordTask = (parentExtractSize == 0);
+            TaskScopeTracker task(EventTask::Sink, shouldRecordTask);
+
             try
             {
                 sink.execute(parentExtractSize, parentExtract);
@@ -28603,150 +28597,126 @@ public:
 
     void doExecute(unsigned parentExtractSize, const byte * parentExtract)
     {
-        bool recordGraphTask = recordingEvents();
-        if (recordGraphTask)
-            queryRecorder().recordTaskStart(EventTask::Graph);
+        const bool shouldRecordTask = (parentExtractSize == 0);
 
-        bool recordTask = (parentExtractSize == 0 && recordingEvents());
-        if (recordTask)
-            queryRecorder().recordTaskStart(EventTask::Sink);
+        //One sink will be executed on this thread - other threads should instantiate this before executing the sinks.
+        TaskScopeTracker task(EventTask::Sink, shouldRecordTask);
 
-        try
-        {
-            if (sinks.ordinality()==1)
-                sinks.item(0).execute(parentExtractSize, parentExtract);
+        if (sinks.ordinality()==1)
+            sinks.item(0).execute(parentExtractSize, parentExtract);
 #ifdef PARALLEL_EXECUTE
-            else if (!probeManager && !graphDefinition.isSequential() && sinkMode != SinkMode::Sequential)
-            {
-                if (sinkMode == SinkMode::ParallelPersistent || sinkMode == SinkMode::AutomaticPersistent)
-                {
-                    if (!threads.ordinality())
-                    {
-                        for (unsigned i = 0; i < sinks.ordinality()-1; i++)
-                        {
-                            threads.append(*new SinkThread(*this, sinks.item(i)));
-                        }
-                    }
-                    for (unsigned i = 0; i < sinks.ordinality()-1; i++)
-                        threads.item(i).start(parentExtractSize, parentExtract);
-                    try
-                    {
-                        sinks.item(sinks.ordinality()-1).execute(parentExtractSize, parentExtract);
-                    }
-                    catch (IException *E)
-                    {
-                        noteException(E);
-                        E->Release();
-                    }
-                    for (unsigned i = 0; i < sinks.ordinality()-1; i++)
-                    {
-                        try
-                        {
-                            threads.item(i).join();
-                        }
-                        catch (IException *E)
-                        {
-                            noteException(E);
-                            E->Release();
-                        }
-                    }
-                    checkAbort();
-                }
-                else if (sinkMode == SinkMode::Parallel || sinkMode == SinkMode::Automatic  || sinkMode == SinkMode::AutomaticParallel)
-                {
-                    class casyncfor: public CAsyncFor
-                    {
-                    public:
-                        IActivityGraph &parent;
-                        unsigned parentExtractSize;
-                        const byte * parentExtract;
-
-                        casyncfor(IRoxieServerActivityCopyArray &_sinks, IActivityGraph &_parent, unsigned _parentExtractSize, const byte * _parentExtract) : CAsyncFor(SYNC_LOCATION),
-                            parent(_parent), parentExtractSize(_parentExtractSize), parentExtract(_parentExtract), sinks(_sinks) { }
-                        void Do(unsigned i)
-                        {
-                            const bool recordTask = (parentExtractSize == 0 && recordingEvents());
-                            if (recordTask)
-                                queryRecorder().recordTaskStart(EventTask::Sink);
-
-                            try
-                            {
-                                sinks.item(i).execute(parentExtractSize, parentExtract);
-                            }
-                            catch (IException *E)
-                            {
-                                if (recordTask)
-                                    queryRecorder().recordTaskStop(EventTask::Sink);
-                                parent.noteException(E);
-                                throw;
-                            }
-
-                            if (recordTask)
-                                queryRecorder().recordTaskStop(EventTask::Sink);
-                        }
-                    private:
-                        IRoxieServerActivityCopyArray &sinks;
-                    } afor(sinks, *this, parentExtractSize, parentExtract);
-                    afor.For(sinks.ordinality(), sinks.ordinality());
-                }
-                else if (sinkMode == SinkMode::AutomaticPooled)
-                {
-                    CIArrayOf<SinkPooledThread> pooledThreads;
-                    for (unsigned i = 0; i < sinks.ordinality()-1; i++)
-                    {
-                        pooledThreads.append(*new SinkPooledThread(*this, sinks.item(i)));
-                        pooledThreads.item(i).start(parentExtractSize, parentExtract);
-                    }
-                    try
-                    {
-                        sinks.item(sinks.ordinality()-1).execute(parentExtractSize, parentExtract);
-                    }
-                    catch (IException *E)
-                    {
-                        noteException(E);
-                        E->Release();
-                    }
-                    for (unsigned i = 0; i < sinks.ordinality()-1; i++)
-                    {
-                        try
-                        {
-                            pooledThreads.item(i).join();
-                        }
-                        catch (IException *E)
-                        {
-                            noteException(E);
-                            E->Release();
-                        }
-                    }
-                    checkAbort();
-                }
-                else
-                    throwUnexpected();
-            }
-#endif
-            else
-            {
-                ForEachItemIn(idx, sinks)
-                {
-                    IRoxieServerActivity &sink = sinks.item(idx);
-                    sink.execute(parentExtractSize, parentExtract);
-                }
-            }
-            graphAgentContext.throwPendingException();
-
-            if (recordTask)
-                queryRecorder().recordTaskStop(EventTask::Sink);
-            if (recordGraphTask)
-                queryRecorder().recordTaskStop(EventTask::Graph);
-        }
-        catch (...)
+        else if (!probeManager && !graphDefinition.isSequential() && sinkMode != SinkMode::Sequential)
         {
-            if (recordTask)
-                queryRecorder().recordTaskStop(EventTask::Sink);
-            if (recordGraphTask)
-                queryRecorder().recordTaskStop(EventTask::Graph);
-            throw;
+            if (sinkMode == SinkMode::ParallelPersistent || sinkMode == SinkMode::AutomaticPersistent)
+            {
+                if (!threads.ordinality())
+                {
+                    for (unsigned i = 0; i < sinks.ordinality()-1; i++)
+                    {
+                        threads.append(*new SinkThread(*this, sinks.item(i)));
+                    }
+                }
+                for (unsigned i = 0; i < sinks.ordinality()-1; i++)
+                    threads.item(i).start(parentExtractSize, parentExtract);
+                try
+                {
+                    sinks.item(sinks.ordinality()-1).execute(parentExtractSize, parentExtract);
+                }
+                catch (IException *E)
+                {
+                    noteException(E);
+                    E->Release();
+                }
+                for (unsigned i = 0; i < sinks.ordinality()-1; i++)
+                {
+                    try
+                    {
+                        threads.item(i).join();
+                    }
+                    catch (IException *E)
+                    {
+                        noteException(E);
+                        E->Release();
+                    }
+                }
+                checkAbort();
+            }
+            else if (sinkMode == SinkMode::Parallel || sinkMode == SinkMode::Automatic  || sinkMode == SinkMode::AutomaticParallel)
+            {
+                class casyncfor: public CAsyncFor
+                {
+                public:
+                    IActivityGraph &parent;
+                    unsigned parentExtractSize;
+                    const byte * parentExtract;
+
+                    casyncfor(IRoxieServerActivityCopyArray &_sinks, IActivityGraph &_parent, unsigned _parentExtractSize, const byte * _parentExtract) : CAsyncFor(SYNC_LOCATION),
+                        parent(_parent), parentExtractSize(_parentExtractSize), parentExtract(_parentExtract), sinks(_sinks) { }
+                    void Do(unsigned i)
+                    {
+                        bool onMainThread = (i == sinks.ordinality() - 1);
+                        const bool shouldRecordTask = (parentExtractSize == 0) && !onMainThread;
+                        TaskScopeTracker task(EventTask::Sink, shouldRecordTask);
+
+                        try
+                        {
+                            sinks.item(i).execute(parentExtractSize, parentExtract);
+                        }
+                        catch (IException *E)
+                        {
+                            parent.noteException(E);
+                            throw;
+                        }
+                    }
+                private:
+                    IRoxieServerActivityCopyArray &sinks;
+                } afor(sinks, *this, parentExtractSize, parentExtract);
+                afor.For(sinks.ordinality(), sinks.ordinality());
+            }
+            else if (sinkMode == SinkMode::AutomaticPooled)
+            {
+                CIArrayOf<SinkPooledThread> pooledThreads;
+                for (unsigned i = 0; i < sinks.ordinality()-1; i++)
+                {
+                    pooledThreads.append(*new SinkPooledThread(*this, sinks.item(i)));
+                    pooledThreads.item(i).start(parentExtractSize, parentExtract);
+                }
+                try
+                {
+                    sinks.item(sinks.ordinality()-1).execute(parentExtractSize, parentExtract);
+                }
+                catch (IException *E)
+                {
+                    noteException(E);
+                    E->Release();
+                }
+                for (unsigned i = 0; i < sinks.ordinality()-1; i++)
+                {
+                    try
+                    {
+                        pooledThreads.item(i).join();
+                    }
+                    catch (IException *E)
+                    {
+                        noteException(E);
+                        E->Release();
+                    }
+                }
+                checkAbort();
+            }
+            else
+                throwUnexpected();
         }
+#endif
+        else
+        {
+            ForEachItemIn(idx, sinks)
+            {
+                IRoxieServerActivity &sink = sinks.item(idx);
+                sink.execute(parentExtractSize, parentExtract);
+            }
+        }
+        graphAgentContext.throwPendingException();
     }
 
     virtual IEclGraphResults *evaluate(unsigned parentExtractSize, const byte * parentExtract)

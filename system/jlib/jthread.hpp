@@ -110,6 +110,7 @@ private:
     int nicelevel;
 
     bool alive;
+    bool suppressRunning = false;
     unsigned tidlog;
 #ifdef _WIN32
     HANDLE hThread;
@@ -135,6 +136,11 @@ public:
     IMPLEMENT_IINTERFACE;
 
     Thread(const char *_name) { init(_name); }
+    Thread(const char *_name, bool _suppressRunning)
+    {
+        init(_name);
+        suppressRunning = _suppressRunning;
+    }
     Thread() = delete;
     ~Thread();
 
@@ -175,14 +181,14 @@ protected:
 };
 
 // utility class, useful for containing a thread
-class CThreaded : public Thread
+class jlib_decl CThreaded : public Thread
 {
     IThreaded *owner;
 public:
     inline CThreaded(const char *name, IThreaded *_owner) : Thread(name), owner(_owner) { }
     inline CThreaded(const char *name) : Thread(name) { owner = NULL; }
     inline void init(IThreaded *_owner, bool inheritThreadContext) { owner = _owner; start(inheritThreadContext); }
-    virtual int run() { owner->threadmain(); return 1; }
+    virtual int run() override;
 };
 
 // Similar to above, but the underlying thread always remains running. This can make repeated start + join's significantly quicker

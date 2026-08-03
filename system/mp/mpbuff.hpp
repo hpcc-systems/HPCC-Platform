@@ -34,6 +34,7 @@ class mp_decl CMessageBuffer: public MemoryBuffer
     SocketEndpoint  sender;
     mptag_t         tag;
     mptag_t         replytag;
+    unsigned        sequence;
 
 public:
     CMessageBuffer() : MemoryBuffer() { init(); }
@@ -42,13 +43,16 @@ public:
 
     inline const SocketEndpoint &getSender() const  { return sender; }
     inline void setReplyTag(mptag_t tag)            { replytag = tag; }  // called prior to send (use cresteReplyTag to make tag)
-    inline mptag_t getReplyTag()                    { return replytag; } // called after recv to determine tag to reply to
-    inline mptag_t getTag()                         { return tag; }
+    inline mptag_t getReplyTag() const              { return replytag; } // called after recv to determine tag to reply to
+    inline mptag_t getTag() const                   { return tag; }
+    inline unsigned getSequence() const             { return sequence; }
+    inline void setSequence(unsigned value)         { sequence = value; }
 
     inline void init()             
     { 
         tag = TAG_NULL;
         replytag = TAG_NULL;
+        sequence = 0;
     }   
 
     inline void init(const SocketEndpoint &_sender, mptag_t _tag, mptag_t _replytag)
@@ -65,6 +69,7 @@ public:
         tag = mb.tag;
         sender = mb.sender;
         replytag = mb.replytag;
+        sequence = mb.sequence;
         mb.clear();
     }
 
@@ -88,6 +93,7 @@ public:
         ret->tag = tag;
         ret->sender = sender;
         ret->replytag = replytag;
+        ret->sequence = sequence;
         ret->append(length(),toByteArray());
         return ret;
     }

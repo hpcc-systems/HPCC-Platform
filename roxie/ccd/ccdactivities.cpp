@@ -873,7 +873,7 @@ protected:
     Linked<IInMemoryIndexManager> manager;
     Linked<ITranslatorSet> translators;
     Owned<IInMemoryFileProcessor> processor;
-    CriticalSection pcrit{SYNC_LOCATION};
+    CriticalSection pcrit{SYNC_UNNAMED};  // Rarely used so pass UNNAMED to avoid filling the lock name table
 
 public:
     CRoxieDiskReadBaseActivity(AgentContextLogger &_logctx, IRoxieQueryPacket *_packet, HelperFactory *_hFactory, const CAgentActivityFactory *_aFactory,

@@ -25,6 +25,7 @@
 #include "jencrypt.hpp"
 #include "jsecrets.hpp"
 #include "jevent.hpp"
+#include "jprotrace.hpp"
 
 #include "udplib.hpp"
 #include "udptopo.hpp"
@@ -1459,6 +1460,7 @@ public:
             CriticalBlock qc(qcrit);
             x->noteQueued(IBYTIdelay);
             waiting.enqueue(x);
+            protraceRecordEnqueueItem(x);
         }
         noteQueued();
         available.signal();
@@ -1485,6 +1487,7 @@ public:
             {
                 x->noteQueued(IBYTIdelay);
                 waiting.enqueue(x);
+                protraceRecordEnqueueItem(x);
             }
         }
         if (found)
@@ -1564,7 +1567,9 @@ public:
     ISerializedRoxieQueryPacket *dequeue()
     {
         CriticalBlock qc(qcrit);
-        return waiting.dequeue();
+        ISerializedRoxieQueryPacket *ret = waiting.dequeue();
+        protraceRecordDequeueItem(ret);
+        return ret;
     }
 
     void noteOrphanIBYTI(const RoxiePacketHeader &hdr)
@@ -1783,9 +1788,11 @@ public:
                 return;
             }
 
-            if (recordingEvents() && header.uid >= RUID_FIRST)
+            if (header.uid >= RUID_FIRST)
             {
-                queryRecorder().recordWorkerStart(header.uid, header.getSequenceId());
+                protraceRecord(EventWorkerStart);
+                if (recordingEvents())
+                    queryRecorder().recordWorkerStart(header.uid, header.getSequenceId());
                 sendWorkerStop = true;
             }
 
@@ -1806,7 +1813,11 @@ public:
             if (!queryFactory)
             {
                 if (sendWorkerStop)
-                    queryRecorder().recordWorkerStop(header.uid, header.getSequenceId());
+                {
+                    protraceRecord(EventWorkerStop);
+                    if (recordingEvents())
+                        queryRecorder().recordWorkerStop(header.uid, header.getSequenceId());
+                }
 
                 StringBuffer hdr;
                 IException *E = MakeStringException(MSGAUD_operator, ROXIE_UNKNOWN_QUERY, "Roxie agent received request for unregistered query: %s", header.toString(hdr).str());
@@ -1858,7 +1869,11 @@ public:
         }
 
         if (sendWorkerStop)
-            queryRecorder().recordWorkerStop(header.uid, header.getSequenceId());
+        {
+            protraceRecord(EventWorkerStop);
+            if (recordingEvents())
+                queryRecorder().recordWorkerStop(header.uid, header.getSequenceId());
+        }
 
         workerThreadBusy = false; // Keep order - before setActivity below
         setActivity(NULL);
@@ -2595,8 +2610,12 @@ public:
     {
         MTIME_SECTION(queryActiveTimer(), "RoxieSocketQueueManager::sendPacket");
         RoxiePacketHeader &header = x->queryHeader();
-        if (recordingEvents() && header.uid >= RUID_FIRST)
-            queryRecorder().recordRequestSend(header.uid, header.getSequenceId());
+        if (header.uid >= RUID_FIRST)
+        {
+            protraceRecord(EventRequestSend, header.getRequestId());
+            if (recordingEvents())
+                queryRecorder().recordRequestSend(header.uid, header.getSequenceId());
+        }
 
         unsigned length = header.packetlength;
         assertex (header.activityId & ~ROXIE_PRIORITY_MASK);
@@ -2852,11 +2871,13 @@ public:
                 if (retries >= SUBCHANNEL_MASK)
                     return; // I already failed unrecoverably on this request - ignore it
 
-                if (recordingEvents() && header.uid >= RUID_FIRST)
+                if (header.uid >= RUID_FIRST)
                 {
                     //This is currently only used to set the correct traceid - revisit later if needed elsewhere or to improve the efficiency
                     tracingSpan.setown(createPseudoScopeFromPacket(packet));
-                    queryRecorder().recordRequestReceive(header.uid, header.getSequenceId());
+                    protraceRecord(EventRequestReceive, header.getRequestId());
+                    if (recordingEvents())
+                        queryRecorder().recordRequestReceive(header.uid, header.getSequenceId());
                 }
                 if (acknowledgeAllRequests && (header.activityId & ~ROXIE_PRIORITY_MASK) < ROXIE_ACTIVITY_SPECIAL_FIRST)
                 {

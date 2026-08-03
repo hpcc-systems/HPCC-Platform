@@ -50,6 +50,10 @@
 #include "securesocket.hpp"
 #endif
 
+#ifdef _USE_PROTRACE
+#include <protrace.h>
+#endif
+
 #if defined (__linux__)
 #include <sys/syscall.h>
 #include "ioprio.h"
@@ -160,6 +164,30 @@ SinkMode defaultSinkMode = SinkMode::Automatic;
 unsigned continuationCompressThreshold = 1024;
 
 bool useOldTopology = false;
+
+static void initializeProtrace(IPropertyTree * topology)
+{
+#ifdef _USE_PROTRACE
+    if (!topology)
+        return;
+
+    size_t protraceMemoryMB = topology->getPropInt("@protraceMemoryMB", 0);
+    if (!protraceMemoryMB)
+        return;
+
+    unsigned protraceCpus = topology->getPropInt("@protraceCpus", 0);
+    protrace::trace_options protraceOptions = (protrace::trace_options)topology->getPropInt("@protraceOptions", 0);
+    bool protraceRecord = topology->getPropBool("@protraceRecord", false);
+    if (!protrace::init_protrace("hpcc", protraceMemoryMB*oneMB, protraceCpus, protraceOptions))
+    {
+        WARNLOG("Failed to initialize protrace (memory=%zuMB, cpus=%u options=%x)", protraceMemoryMB, protraceCpus, (unsigned)protraceOptions);
+        return;
+    }
+
+    if (protraceRecord)
+        protrace::resume();
+#endif
+}
 
 int backgroundCopyClass = 0;
 int backgroundCopyPrio = 0;
@@ -804,6 +832,9 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         topologyFile.append(codeDirectory).append(PATHSEPCHAR).append("RoxieTopology.xml");
         useOldTopology = checkFileExists(topologyFile.str());
         topology = loadConfiguration(useOldTopology ? nullptr : defaultYaml, argv, "roxie", "ROXIE", topologyFile, nullptr, "@netAddress");
+
+        initializeProtrace(topology);
+
         saveTopology(topology->getPropBool("@lockDali", false));
         originalTopologyHash = currentTopologyHash = getTopologyHash();
 

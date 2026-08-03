@@ -18,6 +18,7 @@
 #include "platform.h"
 #include "jfcmp.hpp"
 #include "jlog.hpp"
+#include "jevent.hpp"
 #include "jlzbase.hpp"
 
 //---------------------------------------------------------------------------------------------------------------------
@@ -381,6 +382,8 @@ bool CBlockCompressor::processOption(const char * option, const char * textValue
 
 void CBlockExpander::expand(void *buf)
 {
+    ProTraceTaskScopeTracker scope(EventTask::Decompressing);
+
     if (!outlen)
         return;
     if (buf)
@@ -800,6 +803,8 @@ bool CStreamCompressor::recompressInput(bool isFinalCompression)
 
 void CStreamExpander::expand(void *buf)
 {
+    ProTraceTaskScopeTracker scope(EventTask::Decompressing);
+
     assertex(buf);
     if (!outlen)
         return;

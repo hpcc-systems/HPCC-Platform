@@ -21,6 +21,15 @@
 #include "jisem.hpp"
 #include "jmutex.hpp"
 
+#include <atomic>
+
+static std::atomic<sync_uid_type> nextSyncUid{0};
+sync_uid_type getUniqueSyncId()
+{
+    return ++nextSyncUid;
+}
+
+
 #ifndef _WIN32
 
 #include <sys/time.h>
@@ -45,6 +54,14 @@ void getEndTime(timespec & abs, unsigned timeout)
 
 Semaphore::Semaphore([[maybe_unused]] const char *syncName, unsigned initialCount)
 {
+#ifdef PROTRACE_SEMAPHORES
+    if (trackUnnamedLocks || syncName)
+    {
+        syncid = getUniqueSyncId();
+        if (syncName)
+            protraceNoteSemaphore(syncid, syncName);
+    }
+#endif
     sem_init(&sem, 0, initialCount);
 }
 
@@ -61,33 +78,53 @@ void Semaphore::reinit(unsigned initialCount)
 
 void Semaphore::wait()
 {
+    noteEvent(EventSemWait);
     sem_wait(&sem);
+    noteEvent(EventSemAcquire);
 }
 
 bool Semaphore::tryWait()
 {
-    return sem_trywait(&sem);
+    noteEvent(EventSemWait);
+    bool acquired = (sem_trywait(&sem) == 0);
+    if (acquired)
+        noteEvent(EventSemAcquire);
+    else
+        noteEvent(EventSemWaitTimeout);
+    return acquired;
 }
 
 bool Semaphore::wait(unsigned timeout)
 {
+    noteEvent(EventSemWait);
     if (timeout==(unsigned)-1) {
         sem_wait(&sem);
+        noteEvent(EventSemAcquire);
         return true;
     }
 
     //Ensure uncontended case is handled without calling gettimeofday
     if (sem_trywait(&sem) == 0)
+    {
+        noteEvent(EventSemAcquire);
         return true;
+    }
 
     if (timeout==0)
+    {
+        noteEvent(EventSemWaitTimeout);
         return false;
+    }
 
     timespec abs;
     getEndTime(abs, timeout);
     int ret = sem_timedwait(&sem, &abs);
     if (ret < 0)
+    {
+        noteEvent(EventSemWaitTimeout);
         return false;
+    }
+    noteEvent(EventSemAcquire);
     return true;
 }
 
@@ -96,12 +133,16 @@ bool Semaphore::wait(unsigned timeout)
 void Semaphore::signal()
 {
     sem_post(&sem);
+    noteEvent(EventSemSignal);
 }
 
 void Semaphore::signal(unsigned n)
 {
     for (unsigned i=0; i < n; i++)
         sem_post(&sem);
+
+    for (unsigned i=0; i < n; i++)
+        noteEvent(EventSemSignal);
 }
 
 #else
@@ -110,6 +151,14 @@ void Semaphore::signal(unsigned n)
 
 Semaphore::Semaphore([[maybe_unused]] const char *syncName, unsigned initialCount)
 {
+#ifdef PROTRACE_SEMAPHORES
+    if (trackUnnamedLocks || syncName)
+    {
+        syncid = getUniqueSyncId();
+        if (syncName)
+            protraceNoteSemaphore(syncid, syncName);
+    }
+#endif
     init();
     count = initialCount;
 }
@@ -136,6 +185,7 @@ void Semaphore::reinit(unsigned initialCount)
 bool Semaphore::tryWait()
 {
     bool signalled = false;
+    noteEvent(EventSemWait);
     pthread_mutex_lock(&mx);
     if (count > 0)
     {
@@ -143,15 +193,21 @@ bool Semaphore::tryWait()
         signalled = true;
     }
     pthread_mutex_unlock(&mx);
+    if (signalled)
+        noteEvent(EventSemAcquire);
+    else
+        noteEvent(EventSemWaitTimeout);
     return signalled;
 }
 
 void Semaphore::wait()
 {
+    noteEvent(EventSemWait);
     pthread_mutex_lock(&mx);
     if (--count<0) 
         pthread_cond_wait(&cond, &mx);
     pthread_mutex_unlock(&mx);
+    noteEvent(EventSemAcquire);
 }
 
 bool Semaphore::wait(unsigned timeout)
@@ -160,6 +216,7 @@ bool Semaphore::wait(unsigned timeout)
         wait();
         return true;
     }
+    noteEvent(EventSemWait);
     pthread_mutex_lock(&mx);
     if (--count<0) {
         timespec abs;
@@ -174,10 +231,12 @@ bool Semaphore::wait(unsigned timeout)
         if (pthread_cond_timedwait(&cond, &mx, &abs)==ETIMEDOUT) {
             count++;        // not waiting
             pthread_mutex_unlock(&mx);
+            noteEvent(EventSemWaitTimeout);
             return false;
         }
     }
     pthread_mutex_unlock(&mx);
+    noteEvent(EventSemAcquire);
     return true;
 }
 
@@ -188,10 +247,12 @@ void Semaphore::signal()
     if (count++<0)                      // only signal if someone waiting
         pthread_cond_signal(&cond);
     pthread_mutex_unlock(&mx);
+    noteEvent(EventSemSignal);
 }
 
 void Semaphore::signal(unsigned n)
 {   
+    unsigned num = n;
     pthread_mutex_lock(&mx);
     while ((count<0)&&n) {
         count++;
@@ -200,9 +261,10 @@ void Semaphore::signal(unsigned n)
     }
     count += n;
     pthread_mutex_unlock(&mx);
+
+    for (unsigned i=0; i<num; i++)
+        noteEvent(EventSemSignal);
 }
-
 #endif
-
 #endif
 

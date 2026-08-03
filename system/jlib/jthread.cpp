@@ -28,6 +28,7 @@
 #include "jisem.hpp"
 #include "jtask.hpp"
 #include "jerror.hpp"
+#include "jevent.hpp"
 
 #include <assert.h>
 #ifdef _WIN32
@@ -312,8 +313,12 @@ int Thread::begin()
     if (doTrace(traceThreadStartup))
         DBGLOG("Thread::start(%s) with id %u", getName(), tidlog);
 
+    if (!cthreadname.isEmpty())
+        protraceNoteThreadName(cthreadname.str());
+
     int ret=-1;
     try {
+        TaskScopeTracker scope(EventTask::Running, !suppressRunning);
         ret = run();
     }
     catch (IException *e)
@@ -387,6 +392,12 @@ void Thread::init(const char *_name)
 void Thread::captureThreadLoggingInfo()
 {
     ::saveThreadContext(savedCtx);
+}
+
+int CThreaded::run()
+{
+    owner->threadmain();
+    return 1;
 }
 
 void Thread::start(bool inheritThreadContext)
@@ -668,6 +679,7 @@ void CThreadedPersistent::threadmain()
         try
         {
             restoreThreadContext(athread.savedCtx);
+            TaskScopeTracker scope(EventTask::Running);
             owner->threadmain();
             // Note we do NOT call the thread reset hook here - these threads are expected to be able to preserve state, I think
         }
@@ -813,8 +825,10 @@ void CAsyncFor::For(unsigned num,unsigned maxatonce,bool abortFollowingException
                         {
                             if (abortFollowingException && erre.isSet())
                                 return 0;
-                            try {
+                            try
+                            {
                                 unsigned idx = shuffled ? shuffler->lookup(logical) : logical;
+                                TaskScopeTracker scope(EventTask::Running);
                                 self->Do(idx);
                             }
                             catch (IException * _e)
@@ -866,7 +880,9 @@ void CAsyncFor::For(unsigned num,unsigned maxatonce,bool abortFollowingException
                 }
                 int run()
                 {
-                    try {
+                    try
+                    {
+                        TaskScopeTracker scope(EventTask::Running);
                         self->Do(idx);
                     }
                     catch (IException * _e)
@@ -978,7 +994,7 @@ public:
     CPooledThreadWrapper(CThreadPoolBase &_parent,
                          PooledThreadHandle _handle,
                          IPooledThread *_thread) // takes ownership of thread
-        : Thread(StringBuffer("Member of thread pool: ").append(_parent.poolname).str()), parent(_parent)
+        : Thread(StringBuffer("Member of thread pool: ").append(_parent.poolname).str(), true), parent(_parent)
     {
         thread = _thread;
         handle = _handle;
@@ -1025,7 +1041,10 @@ public:
             try
             {
                 cthreadname.swapWith(runningName); // swap running name and threadname
-                thread->threadmain();
+                {
+                    TaskScopeTracker scope(EventTask::Running);
+                    thread->threadmain();
+                }
                 cthreadname.swapWith(runningName); // swap back
             }
             catch (IException *e)
@@ -2704,7 +2723,7 @@ public:
         CriticalSection &crit;
     public:
         cWorkerThread(CWorkQueueThread *_parent,CriticalSection &_crit,unsigned _persisttime)
-            : Thread("WorkQueueThread::cWorkerThread"),crit(_crit)
+            : Thread("WorkQueueThread::cWorkerThread", true),crit(_crit)
         {
             parent = _parent;
             persisttime = _persisttime;
@@ -2731,6 +2750,7 @@ public:
 
                 try {
                     //If the thread context needs to be preserved - it should be done inside the IWorkQueueItem implementation.
+                    TaskScopeTracker scope(EventTask::Running);
                     work->execute();
                     work->Release();
                 }

@@ -23,6 +23,7 @@
 #include "javahash.tpp"
 #include "jptree.ipp"
 #include "jevent.hpp"
+#include "jprotrace.hpp"
 
 #include "mpbuff.hpp"
 #include "mpcomm.hpp"
@@ -1341,7 +1342,7 @@ bool CClientSDSManager::sendRequest(CMessageBuffer &mb, bool throttle)
 
 CRemoteTreeBase *CClientSDSManager::get(CRemoteConnection &connection, __int64 serverId)
 {
-    CCycleTimer elapsedTime(recordingEvents());
+    CCycleTimer elapsedTime;
     CMessageBuffer mb;
 
     if (childrenCanBeMissing)
@@ -1375,6 +1376,7 @@ CRemoteTreeBase *CClientSDSManager::get(CRemoteConnection &connection, __int64 s
             throwMbException("SDS Reply Error ", mb);
     }
 
+    protraceRecordAt(EventDaliGet, elapsedTime.startCycles(), getProtraceTicks(elapsedTime.elapsedCycles()));
     if (unlikely(recordingEvents()))
         queryRecorder().recordDaliGet(connection.queryConnectionId(), elapsedTime.elapsedNs(), sendSize + mb.length());
 
@@ -1383,7 +1385,7 @@ CRemoteTreeBase *CClientSDSManager::get(CRemoteConnection &connection, __int64 s
 
 void CClientSDSManager::getChildren(CRemoteTreeBase &parent, CRemoteConnection &connection, unsigned levels)
 {
-    CCycleTimer elapsedTime(recordingEvents());
+    CCycleTimer elapsedTime;
     CMessageBuffer mb;
 
     if (childrenCanBeMissing)
@@ -1422,6 +1424,7 @@ void CClientSDSManager::getChildren(CRemoteTreeBase &parent, CRemoteConnection &
     }
     parent.deserializeChildrenRT(mb);
 
+    protraceRecordAt(EventDaliGetChildren, elapsedTime.startCycles(), getProtraceTicks(elapsedTime.elapsedCycles()));
     if (unlikely(recordingEvents()))
     {
         queryRecorder().recordDaliGetChildren(parent.queryName(), connection.queryConnectionId(), elapsedTime.elapsedNs(), sendSize + mb.length());
@@ -1471,7 +1474,7 @@ static void matchServerTree(CClientRemoteTree *local, IPropertyTree &matchTree, 
 
 void CClientSDSManager::ensureLocal(CRemoteConnection &connection, CRemoteTreeBase &_parent, IPropertyTree *serverMatchTree, IPTIteratorCodes flags)
 {
-    CCycleTimer elapsedTime(recordingEvents());
+    CCycleTimer elapsedTime;
     CClientRemoteTree &parent = (CClientRemoteTree &)_parent;
 
     CMessageBuffer remoteGetMb;
@@ -1513,6 +1516,7 @@ void CClientSDSManager::ensureLocal(CRemoteConnection &connection, CRemoteTreeBa
     ForEachItemIn(m, matched)
         walkAndFill(matched.item(m), matchedLocals.item(m), remoteGetMb, childrenCanBeMissing);
 
+    protraceRecordAt(EventDaliEnsureLocal, elapsedTime.startCycles(), getProtraceTicks(elapsedTime.elapsedCycles()));
     if (unlikely(recordingEvents()))
         queryRecorder().recordDaliEnsureLocal(connection.queryConnectionId(), elapsedTime.elapsedNs(), sendSize + remoteGetMb.length());
 
@@ -1520,7 +1524,7 @@ void CClientSDSManager::ensureLocal(CRemoteConnection &connection, CRemoteTreeBa
 
 void CClientSDSManager::getChildrenFor(CRTArray &childLessList, CRemoteConnection &connection, unsigned levels)
 {
-    CCycleTimer elapsedTime(recordingEvents());
+    CCycleTimer elapsedTime;
     CMessageBuffer mb;
 
     if (childrenCanBeMissing)
@@ -1575,13 +1579,14 @@ void CClientSDSManager::getChildrenFor(CRTArray &childLessList, CRemoteConnectio
         }
     }
 
+    protraceRecordAt(EventDaliGetChildrenFor, elapsedTime.startCycles(), getProtraceTicks(elapsedTime.elapsedCycles()));
     if (unlikely(recordingEvents()))
         queryRecorder().recordDaliGetChildrenFor(connection.queryConnectionId(), elapsedTime.elapsedNs(), sendSize + mb.length());
 }
 
 IPropertyTreeIterator *CClientSDSManager::getElements(CRemoteConnection &connection, const char *xpath)
 {
-    CCycleTimer elapsedTime(recordingEvents());
+    CCycleTimer elapsedTime;
     CMessageBuffer mb;
 
     mb.append((int)DAMP_SDSCMD_GETELEMENTS | lazyExtFlag);
@@ -1611,6 +1616,7 @@ IPropertyTreeIterator *CClientSDSManager::getElements(CRemoteConnection &connect
                 tree->deserializeSelfRT(mb);
             }
 
+            protraceRecordAt(EventDaliGetElements, elapsedTime.startCycles(), getProtraceTicks(elapsedTime.elapsedCycles()));
             if (unlikely(recordingEvents()))
                 queryRecorder().recordDaliGetElements(xpath, connection.queryConnectionId(), elapsedTime.elapsedNs(), sendSize + mb.length());
 
@@ -1630,7 +1636,7 @@ void CClientSDSManager::noteDisconnected(CRemoteConnection &connection)
 
 void CClientSDSManager::commit(CRemoteConnection &connection, bool *disconnectDeleteRoot)
 {
-    CCycleTimer elapsedTime(recordingEvents());
+    CCycleTimer elapsedTime;
     CriticalBlock b(crit); // if >1 commit per client concurrently would cause problems with serverId.
 
     CClientRemoteTree *tree = (CClientRemoteTree *) connection.queryRoot();
@@ -1709,13 +1715,14 @@ void CClientSDSManager::commit(CRemoteConnection &connection, bool *disconnectDe
     if (disconnectDeleteRoot)
         noteDisconnected(connection);
 
+    protraceRecordAt(EventDaliCommit, elapsedTime.startCycles(), getProtraceTicks(elapsedTime.elapsedCycles()));
     if (unlikely(recordingEvents()))
         queryRecorder().recordDaliCommit(connection.queryConnectionId(), elapsedTime.elapsedNs(), dataSize);
 }
 
 void CClientSDSManager::changeMode(CRemoteConnection &connection, unsigned mode, unsigned timeout, bool suppressReloads)
 {
-    CCycleTimer elapsedTime(recordingEvents());
+    CCycleTimer elapsedTime;
     CConnectionLock b(connection);
     if (mode & RTM_CREATE_MASK)
         throw MakeSDSException(SDSExcpt_BadMode, "calling changeMode");
@@ -1753,6 +1760,7 @@ void CClientSDSManager::changeMode(CRemoteConnection &connection, unsigned mode,
             assertex(false);
     }
 
+    protraceRecordAt(EventDaliChangeMode, elapsedTime.startCycles(), getProtraceTicks(elapsedTime.elapsedCycles()));
     if (unlikely(recordingEvents()))
         queryRecorder().recordDaliChangeMode(connection.queryConnectionId(), elapsedTime.elapsedNs(), sendSize + mb.length());
 }
@@ -1761,7 +1769,7 @@ void CClientSDSManager::changeMode(CRemoteConnection &connection, unsigned mode,
 #define MIN_MCONNECT_SVER "1.5"
 IRemoteConnections *CClientSDSManager::connect(IMultipleConnector *mConnect, SessionId id, unsigned timeout)
 {
-    CCycleTimer elapsedTime(recordingEvents());
+    CCycleTimer elapsedTime;
     CDaliVersion serverVersionNeeded(MIN_MCONNECT_SVER);
     if (queryDaliServerVersion().compare(serverVersionNeeded) < 0)
         throw MakeSDSException(SDSExcpt_VersionMismatch, "Multiple connect not supported by server versions prior to " MIN_MCONNECT_SVER);
@@ -1821,6 +1829,7 @@ IRemoteConnections *CClientSDSManager::connect(IMultipleConnector *mConnect, Ses
         }
     }
 
+    protraceRecordAt(EventDaliConnect, elapsedTime.startCycles(), getProtraceTicks(elapsedTime.elapsedCycles()));
     if (unlikely(recordingEvents()))
         queryRecorder().recordDaliConnect("Multi connect", 0, elapsedTime.elapsedNs(), sendSize + mb.length());
 
@@ -1829,7 +1838,7 @@ IRemoteConnections *CClientSDSManager::connect(IMultipleConnector *mConnect, Ses
 
 IRemoteConnection *CClientSDSManager::connect(const char *xpath, SessionId id, unsigned mode, unsigned timeout)
 {
-    CCycleTimer elapsedTime(recordingEvents());
+    CCycleTimer elapsedTime;
     if (0 == id || id != myProcessSession())
         throw MakeSDSException(SDSExcpt_InvalidSessionId, ", connecting to %s, sessionid=%" I64F "x", xpath, id);
 
@@ -1875,6 +1884,7 @@ IRemoteConnection *CClientSDSManager::connect(const char *xpath, SessionId id, u
             assertex(false);
     }
 
+    protraceRecordAt(EventDaliConnect, elapsedTime.startCycles(), getProtraceTicks(elapsedTime.elapsedCycles()));
     if (unlikely(recordingEvents()))
         queryRecorder().recordDaliConnect(xpath, conn ? conn->queryConnectionId() : 0, elapsedTime.elapsedNs(), sendSize + mb.length());
 
@@ -1883,7 +1893,7 @@ IRemoteConnection *CClientSDSManager::connect(const char *xpath, SessionId id, u
 
 SubscriptionId CClientSDSManager::subscribe(const char *xpath, ISDSSubscription &notify, bool sub, bool sendValue)
 {
-    CCycleTimer elapsedTime(recordingEvents());
+    CCycleTimer elapsedTime;
     assertex(xpath);
     if (sub && sendValue)
         throw MakeSDSException(SDSExcpt_Unsupported, "Subscription to sub elements, with sendValue option unsupported");
@@ -1896,6 +1906,7 @@ SubscriptionId CClientSDSManager::subscribe(const char *xpath, ISDSSubscription 
     CSDSSubscriberProxy *subscriber = new CSDSSubscriberProxy(xpath, sub, sendValue, notify);
     querySubscriptionManager(SDS_PUBLISHER)->add(subscriber, subscriber->getId());
 
+    protraceRecordAt(EventDaliSubscribe, elapsedTime.startCycles(), getProtraceTicks(elapsedTime.elapsedCycles()));
     if (unlikely(recordingEvents()))
         queryRecorder().recordDaliSubscribe(xpath, subscriber->getId(), elapsedTime.elapsedNs());
 
@@ -1905,7 +1916,7 @@ SubscriptionId CClientSDSManager::subscribe(const char *xpath, ISDSSubscription 
 
 SubscriptionId CClientSDSManager::subscribeExact(const char *xpath, ISDSNodeSubscription &notify, bool sendValue)
 {
-    CCycleTimer elapsedTime(recordingEvents());
+    CCycleTimer elapsedTime;
     if (queryDaliServerVersion().compare(SDS_SVER_MIN_NODESUBSCRIBE) < 0)
         throw MakeSDSException(SDSExcpt_VersionMismatch, "Requires dali server version >= " SDS_SVER_MIN_NODESUBSCRIBE " for subscribeExact");
     assertex(xpath);
@@ -1918,6 +1929,7 @@ SubscriptionId CClientSDSManager::subscribeExact(const char *xpath, ISDSNodeSubs
     CSDSNodeSubscriberProxy *subscriber = new CSDSNodeSubscriberProxy(xpath, sendValue, notify);
     querySubscriptionManager(SDSNODE_PUBLISHER)->add(subscriber, subscriber->getId());
 
+    protraceRecordAt(EventDaliSubscribe, elapsedTime.startCycles(), getProtraceTicks(elapsedTime.elapsedCycles()));
     if (unlikely(recordingEvents()))
         queryRecorder().recordDaliSubscribe(xpath, subscriber->getId(), elapsedTime.elapsedNs());
 

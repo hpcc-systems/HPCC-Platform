@@ -94,7 +94,7 @@ protected:
     Owned<IFile> logical;
     Linked<IFileIO> current;
     Owned<IMemoryMappedFile> mmapped;
-    mutable CriticalSection crit{SYNC_LOCATION};
+    mutable CriticalSection crit{"RoxieLazyFileIO"};
     offset_t fileSize{0};
     unsigned currentIdx{0};
     std::atomic<unsigned __int64> lastAccess{0};

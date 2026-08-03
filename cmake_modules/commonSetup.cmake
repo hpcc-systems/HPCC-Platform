@@ -121,6 +121,30 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
       set(USE_XERCES ON)
   endif()
 
+  if (USE_PROTRACE)
+    find_package(protrace_user CONFIG REQUIRED)
+    add_definitions(-D_USE_PROTRACE)
+
+    if (PROTRACE_LOCKS)
+      add_definitions(-DPROTRACE_LOCKS)
+    endif()
+    if (PROTRACE_SEMAPHORES)
+      add_definitions(-DPROTRACE_SEMAPHORES)
+    endif()
+    if (PROTRACE_MP)
+      add_definitions(-DPROTRACE_MP)
+    endif()
+
+    # Create an interface library to link against (prevents PUBLIC linkage leakage)
+    add_library(protrace_user_all INTERFACE)
+    target_link_libraries(protrace_user_all INTERFACE
+      protrace_user::protrace_emit
+      protrace_user::protrace_user
+    )
+
+    link_libraries(protrace_user_all)
+  endif()
+
   if ( MAKE_DOCS AND CLIENTTOOLS_ONLY )
       set( MAKE_DOCS OFF )
   endif()

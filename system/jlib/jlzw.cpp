@@ -28,6 +28,7 @@
 #include "jzstd.hpp"
 #include "jplane.hpp"
 #include "jerror.hpp"
+#include "jevent.hpp"
 
 #ifdef _WIN32
 #include <io.h>
@@ -466,6 +467,8 @@ size32_t CExpanderBase::expandNext(MemoryBuffer & target)
 
 size32_t CExpanderBase::expandDirect(size32_t destSize, void * dest, size32_t srcSize, const void * src)
 {
+    ProTraceTaskScopeTracker scope(EventTask::Decompressing);
+
     throwUnimplemented();
 }
 
@@ -502,6 +505,8 @@ size32_t CLZWExpander::init(const void *blk)
 
 void CLZWExpander::expand(void *buf)
 {
+    ProTraceTaskScopeTracker scope(EventTask::Decompressing);
+
     if (!outlen)
         return;
     if (buf) {
@@ -1518,6 +1523,8 @@ public:
 
     void expand(void *buf)
     {
+        ProTraceTaskScopeTracker scope(EventTask::Decompressing);
+
         if (!outlen)
             return;
         if (buf) {
@@ -2970,6 +2977,8 @@ public:
 
     void   expand(void *target)
     {
+        ProTraceTaskScopeTracker scope(EventTask::Decompressing);
+
         exp->expand(target);
     }
 

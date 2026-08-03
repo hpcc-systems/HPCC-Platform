@@ -3930,6 +3930,8 @@ public:
 
     PTreeBinaryTimingStressTest()
     {
+        START_TEST
+
         getComponentConfigSP()->getProp("PTreeBinaryTimingStressTest/@path", binaryPath);
         if (binaryPath.isEmpty())
         {
@@ -3986,6 +3988,8 @@ public:
 
         validateContent = getComponentConfigSP()->getPropBool("PTreeBinaryTimingStressTest/@validateContent", false);
         synchronizePhases = getComponentConfigSP()->getPropBool("PTreeBinaryTimingStressTest/@synchronizePhases", true);
+
+        END_TEST
     }
 
     void testPTreeTiming()

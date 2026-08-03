@@ -47,6 +47,7 @@
 #include "mpbuff.hpp"
 #include "mputil.hpp"
 #include "mplog.hpp"
+#include "jprotrace.hpp"
 
 #include "securesocket.hpp"
 
@@ -168,6 +169,7 @@ public:
         SocketEndpoint ep;
         sender.get(ep);
         mb.init(ep,tag,replytag);
+        mb.setSequence(sequence);
     }
 };
 
@@ -273,12 +275,14 @@ public:
     enum QWenum { QWcontinue, QWdequeue, QWprobe };
     Semaphore sem{SYNC_LOCATION};
     CBufferQueueNotify &waiting;
+    CMessageBuffer * accepted = nullptr;
     bool probe;
     CBufferQueueWaiting(CBufferQueueNotify& _waiting,bool _probe) : waiting(_waiting) { probe = _probe; }
     QWenum notify(CMessageBuffer *b)
     {
         // check this for DLL unloaded TBD
         if (waiting.notify(b)) {
+            accepted = b;
             sem.signal();
             return probe?QWprobe:QWdequeue;
         }
@@ -312,6 +316,11 @@ public:
 
     void enqueue(CMessageBuffer *b)
     {
+        //The enqueuing of packets in this code is a bit strange.  If a callback is already waiting, then
+        //the notify() call below will notify the waiter, and signal so that the other thread will continue
+        //Treat it as if it has been queued and dequeued.
+        protraceRecordEnqueueItem(b);
+
         CriticalBlock block(sect);
         unsigned iter=0;
         for (;;) {
@@ -328,12 +337,14 @@ public:
             if (b->getReplyTag() != TAG_CANCEL) 
                 break;
             if (iter++==10) {
+                protraceRecordDequeueItem(b);
                 delete b;
                 return;
             }
             CriticalUnblock unblock(sect);
             Sleep(CANCELTIMEOUT/10);            // to avoid race conditions (cancel eventually times out)
         }
+
         received.enqueue(b);
     }
 
@@ -347,7 +358,8 @@ public:
                     probegot = true;
                 }
                 else {
-                    received.dequeue(i);
+                    CMessageBuffer *dequeued = received.dequeue(i);
+                    protraceRecordDequeueItem(dequeued);
                     return true;
                 }
             }
@@ -367,6 +379,11 @@ public:
             if (!ok)
                 waiting.zap(qwaiting);
         }
+
+        // This packet didn't actually go via a queue, but was processed directly in enqueue above
+        if (ok && !probe && qwaiting.accepted)
+            protraceRecordDequeueItem(qwaiting.accepted);
+
         return ok;
     }
 
@@ -410,6 +427,31 @@ public:
 
 static UnsignedShortArray freetags;
 static unsigned nextfreetag=0;
+
+static inline bool isMpResponseTag(mptag_t tag)
+{
+    return ((int)tag <= (int)TAG_REPLY_BASE);
+}
+
+static inline void traceMpSend([[maybe_unused]] const PacketHeader &hdr, [[maybe_unused]] size32_t dataSize)
+{
+#ifdef PROTRACE_MP
+    if (isMpResponseTag(hdr.tag))
+        protraceRecordMpResponseSend(combineTagSeq((unsigned)hdr.tag, hdr.sequence), dataSize);
+    else
+        protraceRecordMpRequestSend(combineTagSeq((unsigned)hdr.tag, hdr.sequence), dataSize);
+#endif
+}
+
+static inline void traceMpReceive([[maybe_unused]] CMessageBuffer &msg)
+{
+#ifdef PROTRACE_MP
+    if (isMpResponseTag(msg.getTag()))
+        protraceRecordMpResponseReceive(combineTagSeq((unsigned)msg.getTag(), msg.getSequence()));
+    else
+        protraceRecordMpRequestReceive(combineTagSeq((unsigned)msg.getTag(), msg.getSequence()));
+#endif
+}
 
 unsigned short generateDynamicTag()
 {
@@ -1628,7 +1670,10 @@ public:
         StringBuffer ep2;
         LOG(MCdebugInfo, "MP: send(target=%s,sender=%s,tag=%d,replytag=%d,size=%d)",hdr.target.getEndpointHostText(ep1).str(),hdr.sender.getEndpointHostText(ep2).str(),hdr.tag,hdr.replytag,hdr.size);
 #endif
-        return channel->writepacket(&hdr,sizeof(hdr),mb.toByteArray(),mb.length(),tm);
+        bool ok = channel->writepacket(&hdr,sizeof(hdr),mb.toByteArray(),mb.length(),tm);
+        if (ok)
+            traceMpSend(hdr, mb.length());
+        return ok;
     }
 };
 
@@ -1722,10 +1767,12 @@ public:
             recv = new CMultiPacketReceiver;
             recv->msg = new CMessageBuffer();           
             recv->msg->init(msg->getSender(),mhdr.tag,msg->getReplyTag());
+            recv->msg->setSequence(msg->getSequence());
             recv->ptr = (byte *)recv->msg->reserveTruncate(mhdr.total);
             recv->sender = msg->getSender();
             recv->info = mhdr;
             inprogress.append(*recv);
+            traceMpReceive(*recv->msg);
         }
         else {
             if ((recv==NULL)||(mhdr.ofs==0)||
@@ -1795,6 +1842,7 @@ public:
             mhdr.ofs += mhdr.size;
             p += mhdr.size;
         }
+        traceMpSend(hdr, mhdr.total);
         return true;
     }
 
@@ -1955,6 +2003,7 @@ public:
                             activemsg = parent->queryServer().forwardpackethandler->handle(activemsg);
                             break;
                         default:
+                            traceMpReceive(*activemsg);
                             parent->queryServer().userpackethandler->handle(activemsg); // takes ownership
                             activemsg = NULL;
                     }

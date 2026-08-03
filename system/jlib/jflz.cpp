@@ -51,6 +51,7 @@
 #include "jfcmp.hpp"
 #include "jflz.hpp"
 #include "jcrc.hpp"
+#include "jevent.hpp"
 #include "jerror.hpp"
 
 /*
@@ -684,6 +685,8 @@ class jlib_decl CFastLZExpander : public CFcmpExpander
 public:
     virtual void expand(void *buf) override
     {
+        ProTraceTaskScopeTracker scope(EventTask::Decompressing);
+
         if (!outlen)
             return;
         if (buf) {

@@ -26,6 +26,8 @@
 #include "jstream.hpp"
 #include "jstring.hpp"
 #include "jstats.h"
+#include "jprotrace.hpp"
+
 #include <condition_variable>
 #include <type_traits>
 
@@ -87,6 +89,10 @@ enum class EventTask : byte
     Graph,         // Scope of executing a graph
     SubGraph,      // Scope of executing a subgraph
     Running,       // A running thread not otherwise associated with a more specific task scope
+    Reading,       // A task for reading data
+    Processing,    // A task for processing data
+    Compressing,   // A task for compressing data
+    Decompressing, // A task for decompressing data
     Max
 };
 
@@ -440,6 +446,7 @@ public:
 };
 
 //---------------------------------------------------------------------------------------------------------------------
+
 enum EventAttr : byte;
 interface IFileIO;
 
@@ -763,5 +770,56 @@ extern jlib_decl IEventIterator* createEventFileIterator(const char* path);
 extern jlib_decl bool readEvents(const char* filename, IEventVisitor & visitor);
 
 extern jlib_decl bool startComponentRecording(const char * component, const char * optionsText, const char * filename, unsigned channelId, unsigned replicaId, bool pause);
+
+// A RAII wrapper for recording the start and stop of a task scope.  Only goes to protrace.
+class ProTraceTaskScopeTracker
+{
+public:
+    ProTraceTaskScopeTracker(EventTask _task, bool _enabled = true)
+        : task(_task), enabled(_enabled)
+    {
+        if (enabled)
+            protraceRecordTaskStart(task);
+    }
+
+    ~ProTraceTaskScopeTracker()
+    {
+        if (enabled)
+            protraceRecordTaskStop(task);
+    }
+private:
+    const EventTask task;
+    const bool enabled;
+};
+
+// Similar to ProTraceTaskScopeTracker, but also records events if recording is enabled.
+class TaskScopeTracker
+{
+public:
+    TaskScopeTracker(EventTask _task, bool _enabled = true)
+        : task(_task), enabled(_enabled), recording(enabled && recordingEvents())
+    {
+        if (enabled)
+        {
+            protraceRecordTaskStart(task);
+            if (recording)
+                queryRecorder().recordTaskStart(task);
+        }
+    }
+
+    ~TaskScopeTracker()
+    {
+        if (enabled)
+        {
+            protraceRecordTaskStop(task);
+            if (recording)
+                queryRecorder().recordTaskStop(task);
+        }
+    }
+private:
+    const EventTask task;
+    const bool enabled;
+    const bool recording;
+};
 
 #endif

@@ -2961,6 +2961,47 @@ private:
                 preabortKeyedJoinsThreshold = control->getPropInt("@val", 100);
                 topology->setPropInt("@preabortKeyedJoinsThreshold", preabortKeyedJoinsThreshold);
             }
+            else if (stricmp(queryName, "control:protraceClear")==0)
+            {
+                bool clearMetadata = control->getPropBool("@clearMetadata", false);
+                bool success = protraceClearRecording(clearMetadata);
+                reply.appendf("<Protrace success='%s'/>", boolToStr(success));
+            }
+            else if (stricmp(queryName, "control:protraceResume")==0)
+            {
+                bool success = protraceResumeRecording();
+                reply.appendf("<Protrace success='%s'/>", boolToStr(success));
+            }
+            else if (stricmp(queryName, "control:protraceSave")==0)
+            {
+                StringBuffer outputFilename;
+                bool success = false;
+                try
+                {
+                    protraceSaveRecording(outputFilename, control->queryProp("@filename"));
+                    success = true;
+                }
+                catch (const IException * e)
+                {
+                    StringBuffer errMsg;
+                    e->errorMessage(errMsg);
+                    StringBuffer encoded;
+                    encodeXML(errMsg.str(), encoded);
+                    reply.appendf("<Protrace success='false' error='%s'/>", encoded.str());
+                    e->Release();
+                }
+                if (success)
+                {
+                    StringBuffer encoded;
+                    encodeXML(outputFilename.str(), encoded);
+                    reply.appendf("<Protrace success='true' filename='%s'/>", encoded.str());
+                }
+            }
+            else if (stricmp(queryName, "control:protraceSuspend")==0)
+            {
+                bool success = protraceSuspendRecording();
+                reply.appendf("<Protrace success='%s'/>", boolToStr(success));
+            }
             else
                 unknown = true;
             break;

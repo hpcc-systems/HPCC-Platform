@@ -215,6 +215,19 @@ public:
         return (((unsigned) overflowSequence) << 16) | (unsigned) continueSequence;
     }
 
+    // A ~52-bit id correlating a request (server->worker) across send/receive/worker events.
+    // Layout: uid[0:32] | overflowSequence[32:47] | continueSequence[47:52].
+    // Only fields also recoverable from UdpPacketHeader (uid, msgId) may be used, so that
+    // UdpPacketHeader::getRequestId() reproduces the identical value on the response path.
+    // Excludes channel/activityId (not in UdpPacketHeader) and any resent/SKIPTO flags.
+    inline unsigned __int64 getRequestId() const
+    {
+        unsigned __int64 id = uid.load();
+        id |= (static_cast<unsigned __int64>(overflowSequence & OVERFLOWSEQUENCE_MAX)) << 32;
+        id |= (static_cast<unsigned __int64>(continueSequence & 0x1f)) << 47;
+        return id;
+    }
+
     inline void noteAlive(unsigned mask)
     {
         retries = (retries & ~mask);

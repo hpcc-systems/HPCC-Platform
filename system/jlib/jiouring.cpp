@@ -23,6 +23,7 @@
 #include "jmutex.hpp"
 #include "jlog.hpp"
 #include "jerror.hpp"
+#include "jevent.hpp"
 
 #if defined(__linux__) || defined (__FreeBSD__)
 
@@ -404,6 +405,7 @@ public:
             CompletionResponse response;
             if (processor.dequeueCompletion(response))
             {
+                ProTraceTaskScopeTracker scope(EventTask::Processing);
                 if (response.callback->onAsyncComplete(response.result))
                     response.callback->afterCompletion();
             }

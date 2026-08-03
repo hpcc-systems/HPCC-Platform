@@ -1,0 +1,173 @@
+#!/bin/bash
+count=1
+innerCount=20
+doRestart=1
+doPerf=0
+doTrace=0
+doProtrace=0
+doProtraceClear=0
+doKernelTrace=0
+perfPid=""
+query="stresstext.5"
+TRACER_DEFAULT="$HOME/dev/protrace/build/kernel/protrace_cli"
+TRACER="${TRACER:-$TRACER_DEFAULT}"
+
+cleanup_perf() {
+  if [[ -n "$perfPid" ]] && kill -0 "$perfPid" 2>/dev/null; then
+    kill -INT "$perfPid" 2>/dev/null || true
+    wait "$perfPid" 2>/dev/null || true
+  fi
+  perfPid=""
+}
+
+prepare_kernel_trace() {
+  if [[ $doKernelTrace -eq 0 ]]; then
+    return
+  fi
+  "$TRACER" clear_pids
+  "$TRACER" add_process roxie
+  "$TRACER" clear
+}
+
+dump_kernel_trace() {
+  local outputFile="$1"
+  if [[ $doKernelTrace -eq 0 ]]; then
+    return
+  fi
+  "$TRACER" dump "$outputFile"
+}
+
+trap cleanup_perf EXIT
+trap 'cleanup_perf; exit 130' INT TERM
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --norestart)
+      doRestart=0
+      shift
+      ;;
+    --perf)
+      doPerf=1
+      shift
+      ;;
+    --trace)
+      doTrace=1
+      shift
+      ;;
+    --protrace)
+      doProtrace=1
+      shift
+      ;;
+    --protracequery)
+      doProtraceClear=1
+      shift
+      ;;
+    --kerneltrace)
+      doKernelTrace=1
+      shift
+      ;;
+    --query)
+      query="$2"
+      shift 2
+      ;;
+    --count)
+      innerCount="$2"
+      shift 2
+      ;;
+    --help|-h)
+      echo "Usage: $0 [count] [--norestart] [--perf] [--trace] [--protrace] [--protracequery] [--kerneltrace] [--query Q] [--count N]"
+      exit 0
+      ;;
+    -* )
+      echo "Unknown option: $1" >&2
+      echo "Usage: $0 [count] [--norestart] [--perf] [--trace] [--protrace] [--protracequery] [--kerneltrace] [--query Q] [--count N]" >&2
+      exit 1
+      ;;
+    *)
+      if [[ "$count" != "1" ]]; then
+        echo "Unexpected extra argument: $1" >&2
+        echo "Usage: $0 [count] [--norestart] [--perf] [--trace] [--protrace] [--protracequery] [--kerneltrace] [--query Q] [--count N]" >&2
+        exit 1
+      fi
+      count="$1"
+      shift
+      ;;
+  esac
+done
+
+if [[ $doKernelTrace -eq 1 && ! -x "$TRACER" ]]; then
+  echo "kernel tracer not found or not executable: $TRACER" >&2
+  exit 1
+fi
+
+if [[ $doPerf -eq 1 ]]; then
+  doRestart=0
+  ~/hpccrel/etc/init.d/hpcc-init -c myroxie stop > /dev/null
+fi
+
+#query="textindex_keyed.1"
+
+echo -n > alltimings.txt
+for iter in $(seq 1 $count); do
+  if [[ $doRestart -eq 1 ]]; then
+    ~/hpccrel/etc/init.d/hpcc-init -c myroxie restart > /dev/null
+  fi
+
+  if [[ $doPerf -eq 1 ]]; then
+    perfOut="perf.${iter}.data"
+    (cd ~/hpccrel/var/lib/HPCCSystems/myroxie && \
+      exec perf record -g -o "$perfOut" -- \
+      ~/hpccrel/opt/HPCCSystems/bin/roxie --topology=RoxieTopology.xml --logfile --restarts=0 --stdlog=0 ) &
+    perfPid=$!
+  fi
+
+  #Run once to prime cache
+  details="details.$iter.txt"
+  echo -n > timings.txt
+  echo -n > ${details}
+
+  if [[ $doTrace -eq 1 && $iter -eq 1 ]]; then
+    ~/hpcc/opt/HPCCSystems/bin/testsocket . "<control:startEventRecording options='threadid,traceid'/>" > /dev/null
+  fi
+
+  prepare_kernel_trace
+  if [[ $doProtraceClear -eq 1 ]]; then
+    ~/hpcc/opt/HPCCSystems/bin/testsocket . "<control:protraceClear/>" > /dev/null
+  fi
+  ~/hpcc/opt/HPCCSystems/bin/testsocket . "<${query} summaryStats='1'/>" > firsttimings.txt
+  dump_kernel_trace "$(pwd)/kernel.prime.${iter}.kstrc"
+
+  if [[ $doTrace -eq 1 && $iter -eq 1 ]]; then
+    ~/hpcc/opt/HPCCSystems/bin/testsocket . "<control:stopEventRecording/>" > /dev/null
+  fi
+
+  if [[ $doProtrace -eq 1 && $iter -eq 1 ]]; then
+    ~/hpcc/opt/HPCCSystems/bin/testsocket . "<control:protraceSave filename=\"$(pwd)/protrace.${iter}.kstrc\"/>" > /dev/null
+  fi
+
+  grep ">false<" firsttimings.txt
+  for i in $(seq 1 $innerCount); do
+      if [[ $i -eq 1 ]]; then
+        prepare_kernel_trace
+      fi
+      echo -n .
+      timings=$(~/hpcc/opt/HPCCSystems/bin/testsocket . "<${query} summaryStats='1'/>")
+      if [[ $i -eq 1 ]]; then
+        dump_kernel_trace "$(pwd)/kernel.${iter}.kstrc"
+      fi
+      echo $timings >> ${details}
+      echo $timings | grep -o "complete in .* msecs" | grep -o " [0-9].* " >> timings.txt;
+  done
+
+  cat timings.txt >> alltimings.txt
+
+  if [[ $doPerf -eq 1 ]]; then
+    cleanup_perf
+  fi
+
+  echo
+  ./simple_stats.sh timings.txt
+done
+./simple_stats.sh alltimings.txt
+
+

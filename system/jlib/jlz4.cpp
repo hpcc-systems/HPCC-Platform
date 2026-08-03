@@ -20,6 +20,7 @@
 #include "jlz4.hpp"
 #include "lz4.h"
 #include "lz4hc.h"
+#include "jevent.hpp"
 #include "jlog.hpp"
 #include "jlzbase.hpp"
 
@@ -250,6 +251,8 @@ public:
 
     virtual size32_t expandDirect(size32_t destSize, void * dest, size32_t srcSize, const void * src) override
     {
+        ProTraceTaskScopeTracker scope(EventTask::Decompressing);
+
         assertex(destSize != 0);
         return LZ4_decompress_safe((const char *)src, (char *)dest, srcSize, destSize);
     }
@@ -280,6 +283,8 @@ class CLZ4Expander final : public CBlockExpander
 public:
     virtual size32_t expandDirect(size32_t destSize, void * dest, size32_t srcSize, const void * src) override
     {
+        ProTraceTaskScopeTracker scope(EventTask::Decompressing);
+
         assertex(destSize != 0);
         return LZ4_decompress_safe((const char *)src, (char *)dest, srcSize, destSize);
     }
@@ -415,6 +420,8 @@ public:
 
     virtual size32_t expandDirect(size32_t destSize, void * dest, size32_t srcSize, const void * src) override
     {
+        ProTraceTaskScopeTracker scope(EventTask::Decompressing);
+
         assertex(destSize != 0);
         return LZ4_decompress_safe((const char *)src, (char *)dest, srcSize, destSize);
     }

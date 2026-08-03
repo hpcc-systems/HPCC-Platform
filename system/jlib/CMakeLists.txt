@@ -102,6 +102,7 @@ set (    SRCS
          jstats.cpp
          jstream.cpp
          jstring.cpp
+         jprotrace.cpp
          jsuperhash.cpp
          jtask.cpp
          jthread.cpp
@@ -190,6 +191,7 @@ set (    INCLUDES
         jstream.hpp
         jstream.ipp
         jstring.hpp
+        jprotrace.hpp
         jsuperhash.hpp
         jtask.hpp
         jthread.hpp

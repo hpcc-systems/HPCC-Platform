@@ -47,6 +47,26 @@ struct UdpPacketHeader
     // information below is duplicated in the Roxie packet header - we could remove? However, would make aborts harder, and at least ruid is needed at receive end
     ruid_t         ruid;        // The uid allocated by the server to this agent transaction
     unsigned       msgId;       // sub-id allocated by the server to this request within the transaction
+
+    // A ~52-bit id correlating the response back to its request. Must match
+    // RoxiePacketHeader::getRequestId(): ruid==uid and msgId==RoxiePacketHeader::getSequenceId()
+    // (i.e. msgId == (overflowSequence<<16)|continueSequence).
+    inline unsigned __int64 getRequestId() const
+    {
+        unsigned __int64 id = ruid;
+        id |= (static_cast<unsigned __int64>((msgId >> 16) & 0x7fff)) << 32;   // overflowSequence
+        id |= (static_cast<unsigned __int64>(msgId & 0x1f)) << 47;             // continueSequence low bits
+        return id;
+    }
+
+    // A ~52-bit id identifying this response packet, paired with getRequestId().
+    // Layout: msgSeq[0:32] | pktSeq[32:52]; resent/complete flags removed.
+    inline unsigned __int64 getResponseId() const
+    {
+        unsigned __int64 id = msgSeq;
+        id |= (static_cast<unsigned __int64>(pktSeq & UDP_PACKET_SEQUENCE_MASK) & 0xfffff) << 32;
+        return id;
+    }
 };
 
 constexpr unsigned TRACKER_BITS=1024;      // Power of two recommended

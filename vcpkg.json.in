@@ -200,6 +200,10 @@
         "pcre2",
         "picojson",
         {
+            "name": "protrace",
+            "platform": "@VCPKG_PROTRACE@"
+        },
+        {
             "name": "python3",
             "platform": "@VCPKG_PYTHON3@ & windows"
         },
@@ -223,7 +227,7 @@
         {
             "name": "zlib",
             "platform": "@VCPKG_ZLIB@"
-        }, 
+        },
         "zstd"
     ]
 }

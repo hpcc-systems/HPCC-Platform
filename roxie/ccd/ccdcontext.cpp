@@ -17,6 +17,8 @@
 
 #include "platform.h"
 #include "jlib.hpp"
+#include "jevent.hpp"
+#include "jprotrace.hpp"
 
 #include "environment.hpp"
 #include "workunit.hpp"
@@ -1693,6 +1695,8 @@ public:
             unsigned __int64 startTimeStamp = getTimeStampNowValue();
             try
             {
+                TaskScopeTracker task(EventTask::Graph);
+
                 beginGraph(name);
                 created = true;
                 runGraph();

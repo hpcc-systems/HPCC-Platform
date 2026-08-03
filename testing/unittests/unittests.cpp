@@ -20,6 +20,7 @@
 #include "jstats.h"
 #include "jregexp.hpp"
 #include "jfile.hpp"
+#include "jprotrace.hpp"
 #include "deftype.hpp"
 #include "rmtfile.hpp"
 #include "thorhelper.hpp"
@@ -57,6 +58,7 @@ void usage()
     "    -e  --exact                          Match subsequent test names exactly\n"
     "    -h  --help                           Display this help text\n"
     "    -l  --list                           List matching tests but do not execute them\n"
+    "    -s  --protrace                       Capture protrace output to unittest.kstrc\n"
     "    -u  --unload                         Unload dynamically-loaded dlls before termination (may crash on some systems)\n"
     "    -x  --exclude                        Exclude subsequent test names\n"
     "    --<unittestname>.<option>[=<value>]  A custom setting for a specific unittest\n"
@@ -153,6 +155,7 @@ int main(int argc, const char *argv[])
     bool includeAll = false;
     bool verbose = false;
     bool list = false;
+    bool protraceEnabled = false;
     bool useDefaultLocations = true;
     bool unloadDlls = false;
 
@@ -174,6 +177,8 @@ int main(int argc, const char *argv[])
                 includeAll = true;
             else if (streq(arg, "-l") || streq(arg, "--list"))
                 list = true;
+            else if (streq(arg, "-s") || streq(arg, "--protrace"))
+                protraceEnabled = true;
             else if (streq(arg, "-u") || streq(arg, "-unload"))
                 unloadDlls = true;
             else if (streq(arg, "-d") || streq(arg, "--load"))
@@ -272,6 +277,15 @@ int main(int argc, const char *argv[])
     }
 
     bool wasSuccessful = false;
+
+#ifdef _USE_PROTRACE
+    if (protraceEnabled)
+        protrace::init_protrace("hpcc", oneGB, 0, (protrace::trace_options)0);
+#else
+    if (protraceEnabled)
+        WARNLOG("--protrace specified but protrace support is not enabled in this build");
+#endif
+
     {
         // New scope as we need the TestRunner to be destroyed before unloading the dlls...
         CppUnit::TestFactoryRegistry &registry = CppUnit::TestFactoryRegistry::getRegistry();
@@ -301,6 +315,12 @@ int main(int argc, const char *argv[])
         }
         wasSuccessful = list || runner.run( "", false );
     }
+
+#ifdef _USE_PROTRACE
+    if (protraceEnabled)
+        protrace::save_events("unittest.kstrc");
+#endif
+
     releaseAtoms();
     ClearTypeCache();   // Clear this cache before the file hooks are unloaded
     removeFileHooks();

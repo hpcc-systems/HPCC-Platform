@@ -20,6 +20,7 @@
 #include "jthread.hpp"
 #include "jregexp.hpp"
 #include "jevent.hpp"
+#include "jprotrace.hpp"
 #include "securesocket.hpp"
 
 #include "wujobq.hpp"
@@ -1296,6 +1297,7 @@ public:
         ContextSpanScope spanScope(*logctx, requestSpan);
 
         // Call after the create span so the trace id is initialised
+        protraceRecord(EventQueryStart);
         if (recordingEvents())
             queryRecorder().recordQueryStart(wuid.get());
 
@@ -1311,6 +1313,7 @@ public:
         }
         catch (IException *E)
         {
+            protraceRecord(EventQueryStop);
             if (recordingEvents())
                 queryRecorder().recordQueryStop();
             reportException(wu, E, *logctx);
@@ -1321,6 +1324,7 @@ public:
 #ifndef _DEBUG
         catch(...)
         {
+            protraceRecord(EventQueryStop);
             if (recordingEvents())
                 queryRecorder().recordQueryStop();
             reportUnknownException(wu, *logctx);
@@ -1340,6 +1344,7 @@ public:
             DBGLOG("%s", wuXML.str());
         }
 
+        protraceRecord(EventQueryStop);
         if (recordingEvents())
             queryRecorder().recordQueryStop();
 
@@ -1590,6 +1595,7 @@ public:
         requestSpan->setSpanAttribute("queryset.name", querySetName);
 
         // Call after the create span so the trace id is initialised
+        protraceRecord(EventQueryStart);
         if (recordingEvents())
             queryRecorder().recordQueryStart(tracedQueryName);
 
@@ -1764,8 +1770,12 @@ public:
         }
 
         // requestSpan is non-null if this is a real query (ignore control:xxx messages)
-        if (requestSpan && recordingEvents())
-            queryRecorder().recordQueryStop();
+        if (requestSpan)
+        {
+            protraceRecord(EventQueryStop);
+            if (recordingEvents())
+                queryRecorder().recordQueryStop();
+        }
     }
 
 };

@@ -34,6 +34,14 @@ LegacyMutex::LegacyMutex([[maybe_unused]] const char *syncName)
     pthread_cond_init(&lock_free, NULL);
     owner = 0;
     lockcount = 0;
+#ifdef PROTRACE_LOCKS
+    if (trackUnnamedLocks || syncName)
+    {
+        syncid = getUniqueSyncId();
+        if (syncName)
+            protraceNoteLock(syncid, syncName);
+    }
+#endif
 }
 
 LegacyMutex::~LegacyMutex()
@@ -44,12 +52,14 @@ LegacyMutex::~LegacyMutex()
 
 void LegacyMutex::lock()
 {
+    noteEvent(EventLockWait);
     pthread_mutex_lock(&mutex);
     while ((owner!=0) && !pthread_equal(owner, pthread_self()))
         pthread_cond_wait(&lock_free, &mutex);
     if (lockcount++==0)
         owner = pthread_self();
     pthread_mutex_unlock(&mutex);
+    noteEvent(EventLockAcquire);
 }
 
 bool LegacyMutex::lockWait(unsigned timeout)
@@ -58,6 +68,7 @@ bool LegacyMutex::lockWait(unsigned timeout)
         lock();
         return true;
     }
+    noteEvent(EventLockWait);
     pthread_mutex_lock(&mutex);
     bool first=true;
     while ((owner!=0) && !pthread_equal(owner, pthread_self())) {
@@ -68,12 +79,14 @@ bool LegacyMutex::lockWait(unsigned timeout)
         }
         if (pthread_cond_timedwait(&lock_free, &mutex, &abs)==ETIMEDOUT) {
             pthread_mutex_unlock(&mutex);
+            noteEvent(EventLockWaitTimeout);
             return false;
         }
     }
     if (lockcount++==0)
         owner = pthread_self();
     pthread_mutex_unlock(&mutex);
+    noteEvent(EventLockAcquire);
     return true;
 }
 
@@ -89,10 +102,13 @@ void LegacyMutex::unlock()
         pthread_cond_signal(&lock_free);
     }
     pthread_mutex_unlock(&mutex);
+    noteEvent(EventLockRelease);
 }
 
 void LegacyMutex::lockAll(int count)
 {
+    //MORE: I have no idea what events to record here - only used by Monitor
+    // which is only used by TaskQueue, which is barely used.
     if (count) {
         pthread_mutex_lock(&mutex);
         while ((owner!=0) && !pthread_equal(owner, pthread_self()))
@@ -202,6 +218,14 @@ static CriticalSection lockPrefixCS(SYNC_LOCATION);
 static StringBuffer lockPrefix;
 NamedMutex::NamedMutex([[maybe_unused]] const char *syncName, const char *name)
 {
+#ifdef PROTRACE_LOCKS
+    if (trackUnnamedLocks || syncName)
+    {
+        syncid = getUniqueSyncId();
+        if (syncName)
+            protraceNoteLock(syncid, syncName);
+    }
+#endif
     {
         CriticalBlock b(lockPrefixCS);
         if (0 == lockPrefix.length())
@@ -225,26 +249,37 @@ NamedMutex::~NamedMutex()
 
 void NamedMutex::lock()
 {
+    noteEvent(EventLockWait);
     // first lock locally
     threadmutex.lock();
     // then lock globally
     for (;;) {
         if (lock_file(mutexfname))
+        {
+            noteEvent(EventLockAcquire);
             return;
+        }
         Sleep(MUTEX_POLLTIME);
     }
 }
 
 bool NamedMutex::lockWait(unsigned timeout)
 {
+    noteEvent(EventLockWait);
     unsigned t = msTick();
     // first lock locally
     if (!threadmutex.lockWait(timeout))
+    {
+        noteEvent(EventLockWaitTimeout);
         return false;
+    }
     // then lock globally
     for (;;) {
         if (lock_file(mutexfname))
+        {
+            noteEvent(EventLockAcquire);
             return true;
+        }
         unsigned elapsed = msTick()-t;
         if (elapsed>=timeout) {
             threadmutex.unlock();
@@ -252,8 +287,9 @@ bool NamedMutex::lockWait(unsigned timeout)
         }
         Sleep((timeout-elapsed)>MUTEX_POLLTIME ? MUTEX_POLLTIME : (timeout-elapsed));
     }
-    return false;
 
+    noteEvent(EventLockWaitTimeout);
+    return false;
 }
 
 void NamedMutex::unlock()
@@ -261,10 +297,8 @@ void NamedMutex::unlock()
     // assumed held
     unlock_file(mutexfname);
     threadmutex.unlock();
+    noteEvent(EventLockRelease);
 }
-
-
-
 #endif
 
 bool TimedMutex::lockWait(unsigned timeout)
@@ -273,8 +307,14 @@ bool TimedMutex::lockWait(unsigned timeout)
         lock();
         return true;
     }
+    noteEvent(EventLockWait);
     std::chrono::milliseconds ms(timeout);
-    return mutex.try_lock_for(ms);
+    bool locked = mutex.try_lock_for(ms);
+    if (locked)
+        noteEvent(EventLockAcquire);
+    else
+        noteEvent(EventLockWaitTimeout);
+    return locked;
 }
 
 void TimedMutexBlock::throwLockException(unsigned timeout)
@@ -362,7 +402,6 @@ bool ReadWriteLock::lockWrite(unsigned timeout)
     getEndTime(endtime, timeout);
     return (pthread_rwlock_timedwrlock(&rwlock, &endtime) == 0);
 }
-
 #endif
 
 //==================================================================================

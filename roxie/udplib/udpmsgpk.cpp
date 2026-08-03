@@ -31,6 +31,7 @@
 #include "jencrypt.hpp"
 #include "jsecrets.hpp"
 #include "jevent.hpp"
+#include "jprotrace.hpp"
 
 #include "udplib.hpp"
 #include "udptrr.hpp"
@@ -207,8 +208,12 @@ public:
         dataBuff->msgNext = finger;
 
         //NOTE: Record the first unique packet that is received - even if it is resent
-        if (recordingEvents() && pktHdr->ruid >= RUID_FIRST)
-            queryRecorder().recordResponseReceive(pktHdr->ruid, pktHdr->msgId, pktHdr->msgSeq, pktHdr->pktSeq);
+        if (pktHdr->ruid >= RUID_FIRST)
+        {
+            protraceRecord(EventResponseReceive, pktHdr->getRequestId(), pktHdr->getResponseId());
+            if (recordingEvents())
+                queryRecorder().recordResponseReceive(pktHdr->ruid, pktHdr->msgId, pktHdr->msgSeq, pktHdr->pktSeq);
+        }
 
 #ifdef _DEBUG
         numPackets++;
@@ -632,6 +637,7 @@ void CMessageCollator::collate(DataBuffer *dataBuff)
         queue.push_front(pkSqncr);
     else
         queue.push_back(pkSqncr);
+    protraceRecordEnqueueItem(pkSqncr);
     queueCrit.leave();
     sem.signal();
 }
@@ -653,6 +659,7 @@ IMessageResult *CMessageCollator::getNextResult(unsigned time_out, bool &anyActi
         queueCrit.enter();
         PackageSequencer *pkSqncr = queue.front();
         queue.pop_front();
+        protraceRecordDequeueItem(pkSqncr);
         queueCrit.leave();
         anyActivity = true;
         activity = false;

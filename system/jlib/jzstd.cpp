@@ -22,6 +22,7 @@
 #include "jfile.hpp"
 #include "jencrypt.hpp"
 #include "jflz.hpp"
+#include "jevent.hpp"
 #include "jlzbase.hpp"
 #include "jzstd.hpp"
 #include "jerror.hpp"
@@ -61,6 +62,8 @@ public:
 
     virtual size32_t expandDirect(size32_t destSize, void * dest, size32_t srcSize, const void * src) override
     {
+        ProTraceTaskScopeTracker scope(EventTask::Decompressing);
+
         assertex(destSize != 0);
         size_t result = ZSTD_decompress(dest, destSize, src, srcSize);
         if (ZSTD_isError(result))
@@ -105,6 +108,8 @@ public:
 
     virtual size32_t expandDirect(size32_t destSize, void * dest, size32_t srcSize, const void * src) override
     {
+        ProTraceTaskScopeTracker scope(EventTask::Decompressing);
+
         assertex(destSize != 0);
         size_t result = ZSTD_decompress(dest, destSize, src, srcSize);
         if (ZSTD_isError(result))
@@ -274,6 +279,8 @@ public:
 
     virtual size32_t expandDirect(size32_t destSize, void * dest, size32_t srcSize, const void * src) override
     {
+        ProTraceTaskScopeTracker scope(EventTask::Decompressing);
+
         assertex(destSize != 0);
         size_t result = ZSTD_decompress(dest, destSize, src, srcSize);
         if (ZSTD_isError(result))

@@ -154,6 +154,10 @@ public:
     {
         start_time = get_cycles_now();
     }
+    inline cycle_t startCycles() const
+    {
+        return start_time;
+    }
     inline cycle_t elapsedCycles() const
     {
         return get_cycles_now() - start_time;

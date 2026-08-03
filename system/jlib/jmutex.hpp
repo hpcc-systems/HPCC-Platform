@@ -25,6 +25,7 @@
 #include <mutex>
 #include <functional>
 #include "jiface.hpp"
+#include "jprotrace.hpp"
 #include "jsem.hpp"
 
 extern jlib_decl void ThreadYield();
@@ -51,12 +52,27 @@ class jlib_decl LegacyMutex
 {
 friend class Monitor;
 protected:
+    inline void noteEvent(EventType event)
+    {
+#ifdef PROTRACE_LOCKS
+        if (trackUnnamedLocks || likely(syncid))
+            protraceRecord(static_cast<unsigned>(event), syncid);
+#endif
+    }
     LegacyMutex([[maybe_unused]] const char *syncName, const char *name)
     {
         mutex = CreateMutex(NULL, FALSE, name);
         assertex(mutex);
         lockcount = 0;
         owner = 0;
+#ifdef PROTRACE_LOCKS
+        if (trackUnnamedLocks || syncName)
+        {
+            syncid = getUniqueSyncId();
+            if (syncName)
+                protraceNoteLock(syncid, syncName);
+        }
+#endif
     }
 public:
     LegacyMutex([[maybe_unused]] const char *syncName)
@@ -64,6 +80,14 @@ public:
         mutex = CreateMutex(NULL, FALSE, NULL);
         lockcount = 0;
         owner = 0;
+#ifdef PROTRACE_LOCKS
+        if (trackUnnamedLocks || syncName)
+        {
+            syncid = getUniqueSyncId();
+            if (syncName)
+                protraceNoteLock(syncid, syncName);
+        }
+#endif
     }
     ~LegacyMutex()
     {
@@ -73,7 +97,9 @@ public:
     }
     void lock()
     {
+        noteEvent(EventLockWait);
         WaitForSingleObject(mutex, INFINITE);
+        noteEvent(EventLockAcquire);
         if (lockcount) {
             if(owner!=GetCurrentThreadId())     // I think only way this can happen is with unhandled thread exception
                 lockcount = 0;                  // (don't assert as unhandled error may get lost)
@@ -83,8 +109,13 @@ public:
     }
     bool lockWait(unsigned timeout)
     {
+        noteEvent(EventLockWait);
         if (WaitForSingleObject(mutex, (long)timeout)!=WAIT_OBJECT_0)
+        {
+            noteEvent(EventLockWaitTimeout);
             return false;
+        }
+        noteEvent(EventLockAcquire);
         if (lockcount) {
             if(owner!=GetCurrentThreadId())     // I think only way this can happen is with unhandled thread exception
                 lockcount = 0;                  // (don't assert as unhandled error may get lost)
@@ -100,6 +131,7 @@ public:
         if (lockcount==0)
             owner = 0;
         ReleaseMutex(mutex);
+        noteEvent(EventLockRelease);
     }
 
 protected:
@@ -123,6 +155,9 @@ protected:
     
 private:
     int lockcount;
+#ifdef PROTRACE_LOCKS
+    sync_uid_type syncid = 0;
+#endif
 };
 
 #else // posix
@@ -142,8 +177,18 @@ protected:
     int unlockAll();
     void lockAll(int);
 private:
+    inline void noteEvent(EventType event)
+    {
+#ifdef PROTRACE_LOCKS
+        if (trackUnnamedLocks || likely(syncid))
+            protraceRecord(static_cast<unsigned>(event), syncid);
+#endif
+    }
     int lockcount;
     pthread_cond_t lock_free;
+#ifdef PROTRACE_LOCKS
+    sync_uid_type syncid = 0;
+#endif
 };
 #endif
 
@@ -152,11 +197,38 @@ class jlib_decl SimpleMutex
 public:
     SimpleMutex([[maybe_unused]] const char *syncName)
     {
+#ifdef PROTRACE_LOCKS
+        if (trackUnnamedLocks || syncName)
+        {
+            syncid = getUniqueSyncId();
+            if (syncName)
+                protraceNoteLock(syncid, syncName);
+        }
+#endif
     }
-    void lock() { mutex.lock(); };
-    void unlock() { mutex.unlock(); };
+    void lock()
+    {
+        noteEvent(EventLockWait);
+        mutex.lock();
+        noteEvent(EventLockAcquire);
+    };
+    void unlock()
+    {
+        mutex.unlock();
+        noteEvent(EventLockRelease);
+    };
 private:
+    inline void noteEvent(EventType event)
+    {
+#ifdef PROTRACE_LOCKS
+        if (trackUnnamedLocks || likely(syncid))
+            protraceRecord(static_cast<unsigned>(event), syncid);
+#endif
+    }
     std::mutex mutex;
+#ifdef PROTRACE_LOCKS
+    sync_uid_type syncid = 0;
+#endif
 };
 
 class jlib_decl Mutex
@@ -164,11 +236,38 @@ class jlib_decl Mutex
 public:
     Mutex([[maybe_unused]] const char *syncName)
     {
+#ifdef PROTRACE_LOCKS
+        if (trackUnnamedLocks || syncName)
+        {
+            syncid = getUniqueSyncId();
+            if (syncName)
+                protraceNoteLock(syncid, syncName);
+        }
+#endif
     }
-    void lock() { mutex.lock(); };
-    void unlock() { mutex.unlock(); };
+    void lock()
+    {
+        noteEvent(EventLockWait);
+        mutex.lock();
+        noteEvent(EventLockAcquire);
+    };
+    void unlock()
+    {
+        mutex.unlock();
+        noteEvent(EventLockRelease);
+    };
 private:
+    inline void noteEvent(EventType event)
+    {
+#ifdef PROTRACE_LOCKS
+        if (trackUnnamedLocks || likely(syncid))
+            protraceRecord(static_cast<unsigned>(event), syncid);
+#endif
+    }
     std::recursive_mutex mutex;
+#ifdef PROTRACE_LOCKS
+    sync_uid_type syncid = 0;
+#endif
 };
 
 class jlib_decl TimedMutex
@@ -176,12 +275,39 @@ class jlib_decl TimedMutex
 public:
     TimedMutex([[maybe_unused]] const char *syncName)
     {
+#ifdef PROTRACE_LOCKS
+        if (trackUnnamedLocks || syncName)
+        {
+            syncid = getUniqueSyncId();
+            if (syncName)
+                protraceNoteLock(syncid, syncName);
+        }
+#endif
     }
-    void lock() { mutex.lock(); };
+    void lock()
+    {
+        noteEvent(EventLockWait);
+        mutex.lock();
+        noteEvent(EventLockAcquire);
+    };
     bool lockWait(unsigned timeout);
-    void unlock() { mutex.unlock(); };
+    void unlock()
+    {
+        mutex.unlock();
+        noteEvent(EventLockRelease);
+    };
 private:
+    inline void noteEvent(EventType event)
+    {
+#ifdef PROTRACE_LOCKS
+        if (trackUnnamedLocks || likely(syncid))
+            protraceRecord(static_cast<unsigned>(event), syncid);
+#endif
+    }
     std::recursive_timed_mutex mutex;
+#ifdef PROTRACE_LOCKS
+    sync_uid_type syncid = 0;
+#endif
 };
 
 class jlib_decl NamedMutex
@@ -193,8 +319,18 @@ public:
     bool lockWait(unsigned timeout);
     void unlock();
 private:
+    inline void noteEvent(EventType event)
+    {
+#ifdef PROTRACE_LOCKS
+        if (trackUnnamedLocks || likely(syncid))
+            protraceRecord(static_cast<unsigned>(event), syncid);
+#endif
+    }
     TimedMutex threadmutex{SYNC_LOCATION};
     char *mutexfname;
+#ifdef PROTRACE_LOCKS
+    sync_uid_type syncid = 0;
+#endif
 };
 
 template<class T> class jlib_decl MutexBlock
@@ -235,6 +371,9 @@ class jlib_decl CriticalSection
     // lightweight mutex within a single process
 private:
     CRITICAL_SECTION flags;
+#ifdef PROTRACE_LOCKS
+    sync_uid_type syncid = 0;
+#endif
 #ifdef _ASSERT_LOCK_SUPPORT
     ThreadId owner;
     unsigned depth;
@@ -244,6 +383,13 @@ public:
         inline CriticalSection([[maybe_unused]] const char *syncName)
     {
         InitializeCriticalSection(&flags);
+#ifdef PROTRACE_LOCKS
+        if (trackUnnamedLocks || syncName) {
+            syncid = getUniqueSyncId();
+            if (syncName)
+                protraceNoteLock(syncid, syncName);
+        }
+#endif
 #ifdef _ASSERT_LOCK_SUPPORT
         owner = 0;
         depth = 0;
@@ -258,7 +404,9 @@ public:
     };
     inline void enter()
     {
+        noteEvent(EventLockWait);
         EnterCriticalSection(&flags);
+        noteEvent(EventLockAcquire);
 #ifdef _ASSERT_LOCK_SUPPORT
         if (owner)
         {
@@ -279,6 +427,7 @@ public:
             owner = 0;
 #endif
         LeaveCriticalSection(&flags);
+        noteEvent(EventLockRelease);
     };
     inline void assertLocked()
     {
@@ -289,7 +438,11 @@ public:
     inline bool tryEnter()
     {
         if (!TryEnterCriticalSection(&flags))
+        {
+            noteEvent(EventLockTryWaitFail);
             return false;
+        }
+        noteEvent(EventLockTryWaitAcquire);
 #ifdef _ASSERT_LOCK_SUPPORT
         if (owner)
         {
@@ -304,6 +457,14 @@ public:
 #ifdef ENABLE_CHECKEDCRITICALSECTIONS
     bool wouldBlock()  { if (TryEnterCriticalSection(&flags)) { leave(); return false; } return true; } // debug only
 #endif
+private:
+    inline void noteEvent(EventType event)
+    {
+#ifdef PROTRACE_LOCKS
+        if (trackUnnamedLocks || likely(syncid))
+            protraceRecord(static_cast<unsigned>(event), syncid);
+#endif
+    }
 };
 #else
 
@@ -314,6 +475,9 @@ class CriticalSection
 {
 private:
     MutexId mutex;
+#ifdef PROTRACE_LOCKS
+    sync_uid_type syncid = 0;
+#endif
 #ifdef _ASSERT_LOCK_SUPPORT
     ThreadId owner;
     unsigned depth;
@@ -324,6 +488,14 @@ public:
     {
         pthread_mutexattr_t attr;
         pthread_mutexattr_init(&attr);
+#ifdef PROTRACE_LOCKS
+        if (trackUnnamedLocks || syncName)
+        {
+            syncid = getUniqueSyncId();
+            if (syncName)
+                protraceNoteLock(syncid, syncName);
+        }
+#endif
 #ifdef _DEBUG
         verifyex(pthread_mutexattr_settype(&attr,PTHREAD_MUTEX_RECURSIVE)==0); // verify supports attr
 #else
@@ -347,7 +519,9 @@ public:
 
     inline void enter()
     {
+        noteEvent(EventLockWait);
         pthread_mutex_lock(&mutex);
+        noteEvent(EventLockAcquire);
 #ifdef _ASSERT_LOCK_SUPPORT
         if (owner)
         {
@@ -369,6 +543,7 @@ public:
             owner = 0;
 #endif
         pthread_mutex_unlock(&mutex);
+        noteEvent(EventLockRelease);
     }
     inline void assertLocked()
     {
@@ -381,7 +556,11 @@ public:
     {
         int ret = pthread_mutex_trylock(&mutex);
         if (ret != 0)
+        {
+            noteEvent(EventLockTryWaitFail);
             return false;
+        }
+        noteEvent(EventLockTryWaitAcquire);
 #ifdef _ASSERT_LOCK_SUPPORT
         if (owner)
         {
@@ -392,6 +571,14 @@ public:
             owner = GetCurrentThreadId();
 #endif
         return true;
+    }
+private:
+    inline void noteEvent(EventType event)
+    {
+#ifdef PROTRACE_LOCKS
+        if (trackUnnamedLocks || likely(syncid))
+            protraceRecord(static_cast<unsigned>(event), syncid);
+#endif
     }
 };
 #endif
@@ -469,18 +656,39 @@ public:
 
 class  SpinLock
 {
+    inline void noteEvent(EventType event)
+    {
+#ifdef PROTRACE_LOCKS
+        if (trackUnnamedLocks || likely(syncid))
+            protraceRecord(static_cast<unsigned>(event), syncid);
+#endif
+    }
     CriticalSection sect{SYNC_LOCATION};
+#ifdef PROTRACE_LOCKS
+    sync_uid_type syncid = 0;
+#endif
 public:
     inline SpinLock([[maybe_unused]] const char *syncName)
     {
+#ifdef PROTRACE_LOCKS
+        if (trackUnnamedLocks || syncName)
+        {
+            syncid = getUniqueSyncId();
+            if (syncName)
+                protraceNoteSpinLock(syncid, syncName);
+        }
+#endif
     }
     inline void enter()       
     { 
+        noteEvent(EventLockWait);
         sect.enter();
+        noteEvent(EventLockAcquire);
     }
     inline void leave()
     { 
         sect.leave();
+        noteEvent(EventLockRelease);
     }
 };
 
@@ -488,13 +696,31 @@ public:
 
 class jlib_decl  SpinLock
 {
+    inline void noteEvent(EventType event)
+    {
+#ifdef PROTRACE_LOCKS
+        if (trackUnnamedLocks || likely(syncid))
+            protraceRecord(static_cast<unsigned>(event), syncid);
+#endif
+    }
     std::atomic_uint value{false};  // Use an atomic_uint rather than a bool because it is more efficient on power8
     unsigned nesting = 0;           // This is not atomic since it is only accessed by one thread at a time
     std::atomic<ThreadId> owner{0};
+#ifdef PROTRACE_LOCKS
+    sync_uid_type syncid = 0;
+#endif
     inline SpinLock(SpinLock & value __attribute__((unused))) = delete; // to prevent inadvertent use as block
 public:
     inline SpinLock([[maybe_unused]] const char *syncName)
     {
+#ifdef PROTRACE_LOCKS
+        if (trackUnnamedLocks || syncName)
+        {
+            syncid = getUniqueSyncId();
+            if (syncName)
+                protraceNoteSpinLock(syncid, syncName);
+        }
+#endif
     }
 #ifdef _DEBUG
     ~SpinLock()             
@@ -505,6 +731,7 @@ public:
 #endif
     inline void enter()       
     { 
+        noteEvent(EventLockWait);
         ThreadId self = GetCurrentThreadId(); 
 #if defined(SPINLOCK_RR_CHECK) && !defined(_WIN32)    // as requested by RKC
         int policy;
@@ -521,11 +748,13 @@ public:
         {
             dbgassertex(value);
             nesting++;
+            noteEvent(EventLockAcquire);
             return;
         }
         while (unlikely(value.exchange(true, std::memory_order_acquire)))
             spinUntilReady(value);
         owner.store(self, std::memory_order_relaxed);
+        noteEvent(EventLockAcquire);
     }
     inline void leave()
     {
@@ -538,6 +767,7 @@ public:
         }
         else
             nesting--;
+        noteEvent(EventLockRelease);
     }
 };
 
@@ -574,26 +804,47 @@ public:
 #ifdef _DEBUG
 class jlib_decl NonReentrantSpinLock
 {
+    inline void noteEvent(EventType event)
+    {
+#ifdef PROTRACE_LOCKS
+        if (trackUnnamedLocks || likely(syncid))
+            protraceRecord(static_cast<unsigned>(event), syncid);
+#endif
+    }
     std::atomic_uint value;
     std::atomic<ThreadId> owner;
+#ifdef PROTRACE_LOCKS
+    sync_uid_type syncid = 0;
+#endif
     inline NonReentrantSpinLock(NonReentrantSpinLock & value __attribute__((unused))) = delete; // to prevent inadvertent use as block
 public:
     inline NonReentrantSpinLock([[maybe_unused]] const char *syncName) : value(false), owner(0)
     {
+#ifdef PROTRACE_LOCKS
+        if (trackUnnamedLocks || syncName)
+        {
+            syncid = getUniqueSyncId();
+            if (syncName)
+                protraceNoteSpinLock(syncid, syncName);
+        }
+#endif
     }
     inline void enter()       
     { 
+        noteEvent(EventLockWait);
         ThreadId self = GetCurrentThreadId(); 
         assertex(self!=owner.load(std::memory_order_relaxed)); // check for reentrancy
         while (unlikely(value.exchange(true, std::memory_order_acquire)))
             spinUntilReady(value);
         owner.store(self, std::memory_order_relaxed);
+        noteEvent(EventLockAcquire);
     }
     inline void leave()
     { 
         assertex(GetCurrentThreadId()==owner.load(std::memory_order_relaxed)); // check for spurious leave
         owner.store(0, std::memory_order_relaxed);
         value.store(false, std::memory_order_release);
+        noteEvent(EventLockRelease);
     }
 };
 
@@ -601,20 +852,41 @@ public:
 
 class jlib_decl  NonReentrantSpinLock
 {
+    inline void noteEvent(EventType event)
+    {
+#ifdef PROTRACE_LOCKS
+        if (trackUnnamedLocks || likely(syncid))
+            protraceRecord(static_cast<unsigned>(event), syncid);
+#endif
+    }
     std::atomic_uint value;
+#ifdef PROTRACE_LOCKS
+    sync_uid_type syncid = 0;
+#endif
     inline NonReentrantSpinLock(NonReentrantSpinLock & value __attribute__((unused))) = delete; // to prevent inadvertent use as block
 public:
     inline NonReentrantSpinLock([[maybe_unused]] const char *syncName) : value(false)
-    {   
+    {
+#ifdef PROTRACE_LOCKS
+        if (trackUnnamedLocks || syncName)
+        {
+            syncid = getUniqueSyncId();
+            if (syncName)
+                protraceNoteSpinLock(syncid, syncName);
+        }
+#endif
     }
     inline void enter()       
     { 
+        noteEvent(EventLockWait);
         while (unlikely(value.exchange(true, std::memory_order_acquire)))
             spinUntilReady(value);
+        noteEvent(EventLockAcquire);
     }
     inline void leave()
     { 
         value.store(false, std::memory_order_release);
+        noteEvent(EventLockRelease);
     }
 };
 #endif
@@ -1009,7 +1281,7 @@ void jlib_decl checkedWriteLockEnter(ReadWriteLock &l, unsigned timeout, const c
 class CSingletonLock        // a lock that will generally only be locked once (for locking singleton objects - see below for examples
 {
     std::atomic<bool> needlock;
-    CriticalSection  sect{SYNC_LOCATION};
+    CriticalSection  sect{SYNC_UNNAMED}; // Singleton locks are generally uninteresting
 public:
     inline CSingletonLock()
     {
@@ -1055,7 +1327,7 @@ public:
  * A template function for implementing a singleton object.  Using the same example as above would require:
 
     static std::atomic<void *> sobj;
-    static CriticalSection slock{SYNC_LOCATION};
+    static CriticalSection slock{SYNC_UNNAMED};
     void *get()
     {
         return querySingleton(sobj, slock, []{ return createSObj; });
