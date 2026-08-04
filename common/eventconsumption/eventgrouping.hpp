@@ -20,6 +20,7 @@
 #include "eventconsumption.h"
 #include "eventmetaparser.hpp"
 #include "jevent.hpp"
+#include "jtime.hpp"
 #include <algorithm>
 #include <vector>
 #include <string>
@@ -61,6 +62,7 @@ struct GroupAttribute
     unsigned attrId;            // e.g., EvAttrFileOffset
     EventAttrUnit unit;         // e.g., EAUsize
     __uint64 bucketScale = 1;   // The divisor for bucketing, defaults to 1 (raw value)
+    unsigned timestampPrecision = DTP_Nanos; // Fractional-second digits for timestamp labels; DTP_Nanos for non-bucketed, computed from bucketScale when bucketed
     bool isBucket = false;      // True if a user-supplied bucket modifier was parsed
 };
 
