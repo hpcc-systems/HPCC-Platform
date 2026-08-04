@@ -58,7 +58,7 @@ void coalesceDatastore(IPropertyTree *coalesceProps, bool force)
             unsigned configFlags = SH_External|SH_CheckNewDelta;
             configFlags |= coalesceProps->getPropBool("@recoverFromIncErrors", false) ? SH_RecoverFromIncErrors : 0;
             configFlags |= coalesceProps->getPropBool("@backupErrorFiles", true) ? SH_BackupErrorFiles : 0;
-            bool stopped;
+            bool stopped = false;
             Owned<IStoreHelper> iStoreHelper = createStoreHelper(NULL, dataPath, backupPath.str(), configFlags, keepStores, 5000, &stopped, saveBinary, saveAsync);
             unsigned baseEdition = iStoreHelper->queryCurrentEdition();
 
