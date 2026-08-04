@@ -2259,9 +2259,7 @@ protected:
         properties.bytesRead += len;
 
         StringBuffer hexText;
-        hexText.ensureCapacity(len*2);
-        for (unsigned i=0; i < len; i++)
-            hexText.appendhex(buffer.getByte(i), true);
+        hexText.appendhex(len, buffer.mem(), true);
         return event.setValue(attr, hexText.str());
     }
 

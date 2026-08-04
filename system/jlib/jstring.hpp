@@ -82,6 +82,7 @@ public:
     StringBuffer &  limited_valist_appendf(size_t szLimit, const char *format, va_list args) __attribute__((format(printf,3,0)));
     inline StringBuffer &valist_appendf(const char *format, va_list args) __attribute__((format(printf,2,0))) { return limited_valist_appendf(0, format, args); }
     StringBuffer &  appendhex(unsigned char value, bool lower);
+    StringBuffer &  appendhex(size_t len, const void * data, bool lower);
     inline char     charAt(size_t pos) { return buffer[pos]; }
     inline StringBuffer & clear() { curLen = 0; return *this; }
     void            kill();
