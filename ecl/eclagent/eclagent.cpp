@@ -1893,6 +1893,7 @@ void EclAgent::doProcess()
             addTimeStamp(w, SSTglobal, NULL, StWhenStarted);
             if (isRemoteWorkunit)
             {
+                w->setEngineSession(-1); // Clear stale engine session on startup.
                 w->setAgentSession(myProcessSession());
                 w->clearGraphProgress();  // Should Roxie do this too??
             }
@@ -2054,6 +2055,7 @@ void EclAgent::doProcess()
         }
 
         w->setAgentSession(-1);
+        w->setEngineSession(-1); // also clear engine session, the engine should have done so if clean, but this is a fail safe. (leaving it behind can cause false abort problems if the workunit is resubmitted)
     }
     catch (IException *e)
     {
