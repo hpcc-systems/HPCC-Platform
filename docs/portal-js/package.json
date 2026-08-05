@@ -21,5 +21,8 @@
     "@hpcc-js/codemirror": "2.66.5",
     "esbuild": "0.28.1",
     "rimraf": "5.0.10"
+  },
+  "overrides": {
+    "brace-expansion": "2.1.4"
   }
 }
