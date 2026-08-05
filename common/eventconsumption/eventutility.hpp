@@ -23,12 +23,39 @@
 #include <cmath>
 #include <limits>
 
-inline const char* formatTimestampNsText(StringBuffer& out, __uint64 timestampNs)
+inline const char* formatTimestampNsText(StringBuffer& out, __uint64 timestampNs, unsigned precision)
 {
     CDateTime dt;
     dt.setTimeStampNs(timestampNs);
-    dt.getDateTimeString(out, true, true, DTP_Nanos, false);
+    dt.getDateTimeString(out, true, true, precision, false);
     return out.str();
+}
+
+inline const char* formatTimestampNsText(StringBuffer& out, __uint64 timestampNs)
+{
+    return formatTimestampNsText(out, timestampNs, DTP_Nanos);
+}
+
+// Compute the minimum number of fractional-second digits needed so that every multiple of
+// bucketScale (nanoseconds) can be represented exactly.  Returns a value in
+// [DTP_Seconds, DTP_Nanos] suitable for passing to CDateTime::getDateTimeString().
+inline unsigned computeTimestampBucketPrecision(__uint64 bucketScale)
+{
+    assertex(bucketScale > 0);
+    constexpr __uint64 nanosPerSec = 1'000'000'000ULL;
+    __uint64 subsecondNanos = bucketScale % nanosPerSec;
+    if (0 == subsecondNanos)
+        return DTP_Seconds;
+
+    // Trim only trailing decimal zeroes from the sub-second component.
+    // Start from nanosecond precision and reduce once per removable zero.
+    unsigned precision = DTP_Nanos;
+    while ((subsecondNanos % 10) == 0)
+    {
+        subsecondNanos /= 10;
+        --precision;
+    }
+    return precision;
 }
 
 // Flags for strToBytes behavior control

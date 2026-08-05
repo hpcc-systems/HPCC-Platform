@@ -125,6 +125,8 @@ GroupAttribute GroupAttributeExtractor::parseAttribute(const char* attrDesc)
         }
         if (ret.bucketScale == 0)
             throw makeStringExceptionV(0, "Bucket size cannot be 0 for '%s'", attrDesc);
+        if (ret.unit == EAUtimestamp)
+            ret.timestampPrecision = computeTimestampBucketPrecision(ret.bucketScale);
     }
     return ret;
 }
@@ -150,7 +152,7 @@ std::string GroupAttributeExtractor::formatValue(const GroupAttribute& groupAttr
         {
             __uint64 val = std::stoull(rawValue);
             StringBuffer text;
-            formatTimestampNsText(text, val);
+            formatTimestampNsText(text, val, groupAttr.timestampPrecision);
             return text.str();
         }
         catch (...)
@@ -447,6 +449,7 @@ class EventGroupingTest : public CppUnit::TestFixture
     CPPUNIT_TEST(testParseAttribute_Invalid);
     CPPUNIT_TEST(testCanonicalGroupNames);
     CPPUNIT_TEST(testSummarizeCanonicalGroupHeaders);
+    CPPUNIT_TEST(testComputeTimestampBucketPrecision);
     CPPUNIT_TEST(testFormatValue_Timestamp);
     CPPUNIT_TEST_SUITE_END();
 
@@ -575,21 +578,61 @@ public:
         CPPUNIT_ASSERT_EQUAL(std::string(EVENT_META_SERVICE_NAME), headers[1][0]);
     }
 
+    void testComputeTimestampBucketPrecision()
+    {
+        // Whole-second steps: no fractional digits needed
+        CPPUNIT_ASSERT_EQUAL(0U, computeTimestampBucketPrecision(1'000'000'000ULL)); // 1s
+        CPPUNIT_ASSERT_EQUAL(0U, computeTimestampBucketPrecision(5'000'000'000ULL)); // 5s
+        CPPUNIT_ASSERT_EQUAL(0U, computeTimestampBucketPrecision(60'000'000'000ULL)); // 1min
+
+        // Sub-second steps
+        CPPUNIT_ASSERT_EQUAL(1U, computeTimestampBucketPrecision(100'000'000ULL)); // 100ms
+        CPPUNIT_ASSERT_EQUAL(1U, computeTimestampBucketPrecision(500'000'000ULL)); // 500ms
+        CPPUNIT_ASSERT_EQUAL(2U, computeTimestampBucketPrecision(250'000'000ULL)); // 250ms
+        CPPUNIT_ASSERT_EQUAL(3U, computeTimestampBucketPrecision(1'000'000ULL));   // 1ms
+        CPPUNIT_ASSERT_EQUAL(3U, computeTimestampBucketPrecision(5'000'000ULL));   // 5ms
+        CPPUNIT_ASSERT_EQUAL(6U, computeTimestampBucketPrecision(1'000ULL));       // 1us
+        CPPUNIT_ASSERT_EQUAL(4U, computeTimestampBucketPrecision(500'000ULL));     // 500us
+        CPPUNIT_ASSERT_EQUAL(9U, computeTimestampBucketPrecision(1ULL));           // 1ns
+        CPPUNIT_ASSERT_EQUAL(9U, computeTimestampBucketPrecision(7ULL));           // 7ns (non-power-of-10)
+
+        // Steps larger than 1s: exact multiples of 1e9 yield precision 0,
+        // but steps with fractional-second components yield non-zero precision
+        CPPUNIT_ASSERT_EQUAL(0U, computeTimestampBucketPrecision(2'000'000'000ULL)); // 2s (exact multiple)
+        CPPUNIT_ASSERT_EQUAL(1U, computeTimestampBucketPrecision(1'500'000'000ULL)); // 1.5s (has sub-second)
+    }
+
     void testFormatValue_Timestamp()
     {
-        GroupAttribute attr;
-        attr.attrId = EvAttrEventTimestamp;
-        attr.unit = EAUtimestamp;
-        attr.isBucket = true;
+        // Non-bucketed timestamp: precision defaults to DTP_Nanos, isBucket=false → rawValue returned as-is
+        GroupAttribute nonBucketAttr;
+        nonBucketAttr.attrId = EvAttrEventTimestamp;
+        nonBucketAttr.unit = EAUtimestamp;
+        nonBucketAttr.isBucket = false;
+        CPPUNIT_ASSERT_EQUAL(std::string("500000000"), GroupAttributeExtractor::formatValue(nonBucketAttr, "500000000"));
 
-        std::string raw = "500000000"; // Exactly a half second past epoch
-        std::string formatted = GroupAttributeExtractor::formatValue(attr, raw);
-        // Expecting right padding to 9 decimal places
-        CPPUNIT_ASSERT_EQUAL(std::string("1970-01-01T00:00:00.500000000"), formatted);
+        // Bucketed at 1s: precision 0, whole seconds only
+        GroupAttribute attr1s = GroupAttributeExtractor::parseAttribute("EventTimestamp/1s");
+        CPPUNIT_ASSERT_EQUAL(0U, attr1s.timestampPrecision);
+        CPPUNIT_ASSERT_EQUAL(std::string("1970-01-01T00:00:01"), GroupAttributeExtractor::formatValue(attr1s, "1000000000"));
 
-        raw = "500000123";
-        formatted = GroupAttributeExtractor::formatValue(attr, raw);
-        CPPUNIT_ASSERT_EQUAL(std::string("1970-01-01T00:00:00.500000123"), formatted);
+        // Bucketed at 500ms: precision 1 — all labels include 1 fractional digit
+        GroupAttribute attr500ms = GroupAttributeExtractor::parseAttribute("EventTimestamp/500ms");
+        CPPUNIT_ASSERT_EQUAL(1U, attr500ms.timestampPrecision);
+        CPPUNIT_ASSERT_EQUAL(std::string("1970-01-01T00:00:00.0"), GroupAttributeExtractor::formatValue(attr500ms, "0"));
+        CPPUNIT_ASSERT_EQUAL(std::string("1970-01-01T00:00:00.5"), GroupAttributeExtractor::formatValue(attr500ms, "500000000"));
+
+        // Bucketed at 1ms: precision 3
+        GroupAttribute attr1ms = GroupAttributeExtractor::parseAttribute("EventTimestamp/1ms");
+        CPPUNIT_ASSERT_EQUAL(3U, attr1ms.timestampPrecision);
+        CPPUNIT_ASSERT_EQUAL(std::string("1970-01-01T00:00:00.000"), GroupAttributeExtractor::formatValue(attr1ms, "0"));
+        CPPUNIT_ASSERT_EQUAL(std::string("1970-01-01T00:00:00.001"), GroupAttributeExtractor::formatValue(attr1ms, "1000000"));
+
+        // Bucketed at 1ns: precision 9
+        GroupAttribute attr1ns = GroupAttributeExtractor::parseAttribute("EventTimestamp/1ns");
+        CPPUNIT_ASSERT_EQUAL(9U, attr1ns.timestampPrecision);
+        CPPUNIT_ASSERT_EQUAL(std::string("1970-01-01T00:00:00.000000000"), GroupAttributeExtractor::formatValue(attr1ns, "0"));
+        CPPUNIT_ASSERT_EQUAL(std::string("1970-01-01T00:00:00.500000123"), GroupAttributeExtractor::formatValue(attr1ns, "500000123"));
     }
 };
 

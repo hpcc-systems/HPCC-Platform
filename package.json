@@ -31,7 +31,12 @@
   },
   "overrides": {
     "esbuild": "0.28.1",
-    "vite": "7.3.5"
+    "vite": "7.3.5",
+    "brace-expansion": "1.1.18",
+    "glob": { "brace-expansion": "5.0.9" },
+    "linkify-it": "6.1.0",
+    "postcss": "8.5.25",
+    "shell-quote": "1.10.0"
   },
   "repository": {
     "type": "git",
