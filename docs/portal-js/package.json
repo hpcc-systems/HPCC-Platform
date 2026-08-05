@@ -16,6 +16,9 @@
     "update-major": "npx npm-check-updates -u"
   },
   "author": "",
+  "overrides": {
+    "brace-expansion": "2.1.4"
+  },
   "devDependencies": {
     "@hpcc-js/common": "2.73.6",
     "@hpcc-js/codemirror": "2.66.5",
