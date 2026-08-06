@@ -190,12 +190,10 @@ std::string tokenFromRefresh(const std::string& jwtEndPoint, bool allowSelfSigne
 
 MODULE_INIT(INIT_PRIORITY_STANDARD)
 {
-    curl_global_init(CURL_GLOBAL_ALL);
-
+    // curl_global_init/curl_global_cleanup are centralized in system/jlib/jcurl.cpp.
     return true;
 }
 
 MODULE_EXIT()
 {
-    curl_global_cleanup();
 }

@@ -119,13 +119,9 @@
   },
   "overrides": {
     "tmp": "0.2.7",
-    "brace-expansion": "5.0.9",
-    "@eslint/config-array": { "brace-expansion": "1.1.18" },
-    "@eslint/eslintrc": { "brace-expansion": "1.1.18" },
-    "copyfiles": { "brace-expansion": "1.1.18" },
-    "eslint": { "brace-expansion": "1.1.18" },
-    "glob": { "brace-expansion": "1.1.18" },
-    "npm-run-all": { "brace-expansion": "1.1.18" },
+    "brace-expansion@<=1.1.17": "1.1.18",
+    "brace-expansion@>=2.0.0 <2.1.4": "2.1.4",
+    "brace-expansion@>=4.0.0 <5.0.9": "5.0.9",
     "fast-uri": "3.1.5",
     "undici": "8.9.0"
   },

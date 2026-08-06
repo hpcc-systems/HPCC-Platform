@@ -111,6 +111,7 @@ set (    SRCS
          jutil.cpp
          jtrace.cpp
          jzstd.cpp
+         jcurl.cpp
          ${HPCC_SOURCE_DIR}/system/globalid/lnuid.cpp
          ${HPCC_SOURCE_DIR}/system/codesigner/codesigner.cpp
          ${HPCC_SOURCE_DIR}/system/codesigner/gpgcodesigner.cpp
@@ -201,6 +202,7 @@ set (    INCLUDES
         jutil.hpp
         jtrace.hpp
         jzstd.hpp
+        jcurl.hpp
         ${HPCC_SOURCE_DIR}/system/httplib/httplib.h
         ${HPCC_SOURCE_DIR}/system/security/shared/opensslcommon.hpp
         ${HPCC_SOURCE_DIR}/system/security/cryptohelper/cryptocommon.cpp
@@ -247,6 +249,7 @@ target_link_libraries ( jlib PRIVATE
         lz4::lz4
         libbase58
         yaml
+        CURL::libcurl
        )
 
 if (NOT WIN32 AND NOT WIN64 AND NOT APPLE AND NOT EMSCRIPTEN)

@@ -39,6 +39,7 @@ set (    SRCS
          jlibtests.cpp
          jlibtests2.cpp
          jlibtestcompress.cpp
+         jlibtestcurl.cpp
          jstreamtests.cpp
          cryptotests.cpp
          hqltests.cpp
