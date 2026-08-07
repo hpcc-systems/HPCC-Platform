@@ -45,13 +45,12 @@ static bool hasMetaPrefix(const std::string & attrName)
     return attrName.length() >= metaPrefixLength && strnicmp(attrName.c_str(), EVENT_META_PREFIX, metaPrefixLength) == 0;
 }
 
-static inline __uint64 fnv1a(const void* data, size_t len, __uint64 hash = 0xcbf29ce484222325ULL) {
-    const unsigned char* ptr = (const unsigned char*)data;
-    for (size_t i = 0; i < len; ++i) {
-        hash ^= ptr[i];
-        hash *= 0x100000001b3ULL;
-    }
-    return hash;
+// Fold a 64-bit attribute contribution into the running group hash.
+// The contribution may be a precomputed string hash or a normalized scalar value.
+// This maintains ordering (unlike XOR) while avoiding repeated string traversal.
+static inline __uint64 foldHash(__uint64 running, __uint64 attrHash)
+{
+    return fnv1a64Seeded(&attrHash, sizeof(attrHash), running);
 }
 
 GroupAttribute GroupAttributeExtractor::parseAttribute(const char* attrDesc)
@@ -250,15 +249,17 @@ std::string GroupAttributeExtractor::getValue(const GroupAttribute& groupAttr, c
 
 __uint64 GroupAttributeExtractor::getHash(const std::vector<GroupAttribute>& attrs, const CEvent& event, const CMetaInfoState* metaState)
 {
-    __uint64 hash = 0xcbf29ce484222325ULL;
+    __uint64 hash = fnv1a64InitialHash;
     for (const GroupAttribute& groupAttr : attrs)
     {
         unsigned attrId = groupAttr.attrId;
-        if (attrId == EvExtAttrLogicalFileName) {
-            if (metaState) {
-                const char* lfn = metaState->queryLogicalFileName(event);
-                if (lfn)
-                    hash = fnv1a(lfn, strlen(lfn), hash);
+        if (attrId == EvExtAttrLogicalFileName)
+        {
+            if (metaState)
+            {
+                __uint64 attrHash;
+                if (metaState->queryLogicalFileNameHash(event, attrHash))
+                    hash = foldHash(hash, attrHash);
             }
             continue;
         }
@@ -270,12 +271,12 @@ __uint64 GroupAttributeExtractor::getHash(const std::vector<GroupAttribute>& att
             if (event.hasAttribute(attr))
             {
                 __uint64 val = event.queryNumericValue(attr);
-                hash = fnv1a(&val, sizeof(val), hash);
+                hash = fnv1a64Seeded(&val, sizeof(val), hash);
             }
             else if (event.queryType() == EventIndexPayload)
             {
                 __uint64 val = 1;
-                hash = fnv1a(&val, sizeof(val), hash);
+                hash = fnv1a64Seeded(&val, sizeof(val), hash);
             }
             break;
         }
@@ -283,9 +284,22 @@ __uint64 GroupAttributeExtractor::getHash(const std::vector<GroupAttribute>& att
         case EvAttrPath:
         case EvAttrPlane:
         {
-            const char* val = resolveStringAttribute(attr, event, metaState);
-            if (val)
-                hash = fnv1a(val, strlen(val), hash);
+            // Compute a per-attribute FNV hash independently of the running hash,
+            // then fold it in. This keeps direct and meta-derived string values
+            // consistent: service names, paths, and planes all produce fnv1a64(string_bytes)
+            // before folding.
+            __uint64 attrHash;
+            if (event.hasAttribute(attr))
+            {
+                const void* ptr = nullptr;
+                size_t len = 0;
+                if (event.queryHashData(attr, ptr, len) && len != 0)
+                    hash = foldHash(hash, fnv1a64Seeded(ptr, len, fnv1a64InitialHash));
+            }
+            else if (resolveMetaFnv(attr, event, metaState, attrHash))
+            {
+                hash = foldHash(hash, attrHash);
+            }
             break;
         }
         default:
@@ -296,23 +310,14 @@ __uint64 GroupAttributeExtractor::getHash(const std::vector<GroupAttribute>& att
                 {
                     __uint64 val = event.queryNumericValue(attr);
                     val = (val / groupAttr.bucketScale) * groupAttr.bucketScale;
-                    hash = fnv1a(&val, sizeof(val), hash);
+                    hash = foldHash(hash, val);
                 }
-                else if (event.isNumericAttribute(attr))
+                else
                 {
-                    __uint64 val = event.queryNumericValue(attr);
-                    hash = fnv1a(&val, sizeof(val), hash);
-                }
-                else if (event.isTextAttribute(attr))
-                {
-                    const char* val = event.queryTextValue(attr);
-                    if (val)
-                        hash = fnv1a(val, strlen(val), hash);
-                }
-                else if (event.isBooleanAttribute(attr))
-                {
-                    bool val = event.queryBooleanValue(attr);
-                    hash = fnv1a(&val, sizeof(val), hash);
+                    const void* ptr = nullptr;
+                    size_t len = 0;
+                    if (event.queryHashData(attr, ptr, len) && len != 0)
+                        hash = fnv1a64Seeded(ptr, len, hash);
                 }
             }
             break;
@@ -430,6 +435,29 @@ const char* GroupAttributeExtractor::resolveStringAttribute(EventAttr attr, cons
     return nullptr;
 }
 
+bool GroupAttributeExtractor::resolveMetaFnv(EventAttr attr, const CEvent& event, const CMetaInfoState* metaState, __uint64& hash)
+{
+    if (!metaState)
+        return false;
+
+    switch (attr)
+    {
+    case EvAttrServiceName:
+        if (event.hasAttribute(EvAttrEventTraceId))
+            return metaState->queryServiceNameHash(event.queryTextValue(EvAttrEventTraceId), hash);
+        break;
+    case EvAttrPath:
+        if (event.hasAttribute(EvAttrFileId))
+            return metaState->queryFilePathHash(event.queryNumericValue(EvAttrFileId), hash);
+        break;
+    case EvAttrPlane:
+        return metaState->queryPlaneHash(event, hash);
+    default:
+        break;
+    }
+    return false;
+}
+
 #ifdef _USE_CPPUNIT
 
 #include "eventunittests.hpp"
@@ -451,6 +479,7 @@ class EventGroupingTest : public CppUnit::TestFixture
     CPPUNIT_TEST(testSummarizeCanonicalGroupHeaders);
     CPPUNIT_TEST(testComputeTimestampBucketPrecision);
     CPPUNIT_TEST(testFormatValue_Timestamp);
+    CPPUNIT_TEST(testGetHash_MixedAttributesAndEmptyString);
     CPPUNIT_TEST_SUITE_END();
 
 public:
@@ -633,6 +662,81 @@ public:
         CPPUNIT_ASSERT_EQUAL(9U, attr1ns.timestampPrecision);
         CPPUNIT_ASSERT_EQUAL(std::string("1970-01-01T00:00:00.000000000"), GroupAttributeExtractor::formatValue(attr1ns, "0"));
         CPPUNIT_ASSERT_EQUAL(std::string("1970-01-01T00:00:00.500000123"), GroupAttributeExtractor::formatValue(attr1ns, "500000123"));
+    }
+
+    void testGetHash_MixedAttributesAndEmptyString()
+    {
+        START_TEST
+        CMetaInfoState state;
+        Owned<IEventVisitationLink> collector = state.getCollector();
+
+        CEvent planeInfo;
+        planeInfo.reset(MetaPlaneInformation);
+        planeInfo.setValue(EvAttrPlane, "myplane");
+        planeInfo.setValue(EvAttrPath, "/var/lib/hpccsystems/hpcc-data/myplane/");
+        planeInfo.setValue(EvAttrIsStriped, false);
+        CPPUNIT_ASSERT(collector->visitEvent(planeInfo));
+
+        CEvent fileInfo;
+        fileInfo.reset(MetaFileInformation);
+        fileInfo.setValue(EvAttrFileId, (__uint64)1);
+        fileInfo.setValue(EvAttrPath, "/var/lib/hpccsystems/hpcc-data/myplane/some/logical/file::1");
+        CPPUNIT_ASSERT(collector->visitEvent(fileInfo));
+
+        CEvent queryStart;
+        queryStart.reset(EventQueryStart);
+        queryStart.setValue(EvAttrEventTraceId, "trace-1");
+        queryStart.setValue(EvAttrServiceName, "service-1");
+        CPPUNIT_ASSERT(collector->visitEvent(queryStart));
+
+        std::vector<GroupAttribute> attrs;
+        attrs.push_back(GroupAttributeExtractor::parseAttribute("NodeKind"));
+        attrs.push_back(GroupAttributeExtractor::parseAttribute("FileOffset"));
+        attrs.push_back(GroupAttributeExtractor::parseAttribute("ServiceName"));
+        attrs.push_back(GroupAttributeExtractor::parseAttribute("Path"));
+        attrs.push_back(GroupAttributeExtractor::parseAttribute("Plane"));
+
+        CEvent event;
+        event.reset(EventIndexCacheHit);
+        event.setValue(EvAttrFileId, (__uint64)1);
+        event.setValue(EvAttrEventTraceId, "trace-1");
+        event.setValue(EvAttrNodeKind, (__uint64)7);
+        event.setValue(EvAttrFileOffset, (__uint64)123456);
+
+        __uint64 expected = fnv1a64InitialHash;
+
+        __uint64 nodeKind = event.queryNumericValue(EvAttrNodeKind);
+        expected = fnv1a64Seeded(&nodeKind, sizeof(nodeKind), expected);
+
+        __uint64 fileOffset = event.queryNumericValue(EvAttrFileOffset);
+        expected = fnv1a64Seeded(&fileOffset, sizeof(fileOffset), expected);
+
+        __uint64 serviceHash = 0;
+        CPPUNIT_ASSERT(state.queryServiceNameHash(event.queryTextValue(EvAttrEventTraceId), serviceHash));
+        expected = fnv1a64Seeded(&serviceHash, sizeof(serviceHash), expected);
+
+        __uint64 pathHash = 0;
+        CPPUNIT_ASSERT(state.queryFilePathHash(event.queryNumericValue(EvAttrFileId), pathHash));
+        expected = fnv1a64Seeded(&pathHash, sizeof(pathHash), expected);
+
+        __uint64 planeHash = 0;
+        CPPUNIT_ASSERT(state.queryPlaneHash(event, planeHash));
+        expected = fnv1a64Seeded(&planeHash, sizeof(planeHash), expected);
+
+        __uint64 actual = GroupAttributeExtractor::getHash(attrs, event, &state);
+        CPPUNIT_ASSERT_EQUAL(expected, actual);
+
+        CEvent emptyService;
+        emptyService.reset(EventQueryStart);
+        emptyService.setValue(EvAttrServiceName, "");
+
+        std::vector<GroupAttribute> serviceAttrs;
+        serviceAttrs.push_back(GroupAttributeExtractor::parseAttribute("ServiceName"));
+
+        __uint64 emptyExpected = fnv1a64InitialHash;
+        __uint64 emptyActual = GroupAttributeExtractor::getHash(serviceAttrs, emptyService, nullptr);
+        CPPUNIT_ASSERT_EQUAL(emptyExpected, emptyActual);
+        END_TEST
     }
 };
 

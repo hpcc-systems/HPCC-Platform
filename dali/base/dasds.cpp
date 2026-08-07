@@ -50,6 +50,7 @@ static unsigned readWriteSlowTracing = 10000; // 10s default
 static bool readWriteStackTracing = false;
 static unsigned fakeCritTimeout = 60000;
 static unsigned readWriteTimeout = 60000;
+static constexpr unsigned storeReadLockTraceIntervalMs = 60000; // minimum gap between store read-lock stats traces
 
 // #define NODELETE
 // #define DISABLE_COALESCE_QUIETTIME
@@ -2113,6 +2114,18 @@ public: // data
     StringAttr daliName;
     Owned<IPropertyTree> properties;
 private:
+    struct StoreReadLockStats
+    {
+        unsigned __int64 count = 0;
+        unsigned __int64 blockedNs = 0;
+        unsigned __int64 maxBlockedNs = 0;
+        unsigned __int64 holdNs = 0;
+        unsigned __int64 maxHoldNs = 0;
+    };
+
+    void updateStoreReadLockAcquireStats(unsigned __int64 blockedNs) const;
+    bool updateStoreReadLockReleaseStats(unsigned __int64 heldNs, StoreReadLockStats &snapshot) const;
+
     void validateBackup();
     void validateDeltaBackup();
     LockStatus establishLock(CLock &lock, __int64 treeId, ConnectionId connectionId, SessionId sessionId, unsigned mode, unsigned timeout, IUnlockCallback &lockCallback);
@@ -2143,6 +2156,13 @@ private:
     CDeltaWriter deltaWriter;
     CExtCache extCache;
     bool backupOutOfSync = false;
+
+    // Instrumentation for store read-lock usage. lockStoreRead()/unlockStoreRead() can be
+    // called frequently (e.g. by paginated DFS scans), so accumulate simple totals and
+    // trace them at most once per interval.
+    mutable CriticalSection storeReadLockStatsCrit{"DaliSDSReadLockStatsCrit"};
+    mutable StoreReadLockStats storeReadLockStats;
+    mutable CCycleTimer storeReadLockReportTimer;
 
 friend class CExternalFile;
 friend class CBinaryFileExternal;
@@ -7123,17 +7143,65 @@ bool CCovenSDSManager::removeNotifyHandler(const char *handlerKey)
     return nodeNotifyHandlers.remove(handlerKey);
 }
 
+// The store read-lock is a shared (multiple-reader) lock, so several threads may hold it
+// concurrently; each records its own acquisition timestamp in thread-local storage.
+// lock/unlock are strictly paired per thread and no recursion
+static thread_local cycle_t storeReadLockStartCycles = 0;
+
+void CCovenSDSManager::updateStoreReadLockAcquireStats(unsigned __int64 blockedNs) const
+{
+    CriticalBlock b(storeReadLockStatsCrit);
+    ++storeReadLockStats.count;
+    storeReadLockStats.blockedNs += blockedNs;
+    if (blockedNs > storeReadLockStats.maxBlockedNs)
+        storeReadLockStats.maxBlockedNs = blockedNs;
+}
+
+bool CCovenSDSManager::updateStoreReadLockReleaseStats(unsigned __int64 heldNs, StoreReadLockStats &snapshot) const
+{
+    CriticalBlock b(storeReadLockStatsCrit);
+    storeReadLockStats.holdNs += heldNs;
+    if (heldNs > storeReadLockStats.maxHoldNs)
+        storeReadLockStats.maxHoldNs = heldNs;
+
+    if (storeReadLockStats.count && storeReadLockReportTimer.elapsedMs() >= storeReadLockTraceIntervalMs)
+    {
+        storeReadLockReportTimer.reset();
+        snapshot = storeReadLockStats;
+        return true;
+    }
+    return false;
+}
+
 IPropertyTree *CCovenSDSManager::lockStoreRead() const
 {
-    PROGLOG("lockStoreRead() called");
+    dbgassertex(storeReadLockStartCycles == 0);
+    const cycle_t waitStartCycles = get_cycles_now();
     CHECKEDREADLOCKENTER(dataRWLock, readWriteTimeout);
+    const cycle_t acquiredCycles = get_cycles_now();
+    const unsigned __int64 blockedNs = (unsigned __int64) cycle_to_nanosec(acquiredCycles - waitStartCycles);
+    storeReadLockStartCycles = acquiredCycles;
+    updateStoreReadLockAcquireStats(blockedNs);
     return root;
 }
 
 void CCovenSDSManager::unlockStoreRead() const
 {
+    const cycle_t endCycles = get_cycles_now();
     dataRWLock.unlockRead();
-    PROGLOG("unlockStoreRead() called");
+
+    const cycle_t startCycles = storeReadLockStartCycles;
+    dbgassertex(startCycles != 0); // Contract: unlockStoreRead() must be paired with a prior lockStoreRead() on this thread.
+    storeReadLockStartCycles = 0;
+
+    const unsigned __int64 heldNs = (unsigned __int64) cycle_to_nanosec(endCycles - startCycles);
+    StoreReadLockStats snapshot;
+    if (updateStoreReadLockReleaseStats(heldNs, snapshot))
+    {
+        PROGLOG("TIMING(SDS store read-lock): %" I64F "u acquisitions, %.2fms blocked entering, max blocked %.2fms, %.2fms total held, max held %.2fms",
+            snapshot.count, (double) snapshot.blockedNs / 1000000.0, (double) snapshot.maxBlockedNs / 1000000.0,
+            (double) snapshot.holdNs / 1000000.0, (double) snapshot.maxHoldNs / 1000000.0);
+    }
 }
 
 bool CCovenSDSManager::setSDSDebug(StringArray &params, StringBuffer &reply)

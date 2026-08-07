@@ -221,6 +221,7 @@ public:
     const char* queryTextValue() const;
     __uint64 queryNumericValue() const;
     virtual bool queryBooleanValue() const;
+    bool queryHashData(const void*& ptr, size_t& length) const;
     // Called once to identify the intended meaning of this instance
     void setup(EventAttr attr);
     // Called once per logical event to restore the original state of this instance
@@ -414,6 +415,7 @@ public:
     const char* queryTextValue(EventAttr attr) const;
     __uint64 queryNumericValue(EventAttr attr) const;
     bool queryBooleanValue(EventAttr attr) const;
+    bool queryHashData(EventAttr attr, const void*& ptr, size_t& length) const;
     bool setValue(EventAttr attr, const char* value);
     bool setValue(EventAttr attr, __uint64 value);
     bool setValue(EventAttr attr, bool value);

@@ -161,6 +161,8 @@ interface jlib_decl IPropertyTree : extends serializable
     virtual void serializeToStream(IBufferedSerialOutputStream &out) const = 0;
     virtual void deserializeFromStream(IBufferedSerialInputStream &in, PTreeDeserializeContext &ctx) = 0;
 
+    virtual bool isOrphaned() const { return false; } // default: not orphaned; derivations (e.g. dali tree instances, can mark a tree as orphaned = no longer attached to a parent tree)
+
 private:
     void setProp(const char *, int); // dummy to catch accidental use of setProp when setPropInt() intended
     void addProp(const char *, int); // likewise
@@ -487,5 +489,9 @@ interface ISyncedPropertyTree : extends IInterface
 
 extern jlib_decl ISyncedPropertyTree * createSyncedPropertyTree(IPropertyTree * tree);
 
+#ifdef _USE_CPPUNIT
+// test-only function to mark a tree as orphaned for unit test scenarios
+extern jlib_decl void cppunitMarkTreeOrphaned(IPropertyTree * tree);
+#endif
 
 #endif

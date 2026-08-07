@@ -85,6 +85,7 @@ public:
     static bool isEqual(const std::vector<GroupAttribute>& attrs, const CEvent& event, const CMetaInfoState* metaState, const std::vector<std::string>& groupValues);
 private:
     static const char* resolveStringAttribute(EventAttr attr, const CEvent& event, const CMetaInfoState* metaState);
+    static bool resolveMetaFnv(EventAttr attr, const CEvent& event, const CMetaInfoState* metaState, __uint64& hash);
 };
 
 /**

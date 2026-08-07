@@ -260,12 +260,12 @@ switch to `"strict"` once connectivity is confirmed.
 ## Enable Password Expiration on the Test Server (Optional)
 
 By default, 389ds does not enforce a password expiration policy — passwords never expire.
-If you need to test HPCC's handling of expired 389ds passwords (tracked in
-[GH#36810](https://github.com/hpcc-systems/HPCC-Platform/issues/36810)), you must explicitly
-enable password policy on the test server.
+If you need to test HPCC's handling of expired 389ds passwords, you must explicitly enable password policy on the test server.
 
 > **Note:** This is only needed if you are testing password expiration behavior. It has no
 > effect on any other part of the setup and can be skipped otherwise.
+
+> **Note:** LDAP terminology is used below. The term 'bind' is analogous to a login for a user.
 
 ### Enable the Global Password Policy
 
@@ -289,6 +289,74 @@ docker exec 389ds dsconf localhost pwpolicy get
 > **Units:** 389ds password policy durations (`--pwdmaxage`, `--pwdwarning`) are in
 > **seconds**, unlike Active Directory's `maxPwdAge` (100-nanosecond intervals). Don't reuse
 > AD-style values here.
+
+### Understanding Grace Period vs. Warning-Window Extension
+
+389ds has **two distinct, independent mechanisms** that are easy to conflate because both
+involve "extra time" around expiration. Setting `--pwdgracelimit` alone does not give you the
+whole picture — it's important to understand both to avoid confusing test results:
+
+1. **Warning-window extension (`--pwdwarning`) — a one-time, pre-expiration "soft" bump.**
+   On every bind, 389ds checks whether the account is within `pwdwarning` seconds of its
+   `passwordExpirationTime`. The *first* bind that lands inside this window resets
+   `passwordExpirationTime = now + pwdwarning` and flips the entry's internal
+   `passwordExpWarned` flag from `0` to `1`. This happens **exactly once** per password — a
+   second bind inside the (new) window does not extend it again.
+   - **Gotcha:** if `--pwdwarning` is set *larger* than `--pwdmaxage` (e.g., warning=86400,
+     maxage=600), every freshly-set password is immediately "inside the warning window," so the
+     very next bind after a password change silently overwrites the intended `+pwdmaxage`
+     expiration with a much longer `+pwdwarning` one. Keep `--pwdwarning` meaningfully smaller
+     than `--pwdmaxage` to avoid this.
+
+2. **Grace logins (`--pwdgracelimit`) — a hard, post-expiration allowance.** This is a
+   separate counter that only matters *after* `passwordExpirationTime` has actually passed. If
+   `pwdgracelimit` is `0` (the default), any bind after true expiration is unconditionally
+   rejected with "password expired," regardless of the warning-window mechanism above — the
+   true-expiration check runs first and short-circuits before the warning-window logic could
+   ever apply again. If `pwdgracelimit` is `N > 0`, up to `N` binds are allowed after
+   expiration (each consuming one "grace login" from a per-entry counter) before the account
+   is hard-locked.
+
+These two mechanisms do not combine or extend each other: the warning-window bump only ever
+fires *before* true expiration, and grace logins only ever apply *after* it.
+
+To verify either mechanism directly rather than inferring it from HPCC's behavior, inspect the
+389ds access log inside the container (`/data/logs/access` — enabled by default via
+`nsslapd-accesslog-logging-enabled: on`), which records exact BIND/MOD/RESULT timestamps you
+can correlate against `passwordExpirationTime`/`passwordExpWarned` before and after a bind:
+
+```bash
+docker exec 389ds tail -f /data/logs/access
+```
+
+### Suggested Settings for a Test Environment
+
+The example values above (`--pwdmaxage 600 --pwdwarning 300 --pwdgracelimit 3`) are reasonable
+for an active, hands-on test session, but a couple of adjustments are worth considering for
+longer-lived test environments:
+
+- **Set a non-zero `--pwdgracelimit`.** Test users may go unused for long stretches between
+  test runs (days, over a weekend, etc.). With the default `--pwdgracelimit 0`, any test user
+  whose password has genuinely expired since the last run will hard-fail login with no
+  recovery except an explicit password reset — which can be disruptive if it happens
+  unexpectedly mid-test-suite or blocks an unattended/scheduled test run. Setting a grace limit
+  (e.g., `--pwdgracelimit 5` or higher) gives you a buffer of logins to notice and react to an
+  expired password (or simply to keep testing) instead of an immediate hard lockout.
+- Keep `--pwdwarning` well below `--pwdmaxage`, per the gotcha above, so the pre-expiration
+  behavior stays predictable rather than silently extending every password's real lifetime.
+- For long-running/CI-style environments where password expiration itself isn't the thing
+  being tested, consider disabling expiration entirely (see "Disabling Password Expiration"
+  below) and only enabling it in a dedicated, short-lived session when specifically testing
+  expiration/grace behavior.
+
+Example, geared toward infrequent test-user logins while still allowing expiration behavior to
+be observed:
+
+```bash
+docker exec 389ds dsconf localhost pwpolicy set --pwdexpire on --pwdmaxage 7776000 \
+  --pwdwarning 604800 --pwdgracelimit 5
+# 90-day max age, 7-day warning window, 5 post-expiration grace logins.
+```
 
 ### Force an Existing Test User's Password to Expire Immediately
 

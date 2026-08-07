@@ -10810,3 +10810,13 @@ ISyncedPropertyTree * createSyncedPropertyTree(IPropertyTree * tree)
 {
     return new SyncedPropertyTreeWrapper(tree);
 }
+
+#ifdef _USE_CPPUNIT
+// test-only function to mark a tree as orphaned for unit test scenarios
+void cppunitMarkTreeOrphaned(IPropertyTree * tree)
+{
+    PTree *ptree = QUERYINTERFACE(tree, PTree);
+    verifyex(ptree);
+    ptree->cppunitSetOrphaned();
+}
+#endif

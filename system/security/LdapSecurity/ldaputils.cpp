@@ -24,6 +24,9 @@
 
 #include "ldaputils.hpp"
 
+#include <cerrno>
+#include <climits>
+
 #ifndef _WIN32
 # include <signal.h>
 # ifdef _USE_OPENSSL
@@ -274,6 +277,127 @@ int LdapUtils::LdapSimpleBind(LDAP* ld, int ldapTimeout, char* userdn, char* pas
 #endif
     return srtn;
 }
+
+#ifndef _WIN32
+// 389ds's legacy Netscape-heritage password expiration control OIDs (not the RFC draft-behera-ldap-password-policy
+// control - 389ds does not implement that). Sent unconditionally by the server; no request control needed.
+static constexpr const char *LDAP_CONTROL_389DS_PASSWORD_EXPIRED = "2.16.840.1.113730.3.4.4";
+static constexpr const char *LDAP_CONTROL_389DS_PASSWORD_EXPIRING = "2.16.840.1.113730.3.4.5";
+
+// Performs a single sasl-bind attempt against the given userdn, extracting 389ds's
+// password-expired/expiring response controls into passwordExpired/secondsToExpiry.
+// Factored out of LdapSimpleBindWithExpirationStatus() so it can be retried below with
+// the DC components stripped from userdn, mirroring the fallback LdapBind() performs for
+// OpenLDAP/389ds.
+static int ldapSaslBindWithExpirationStatusOnce(LDAP* ld, int ldapTimeout, const char* userdn, const char* password,
+    bool& passwordExpired, int& secondsToExpiry)
+{
+    passwordExpired = false;
+    secondsToExpiry = -1;
+
+    TIMEVAL timeout = {ldapTimeout, 0};
+    ldap_set_option(ld, LDAP_OPT_TIMEOUT, &timeout);
+    ldap_set_option(ld, LDAP_OPT_NETWORK_TIMEOUT, &timeout);
+
+    struct berval cred;
+    cred.bv_val = (char*)password;
+    cred.bv_len = password ? strlen(password) : 0;
+
+    int msgid = 0;
+    // No request control attached - 389ds sends its expiration controls unconditionally. (A real
+    // OpenLDAP/slapd server running the ppolicy overlay would instead require the standard RFC
+    // draft-behera-ldap-password-policy request control here - not implemented, as this path is
+    // 389ds-specific and untested against vanilla OpenLDAP+ppolicy.)
+    int rc = ldap_sasl_bind(ld, userdn, LDAP_SASL_SIMPLE, &cred, NULL, NULL, &msgid);
+    // secure ldap tls might overwrite SIGPIPE handler
+    signal(SIGPIPE, SIG_IGN);
+    if (rc != LDAP_SUCCESS)
+        return rc;
+
+    LDAPMessage *result = NULL;
+    TIMEVAL resultTimeout = {ldapTimeout, 0};
+    // ldap_sasl_bind() only sends the request; block here for the response - functionally equivalent
+    // to a synchronous bind call, but this path (unlike ldap_bind_s()/ldap_sasl_bind_s()) preserves
+    // response controls for ldap_parse_result() to extract below.
+    int resrc = ldap_result(ld, msgid, LDAP_MSG_ALL, &resultTimeout, &result);
+    if (resrc <= 0)
+        return (resrc == 0) ? LDAP_TIMEOUT : LDAP_SERVER_DOWN;
+
+    int errcode = LDAP_SUCCESS;
+    LDAPControl **returnedCtrls = NULL;
+    int parseRc = ldap_parse_result(ld, result, &errcode, NULL, NULL, NULL, &returnedCtrls, true /*frees result*/);
+    if (parseRc != LDAP_SUCCESS)
+    {
+        if (returnedCtrls)
+            ldap_controls_free(returnedCtrls);
+        return parseRc;
+    }
+
+    if (returnedCtrls)
+    {
+        for (int i = 0; returnedCtrls[i] != NULL; i++)
+        {
+            if (streq(returnedCtrls[i]->ldctl_oid, LDAP_CONTROL_389DS_PASSWORD_EXPIRED))
+                passwordExpired = true;
+            else if (streq(returnedCtrls[i]->ldctl_oid, LDAP_CONTROL_389DS_PASSWORD_EXPIRING))
+            {
+                // Value is the ASCII decimal string of seconds until expiry, not BER-encoded.
+                struct berval *val = &returnedCtrls[i]->ldctl_value;
+                if (val->bv_val && val->bv_len > 0)
+                {
+                    StringBuffer secs(val->bv_len, val->bv_val);
+                    char *endptr = nullptr;
+                    errno = 0;
+                    long parsedSecs = strtol(secs.str(), &endptr, 10);
+                    // Only accept the value if the entire string was consumed as a valid,
+                    // in-range, non-negative number; otherwise leave secondsToExpiry at its -1
+                    // default rather than risk misinterpreting malformed input as "expires
+                    // immediately" or silently truncating an out-of-range value.
+                    if (endptr != secs.str() && *endptr == '\0' && errno != ERANGE &&
+                        parsedSecs >= 0 && parsedSecs <= INT_MAX)
+                        secondsToExpiry = (int)parsedSecs;
+                    else
+                        WARNLOG("LdapUtils: unexpected value for 389ds password-expiring control: '%s'", secs.str());
+                }
+            }
+        }
+        ldap_controls_free(returnedCtrls);
+    }
+
+    return errcode;
+}
+
+int LdapUtils::LdapSimpleBindWithExpirationStatus(LDAP* ld, int ldapTimeout, const char* userdn, const char* password,
+    bool& passwordExpired, int& secondsToExpiry)
+{
+    int rc = ldapSaslBindWithExpirationStatusOnce(ld, ldapTimeout, userdn, password, passwordExpired, secondsToExpiry);
+    if (rc != LDAP_SUCCESS && userdn && strchr(userdn, ','))
+    {   // 389ds is happier without the domain component specified - retry with DC components
+        // stripped, mirroring the fallback LdapBind() performs for OpenLDAP/389ds below.
+        StringBuffer cn(userdn);
+        cn.toLowerCase();
+        const char *pDC = strstr(cn.str(), ",dc=");
+        if (pDC)
+        {
+            cn.setLength(pDC - cn.str());//chop off DC components
+            if (cn.length())//disallow call if no cn
+                rc = ldapSaslBindWithExpirationStatusOnce(ld, ldapTimeout, cn.str(), password, passwordExpired, secondsToExpiry);
+        }
+    }
+    return rc;
+}
+
+int LdapUtils::LdapBindDetectExpiry(LDAP* ld, int ldapTimeout, const char* domain, const char* username,
+    const char* password, const char* userdn, LdapServerType server_type, const char* method,
+    bool& passwordExpired, int& secondsToExpiry)
+{
+    passwordExpired = false;
+    secondsToExpiry = -1;
+    if (server_type == LDAP_389DS)
+        return LdapSimpleBindWithExpirationStatus(ld, ldapTimeout, userdn, password, passwordExpired, secondsToExpiry);
+    return LdapBind(ld, ldapTimeout, domain, username, password, userdn, server_type, method);
+}
+#endif
 
 // userdn is required for ldap_simple_bind_s, not really necessary for ldap_bind_s.
 int LdapUtils::LdapBind(LDAP* ld, int ldapTimeout, const char* domain, const char* username, const char* password, const char* userdn, LdapServerType server_type, const char* method)

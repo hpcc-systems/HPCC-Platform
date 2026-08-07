@@ -916,6 +916,13 @@ public:
 // serializable impl.
     virtual void serialize(MemoryBuffer &tgt) override;
     virtual void deserialize(MemoryBuffer &src) override;
+#ifdef _USE_CPPUNIT
+    virtual bool isOrphaned() const override
+    {
+        return IptFlagTst(flags, ipt_ext5);
+    }
+    void cppunitSetOrphaned() { IptFlagSet(flags, ipt_ext5); }
+#endif
 
 protected:
     aindex_t getChildMatchPos(const char *xpath);
