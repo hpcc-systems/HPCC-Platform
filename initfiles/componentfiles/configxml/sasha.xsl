@@ -81,6 +81,7 @@
             </xsl:attribute>
             
             <xsl:copy-of select="/Environment/Software/Directories"/>  
+            <xsl:copy-of select="./protrace"/>
             <xsl:choose>
                 <xsl:when test="tracing">
                     <xsl:copy-of select="./tracing"/>

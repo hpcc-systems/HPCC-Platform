@@ -33,6 +33,7 @@
 #include "jstring.hpp"
 #include "jutil.hpp"
 #include "jmisc.hpp"
+#include "jprotrace.hpp"
 #include "yaml.h"
 
 #include <initializer_list>
@@ -9637,6 +9638,7 @@ IPropertyTree * loadConfiguration(IPropertyTree *componentDefault, IPropertyTree
         configFileUpdater->startMonitoring();
 
     initTraceManager(componentTag, componentConfiguration.get(), globalConfiguration.get());
+    protraceInitialize(componentTag, componentConfiguration.get());
     return componentConfiguration.getLink();
 }
 

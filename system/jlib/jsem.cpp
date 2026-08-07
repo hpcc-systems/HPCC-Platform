@@ -21,14 +21,6 @@
 #include "jisem.hpp"
 #include "jmutex.hpp"
 
-#include <atomic>
-
-static std::atomic<sync_uid_type> nextSyncUid{0};
-sync_uid_type getUniqueSyncId()
-{
-    return ++nextSyncUid;
-}
-
 
 #ifndef _WIN32
 
@@ -56,11 +48,7 @@ Semaphore::Semaphore([[maybe_unused]] const char *syncName, unsigned initialCoun
 {
 #ifdef PROTRACE_SEMAPHORES
     if (trackUnnamedLocks || syncName)
-    {
-        syncid = getUniqueSyncId();
-        if (syncName)
-            protraceNoteSemaphore(syncid, syncName);
-    }
+        syncid = protrace::note_semaphore(syncName);
 #endif
     sem_init(&sem, 0, initialCount);
 }
@@ -153,11 +141,7 @@ Semaphore::Semaphore([[maybe_unused]] const char *syncName, unsigned initialCoun
 {
 #ifdef PROTRACE_SEMAPHORES
     if (trackUnnamedLocks || syncName)
-    {
-        syncid = getUniqueSyncId();
-        if (syncName)
-            protraceNoteSemaphore(syncid, syncName);
-    }
+        syncid = protrace::note_semaphore(syncName);
 #endif
     init();
     count = initialCount;

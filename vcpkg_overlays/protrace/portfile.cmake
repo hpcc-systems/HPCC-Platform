@@ -2,7 +2,7 @@
 vcpkg_from_git(
     OUT_SOURCE_PATH SOURCE_PATH
     URL "https://github.com/risk-hsy/protrace.git"
-    REF 119f4cd15c3f85705aa6d31406ca0ea8d0a3f613
+    REF 4b28bfa8e4339e05256e36f05af71738474d51b1
     HEAD_REF master
 )
 
@@ -12,6 +12,8 @@ vcpkg_cmake_configure(
         -DUSER_BUILD_TESTS=OFF
         -DPROTRACE_STANDALONE=ON
         -DBUILD_PROTRACE_KERNEL=OFF
+        -DUSER_THREAD_MEM=4194304
+        -DUSER_LOCK_MEM=16777216
 )
 
 vcpkg_cmake_install()

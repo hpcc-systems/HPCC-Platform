@@ -112,6 +112,7 @@ static void stopServer()
     {
         servers.remove(j);      // ensure correct order for destruction
     }
+    protraceOnTerminate();
 }
 
 bool actionOnAbort()

@@ -23,6 +23,7 @@
 #include "jlib.hpp"
 #include "exception_util.hpp"
 #include "dasds.hpp"
+#include "jprotrace.hpp"
 
 #define SDS_LOCK_TIMEOUT (5*60*1000) // 5 mins
 
@@ -237,6 +238,129 @@ bool CWSESPControlEx::onGetLoggingSettings(IEspContext& context, IEspGetLoggingS
         resp.setLoggingLevelSetting(loggingLevelSetting);
         resp.setLogRequestsSetting(getLogRequestString(logRequestsSetting, logRequests.clear()));
         resp.setLogResponsesSetting(logResponsesSetting);
+    }
+    catch(IException* e)
+    {
+        FORWARDEXCEPTION(context, e, ECLWATCH_INTERNAL_ERROR);
+    }
+    return true;
+}
+
+bool CWSESPControlEx::onProtraceResume(IEspContext& context, IEspProtraceResumeRequest& req, IEspProtraceResumeResponse& resp)
+{
+    try
+    {
+#ifdef _USE_OPENLDAP
+        ILdapSecManager* secmgr = dynamic_cast<ILdapSecManager*>(context.querySecManager());
+        if(secmgr && !secmgr->isSuperUser(context.queryUser()))
+        {
+            context.setAuthStatus(AUTH_STATUS_NOACCESS);
+            throw MakeStringException(ECLWATCH_SUPER_USER_ACCESS_DENIED, "Failed to resume protrace recording. Permission denied.");
+        }
+#endif
+
+        const bool available = hasProtrace();
+        bool success = available && protraceResumeRecording();
+        resp.setStatus(success ? 0 : -1);
+        if (success)
+            resp.setMessage("Protrace recording resumed.");
+        else if (!available)
+            resp.setMessage("Protrace is not available in this build.");
+        else
+            resp.setMessage("Failed to resume protrace recording.");
+    }
+    catch(IException* e)
+    {
+        FORWARDEXCEPTION(context, e, ECLWATCH_INTERNAL_ERROR);
+    }
+    return true;
+}
+
+bool CWSESPControlEx::onProtraceSuspend(IEspContext& context, IEspProtraceSuspendRequest& req, IEspProtraceSuspendResponse& resp)
+{
+    try
+    {
+#ifdef _USE_OPENLDAP
+        ILdapSecManager* secmgr = dynamic_cast<ILdapSecManager*>(context.querySecManager());
+        if(secmgr && !secmgr->isSuperUser(context.queryUser()))
+        {
+            context.setAuthStatus(AUTH_STATUS_NOACCESS);
+            throw MakeStringException(ECLWATCH_SUPER_USER_ACCESS_DENIED, "Failed to suspend protrace recording. Permission denied.");
+        }
+#endif
+
+        const bool available = hasProtrace();
+        bool success = available && protraceSuspendRecording();
+        resp.setStatus(success ? 0 : -1);
+        if (success)
+            resp.setMessage("Protrace recording suspended.");
+        else if (!available)
+            resp.setMessage("Protrace is not available in this build.");
+        else
+            resp.setMessage("Failed to suspend protrace recording.");
+    }
+    catch(IException* e)
+    {
+        FORWARDEXCEPTION(context, e, ECLWATCH_INTERNAL_ERROR);
+    }
+    return true;
+}
+
+bool CWSESPControlEx::onProtraceClear(IEspContext& context, IEspProtraceClearRequest& req, IEspProtraceClearResponse& resp)
+{
+    try
+    {
+#ifdef _USE_OPENLDAP
+        ILdapSecManager* secmgr = dynamic_cast<ILdapSecManager*>(context.querySecManager());
+        if(secmgr && !secmgr->isSuperUser(context.queryUser()))
+        {
+            context.setAuthStatus(AUTH_STATUS_NOACCESS);
+            throw MakeStringException(ECLWATCH_SUPER_USER_ACCESS_DENIED, "Failed to clear protrace recording. Permission denied.");
+        }
+#endif
+
+        const bool available = hasProtrace();
+        bool success = available && protraceClearRecording(req.getClearMetadata_isNull() ? false : req.getClearMetadata());
+        resp.setStatus(success ? 0 : -1);
+        if (success)
+            resp.setMessage("Protrace recording cleared.");
+        else if (!available)
+            resp.setMessage("Protrace is not available in this build.");
+        else
+            resp.setMessage("Failed to clear protrace recording.");
+    }
+    catch(IException* e)
+    {
+        FORWARDEXCEPTION(context, e, ECLWATCH_INTERNAL_ERROR);
+    }
+    return true;
+}
+
+bool CWSESPControlEx::onProtraceSave(IEspContext& context, IEspProtraceSaveRequest& req, IEspProtraceSaveResponse& resp)
+{
+    try
+    {
+#ifdef _USE_OPENLDAP
+        ILdapSecManager* secmgr = dynamic_cast<ILdapSecManager*>(context.querySecManager());
+        if(secmgr && !secmgr->isSuperUser(context.queryUser()))
+        {
+            context.setAuthStatus(AUTH_STATUS_NOACCESS);
+            throw MakeStringException(ECLWATCH_SUPER_USER_ACCESS_DENIED, "Failed to save protrace recording. Permission denied.");
+        }
+#endif
+
+        if (!hasProtrace())
+        {
+            resp.setStatus(-1);
+            resp.setMessage("Protrace is not available in this build.");
+            return false;
+        }
+
+        StringBuffer outputFilename;
+        protraceSaveRecording(outputFilename, req.getFilename());
+        resp.setStatus(0);
+        resp.setFilename(outputFilename.str());
+        resp.setMessage("Protrace recording saved.");
     }
     catch(IException* e)
     {

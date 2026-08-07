@@ -67,11 +67,7 @@ protected:
         owner = 0;
 #ifdef PROTRACE_LOCKS
         if (trackUnnamedLocks || syncName)
-        {
-            syncid = getUniqueSyncId();
-            if (syncName)
-                protraceNoteLock(syncid, syncName);
-        }
+            syncid = protrace::note_lock(syncName);
 #endif
     }
 public:
@@ -82,11 +78,7 @@ public:
         owner = 0;
 #ifdef PROTRACE_LOCKS
         if (trackUnnamedLocks || syncName)
-        {
-            syncid = getUniqueSyncId();
-            if (syncName)
-                protraceNoteLock(syncid, syncName);
-        }
+            syncid = protrace::note_lock(syncName);
 #endif
     }
     ~LegacyMutex()
@@ -199,11 +191,7 @@ public:
     {
 #ifdef PROTRACE_LOCKS
         if (trackUnnamedLocks || syncName)
-        {
-            syncid = getUniqueSyncId();
-            if (syncName)
-                protraceNoteLock(syncid, syncName);
-        }
+            syncid = protrace::note_lock(syncName);
 #endif
     }
     void lock()
@@ -238,11 +226,7 @@ public:
     {
 #ifdef PROTRACE_LOCKS
         if (trackUnnamedLocks || syncName)
-        {
-            syncid = getUniqueSyncId();
-            if (syncName)
-                protraceNoteLock(syncid, syncName);
-        }
+            syncid = protrace::note_lock(syncName);
 #endif
     }
     void lock()
@@ -277,11 +261,7 @@ public:
     {
 #ifdef PROTRACE_LOCKS
         if (trackUnnamedLocks || syncName)
-        {
-            syncid = getUniqueSyncId();
-            if (syncName)
-                protraceNoteLock(syncid, syncName);
-        }
+            syncid = protrace::note_lock(syncName);
 #endif
     }
     void lock()
@@ -385,9 +365,7 @@ public:
         InitializeCriticalSection(&flags);
 #ifdef PROTRACE_LOCKS
         if (trackUnnamedLocks || syncName) {
-            syncid = getUniqueSyncId();
-            if (syncName)
-                protraceNoteLock(syncid, syncName);
+            syncid = protrace::note_lock(syncName);
         }
 #endif
 #ifdef _ASSERT_LOCK_SUPPORT
@@ -490,11 +468,7 @@ public:
         pthread_mutexattr_init(&attr);
 #ifdef PROTRACE_LOCKS
         if (trackUnnamedLocks || syncName)
-        {
-            syncid = getUniqueSyncId();
-            if (syncName)
-                protraceNoteLock(syncid, syncName);
-        }
+            syncid = protrace::note_lock(syncName);
 #endif
 #ifdef _DEBUG
         verifyex(pthread_mutexattr_settype(&attr,PTHREAD_MUTEX_RECURSIVE)==0); // verify supports attr
@@ -672,11 +646,7 @@ public:
     {
 #ifdef PROTRACE_LOCKS
         if (trackUnnamedLocks || syncName)
-        {
-            syncid = getUniqueSyncId();
-            if (syncName)
-                protraceNoteSpinLock(syncid, syncName);
-        }
+            syncid = protrace::note_spinlock(syncName);
 #endif
     }
     inline void enter()       
@@ -715,11 +685,7 @@ public:
     {
 #ifdef PROTRACE_LOCKS
         if (trackUnnamedLocks || syncName)
-        {
-            syncid = getUniqueSyncId();
-            if (syncName)
-                protraceNoteSpinLock(syncid, syncName);
-        }
+            syncid = protrace::note_spinlock(syncName);
 #endif
     }
 #ifdef _DEBUG
@@ -822,11 +788,7 @@ public:
     {
 #ifdef PROTRACE_LOCKS
         if (trackUnnamedLocks || syncName)
-        {
-            syncid = getUniqueSyncId();
-            if (syncName)
-                protraceNoteSpinLock(syncid, syncName);
-        }
+            syncid = protrace::note_spinlock(syncName);
 #endif
     }
     inline void enter()       
@@ -869,11 +831,7 @@ public:
     {
 #ifdef PROTRACE_LOCKS
         if (trackUnnamedLocks || syncName)
-        {
-            syncid = getUniqueSyncId();
-            if (syncName)
-                protraceNoteSpinLock(syncid, syncName);
-        }
+            syncid = protrace::note_spinlock(syncName);
 #endif
     }
     inline void enter()       

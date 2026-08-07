@@ -107,6 +107,7 @@ void usage(const char *exe)
          "                       [--savexml[=<true|false]]   -- save and time the parsed xml\n");
   printf("  migratefiles <src-group> <target-group> [<filemask>] [dryrun] [createmaps] [listonly] [verbose]\n");
   printf("  mpping <server-ip>              -- time MP connect\n");
+  printf("  protrace <resume|suspend|clear|save> [options] -- control dali process protrace recording\n");
   printf("  serverlist <mask>               -- list server IPs (mask optional)\n");
   printf("  translatetoxpath logicalfile [File|SuperFile|Scope]\n");
   printf("  unlock <xpath or logicalfile> <[path|file]> --  unlocks either matching xpath(s) or matching logical file(s), can contain wildcards\n");
@@ -659,6 +660,40 @@ int main(int argc, const char* argv[])
                             }
                         }
                         cleanStaleGroups(groupPattern, dryrun);
+                    }
+                    else if (strieq(cmd, "protrace"))
+                    {
+                        CHECKPARAMS(1, 2);
+                        const char *subcmd = params.item(1);
+                        bool success = false;
+                        if (strieq(subcmd, "resume"))
+                        {
+                            CHECKPARAMS(1, 1);
+                            success = protraceResume(out);
+                        }
+                        else if (strieq(subcmd, "suspend"))
+                        {
+                            CHECKPARAMS(1, 1);
+                            success = protraceSuspend(out);
+                        }
+                        else if (strieq(subcmd, "clear"))
+                        {
+                            CHECKPARAMS(1, 2);
+                            bool clearMetadata = np > 1 && strToBool(params.item(2));
+                            success = protraceClear(clearMetadata, out);
+                        }
+                        else if (strieq(subcmd, "save"))
+                        {
+                            CHECKPARAMS(1, 2);
+                            const char *filename = np > 1 ? params.item(2) : nullptr;
+                            success = protraceSave(filename, out);
+                        }
+                        else
+                            throw makeStringExceptionV(0, "unknown protrace command '%s'", subcmd);
+
+                        doLog(success, out);
+                        if (!success)
+                            ret = 1;
                     }
                     else if (strieq(cmd, "remotetest"))
                         remoteTest(params.item(1), true);

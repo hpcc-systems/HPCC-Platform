@@ -608,6 +608,8 @@ int init_main(int argc, const char* argv[])
             startEspEventRecording(recordEventOptions, optRecordEventFilename);
         }
 
+        // The configuration for esp is strange - this will not have been performed in the loadConfig
+        protraceInitialize("esp", procpt);
     }
     catch(IException* e)
     {

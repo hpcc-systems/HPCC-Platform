@@ -75,6 +75,7 @@
       <xsl:apply-templates select="Option[string(@name) != '']" mode="copy"/>
 
       <xsl:call-template name="copyVaultsConfig"/>
+      <xsl:copy-of select="./protrace"/>
 
       <xsl:choose>
             <xsl:when test="tracing">

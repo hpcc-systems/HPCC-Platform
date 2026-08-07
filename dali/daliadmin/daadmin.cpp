@@ -2699,6 +2699,78 @@ void unlock(const char *pattern, bool files)
     }
 }
 
+static bool sendProtraceDiagnosticRequest(const char *operation, MemoryBuffer &params, MemoryBuffer &response)
+{
+    MemoryBuffer request;
+    request.append(operation);
+    request.append(params);
+    getDaliDiagnosticValue(request);
+    response.swapWith(request);
+
+    bool success = false;
+    response.read(success);
+    return success;
+}
+
+bool protraceResume(StringBuffer &out)
+{
+    MemoryBuffer params;
+    MemoryBuffer response;
+    bool success = sendProtraceDiagnosticRequest("protraceResume", params, response);
+    out.clear().append(boolToStr(success));
+    return success;
+}
+
+bool protraceSuspend(StringBuffer &out)
+{
+    MemoryBuffer params;
+    MemoryBuffer response;
+    bool success = sendProtraceDiagnosticRequest("protraceSuspend", params, response);
+    out.clear().append(boolToStr(success));
+    return success;
+}
+
+bool protraceClear(bool clearMetadata, StringBuffer &out)
+{
+    MemoryBuffer params;
+    params.append(clearMetadata);
+    MemoryBuffer response;
+    bool success = sendProtraceDiagnosticRequest("protraceClear", params, response);
+    out.clear().append(boolToStr(success));
+    return success;
+}
+
+bool protraceSave(const char *filename, StringBuffer &out)
+{
+    MemoryBuffer params;
+    params.append(filename ? filename : "");
+    MemoryBuffer request;
+    request.append("protraceSave");
+    request.append(params);
+    getDaliDiagnosticValue(request);
+    MemoryBuffer response;
+    response.swapWith(request);
+
+    // Deserialize response - serializeException format is self-describing:
+    // 0x01 = success (NULL exception), 0x00 = error (exception follows)
+    Owned<IException> exception = deserializeException(response);
+
+    if (!exception)
+    {
+        // Success case: read output filename
+        StringBuffer outputFilename;
+        response.read(outputFilename);
+        out.clear().append(outputFilename);
+        return true;
+    }
+    else
+    {
+        // Error case: exception already deserialized
+        exception->errorMessage(out.clear());
+        return false;
+    }
+}
+
 void dumpWorkunit(const char *wuid, bool includeProgress)
 {
     Owned<IWorkUnitFactory> factory = getWorkUnitFactory();

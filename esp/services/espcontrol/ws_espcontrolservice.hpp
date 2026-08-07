@@ -76,6 +76,10 @@ public:
     virtual bool onEnableDaliSubscriptions(IEspContext& context, IEspEnableDaliSubscriptionsRequest& req, IEspEnableDaliSubscriptionsResponse& resp);
     virtual bool onDetachFromDali(IEspContext& context, IEspDetachFromDaliRequest& req, IEspDetachFromDaliResponse& resp);
     virtual bool onAttachToDali(IEspContext& context, IEspAttachToDaliRequest& req, IEspAttachToDaliResponse& resp);
+    virtual bool onProtraceResume(IEspContext& context, IEspProtraceResumeRequest& req, IEspProtraceResumeResponse& resp);
+    virtual bool onProtraceSuspend(IEspContext& context, IEspProtraceSuspendRequest& req, IEspProtraceSuspendResponse& resp);
+    virtual bool onProtraceClear(IEspContext& context, IEspProtraceClearRequest& req, IEspProtraceClearResponse& resp);
+    virtual bool onProtraceSave(IEspContext& context, IEspProtraceSaveRequest& req, IEspProtraceSaveResponse& resp);
 };
 
 #endif //_ESPWIZ_ws_espcontrol_HPP__

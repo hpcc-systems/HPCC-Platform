@@ -25,7 +25,6 @@
 #include "jeventconst.hpp"
 
 typedef unsigned sync_uid_type;
-extern jlib_decl sync_uid_type getUniqueSyncId();
 
 // Introduce a constexpr function for stripping the path from the filename:line text to reduce memory usage.
 constexpr const char * extractTail(const char * text)
@@ -60,11 +59,7 @@ protected:
         hSem = CreateSemaphore(NULL, 0, 0x7fffffff, name);
 #ifdef PROTRACE_SEMAPHORES
         if (trackUnnamedLocks || syncName)
-        {
-            syncid = getUniqueSyncId();
-            if (syncName)
-                protraceNoteSemaphore(syncid, syncName);
-        }
+            syncid = protrace::note_semaphore(syncName);
 #endif
     }
 public:
@@ -73,11 +68,7 @@ public:
         hSem = CreateSemaphore(NULL, initialCount, 0x7fffffff, NULL);
 #ifdef PROTRACE_SEMAPHORES
         if (trackUnnamedLocks || syncName)
-        {
-            syncid = getUniqueSyncId();
-            if (syncName)
-                protraceNoteSemaphore(syncid, syncName);
-        }
+            syncid = protrace::note_semaphore(syncName);
 #endif
     }
 

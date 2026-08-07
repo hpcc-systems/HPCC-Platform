@@ -1670,10 +1670,8 @@ public:
         StringBuffer ep2;
         LOG(MCdebugInfo, "MP: send(target=%s,sender=%s,tag=%d,replytag=%d,size=%d)",hdr.target.getEndpointHostText(ep1).str(),hdr.sender.getEndpointHostText(ep2).str(),hdr.tag,hdr.replytag,hdr.size);
 #endif
-        bool ok = channel->writepacket(&hdr,sizeof(hdr),mb.toByteArray(),mb.length(),tm);
-        if (ok)
-            traceMpSend(hdr, mb.length());
-        return ok;
+        traceMpSend(hdr, mb.length());
+        return channel->writepacket(&hdr,sizeof(hdr),mb.toByteArray(),mb.length(),tm);
     }
 };
 
@@ -1826,6 +1824,15 @@ public:
             LOG(MCdebugInfo, "MP: multi-send block=%d, num blocks=%d, ofs=%d, size=%d",i,mhdr.numparts,mhdr.ofs,mhdr.size);
 #endif
             outhdr.initseq();
+            if (0 == i)
+            {
+#ifdef PROTRACE_MP
+                if (isMpResponseTag(hdr.tag))
+                    protraceRecordMpResponseSend(combineTagSeq((unsigned)hdr.tag, outhdr.sequence), mhdr.total);
+                else
+                    protraceRecordMpRequestSend(combineTagSeq((unsigned)hdr.tag, outhdr.sequence), mhdr.total);
+#endif
+            }
             outhdr.size = sizeof(outhdr)+sizeof(mhdr)+mhdr.size;
             if (!channel->writepacket(&outhdr,sizeof(outhdr),&mhdr,sizeof(mhdr),p,mhdr.size,tm)) {
 #ifdef _FULLTRACE
@@ -1842,7 +1849,6 @@ public:
             mhdr.ofs += mhdr.size;
             p += mhdr.size;
         }
-        traceMpSend(hdr, mhdr.total);
         return true;
     }
 

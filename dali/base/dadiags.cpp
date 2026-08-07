@@ -28,6 +28,7 @@
 #include "dasubs.ipp"
 #include "dautils.hpp"
 #include "dadiags.hpp"
+#include "jprotrace.hpp"
 
 #ifdef _MSC_VER
 #pragma warning (disable : 4355)
@@ -194,6 +195,40 @@ public:
                     mb.append(success);
                     if (success)
                         mb.append(connectionInfo);
+                }
+                else if (0 == stricmp(id, "protraceResume"))
+                {
+                    bool success = protraceResumeRecording();
+                    mb.append(success);
+                }
+                else if (0 == stricmp(id, "protraceSuspend"))
+                {
+                    bool success = protraceSuspendRecording();
+                    mb.append(success);
+                }
+                else if (0 == stricmp(id, "protraceClear"))
+                {
+                    bool clearMetadata = false;
+                    params.read(clearMetadata);
+                    bool success = protraceClearRecording(clearMetadata);
+                    mb.append(success);
+                }
+                else if (0 == stricmp(id, "protraceSave"))
+                {
+                    StringAttr requestedFilename;
+                    params.read(requestedFilename);
+                    StringBuffer outputFilename;
+                    try
+                    {
+                        protraceSaveRecording(outputFilename, requestedFilename.get());
+                        serializeException(NULL, mb);  // writes 0x01 to indicate success
+                        mb.append(outputFilename);
+                    }
+                    catch (IException *e)
+                    {
+                        serializeException(e, mb);  // writes 0x00, errorCode, errorMessage
+                        e->Release();
+                    }
                 }
                 else if (0 == stricmp(id, "save"))
                 {

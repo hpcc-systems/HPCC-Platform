@@ -36,11 +36,7 @@ LegacyMutex::LegacyMutex([[maybe_unused]] const char *syncName)
     lockcount = 0;
 #ifdef PROTRACE_LOCKS
     if (trackUnnamedLocks || syncName)
-    {
-        syncid = getUniqueSyncId();
-        if (syncName)
-            protraceNoteLock(syncid, syncName);
-    }
+        syncid = protrace::note_lock(syncName);
 #endif
 }
 
@@ -220,11 +216,7 @@ NamedMutex::NamedMutex([[maybe_unused]] const char *syncName, const char *name)
 {
 #ifdef PROTRACE_LOCKS
     if (trackUnnamedLocks || syncName)
-    {
-        syncid = getUniqueSyncId();
-        if (syncName)
-            protraceNoteLock(syncid, syncName);
-    }
+        syncid = protrace::note_lock(syncName);
 #endif
     {
         CriticalBlock b(lockPrefixCS);

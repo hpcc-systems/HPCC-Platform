@@ -43,6 +43,8 @@ constexpr bool trackUnnamedLocks = false;
 
 #include "jeventconst.hpp"
 
+interface IPropertyTree;
+
 
 enum class EventTask : byte;
 
@@ -63,7 +65,7 @@ inline __uint64 combineIdSeq(unsigned id, unsigned seq)
 
 inline __uint64 combineTagSeq(unsigned tag, unsigned seq)
 {
-    return (static_cast<uint64_t>(tag) << 32) | seq;
+    return (static_cast<uint64_t>(seq) << 32) | tag;
 }
 
 inline __uint64 getProtraceTicks(cycle_t cycles)
@@ -222,11 +224,13 @@ inline void protraceNoteSpinLock([[maybe_unused]] unsigned syncId, [[maybe_unuse
 extern jlib_decl bool protraceResumeRecording();
 extern jlib_decl bool protraceSuspendRecording();
 extern jlib_decl bool protraceClearRecording(bool clearMetadata);
+extern jlib_decl void protraceInitialize(const char * component, IPropertyTree * componentConfig);
 
 // Dump the current protrace recording to disk.
 // If filename is relative (or omitted), a file will be created in a temporary directory.
 // On success, outputFilename contains the generated/used filename.
 class StringBuffer;
 extern jlib_decl void protraceSaveRecording(StringBuffer & outputFilename, const char * filename);
+extern jlib_decl void protraceOnTerminate();
 
 #endif

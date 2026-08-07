@@ -91,6 +91,7 @@
             <xsl:copy-of select="@*[string(.) != '' and substring(name(), 1, 5) = 'trace']"/>
 
             <xsl:copy-of select="/Environment/Software/Directories"/>  
+            <xsl:copy-of select="./protrace"/>
             <xsl:choose>
                 <xsl:when test="tracing">
                     <xsl:copy-of select="./tracing"/>
