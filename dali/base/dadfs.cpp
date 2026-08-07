@@ -41,9 +41,15 @@
 
 #include <string>
 #include <vector>
+#include <unordered_set>
 #include <unordered_map>
+#include <functional>
 #include <algorithm>
 #include <time.h>
+
+#ifdef _USE_CPPUNIT
+#include "unittests.hpp"
+#endif
 
 #ifdef _DEBUG
 //#define EXTRA_LOGGING
@@ -2511,7 +2517,7 @@ class CDFAttributeIterator: implements IPropertyTreeIterator, public CInterface
 public:
     IMPLEMENT_IINTERFACE;
 
-    static MemoryBuffer &serializeFileAttributes(MemoryBuffer &mb, IPropertyTree &root, const char *name, bool issuper, SerializeFileAttrOptions& options)
+    static MemoryBuffer &serializeFileAttributes(MemoryBuffer &mb, const IPropertyTree &root, const char *name, bool issuper, const SerializeFileAttrOptions& options)
     {
         StringBuffer buf;
         mb.append(name);
@@ -9995,46 +10001,64 @@ IDFPartFilter *createPartFilter(const char *filter)
 class CFileMatch : public CInterface
 {
     StringAttr name;
-    Linked<IPropertyTree> tree;
     bool isSuper;
+    MemoryBuffer serializedRowMb;
 public:
-    CFileMatch(const char *_name, IPropertyTree *_tree, bool _isSuper) : name(_name), tree(_tree), isSuper(_isSuper)
+    // Pre-serialize on construction so serialization work is done under scan-time locking.
+    CFileMatch(const char *_name, const IPropertyTree &tree, bool _isSuper, const SerializeFileAttrOptions &options)
+        : name(_name), isSuper(_isSuper)
     {
+        CDFAttributeIterator::serializeFileAttributes(serializedRowMb, tree, _name, _isSuper, options);
     }
-    IPropertyTree &queryFileTree() const { return *tree; }
     const char *queryName() const { return name; }
+    StringBuffer &getScopeName(StringBuffer &out) const // used for authentication only
+    {
+        const char *nameStr = name.get();
+        const char *lastColon = strrchr(nameStr, ':');
+        if (lastColon && lastColon > nameStr && *(lastColon - 1) == ':') // if lastColon, should always be true
+            out.append((size32_t)(lastColon - 1 - nameStr), nameStr);
+        return out;
+    }
     bool queryIsSuper() const { return isSuper; }
+    bool appendSerializedRow(MemoryBuffer &out) const
+    {
+        out.append(serializedRowMb);
+        return true;
+    }
 };
 typedef CIArrayOf<CFileMatch> CFileMatchArray;
 
-class CScope : public CInterface
+class CScopePermissionCache
 {
-    StringAttr name;
-    CIArrayOf<CFileMatch> files; // matches
-    CIArrayOf<CScope> subScopes;
+    // A short-lived cache used during massive DFS scans (e.g. iterateFiles) to avoid
+    // hitting the Session Manager (and triggering RPC/LDAP round-trips) for every
+    // single file when checking scope permissions.
+    IUserDescriptor *user = nullptr;
+    std::unordered_map<std::string, SecAccessFlags> cache;
 public:
-    CScope(const char *_name) : name(_name)
+    explicit CScopePermissionCache(IUserDescriptor *_user) : user(_user)
     {
     }
-    const char *getName() const { return name; }
-    void addMatch(const char *name, IPropertyTree &fileTree, bool isSuper)
+    SecAccessFlags queryPermission(const char *scopeName)
     {
-        files.append(*new CFileMatch(name, &fileTree, isSuper));
+        if (!scopeName)
+            scopeName = "";
+        auto it = cache.find(scopeName);
+        if (it != cache.end())
+            return it->second;
+        SecAccessFlags perm = getScopePermissions(scopeName, user, 0);     // don't audit
+        cache.emplace(scopeName, perm);
+        return perm;
     }
-    CScope *addScope(const char *scope)
+    bool queryHasReadPermission(const char *scopeName)
     {
-        CScope *subScope = new CScope(scope);
-        subScopes.append(*subScope);
-        return subScope;
+        return HASREADPERMISSION(queryPermission(scopeName));
     }
-    void popLastScope()
+    unsigned queryCachedScopeCount() const
     {
-        subScopes.pop();
+        return cache.size();
     }
-    CIArrayOf<CScope> &querySubScopes() { return subScopes; }
-    CFileMatchArray &queryFiles() { return files; }
 };
-typedef CIArrayOf<CScope> CScopeArray;
 
 
 const char* DFUQFilterFieldNames[] = { "", "@description", "@directory", "@group", "@modified", "@name", "@numclusters", "@numparts",
@@ -10084,23 +10108,23 @@ public:
         }
     };
 
-    DFUQFilterType getFilterType() { return filterType;}
-    const char * getAttrPath() { return attrPath.get();}
-    const char * getFilterValue() { return filterValue.get();}
-    const char * getFilterValueHigh() { return filterValueHigh.get();}
-    const int getFilterValueInt() { return filterValueInt;}
-    const int getFilterValueHighInt() { return filterValueHighInt;}
-    const __int64 getFilterValueInt64() { return filterValueInt64;}
-    const __int64 getFilterValueHighInt64() { return filterValueHighInt64;}
-    const bool getFilterValueBoolean() { return filterValueBoolean;}
-    const char * getSep() { return sep.get();}
-    void getFilterArray(StringArray &filters)
+    DFUQFilterType getFilterType() const { return filterType;}
+    const char * getAttrPath() const { return attrPath.get();}
+    const char * getFilterValue() const { return filterValue.get();}
+    const char * getFilterValueHigh() const { return filterValueHigh.get();}
+    const int getFilterValueInt() const { return filterValueInt;}
+    const int getFilterValueHighInt() const { return filterValueHighInt;}
+    const __int64 getFilterValueInt64() const { return filterValueInt64;}
+    const __int64 getFilterValueHighInt64() const { return filterValueHighInt64;}
+    const bool getFilterValueBoolean() const { return filterValueBoolean;}
+    const char * getSep() const { return sep.get();}
+    void getFilterArray(StringArray &filters) const
     {
         ForEachItemIn(c, filterArray)
             filters.append(filterArray.item(c));
     }
 
-    bool checkFilter(IPropertyTree &file)
+    bool checkFilter(const IPropertyTree &file) const
     {
         bool match = true;
         switch(filterType)
@@ -10132,7 +10156,7 @@ public:
         }
         return match;
     }
-    bool doWildMatch(IPropertyTree &file)
+    bool doWildMatch(const IPropertyTree &file) const
     {
         const char* filter = filterValue.get();
         if (!attrPath.get() || !filter || !*filter || streq(filter, "*"))
@@ -10143,7 +10167,7 @@ public:
             return true;
         return false;
     }
-    bool doInverseWildMatch(IPropertyTree &file)
+    bool doInverseWildMatch(const IPropertyTree &file) const
     {
         const char* filter = filterValue.get();
         if (!attrPath.get() || !filter || !*filter || streq(filter, "*"))
@@ -10154,21 +10178,21 @@ public:
             return false;
         return true;
     }
-    bool doBooleanMatch(IPropertyTree &file)
+    bool doBooleanMatch(const IPropertyTree &file) const
     {
         if (!attrPath.get())
             return true;
 
         return filterValueBoolean == file.getPropBool(attrPath.get(), true);
     }
-    bool checkHasPropFilter(IPropertyTree &file)
+    bool checkHasPropFilter(const IPropertyTree &file) const
     {
         if (!attrPath.get())
             return true;
 
         return filterValueBoolean == file.hasProp(attrPath.get());
     }
-    bool checkContainStringFilter(IPropertyTree &file)
+    bool checkContainStringFilter(const IPropertyTree &file) const
     {
         if (!attrPath.get())
             return true;
@@ -10198,7 +10222,7 @@ public:
         }
         return found;
     }
-    bool checkStringRangeFilter(IPropertyTree &file)
+    bool checkStringRangeFilter(const IPropertyTree &file) const
     {
         if (!attrPath.get())
             return true;
@@ -10211,7 +10235,7 @@ public:
             return false;
         return true;
     }
-    bool checkIntegerRangeFilter(IPropertyTree &file)
+    bool checkIntegerRangeFilter(const IPropertyTree &file) const
     {
         if (!attrPath.get())
             return true;
@@ -10222,7 +10246,7 @@ public:
             return false;
         return true;
     }
-    bool checkInteger64RangeFilter(IPropertyTree &file)
+    bool checkInteger64RangeFilter(const IPropertyTree &file) const
     {
         if (!attrPath.get())
             return true;
@@ -10339,7 +10363,7 @@ class CIterateFileFilterContainer : public CInterface
         }
     }
 
-    bool doWildMatch(const char* filter, const char* value)
+    bool doWildMatch(const char* filter, const char* value) const
     {
         if (!filter || !*filter || streq(filter, "*") || (value && WildMatch(value, filter, true)))
             return true;
@@ -10419,7 +10443,7 @@ public:
     {
         options.readFields(fields);
     }
-    bool matchFileScanFilter(const char* name, IPropertyTree &file)
+    bool matchFileScanFilter(const char* name, const IPropertyTree &file) const
     {
         if (!doWildMatch(wildNameFilter.get(), name))
             return false;
@@ -10447,20 +10471,20 @@ public:
         return true;
     }
 
-    DFUQFileTypeFilter getFileTypeFilter() { return fileTypeFilter; }
-    unsigned getMaxFilesFilter() { return maxFilesFilter; }
+    DFUQFileTypeFilter getFileTypeFilter() const { return fileTypeFilter; }
+    unsigned getMaxFilesFilter() const { return maxFilesFilter; }
     void setFileTypeFilter(DFUQFileTypeFilter _fileType)
     {
         fileTypeFilter = _fileType;
     }
-    const char* getNameFilter() { return wildNameFilter.get(); }
+    const char* getNameFilter() const { return wildNameFilter.get(); }
     void setNameFilter(const char* _wildName)
     {
         if (!_wildName || !*_wildName)
             return;
         wildNameFilter.set(_wildName);
     }
-    SerializeFileAttrOptions& getSerializeFileAttrOptions() { return options; }
+    const SerializeFileAttrOptions& getSerializeFileAttrOptions() const { return options; }
     IDFUFilterIterator *getFilterIterator()
     {
         return new ArrayIIteratorOf<const CDFUSFFilterArray, CDFUSFFilter, IDFUFilterIterator>(filters);
@@ -10469,207 +10493,623 @@ public:
 
 class CFileScanner
 {
-    bool recursive;
-    bool includesuper;
-    StringAttr wildname;
-    Owned<CScope> topLevelScope;
-    CScope *currentScope;
-    Owned<CIterateFileFilterContainer> iterateFileFilterContainer;
+    // CFileScanner traverses the DFS metadata tree in depth-first order and supports
+    // pagination by returning a continuation token when scanStepLimit stops a scan early.
+    //
+    // TraversalState is the continuation token. It stores one frame per active scope,
+    // ordered deepest-first, so state[0] is the deepest partially scanned scope and
+    // state.back() is the shallowest scope closest to the tree root. Each frame stores
+    // only the unconsumed suffix of direct children for that scope, plus the next sibling
+    // index within that suffix.
+    //
+    // begin() initializes the filter context and resets internal pagination state.
+    // nextPage() performs the first traversal and all subsequent resumes using the
+    // internally retained TraversalState cursor.
+    //
+    // scanScope() consumes the saved frames from the back of the vector as recursion
+    // descends from shallowest to deepest. When resuming a partially scanned scope, the
+    // current frame gives the next sibling index to process within the stored suffix.
+    // If the previous page stopped in a descendant scope, the frame also records the
+    // direct child to re-enter before continuing with later siblings.
+    //
+    // Orphan handling is part of the pagination contract. Children are captured when a
+    // batch starts, but a later resume may find that one of those linked child nodes has
+    // been deleted from Dali and is now orphaned. In that case the child is skipped.
+    // If the orphaned child is the pending partially scanned scope, the remaining saved
+    // frames belong only to that subtree and must be discarded so the next sibling does
+    // not accidentally consume them.
+    //
+    // New frames are pushed deepest-first whenever scanStepLimit is reached again, producing
+    // the next continuation token for the following resume call.
+    struct TraversalChild
+    {
+        Owned<IPropertyTree> tree;      // LINK'd reference to child node
+        bool isScope = false;
+        bool isSuper = false;
+    };
 
-    bool scopeMatch(const char *name)
-    {   // name has trailing '::'
-        if (!name || !*name)
-            return true;
-        const char *s1 = NULL;
-        if (!iterateFileFilterContainer)
-            s1 = wildname.get();
-        else
-            s1 = iterateFileFilterContainer->getNameFilter();
-        if (!s1 || !*s1)
-            return true;
-        const char *s2 = name;
-        while (*s2) {
-            if (*s1=='*') {
-                if (recursive)
-                    return true;
-                if (*s2==':')
-                    return false;
-                // '*' can only come at end of scope in non-recursive
-                while (*s1&&(*s1!=':'))
-                    s1++;
-                while (*s2&&(*s2!=':'))
-                    s2++;
-            }
-            else if ((*s1==*s2)||(*s1=='?')) {
-                s1++;
-                s2++;
-            }
+    struct TraversalStackLevel
+    {
+        std::vector<TraversalChild> children;  // Direct linked child references with child type metadata
+        size_t currentIndex = 0;               // Resume position within children at this level
+        static constexpr size_t noChild = static_cast<size_t>(-1);
+        size_t pendingChildIndex = noChild;     // Partially-scanned child to re-enter before currentIndex
+    };
+
+    using TraversalState = std::vector<TraversalStackLevel>;
+
+    static CConfigUpdateHook configHook;
+    static constexpr unsigned defaultTimingReportIntervalSeconds = 60 * 60;
+    static constexpr unsigned defaultScanStepBudget = 5000;
+    static constexpr unsigned uninitialized = static_cast<unsigned>(-1);
+    static std::atomic<unsigned> timingReportIntervalSeconds;
+    static std::atomic<unsigned> configuredScanStepBudget;
+    static CriticalSection timingCrit;
+    static unsigned __int64 timingCallCount;
+    static unsigned __int64 timingScanMs;
+    static unsigned __int64 timingAuthMs;
+    static unsigned __int64 timingSerializationMs;
+    static time_t timingNextReport;
+
+    TraversalState traversalState;
+    bool firstPagePending = false;
+    bool recursive = false;
+    const CIterateFileFilterContainer *iterateFileFilterContainer = nullptr;
+    const unsigned scanStepLimit; // Traversal work budget per scan/resume call (visited/collected children)
+    unsigned stepsTaken = 0;
+
+    static unsigned queryTimingReportIntervalSeconds()
+    {
+        unsigned configured = timingReportIntervalSeconds.load(std::memory_order_relaxed);
+        assertex(configured != uninitialized);
+        return configured;
+    }
+
+    static void updateConfig(const IPropertyTree *oldComponentConfiguration, const IPropertyTree *oldGlobalConfiguration)
+    {
+        Owned<IPropertyTree> componentConfig = getComponentConfigSP();
+
+        unsigned timingReport = static_cast<unsigned>(componentConfig->getPropInt("expert/@dfsIterateFilteredFilesTimingReportSeconds", defaultTimingReportIntervalSeconds));
+        unsigned effectiveTimingReport = timingReport ? timingReport : defaultTimingReportIntervalSeconds;
+        timingReportIntervalSeconds.store(effectiveTimingReport, std::memory_order_relaxed);
+
+        unsigned configuredBudget = static_cast<unsigned>(componentConfig->getPropInt("expert/@dfsIterateFilteredFilesScanStepBudget", defaultScanStepBudget));
+        unsigned effectiveBudget = configuredBudget ? configuredBudget : defaultScanStepBudget;
+        configuredScanStepBudget.store(effectiveBudget, std::memory_order_relaxed);
+    }
+
+    // Compares a segment of a logical file name against a wildcard filter segment.
+    // Supports '?' (single character) and '*' (zero or more characters, bounded to the current segment).
+    // The filter boundary is either explicit (filterSegmentEnd) or implicit (the next ':' or null terminator).
+    // On a match, filterCursor is advanced to the bounds of the current filter segment.
+    static bool matchSegmentCharacters(const char *nameSegment, size_t nameSegmentLen, const char *&filterCursor, const char *filterSegmentEnd)
+    {
+        // Safe access to the current filter character, enforcing the segment bounds
+        auto filterChar = [&]()
+        {
+            return (!filterSegmentEnd || filterCursor < filterSegmentEnd) ? *filterCursor : '\0';
+        };
+
+        // Advances the filter cursor past any remaining characters in the current segment
+        auto consumeToEndOfSegment = [&]()
+        {
+            if (filterSegmentEnd)
+                filterCursor = filterSegmentEnd;
             else
-                return false;
+            {
+                while (*filterCursor && (*filterCursor != ':'))
+                    filterCursor++;
+            }
+        };
+
+        size_t segPos = 0;
+        while (segPos < nameSegmentLen)
+        {
+            char segChar = nameSegment[segPos];
+            char fc = filterChar();
+
+            if (fc == '*')
+            {
+                consumeToEndOfSegment();
+                segPos = nameSegmentLen;
+                continue;
+            }
+
+            if (fc == segChar || fc == '?')
+            {
+                filterCursor++;
+                segPos++;
+                continue;
+            }
+
+            return false;
         }
+
+        // If the segment characters matched exactly, but the filter still has a trailing '*'
+        // for this segment (e.g. name="abc", filter="abc*"), consume the '*' up to the
+        // segment boundary. Otherwise the caller might incorrectly evaluate the '*' as a failed separator.
+        if (filterChar() == '*')
+            consumeToEndOfSegment();
+
         return true;
     }
 
-    bool processScopes(IPropertyTree &root,StringBuffer &name)
+    bool scopeMatchSegment(const char *scopeName, const char *&scopeFilter, bool &descendantScopesUnconstrained) const
     {
-        bool ret = false;
-        CScope *parentScope = currentScope;
-        if (parentScope)
-            currentScope = parentScope->addScope(name);
-        else
-        { // once only
-            topLevelScope.setown(new CScope(""));
-            currentScope = topLevelScope;
-        }
-        size32_t ns = name.length();
-        if (ns)
-            name.append("::");
-        size32_t ns2 = name.length();
+        // Match one scope segment as if it were "scopeName::" against the remaining
+        // wildcard filter. On success, advance scopeFilter to the first unconsumed
+        // filter character for the child scope.
+        //
+        // descendantScopesUnconstrained means the scope filter was fully consumed at an
+        // earlier depth, so deeper descendant scopes are no longer constrained by
+        // any remaining scope segments. It does NOT mean that seeing a '*' inside
+        // the current scope segment automatically satisfies later scope segments.
+        if (descendantScopesUnconstrained)
+            return true;
 
-        if (scopeMatch(name.str())) {
-            Owned<IPropertyTreeIterator> iter = root.getElements(queryDfsXmlBranchName(DXB_Scope));
-            if (iter->first()) {
-                do {
-                    IPropertyTree &scope = iter->query();
-                    if (scope.hasChildren()) {
-                        name.append(scope.queryProp("@name"));
-                        ret |= processScopes(scope, name);
-                        name.setLength(ns2);
-                    }
-                } while (iter->next());
-            }
-            if (!iterateFileFilterContainer)
-                ret |= processFiles(root,name);
-            else
-                ret |= processFilesWithFilters(root,name);
-        }
-        if (!ret && parentScope)
-            parentScope->popLastScope(); // discard scopes where no matches
-        currentScope = parentScope;
-        name.setLength(ns);
-        return ret;
-    }
+        const char *filter = scopeFilter;
+        if (isEmptyString(filter))
+            return false;
 
-    bool processFiles(IPropertyTree &root,StringBuffer &name)
-    {
-        bool ret = false;
-        const char *s1 = wildname.get();
-        size32_t ns = name.length();
-        Owned<IPropertyTreeIterator> iter = root.getElements(queryDfsXmlBranchName(DXB_File));
-        if (iter->first()) {
-            IPropertyTree &scope = iter->query();
-            do {
-                IPropertyTree &file = iter->query();
-                name.append(file.queryProp("@name"));
-                if (!s1||WildMatch(name.str(),s1,true)) {
-                    currentScope->addMatch(name,file,false);
-                    ret = true;
-                }
-                name.setLength(ns);
-            } while (iter->next());
-        }
-        if (includesuper) {
-            iter.setown(root.getElements(queryDfsXmlBranchName(DXB_SuperFile)));
-            if (iter->first()) {
-                do {
-                    IPropertyTree &file = iter->query();
-                    name.append(file.queryProp("@name"));
-                    if (!s1||WildMatch(name.str(),s1,true)) {
-                        currentScope->addMatch(name,file,true);
-                        ret = true;
-                    }
-                    name.setLength(ns);
-                } while (iter->next());
-            }
-        }
-        return ret;
-    }
+        // Phase 1: match scopeName characters.
+        size_t scopeNameLen = strlen(scopeName); // caller ensures scopeName is non-empty
+        if (!matchSegmentCharacters(scopeName, scopeNameLen, filter, nullptr))
+            return false;
 
-    bool processFilesWithFilters(IPropertyTree &root, StringBuffer &name)
-    {
-        bool ret = false;
-        size32_t ns = name.length();
-        DFUQFileTypeFilter fileTypeFilter = iterateFileFilterContainer->getFileTypeFilter();
-        if (fileTypeFilter != DFUQFFTsuperfileonly)
-            addMatchedFiles(root.getElements(queryDfsXmlBranchName(DXB_File)), false, name, ns, ret);
-        if ((fileTypeFilter == DFUQFFTall) || (fileTypeFilter == DFUQFFTsuperfileonly))
-            addMatchedFiles(root.getElements(queryDfsXmlBranchName(DXB_SuperFile)), true, name, ns, ret);
-        return ret;
-    }
-
-    void addMatchedFiles(IPropertyTreeIterator* files, bool isSuper, StringBuffer &name, size32_t ns, bool& ret)
-    {
-        Owned<IPropertyTreeIterator> iter = files;
-        ForEach(*iter)
+        if (isEmptyString(filter))
         {
-            IPropertyTree &file = iter->query();
-            name.append(file.queryProp("@name"));
-            if (iterateFileFilterContainer->matchFileScanFilter(name.str(), file))
+            descendantScopesUnconstrained = recursive;
+            scopeFilter = filter;
+            return true;
+        }
+
+        // Phase 2: match the mandatory "::" separator.
+        for (unsigned sepCount = 0; sepCount < 2; )
+        {
+            if (*filter == '*')
+                return false;  // non-recursive '*' cannot match ':'
+
+            if ((*filter != ':') && (*filter != '?'))
+                return false;
+
+            filter++;
+            sepCount++;
+        }
+
+        scopeFilter = filter;
+        return true;
+    }
+
+    bool includeScopeChild(const char *childScopeName, const char *scopeFilter, const char *scopeFilterFirstSeparator, const char *scopeFilterEnd, bool descendantScopesUnconstrained) const
+    {
+        if (descendantScopesUnconstrained)
+            return true;
+
+        if (isEmptyString(scopeFilter))
+            return false;
+
+        const char *filter = scopeFilter;
+        const char *filterSegmentEnd = scopeFilterFirstSeparator ? scopeFilterFirstSeparator : scopeFilterEnd;
+        size_t childScopeNameLen = strlen(childScopeName);
+        if (!matchSegmentCharacters(childScopeName, childScopeNameLen, filter, filterSegmentEnd))
+            return false;
+
+        if (filter == scopeFilterEnd)
+            return true;
+
+        // Must match the mandatory "::" separator (allowing '?' in separator positions).
+        for (unsigned sepCount = 0; sepCount < 2; )
+        {
+            if (filter == scopeFilterEnd)
+                return false;
+            if (*filter == '*')
+                return false;
+            if ((*filter == ':') || (*filter == '?'))
             {
-                currentScope->addMatch(name,file,isSuper);
-                ret = true;
+                filter++;
+                sepCount++;
+                continue;
             }
-            name.setLength(ns);
+            return false;
+        }
+
+        return true;
+    }
+
+    void collectChildren(const IPropertyTree &root, const char *scopeFilter, bool descendantScopesUnconstrained, std::vector<TraversalChild> &children)
+    {
+        // Caveat: child collection is intentionally eager per scope. For very wide scopes,
+        // one collection pass can consume more work than the configured page budget before
+        // we reach a safe yield point. We still account collection work in stepsTaken and
+        // stop at the next natural boundary (immediately after collection completes).
+        const bool hasScopeFilter = !isEmptyString(scopeFilter);
+        const char *scopeFilterFirstSeparator = hasScopeFilter ? strchr(scopeFilter, ':') : nullptr;
+        const char *scopeFilterEnd = hasScopeFilter ? (scopeFilter + strlen(scopeFilter)) : nullptr;
+
+        enum class LeafCollectionMode { includeAll, tailPattern, excludeAll };
+        LeafCollectionMode leafCollectionMode = LeafCollectionMode::excludeAll;
+        bool tailPatternIsAny = false;
+        if (descendantScopesUnconstrained)
+            leafCollectionMode = LeafCollectionMode::includeAll;
+        else if (hasScopeFilter && !scopeFilterFirstSeparator)
+        {
+            leafCollectionMode = LeafCollectionMode::tailPattern;
+            tailPatternIsAny = streq(scopeFilter, "*");
+        }
+
+        // Collect child files
+        DFUQFileTypeFilter fileTypeFilter = iterateFileFilterContainer->getFileTypeFilter();
+        if (((fileTypeFilter == DFUQFFTall) || (fileTypeFilter == DFUQFFTnonsuperfileonly)) && (leafCollectionMode != LeafCollectionMode::excludeAll))
+        {
+            Owned<IPropertyTreeIterator> files = root.getElements(queryDfsXmlBranchName(DXB_File));
+            if (files && files->first())
+            {
+                do
+                {
+                    if (scanStepLimit && (stepsTaken < scanStepLimit))
+                        ++stepsTaken;
+
+                    if (leafCollectionMode == LeafCollectionMode::tailPattern)
+                    {
+                        const char *fileName = files->query().queryProp("@name");
+                        if (!fileName)
+                            continue;
+                        if (!tailPatternIsAny && !WildMatch(fileName, scopeFilter, true))
+                            continue;
+                    }
+
+                    TraversalChild &child = children.emplace_back();
+                    child.tree.set(&files->query());
+                }
+                while (files->next());
+            }
+        }
+        if (((fileTypeFilter == DFUQFFTall) || (fileTypeFilter == DFUQFFTsuperfileonly)) && (leafCollectionMode != LeafCollectionMode::excludeAll))
+        {
+            Owned<IPropertyTreeIterator> supers = root.getElements(queryDfsXmlBranchName(DXB_SuperFile));
+            if (supers && supers->first())
+            {
+                do
+                {
+                    if (scanStepLimit && (stepsTaken < scanStepLimit))
+                        ++stepsTaken;
+
+                    if (leafCollectionMode == LeafCollectionMode::tailPattern)
+                    {
+                        const char *superName = supers->query().queryProp("@name");
+                        if (!superName)
+                            continue;
+                        if (!tailPatternIsAny && !WildMatch(superName, scopeFilter, true))
+                            continue;
+                    }
+
+                    TraversalChild &child = children.emplace_back();
+                    child.tree.set(&supers->query());
+                    child.isSuper = true;
+                }
+                while (supers->next());
+            }
+        }
+        // Collect child scopes
+        Owned<IPropertyTreeIterator> scopes = root.getElements(queryDfsXmlBranchName(DXB_Scope));
+        if (scopes && scopes->first())
+        {
+            do
+            {
+                if (scanStepLimit && (stepsTaken < scanStepLimit))
+                    ++stepsTaken;
+
+                IPropertyTree &scope = scopes->query();
+                const char *scopeName = scope.queryProp("@name");
+                if (scopeName && scope.hasChildren() && includeScopeChild(scopeName, scopeFilter, scopeFilterFirstSeparator, scopeFilterEnd, descendantScopesUnconstrained))
+                {
+                    TraversalChild &child = children.emplace_back();
+                    child.tree.set(&scope);
+                    child.isScope = true;
+                }
+            }
+            while (scopes->next());
         }
     }
+
+    bool scanScope(const IPropertyTree &root, StringBuffer &currentScopePath, const char *currentScopeTail, const char *scopeFilter, bool descendantScopesUnconstrained,
+        CFileMatchArray &matches, TraversalState &nextState)
+    {
+        size32_t baseLen = currentScopePath.length();
+        if (baseLen)
+            currentScopePath.append("::");
+        size32_t scopeLen = currentScopePath.length();
+
+        bool matched = true;
+        const char *remainingScopeFilter = scopeFilter;
+        bool scopeDescendantScopesUnconstrained = descendantScopesUnconstrained;
+        if (!isEmptyString(currentScopeTail))
+            matched = scopeMatchSegment(currentScopeTail, remainingScopeFilter, scopeDescendantScopesUnconstrained);
+        if (matched)
+        {
+            std::vector<TraversalChild> children;
+            size_t startIndex = 0;
+            size_t pendingIndex = TraversalStackLevel::noChild;  // partially-scanned child to re-enter when resuming
+            if (!nextState.empty())
+            {
+                // Reuse the captured children and resume from the saved position rather
+                // than restarting this scope from its first child.
+                TraversalStackLevel level = std::move(nextState.back());
+                nextState.pop_back();
+                children = std::move(level.children);
+                startIndex = level.currentIndex;
+                pendingIndex = level.pendingChildIndex;
+
+                // How the resume position is split across stack frames:
+                //
+                // When a previous batch stopped inside a nested scope, the unfinished work
+                // is NOT described by a single index. It is spread across one resume frame
+                // per level of the descent, ordered deepest-first in the resume cursor. Each frame
+                // stores the index of the NEXT SIBLING to process after the child that was
+                // active when the batch stopped - i.e. currentIndex points *past* the child
+                // that is still only partially scanned, because that child is represented by
+                // the next (deeper) frame, not by this frame.
+                //
+                // Therefore, when a deeper frame exists, the child that must be re-entered
+                // to finish its subtree is tracked explicitly in pendingChildIndex so the
+                // loop below revisits it first (descending with the deeper frame) and only
+                // afterwards continues with the normal siblings from startIndex onwards.
+                //
+                // Worked example - tree:
+                //     root
+                //     └─ a
+                //        ├─ b        (index 0)
+                //        ├─ c        (index 1)  -> f1, f2, f3
+                //        └─ d        (index 2)
+                // If a batch stopped after emitting c::f2, the saved frames are:
+                //     frame for c : currentIndex = 2   (next child inside c is f3)
+                //     frame for a : currentIndex = 2   (next sibling after c is d)
+                // Resuming at 'a': startIndex = 2 (d), pendingIndex = 1 (c). The loop first
+                // re-enters c to emit f3, then continues normally at d. Without pendingIndex,
+                // c::f3 would be skipped because a's cursor already points past c.
+                if (pendingIndex != TraversalStackLevel::noChild)
+                    assertex((pendingIndex < children.size()) && (startIndex == pendingIndex + 1));
+            }
+            else
+            {
+                collectChildren(root, remainingScopeFilter, scopeDescendantScopesUnconstrained, children);
+
+                // If collection consumed the page budget, yield before processing siblings.
+                // This preserves a stable resume point while still accounting collection cost.
+                if (scanStepLimit && (stepsTaken >= scanStepLimit) && !children.empty())
+                {
+                    captureCurrentState(nextState, std::move(children), 0, TraversalStackLevel::noChild);
+                    currentScopePath.setLength(baseLen);
+                    return false;
+                }
+            }
+
+            size_t loopStart = (pendingIndex != TraversalStackLevel::noChild) ? pendingIndex : startIndex;
+            for (size_t childIndex = loopStart; childIndex < children.size(); childIndex++)
+            {
+                TraversalChild &childRef = children[childIndex];
+                // Child references are captured when a batch starts. During pagination,
+                // concurrent DFS mutations can delete one of those children before we
+                // resume and visit it. In that case the linked child node becomes
+                // orphaned, so we skip it instead of dereferencing stale metadata.
+                // Consequence: under concurrent deletes, a resumed scan may return fewer
+                // rows than an immutable snapshot, but traversal remains safe and makes
+                // forward progress through the remaining siblings.
+                if (unlikely(childRef.tree->isOrphaned()))
+                {
+                    // If the orphaned child was the pending partially-scanned scope, the remaining
+                    // nextState frames belong exclusively to its subtree and must be discarded.
+                    // Otherwise the next sibling scope would incorrectly consume them.
+                    if (childIndex == pendingIndex)
+                        nextState.clear();
+                    continue;
+                }
+                const IPropertyTree &child = *childRef.tree;
+                const char *childName = child.queryProp("@name");
+                if (unlikely(!childName)) // prob. impossible
+                    continue;
+
+                currentScopePath.append(childName);
+                bool stopRequested = false;
+                bool reenterCurrentChild = false;
+
+                // Bound a batch by traversal work, not by match density.
+                // Re-entering a pending child must not consume another step:
+                // that child was already charged when first reached in a prior batch.
+                bool stepLimitReached = false;
+                bool pendingChild = (childIndex == pendingIndex);
+                if (scanStepLimit && !pendingChild)
+                {
+                    ++stepsTaken;
+                    stepLimitReached = (stepsTaken >= scanStepLimit);
+                }
+
+                if (childRef.isScope)
+                {
+                    if (stepLimitReached)
+                    {
+                        // Budget exhausted before descending into this child scope.
+                        // Preserve it as pending so next resume re-enters here.
+                        reenterCurrentChild = true;
+                    }
+                    else
+                    {
+                        // Re-enter the partially-scanned child with its deeper resume level;
+                        // all other children are new subtrees scanned from the beginning.
+                        // If this is not the pending child, nextState should already be empty
+                        // because the pending child consumed any remaining deeper frames.
+                        assertex(childIndex == pendingIndex || nextState.empty());
+                        if (!scanScope(child, currentScopePath, childName, remainingScopeFilter, scopeDescendantScopesUnconstrained, matches, nextState))
+                        {
+                            stopRequested = true;
+                            reenterCurrentChild = true;
+                        }
+                    }
+                }
+                else
+                {
+                    // This is a file or superfile
+                    const char *logicalName = currentScopePath.str();
+                    if (iterateFileFilterContainer->matchFileScanFilter(logicalName, child))
+                    {
+                        try
+                        {
+                            matches.append(*new CFileMatch(logicalName, child, childRef.isSuper, iterateFileFilterContainer->getSerializeFileAttrOptions()));
+                        }
+                        catch (IException *e)
+                        {
+                            VStringBuffer msg("Failed to capture serialized properties for file: %s", logicalName);
+                            EXCLOG(e, msg.str());
+                            e->Release();
+                        }
+                    }
+                }
+                currentScopePath.setLength(scopeLen);
+                if (!stopRequested)
+                    stopRequested = stepLimitReached;
+                if (stopRequested)
+                {
+                    // scanScope() stops early when traversal step budget is exhausted,
+                    // either before descending or within a descendant subtree.
+                    size_t capturedPendingIndex = reenterCurrentChild ? childIndex : TraversalStackLevel::noChild;
+                    // Capture current position for pause/resume
+                    captureCurrentState(nextState, std::move(children), childIndex + 1, capturedPendingIndex);
+
+                    currentScopePath.setLength(baseLen);
+                    return false;
+                }
+            }
+        }
+        currentScopePath.setLength(baseLen);
+        return true;
+    }
+
+    // Capture traversal state at current recursion depth
+    void captureCurrentState(TraversalState &nextState, std::vector<TraversalChild> &&children, size_t currentChildIndex, size_t pendingChildIndex)
+    {
+        // Build a stack level representing only the unconsumed suffix for this scope.
+        // If a pending child exists, keep it as the first element so resume can re-enter
+        // the unfinished subtree before continuing with later siblings.
+        TraversalStackLevel level;
+
+        size_t sliceStart = (pendingChildIndex != TraversalStackLevel::noChild) ? pendingChildIndex : currentChildIndex;
+        assertex(currentChildIndex <= children.size());
+        assertex(sliceStart <= currentChildIndex);
+        assertex((pendingChildIndex == TraversalStackLevel::noChild) || (currentChildIndex == pendingChildIndex + 1));
+        level.children.reserve(children.size() - sliceStart);
+        for (size_t childIndex = sliceStart; childIndex < children.size(); ++childIndex)
+            level.children.emplace_back(std::move(children[childIndex]));
+
+        level.currentIndex = currentChildIndex - sliceStart;
+        level.pendingChildIndex = (pendingChildIndex != TraversalStackLevel::noChild) ? (pendingChildIndex - sliceStart) : TraversalStackLevel::noChild;
+        nextState.push_back(std::move(level));
+    }
+
 public:
-    void scan(IPropertyTree *sroot, const char *_wildname,bool _recursive,bool _includesuper)
+    static void installConfigHookOnce()
     {
-        if (_wildname)
-            wildname.set(_wildname);
-        else
-            wildname.clear();
-        recursive = _recursive;
-        includesuper = _includesuper;
-        StringBuffer name;
-        topLevelScope.clear();
-        currentScope = NULL;
-        processScopes(*sroot->queryPropTree(querySdsFilesRoot()),name);
+        configHook.installOnce(updateConfig, true);
     }
-    void scan(IPropertyTree *sroot, CIterateFileFilterContainer* _iterateFileFilterContainer, bool _recursive)
-    {
-        iterateFileFilterContainer.setown(_iterateFileFilterContainer);
-        recursive = _recursive;
 
-        StringBuffer name;
-        topLevelScope.clear();
-        currentScope = NULL;
-        processScopes(*sroot->queryPropTree(querySdsFilesRoot()),name);
-    }
-    void _getResults(bool auth, IUserDescriptor *user, CScope &scope, CFileMatchArray &matchingFiles, StringArray &authScopes,
-        unsigned &count, bool checkFileCount)
+    static unsigned queryScanStepBudget()
     {
-        if (auth)
-        {
-            SecAccessFlags perm = getScopePermissions(scope.getName(),user,0);     // don't audit
-            if (!HASREADPERMISSION(perm))
-                return;
-            authScopes.append(scope.getName());
-        }
-        CFileMatchArray &files = scope.queryFiles();
-        ForEachItemIn(f, files)
-        {
-            if (checkFileCount && (count == iterateFileFilterContainer->getMaxFilesFilter()))
-                throw MakeStringException(DFSERR_PassIterateFilesLimit, "CFileScanner::_getResults() found >%d files.",
-                    iterateFileFilterContainer->getMaxFilesFilter());
+        unsigned configured = configuredScanStepBudget.load(std::memory_order_relaxed);
+        assertex(configured != uninitialized);
+        return configured;
+    }
 
-            CFileMatch *match = &files.item(f);
-            matchingFiles.append(*LINK(match));
-            ++count;
-        }
-        CScopeArray &subScopes = scope.querySubScopes();
-        ForEachItemIn(s, subScopes)
+    static void noteTiming(const char *trc, unsigned scanMs, unsigned authMs, unsigned serializationMs)
+    {
+        unsigned totalMs = scanMs + authMs + serializationMs;
+        bool logHourly = false;
+        unsigned __int64 totalCalls = 0;
+        unsigned __int64 totalScanMs = 0;
+        unsigned __int64 totalAuthMs = 0;
+        unsigned __int64 totalSerializationMs = 0;
+        unsigned __int64 hourlyTotalMs = 0;
+        time_t reportIntervalSeconds = queryTimingReportIntervalSeconds();
+
+        time_t now = time(nullptr);
         {
-            CScope &subScope = subScopes.item(s);
-            _getResults(auth, user, subScope, matchingFiles, authScopes, count, checkFileCount);
+            CriticalBlock block(timingCrit);
+            timingCallCount++;
+            timingScanMs += scanMs;
+            timingAuthMs += authMs;
+            timingSerializationMs += serializationMs;
+
+            if (!timingNextReport)
+                timingNextReport = now + reportIntervalSeconds;
+            else if (now >= timingNextReport)
+            {
+                logHourly = true;
+                totalCalls = timingCallCount;
+                totalScanMs = timingScanMs;
+                totalAuthMs = timingAuthMs;
+                totalSerializationMs = timingSerializationMs;
+                hourlyTotalMs = totalScanMs + totalAuthMs + totalSerializationMs;
+
+                timingCallCount = 0;
+                timingScanMs = 0;
+                timingAuthMs = 0;
+                timingSerializationMs = 0;
+                timingNextReport = now + reportIntervalSeconds;
+            }
+        }
+
+        if (totalMs > 100)
+            PROGLOG("TIMING(filescan): %s: took %u ms (scan=%u auth=%u serialization=%u)", trc, totalMs, scanMs, authMs, serializationMs);
+
+        if (logHourly)
+        {
+            PROGLOG("TIMING(filescan-hourly): last %u s calls=%llu total=%llu ms (scanLocked=%llu auth=%llu serialization=%llu)",
+                static_cast<unsigned>(reportIntervalSeconds), totalCalls, hourlyTotalMs, totalScanMs, totalAuthMs, totalSerializationMs);
         }
     }
-    unsigned getResults(bool auth, IUserDescriptor *user, CFileMatchArray &matchingFiles, StringArray &authScopes, unsigned &count, bool checkFileCount)
+
+    CFileScanner(unsigned _scanStepLimit = queryScanStepBudget()) : scanStepLimit(_scanStepLimit)
     {
-        _getResults(auth, user, *topLevelScope, matchingFiles, authScopes, count, checkFileCount);
-        return count;
+    }
+
+    void begin(const CIterateFileFilterContainer *_iterateFileFilterContainer, bool _recursive)
+    {
+        assertex(_iterateFileFilterContainer);
+        iterateFileFilterContainer = _iterateFileFilterContainer;
+        recursive = _recursive;
+        traversalState.clear();
+        firstPagePending = true;
+    }
+
+    bool nextPage(const IPropertyTree *sroot, CFileMatchArray &matches)
+    {
+        assertex(sroot);
+        assertex(iterateFileFilterContainer);
+        matches.kill();
+        stepsTaken = 0;
+
+        // Exhausted: no additional work remains for this configured traversal.
+        if (!firstPagePending && traversalState.empty())
+            return false;
+
+        firstPagePending = false;
+
+        const char *activeNameFilter = iterateFileFilterContainer->getNameFilter();
+        StringBuffer currentScopePath;
+        scanScope(*sroot->queryPropTree(querySdsFilesRoot()), currentScopePath, nullptr, activeNameFilter, false, matches, traversalState);
+
+        // true means the caller can request another page.
+        return !traversalState.empty();
     }
 };
+
+CConfigUpdateHook CFileScanner::configHook;
+std::atomic<unsigned> CFileScanner::timingReportIntervalSeconds{CFileScanner::uninitialized};
+std::atomic<unsigned> CFileScanner::configuredScanStepBudget{CFileScanner::uninitialized};
+CriticalSection CFileScanner::timingCrit("timingCrit");
+unsigned __int64 CFileScanner::timingCallCount = 0;
+unsigned __int64 CFileScanner::timingScanMs = 0;
+unsigned __int64 CFileScanner::timingAuthMs = 0;
+unsigned __int64 CFileScanner::timingSerializationMs = 0;
+time_t CFileScanner::timingNextReport = 0;
 
 StringBuffer &getClusterGroupName(const IPropertyTree &cluster, StringBuffer &groupName)
 {
@@ -11768,35 +12208,44 @@ public:
         unsigned count=0;
         mb.append(count);
 
-        CFileScanner scanner;
-        CSDSServerLockBlock sdsLock; // lock sds while scanning
+        Owned<CIterateFileFilterContainer> iterateFileFilterContainer = new CIterateFileFilterContainer();
+        if (!isEmptyString(wildname))
+            iterateFileFilterContainer->setNameFilter(wildname);
+        if (!includesuper)
+            iterateFileFilterContainer->setFileTypeFilter(DFUQFFTnonsuperfileonly);
+
+        CFileScanner scanner(0); // 0 = no step budget: scan all files in one pass (legacy path has no pagination support)
+        CFileMatchArray matchingFiles;
         unsigned start = msTick();
-        scanner.scan(sdsLock, wildname.get(),recursive,includesuper);
+        {
+            CSDSServerLockBlock sdsLock; // lock sds while scanning to preserve a consistent snapshot
+            scanner.begin(iterateFileFilterContainer.get(), recursive);
+            (void) scanner.nextPage(sdsLock, matchingFiles); // NB: legacy iterateFiles does not support maxFiles, so pass 0 to scan all files, and no pagination
+        }
         unsigned tookMs = msTick()-start;
         if (tookMs>100)
             PROGLOG("TIMING(filescan): %s: took %dms",trc.str(), tookMs);
-        sdsLock.unlock(); // unlock to perform authentification
 
         bool auth = querySessionManager().checkScopeScansLDAP();
-        StringArray authScopes;
-        CIArrayOf<CFileMatch> matchingFiles;
-        start = msTick();
-        scanner.getResults(auth, udesc, matchingFiles, authScopes, count, false);
-        tookMs = msTick()-start;
-        if (tookMs>100)
-            PROGLOG("TIMING(LDAP): %s: took %dms, %d lookups, file matches = %d", trc.str(), tookMs, authScopes.ordinality(), count);
+        CScopePermissionCache permissionCache(udesc);
 
-        sdsLock.lock(); // re-lock sds while serializing
         start = msTick();
-        SerializeFileAttrOptions options; //The options is needed for the serializeFileAttributes()
         ForEachItemIn(m, matchingFiles)
         {
             CFileMatch &fileMatch = matchingFiles.item(m);
-            CDFAttributeIterator::serializeFileAttributes(mb, fileMatch.queryFileTree(), fileMatch.queryName(), fileMatch.queryIsSuper(), options);
+            if (auth)
+            {
+                StringBuffer scopeName;
+                fileMatch.getScopeName(scopeName);
+                if (!permissionCache.queryHasReadPermission(scopeName.str()))
+                    continue;
+            }
+            assertex(fileMatch.appendSerializedRow(mb));
+            ++count;
         }
         tookMs = msTick()-start;
         if (tookMs>100)
-            PROGLOG("TIMING(filescan-serialization): %s: took %dms, %d files",trc.str(), tookMs, count);
+            PROGLOG("TIMING(filescan-ser): %s: took %ums, count=%u",trc.str(), tookMs, count);
 
         mb.writeDirect(0,sizeof(count),&count);
     }
@@ -11824,7 +12273,7 @@ public:
     void iterateFilteredFilesCommon(TransactionLog &transactionLog, const IPropertyTree *request, CMessageBuffer &mb, StringBuffer &trc)
     {
         const char *filters = request->queryProp("@filters");
-        const char *fields = request->queryProp("@fields"); // NB: if empty, all fields are returned
+        const char *fields = request->queryProp("@fields");
         bool recursive = request->getPropBool("@recursive");
         const char *userName = request->queryProp("@user");
         Owned<IUserDescriptor> udesc;
@@ -11833,62 +12282,114 @@ public:
             udesc.setown(createUserDescriptor());
             udesc->set(userName, nullptr);
         }
-        bool suppressAllFilesFlag = request->getPropBool("@suppressAllFilesFlag");
 
-        trc.appendf("iterateFilteredFiles(%s,%s)",filters,recursive?"recursive":"");
+        trc.appendf("iterateFilteredFiles(%s,%s)", filters, recursive ? "recursive" : "");
         if (queryTransactionLogging())
             transactionLog.log("%s", trc.str());
-
-        unsigned count=0;
-        unsigned startPos = mb.length();
-        mb.append(count);
 
         Owned<CIterateFileFilterContainer> iterateFileFilterContainer = new CIterateFileFilterContainer();
         iterateFileFilterContainer->readFilters(filters);
         if (!isEmptyString(fields))
             iterateFileFilterContainer->readFields(fields);
 
-        CFileScanner scanner;
-        CSDSServerLockBlock sdsLock; // lock sds while scanning
-        unsigned start = msTick();
-        scanner.scan(sdsLock, iterateFileFilterContainer.getLink(), recursive);
-        unsigned tookMs = msTick()-start;
-        if (tookMs>100)
-            PROGLOG("TIMING(filescan): %s: took %dms",trc.str(), tookMs);
-        sdsLock.unlock(); // unlock to perform authentification
-
+        const unsigned maxFiles = iterateFileFilterContainer->getMaxFilesFilter();
+        CFileScanner::installConfigHookOnce();
+        const unsigned scanStepBudget = std::min(maxFiles, CFileScanner::queryScanStepBudget()); // Scanner traversal step budget per lock hold
         bool auth = querySessionManager().checkScopeScansLDAP();
-        StringArray authScopes;
-        CIArrayOf<CFileMatch> matchingFiles;
-        start = msTick();
-        bool returnAllMatchingFiles = true;
-        try
-        {
-            scanner.getResults(auth, udesc, matchingFiles, authScopes, count, true);
-        }
-        catch(IException *e)
-        {
-            if (DFSERR_PassIterateFilesLimit != e->errorCode())
-                throw;
-            e->Release();
-            returnAllMatchingFiles = false;
-        }
-        if (!suppressAllFilesFlag)
-            mb.append(returnAllMatchingFiles);
+        CScopePermissionCache permissionCache(udesc);
+        std::unordered_set<std::string_view> emittedNames; // views into CFileMatch::name, kept alive by matchingFiles
+        CFileMatchArray matchingFiles;
+        bool allMatchingFilesReceived = false;
+        bool hitClientMaxFiles = false;
 
-        tookMs = msTick()-start;
-        if (tookMs>100)
-            PROGLOG("TIMING(LDAP): %s: took %dms, %d lookups, file matches = %d", trc.str(), tookMs, authScopes.ordinality(), count);
+        // Create scanner once outside loop for stack-retained pagination
+        CFileScanner scanner(scanStepBudget);
+        scanner.begin(iterateFileFilterContainer, recursive);
+        cycle_t scanCycles = 0;
+        cycle_t authCycles = 0;
 
-        sdsLock.lock(); // re-lock sds while serializing
-        start = msTick();
+        CCycleTimer timer;
+        while (true)
+        {
+            if (matchingFiles.ordinality() >= maxFiles)
+            {
+                hitClientMaxFiles = true;
+                break;
+            }
+
+            bool scanExhausted = false;
+            CFileMatchArray pageMatches;
+            {
+                // Acquiring the SDS lock blocks other Dali writes while this batch scans.
+                // We lock per-batch and release between batches to avoid starving writers
+                // during massive (millions of files) directory traversals. Because we release
+                // it across batches, the DFS tree may mutate between batches -- meaning
+                // a paginated scan might see an inconsistent view -- but it prevents
+                // the scanner from freezing the whole cluster.
+                //
+                // Unlike the old non-paginated approach which gathered all files then locked
+                // again during serialization, this approach locks once per batch and
+                // serializes eagerly under this lock. It also aborts the scan immediately
+                // upon reaching the batch traversal budget, avoiding wasted work. It will only
+                // resume for more pages if post-scan authorization pruning drops the total
+                // yield below the requested maxFiles.
+                //
+
+                timer.reset();
+                CSDSServerLockBlock sdsLock;
+                scanExhausted = !scanner.nextPage(sdsLock, pageMatches);
+                scanCycles += timer.elapsedCycles();
+            }
+
+            timer.reset();
+            ForEachItemIn(m, pageMatches)
+            {
+                CFileMatch &fileMatch = pageMatches.item(m);
+                if (auth)
+                {
+                    StringBuffer scopeName;
+                    fileMatch.getScopeName(scopeName);
+                    if (!permissionCache.queryHasReadPermission(scopeName.str()))
+                        continue;
+                }
+                std::string_view name(fileMatch.queryName());
+                // Lock is released between pages, so concurrent DFS mutations can make a logical
+                // name re-appear in a later batch (e.g. delete/recreate of the same path).
+                if (!emittedNames.insert(name).second)
+                    continue;
+                matchingFiles.append(*LINK(&fileMatch));
+                if (matchingFiles.ordinality() >= maxFiles)
+                {
+                    hitClientMaxFiles = true;
+                    break;
+                }
+            }
+            authCycles += timer.elapsedCycles();
+
+            if (hitClientMaxFiles)
+                break;
+
+            // Completion is signaled by exhausted traversal state, not by match count.
+            if (scanExhausted)
+            {
+                allMatchingFilesReceived = true;
+                break;
+            }
+        }
+        unsigned count = 0;
+        unsigned startPos = mb.length();
+        mb.append(count);
+        mb.append(allMatchingFilesReceived);
+
+        timer.reset();
         ForEachItemIn(m, matchingFiles)
         {
             CFileMatch &fileMatch = matchingFiles.item(m);
             unsigned pos = mb.length();
             try
             {
-                CDFAttributeIterator::serializeFileAttributes(mb, fileMatch.queryFileTree(), fileMatch.queryName(), fileMatch.queryIsSuper(), iterateFileFilterContainer->getSerializeFileAttrOptions());
+                assertex(fileMatch.appendSerializedRow(mb));
+                ++count;
             }
             catch (IException *e)
             {
@@ -11896,12 +12397,12 @@ public:
                 LOG(MCuserWarning, e, errMsg.append(fileMatch.queryName()));
                 e->Release();
                 mb.setLength(pos);
-                --count;
             }
         }
-        tookMs = msTick()-start;
-        if (tookMs>100)
-            PROGLOG("TIMING(filescan-serialization): %s: took %dms, %d files",trc.str(), tookMs, count);
+        unsigned serializationMs = timer.elapsedMs();
+        unsigned scanMs = static_cast<unsigned>(cycle_to_millisec(scanCycles));
+        unsigned authMs = static_cast<unsigned>(cycle_to_millisec(authCycles));
+        CFileScanner::noteTiming(trc.str(), scanMs, authMs, serializationMs);
 
         mb.writeDirect(startPos, sizeof(count), &count);
     }
@@ -14730,4 +15231,951 @@ extern da_decl void removeLogical(const char *fname, IUserDescriptor *user) {
         f->detachLogical();
     }
 }
+
+class DaliFileScannerSelfContainedTests : public CppUnit::TestFixture
+{
+    static constexpr unsigned bulkAlphaScopeCount = 60;
+    static constexpr unsigned bulkAlphaFilesPerScope = 5;
+    static constexpr unsigned bulkAlphaSupersPerScope = 1;
+    static constexpr unsigned bulkGammaScopeCount = 20;
+    static constexpr unsigned bulkGammaFilesPerScope = 4;
+
+    static constexpr unsigned expectedAlphaMatches = 5 + (bulkAlphaScopeCount * (bulkAlphaFilesPerScope + bulkAlphaSupersPerScope));
+    static constexpr unsigned expectedTotalMatches = expectedAlphaMatches + 3 + (bulkGammaScopeCount * bulkGammaFilesPerScope);
+
+    CPPUNIT_TEST_SUITE(DaliFileScannerSelfContainedTests);
+    CPPUNIT_TEST(testCFileScannerBasicWildcardScan);
+    CPPUNIT_TEST(testIterateFilesLegacyMessageFlow);
+    CPPUNIT_TEST(testIterateFilteredFiles3StyleFullPayloadMessageFlow);
+    CPPUNIT_TEST(testIterateFilteredFiles3StyleAllMatchingFilesFlagTransitions);
+    CPPUNIT_TEST(testPaginationSparseMatchesDoNotStopOnEmptyPage);
+    // Phase 4: Comprehensive Mutation Tests
+    CPPUNIT_TEST(testPaginationNoMutations);
+    CPPUNIT_TEST(testPaginationWithDeletions);
+    CPPUNIT_TEST(testPaginationWithInsertions);
+    CPPUNIT_TEST(testPaginationDeepNesting);
+    CPPUNIT_TEST(testPaginationConsistency);
+    CPPUNIT_TEST(testPaginationNoDuplicateOrSkip);
+    CPPUNIT_TEST(testPaginationPartialChildReentryOrder);
+    CPPUNIT_TEST(testPaginationPendingScopeOrphaned);
+    CPPUNIT_TEST_SUITE_END();
+
+    static IPropertyTree *addNamedScope(IPropertyTree &parent, const char *name)
+    {
+        Owned<IPropertyTree> scope = createPTree(queryDfsXmlBranchName(DXB_Scope));
+        scope->setProp("@name", name);
+        return parent.addPropTree(queryDfsXmlBranchName(DXB_Scope), scope.getClear());
+    }
+
+    static IPropertyTree *addNamedFile(IPropertyTree &parent, const char *name, bool isSuper)
+    {
+        const char *branchName = queryDfsXmlBranchName(isSuper ? DXB_SuperFile : DXB_File);
+        Owned<IPropertyTree> file = createPTree(branchName);
+        file->setProp("@name", name);
+        file->setProp("@modified", "2026-07-15T10:00:00Z");
+
+        if (isSuper)
+        {
+            file->setPropInt("@numsubfiles", 2);
+            Owned<IPropertyTree> sub = createPTree("SubFile");
+            sub->setProp("@name", "alpha::beta::fileA");
+            file->addPropTree("SubFile", sub.getClear());
+        }
+        else
+        {
+            file->setProp("@directory", "/var/lib/HPCCSystems/hpcc-data");
+            file->setPropInt("@numparts", 3);
+            file->setProp("@partmask", "part_[1..3]");
+        }
+
+        Owned<IPropertyTree> attr = createPTree("Attr");
+        attr->setProp("@owner", "unittest");
+        attr->setPropInt64("@size", 1234);
+        attr->setProp("@job", "W20260715-100000");
+        file->addPropTree("Attr", attr.getClear());
+
+        return parent.addPropTree(branchName, file.getClear());
+    }
+
+    static IPropertyTree *createSyntheticStore()
+    {
+        Owned<IPropertyTree> storeRoot = createPTree("Store");
+        IPropertyTree *filesRoot = storeRoot->addPropTree(querySdsFilesRoot(), createPTree());
+
+        IPropertyTree *alpha = addNamedScope(*filesRoot, "alpha");
+        IPropertyTree *beta = addNamedScope(*alpha, "beta");
+        addNamedFile(*beta, "fileA", false);
+        addNamedFile(*beta, "fileB", false);
+        addNamedFile(*beta, "superAB", true);
+        addNamedFile(*alpha, "fileRoot", false);
+        addNamedFile(*alpha, "beta2", false); // Test collision with scope beta
+
+        IPropertyTree *gamma = addNamedScope(*filesRoot, "gamma");
+        addNamedFile(*gamma, "fileG", false);
+
+        IPropertyTree *trailingStarScope = addNamedScope(*filesRoot, "somescope");
+        IPropertyTree *trailingStarSubscope = addNamedScope(*trailingStarScope, "abc");
+        addNamedFile(*trailingStarSubscope, "def", false);
+        addNamedFile(*trailingStarScope, "abc", false);
+
+        for (unsigned scopeIndex = 0; scopeIndex < bulkAlphaScopeCount; scopeIndex++)
+        {
+            StringBuffer scopeName;
+            scopeName.appendf("bulkA%03u", scopeIndex);
+            IPropertyTree *bulkScope = addNamedScope(*alpha, scopeName.str());
+
+            for (unsigned fileIndex = 0; fileIndex < bulkAlphaFilesPerScope; fileIndex++)
+            {
+                StringBuffer fileName;
+                fileName.appendf("file%03u", fileIndex);
+                addNamedFile(*bulkScope, fileName.str(), false);
+            }
+
+            for (unsigned superIndex = 0; superIndex < bulkAlphaSupersPerScope; superIndex++)
+            {
+                StringBuffer superName;
+                superName.appendf("super%03u", superIndex);
+                addNamedFile(*bulkScope, superName.str(), true);
+            }
+        }
+
+        for (unsigned scopeIndex = 0; scopeIndex < bulkGammaScopeCount; scopeIndex++)
+        {
+            StringBuffer scopeName;
+            scopeName.appendf("bulkG%03u", scopeIndex);
+            IPropertyTree *bulkScope = addNamedScope(*gamma, scopeName.str());
+
+            for (unsigned fileIndex = 0; fileIndex < bulkGammaFilesPerScope; fileIndex++)
+            {
+                StringBuffer fileName;
+                fileName.appendf("file%03u", fileIndex);
+                addNamedFile(*bulkScope, fileName.str(), false);
+            }
+        }
+
+        return storeRoot.getClear();
+    }
+
+    static unsigned runIterateFilteredFiles3StyleRequest(IPropertyTree &storeRoot, const IPropertyTree &request, MemoryBuffer &replyMb)
+    {
+        const char *filters = request.queryProp("@filters");
+        const char *fields = request.queryProp("@fields");
+        bool recursive = request.getPropBool("@recursive");
+
+        Owned<CIterateFileFilterContainer> filterContainer = new CIterateFileFilterContainer();
+        filterContainer->readFilters(filters);
+        if (!isEmptyString(fields))
+            filterContainer->readFields(fields);
+
+        const unsigned maxFiles = filterContainer->getMaxFilesFilter();
+        const unsigned scanStepBudget = std::min(maxFiles, 5000u);
+
+        CFileScanner scanner(scanStepBudget);
+        scanner.begin(filterContainer, recursive);
+        CFileMatchArray matchingFiles;
+        std::unordered_set<std::string> emittedNames;
+        bool allMatchingFilesReceived = false;
+        bool hitClientMaxFiles = false;
+
+        while (true)
+        {
+            if (matchingFiles.ordinality() >= maxFiles)
+            {
+                hitClientMaxFiles = true;
+                break;
+            }
+
+            CIArrayOf<CFileMatch> pageMatches;
+            bool scanExhausted = !scanner.nextPage(&storeRoot, pageMatches);
+
+            ForEachItemIn(m, pageMatches)
+            {
+                CFileMatch &fileMatch = pageMatches.item(m);
+                std::string name(fileMatch.queryName());
+                if (!emittedNames.insert(name).second)
+                    continue;
+                matchingFiles.append(*LINK(&fileMatch));
+                if (matchingFiles.ordinality() >= maxFiles)
+                {
+                    hitClientMaxFiles = true;
+                    break;
+                }
+            }
+
+            if (hitClientMaxFiles)
+                break;
+
+            if (scanExhausted)
+            {
+                allMatchingFilesReceived = true;
+                break;
+            }
+        }
+
+        replyMb.clear();
+        unsigned count = matchingFiles.ordinality();
+        unsigned startPos = replyMb.length();
+        replyMb.append(count);
+        replyMb.append(allMatchingFilesReceived);
+
+        ForEachItemIn(m, matchingFiles)
+        {
+            CFileMatch &fileMatch = matchingFiles.item(m);
+            assertex(fileMatch.appendSerializedRow(replyMb));
+        }
+
+        replyMb.writeDirect(startPos, sizeof(count), &count);
+        return count;
+    }
+
+    static unsigned runIterateFilesLegacyStyleRequest(IPropertyTree &storeRoot, const char *wildname, bool recursive, bool includesuper, MemoryBuffer &replyMb)
+    {
+        Owned<CIterateFileFilterContainer> filterContainer = new CIterateFileFilterContainer();
+        if (!isEmptyString(wildname))
+            filterContainer->setNameFilter(wildname);
+        if (!includesuper)
+            filterContainer->setFileTypeFilter(DFUQFFTnonsuperfileonly);
+
+        CFileScanner scanner(0);
+        CIArrayOf<CFileMatch> matchingFiles;
+        scanner.begin(filterContainer.get(), recursive);
+        (void) scanner.nextPage(&storeRoot, matchingFiles);
+
+        replyMb.clear();
+        unsigned count = matchingFiles.ordinality();
+        unsigned startPos = replyMb.length();
+        replyMb.append(count);
+
+        ForEachItemIn(m, matchingFiles)
+            assertex(matchingFiles.item(m).appendSerializedRow(replyMb));
+
+        replyMb.writeDirect(startPos, sizeof(count), &count);
+        return count;
+    }
+
+    static bool readLegacyFileRow(MemoryBuffer &mb, StringBuffer &nameOut)
+    {
+        if (mb.getPos() >= mb.length())
+            return false;
+
+        Owned<IPropertyTree> row = CDFAttributeIterator::deserializeFileAttrLegacy(mb);
+        const char *name = row->queryProp(getDFUQResultFieldName(DFUQResultField::name));
+        if (isEmptyString(name))
+            return false;
+        nameOut.set(name);
+        return true;
+    }
+
+    static void readAllLegacyRows(MemoryBuffer &mb, StringArray &namesOut)
+    {
+        while (true)
+        {
+            StringBuffer name;
+            if (!readLegacyFileRow(mb, name))
+                break;
+            namesOut.append(name.str());
+        }
+    }
+
+    static IPropertyTree *createFlatStore(const char *scopeName, unsigned fileCount, unsigned nameWidth, IPropertyTree **scopeOut)
+    {
+        Owned<IPropertyTree> storeRoot = createPTree("Store");
+        IPropertyTree *filesRoot = storeRoot->addPropTree(querySdsFilesRoot(), createPTree());
+        IPropertyTree *scope = addNamedScope(*filesRoot, scopeName);
+
+        for (unsigned i = 0; i < fileCount; i++)
+        {
+            StringBuffer name;
+            name.appendf("file%0*u", nameWidth, i);
+            addNamedFile(*scope, name.str(), false);
+        }
+
+        if (scopeOut)
+            *scopeOut = scope;
+
+        return storeRoot.getClear();
+    }
+
+    static unsigned removeLastNFiles(IPropertyTree &scope, unsigned filesToDelete)
+    {
+        unsigned deleted = 0;
+        for (unsigned d = 0; d < filesToDelete; d++)
+        {
+            Owned<IPropertyTreeIterator> filesIter(scope.getElements(queryDfsXmlBranchName(DXB_File), iptiter_sort));
+            IPropertyTree *last = nullptr;
+            ForEach(*filesIter)
+                last = &filesIter->query();
+
+            if (!last)
+                break;
+
+            scope.removeTree(last);
+            deleted++;
+        }
+        return deleted;
+    }
+
+    using PageMutation = std::function<void(unsigned page, IPropertyTree &storeRoot, bool hasMorePages)>;
+
+    static void collectPagedNames(IPropertyTree &storeRoot, bool recursive, unsigned scanStepBudget, unsigned maxPages, const PageMutation &mutateBetweenPages, StringArray &namesOut)
+    {
+        Owned<CIterateFileFilterContainer> filterContainer = new CIterateFileFilterContainer();
+        filterContainer->readFilters("");
+
+        CFileScanner scanner(scanStepBudget);
+        scanner.begin(filterContainer.get(), recursive);
+
+        for (unsigned page = 0; page < maxPages; page++)
+        {
+            CIArrayOf<CFileMatch> pageMatches;
+            bool hasMorePages = scanner.nextPage(&storeRoot, pageMatches);
+
+            ForEachItemIn(i, pageMatches)
+                namesOut.append(pageMatches.item(i).queryName());
+
+            if (mutateBetweenPages)
+                mutateBetweenPages(page, storeRoot, hasMorePages);
+            if (!hasMorePages)
+                break;
+        }
+    }
+
+    static void collectPagedNames(IPropertyTree &storeRoot, bool recursive, unsigned scanStepBudget, unsigned maxPages, StringArray &namesOut)
+    {
+        collectPagedNames(storeRoot, recursive, scanStepBudget, maxPages, PageMutation(), namesOut);
+    }
+
+    static void assertNoDuplicateNames(const StringArray &names)
+    {
+        std::unordered_set<std::string> seen;
+        for (unsigned i = 0; i < names.ordinality(); i++)
+        {
+            bool inserted = seen.insert(names.item(i)).second;
+            CPPUNIT_ASSERT(inserted);
+        }
+    }
+
+    static void assertSequentialNames(const StringArray &names, const char *scopePrefix, unsigned count, unsigned width)
+    {
+        CPPUNIT_ASSERT_EQUAL(count, names.ordinality());
+        for (unsigned i = 0; i < count; i++)
+        {
+            StringBuffer expected;
+            expected.appendf("%s::file%0*u", scopePrefix, width, i);
+            CPPUNIT_ASSERT(streq(expected.str(), names.item(i)));
+        }
+    }
+
+    static void assertContainsSequentialNames(const StringArray &names, const char *scopePrefix, unsigned count, unsigned width)
+    {
+        for (unsigned i = 0; i < count; i++)
+        {
+            StringBuffer expected;
+            expected.appendf("%s::file%0*u", scopePrefix, width, i);
+            CPPUNIT_ASSERT(names.contains(expected.str()));
+        }
+    }
+
+    static void assertSameNameSet(const StringArray &lhs, const StringArray &rhs)
+    {
+        std::unordered_set<std::string> lhsSet;
+        std::unordered_set<std::string> rhsSet;
+
+        for (unsigned i = 0; i < lhs.ordinality(); i++)
+            lhsSet.insert(lhs.item(i));
+        for (unsigned i = 0; i < rhs.ordinality(); i++)
+            rhsSet.insert(rhs.item(i));
+
+        CPPUNIT_ASSERT_EQUAL(lhsSet.size(), rhsSet.size());
+        for (const auto &name : lhsSet)
+            CPPUNIT_ASSERT(rhsSet.find(name) != rhsSet.end());
+    }
+
+public:
+    void testCFileScannerBasicWildcardScan()
+    {
+        // Intent: validate direct CFileScanner wildcard filtering on a synthetic store.
+        // Verifies representative alpha::b* file/super matches are present in the result set,
+        // and that later scope segments still constrain matches after a wildcard scope segment.
+        Owned<IPropertyTree> storeRoot = createSyntheticStore();
+
+        Owned<CIterateFileFilterContainer> filterContainer = new CIterateFileFilterContainer();
+        filterContainer->setNameFilter("alpha::b*");
+
+        CIArrayOf<CFileMatch> matchingFiles;
+        CFileScanner scanner(0);
+        scanner.begin(filterContainer.get(), true);
+        (void) scanner.nextPage(storeRoot, matchingFiles);
+
+        unsigned expectedBPrefixMatches = expectedAlphaMatches - 1; // alpha::fileRoot excluded by alpha::b*
+        CPPUNIT_ASSERT_EQUAL(expectedBPrefixMatches, (unsigned) matchingFiles.ordinality());
+
+        StringArray names;
+        ForEachItemIn(i, matchingFiles)
+            names.append(matchingFiles.item(i).queryName());
+
+        CPPUNIT_ASSERT(names.contains("alpha::beta::fileA"));
+        CPPUNIT_ASSERT(names.contains("alpha::beta::fileB"));
+        CPPUNIT_ASSERT(names.contains("alpha::beta::superAB"));
+        CPPUNIT_ASSERT(names.contains("alpha::bulkA000::file000"));
+        CPPUNIT_ASSERT(names.contains("alpha::bulkA059::super000"));
+        CPPUNIT_ASSERT(names.contains("alpha::beta2"));
+        CPPUNIT_ASSERT(!names.contains("alpha::fileRoot"));
+        CPPUNIT_ASSERT(!names.contains("gamma::fileG"));
+
+        // Verify the scope segment wildcard edge case bug is fixed (trailing star matching exactly the bounds of the segment)
+        filterContainer.setown(new CIterateFileFilterContainer());
+        filterContainer->setNameFilter("somescope::abc*::*");
+        matchingFiles.kill();
+        scanner.begin(filterContainer.get(), true);
+        (void) scanner.nextPage(storeRoot, matchingFiles);
+        CPPUNIT_ASSERT_EQUAL(1u, (unsigned) matchingFiles.ordinality());
+        CPPUNIT_ASSERT_EQUAL(0, strcmp("somescope::abc::def", matchingFiles.item(0).queryName()));
+
+        filterContainer.setown(new CIterateFileFilterContainer());
+        filterContainer->setNameFilter("somescope::abc*");
+        matchingFiles.kill();
+        scanner.begin(filterContainer.get(), true);
+        (void) scanner.nextPage(storeRoot, matchingFiles);
+        CPPUNIT_ASSERT_EQUAL(2u, (unsigned) matchingFiles.ordinality());
+
+        filterContainer.setown(new CIterateFileFilterContainer());
+        filterContainer->setNameFilter("somescope::ab*");
+        matchingFiles.kill();
+        scanner.begin(filterContainer.get(), true);
+        (void) scanner.nextPage(storeRoot, matchingFiles);
+        CPPUNIT_ASSERT_EQUAL(2u, (unsigned) matchingFiles.ordinality());
+
+        // Test trailing wildcard on a non-final filter segment
+        filterContainer.setown(new CIterateFileFilterContainer());
+        filterContainer->setNameFilter("somescope*::abc::def");
+        matchingFiles.kill();
+        scanner.begin(filterContainer.get(), true);
+        (void) scanner.nextPage(storeRoot, matchingFiles);
+        CPPUNIT_ASSERT_EQUAL(1u, (unsigned) matchingFiles.ordinality());
+        CPPUNIT_ASSERT_EQUAL(0, strcmp("somescope::abc::def", matchingFiles.item(0).queryName()));
+
+        filterContainer.setown(new CIterateFileFilterContainer());
+        filterContainer->setNameFilter("somesco*::*bc::def*");
+        matchingFiles.kill();
+        scanner.begin(filterContainer.get(), true);
+        (void) scanner.nextPage(storeRoot, matchingFiles);
+        CPPUNIT_ASSERT_EQUAL(1u, (unsigned) matchingFiles.ordinality());
+        CPPUNIT_ASSERT_EQUAL(0, strcmp("somescope::abc::def", matchingFiles.item(0).queryName()));
+
+        // Add a focused nested case locally so this test can verify that a later scope segment
+        // ("::c::") is still enforced after matching a wildcard scope segment ("b*").
+        IPropertyTree *filesRoot = storeRoot->queryPropTree(querySdsFilesRoot());
+        CPPUNIT_ASSERT(filesRoot);
+
+        StringBuffer betaQuery;
+        betaQuery.append(queryDfsXmlBranchName(DXB_Scope)).append("[@name=\"alpha\"]/")
+            .append(queryDfsXmlBranchName(DXB_Scope)).append("[@name=\"beta\"]");
+        IPropertyTree *beta = filesRoot->queryPropTree(betaQuery.str());
+        CPPUNIT_ASSERT(beta);
+
+        IPropertyTree *c = addNamedScope(*beta, "c");
+        IPropertyTree *notc = addNamedScope(*beta, "notc");
+        IPropertyTree *nestedC = addNamedScope(*notc, "c");
+        addNamedFile(*c, "fileA", false);
+        addNamedFile(*notc, "fileA", false);
+        addNamedFile(*nestedC, "fileA", false);
+
+        Owned<CIterateFileFilterContainer> constrainedFilterContainer = new CIterateFileFilterContainer();
+        constrainedFilterContainer->setNameFilter("alpha::b*::c::fileA");
+
+        CIArrayOf<CFileMatch> constrainedMatches;
+        // This check validates wildcard scope-segment correctness, not pagination.
+        // Use an unbounded scan budget so assertion is deterministic.
+        CFileScanner constrainedScanner(0);
+        constrainedScanner.begin(constrainedFilterContainer.get(), true);
+        (void) constrainedScanner.nextPage(storeRoot, constrainedMatches);
+
+        CPPUNIT_ASSERT_EQUAL(1U, (unsigned) constrainedMatches.ordinality());
+        CPPUNIT_ASSERT(streq("alpha::beta::c::fileA", constrainedMatches.item(0).queryName()));
+        CPPUNIT_ASSERT(!streq("alpha::beta::notc::c::fileA", constrainedMatches.item(0).queryName()));
+    }
+
+    void testIterateFilteredFiles3StyleFullPayloadMessageFlow()
+    {
+        // Intent: validate the normal iterateFilteredFiles3 message contract end-to-end
+        // for an unrestricted request (count, allMatchingFiles flag, and representative rows).
+        Owned<IPropertyTree> storeRoot = createSyntheticStore();
+
+        Owned<IPropertyTree> request = createPTree();
+        request->setProp("@filters", "");
+        request->setPropBool("@recursive", true);
+
+        MemoryBuffer requestMb;
+        request->serialize(requestMb);
+
+        Owned<IPropertyTree> parsedRequest = createPTree(requestMb);
+
+        MemoryBuffer replyMb;
+        unsigned count = runIterateFilteredFiles3StyleRequest(*storeRoot, *parsedRequest, replyMb);
+        CPPUNIT_ASSERT_EQUAL(expectedTotalMatches, count);
+
+        unsigned wireCount = 0;
+        bool returnAllMatchingFiles = false;
+        replyMb.read(wireCount);
+        replyMb.read(returnAllMatchingFiles);
+
+        CPPUNIT_ASSERT_EQUAL(expectedTotalMatches, wireCount);
+        CPPUNIT_ASSERT(returnAllMatchingFiles);
+
+        StringArray names;
+        readAllLegacyRows(replyMb, names);
+
+        CPPUNIT_ASSERT_EQUAL(expectedTotalMatches, (unsigned)names.ordinality());
+        CPPUNIT_ASSERT(names.contains("alpha::beta::fileA"));
+        CPPUNIT_ASSERT(names.contains("alpha::beta::fileB"));
+        CPPUNIT_ASSERT(names.contains("alpha::beta::superAB"));
+        CPPUNIT_ASSERT(names.contains("alpha::fileRoot"));
+        CPPUNIT_ASSERT(names.contains("gamma::fileG"));
+        CPPUNIT_ASSERT(names.contains("alpha::bulkA000::file000"));
+        CPPUNIT_ASSERT(names.contains("alpha::bulkA059::super000"));
+        CPPUNIT_ASSERT(names.contains("gamma::bulkG019::file003"));
+    }
+
+    void testIterateFilesLegacyMessageFlow()
+    {
+        // Intent: validate legacy iterateFiles message behavior with and without superfiles.
+        // Verifies counts, wire count integrity, and expected inclusion/exclusion of results.
+        Owned<IPropertyTree> storeRoot = createSyntheticStore();
+
+        MemoryBuffer noSuperReply;
+        unsigned noSuperCount = runIterateFilesLegacyStyleRequest(*storeRoot, "alpha::*", true, false, noSuperReply);
+        CPPUNIT_ASSERT_EQUAL(expectedAlphaMatches - (1 + (bulkAlphaScopeCount * bulkAlphaSupersPerScope)), noSuperCount);
+
+        unsigned wireCount = 0;
+        noSuperReply.read(wireCount);
+        CPPUNIT_ASSERT_EQUAL(noSuperCount, wireCount);
+
+        StringArray noSuperNames;
+        readAllLegacyRows(noSuperReply, noSuperNames);
+
+        CPPUNIT_ASSERT_EQUAL(noSuperCount, (unsigned) noSuperNames.ordinality());
+        CPPUNIT_ASSERT(noSuperNames.contains("alpha::beta::fileA"));
+        CPPUNIT_ASSERT(noSuperNames.contains("alpha::beta::fileB"));
+        CPPUNIT_ASSERT(noSuperNames.contains("alpha::fileRoot"));
+        CPPUNIT_ASSERT(noSuperNames.contains("alpha::bulkA000::file000"));
+        CPPUNIT_ASSERT(!noSuperNames.contains("alpha::beta::superAB"));
+        CPPUNIT_ASSERT(!noSuperNames.contains("alpha::bulkA059::super000"));
+
+        MemoryBuffer withSuperReply;
+        unsigned withSuperCount = runIterateFilesLegacyStyleRequest(*storeRoot, "alpha::*", true, true, withSuperReply);
+        CPPUNIT_ASSERT_EQUAL(expectedAlphaMatches, withSuperCount);
+
+        wireCount = 0;
+        withSuperReply.read(wireCount);
+        CPPUNIT_ASSERT_EQUAL(withSuperCount, wireCount);
+
+        StringArray withSuperNames;
+        readAllLegacyRows(withSuperReply, withSuperNames);
+
+        CPPUNIT_ASSERT_EQUAL(withSuperCount, (unsigned) withSuperNames.ordinality());
+        CPPUNIT_ASSERT(withSuperNames.contains("alpha::beta::fileA"));
+        CPPUNIT_ASSERT(withSuperNames.contains("alpha::beta::fileB"));
+        CPPUNIT_ASSERT(withSuperNames.contains("alpha::beta::superAB"));
+        CPPUNIT_ASSERT(withSuperNames.contains("alpha::fileRoot"));
+        CPPUNIT_ASSERT(withSuperNames.contains("alpha::bulkA000::file000"));
+        CPPUNIT_ASSERT(withSuperNames.contains("alpha::bulkA059::super000"));
+    }
+
+    void testIterateFilteredFiles3StyleAllMatchingFilesFlagTransitions()
+    {
+        // Intent: validate allMatchingFiles flag transitions:
+        // full/unrestricted request -> true, maxFiles-limited request -> false.
+        Owned<IPropertyTree> storeRoot = createSyntheticStore();
+
+        Owned<IPropertyTree> fullRequest = createPTree();
+        fullRequest->setProp("@filters", "");
+        fullRequest->setPropBool("@recursive", true);
+
+        MemoryBuffer fullReply;
+        unsigned fullCount = runIterateFilteredFiles3StyleRequest(*storeRoot, *fullRequest, fullReply);
+        CPPUNIT_ASSERT_EQUAL(expectedTotalMatches, fullCount);
+
+        unsigned wireCount = 0;
+        bool allReceived = false;
+        fullReply.read(wireCount);
+        fullReply.read(allReceived);
+        CPPUNIT_ASSERT_EQUAL(expectedTotalMatches, wireCount);
+        CPPUNIT_ASSERT(allReceived);
+
+        StringBuffer limitedFilters;
+        limitedFilters.append(DFUQFTspecial).append(DFUQFilterSeparator)
+            .append(DFUQSFMaxFiles).append(DFUQFilterSeparator)
+            .append(10).append(DFUQFilterSeparator);
+
+        Owned<IPropertyTree> limitedRequest = createPTree();
+        limitedRequest->setProp("@filters", limitedFilters.str());
+        limitedRequest->setPropBool("@recursive", true);
+
+        MemoryBuffer limitedReply;
+        unsigned limitedCount = runIterateFilteredFiles3StyleRequest(*storeRoot, *limitedRequest, limitedReply);
+        CPPUNIT_ASSERT_EQUAL(10U, limitedCount);
+
+        wireCount = 0;
+        allReceived = true;
+        limitedReply.read(wireCount);
+        limitedReply.read(allReceived);
+        CPPUNIT_ASSERT_EQUAL(10U, wireCount);
+        CPPUNIT_ASSERT(!allReceived);
+    }
+
+    void testPaginationSparseMatchesDoNotStopOnEmptyPage()
+    {
+        // Intent: verify traversal-step pagination does not treat an empty match page as completion.
+        // Verifies first page can be empty with continuation state, and that later pages still return matches.
+        Owned<IPropertyTree> storeRoot = createPTree("Store");
+        IPropertyTree *filesRoot = storeRoot->addPropTree(querySdsFilesRoot(), createPTree());
+
+        // Build many non-matching scopes/files before the single matching file.
+        // Filter '*::needle' requires recursion and causes sparse match density.
+        for (unsigned i = 0; i < 12; i++)
+        {
+            StringBuffer scopeName;
+            scopeName.appendf("s%02u", i);
+            IPropertyTree *scope = addNamedScope(*filesRoot, scopeName.str());
+            addNamedFile(*scope, "other", false);
+        }
+
+        IPropertyTree *targetScope = addNamedScope(*filesRoot, "target");
+        addNamedFile(*targetScope, "needle", false);
+
+        Owned<CIterateFileFilterContainer> filterContainer = new CIterateFileFilterContainer();
+        filterContainer->setNameFilter("*::needle");
+
+        CFileScanner scanner(1);
+        scanner.begin(filterContainer.get(), true);
+
+        CIArrayOf<CFileMatch> page;
+        bool hasMorePages = scanner.nextPage(storeRoot, page);
+
+        // With tiny step budget and sparse matches, an empty page is expected.
+        CPPUNIT_ASSERT_EQUAL(0U, (unsigned)page.ordinality());
+        CPPUNIT_ASSERT(hasMorePages);
+
+        bool sawNeedle = false;
+        for (unsigned resumePage = 0; resumePage < 128; resumePage++)
+        {
+            page.kill();
+            hasMorePages = scanner.nextPage(storeRoot, page);
+
+            ForEachItemIn(i, page)
+            {
+                if (streq("target::needle", page.item(i).queryName()))
+                    sawNeedle = true;
+            }
+
+            if (!hasMorePages)
+                break;
+        }
+
+        CPPUNIT_ASSERT_MESSAGE("Expected to eventually find sparse match after empty pages", sawNeedle);
+        CPPUNIT_ASSERT_MESSAGE("Expected traversal to fully exhaust", !hasMorePages);
+    }
+
+    // Phase 4: Comprehensive Mutation Tests
+
+    void testPaginationNoMutations()
+    {
+        // Intent: establish pagination baseline with no concurrent store mutations.
+        // Verifies full coverage, no duplicates, and expected membership across pages.
+        Owned<IPropertyTree> storeRoot = createFlatStore("test", 100, 3, nullptr);
+        StringArray names;
+        collectPagedNames(*storeRoot, true, 20, 8, names);
+        assertNoDuplicateNames(names);
+        CPPUNIT_ASSERT_EQUAL(100U, names.ordinality());
+        assertContainsSequentialNames(names, "test", 100, 3);
+    }
+
+    void testPaginationWithDeletions()
+    {
+        // Intent: validate pagination robustness when files are deleted between page requests.
+        // Verifies no duplicates and sensible bounds on observed total results.
+        IPropertyTree *scope = nullptr;
+        Owned<IPropertyTree> storeRoot = createFlatStore("test", 100, 3, &scope);
+        unsigned totalDeleted = 0;
+
+        auto deleteAfterPage = [&](unsigned page, IPropertyTree &, bool hasMorePages)
+        {
+            if (!hasMorePages || page >= 4)
+                return;
+            totalDeleted += removeLastNFiles(*scope, (page % 3) + 1);
+        };
+
+        StringArray names;
+        collectPagedNames(*storeRoot, true, 20, 8, deleteAfterPage, names);
+        assertNoDuplicateNames(names);
+        CPPUNIT_ASSERT(names.ordinality() <= 100);
+        CPPUNIT_ASSERT(names.ordinality() >= (100 - totalDeleted));
+    }
+
+    void testPaginationWithInsertions()
+    {
+        // Intent: validate pagination behavior when files are inserted between page requests.
+        // Verifies no duplicates, bounded growth, and preservation of baseline file coverage.
+        IPropertyTree *scope = nullptr;
+        Owned<IPropertyTree> storeRoot = createFlatStore("test", 100, 3, &scope);
+
+        auto insertAfterPage = [&](unsigned page, IPropertyTree &, bool hasMorePages)
+        {
+            if (!hasMorePages || page >= 4)
+                return;
+
+            for (unsigned n = 0; n < 5; n++)
+            {
+                StringBuffer name;
+                name.appendf("newfile_p%u_%u", page, n);
+                addNamedFile(*scope, name.str(), false);
+            }
+        };
+
+        StringArray names;
+        collectPagedNames(*storeRoot, true, 20, 8, insertAfterPage, names);
+        assertNoDuplicateNames(names);
+        CPPUNIT_ASSERT(names.ordinality() >= 100);
+        CPPUNIT_ASSERT(names.ordinality() <= 120);
+        assertContainsSequentialNames(names, "test", 100, 3);
+    }
+
+    void testPaginationDeepNesting()
+    {
+        // Intent: verify pagination traverses deeply nested scope hierarchies correctly.
+        // Verifies all expected deep-leaf files are discovered without duplication.
+        Owned<IPropertyTree> storeRoot = createPTree("Store");
+        IPropertyTree *filesRoot = storeRoot->addPropTree(querySdsFilesRoot(), createPTree());
+
+        // Create 3 scope levels: a::b::c::
+        IPropertyTree *level = filesRoot;
+        const char *scopeNames[] = {"a", "b", "c"};
+        for (unsigned s = 0; s < 3; s++)
+        {
+            level = addNamedScope(*level, scopeNames[s]);
+        }
+
+        // Add 15 files at the deepest level
+        for (unsigned i = 0; i < 15; i++)
+        {
+            StringBuffer name;
+            name.appendf("file%02u", i);
+            addNamedFile(*level, name.str(), false);
+        }
+
+        StringArray names;
+        collectPagedNames(*storeRoot, true, 5, 8, names);
+        assertNoDuplicateNames(names);
+        CPPUNIT_ASSERT_EQUAL(15U, names.ordinality());
+        assertContainsSequentialNames(names, "a::b::c", 15, 2);
+    }
+
+    void testPaginationConsistency()
+    {
+        // Intent: verify pagination is stable across repeated runs over equivalent input data.
+        // Verifies consistent cardinality, uniqueness, expected membership, and set equality.
+        StringArray results[3];
+
+        for (unsigned run = 0; run < 3; run++)
+        {
+            Owned<IPropertyTree> storeRoot = createFlatStore("test", 50, 3, nullptr);
+            collectPagedNames(*storeRoot, true, 20, 8, results[run]);
+        }
+
+        CPPUNIT_ASSERT_EQUAL(results[0].ordinality(), results[1].ordinality());
+        CPPUNIT_ASSERT_EQUAL(results[1].ordinality(), results[2].ordinality());
+
+        assertNoDuplicateNames(results[0]);
+        assertNoDuplicateNames(results[1]);
+        assertNoDuplicateNames(results[2]);
+
+        CPPUNIT_ASSERT_EQUAL(50U, results[0].ordinality());
+        CPPUNIT_ASSERT_EQUAL(50U, results[1].ordinality());
+        CPPUNIT_ASSERT_EQUAL(50U, results[2].ordinality());
+
+        assertContainsSequentialNames(results[0], "test", 50, 3);
+        assertContainsSequentialNames(results[1], "test", 50, 3);
+        assertContainsSequentialNames(results[2], "test", 50, 3);
+
+        assertSameNameSet(results[0], results[1]);
+        assertSameNameSet(results[1], results[2]);
+    }
+
+    void testPaginationNoDuplicateOrSkip()
+    {
+        // Intent: validate that pagination neither duplicates nor skips entries.
+        // Verifies exact expected cardinality and complete membership coverage.
+        Owned<IPropertyTree> storeRoot = createFlatStore("test", 37, 3, nullptr);
+        StringArray names;
+        collectPagedNames(*storeRoot, true, 7, 16, names);
+        assertNoDuplicateNames(names);
+        CPPUNIT_ASSERT_EQUAL(37U, names.ordinality());
+        assertContainsSequentialNames(names, "test", 37, 3);
+    }
+
+    void testPaginationPartialChildReentryOrder()
+    {
+        // Intent: verify resume re-enters a partially scanned child scope before sibling scopes.
+        // Verifies emitted order across pages starts with remaining child entries,
+        // then proceeds to sibling scopes.
+        Owned<IPropertyTree> storeRoot = createPTree("Store");
+        IPropertyTree *filesRoot = storeRoot->addPropTree(querySdsFilesRoot(), createPTree());
+        IPropertyTree *a = addNamedScope(*filesRoot, "a");
+        IPropertyTree *b = addNamedScope(*a, "b");
+        IPropertyTree *d = addNamedScope(*a, "d");
+
+        addNamedFile(*b, "file00", false);
+        addNamedFile(*b, "file01", false);
+        addNamedFile(*b, "file02", false);
+        addNamedFile(*d, "file00", false);
+
+        Owned<CIterateFileFilterContainer> filterContainer = new CIterateFileFilterContainer();
+        filterContainer->readFilters("");
+
+        CFileScanner scanner(4);
+        scanner.begin(filterContainer.get(), true);
+
+        StringArray emitted;
+        for (unsigned page = 0; page < 16; page++)
+        {
+            CIArrayOf<CFileMatch> pageMatches;
+            bool hasMorePages = scanner.nextPage(storeRoot, pageMatches);
+            ForEachItemIn(i, pageMatches)
+                emitted.append(pageMatches.item(i).queryName());
+            if (!hasMorePages)
+                break;
+        }
+
+        CPPUNIT_ASSERT_EQUAL(4U, emitted.ordinality());
+        CPPUNIT_ASSERT(streq("a::b::file00", emitted.item(0)));
+        CPPUNIT_ASSERT(streq("a::b::file01", emitted.item(1)));
+        CPPUNIT_ASSERT(streq("a::b::file02", emitted.item(2)));
+        CPPUNIT_ASSERT(streq("a::d::file00", emitted.item(3)));
+    }
+
+    void testPaginationPendingScopeOrphaned()
+    {
+        // Intent: regression coverage for orphaned pending-scope handling during resume.
+        // Verifies stale deeper frames are not misapplied when the pending child is deleted.
+        // Regression test for: when the pending partially-scanned scope is deleted between pages,
+        // the remaining deeper resume frames in nextState must be discarded so the next sibling
+        // scope does not incorrectly consume them.
+        //
+        // Complex tree structure with multiple levels and multiple siblings:
+        //   a::b::c::{file00, file01, file02}
+        //   a::d::{file00, file01}
+        //   a::e::f::{file00, file01}
+        //   a::e::g::{file00}
+        //
+        // Page 1: scan with maxFiles=2 returns c::file00, c::file01, saves 3 frames:
+        //   frame[0] (deepest): c's children, currentIndex=2 (c::file02 is next)
+        //   frame[1]: b's children (just c), currentIndex=1 (no more siblings in b)
+        //   frame[2] (shallowest): a's children, currentIndex=1 (d is next after b)
+        // pendingIndex = 0 (b) on resume at a's level.
+        //
+        // Between pages: delete scope b. b becomes orphaned.
+        // On resume: b is the pendingIndex and is orphaned. Without the fix, frames[0..1]
+        // (the deeper c and b frames) are left in nextState and incorrectly applied to
+        // d's scanScope, causing assertion failure at the isScope check.
+        // With the fix, nextState is cleared when the pending orphaned child is skipped.
+        //
+        // Continues to verify d and e siblings are processed correctly after orphan skipping.
+        Owned<IPropertyTree> storeRoot = createPTree("Store");
+        IPropertyTree *filesRoot = storeRoot->addPropTree(querySdsFilesRoot(), createPTree());
+        IPropertyTree *a = addNamedScope(*filesRoot, "a");
+        IPropertyTree *b = addNamedScope(*a, "b");
+        IPropertyTree *c = addNamedScope(*b, "c");
+        IPropertyTree *d = addNamedScope(*a, "d");
+        IPropertyTree *e = addNamedScope(*a, "e");
+        IPropertyTree *f = addNamedScope(*e, "f");
+        IPropertyTree *g = addNamedScope(*e, "g");
+
+        // Deep nesting: b::c::{files}
+        addNamedFile(*c, "file00", false);
+        addNamedFile(*c, "file01", false);
+        addNamedFile(*c, "file02", false);
+
+        // Sibling after orphaned scope: d::{files}
+        addNamedFile(*d, "file00", false);
+        addNamedFile(*d, "file01", false);
+
+        // Deeper nesting in following siblings: e::f::{files}, e::g::{files}
+        addNamedFile(*f, "file00", false);
+        addNamedFile(*f, "file01", false);
+        addNamedFile(*g, "file00", false);
+
+        Owned<CIterateFileFilterContainer> filterContainer = new CIterateFileFilterContainer();
+        filterContainer->readFilters("");
+
+        CFileScanner scanner(5);
+        scanner.begin(filterContainer.get(), true);
+
+        bool hasMorePages = true;
+        bool sawExpectedPrefix = false;
+        for (unsigned page = 0; page < 32; page++)
+        {
+            CIArrayOf<CFileMatch> pageMatches;
+            hasMorePages = scanner.nextPage(storeRoot, pageMatches);
+
+            if ((pageMatches.ordinality() >= 2)
+                && streq("a::b::c::file00", pageMatches.item(0).queryName())
+                && streq("a::b::c::file01", pageMatches.item(1).queryName()))
+            {
+                sawExpectedPrefix = true;
+                break;
+            }
+
+            if (!hasMorePages)
+                break;
+        }
+        CPPUNIT_ASSERT_MESSAGE("Expected to reach page prefix a::b::c::file00,file01 before delete", sawExpectedPrefix);
+
+        // Simulate concurrent deletion of scope b between pages (orphaning the pending frame)
+        Linked<IPropertyTree> linkedB = b;
+        a->removeTree(b);
+        cppunitMarkTreeOrphaned(linkedB);
+
+        StringArray remaining;
+        for (unsigned page = 0; page < 64; page++)
+        {
+            CIArrayOf<CFileMatch> pageMatches;
+            hasMorePages = scanner.nextPage(storeRoot, pageMatches);
+            ForEachItemIn(i, pageMatches)
+                remaining.append(pageMatches.item(i).queryName());
+            if (!hasMorePages)
+                break;
+        }
+
+        auto findIndex = [&](const char *name) -> int
+        {
+            ForEachItemIn(i, remaining)
+            {
+                if (streq(name, remaining.item(i)))
+                    return (int)i;
+            }
+            return -1;
+        };
+
+        int d0 = findIndex("a::d::file00");
+        int d1 = findIndex("a::d::file01");
+        int f0 = findIndex("a::e::f::file00");
+        int f1 = findIndex("a::e::f::file01");
+
+        if (d0 < 0)
+            CPPUNIT_FAIL("Expected to find a::d::file00 after orphaning pending scope");
+        if (d1 < 0)
+            CPPUNIT_FAIL("Expected to find a::d::file01 after orphaning pending scope");
+        if (f0 < 0)
+            CPPUNIT_FAIL("Expected to find a::e::f::file00 after orphaning pending scope");
+        if (f1 < 0)
+            CPPUNIT_FAIL("Expected to find a::e::f::file01 after orphaning pending scope");
+
+        CPPUNIT_ASSERT(d0 < d1);
+        CPPUNIT_ASSERT(d1 < f0);
+        CPPUNIT_ASSERT(f0 < f1);
+    }
+};
+
+CPPUNIT_TEST_SUITE_REGISTRATION(DaliFileScannerSelfContainedTests);
 #endif // _USE_CPPUNIT
