@@ -51,7 +51,6 @@ Tips for writing effective prompts for GitHub Copilot.
 
 For tips on using Copilot for ECL development, see [The `@ecl` Participant in Copilot](./userdoc/copilot/eclParticipantinCopilot.md) and [Why `@workspace` matters in Copilot Chat](./userdoc/copilot/UsingWorkspace.md).
 
-
 ## Containerized Deployment
 
 ### Docker
@@ -99,6 +98,8 @@ DFUPlus is a command-line utility that provides advanced file management capabil
 ECL is the Enterprise Control Language designed specifically for huge data projects using the HPCC Systems platform. Its extreme scalability comes from a design that allows you to leverage every query you create for re-use in subsequent queries as needed.
 
 [ECL Language Reference](https://hpccsystems.com/wp-content/uploads/_documents/ECLR_EN_US/index.html) Online Access to the ECL Language Reference.
+
+[Ledger-Based Processing with ECL](./userdoc/LedgerBasedProcessingWithECL.md): What ledger processing is, how it preserves audit history, and how to implement incremental-by-default patterns in ECL.
 
 ### Field Translation
 
