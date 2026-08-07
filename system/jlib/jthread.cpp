@@ -269,6 +269,8 @@ void Thread::adjustNiceLevel()
     SetThreadPriority(hThread, priority);
 #elif defined(__linux__)
     setpriority(PRIO_PROCESS, 0, nicelevel);
+#elif defined(__APPLE__)
+    setpriority(PRIO_DARWIN_THREAD, 0, nicelevel);
 #else
     UNIMPLEMENTED;
 #endif
