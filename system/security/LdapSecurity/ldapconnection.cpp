@@ -2037,6 +2037,13 @@ public:
             StringBuffer hostbuf;
             int rc = LDAP_SERVER_DOWN;
             char *ldap_errstring=NULL;
+#ifndef _WIN32
+            // 389ds doesn't surface expiration/lockout status via the plain bind error string (that's
+            // AD-specific), so LdapBindDetectExpiry() uses the expiration-status-aware bind for LDAP_389DS
+            // to detect it directly from the server's response controls instead.
+            bool ds389PasswordExpired = false;
+            int ds389SecondsToExpiry = -1;
+#endif
             for (int numHosts=0; numHosts < m_ldapconfig->getHostCount(); numHosts++)
             {
                 for(int retries = 0; retries <= LDAPSEC_MAX_RETRIES; retries++)
@@ -2045,7 +2052,11 @@ public:
                     DBGLOG("LdapBind for user %s (retries=%d) on host %s.", username, retries, hostbuf.str());
                     {
                         LDAP* user_ld = LdapUtils::LdapInit(m_ldapconfig->getProtocol(), hostbuf.str(), m_ldapconfig->getLdapPort(), m_ldapconfig->getLdapSecurePort(), m_ldapconfig->getCipherSuite(), m_ldapconfig->getTLSValidation(), m_ldapconfig->getCACertFile());
+#ifndef _WIN32
+                        rc = LdapUtils::LdapBindDetectExpiry(user_ld, m_ldapconfig->getLdapTimeout(), m_ldapconfig->getDomain(), username, password, userdnbuf.str(), m_ldapconfig->getServerType(), m_ldapconfig->getAuthMethod(), ds389PasswordExpired, ds389SecondsToExpiry);
+#else
                         rc = LdapUtils::LdapBind(user_ld, m_ldapconfig->getLdapTimeout(), m_ldapconfig->getDomain(), username, password, userdnbuf.str(), m_ldapconfig->getServerType(), m_ldapconfig->getAuthMethod());
+#endif
                         if(rc != LDAP_SUCCESS)
                             ldap_get_option(user_ld, LDAP_OPT_ERROR_STRING, &ldap_errstring);
                         LDAP_UNBIND(user_ld);
@@ -2077,7 +2088,11 @@ public:
                 {
                     WARNLOG("Using automatically obtained LDAP Server %s", dc.str());
                     LDAP* user_ld = LdapUtils::LdapInit(m_ldapconfig->getProtocol(), dc.str(), m_ldapconfig->getLdapPort(), m_ldapconfig->getLdapSecurePort(), m_ldapconfig->getCipherSuite(), m_ldapconfig->getTLSValidation(), m_ldapconfig->getCACertFile());
+#ifndef _WIN32
+                    rc = LdapUtils::LdapBindDetectExpiry(user_ld, m_ldapconfig->getLdapTimeout(), m_ldapconfig->getDomain(), username, password, userdnbuf.str(), m_ldapconfig->getServerType(), m_ldapconfig->getAuthMethod(), ds389PasswordExpired, ds389SecondsToExpiry);
+#else
                     rc = LdapUtils::LdapBind(user_ld, m_ldapconfig->getLdapTimeout(), m_ldapconfig->getDomain(), username, password, userdnbuf.str(), m_ldapconfig->getServerType(), m_ldapconfig->getAuthMethod());
+#endif
                     if(rc != LDAP_SUCCESS)
                         ldap_get_option(user_ld, LDAP_OPT_ERROR_STRING, &ldap_errstring);
                     LDAP_UNBIND(user_ld);
@@ -2085,6 +2100,13 @@ public:
             }
             if(rc != LDAP_SUCCESS)
             {
+#ifndef _WIN32
+                if (ds389PasswordExpired)
+                {
+                    user.setAuthenticateStatus(AS_PASSWORD_VALID_BUT_EXPIRED);
+                    return false;
+                }
+#endif
                 if (ldap_errstring && *ldap_errstring && strstr(ldap_errstring, " data "))//if extended error strings are available (they are not in windows clients)
                 {
 #ifdef _DEBUG
@@ -2138,6 +2160,18 @@ public:
                 }
                 return false;
             }
+#ifndef _WIN32
+            // Bind succeeded: if 389ds returned a fresher "PasswordExpiring" seconds-to-expiry
+            // value on the actual bind (potentially more current than the pre-bind attribute
+            // search above), prefer it over the previously-set expiration.
+            if (m_ldapconfig->getServerType() == LDAP_389DS && ds389SecondsToExpiry >= 0)
+            {
+                CDateTime expiry;
+                expiry.setNow();
+                expiry.adjustTimeSecs(ds389SecondsToExpiry);
+                user.setPasswordExpiration(expiry);
+            }
+#endif
             user.setAuthenticateStatus(AS_AUTHENTICATED);
         }
         //Always retrieve user info(SID, UID, fullname, etc) for Active Directory, when the user first logs in.
@@ -3469,6 +3503,19 @@ public:
         m_ldapconfig->getLdapHost(hostbuf);
 
         LDAP* user_ld = LdapUtils::LdapInit(m_ldapconfig->getProtocol(), hostbuf.str(), m_ldapconfig->getLdapPort(), m_ldapconfig->getLdapSecurePort(), m_ldapconfig->getCipherSuite(), m_ldapconfig->getTLSValidation(), m_ldapconfig->getCACertFile());
+#ifndef _WIN32
+        // 389ds signals "password valid but expired" via a response control on bind failure,
+        // not via a distinguishable error string (that's AD-specific, see below), so a plain
+        // sync bind can't tell "wrong password" apart from "correct password but expired" here.
+        if (m_ldapconfig->getServerType() == LDAP_389DS)
+        {
+            bool ds389PasswordExpired = false;
+            int ds389SecondsToExpiry = -1;
+            int rc = LdapUtils::LdapSimpleBindWithExpirationStatus(user_ld, m_ldapconfig->getLdapTimeout(), userdn.str(), password, ds389PasswordExpired, ds389SecondsToExpiry);
+            LDAP_UNBIND(user_ld);
+            return rc == LDAP_SUCCESS || ds389PasswordExpired;
+        }
+#endif
         int rc = LdapUtils::LdapBind(user_ld, m_ldapconfig->getLdapTimeout(),m_ldapconfig->getDomain(), username, password, userdn, m_ldapconfig->getServerType(), m_ldapconfig->getAuthMethod());
         if(rc != LDAP_SUCCESS)
             ldap_get_option(user_ld, LDAP_OPT_ERROR_STRING, &ldap_errstring);
@@ -4846,7 +4893,8 @@ public:
                     if (vals.hasValues())
                         m_pwscheme.append(vals.queryCharValue(0));
                 }
-                ldap_msgfree(msg);
+                // msg (CLDAPMessage) frees itself safely in its destructor; an explicit
+                // ldap_msgfree(msg) here would double-free it and abort (SIGABRT).
             }
         }
         
