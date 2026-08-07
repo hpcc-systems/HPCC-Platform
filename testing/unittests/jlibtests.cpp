@@ -3685,6 +3685,8 @@ IPropertyTree *createBinaryDataCompressionTestPTree(const char *testXml)
  * testRoundTripForRootOnlyPTree                              - Tests round-trip serialization/deserialization for a PTree with only a root node
  * testRoundTripForCompatibilityConfigPropertyTree            - Tests round-trip serialization/deserialization for a complex compatibility config PTree
  * testRoundTripForBinaryDataCompressionTestPTree             - Tests round-trip serialization/deserialization for a PTree with various binary data sizes
+ * testRoundTripForUnnamedRootPTree                           - Tests round-trip for an unnamed root node through createPTree(MemoryBuffer&)
+ * testMemoryBufferDeserializeWithSwapEndian                  - Tests createPTree(MemoryBuffer&) honors MemoryBuffer endian mode
  * testMalformedStreamTruncations                             - Tests deserialization error handling for deterministic truncation offsets
  */
 
@@ -3695,6 +3697,8 @@ class PTreeSerializationDeserializationTest : public CppUnit::TestFixture
     CPPUNIT_TEST(testRoundTripForRootOnlyPTree);
     CPPUNIT_TEST(testRoundTripForCompatibilityConfigPropertyTree);
     CPPUNIT_TEST(testRoundTripForBinaryDataCompressionTestPTree);
+    CPPUNIT_TEST(testRoundTripForUnnamedRootPTree);
+    CPPUNIT_TEST(testMemoryBufferDeserializeWithSwapEndian);
     CPPUNIT_TEST(testMalformedStreamTruncations);
     CPPUNIT_TEST_SUITE_END();
 
@@ -3859,6 +3863,48 @@ public:
     void testRoundTripForBinaryDataCompressionTestPTree()
     {
         performRoundTripTest(__func__, createBinaryDataCompressionTestPTree(testXml));
+    }
+
+    void testRoundTripForUnnamedRootPTree(ipt_flags flags)
+    {
+        START_TEST
+
+        Owned<IPropertyTree> original{createPTree(nullptr)};
+        original->setProp("@kind", "unnamed-root");
+        original->setProp("child", "value");
+
+        MemoryBuffer serialized;
+        original->serialize(serialized);
+
+        Owned<IPropertyTree> deserialized{createPTree(serialized, flags)};
+        CPPUNIT_ASSERT(areMatchingPTrees(original, deserialized));
+
+        END_TEST
+    }
+
+    void testRoundTripForUnnamedRootPTree()
+    {
+        testRoundTripForUnnamedRootPTree(ipt_none);
+        testRoundTripForUnnamedRootPTree(ipt_lowmem);
+        testRoundTripForUnnamedRootPTree(ipt_ordered);
+    }
+
+    void testMemoryBufferDeserializeWithSwapEndian()
+    {
+        START_TEST
+
+        Owned<IPropertyTree> original{createCompatibilityConfigPropertyTree()};
+
+        MemoryBuffer swappedSerialized;
+        swappedSerialized.setSwapEndian(true);
+        original->serialize(swappedSerialized);
+
+        CPPUNIT_ASSERT_MESSAGE("Expected swapped serialization buffer to preserve swap-endian mode", swappedSerialized.needSwapEndian());
+
+        Owned<IPropertyTree> deserialized{createPTree(swappedSerialized, ipt_none)};
+        CPPUNIT_ASSERT(areMatchingPTrees(original, deserialized));
+
+        END_TEST
     }
 
     // Malformed buffered-serial stream truncations test: ensure deserialize errors are reported without relying on specific format offsets

@@ -40,6 +40,7 @@ class PTreeDeserializeContext
 {
 public:
     std::vector<size32_t> matchOffsets;
+    bool swapEndian = false;
 
     PTreeDeserializeContext()
     {
@@ -47,6 +48,22 @@ public:
         // reserve space up front to avoid reallocations.
         constexpr size32_t expectedMaximumAttributeOffsetCount = 15 * 2;
         matchOffsets.reserve(expectedMaximumAttributeOffsetCount);
+    }
+
+    template <class T>
+    void readEndian(IBufferedSerialInputStream &src, T &value) const
+    {
+        if (!swapEndian || sizeof(T) == 1)
+        {
+            ::read(src, value);
+            return;
+        }
+
+        byte temp[sizeof(T)];
+        ::read(src, temp, sizeof(T));
+        auto *dst = reinterpret_cast<byte *>(&value);
+        for (size32_t i = 0; i < sizeof(T); ++i)
+            dst[i] = temp[sizeof(T) - 1 - i];
     }
 };
 

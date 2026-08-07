@@ -3210,8 +3210,10 @@ void PTree::deserializeSelf(IBufferedSerialInputStream &src, PTreeDeserializeCon
 {
     size32_t skipLen{0};
     const char *name = queryZeroTerminatedString(src, skipLen);
-    if (unlikely(skipLen == 0))
+    if (unlikely(!name))
         throwUnexpectedX("PTree deserialization error: end of stream, expected name");
+    if (skipLen == 0)
+        name = nullptr;
     setName(name);
     src.skip(skipLen + 1); // Skip over name and null terminator
 
@@ -3231,7 +3233,7 @@ void PTree::deserializeSelf(IBufferedSerialInputStream &src, PTreeDeserializeCon
     if (value)
         delete value;
     size32_t size{0};
-    read(src, size);
+    ctx.readEndian(src, size);
     if (size > 0)
         value = new CPTValue(src, size);
     else
@@ -4667,17 +4669,20 @@ IPropertyTreeIterator *PTStackIterator::popFromStack(StringAttr &path)
 
 IPropertyTree *createPTree(MemoryBuffer &src, byte flags)
 {
-    IPropertyTree *tree = createPTree(nullptr, flags);
-    tree->deserialize(src);
-    return tree;
+    Owned<IBufferedSerialInputStream> stream = createBufferedSerialInputStream(src);
+    Owned<IPropertyTree> tree = createPTree(nullptr, flags);
+    PTreeDeserializeContext ctx;
+    ctx.swapEndian = src.needSwapEndian();
+    tree->deserializeFromStream(*stream, ctx);
+    return tree.getClear();
 }
 
 IPropertyTree *createPTreeFromBinary(IBufferedSerialInputStream &src, byte flags)
 {
-    IPropertyTree *tree = createPTree(nullptr, flags);
+    Owned<IPropertyTree> tree = createPTree(nullptr, flags);
     PTreeDeserializeContext ctx;
     tree->deserializeFromStream(src, ctx);
-    return tree;
+    return tree.getClear();
 }
 
 IPropertyTree *createPTreeFromBinary(IBufferedSerialInputStream &src, IPTreeNodeCreator *nodeCreator)
@@ -4685,10 +4690,10 @@ IPropertyTree *createPTreeFromBinary(IBufferedSerialInputStream &src, IPTreeNode
     if (!nodeCreator)
         return createPTreeFromBinary(src, ipt_none);
 
-    IPropertyTree *tree = nodeCreator->create(nullptr); // The nullptr is a dummy name value, it will be overwritten by deserializeFromStream
+    Owned<IPropertyTree> tree = nodeCreator->create(nullptr); // The nullptr is a dummy name value, it will be overwritten by deserializeFromStream
     PTreeDeserializeContext ctx;
     tree->deserializeFromStream(src, ctx);
-    return tree;
+    return tree.getClear();
 }
 
 
@@ -7552,6 +7557,12 @@ public:
     virtual IPropertyTree *create(const char *name=NULL, IPTArrayValue *value=NULL, ChildMap *children=NULL, bool existing=false) override
     {
         return new COrderedPTree<BASE_PTREE>(name, SELF::flags, value, children);
+    }
+    virtual IPropertyTree *create(IBufferedSerialInputStream &in, PTreeDeserializeContext &ctx) override
+    {
+        Owned<IPropertyTree> tree = new COrderedPTree<BASE_PTREE>();
+        tree->deserializeFromStream(in, ctx);
+        return tree.getClear();
     }
     virtual IPropertyTree *create(MemoryBuffer &mb) override
     {
