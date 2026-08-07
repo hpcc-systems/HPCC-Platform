@@ -1694,6 +1694,31 @@ bool CEventAttribute::queryBooleanValue() const
     return boolean;
 }
 
+bool CEventAttribute::queryHashData(const void*& ptr, size_t& length) const
+{
+    ptr = nullptr;
+    length = 0;
+    switch (queryTypeClass())
+    {
+    case EATCnumeric:
+    case EATCtimestamp:
+        ptr = &number;
+        length = sizeof(number);
+        return true;
+    case EATCboolean:
+        ptr = &boolean;
+        length = sizeof(boolean);
+        return true;
+    case EATCtext:
+        ptr = text.str();
+        length = text.length();
+        return true;
+    default:
+        break;
+    }
+    return false;
+}
+
 void CEventAttribute::setup(EventAttr attr)
 {
     ASSERT_ATTR(attr);
@@ -1832,6 +1857,12 @@ bool CEvent::queryBooleanValue(EventAttr attr) const
 {
     ASSERT_ATTR(attr);
     return attributes[attr].queryBooleanValue();
+}
+
+bool CEvent::queryHashData(EventAttr attr, const void*& ptr, size_t& length) const
+{
+    ASSERT_ATTR(attr);
+    return attributes[attr].queryHashData(ptr, length);
 }
 
 bool CEvent::setValue(EventAttr attr, const char* value)

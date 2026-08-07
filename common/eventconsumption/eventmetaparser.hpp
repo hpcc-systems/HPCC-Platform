@@ -24,6 +24,7 @@
 #include <unordered_map>
 #include <set>
 #include <string>
+#include <string_view>
 
 constexpr char EVENT_META_PREFIX[] = "meta.";
 constexpr char EVENT_META_SERVICE_NAME[] = "meta.ServiceName";
@@ -127,16 +128,20 @@ public:
     // Accessor functions for file ID to path mappings
     // Note: Returns "" (empty string) to represent a cache miss
     const char* queryFilePath(__uint64 fileId) const;
+    bool queryFilePathHash(__uint64 fileId, __uint64& hash) const;
     bool hasFileMapping(__uint64 fileId) const;
 
     // Accessor functions for trace ID to service name mappings
     // Note: Returns "" (empty string) to represent a cache miss
     const char* queryServiceName(const char* traceId) const;
+    bool queryServiceNameHash(const char* traceId, __uint64& hash) const;
     bool hasServiceMapping(const char* traceId) const;
 
     // Accessor functions for plane information
     const char* queryLogicalFileName(const CEvent& event) const;
+    bool queryLogicalFileNameHash(const CEvent& event, __uint64& hash) const;
     const char* queryPlane(const CEvent& event) const;
+    bool queryPlaneHash(const CEvent& event, __uint64& hash) const;
 
     // Clear all mappings
     void clearAll();
@@ -176,12 +181,32 @@ private:
             return h;
         }
     };
+
+    // A string_view (stable pointer into a node-based container) paired with its
+    // precomputed FNV-1a 64-bit hash, so getHash() folds 8 bytes instead of N.
+    struct CachedString
+    {
+        std::string_view view;
+        __uint64 hash{0};
+    };
+
+    // Service name entry: owns the string and caches its hash.
+    struct ServiceEntry
+    {
+        std::string name;
+        __uint64 hash{0};
+    };
+
+    const CachedString* queryFilePathEntry(__uint64 fileId) const;
+    const ServiceEntry* queryServiceNameEntry(const char* traceId) const;
+    const CachedString* queryLogicalFileNameEntry(const CEvent& event) const;
+    const CachedString* queryPlaneEntry(const CEvent& event) const;
     void onFile(const char* filename, uint32_t version);
     void onEvent(CEvent& event);
     static SourceFileKey makeSourceFileKey(const CEvent& event);
     uint32_t generateRuntimeFileId(const CEvent& event);
     const PlaneInformation* findBestPlaneMatch(const char* path) const;
-    const char* deriveLogicalFileName(const char* path, const PlaneInformation* plane);
+    std::string_view deriveLogicalFileName(const char* path, const PlaneInformation* plane);
 
 private:
     size_t sourceCount{0};
@@ -190,15 +215,16 @@ private:
     bool haveLastRemap{false};
 
     // File ID to path mappings (from MetaFileInformation events)
-    // Note: fileIdToPath stores pointers to the string buffers owned by indexFiles.
+    // Note: fileIdToPath stores CachedString values. Each view references string memory
+    // owned by indexFiles, and hash caches the corresponding FNV-1a value.
     // This is safe because std::set is a node-based container which guarantees
     // memory stability; element pointers are never invalidated when the set grows.
     std::set<IndexFileProperties, IndexFilePropertiesCompare> indexFiles;
     std::unordered_map<SourceFileKey, const IndexFileProperties*, SourceFileKeyHash> sourceToProps;
-    std::unordered_map<__uint64, const char*> fileIdToPath;
+    std::unordered_map<__uint64, CachedString> fileIdToPath;
 
     // Trace ID to service name mappings (from EventQueryStart events)
-    std::unordered_map<std::string, std::string> traceIdToService;
+    std::unordered_map<std::string, ServiceEntry> traceIdToService;
 
     // Physical file paths mapped to logical file names.
     //
@@ -206,12 +232,13 @@ private:
     // logicalNamePool owns the string memory for each unique derived logical file name
     // fileIdToLogicalName caches the derived logical file name for each known file ID
     //
-    // Note: fileIdToLogicalName stores pointers to the string buffers owned by logicalNamePool.
+    // Note: fileIdToLogicalName stores CachedString values. Each view references string memory
+    // owned by logicalNamePool, and hash caches the corresponding FNV-1a value.
     // This is safe because std::set is a node-based container which guarantees
     // memory stability; element pointers are never invalidated when the set grows.
     Planes planes;
     // fileIdToPlane caches the storage plane identifier for each known file Id
-    std::unordered_map<__uint64, const char*> fileIdToPlane;
-    std::unordered_map<__uint64, const char*> fileIdToLogicalName;
+    std::unordered_map<__uint64, CachedString> fileIdToPlane;
+    std::unordered_map<__uint64, CachedString> fileIdToLogicalName;
     std::set<std::string, std::less<>> logicalNamePool;
 };

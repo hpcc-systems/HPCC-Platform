@@ -17,6 +17,7 @@
 
 #pragma once
 
+#include "jlib.hpp"
 #include "jstring.hpp"
 #include "jtime.hpp"
 
@@ -56,6 +57,19 @@ inline unsigned computeTimestampBucketPrecision(__uint64 bucketScale)
         --precision;
     }
     return precision;
+}
+
+static constexpr __uint64 fnv1a64InitialHash = 0xcbf29ce484222325ULL;
+
+inline __uint64 fnv1a64Seeded(const void* data, size_t len, __uint64 hash)
+{
+    const unsigned char* ptr = (const unsigned char*)data;
+    for (size_t i = 0; i < len; ++i)
+    {
+        hash ^= ptr[i];
+        hash *= 0x100000001b3ULL;
+    }
+    return hash;
 }
 
 // Flags for strToBytes behavior control

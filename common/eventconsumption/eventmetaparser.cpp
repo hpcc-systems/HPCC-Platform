@@ -17,6 +17,7 @@
 
 #include "eventmetaparser.hpp"
 #include "eventiterator.h"
+#include "eventutility.hpp"
 #include "jevent.hpp"
 
 struct DerivedMetaAttrName
@@ -78,6 +79,15 @@ EventAttrUnit queryDerivedMetaAttributeUnit(unsigned attrId)
     return EAUnone;
 }
 
+namespace
+{
+inline bool failHashQuery(__uint64& hash)
+{
+    hash = 0;
+    return false;
+}
+}
+
 void CMetaInfoState::CCollector::setNextLink(IEventVisitor& visitor)
 {
     nextLink.set(&visitor);
@@ -127,10 +137,38 @@ IEventVisitationLink* CMetaInfoState::getCollector()
     return new CCollector(*this);
 }
 
-const char* CMetaInfoState::queryFilePath(__uint64 fileId) const
+const CMetaInfoState::CachedString* CMetaInfoState::queryFilePathEntry(__uint64 fileId) const
 {
     auto it = fileIdToPath.find(fileId);
-    return (it != fileIdToPath.end()) ? it->second : "";
+    if (it == fileIdToPath.end())
+        return nullptr;
+    return &it->second;
+}
+
+const char* CMetaInfoState::queryFilePath(__uint64 fileId) const
+{
+    const CachedString* entry = queryFilePathEntry(fileId);
+    return entry ? entry->view.data() : "";
+}
+
+bool CMetaInfoState::queryFilePathHash(__uint64 fileId, __uint64& hash) const
+{
+    const CachedString* entry = queryFilePathEntry(fileId);
+    if (!entry)
+        return failHashQuery(hash);
+    hash = entry->hash;
+    return true;
+}
+
+const CMetaInfoState::CachedString* CMetaInfoState::queryPlaneEntry(const CEvent& event) const
+{
+    if (!event.hasAttribute(EvAttrFileId))
+        return nullptr;
+
+    auto it = fileIdToPlane.find(event.queryNumericValue(EvAttrFileId));
+    if (it == fileIdToPlane.end())
+        return nullptr;
+    return &it->second;
 }
 
 const char* CMetaInfoState::queryPlane(const CEvent& event) const
@@ -138,29 +176,53 @@ const char* CMetaInfoState::queryPlane(const CEvent& event) const
     if (event.hasAttribute(EvAttrPlane))
         return event.queryTextValue(EvAttrPlane);
 
-    if (!event.hasAttribute(EvAttrFileId))
-        return "";
+    const CachedString* entry = queryPlaneEntry(event);
+    return entry ? entry->view.data() : "";
+}
 
-    auto it = fileIdToPlane.find(event.queryNumericValue(EvAttrFileId));
-    if (it != fileIdToPlane.end())
+bool CMetaInfoState::queryPlaneHash(const CEvent& event, __uint64& hash) const
+{
+    if (event.hasAttribute(EvAttrPlane))
     {
-        return it->second;
+        // Direct attribute: compute FNV on the spot for consistency with cached plane values.
+        const void* ptr; size_t len;
+        if (!event.queryHashData(EvAttrPlane, ptr, len) || 0 == len)
+            return failHashQuery(hash);
+        hash = fnv1a64Seeded(ptr, len, fnv1a64InitialHash);
+        return true;
     }
-    return "";
+    const CachedString* entry = queryPlaneEntry(event);
+    if (!entry)
+        return failHashQuery(hash);
+    hash = entry->hash;
+    return true;
+}
+
+const CMetaInfoState::CachedString* CMetaInfoState::queryLogicalFileNameEntry(const CEvent& event) const
+{
+    if (!event.hasAttribute(EvAttrFileId))
+        return nullptr;
+
+    const unsigned fileId = event.queryNumericValue(EvAttrFileId);
+    auto it = fileIdToLogicalName.find(fileId);
+    if (it == fileIdToLogicalName.end())
+        return nullptr;
+    return &it->second;
 }
 
 const char* CMetaInfoState::queryLogicalFileName(const CEvent& event) const
 {
-    if (!event.hasAttribute(EvAttrFileId))
-        return "";
+    const CachedString* entry = queryLogicalFileNameEntry(event);
+    return entry ? entry->view.data() : "";
+}
 
-    const unsigned fileId = event.queryNumericValue(EvAttrFileId);
-
-    auto it = fileIdToLogicalName.find(fileId);
-    if (it != fileIdToLogicalName.end())
-        return it->second;
-
-    return "";
+bool CMetaInfoState::queryLogicalFileNameHash(const CEvent& event, __uint64& hash) const
+{
+    const CachedString* entry = queryLogicalFileNameEntry(event);
+    if (!entry || entry->view.empty())
+        return failHashQuery(hash);
+    hash = entry->hash;
+    return true;
 }
 
 bool CMetaInfoState::hasFileMapping(__uint64 fileId) const
@@ -170,10 +232,27 @@ bool CMetaInfoState::hasFileMapping(__uint64 fileId) const
 
 const char* CMetaInfoState::queryServiceName(const char* traceId) const
 {
+    const ServiceEntry* entry = queryServiceNameEntry(traceId);
+    return entry ? entry->name.c_str() : "";
+}
+
+const CMetaInfoState::ServiceEntry* CMetaInfoState::queryServiceNameEntry(const char* traceId) const
+{
     if (!traceId || !*traceId)
-        return "";
+        return nullptr;
     auto it = traceIdToService.find(traceId);
-    return (it != traceIdToService.end()) ? it->second.c_str() : "";
+    if (it == traceIdToService.end())
+        return nullptr;
+    return &it->second;
+}
+
+bool CMetaInfoState::queryServiceNameHash(const char* traceId, __uint64& hash) const
+{
+    const ServiceEntry* entry = queryServiceNameEntry(traceId);
+    if (!entry)
+        return failHashQuery(hash);
+    hash = entry->hash;
+    return true;
 }
 
 bool CMetaInfoState::hasServiceMapping(const char* traceId) const
@@ -240,13 +319,18 @@ void CMetaInfoState::onEvent(CEvent& event)
                 // In single-source mode, multiple unique file IDs might share the same path (so always map).
                 if (isNewPath || sourceCount <= 1)
                 {
-                    fileIdToPath.emplace(targetFileId, indexIt->path.c_str());
+                    std::string_view pathView = indexIt->path;
+                    fileIdToPath.emplace(targetFileId, CachedString{pathView, fnv1a64Seeded(pathView.data(), pathView.size(), fnv1a64InitialHash)});
 
                     // Derive logical file name eagerly
                     const PlaneInformation* bestPlane = findBestPlaneMatch(path);
                     if (bestPlane)
-                        fileIdToPlane[targetFileId] = bestPlane->plane.c_str();
-                    fileIdToLogicalName[targetFileId] = deriveLogicalFileName(path, bestPlane);
+                    {
+                        std::string_view planeView = bestPlane->plane;
+                        fileIdToPlane[targetFileId] = CachedString{planeView, fnv1a64Seeded(planeView.data(), planeView.size(), fnv1a64InitialHash)};
+                    }
+                    std::string_view lfnView = deriveLogicalFileName(path, bestPlane);
+                    fileIdToLogicalName[targetFileId] = CachedString{lfnView, fnv1a64Seeded(lfnView.data(), lfnView.size(), fnv1a64InitialHash)};
                 }
             }
         }
@@ -257,7 +341,12 @@ void CMetaInfoState::onEvent(CEvent& event)
             const char* traceId = event.queryTextValue(EvAttrEventTraceId);
             const char* serviceName = event.queryTextValue(EvAttrServiceName);
             if (!isEmptyString(traceId) && !isEmptyString(serviceName))
-                traceIdToService.emplace(std::make_pair(traceId, serviceName));
+            {
+                const void* ptr = nullptr;
+                size_t len = 0;
+                if (event.queryHashData(EvAttrServiceName, ptr, len))
+                    traceIdToService.emplace(traceId, ServiceEntry{serviceName, fnv1a64Seeded(ptr, len, fnv1a64InitialHash)});
+            }
         }
         break;
     default:
@@ -345,7 +434,7 @@ const CMetaInfoState::PlaneInformation* CMetaInfoState::findBestPlaneMatch(const
     return bestPlane;
 }
 
-const char* CMetaInfoState::deriveLogicalFileName(const char* path, const CMetaInfoState::PlaneInformation* plane)
+std::string_view CMetaInfoState::deriveLogicalFileName(const char* path, const CMetaInfoState::PlaneInformation* plane)
 {
     // 1. Remove the plane path prefix, if a plane match was found.
     const char* start = path;
@@ -434,7 +523,7 @@ const char* CMetaInfoState::deriveLogicalFileName(const char* path, const CMetaI
     auto pit = logicalNamePool.find(finalLogical);
     if (pit == logicalNamePool.end())
         pit = logicalNamePool.insert(std::move(finalLogical)).first;
-    return pit->c_str();
+    return *pit;
 }
 
 #ifdef _USE_CPPUNIT
@@ -448,6 +537,10 @@ class EventMetaStateTest : public CppUnit::TestFixture
     CPPUNIT_TEST(validateChannelIdAttributeType);
     CPPUNIT_TEST(validateReplicaIdAttributeType);
     CPPUNIT_TEST(validateInstanceIdAttributeType);
+    CPPUNIT_TEST(testHashQueryCacheMissesAndHits);
+    CPPUNIT_TEST(testLogicalFileNameHashEmptyDerivedReturnsFalse);
+    CPPUNIT_TEST(testPlaneHashDirectAttributeMatchesMetaDerived);
+    CPPUNIT_TEST(testHashOutputsMatchKnownFnv1aValues);
     CPPUNIT_TEST(testPlaneLookup);
     CPPUNIT_TEST(testDataDrivenLogicalFileNameDerivation);
     CPPUNIT_TEST(testConflictingPlanePath);
@@ -489,6 +582,132 @@ public:
     void validateInstanceIdAttributeType()
     {
         CPPUNIT_ASSERT_MESSAGE("Expected EvAttrInstanceId to be EATu8", queryEventAttributeType(EvAttrInstanceId) == EATu8);
+    }
+
+    void testHashQueryCacheMissesAndHits()
+    {
+        START_TEST
+        CMetaInfoState state;
+        const char* xmlEvents = R"(
+<events>
+    <event type="PlaneInformation" Plane="myplane" Path="/var/lib/hpccsystems/hpcc-data/myplane/" IsStriped="0" />
+    <event type="FileInformation" FileId="1" Path="/var/lib/hpccsystems/hpcc-data/myplane/some/logical/file::1" />
+</events>
+)";
+        executeTestEvents(xmlEvents, state);
+
+        // Seed traceId-to-service cache via visitor pipeline to avoid XML parsing ambiguity.
+        Owned<IEventVisitationLink> collector = state.getCollector();
+        CEvent queryStart;
+        queryStart.reset(EventQueryStart);
+        queryStart.setValue(EvAttrEventTraceId, "trace-1");
+        queryStart.setValue(EvAttrServiceName, "foobar");
+        CPPUNIT_ASSERT(collector->visitEvent(queryStart));
+
+        __uint64 hash = 123;
+        CPPUNIT_ASSERT(!state.queryFilePathHash(999, hash));
+        CPPUNIT_ASSERT_EQUAL((__uint64)0, hash);
+        CPPUNIT_ASSERT(state.queryFilePathHash(1, hash));
+
+        hash = 123;
+        CPPUNIT_ASSERT(!state.queryServiceNameHash("missing-trace", hash));
+        CPPUNIT_ASSERT_EQUAL((__uint64)0, hash);
+        CPPUNIT_ASSERT(state.queryServiceNameHash("trace-1", hash));
+
+        CEvent missing;
+        missing.reset(MetaFileInformation);
+        missing.setValue(EvAttrFileId, (__uint64)999);
+        CPPUNIT_ASSERT(!state.queryLogicalFileNameHash(missing, hash));
+        CPPUNIT_ASSERT(!state.queryPlaneHash(missing, hash));
+
+        CEvent emptyPlane;
+        emptyPlane.reset(MetaPlaneInformation);
+        emptyPlane.setValue(EvAttrPlane, "");
+        CPPUNIT_ASSERT(!state.queryPlaneHash(emptyPlane, hash));
+        END_TEST
+    }
+
+    void testPlaneHashDirectAttributeMatchesMetaDerived()
+    {
+        START_TEST
+        CMetaInfoState state;
+        const char* xmlEvents = R"(
+<events>
+    <event type="PlaneInformation" Plane="myplane" Path="/var/lib/hpccsystems/hpcc-data/myplane/" IsStriped="0" />
+    <event type="FileInformation" FileId="1" Path="/var/lib/hpccsystems/hpcc-data/myplane/some/logical/file::1" />
+</events>
+)";
+        executeTestEvents(xmlEvents, state);
+
+        CEvent metaEvent;
+        metaEvent.reset(MetaFileInformation);
+        metaEvent.setValue(EvAttrFileId, (__uint64)1);
+        __uint64 metaHash = 0;
+        CPPUNIT_ASSERT(state.queryPlaneHash(metaEvent, metaHash));
+
+        CEvent directEvent;
+        directEvent.reset(MetaPlaneInformation);
+        directEvent.setValue(EvAttrPlane, "myplane");
+        __uint64 directHash = 0;
+        CPPUNIT_ASSERT(state.queryPlaneHash(directEvent, directHash));
+
+        CPPUNIT_ASSERT_EQUAL(metaHash, directHash);
+        END_TEST
+    }
+
+    void testLogicalFileNameHashEmptyDerivedReturnsFalse()
+    {
+        START_TEST
+        CMetaInfoState state;
+        const char* xmlEvents = R"(
+<events>
+    <event type="PlaneInformation" Plane="myplane" Path="/var/lib/hpccsystems/hpcc-data/myplane/" IsStriped="0" />
+    <event type="FileInformation" FileId="10" Path="/var/lib/hpccsystems/hpcc-data/myplane/" />
+</events>
+)";
+        executeTestEvents(xmlEvents, state);
+
+        CEvent event;
+        event.reset(MetaFileInformation);
+        event.setValue(EvAttrFileId, (__uint64)10);
+
+        // A path identical to the plane root derives to an empty logical file name.
+        const char* logicalName = state.queryLogicalFileName(event);
+        CPPUNIT_ASSERT(logicalName != nullptr);
+        CPPUNIT_ASSERT_EQUAL(std::string(""), std::string(logicalName));
+
+        __uint64 hash = 123;
+        CPPUNIT_ASSERT(!state.queryLogicalFileNameHash(event, hash));
+        CPPUNIT_ASSERT_EQUAL((__uint64)0, hash);
+        END_TEST
+    }
+
+    void testHashOutputsMatchKnownFnv1aValues()
+    {
+        START_TEST
+        CMetaInfoState state;
+        Owned<IEventVisitationLink> collector = state.getCollector();
+
+        CEvent queryStartA;
+        queryStartA.reset(EventQueryStart);
+        queryStartA.setValue(EvAttrEventTraceId, "trace-a");
+        queryStartA.setValue(EvAttrServiceName, "a");
+        CPPUNIT_ASSERT(collector->visitEvent(queryStartA));
+
+        CEvent queryStartFoobar;
+        queryStartFoobar.reset(EventQueryStart);
+        queryStartFoobar.setValue(EvAttrEventTraceId, "trace-foobar");
+        queryStartFoobar.setValue(EvAttrServiceName, "foobar");
+        CPPUNIT_ASSERT(collector->visitEvent(queryStartFoobar));
+
+        __uint64 hashA = 0;
+        CPPUNIT_ASSERT(state.queryServiceNameHash("trace-a", hashA));
+        CPPUNIT_ASSERT_EQUAL((__uint64)0xaf63dc4c8601ec8cULL, hashA);
+
+        __uint64 hashFoobar = 0;
+        CPPUNIT_ASSERT(state.queryServiceNameHash("trace-foobar", hashFoobar));
+        CPPUNIT_ASSERT_EQUAL((__uint64)0x85944171f73967e8ULL, hashFoobar);
+        END_TEST
     }
 
     void testPlaneLookup()
