@@ -18,7 +18,6 @@ test.describe("V5-Basic", () => {
 
     test("Activities", async ({ page }) => {
         await page.goto("stub.htm");
-        await page.waitForLoadState("networkidle");
         await expect(page.locator("#stub_Main-DLStackController_stub_Main-DL_Activity_label")).toBeVisible();
         await expect(page.getByLabel("Auto Refresh")).toBeVisible();
         await expect(page.getByLabel("Maximize/Restore")).toBeVisible();
