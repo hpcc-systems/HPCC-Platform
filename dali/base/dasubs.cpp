@@ -144,7 +144,7 @@ class CDaliPublisherServer: public IDaliServer, public Thread, public CDaliPubli
     UnsignedArray tags;
     CheckedCriticalSection tagsect{SYNC_LOCATION};
     CheckedCriticalSection stubsect{SYNC_LOCATION};
-    ReadWriteLock processlock;
+    ReadWriteLock processlock{SYNC_LOCATION};
 public:
     IMPLEMENT_IINTERFACE_USING(Thread);
 

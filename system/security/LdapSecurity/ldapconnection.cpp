@@ -1697,7 +1697,7 @@ private:
         MemoryAttrItem(unsigned len, const void * ptr) : MemoryAttr(len, ptr) {}
 
     };
-    ReadWriteLock             m_unknownSIDCacheLock;
+    ReadWriteLock             m_unknownSIDCacheLock{SYNC_LOCATION};
     CIArrayOf<MemoryAttrItem> m_unknownSIDCache;//cache Security Identifier Structure (SID) of previously deleted/orphaned LDAP objects
 
 

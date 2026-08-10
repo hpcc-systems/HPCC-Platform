@@ -1512,7 +1512,7 @@ private:
 class CRoxieDebugSessionManager : implements IRoxieDebugSessionManager, public CInterface
 {
 protected:
-    ReadWriteLock debugLock; 
+    ReadWriteLock debugLock{SYNC_LOCATION}; 
     MapStringToMyClass<IDebuggerContext> debuggerContexts;
 
 public:
@@ -2322,7 +2322,7 @@ private:
     Owned<IRoxieDaliHelper> daliHelper;
     Owned<IDaliPackageWatcher> pSetsNotifier;
     Owned<IDaliPackageWatcher> pMapsNotifier;
-    mutable ReadWriteLock packageCrit;
+    mutable ReadWriteLock packageCrit{SYNC_LOCATION};
     InterruptableSemaphore controlSem{SYNC_LOCATION};
     Owned<CRoxiePackageSetWatcher> allQueryPackages;
 

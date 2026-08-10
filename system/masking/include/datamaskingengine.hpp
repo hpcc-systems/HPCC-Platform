@@ -528,7 +528,7 @@ namespace DataMasking
         Owned<ITracer>            tracer;
         Loader                    loader;
         std::list<Owned<Domain> > domains;
-        mutable ReadWriteLock     domainLock;
+        mutable ReadWriteLock     domainLock{SYNC_LOCATION};
         Owned<ITextIterator>      emptyText;
     public:
         CEngine()

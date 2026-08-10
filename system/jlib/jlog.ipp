@@ -805,11 +805,11 @@ private:
 
 private:
     CIArrayOf<LogMsgMonitor>  monitors;
-    mutable ReadWriteLock     monitorLock;
+    mutable ReadWriteLock     monitorLock{SYNC_LOCATION};
     CategoryLogMsgFilter      prefilter;
     std::atomic<LogMsgId>     nextID;
     IArrayOf<ILogMsgLinkToChild> children;
-    mutable ReadWriteLock     childLock;
+    mutable ReadWriteLock     childLock{SYNC_LOCATION};
     bool                      suspendedChildren;
     unsigned                  port;
     LogMsgSessionId           session;

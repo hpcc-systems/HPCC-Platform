@@ -462,7 +462,7 @@ namespace ModularLogAgent
             }
 
         private:
-            mutable ReadWriteLock m_rwLock;
+            mutable ReadWriteLock m_rwLock{SYNC_LOCATION};
             Collection            m_registrants;
         };
 

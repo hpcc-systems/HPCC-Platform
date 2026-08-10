@@ -2100,7 +2100,7 @@ public:
     virtual bool fireException(IException *e);
 
 public: // data
-    mutable ReadWriteLock dataRWLock;
+    mutable ReadWriteLock dataRWLock{SYNC_LOCATION};
     CheckedCriticalSection connectCrit{SYNC_LOCATION};
     CheckedCriticalSection connDestructCrit{SYNC_LOCATION};
     CheckedCriticalSection cTableCrit{SYNC_LOCATION};

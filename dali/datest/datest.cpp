@@ -2694,7 +2694,7 @@ void TestSDS3(IGroup *group)
     } poolFactory;
 
     unsigned nthreads = testParams.ordinality()?atoi(testParams.item(0)):10;
-    ReadWriteLock reinitLock;
+    ReadWriteLock reinitLock{SYNC_LOCATION};
     Owned<IThreadPool> pool = createThreadPool("TSDS1", &poolFactory, false, nullptr, nthreads);
 
     SDS3Params params;

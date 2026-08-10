@@ -221,6 +221,14 @@ inline void protraceNoteSpinLock([[maybe_unused]] unsigned syncId, [[maybe_unuse
 #endif
 }
 
+inline void protraceNoteRwLock([[maybe_unused]] unsigned syncId, [[maybe_unused]] const char *name)
+{
+#ifdef _USE_PROTRACE
+    if (name)
+        protrace::note_rwlock(syncId, name);
+#endif
+}
+
 extern jlib_decl bool protraceResumeRecording();
 extern jlib_decl bool protraceSuspendRecording();
 extern jlib_decl bool protraceClearRecording(bool clearMetadata);

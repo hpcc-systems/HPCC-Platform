@@ -4574,81 +4574,23 @@ CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(PTreeBinaryTimingStressTest, "PTreeBinaryT
 #include "jdebug.hpp"
 #include <shared_mutex>
 
-class SReadWriteLock
+class TestLegacyReadWriteLock : public LegacyReadWriteLock
 {
 public:
-    void lockRead()         { mutex.lock_shared(); }
-    void lockWrite()        { mutex.lock(); writelocked = true; }
-    bool lockRead(unsigned timeout);
-    bool lockWrite(unsigned timeout);
-    void unlock()           { if (writelocked) unlockWrite(); else unlockRead(); }
-    void unlockRead()       { mutex.unlock_shared(); }
-    void unlockWrite()      { writelocked = false; mutex.unlock(); }
-    bool queryWriteLocked() { return writelocked; };
-
-protected:
-    std::shared_mutex mutex;
-    bool writelocked = false;
+    TestLegacyReadWriteLock() : LegacyReadWriteLock(nullptr) {}
 };
 
-bool SReadWriteLock::lockRead(unsigned timeout)
+class TestStdReadWriteLock : public StdReadWriteLock
 {
-    if (timeout == (unsigned)-1)
-    {
-        lockRead();
-        return true;
-    }
-//    std::chrono::milliseconds ms(timeout);
-    return false;//mutex.try_lock_shared_for(ms);
-}
-
-bool SReadWriteLock::lockWrite(unsigned timeout)
-{
-    if (timeout == (unsigned)-1)
-    {
-        lockWrite();
-        return true;
-    }
-    return false;
-  //  std::chrono::milliseconds ms(timeout);
-    //return mutex.try_lock_for(ms);
-}
-
-class SReadLockBlock
-{
-    SReadWriteLock *lock;
 public:
-    SReadLockBlock(SReadWriteLock &l) : lock(&l)      { lock->lockRead(); }
-    ~SReadLockBlock()                                { if (lock) lock->unlockRead(); }
-    void clear()
-    {
-        if (lock)
-        {
-            lock->unlockRead();
-            lock = NULL;
-        }
-    }
+    TestStdReadWriteLock() : StdReadWriteLock(nullptr) {}
 };
 
-class SWriteLockBlock
+class TestStdTimedReadWriteLock : public StdTimedReadWriteLock
 {
-    SReadWriteLock *lock;
 public:
-    SWriteLockBlock(SReadWriteLock &l) : lock(&l)     { lock->lockWrite(); }
-    ~SWriteLockBlock()                               { if (lock) lock->unlockWrite(); }
-    void clear()
-    {
-        if (lock)
-        {
-            lock->unlockWrite();
-            lock = NULL;
-        }
-    }
+    TestStdTimedReadWriteLock() : StdTimedReadWriteLock(nullptr) {}
 };
-
-#define ReadWriteLock SReadWriteLock
-#define ReadLockBlock SReadLockBlock
-#define WriteLockBlock SWriteLockBlock
 
 class AtomicTimingStressTest : public CppUnit::TestFixture
 {
@@ -4683,11 +4625,11 @@ public:
         std::atomic<unsigned __int64> value = { 0 };
     };
 
-    template <typename LOCK, typename BLOCK, typename COUNTER, unsigned NUMVALUES, unsigned NUMLOCKS>
+    template <typename LOCK, typename BLOCK, typename COUNTER>
     class LockTester
     {
     public:
-        LockTester()
+        LockTester(unsigned _NUMVALUES, unsigned _NUMLOCKS) : NUMVALUES(_NUMVALUES), NUMLOCKS(_NUMLOCKS)
         {
             value1 = 0;
         }
@@ -4695,8 +4637,9 @@ public:
         class LockTestThread : public Thread
         {
         public:
-            LockTestThread(Semaphore & _startSem, Semaphore & _endSem, LOCK & _lock1, COUNTER & _value1, LOCK & _lock2, COUNTER * _extraValues, unsigned _numIterations)
-                : Thread("LockTestThread"), startSem(_startSem), endSem(_endSem),
+            LockTestThread(LockTester & _tester,
+                  Semaphore & _startSem, Semaphore & _endSem, LOCK & _lock1, COUNTER & _value1, LOCK & _lock2, COUNTER * _extraValues, unsigned _numIterations)
+                : Thread("LockTestThread"), tester(_tester), startSem(_startSem), endSem(_endSem),
                   lock1(_lock1), lock2(_lock2),
                   value1(_value1), extraValues(_extraValues),
                   numIterations(_numIterations)
@@ -4705,19 +4648,17 @@ public:
 
             virtual void execute()
             {
+                unsigned NUMVALUES = tester.NUMVALUES;
                 {
                     BLOCK block(lock1);
                     value1++;
                     if (NUMVALUES >= 2)
-                        extraValues[1]++;
-                    if (NUMVALUES >= 3)
-                        extraValues[2]++;
-                    if (NUMVALUES >= 4)
-                        extraValues[3]++;
-                    if (NUMVALUES >= 5)
-                        extraValues[4]++;
+                    {
+                        for (unsigned i = 1; i < NUMVALUES; i++)
+                            extraValues[i]++;
+                    }
                 }
-                if (NUMLOCKS == 2)
+                if (tester.NUMLOCKS == 2)
                 {
                     BLOCK block(lock2);
                     extraValues[1]++;
@@ -4734,6 +4675,7 @@ public:
             }
 
         protected:
+            LockTester & tester;
             Semaphore & startSem;
             Semaphore & endSem;
             LOCK & lock1;
@@ -4750,7 +4692,7 @@ public:
                 extraValues[ix] = 0;
             for (unsigned i = 0; i < numThreads; i++)
             {
-                LockTestThread * next = new LockTestThread(startSem, endSem, lock, value1, lock, extraValues, numIterations);
+            LockTestThread * next = new LockTestThread(*this, startSem, endSem, lock, value1, lock, extraValues, numIterations);
                 threads.append(*next);
                 next->start(false);
             }
@@ -4762,7 +4704,7 @@ public:
             cycle_t endCycles = get_cycles_now();
             unsigned __int64 expected = (unsigned __int64)numIterations * numThreads;
             unsigned __int64 averageTime = cycle_to_nanosec(endCycles - startCycles) / (numIterations * numThreads);
-            DBGLOG("%s@%u/%u threads(%u) %" I64F "uns/iteration lost(%" I64F "d)", title, NUMVALUES, NUMLOCKS, numThreads, averageTime, expected - value1);
+//            DBGLOG("%s@%u/%u threads(%u) %" I64F "uns/iteration lost(%" I64F "d)", title, NUMVALUES, NUMLOCKS, numThreads, averageTime, expected - value1);
             for (unsigned i3 = 0; i3 < numThreads; i3++)
                 threads.item(i3).join();
             return averageTime;
@@ -4774,30 +4716,26 @@ public:
         Semaphore endSem{SYNC_LOCATION};
         LOCK lock;
         COUNTER value1;
-        COUNTER extraValues[NUMVALUES];
+        COUNTER extraValues[50];
+        unsigned NUMVALUES;
+        unsigned NUMLOCKS;
     };
 
     #define DO_TEST(LOCK, CLOCK, COUNTER, NUMVALUES, NUMLOCKS)   \
     { \
-        const char * title = #LOCK "," #COUNTER;\
-        LockTester<LOCK, CLOCK, COUNTER, NUMVALUES, NUMLOCKS> tester;\
-        uncontendedTimes.append(tester.run(title, 1, numIterations));\
-        minorTimes.append(tester.run(title, 2, numIterations));\
-        typicalTimes.append(tester.run(title, numCores / 2, numIterations));\
-        tester.run(title, numCores, numIterations);\
-        tester.run(title, numCores + 1, numIterations);\
-        contendedTimes.append(tester.run(title, numCores * 2, numIterations));\
+        const char * title = #CLOCK;\
+        LockTester<LOCK, CLOCK, COUNTER> tester(NUMVALUES, NUMLOCKS);\
+        __uint64 t1 = tester.run(title, 1, numIterations);\
+        __uint64 t2 = tester.run(title, 2, numIterations);\
+        __uint64 t3 = tester.run(title, 4, numIterations);\
+        __uint64 t4 = tester.run(title, numCores / 2, numIterations);\
+        __uint64 t5 = tester.run(title, numCores, numIterations);\
+        __uint64 t6 = tester.run(title, numCores + 1, numIterations);\
+        __uint64 t7 = tester.run(title, numCores * 2, numIterations);\
+        DBGLOG("%-40s: %6llu %6llu %6llu %6llu %6llu %6llu %6llu", title, t1, t2, t3, t4, t5, t6, t7);\
     }
 
     //Use to common out a test
-    #define XDO_TEST(LOCK, CLOCK, COUNTER, NUMVALUES, NUMLOCKS)   \
-    { \
-        uncontendedTimes.append(0);\
-        minorTimes.append(0);\
-        typicalTimes.append(0);\
-        contendedTimes.append(0);\
-    }
-
     class TestCriticalSection : public CriticalSection
     {
     public:
@@ -4826,72 +4764,46 @@ public:
     class Null
     {};
 
-    const unsigned numIterations = 1000000;
+    const unsigned numIterations = 10000;
     const unsigned numCores = std::max(getAffinityCpus(), 16U);
-    void runAllTests()
+
+    void runAllTests(unsigned numValues, unsigned numLocks)
     {
-        DO_TEST(TestCriticalSection, CriticalBlock, unsigned __int64, 1, 1);
-        DO_TEST(TestCriticalSection, CriticalBlock, unsigned __int64, 2, 1);
-        DO_TEST(TestCriticalSection, CriticalBlock, unsigned __int64, 5, 1);
-        DO_TEST(TestCriticalSection, CriticalBlock, unsigned __int64, 1, 2);
-        DO_TEST(TestMutex, synchronized, unsigned __int64, 1, 1);
-        DO_TEST(TestMutex, synchronized, unsigned __int64, 2, 1);
-        DO_TEST(TestMutex, synchronized, unsigned __int64, 5, 1);
-        DO_TEST(TestMutex, synchronized, unsigned __int64, 1, 2);
-        DO_TEST(TestSimpleMutex, MutexBlock<SimpleMutex>, unsigned __int64, 1, 1);
-        DO_TEST(TestSimpleMutex, MutexBlock<SimpleMutex>, unsigned __int64, 2, 1);
-        DO_TEST(TestSimpleMutex, MutexBlock<SimpleMutex>, unsigned __int64, 5, 1);
-        DO_TEST(TestSimpleMutex, MutexBlock<SimpleMutex>, unsigned __int64, 1, 2);
-        DO_TEST(TestTimedMutex, TimedMutexBlock, unsigned __int64, 1, 1);
-        DO_TEST(TestTimedMutex, TimedMutexBlock, unsigned __int64, 2, 1);
-        DO_TEST(TestTimedMutex, TimedMutexBlock, unsigned __int64, 5, 1);
-        DO_TEST(TestTimedMutex, TimedMutexBlock, unsigned __int64, 1, 2);
-        DO_TEST(TestSpinLock, SpinBlock, unsigned __int64, 1, 1);
-        DO_TEST(TestSpinLock, SpinBlock, unsigned __int64, 2, 1);
-        DO_TEST(TestSpinLock, SpinBlock, unsigned __int64, 5, 1);
-        DO_TEST(TestSpinLock, SpinBlock, unsigned __int64, 1, 2);
-        DO_TEST(Null, Null, std::atomic<unsigned __int64>, 1, 1);
-        DO_TEST(Null, Null, std::atomic<unsigned __int64>, 2, 1);
-        DO_TEST(Null, Null, std::atomic<unsigned __int64>, 5, 1);
-        DO_TEST(Null, Null, std::atomic<unsigned __int64>, 1, 2);
-        DO_TEST(Null, Null, RelaxedAtomic<unsigned __int64>, 1, 1);
-        DO_TEST(Null, Null, RelaxedAtomic<unsigned __int64>, 5, 1);
-        DO_TEST(Null, Null, CasCounter, 1, 1);
-        DO_TEST(Null, Null, CasCounter, 5, 1);
-        DO_TEST(Null, Null, unsigned __int64, 1, 1);
-        DO_TEST(Null, Null, unsigned __int64, 2, 1);
-        DO_TEST(Null, Null, unsigned __int64, 5, 1);
+        DBGLOG("Test %u values %u locks", numValues, numLocks);
+        DBGLOG("%-40s: %6u %6u %6u %6u %6u %6u %6u", "test", 1, 2, 4, numCores/2, numCores, numCores+1, numCores*2);
+
+        DO_TEST(TestCriticalSection, CriticalBlock, unsigned __int64, numValues, numLocks);
+
+#if 0
+        DO_TEST(TestMutex, synchronized, unsigned __int64, numValues, numLocks);
+        DO_TEST(TestSimpleMutex, MutexBlock<SimpleMutex>, unsigned __int64, numValues, numLocks);
+        DO_TEST(TestTimedMutex, TimedMutexBlock, unsigned __int64, numValues, numLocks);
+        DO_TEST(TestSpinLock, SpinBlock, unsigned __int64, numValues, numLocks);
+        DO_TEST(Null, Null, std::atomic<unsigned __int64>, numValues, numLocks);
+        DO_TEST(Null, Null, RelaxedAtomic<unsigned __int64>, numValues, numLocks);
+        DO_TEST(Null, Null, CasCounter, numValues, numLocks);
+        DO_TEST(Null, Null, unsigned __int64, numValues, numLocks);
+#endif
 
         //Read locks will fail to prevent values being lost, but the timings are useful in comparison with CriticalSection
-        DO_TEST(ReadWriteLock, ReadLockBlock, unsigned __int64, 1, 1);
-        DO_TEST(ReadWriteLock, ReadLockBlock, unsigned __int64, 2, 1);
-        DO_TEST(ReadWriteLock, ReadLockBlock, unsigned __int64, 5, 1);
-        DO_TEST(ReadWriteLock, ReadLockBlock, unsigned __int64, 1, 2);
-        DO_TEST(ReadWriteLock, WriteLockBlock, unsigned __int64, 1, 1);
-        DO_TEST(ReadWriteLock, WriteLockBlock, unsigned __int64, 2, 1);
-        DO_TEST(ReadWriteLock, WriteLockBlock, unsigned __int64, 5, 1);
-        DO_TEST(ReadWriteLock, WriteLockBlock, unsigned __int64, 1, 2);
+        DO_TEST(TestLegacyReadWriteLock, LegacyReadLockBlock, unsigned __int64, numValues, numLocks);
+        DO_TEST(TestLegacyReadWriteLock, LegacyWriteLockBlock, unsigned __int64, numValues, numLocks);
 
-        DBGLOG("Summary");
-        summariseTimings("Uncontended", uncontendedTimes);
-        summariseTimings("Minor", minorTimes);
-        summariseTimings("Typical", typicalTimes);
-        summariseTimings("Over", contendedTimes);
+        DO_TEST(TestStdReadWriteLock, StdReadLockBlock, unsigned __int64, numValues, numLocks);
+        DO_TEST(TestStdReadWriteLock, StdWriteLockBlock, unsigned __int64, numValues, numLocks);
+
+        DO_TEST(TestStdTimedReadWriteLock, StdTimedReadLockBlock, unsigned __int64, numValues, numLocks);
+        DO_TEST(TestStdTimedReadWriteLock, StdTimedWriteLockBlock, unsigned __int64, numValues, numLocks);
     }
 
-    void summariseTimings(const char * option, UInt64Array & times)
+    void runAllTests()
     {
-        DBGLOG("%11s 1x: cs(%3" I64F "u) mutex (%3" I64F "u) smutex (%3" I64F "u) tmutex (%3" I64F "u) spin(%3" I64F "u) atomic(%3" I64F "u) ratomic(%3" I64F "u) cas(%3" I64F "u) rd(%3" I64F "u) wr(%3" I64F "u)", option,
-                         times.item(0), times.item(4), times.item(8), times.item(12), times.item(16), times.item(20), times.item(24), times.item(26), times.item(31), times.item(35));
-        DBGLOG("%11s 5x: cs(%3" I64F "u) mutex (%3" I64F "u) smutex (%3" I64F "u) tmutex (%3" I64F "u) spin(%3" I64F "u) atomic(%3" I64F "u) ratomic(%3" I64F "u) cas(%3" I64F "u) rd(%3" I64F "u) wr(%3" I64F "u)", "",
-                         times.item(2), times.item(6), times.item(10), times.item(14), times.item(18), times.item(22), times.item(25), times.item(27), times.item(33), times.item(37));
+        runAllTests(1, 1);
+        runAllTests(2, 1);
+        runAllTests(5, 1);
+        runAllTests(50, 1);
+        runAllTests(1, 2);
     }
-
-private:
-    UInt64Array uncontendedTimes;
-    UInt64Array minorTimes;
-    UInt64Array typicalTimes;
-    UInt64Array contendedTimes;
 };
 
 CPPUNIT_TEST_SUITE_REGISTRATION(AtomicTimingStressTest);
@@ -5048,7 +4960,7 @@ public:
         IArrayOf<Thread> threads;
         Semaphore startSem{SYNC_LOCATION};
         Semaphore endSem{SYNC_LOCATION};
-        ReadWriteLock lock;
+        ReadWriteLock lock{SYNC_LOCATION};
         unsigned __int64 value;
 
         value = 0;

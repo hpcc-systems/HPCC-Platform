@@ -1358,6 +1358,24 @@ attribute: DataSize = 73
         recorder.recordLockWaitTimeout(lockId);
         recorder.recordSemWaitTimeout(lockId);
 
+        // Read/write lock events (currently only available via generic recordEvent)
+        // because they will only ever be recorded in the protrace framework
+        CEvent rwlockEvent;
+        auto recordRwlockEvent = [&](EventType type)
+        {
+            rwlockEvent.reset(type);
+            rwlockEvent.setValue(EvAttrLockId, lockId);
+            recorder.recordEvent(rwlockEvent);
+        };
+        recordRwlockEvent(EventRwlockReadWait);
+        recordRwlockEvent(EventRwlockReadAcquire);
+        recordRwlockEvent(EventRwlockReadRelease);
+        recordRwlockEvent(EventRwlockWriteWait);
+        recordRwlockEvent(EventRwlockWriteAcquire);
+        recordRwlockEvent(EventRwlockWriteRelease);
+        recordRwlockEvent(EventRwlockReadWaitTimeout);
+        recordRwlockEvent(EventRwlockWriteWaitTimeout);
+
         // Remote events
         recorder.recordRequestSend(1, 1);
         recorder.recordRequestReceive(1, 1);

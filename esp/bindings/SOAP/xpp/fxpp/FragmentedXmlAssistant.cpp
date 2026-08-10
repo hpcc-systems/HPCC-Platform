@@ -188,7 +188,7 @@ public:
 
 protected:
     UriRegistrations m_uriRegistrations;
-    mutable ReadWriteLock m_rwLock;
+    mutable ReadWriteLock m_rwLock{SYNC_LOCATION};
     Owned<const IExternalDetector> m_defaultDetector;
     Owned<const IExternalContentLoader> m_loader;
 

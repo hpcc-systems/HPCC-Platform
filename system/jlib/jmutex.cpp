@@ -361,43 +361,6 @@ void Monitor::notifyAll()
 
 //==================================================================================
 
-#ifdef USE_PTHREAD_RWLOCK
-
-bool ReadWriteLock::lockRead(unsigned timeout)
-{
-    if (timeout == (unsigned)-1)
-    {
-        lockRead();
-        return true;
-    }
-
-    if (pthread_rwlock_tryrdlock(&rwlock) == 0)
-        return true;
-
-    timespec endtime;
-    getEndTime(endtime, timeout);
-    return (pthread_rwlock_timedrdlock(&rwlock, &endtime) == 0);
-}
-
-bool ReadWriteLock::lockWrite(unsigned timeout)
-{
-    if (timeout == (unsigned)-1)
-    {
-        lockWrite();
-        return true;
-    }
-
-    if (pthread_rwlock_trywrlock(&rwlock) == 0)
-        return true;
-
-    timespec endtime;
-    getEndTime(endtime, timeout);
-    return (pthread_rwlock_timedwrlock(&rwlock, &endtime) == 0);
-}
-#endif
-
-//==================================================================================
-
 #ifdef USECHECKEDCRITICALSECTIONS
 CheckedReadLockBlock::CheckedReadLockBlock(ReadWriteLock &l, unsigned timeout, const char *fname,unsigned lnum) : lock(l)
 {

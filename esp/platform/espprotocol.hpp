@@ -98,7 +98,7 @@ class CEspApplicationPort
     HINSTANCE hxsl;
     Owned<IXslProcessor> xslp;
     CEspProtocol* protocol = nullptr;
-    ReadWriteLock rwLock;
+    ReadWriteLock rwLock{SYNC_LOCATION};
 public:
     CEspApplicationPort(bool viewcfg, CEspProtocol* prot);
 
@@ -162,7 +162,7 @@ private:
     int m_MaxRequestEntityLength;
     IEspContainer *m_container = nullptr;
     Owned<IPersistentHandler> m_persistentHandler;
-    ReadWriteLock rwLock;
+    ReadWriteLock rwLock{SYNC_LOCATION};
 
 public:
     IMPLEMENT_IINTERFACE;

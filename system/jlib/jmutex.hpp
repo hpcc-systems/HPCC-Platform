@@ -22,7 +22,9 @@
 
 #include <assert.h>
 #include <atomic>
+#include <chrono>
 #include <mutex>
+#include <shared_mutex>
 #include <functional>
 #include "jiface.hpp"
 #include "jprotrace.hpp"
@@ -901,19 +903,16 @@ public:
 
 //--------------------------------------------------------------------------------------------------------------------
 
-//Currently disabled since performance profile of own implementation is preferable, and queryWriteLocked() cannot be implemented
-//#define USE_PTHREAD_RWLOCK
-
-#ifndef USE_PTHREAD_RWLOCK
-
-class jlib_decl ReadWriteLock
+class jlib_decl LegacyReadWriteLock
 {
     bool lockRead(bool timed, unsigned timeout) { 
+                                noteEvent(EventRwlockReadWait);
                                 cs.enter(); 
                                 if (writeLocks == 0) 
                                 {
                                     readLocks++;
                                     cs.leave();
+                                    noteEvent(EventRwlockReadAcquire);
                                 }
                                 else
                                 {
@@ -926,6 +925,7 @@ class jlib_decl ReadWriteLock
                                             if (!readSem.wait(0)) {
                                                 readWaiting--;
                                                 cs.leave();
+                                                noteEvent(EventRwlockReadWaitTimeout);
                                                 return false;
                                             }
                                             cs.leave();
@@ -934,15 +934,18 @@ class jlib_decl ReadWriteLock
                                     else
                                         readSem.wait();
                                     //NB: waiting and locks adjusted before the signal occurs.
+                                    noteEvent(EventRwlockReadAcquire);
                                 }
                                 return true;
                             }
     bool lockWrite(bool timed, unsigned timeout) { 
+                                noteEvent(EventRwlockWriteWait);
                                 cs.enter(); 
                                 if ((readLocks == 0) && (writeLocks == 0))
                                 {
                                     writeLocks++;
                                     cs.leave();
+                                    noteEvent(EventRwlockWriteAcquire);
                                 }
                                 else
                                 {
@@ -955,6 +958,7 @@ class jlib_decl ReadWriteLock
                                             if (!writeSem.wait(0)) {
                                                 writeWaiting--;
                                                 cs.leave();
+                                                noteEvent(EventRwlockWriteWaitTimeout);
                                                 return false;
                                             }
                                             cs.leave();
@@ -963,6 +967,7 @@ class jlib_decl ReadWriteLock
                                     else
                                         writeSem.wait();
                                     //NB: waiting and locks adjusted before the signal occurs.
+                                    noteEvent(EventRwlockWriteAcquire);
                                 }
 #ifdef _DEBUG
                                 exclWriteOwner = GetCurrentThreadId();
@@ -970,14 +975,18 @@ class jlib_decl ReadWriteLock
                                 return true;
                             }
 public:
-    ReadWriteLock()
+    LegacyReadWriteLock(const char * syncName)
     {
         readLocks = 0; writeLocks = 0; readWaiting = 0; writeWaiting = 0;
 #ifdef _DEBUG
         exclWriteOwner = 0;
 #endif
+#ifdef PROTRACE_LOCKS
+        if (trackUnnamedLocks || syncName)
+            syncid = protrace::note_rwlock(syncName);
+#endif
     }
-    ~ReadWriteLock()        { assertex(readLocks == 0 && writeLocks == 0); }
+    ~LegacyReadWriteLock()        { assertex(readLocks == 0 && writeLocks == 0); }
 
     void lockRead()         { lockRead(false, 0); }
     void lockWrite()        { lockWrite(false, 0); }
@@ -986,10 +995,15 @@ public:
     unsigned queryReadLockCount() const { return readLocks; }
     void unlock()           { 
                                 cs.enter(); 
-                                if (readLocks) readLocks--;
+                                if (readLocks) 
+                                {
+                                    readLocks--;
+                                    noteEvent(EventRwlockReadRelease);
+                                }
                                 else
                                 {
                                     writeLocks--;
+                                    noteEvent(EventRwlockWriteRelease);
 #ifdef _DEBUG
                                     exclWriteOwner = 0;
 #endif
@@ -1019,47 +1033,35 @@ public:
 
     //MORE: May want to use the pthread implementations under linux.
 protected:
-    CriticalSection     cs{SYNC_LOCATION};
-    Semaphore           readSem{SYNC_LOCATION};
-    Semaphore           writeSem{SYNC_LOCATION};
+    inline void noteEvent(EventType ev)
+    {
+#ifdef PROTRACE_LOCKS
+        protraceRecord(ev, syncid);
+#endif
+    }
+
+    CriticalSection     cs{nullptr};        // Do not trace these internal locks - only trace the rwlock
+    Semaphore           readSem{nullptr};
+    Semaphore           writeSem{nullptr};
     unsigned            readLocks;
     unsigned            writeLocks;
     unsigned            readWaiting;
     unsigned            writeWaiting;
+#ifdef PROTRACE_LOCKS
+    sync_uid_type       syncid = 0;
+#endif
 #ifdef _DEBUG
     ThreadId            exclWriteOwner;
 #endif
 };
 
-#else
 
-class jlib_decl ReadWriteLock
+class LegacyReadLockBlock
 {
+    LegacyReadWriteLock *lock;
 public:
-    ReadWriteLock()         { pthread_rwlock_init(&rwlock, nullptr); }
-    ~ReadWriteLock()        { pthread_rwlock_destroy(&rwlock); }
-
-    void lockRead()         { pthread_rwlock_rdlock(&rwlock); }
-    void lockWrite()        { pthread_rwlock_wrlock(&rwlock); }
-    bool lockRead(unsigned timeout);
-    bool lockWrite(unsigned timeout);
-    void unlock()           { pthread_rwlock_unlock(&rwlock); }
-    void unlockRead()       { pthread_rwlock_unlock(&rwlock); }
-    void unlockWrite()      { pthread_rwlock_unlock(&rwlock); }
-    //  bool queryWriteLocked(); // I don't think this can be implemented on top of the pthread interface
-
-protected:
-    pthread_rwlock_t    rwlock;
-};
-
-#endif
-
-class ReadLockBlock
-{
-    ReadWriteLock *lock;
-public:
-    ReadLockBlock(ReadWriteLock &l) : lock(&l)      { lock->lockRead(); }
-    ~ReadLockBlock()                                { if (lock) lock->unlockRead(); }
+    LegacyReadLockBlock(LegacyReadWriteLock &l) : lock(&l)      { lock->lockRead(); }
+    ~LegacyReadLockBlock()                                { if (lock) lock->unlockRead(); }
     void clear()
     {
         if (lock)
@@ -1070,12 +1072,12 @@ public:
     }
 };
 
-class WriteLockBlock
+class LegacyWriteLockBlock
 {
-    ReadWriteLock *lock;
+    LegacyReadWriteLock *lock;
 public:
-    WriteLockBlock(ReadWriteLock &l) : lock(&l)     { lock->lockWrite(); }
-    ~WriteLockBlock()                               { if (lock) lock->unlockWrite(); }
+    LegacyWriteLockBlock(LegacyReadWriteLock &l) : lock(&l)     { lock->lockWrite(); }
+    ~LegacyWriteLockBlock()                               { if (lock) lock->unlockWrite(); }
     void clear()
     {
         if (lock)
@@ -1086,9 +1088,239 @@ public:
     }
 };
 
+//--------------------------------------------------------------------------------------------------------------------
+
+class jlib_decl StdReadWriteLock
+{
+public:
+    StdReadWriteLock(const char * syncName)
+    {
+#ifdef PROTRACE_LOCKS
+        if (trackUnnamedLocks || syncName)
+            syncid = protrace::note_rwlock(syncName);
+#endif
+    }
+    ~StdReadWriteLock() = default;
+
+    void lockRead()
+    {
+        noteEvent(EventRwlockReadWait);
+        mutex.lock_shared();
+        noteEvent(EventRwlockReadAcquire);
+    }
+
+    void lockWrite()
+    {
+        noteEvent(EventRwlockWriteWait);
+        mutex.lock();
+        noteEvent(EventRwlockWriteAcquire);
+    }
+
+    void unlockRead()
+    {
+        noteEvent(EventRwlockReadRelease);
+        mutex.unlock_shared();
+    }
+
+    void unlockWrite()
+    {
+        noteEvent(EventRwlockWriteRelease);
+        mutex.unlock();
+    }
+
+protected:
+    inline void noteEvent(EventType ev)
+    {
+#ifdef PROTRACE_LOCKS
+        protraceRecord(ev, syncid);
+#endif
+    }
+
+    std::shared_mutex     mutex;
+#ifdef PROTRACE_LOCKS
+    sync_uid_type               syncid = 0;
+#endif
+};
+
+class StdReadLockBlock
+{
+    StdReadWriteLock *lock;
+public:
+    StdReadLockBlock(StdReadWriteLock &l) : lock(&l)    { lock->lockRead(); }
+    ~StdReadLockBlock()                                 { if (lock) lock->unlockRead(); }
+    void clear()
+    {
+        if (lock)
+        {
+            lock->unlockRead();
+            lock = nullptr;
+        }
+    }
+};
+
+class StdWriteLockBlock
+{
+    StdReadWriteLock *lock;
+public:
+    StdWriteLockBlock(StdReadWriteLock &l) : lock(&l)   { lock->lockWrite(); }
+    ~StdWriteLockBlock()                                { if (lock) lock->unlockWrite(); }
+    void clear()
+    {
+        if (lock)
+        {
+            lock->unlockWrite();
+            lock = nullptr;
+        }
+    }
+};
 
 //--------------------------------------------------------------------------------------------------------------------
 
+class jlib_decl StdTimedReadWriteLock
+{
+public:
+    StdTimedReadWriteLock(const char * syncName)
+    {
+#ifdef PROTRACE_LOCKS
+        if (trackUnnamedLocks || syncName)
+            syncid = protrace::note_rwlock(syncName);
+#endif
+    }
+    ~StdTimedReadWriteLock() = default;
+
+    void lockRead()
+    {
+        noteEvent(EventRwlockReadWait);
+        mutex.lock_shared();
+        readLocks.fetch_add(1, std::memory_order_relaxed);
+        noteEvent(EventRwlockReadAcquire);
+    }
+
+    bool lockRead(unsigned timeout)
+    {
+        if (timeout == (unsigned)-1)
+        {
+            lockRead();
+            return true;
+        }
+
+        noteEvent(EventRwlockReadWait);
+        if (!mutex.try_lock_shared_for(std::chrono::milliseconds(timeout)))
+        {
+            noteEvent(EventRwlockReadWaitTimeout);
+            return false;
+        }
+        readLocks.fetch_add(1, std::memory_order_relaxed);
+        noteEvent(EventRwlockReadAcquire);
+        return true;
+    }
+
+    void lockWrite()
+    {
+        noteEvent(EventRwlockWriteWait);
+        mutex.lock();
+        writeLocked.store(true, std::memory_order_relaxed);
+        noteEvent(EventRwlockWriteAcquire);
+    }
+
+    bool lockWrite(unsigned timeout)
+    {
+        if (timeout == (unsigned)-1)
+        {
+            lockWrite();
+            return true;
+        }
+
+        noteEvent(EventRwlockWriteWait);
+        if (!mutex.try_lock_for(std::chrono::milliseconds(timeout)))
+        {
+            noteEvent(EventRwlockWriteWaitTimeout);
+            return false;
+        }
+        writeLocked.store(true, std::memory_order_relaxed);
+        noteEvent(EventRwlockWriteAcquire);
+        return true;
+    }
+
+    void unlockRead()
+    {
+        noteEvent(EventRwlockReadRelease);
+        readLocks.fetch_sub(1, std::memory_order_relaxed);
+        mutex.unlock_shared();
+    }
+
+    void unlockWrite()
+    {
+        noteEvent(EventRwlockWriteRelease);
+        writeLocked.store(false, std::memory_order_relaxed);
+        mutex.unlock();
+    }
+
+    void unlock()
+    {
+        if (writeLocked.load(std::memory_order_relaxed))
+            unlockWrite();
+        else
+            unlockRead();
+    }
+
+    unsigned queryReadLockCount() const { return readLocks.load(std::memory_order_relaxed); }
+    bool queryWriteLocked() const       { return writeLocked.load(std::memory_order_relaxed); }
+
+protected:
+    inline void noteEvent(EventType ev)
+    {
+#ifdef PROTRACE_LOCKS
+        protraceRecord(ev, syncid);
+#endif
+    }
+
+    std::shared_timed_mutex     mutex;
+    std::atomic<unsigned>       readLocks{0};
+    std::atomic<bool>           writeLocked{false};
+#ifdef PROTRACE_LOCKS
+    sync_uid_type               syncid = 0;
+#endif
+};
+
+class StdTimedReadLockBlock
+{
+    StdTimedReadWriteLock *lock;
+public:
+    StdTimedReadLockBlock(StdTimedReadWriteLock &l) : lock(&l)    { lock->lockRead(); }
+    ~StdTimedReadLockBlock()                                 { if (lock) lock->unlockRead(); }
+    void clear()
+    {
+        if (lock)
+        {
+            lock->unlockRead();
+            lock = nullptr;
+        }
+    }
+};
+
+class StdTimedWriteLockBlock
+{
+    StdTimedReadWriteLock *lock;
+public:
+    StdTimedWriteLockBlock(StdTimedReadWriteLock &l) : lock(&l)   { lock->lockWrite(); }
+    ~StdTimedWriteLockBlock()                                { if (lock) lock->unlockWrite(); }
+    void clear()
+    {
+        if (lock)
+        {
+            lock->unlockWrite();
+            lock = nullptr;
+        }
+    }
+};
+
+
+using ReadWriteLock = LegacyReadWriteLock;
+using ReadLockBlock = LegacyReadLockBlock;
+using WriteLockBlock = LegacyWriteLockBlock;
+
+//--------------------------------------------------------------------------------------------------------------------
 class Barrier
 {
     CriticalSection crit{SYNC_LOCATION};

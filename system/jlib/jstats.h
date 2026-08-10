@@ -806,7 +806,7 @@ protected:
 
 protected:
     CIArrayOf<CNestedRuntimeStatisticCollection> map;
-    mutable ReadWriteLock lock;
+    mutable ReadWriteLock lock{SYNC_LOCATION};
 };
 
 class CNestedRuntimeSummaryStatisticMap : public CNestedRuntimeStatisticMap

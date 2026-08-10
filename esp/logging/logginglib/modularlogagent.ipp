@@ -39,7 +39,7 @@ namespace ModularLogAgent
         virtual bool isEnabled() const;
         virtual StringBuffer& toString(StringBuffer& str) const;
     protected:
-        mutable ReadWriteLock m_rwLock;
+        mutable ReadWriteLock m_rwLock{SYNC_LOCATION};
     private:
         template <typename container_t> friend class TModule;
         const ITraceLoggingComponent* m_self = nullptr;

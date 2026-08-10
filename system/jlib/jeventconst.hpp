@@ -69,6 +69,14 @@ enum EventType : unsigned char
     EventMpResponseReceive,
     EventEnqueue,
     EventDequeue,
+    EventRwlockReadWait,
+    EventRwlockReadAcquire,
+    EventRwlockReadRelease,
+    EventRwlockWriteWait,
+    EventRwlockWriteAcquire,
+    EventRwlockWriteRelease,
+    EventRwlockReadWaitTimeout,
+    EventRwlockWriteWaitTimeout,
     EventMax
 };
 

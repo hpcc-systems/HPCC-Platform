@@ -183,6 +183,14 @@ static constexpr EventInformation eventInformation[] = {
     DEFINE_EVENT(MpResponseReceive,  Remote, JEVENT_MPRESPONSERECEIVE_ATTRS)
     DEFINE_EVENT(Enqueue,            Query,  JEVENT_ENQUEUE_ATTRS)
     DEFINE_EVENT(Dequeue,            Query,  JEVENT_DEQUEUE_ATTRS)
+    DEFINE_EVENT(RwlockReadWait,     Mutex, JEVENT_MUTEX_ATTRS)
+    DEFINE_EVENT(RwlockReadAcquire,  Mutex, JEVENT_MUTEX_ATTRS)
+    DEFINE_EVENT(RwlockReadRelease,  Mutex, JEVENT_MUTEX_ATTRS)
+    DEFINE_EVENT(RwlockWriteWait,    Mutex, JEVENT_MUTEX_ATTRS)
+    DEFINE_EVENT(RwlockWriteAcquire, Mutex, JEVENT_MUTEX_ATTRS)
+    DEFINE_EVENT(RwlockWriteRelease, Mutex, JEVENT_MUTEX_ATTRS)
+    DEFINE_EVENT(RwlockReadWaitTimeout,  Mutex, JEVENT_MUTEX_ATTRS)
+    DEFINE_EVENT(RwlockWriteWaitTimeout, Mutex, JEVENT_MUTEX_ATTRS)
 };
 
 static_assert(_elements_in(eventInformation) == EventMax);

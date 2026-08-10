@@ -60,6 +60,8 @@ void usage()
     "    -l  --list                           List matching tests but do not execute them\n"
     "    -s  --protrace                       Capture protrace output to unittest.kstrc\n"
     "    -u  --unload                         Unload dynamically-loaded dlls before termination (may crash on some systems)\n"
+    "    -v  --verbose                        Enable verbose output without timestamps\n"
+    "    -vt --verbose-timestamp              Enable verbose output with timestamps\n"
     "    -x  --exclude                        Exclude subsequent test names\n"
     "    --<unittestname>.<option>[=<value>]  A custom setting for a specific unittest\n"
     "\n");
@@ -154,6 +156,7 @@ int main(int argc, const char *argv[])
     bool exclude = false;
     bool includeAll = false;
     bool verbose = false;
+    bool timestamps = false;
     bool list = false;
     bool protraceEnabled = false;
     bool useDefaultLocations = true;
@@ -171,6 +174,11 @@ int main(int argc, const char *argv[])
                 exclude = true;
             else if (streq(arg, "-v") || streq(arg, "--verbose"))
                 verbose = true;
+            else if (streq(arg, "-vt") || streq(arg, "--verbose-timestamp"))
+            {
+                verbose = true;
+                timestamps = true;
+            }
             else if (streq(arg, "-e") || streq(arg, "--exact"))
                 wildMatch = false;
             else if (streq(arg, "-a") || streq(arg, "--all"))
@@ -222,7 +230,12 @@ int main(int argc, const char *argv[])
         }
     }
     if (verbose)
-        queryStderrLogMsgHandler()->setMessageFields(MSGFIELD_trace|MSGFIELD_span|MSGFIELD_time|MSGFIELD_microTime|MSGFIELD_milliTime|MSGFIELD_thread);
+    {
+        if (timestamps)
+            queryStderrLogMsgHandler()->setMessageFields(MSGFIELD_trace|MSGFIELD_span|MSGFIELD_time|MSGFIELD_microTime|MSGFIELD_milliTime|MSGFIELD_thread);
+        else
+            queryStderrLogMsgHandler()->setMessageFields(0);
+    }
     else
         removeLog();
 

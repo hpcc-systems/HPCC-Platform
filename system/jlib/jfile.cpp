@@ -5634,7 +5634,7 @@ void RemoteMultiFilename::tostr(StringArray &array,StringBuffer &out)
 //===================================================================================================
 
 static IArrayOf<IContainedFileHook> containedFileHooks;
-static ReadWriteLock containedFileHookLock;
+static ReadWriteLock containedFileHookLock{SYNC_LOCATION};
 
 void addContainedFileHook(IContainedFileHook *hook)
 {
@@ -5665,7 +5665,7 @@ static IFile *createContainedIFileByHook(const char *filename)
 }
 
 static IArrayOf<IRemoteFileCreateHook> remoteFileHooks;
-static ReadWriteLock remoteFileHookLock;
+static ReadWriteLock remoteFileHookLock{SYNC_LOCATION};
 
 void addIFileCreateHook(IRemoteFileCreateHook *hook)
 {

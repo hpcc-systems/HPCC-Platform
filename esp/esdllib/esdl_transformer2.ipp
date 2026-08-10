@@ -473,11 +473,11 @@ class Esdl2Transformer : public CInterface, implements IEsdlTransformer
 private:
     Owned<IEsdlDefinition> m_def;
 
-    ReadWriteLock rwTypeLock;
+    ReadWriteLock rwTypeLock{SYNC_LOCATION};
     EsdlBaseArray types;  //elements and arrays
     EsdlBaseMap type_map;
 
-    ReadWriteLock rwMethodLock;
+    ReadWriteLock rwMethodLock{SYNC_LOCATION};
     EsdlMethodArray methods;  //elements and arrays
     EsdlMethodMap meth_map;
 

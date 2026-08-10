@@ -837,7 +837,7 @@ public:
     }
 };
 
-ReadWriteLock CQueryStatsAggregator::queryStatsLock;
+ReadWriteLock CQueryStatsAggregator::queryStatsLock{SYNC_LOCATION};
 CIArrayOf<CQueryStatsAggregator> CQueryStatsAggregator::queryStatsAggregators;
 CQueryStatsAggregator CQueryStatsAggregator::globalStatsAggregator(NULL, SLOT_LENGTH);
 

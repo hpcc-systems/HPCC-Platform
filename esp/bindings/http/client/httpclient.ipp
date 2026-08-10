@@ -38,7 +38,7 @@ private:
     void initPersistentHandler();
 
 #ifdef COOKIE_HANDLING
-    ReadWriteLock m_rwlock;
+    ReadWriteLock m_rwlock{SYNC_LOCATION};
     IArrayOf<CEspCookie> m_cookies;
 protected:
     IArrayOf<CEspCookie>& queryCookies() {return m_cookies;}

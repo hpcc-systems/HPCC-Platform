@@ -128,10 +128,10 @@ protected:
 private:
     using Filters = std::map<std::string, Linked<IModularTraceMsgFilter> >;
     Filters filters;
-    mutable ReadWriteLock filtersLock;
+    mutable ReadWriteLock filtersLock{SYNC_LOCATION};
     using Sinks = std::map<std::string, Linked<IModularTraceMsgSink> >;
     Sinks sinks;
-    mutable ReadWriteLock sinksLock;
+    mutable ReadWriteLock sinksLock{SYNC_LOCATION};
 public:
     CModularTracer()
     {

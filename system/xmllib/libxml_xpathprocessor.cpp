@@ -84,7 +84,7 @@ class CLibCompiledXpath : public CInterfaceOf<ICompiledXpath>
 private:
     xmlXPathCompExprPtr m_compiledXpathExpression = nullptr;
     StringBuffer m_xpath;
-    ReadWriteLock m_rwlock;
+    ReadWriteLock m_rwlock{SYNC_LOCATION};
 
 public:
     CLibCompiledXpath(const char * xpath)
@@ -339,7 +339,7 @@ public:
     XPathInputMap provided;
     xmlDocPtr m_xmlDoc = nullptr;
     xmlXPathContextPtr m_xpathContext = nullptr;
-    ReadWriteLock m_rwlock;
+    ReadWriteLock m_rwlock{SYNC_LOCATION};
     XPathScopeVector scopes;
     Owned<CLibXpathContext> primaryContext; //if set will lookup variables from primaryContext (secondary context is generally target not source)
 

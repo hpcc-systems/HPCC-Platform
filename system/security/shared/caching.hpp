@@ -194,12 +194,12 @@ private:
     typedef std::map<string, CachedUser*> MapUserCache;
 
     MapResPermissionsCache m_resPermissionsMap;  //user specific resource permissions cache
-    mutable ReadWriteLock m_resPermCacheRWLock; //guards m_resPermissionsMap
+    mutable ReadWriteLock m_resPermCacheRWLock{SYNC_LOCATION}; //guards m_resPermissionsMap
 
     time_t m_cacheTimeoutInSeconds;
 
     MapUserCache m_userCache;
-    mutable ReadWriteLock m_userCacheRWLock;    //guards m_userCache
+    mutable ReadWriteLock m_userCacheRWLock{SYNC_LOCATION};    //guards m_userCache
 
     StringAttr                  m_secMgrClass;
 
@@ -207,7 +207,7 @@ private:
     std::map<std::string, SecAccessFlags> m_userDefaultFileScopePermissions;
     SecAccessFlags              m_defaultPermission;    // TO BE DEPRECATED - SECURITY HOLE
     map<string, ISecResource*>  m_managedFileScopesMap;
-    mutable ReadWriteLock       m_scopesRWLock;//guards m_managedFileScopesMap
+    mutable ReadWriteLock       m_scopesRWLock{SYNC_LOCATION};//guards m_managedFileScopesMap
     ISecManager *               m_secMgr;
 
     Semaphore m_exitFileScopeCacheFillThreadSem{SYNC_LOCATION};
