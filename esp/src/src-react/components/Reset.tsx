@@ -9,6 +9,7 @@ import { MessageBox } from "../layouts/MessageBox";
 import { resetNavWide, resetTheme } from "../hooks/theme";
 import { resetFavorites } from "../hooks/favorite";
 import { resetCookieConsent } from "./Frame";
+import { resetMetricsOptions } from "./Metrics";
 import { resetWorkunitOptions } from "./Workunits";
 import { resetWorkunitSummarySplitter } from "./WorkunitSummary";
 import { resetWUSummaryOptions } from "./WUSSummary";
@@ -41,6 +42,7 @@ export const ResetDialog: React.FunctionComponent<ResetDialogProps> = ({
     const onClick = React.useCallback(async () => {
         if (checkMetricOptions) {
             await resetMetricsViews();
+            await resetMetricsOptions();
         }
         if (checkWorkunitOptions) {
             await resetWorkunitOptions();

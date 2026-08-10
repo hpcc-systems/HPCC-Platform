@@ -10,6 +10,7 @@ export interface HpccJSComponentProps {
     width: number;
     height: number;
     debounce?: boolean;
+    style?: React.CSSProperties;
     onReady?: () => void;
 }
 
@@ -18,6 +19,7 @@ export const HpccJSComponent: React.FunctionComponent<HpccJSComponentProps> = ({
     width,
     height,
     debounce = true,
+    style,
     onReady
 }) => {
     const divID = useId("viz-component-");
@@ -40,7 +42,7 @@ export const HpccJSComponent: React.FunctionComponent<HpccJSComponentProps> = ({
         }
     }, [debounce, height, onReady, widget, width]);
 
-    return <div ref={setDivRef} id={divID} className="hpcc-js-component" style={{ width, height }}>
+    return <div ref={setDivRef} id={divID} className="hpcc-js-component" style={{ width, height, ...style }}>
     </div>;
 };
 
@@ -50,6 +52,7 @@ export interface AutosizeHpccJSComponentProps {
     padding?: number;
     debounce?: boolean;
     hidden?: boolean;
+    style?: React.CSSProperties;
     onReady?: () => void;
     children?: React.ReactNode;
 }
@@ -60,6 +63,7 @@ export const AutosizeHpccJSComponent: React.FunctionComponent<AutosizeHpccJSComp
     padding = 0,
     debounce = true,
     hidden = false,
+    style,
     onReady,
     children
 }) => {
@@ -67,7 +71,7 @@ export const AutosizeHpccJSComponent: React.FunctionComponent<AutosizeHpccJSComp
     return <SizeMe>{({ size }) => {
         const width = size?.width || padding * 2;
         const height = size?.height || padding * 2;
-        return <div style={{ width: "100%", height: hidden ? "1px" : fixedHeight, position: "relative" }}>
+        return <div style={{ width: "100%", height: hidden ? "1px" : fixedHeight, position: "relative", ...style }}>
             <div style={{ position: "absolute", padding: `${padding}px`, display: hidden ? "none" : "block" }}>
                 <HpccJSComponent widget={widget} debounce={debounce} width={width - padding * 2} height={height - padding * 2} onReady={onReady} />
             </div>
@@ -87,6 +91,7 @@ export interface AutosizeComponentProps {
     fixedHeight?: string;
     padding?: number;
     hidden?: boolean;
+    style?: React.CSSProperties;
     children?: React.ReactNode;
 }
 
@@ -94,13 +99,14 @@ export const AutosizeComponent: React.FunctionComponent<AutosizeComponentProps> 
     fixedHeight = "100%",
     padding = 0,
     hidden = false,
+    style,
     children
 }) => {
 
     return <SizeMe hidden={hidden}>{({ size }) => {
         const width = size?.width || padding * 2;
         const height = size?.height || padding * 2;
-        return <div style={{ width: "100%", height: fixedHeight, position: "relative" }}>
+        return <div style={{ width: "100%", height: fixedHeight, position: "relative", ...style }}>
             <div style={{ position: "absolute", padding: `${padding}px` }}>
                 <div style={{ width: width - padding * 2, height: height - padding * 2, display: "flex", alignItems: "center", justifyContent: "center" }} >
                     {children}

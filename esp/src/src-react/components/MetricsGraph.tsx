@@ -6,16 +6,18 @@ import { useConst } from "@fluentui/react-hooks";
 import { bundleIcon, Folder20Filled, Folder20Regular, FolderOpen20Filled, FolderOpen20Regular } from "@fluentui/react-icons";
 import { IScope } from "@hpcc-js/comms";
 import nlsHPCC from "src/nlsHPCC";
-import { FetchStatus, GLOBAL_FAKE_ID, METRICS_GRAPH_TRACK_SELECTION, MetricsView, useMetricsGraphLayout, useMetricsViews, useWorkunitMetrics } from "../hooks/metrics";
+import { FetchStatus, GLOBAL_FAKE_ID, METRICS_GRAPH_TRACK_SELECTION, METRICS_GRAPH_SHOW_TOOLTIP, MetricsView, useMetricsGraphLayout, useMetricsViews, useWorkunitMetrics } from "../hooks/metrics";
 import { useUserStore } from "../hooks/store";
+import { useUserTheme } from "../hooks/theme";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { AutosizeComponent, AutosizeHpccJSComponent } from "../layouts/HpccJSAdapter";
-import { isLayoutComplete, LayoutStatus, MetricGraph, MetricGraphWidget } from "../util/metricGraph";
+import { isLayoutComplete, LayoutStatus, MetricGraphWidget as MetricGraphWidget, MetricGraph } from "../util/metricGraph";
 import { BreadcrumbInfo, OverflowBreadcrumb } from "./controls/OverflowBreadcrumb";
+import { MetricsGraphTooltip } from "./MetricsGraphTooltip";
 
 const LineageIcon = bundleIcon(Folder20Filled, Folder20Regular);
 const SelectedLineageIcon = bundleIcon(FolderOpen20Filled, FolderOpen20Regular);
-const TRANSITION_DURATION = 0;
+const TRANSITION_DURATION = 250;
 
 export function idsToScopes(metrics: IScope[], ids?: string[]): IScope[] {
     if (!ids?.length) {
@@ -57,7 +59,8 @@ export function calcLineage(metricGraph: MetricGraph, selection?: IScope[], lsNa
 }
 
 export interface MetricGraphData {
-    metricGraph: MetricGraph;
+    metricGraph?: MetricGraph;
+    loading: boolean;
     selectedMetrics: IScope[];
     lineage: IScope[];
     lineageSelectionScope: IScope | undefined;
@@ -71,8 +74,19 @@ export function useMetricsGraphData(metrics: IScope[], view: MetricsView, lineag
     const { svg, layoutStatus } = useMetricsGraphLayout(dot);
     const [lineage, setLineage] = React.useState<IScope[]>([]);
     const [lineageSelectionScope, setLineageSelectionScope] = React.useState<IScope | undefined>(undefined);
+    const [metricGraph, setMetricGraph] = React.useState<MetricGraph | undefined>(undefined);
 
-    const metricGraph = useConst(() => new MetricGraph());
+    React.useEffect(() => {
+        let cancelled = false;
+        MetricGraph.create().then(nextMetricGraph => {
+            if (!cancelled) {
+                setMetricGraph(nextMetricGraph);
+            }
+        });
+        return () => {
+            cancelled = true;
+        };
+    }, []);
 
     const selectedMetrics = React.useMemo<IScope[]>(() => {
         return idsToScopes(metrics, selection);
@@ -81,6 +95,7 @@ export function useMetricsGraphData(metrics: IScope[], view: MetricsView, lineag
     const lineageSelectionScopeName = lineageSelectionScope?.name;
 
     React.useEffect(() => {
+        if (!metricGraph) return;
         if (metrics.length > 0) {
             metricGraph.load(metrics);
             setDot(metricGraph.graphTpl(lineageSelectionScopeName ? [lineageSelectionScopeName] : [], view));
@@ -91,6 +106,7 @@ export function useMetricsGraphData(metrics: IScope[], view: MetricsView, lineag
     }, [lineageSelectionScopeName, metricGraph, metrics, view]);
 
     React.useEffect(() => {
+        if (!metricGraph) return;
         const { lineage: nextLineage, lineageSelectionScope: nextLineageSelectionScope } = calcLineage(metricGraph, selectedMetrics, lineageSelectionName);
         setLineage(prevLineage => {
             if (prevLineage.length === nextLineage.length && prevLineage.every((item, idx) => item.name === nextLineage[idx]?.name)) {
@@ -106,7 +122,7 @@ export function useMetricsGraphData(metrics: IScope[], view: MetricsView, lineag
         });
     }, [metricGraph, selectedMetrics, lineageSelectionName]);
 
-    return { metricGraph, selectedMetrics, lineage, lineageSelectionScope, dot, svg, layoutStatus };
+    return { metricGraph, loading: metricGraph === undefined, selectedMetrics, lineage, lineageSelectionScope, dot, svg, layoutStatus };
 }
 
 export interface MetricsGraphProps {
@@ -121,7 +137,7 @@ export interface MetricsGraphProps {
 
 export const MetricsGraph: React.FunctionComponent<MetricsGraphProps> = ({
     metrics,
-    metricGraphData: { metricGraph, selectedMetrics, lineage, lineageSelectionScope, svg, layoutStatus },
+    metricGraphData: { metricGraph, loading, selectedMetrics, lineage, lineageSelectionScope, svg, layoutStatus },
     selection,
     selectedMetricsSource,
     status,
@@ -130,6 +146,8 @@ export const MetricsGraph: React.FunctionComponent<MetricsGraphProps> = ({
 }) => {
     const [selectedMetricsPtr, setSelectedMetricsPtr] = React.useState<number>(-1);
     const [trackSelection, setTrackSelection] = useUserStore(METRICS_GRAPH_TRACK_SELECTION, true);
+    const [showTooltips, setShowTooltips] = useUserStore(METRICS_GRAPH_SHOW_TOOLTIP, true);
+    const { isDark } = useUserTheme();
     const [isRenderComplete, setIsRenderComplete] = React.useState<boolean>(false);
     const [metricGraphWidgetReady, setMetricGraphWidgetReady] = React.useState<boolean>(false);
 
@@ -146,7 +164,9 @@ export const MetricsGraph: React.FunctionComponent<MetricsGraphProps> = ({
     );
 
     React.useEffect(() => {
+        if (!metricGraph) return;
         metricGraphWidget
+            .metricGraph(metricGraph)
             .on("selectionChanged", () => {
                 const selection = metricGraphWidget.selection().filter(id => metricGraph.item(id)).map(id => metricGraph.item(id).id);
                 onSelectionChange(selection);
@@ -176,7 +196,7 @@ export const MetricsGraph: React.FunctionComponent<MetricsGraphProps> = ({
                         metricGraphWidget
                             .selection(newSelection)
                             ;
-                        if (trackSelection && selectedMetricsSource !== "metricGraphWidget") {
+                        if (trackSelection) {
                             if (newSelection.length) {
                                 if (sameSVG) {
                                     metricGraphWidget.centerOnSelection(TRANSITION_DURATION);
@@ -187,7 +207,7 @@ export const MetricsGraph: React.FunctionComponent<MetricsGraphProps> = ({
                                 metricGraphWidget.zoomToFit(TRANSITION_DURATION);
                             }
                         }
-                        metricGraphWidget.lazyRender();
+                        return metricGraphWidget.renderPromise();
                     }
                 })
                 .finally(() => {
@@ -226,9 +246,9 @@ export const MetricsGraph: React.FunctionComponent<MetricsGraphProps> = ({
 
     const graphRightButtons = React.useMemo((): ICommandBarItemProps[] => [
         {
-            key: "toSel", title: nlsHPCC.ZoomSelection,
+            key: "toSel", title: nlsHPCC.TrackSelection,
             disabled: selection === undefined || selection.length <= 0,
-            iconProps: { iconName: "FitPage" },
+            iconProps: { iconName: "EyeTracking" },
             canCheck: true,
             checked: trackSelection,
             onClick: () => {
@@ -242,26 +262,46 @@ export const MetricsGraph: React.FunctionComponent<MetricsGraphProps> = ({
         },
         { key: "divider_1", itemType: ContextualMenuItemType.Divider },
         {
-            key: "tofit", title: nlsHPCC.ZoomAll, iconProps: { iconName: "ScaleVolume" },
+            key: "tofit", title: nlsHPCC.ZoomAll,
+            iconProps: { iconName: "FitPage" },
             onClick: () => metricGraphWidget.zoomToFit()
-        }, {
-            key: "tofitWidth", title: nlsHPCC.ZoomWidth, iconProps: { iconName: "FitWidth" },
+        },
+        {
+            key: "tofitWidth", title: nlsHPCC.ZoomWidth,
+            iconProps: { iconName: "FitWidth" },
             onClick: () => metricGraphWidget.zoomToWidth()
-        }, {
-            key: "100%", title: nlsHPCC.Zoom100Pct, iconProps: { iconName: "ZoomToFit" },
+        },
+        { key: "divider_2", itemType: ContextualMenuItemType.Divider },
+        {
+            key: "100%", title: nlsHPCC.Zoom100Pct,
+            iconProps: { iconName: "Reset" },
             onClick: () => metricGraphWidget.zoomToScale(1)
-        }, {
-            key: "plus", title: nlsHPCC.ZoomPlus, iconProps: { iconName: "ZoomIn" },
+        },
+        {
+            key: "plus", title: nlsHPCC.ZoomPlus,
+            iconProps: { iconName: "ZoomIn" },
             onClick: () => metricGraphWidget.zoomPlus()
-        }, {
-            key: "minus", title: nlsHPCC.ZoomMinus, iconProps: { iconName: "ZoomOut" },
+        },
+        {
+            key: "minus", title: nlsHPCC.ZoomMinus,
+            iconProps: { iconName: "ZoomOut" },
             onClick: () => metricGraphWidget.zoomMinus()
         },
-    ], [metricGraphWidget, selection, setTrackSelection, trackSelection]);
+        { key: "divider_3", itemType: ContextualMenuItemType.Divider },
+        {
+            key: "showTooltips", title: nlsHPCC.ShowTooltips,
+            iconProps: { iconName: "CommentText" },
+            canCheck: true,
+            checked: showTooltips,
+            onClick: () => { setShowTooltips(!showTooltips); }
+        },
+    ], [metricGraphWidget, selection, setShowTooltips, setTrackSelection, showTooltips, trackSelection]);
 
     const spinnerLabel: string = React.useMemo((): string => {
         if (status === FetchStatus.STARTED) {
             return nlsHPCC.FetchingData;
+        } else if (loading) {
+            return nlsHPCC.PerformingLayout;
         } else if (status === FetchStatus.COMPLETE && selectedMetrics.length === 0) {
             // fetch completed but an error occurred or no data available?
             return "";
@@ -279,9 +319,12 @@ export const MetricsGraph: React.FunctionComponent<MetricsGraphProps> = ({
             return nlsHPCC.RenderSVG;
         }
         return "";
-    }, [status, selectedMetrics.length, layoutStatus, isRenderComplete]);
+    }, [status, loading, selectedMetrics.length, layoutStatus, isRenderComplete]);
 
     const breadcrumbs = React.useMemo<BreadcrumbInfo[]>(() => {
+        if (!metricGraph) {
+            return [];
+        }
         return lineage.filter(item => item.id !== GLOBAL_FAKE_ID).map(item => {
             return {
                 id: item.name,
@@ -306,11 +349,17 @@ export const MetricsGraph: React.FunctionComponent<MetricsGraphProps> = ({
                         <Spinner size="extra-large" label={spinnerLabel} labelPosition="below"></Spinner>
                 }
             </AutosizeComponent>
-            <AutosizeComponent hidden={!!spinnerLabel || selection?.length > 0}>
+            <AutosizeComponent hidden={!!spinnerLabel || selection?.length > 0 || lineageSelectionScope !== undefined}>
                 <Label style={{ ...typographyStyles.subtitle2 }}>{nlsHPCC.NoContentPleaseSelectItem}</Label>
             </AutosizeComponent>
-            <AutosizeHpccJSComponent widget={metricGraphWidget} onReady={onReady}>
+            <AutosizeHpccJSComponent widget={metricGraphWidget} onReady={onReady} style={{ colorScheme: isDark ? "dark" : "light", "--lightningcss-light": isDark ? " " : "initial", "--lightningcss-dark": isDark ? "initial" : " " } as React.CSSProperties}>
             </AutosizeHpccJSComponent>
+            <MetricsGraphTooltip
+                metricGraph={metricGraph}
+                metricGraphWidget={metricGraphWidget}
+                selection={selection}
+                showTooltips={showTooltips}
+            />
         </>
         }
     />;

@@ -9,6 +9,7 @@ import { scopedLogger } from "@hpcc-js/util";
 import nlsHPCC from "src/nlsHPCC";
 import { WUTimelineNoFetch } from "src/Timings";
 import * as Utility from "src/Utility";
+import { userKeyValStore } from "src/KeyValStore";
 import { useMetricsViews, useWUQueryMetrics, scopeFilterMetrics, scopeFilterLogicalGraph, GLOBAL_FAKE_ID, METRICS_UNIFORM_TIME_UNITS } from "../hooks/metrics";
 import { useUserStore } from "../hooks/store";
 import { HolyGrail } from "../layouts/HolyGrail";
@@ -37,6 +38,12 @@ const useStyles = makeStyles({
 
 type SelectedMetricsSource = "" | "scopesTable" | "scopesSqlTable" | "metricGraphWidget" | "hotspot" | "reset";
 const TIMELINE_FIXEDHEIGHT = 152;
+const METRICS_SHOWTIMELINE = "metrics_showTimeline";
+
+export function resetMetricsOptions() {
+    const store = userKeyValStore();
+    return store?.delete(METRICS_SHOWTIMELINE);
+}
 
 function scopeSelectionId(scope: IScope): string {
     return scope.__lparam?.id ?? scope.id;
@@ -68,13 +75,12 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
     if (querySet && queryId) {
         wuid = "";
     }
-
     const styles = useStyles();
     const { isDark } = useUserTheme();
     const [selectedMetricsSource, setSelectedMetricsSource] = React.useState<SelectedMetricsSource>("");
     const { metrics, columns, status, refresh } = useWUQueryMetrics(wuid, querySet, queryId, logicalGraph ? scopeFilterLogicalGraph : scopeFilterMetrics);
     const { loaded, viewIds, viewId, setViewId, view, updateView, save } = useMetricsViews(logicalGraph);
-    const metricGraphData = useMetricsGraphData(metrics, view, lineageSelection, selection);
+    const metricGraphData = useMetricsGraphData(metrics, view, lineageSelection, selection ?? [lineageSelection]);
     const { metricGraph, selectedMetrics, lineageSelectionScope, dot } = metricGraphData;
     const [showMetricOptions, setShowMetricOptions] = React.useState(false);
     const [dockpanel, setDockpanel] = React.useState<ResetableDockPanel>();
@@ -83,14 +89,15 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
     const [matchCase, setMatchCase] = React.useState(false);
     const [matchWholeWord, setMatchWholeWord] = React.useState(false);
     const [showTimingInSeconds, setShowTimingInSeconds] = useUserStore<boolean>(METRICS_UNIFORM_TIME_UNITS, false);
+    const [showTimeline, setShowTimeline] = useUserStore<boolean>(METRICS_SHOWTIMELINE, true);
 
     const pushSelectionUrl = React.useCallback((parentUrl: string, viewId: string, lsName?: string, selection?: string[], replace: boolean = false) => {
         const hasLineage = !!lsName?.length;
         const hasSelection = !!selection?.length;
         const viewStr = (!logicalGraph && hasLineage && hasSelection) ? `/${encodeURIComponent(viewId)}` : "";
         const selectedMetrics = idsToScopes(metrics, selection);
-        const lineage = calcLineage(metricGraph, selectedMetrics, lsName);
-        const lineageSelectionStr = lineage.lineageSelectionScope?.name?.length ? `/${lineage.lineageSelectionScope.name}` : "";
+        const lineage = metricGraph ? calcLineage(metricGraph, selectedMetrics, lsName) : undefined;
+        const lineageSelectionStr = lineage?.lineageSelectionScope?.name?.length ? `/${lineage.lineageSelectionScope.name}` : "";
         const selectionStr = selectedMetrics?.length ? `/${selectedMetrics.map(item => item.id).join(",")}` : "";
 
         if (replace) {
@@ -207,14 +214,14 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
     }, [timeline, lineageSelectionScope?.name, parentUrl, pushSelectedMetricsUrl]);
 
     React.useEffect(() => {
-        if (!logicalGraph && view.showTimeline) {
+        if (!logicalGraph && showTimeline) {
             timeline
                 .scopes(metrics.filter(row => row.id !== GLOBAL_FAKE_ID))
                 .height(TIMELINE_FIXEDHEIGHT)
                 .lazyRender()
                 ;
         }
-    }, [logicalGraph, metrics, timeline, view.showTimeline]);
+    }, [logicalGraph, metrics, showTimeline, timeline]);
 
     //  Scopes Table  ---
     const onChangeScopeFilter = React.useCallback((event: SearchBoxChangeEvent, data: { value: string }) => {
@@ -245,7 +252,7 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
 
     React.useEffect(() => {
         const scopesTableMetrics = includePendingItems ? metrics : metrics.filter(row => {
-            return metricGraph.itemStatus(row) !== "unknown";
+            return metricGraph?.itemStatus(row) !== "unknown";
         });
         scopesTable
             .metrics(scopesTableMetrics, view.scopeTypes, view.properties, scopeFilter, matchCase, matchWholeWord, showTimingInSeconds)
@@ -369,10 +376,9 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
             },
         },
         {
-            key: "timeline", text: nlsHPCC.Timeline, canCheck: true, checked: view.showTimeline, hidden: logicalGraph, iconProps: { iconName: "TimelineProgress" },
+            key: "timeline", text: nlsHPCC.Timeline, canCheck: true, checked: showTimeline, hidden: logicalGraph, iconProps: { iconName: "TimelineProgress" },
             onClick: () => {
-                updateView({ showTimeline: !view.showTimeline }, true);
-                save();
+                setShowTimeline(!showTimeline);
             }
         },
         {
@@ -388,7 +394,7 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
                 setShowMetricOptions(true);
             }
         }
-    ].filter(item => item.hidden !== true), [dockpanel, hotspots, lineageSelectionScope?.name, logicalGraph, onHotspot, parentUrl, pushSelectionUrl, refresh, selection, save, setShowTimingInSeconds, setViewId, showTimingInSeconds, timeline, updateView, view.showTimeline, viewId, viewIds]);
+    ].filter(item => item.hidden !== true), [dockpanel, hotspots, lineageSelectionScope?.name, logicalGraph, onHotspot, parentUrl, pushSelectionUrl, refresh, selection, save, setShowTimeline, setShowTimingInSeconds, setViewId, showTimeline, showTimingInSeconds, timeline, updateView, viewId, viewIds]);
 
     const formatColumns = React.useMemo((): Utility.ColumnMap => {
         const copyColumns: Utility.ColumnMap = {};
@@ -452,7 +458,7 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
     return <HolyGrail
         header={<>
             <CommandBar items={buttons} farItems={rightButtons} />
-            <AutosizeHpccJSComponent widget={timeline} fixedHeight={`${TIMELINE_FIXEDHEIGHT + 8}px`} padding={4} hidden={logicalGraph || !view.showTimeline} />
+            <AutosizeHpccJSComponent widget={timeline} fixedHeight={`${TIMELINE_FIXEDHEIGHT + 8}px`} padding={4} hidden={logicalGraph || !showTimeline} />
         </>}
         main={
             <ErrorBoundary>

@@ -31,15 +31,15 @@ import {
     useOverflowMenu,
 } from "@fluentui/react-components";
 import {
-    ArrowClockwise16Regular, ArrowDownload16Regular, ArrowLeft16Regular, ArrowRight16Regular,
-    ArrowUpload16Regular, AutoFitWidth20Regular, CheckmarkCircle16Regular, CodeBlock16Regular,
-    ContactCard16Regular, Copy16Regular, DataBarVertical16Regular, Delete16Regular,
-    Dismiss16Regular, DocumentText16Regular, Eye16Regular, Filter16Filled, Filter16Regular,
-    LockClosed16Regular, LockOpen16Regular,
-    Maximize16Regular, MoreHorizontal16Regular, Save16Regular, Settings16Regular, TableLink16Regular,
-    TableRegular, TextBulletListRegular, Timeline20Regular, TopSpeed16Regular,
-    WindowEdit16Regular, ZoomFit16Regular, ZoomFit20Regular, ZoomIn16Regular, ZoomOut16Regular,
-    SearchRegular,
+    ArrowClockwiseRegular, ArrowDownloadRegular, ArrowLeftRegular, ArrowResetRegular,
+    ArrowRightRegular, ArrowUploadRegular, AutoFitWidthRegular, CheckmarkCircleRegular,
+    CodeBlockRegular, CommentTextRegular, ContactCardRegular, CopyRegular,
+    DataBarVerticalRegular, DeleteRegular, DismissRegular, DocumentTextRegular,
+    EyeRegular, EyeTrackingRegular, FilterFilled, FilterRegular, LockClosedRegular,
+    LockOpenRegular, MaximizeRegular, MoreHorizontalRegular, SaveRegular, SearchRegular,
+    SettingsRegular, TableLinkRegular, TableRegular, TextBulletListRegular,
+    TimelineRegular, TopSpeedRegular, WindowEditRegular, ZoomFitRegular, ZoomInRegular,
+    ZoomOutRegular,
 } from "@fluentui/react-icons";
 
 const useStyles = makeStyles({
@@ -87,40 +87,43 @@ export interface ICommandBarItemProps {
 
 // ─── v8 icon name → v9 SVG element mapping ───────────────────────────────────
 const ICON_MAP: Record<string, React.ReactElement> = {
-    AnalyticsView: <DataBarVertical16Regular />,
-    BarChartVertical: <DataBarVertical16Regular />,
+    AnalyticsView: <DataBarVerticalRegular />,
+    BarChartVertical: <DataBarVerticalRegular />,
     BulletedTreeList: <TextBulletListRegular />,
-    Cancel: <Dismiss16Regular />,
-    ComplianceAudit: <CheckmarkCircle16Regular />,
-    Contact: <ContactCard16Regular />,
-    Copy: <Copy16Regular />,
-    Delete: <Delete16Regular />,
-    DocumentText: <DocumentText16Regular />,
-    Download: <ArrowDownload16Regular />,
-    FileHTML: <CodeBlock16Regular />,
-    Filter: <Filter16Regular />,
-    FilterSolid: <Filter16Filled style={{ color: tokens.colorBrandForeground1 }} />,
-    FitPage: <ZoomFit16Regular />,
-    FitWidth: <AutoFitWidth20Regular />,
-    Lock: <LockClosed16Regular />,
-    NavigateBack: <ArrowLeft16Regular />,
-    NavigateBackMirrored: <ArrowRight16Regular />,
-    Refresh: <ArrowClockwise16Regular />,
-    Relationship: <TableLink16Regular />,
-    Save: <Save16Regular />,
-    ScaleVolume: <Maximize16Regular />,
+    Cancel: <DismissRegular />,
+    CommentText: <CommentTextRegular />,
+    ComplianceAudit: <CheckmarkCircleRegular />,
+    Contact: <ContactCardRegular />,
+    Copy: <CopyRegular />,
+    Delete: <DeleteRegular />,
+    DocumentText: <DocumentTextRegular />,
+    Download: <ArrowDownloadRegular />,
+    EyeTracking: <EyeTrackingRegular />,
+    FileHTML: <CodeBlockRegular />,
+    Filter: <FilterRegular />,
+    FilterSolid: <FilterFilled style={{ color: tokens.colorBrandForeground1 }} />,
+    FitPage: <ZoomFitRegular />,
+    FitWidth: <AutoFitWidthRegular />,
+    Lock: <LockClosedRegular />,
+    NavigateBack: <ArrowLeftRegular />,
+    NavigateBackMirrored: <ArrowRightRegular />,
+    Refresh: <ArrowClockwiseRegular />,
+    Reset: <ArrowResetRegular />,
+    Relationship: <TableLinkRegular />,
+    Save: <SaveRegular />,
+    ScaleVolume: <MaximizeRegular />,
     SearchRegular: <SearchRegular />,
-    Settings: <Settings16Regular />,
-    SpeedHigh: <TopSpeed16Regular />,
+    Settings: <SettingsRegular />,
+    SpeedHigh: <TopSpeedRegular />,
     Table: <TableRegular />,
-    TimelineProgress: <Timeline20Regular />,
-    Unlock: <LockOpen16Regular />,
-    Upload: <ArrowUpload16Regular />,
-    View: <Eye16Regular />,
-    WindowEdit: <WindowEdit16Regular />,
-    ZoomIn: <ZoomIn16Regular />,
-    ZoomOut: <ZoomOut16Regular />,
-    ZoomToFit: <ZoomFit20Regular />,
+    TimelineProgress: <TimelineRegular />,
+    Unlock: <LockOpenRegular />,
+    Upload: <ArrowUploadRegular />,
+    View: <EyeRegular />,
+    WindowEdit: <WindowEditRegular />,
+    ZoomIn: <ZoomInRegular />,
+    ZoomOut: <ZoomOutRegular />,
+    ZoomToFit: <ZoomFitRegular />,
 };
 
 /**
@@ -165,7 +168,7 @@ function renderItem(item: ICommandBarItemProps, buttonClassName?: string): React
         return <ToolbarDivider key={item.key} />;
     }
     const icon = renderIcon(item.iconProps?.iconName, item.iconElement);
-    const title = item.iconOnly ? item.text : undefined;
+    const title = item.title ?? (item.iconOnly ? item.text : undefined);
     const label = item.iconOnly ? undefined : item.text;
 
     if (item.subMenuProps) {
@@ -249,7 +252,7 @@ const ToolbarOverflowMenu: React.FunctionComponent<{ items: ICommandBarItemProps
             <MenuTrigger disableButtonEnhancement>
                 <ToolbarButton
                     ref={ref}
-                    icon={<MoreHorizontal16Regular />}
+                    icon={<MoreHorizontalRegular />}
                     aria-label="More items"
                     style={{ display: isOverflowing ? undefined : "none" }}
                 />

@@ -3,6 +3,7 @@ import { useConst, useForceUpdate } from "@fluentui/react-hooks";
 import { WsWorkunits, WorkunitsService, IScope } from "@hpcc-js/comms";
 import { scopedLogger } from "@hpcc-js/util";
 import { userKeyValStore } from "src/KeyValStore";
+import { decodeHTML } from "src/Utility";
 import { DockPanelLayout } from "../layouts/DockPanel";
 import { singletonDebounce } from "../util/throttle";
 import { isGraphvizWorkerResponse, layoutCache, LayoutStatus } from "../util/metricGraph";
@@ -20,6 +21,7 @@ const METRIC_OPTIONS_4 = "MetricOptions-4";
 export const GLOBAL_FAKE_ID = "<global>";
 
 export const METRICS_GRAPH_TRACK_SELECTION = "metrics_graph_trackSelection";
+export const METRICS_GRAPH_SHOW_TOOLTIP = "metrics_graph_showTooltip";
 export const METRICS_UNIFORM_TIME_UNITS = "metrics_uniform_time_units";
 
 export function resetMetricsViews() {
@@ -29,6 +31,7 @@ export function resetMetricsViews() {
         store?.delete(METRIC_OPTIONS_3),
         store?.delete(METRIC_OPTIONS_4),
         store?.delete(METRICS_GRAPH_TRACK_SELECTION),
+        store?.delete(METRICS_GRAPH_SHOW_TOOLTIP),
         store?.delete(METRICS_UNIFORM_TIME_UNITS)
     ]);
 }
@@ -42,7 +45,6 @@ export interface MetricsView {
     edgeTpl;
     sql: string;
     layout?: DockPanelLayout;
-    showTimeline: boolean;
 }
 export type StringMetricsViewMap = { [id: string]: MetricsView };
 
@@ -63,8 +65,7 @@ const DefaultMetricsViews: StringMetricsViewMap = {
         sql: `\
 SELECT type, name, CostExecute, TimeElapsed, id
     FROM metrics`,
-        layout: undefined,
-        showTimeline: true
+        layout: undefined
     },
     Graphs: {
         scopeTypes: ["graph", "subgraph"],
@@ -77,8 +78,7 @@ SELECT type, name, CostExecute, TimeElapsed, id
 SELECT type, name, CostExecute, TimeElapsed, id
     FROM metrics
     WHERE type = 'graph' OR type = 'subgraph'`,
-        layout: undefined,
-        showTimeline: true
+        layout: undefined
     },
     Activities: {
         scopeTypes: ["activity"],
@@ -91,8 +91,7 @@ SELECT type, name, CostExecute, TimeElapsed, id
 SELECT type, name, TimeLocalExecute, SizeDiskRead, NumDiskRead, id
     FROM metrics
     WHERE type = 'activity'`,
-        layout: undefined,
-        showTimeline: true
+        layout: undefined
     },
     Operations: {
         scopeTypes: ["operation"],
@@ -105,8 +104,7 @@ SELECT type, name, TimeLocalExecute, SizeDiskRead, NumDiskRead, id
 SELECT type, name, TimeElapsed, id
     FROM metrics
     WHERE type = 'operation'`,
-        layout: undefined,
-        showTimeline: true
+        layout: undefined
     },
     Peaks: {
         scopeTypes: ["subgraph"],
@@ -119,8 +117,7 @@ SELECT type, name, TimeElapsed, id
 SELECT type, name, NodeMaxPeakMemory, NodeMaxPeakRowMemory, NodeMinPeakMemory, NodeMinPeakRowMemory, SizeAvgPeakMemory, SizeAvgPeakRowMemory, SizeDeltaPeakMemory, SizeDeltaPeakRowMemory, SizeMaxPeakMemory, SizeMaxPeakRowMemory, SizeMinPeakMemory, SizeMinPeakRowMemory, SizePeakMemory, SizeStdDevPeakMemory, SizeStdDevPeakRowMemory, SkewMaxPeakMemory, SkewMaxPeakRowMemory, SkewMinPeakMemory, SkewMinPeakRowMemory, id
     FROM metrics
     WHERE type = 'subgraph'`,
-        layout: undefined,
-        showTimeline: true
+        layout: undefined
     }
 };
 
@@ -128,6 +125,15 @@ SELECT type, name, NodeMaxPeakMemory, NodeMaxPeakRowMemory, NodeMinPeakMemory, N
 
 export function clone<T>(_: T): T {
     return JSON.parse(JSON.stringify(_));
+}
+
+function stripShowTimelineFromViews(views: StringMetricsViewMap): StringMetricsViewMap {
+    const sanitizedViews: StringMetricsViewMap = {};
+    for (const viewId in views) {
+        const { showTimeline: _showTimeline, ...rest } = views[viewId] as MetricsView & { showTimeline?: boolean };
+        sanitizedViews[viewId] = rest as MetricsView;
+    }
+    return sanitizedViews;
 }
 
 // function checkLayout(options: MetricsView): boolean {
@@ -164,8 +170,7 @@ const logicalGraphView: MetricsView = {
     sql: `\
 SELECT type, name, id, Kind, Label, EclNameList, EclText
     FROM metrics`,
-    layout: undefined,
-    showTimeline: false
+    layout: undefined
 };
 
 const logicalGraphResult: useMetricsViewsResult = {
@@ -209,9 +214,10 @@ export function useMetricsViews(logicalGraph: boolean): useMetricsViewsResult {
         if (metricViewStr && !loaded) {
             try {
                 const userView: UserMetricsView = JSON.parse(metricViewStr);
-                _origViews.set(clone(userView.views));
-                _views.set(userView.views);
-                _viewIds.set(Object.keys(userView.views));
+                const sanitizedViews = stripShowTimelineFromViews(userView.views);
+                _origViews.set(clone(sanitizedViews));
+                _views.set(sanitizedViews);
+                _viewIds.set(Object.keys(sanitizedViews));
                 setViewId(userView.viewId);
                 _loaded.set(true);
             } catch (e) {
@@ -306,7 +312,7 @@ export function useMetricsViews(logicalGraph: boolean): useMetricsViewsResult {
     }, [refresh, view, viewId, views]);
 
     const save = React.useCallback(() => {
-        return setMetricViewStr(JSON.stringify({ viewId, views }));
+        return setMetricViewStr(JSON.stringify({ viewId, views: stripShowTimelineFromViews(views) }));
     }, [viewId, views, setMetricViewStr]);
 
     if (logicalGraph) {
@@ -413,6 +419,37 @@ export interface IScopeEx extends IScope {
     __exceptions?: WsWorkunits.ECLException[],
 }
 
+function decodeStringsInPlace(value: unknown): void {
+    if (!value || typeof value !== "object") {
+        return;
+    }
+    if (Array.isArray(value)) {
+        value.forEach(item => decodeStringsInPlace(item));
+        return;
+    }
+
+    const obj = value as Record<string, unknown>;
+    for (const key in obj) {
+        const next = obj[key];
+        if (typeof next === "string") {
+            obj[key] = decodeHTML(next);
+        } else if (next && typeof next === "object") {
+            decodeStringsInPlace(next);
+        }
+    }
+}
+
+function normalizeMetricScope(row: IScopeEx, exceptionsMap?: { [scope: string]: WsWorkunits.ECLException[] }): IScopeEx {
+    decodeStringsInPlace(row);
+    if (exceptionsMap?.[row.name]) {
+        row.__exceptions = exceptionsMap[row.name];
+    }
+    if (row.id === "") {
+        row.id = GLOBAL_FAKE_ID;
+    }
+    return row;
+}
+
 export function useWorkunitMetrics(
     wuid: string,
     scopeFilter: Partial<WsWorkunits.ScopeFilter> = scopeFilterMetrics,
@@ -472,15 +509,7 @@ export function useWorkunitMetrics(
                         exceptionsMap[exception.Scope].push(exception);
                     }
                 }
-                setData(response?.data.map(row => {
-                    if (exceptionsMap[row.name]) {
-                        row.__exceptions = exceptionsMap[row.name];
-                    }
-                    if (row.id === "") {
-                        row.id = GLOBAL_FAKE_ID;
-                    }
-                    return row;
-                }));
+                setData(response?.data.map(row => normalizeMetricScope(row, exceptionsMap)));
                 setColumns(response?.columns);
                 setActivities(response?.meta?.Activities?.Activity ?? []);
                 setProperties(response?.meta?.Properties?.Property ?? []);
@@ -544,7 +573,7 @@ export function useQueryMetrics(
                     IncludeCreatorType: false
                 }
             }).then(response => {
-                setData(response?.data);
+                setData(response?.data.map(row => normalizeMetricScope(row)));
                 setColumns(response?.columns);
                 setActivities(response?.meta?.Activities?.Activity || []);
                 setProperties(response?.meta?.Properties?.Property || []);

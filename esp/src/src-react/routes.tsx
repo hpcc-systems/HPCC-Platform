@@ -23,6 +23,13 @@ function splitCompareWuids(wuid: string): string[] {
 function parseWorkunitTabState(tab: string, state: string) {
     switch (tab) {
         case "metrics":
+            {
+                const selection = state.split(",");
+                if (selection.length === 1) {
+                    return { [tab]: { lineageSelection: selection[0] } };
+                }
+                return { [tab]: { selection } };
+            }
         case "logicalgraph":
             return { [tab]: { selection: state.split(",") } };
         case "eclsummary":

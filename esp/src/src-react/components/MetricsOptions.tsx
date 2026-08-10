@@ -322,9 +322,6 @@ export const MetricsOptions: React.FunctionComponent<MetricsOptionsProps> = ({
                 }
                 {selectedTab === "layout" &&
                     <div className={styles.layoutPanel} style={{ height: innerHeight }}>
-                        <Checkbox label={nlsHPCC.Timeline} checked={dirtyView.showTimeline} onChange={(_, data) => {
-                            setDirtyView(prev => ({ ...prev, showTimeline: !!data.checked }));
-                        }} />
                         <JSONSourceEditor json={dirtyView.layout} toolbar={false} onChange={obj => {
                             if (obj) {
                                 setDirtyView(prev => ({ ...prev, layout: obj as DockPanelLayout }));
@@ -334,9 +331,9 @@ export const MetricsOptions: React.FunctionComponent<MetricsOptionsProps> = ({
                 }
                 {selectedTab === "all" &&
                     <div className={styles.allPanel} style={{ height: innerHeight }}>
-                        <JSONSourceEditor json={dirtyView} toolbar={false} onChange={(obj?: MetricsView) => {
+                        <JSONSourceEditor json={dirtyView} toolbar={false} onChange={(obj: object) => {
                             if (obj) {
-                                setDirtyView(obj);
+                                setDirtyView(obj as MetricsView);
                                 forceRefresh();
                             }
                         }} />
