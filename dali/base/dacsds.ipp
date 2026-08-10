@@ -310,7 +310,7 @@ public:
     virtual void deserializeSelfRT(MemoryBuffer &mb) override;
     virtual void deserializeChildrenRT(MemoryBuffer &src) override;
 
-    inline void addServerTreeInfo(byte STIInfo) { serverTreeInfo += STIInfo; }
+    inline void addServerTreeInfo(byte STIInfo) { serverTreeInfo.store(serverTreeInfo.load() | STIInfo); }
     inline bool queryLazyFetch() const { return connection.queryLazyFetch(); }
     inline CRemoteConnection &queryConnection() { return connection; }
     inline ISDSConnectionManager &queryManager() const { return connection.queryManager(); }
@@ -361,7 +361,7 @@ public:
     virtual bool getPropBin(const char *xpath, MemoryBuffer &ret) const override;
     virtual void localizeElements(const char *xpath, bool allTail=false) override;
     virtual IPropertyTree *queryBranch(const char *xpath) const override;
-    virtual bool hasChildren() const override { return (children && children->count()) || (!children && 0 != (serverTreeInfo & STI_HaveChildren)); }
+    virtual bool hasChildren() const override { return (children && children->count()) || (!children && 0 != (serverTreeInfo.load() & STI_HaveChildren)); }
 
 // ITrackChanges
     virtual ChangeInfo *queryChanges() override;
@@ -374,7 +374,8 @@ public:
 
 private: // data
     unsigned state;
-    mutable byte serverTreeInfo;
+    // Atomic so the value can be read outside a critical section, always modifed inside one.
+    mutable std::atomic<byte> serverTreeInfo;
     CRemoteConnection &connection;
 };
 

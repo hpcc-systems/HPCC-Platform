@@ -567,7 +567,9 @@ bool CClientRemoteTree::Release() const
 void CClientRemoteTree::deserializeSelfRT(MemoryBuffer &mb)
 {
     CRemoteTreeBase::deserializeSelfRT(mb);
-    mb.read(serverTreeInfo);
+    byte serializedServerTreeInfo;
+    mb.read(serializedServerTreeInfo);
+    serverTreeInfo.store(serializedServerTreeInfo);
 }
 
 void CClientRemoteTree::deserializeChildrenRT(MemoryBuffer &src)
@@ -724,15 +726,19 @@ ChildMap *CClientRemoteTree::checkChildren() const
 
 ChildMap *CClientRemoteTree::_checkChildren()
 {
+    if (!(STI_HaveChildren & serverTreeInfo.load()))
+        return children;
+
     CConnectionLock b(connection);
-    if (!children && STI_HaveChildren & serverTreeInfo)
+    byte treeInfo = serverTreeInfo.load();
+    if (!children && (STI_HaveChildren & treeInfo))
     {
         if (queryLazyFetch())
         {
-            serverTreeInfo &= ~STI_HaveChildren;
             createChildMap();
             if (serverId)
                 queryManager().getChildren(*this, connection);
+            serverTreeInfo.store(treeInfo & ~STI_HaveChildren);
         }
     }
     return children;
@@ -827,7 +833,7 @@ void CClientRemoteTree::appendLocal(size32_t size, const void *data, bool binary
             }
             else
             {
-                if (STI_External & serverTreeInfo) // if it has, change will only be fetched on a get call
+                if (STI_External & serverTreeInfo.load()) // if it has, change will only be fetched on a get call
                 {
                     mergeState(CPS_PropAppend);
                     registerPropAppend(0); // whole value on commit to be sent for external append.
@@ -928,7 +934,7 @@ void CClientRemoteTree::registerPropAppend(size32_t l)
 
 void CClientRemoteTree::clearChanges()
 {
-    if (0 != (STI_External & serverTreeInfo) && 0 != (CPS_PropAppend & state))
+    if (0 != (STI_External & serverTreeInfo.load()) && 0 != (CPS_PropAppend & state))
         setProp(NULL, (char *)NULL);
     connection.clearChanges(*this);
 }
@@ -1003,9 +1009,11 @@ bool CClientRemoteTree::removeTree(IPropertyTree *child)
 void CClientRemoteTree::checkExt() const
 {
     if (!connection.queryUseAppendOpt()) return;
+
+    byte treeInfo = serverTreeInfo.load();
     if (!value)
     {
-        if (STI_External & serverTreeInfo)
+        if (STI_External & treeInfo)
         {
             MemoryBuffer mb;
             queryManager().getExternalValueFromServerId(serverId, mb);
@@ -1015,12 +1023,12 @@ void CClientRemoteTree::checkExt() const
                 const_cast<CClientRemoteTree *>(this)->setValue(new CPTValue(mb), binary);
             }
             else
-                serverTreeInfo &= ~STI_External;
+                serverTreeInfo.store(treeInfo & ~STI_External);
         }
     }
     else if (0 != (CPS_PropAppend & state))
     {
-        if (STI_External & serverTreeInfo)
+        if (STI_External & treeInfo)
         {
             MemoryBuffer mb;
             bool binary = IptFlagTst(flags, ipt_binary);
@@ -1034,7 +1042,7 @@ void CClientRemoteTree::checkExt() const
                     value->getValue(mb, binary);
             }
             else
-                serverTreeInfo &= ~STI_External;
+                serverTreeInfo.store(treeInfo & ~STI_External);
         }
     }
 }
