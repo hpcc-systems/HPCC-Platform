@@ -10,10 +10,10 @@ import { useUserTheme } from "../hooks/theme";
 import { DockPanel, DockPanelItem, ResetableDockPanel } from "../layouts/DockPanel";
 import { DojoAdapter } from "../layouts/DojoAdapter";
 import { HolyGrail } from "../layouts/HolyGrail";
-import { AutosizeComponent } from "../layouts/HpccJSAdapter";
 import { pushUrl } from "../util/history";
 import { debounce } from "../util/throttle";
 import { InfoGrid } from "./InfoGrid";
+import { MetricsGraphStandalone } from "./MetricsGraph";
 import { TabbedResults } from "./Results";
 import { ECLSourceEditor } from "./SourceEditor";
 import { TargetClusterOption, TargetClusterTextField } from "./forms/Fields";
@@ -481,9 +481,7 @@ export const ECLPlayground: React.FunctionComponent<ECLPlaygroundProps> = (props
                     </DockPanelItem>
                     <DockPanelItem key="graph" title={nlsHPCC.Graphs} location="split-right" relativeTo="eclEditor">
                         {submissionComplete ?
-                            <AutosizeComponent>
-                                <DojoAdapter widgetClassID="Graph7Widget" params={{ Wuid: workunit?.Wuid }} />
-                            </AutosizeComponent>
+                            <MetricsGraphStandalone wuid={workunit?.Wuid} />
                             : <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%" }}>
                                 <Spinner size="large" />
                             </div>

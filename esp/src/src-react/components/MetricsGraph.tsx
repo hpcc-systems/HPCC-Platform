@@ -6,7 +6,7 @@ import { useConst } from "@fluentui/react-hooks";
 import { bundleIcon, Folder20Filled, Folder20Regular, FolderOpen20Filled, FolderOpen20Regular } from "@fluentui/react-icons";
 import { IScope } from "@hpcc-js/comms";
 import nlsHPCC from "src/nlsHPCC";
-import { FetchStatus, GLOBAL_FAKE_ID, METRICS_GRAPH_TRACK_SELECTION, MetricsView, useMetricsGraphLayout } from "../hooks/metrics";
+import { FetchStatus, GLOBAL_FAKE_ID, METRICS_GRAPH_TRACK_SELECTION, MetricsView, useMetricsGraphLayout, useMetricsViews, useWorkunitMetrics } from "../hooks/metrics";
 import { useUserStore } from "../hooks/store";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { AutosizeComponent, AutosizeHpccJSComponent } from "../layouts/HpccJSAdapter";
@@ -313,5 +313,46 @@ export const MetricsGraph: React.FunctionComponent<MetricsGraphProps> = ({
             </AutosizeHpccJSComponent>
         </>
         }
+    />;
+};
+
+interface MetricsGraphStandaloneProps {
+    wuid?: string;
+}
+
+export const MetricsGraphStandalone: React.FunctionComponent<MetricsGraphStandaloneProps> = ({ wuid = "" }) => {
+    const { metrics, status } = useWorkunitMetrics(wuid);
+    const { view } = useMetricsViews(false);
+    const [lineageSelection, setLineageSelection] = React.useState<string>();
+    const [selection, setSelection] = React.useState<string[]>();
+    const initializedMetrics = React.useRef<IScope[] | undefined>(undefined);
+    const metricGraphData = useMetricsGraphData(metrics, view, lineageSelection, selection);
+
+    React.useEffect(() => {
+        setLineageSelection(undefined);
+        setSelection(undefined);
+    }, [wuid]);
+
+    React.useEffect(() => {
+        if (status !== FetchStatus.COMPLETE || metrics.length === 0 || initializedMetrics.current === metrics) return;
+
+        initializedMetrics.current = metrics;
+        const workflowNames = new Set(metrics.filter(metric => metric.type === "workflow").map(metric => metric.name));
+        setSelection(metrics.filter(metric => {
+            if (metric.type !== "workflow") return false;
+            const separatorIndex = metric.name.lastIndexOf(":");
+            const parentName = separatorIndex < 0 ? "" : metric.name.substring(0, separatorIndex);
+            return !workflowNames.has(parentName);
+        }).map(metric => metric.id));
+    }, [metrics, status]);
+
+    return <MetricsGraph
+        metrics={metrics}
+        metricGraphData={metricGraphData}
+        selection={selection}
+        selectedMetricsSource="metricGraphWidget"
+        status={status}
+        onLineageSelectionChange={setLineageSelection}
+        onSelectionChange={setSelection}
     />;
 };
