@@ -28,15 +28,34 @@ jobs:
     name: "Test eclwatch"
     runs-on: ${{ inputs.os }}
 
+    strategy:
+      matrix:
+        node-version: [22, 24, 26]
+
     steps:
+      - uses: actions/checkout@v6
+        with:
+          submodules: "recursive"
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+          cache-dependency-path: ${{ github.workspace }}/esp/src/package-lock.json
+
+      - name: Install Dependencies
+        working-directory: ${{ github.workspace }}/esp/src
+        run: npm ci
 
       - name: Download Package
+        if: ${{ matrix.node-version == 22 }}
         uses: actions/download-artifact@v8
         with:
           name: ${{ inputs.asset-name }}
           path: ${{ inputs.asset-name }}
 
       - name: Install Package
+        if: ${{ matrix.node-version == 22 }}
         shell: "bash"
         run: |
           sudo apt-get install -y xmlstarlet
@@ -45,43 +64,39 @@ jobs:
           sudo xmlstarlet ed -L -u 'Environment/Software/ThorCluster/@slavesPerNode' -v 2 -u 'Environment/Software/ThorCluster/@channelsPerSlave' -v 1 /etc/HPCCSystems/environment.xml
 
       - name: Start HPCC-Platform
+        if: ${{ matrix.node-version == 22 }}
         shell: "bash"
         run: |
           export LANG="en_US.UTF-8"
           sudo update-locale
           sudo /etc/init.d/hpcc-init start
 
-      - uses: actions/checkout@v6
-          
-      - uses: actions/setup-node@v6
-        with:
-          node-version: 22
-
-      - name: Install Dependencies
-        working-directory: ${{ github.workspace }}/esp/src
-        run: npm ci
-
       - name: Lint
+        if: ${{ matrix.node-version == 22 }}
         working-directory: ${{ github.workspace }}/esp/src
         run: npm run lint
 
       - name: Install Playwright browsers
+        if: ${{ matrix.node-version == 22 }}
         working-directory: ${{ github.workspace }}/esp/src
         run: CI=1 npx playwright install --with-deps
 
       - name: Set Server IP
+        if: ${{ matrix.node-version == 22 }}
         working-directory: ${{ github.workspace }}/esp/src
         run: |
           echo "http://localhost:8010" > lws.target.txt
           echo "" >> lws.target.txt
 
       - name: Test
+        if: ${{ matrix.node-version == 22 }}
         working-directory: ${{ github.workspace }}/esp/src
         run: npm run test-ci
 
       - name: Upload Playwright test results
-        if: ${{ failure() || cancelled() }}
+        if: ${{ (matrix.node-version == 22) && (failure() || cancelled()) }}
         uses: actions/upload-artifact@v7
         with:
           name: eclwatch-test-results
           path: ${{ github.workspace }}/esp/src/test-results/*
+          if-no-files-found: warn
