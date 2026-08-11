@@ -27,6 +27,7 @@
 #include "jstring.hpp"
 #include "jstats.h"
 #include <condition_variable>
+#include <initializer_list>
 #include <type_traits>
 
 //--------------------------------------------------------------------------------------------------
@@ -172,6 +173,7 @@ enum EventAttrUnit : byte
 
 extern jlib_decl EventType queryEventType(const char* name);
 extern jlib_decl const char * queryEventName(EventType event);
+extern jlib_decl std::initializer_list<EventAttr> queryEventAttributeIds(EventType event);
 extern jlib_decl EventAttr queryEventAttribute(const char* name);
 extern jlib_decl const char * queryEventAttributeName(EventAttr attr);
 extern jlib_decl EventAttrType queryEventAttributeType(EventAttr attr);

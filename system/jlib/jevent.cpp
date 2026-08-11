@@ -279,6 +279,12 @@ const char * queryEventName(EventType event)
     return eventInformation[event].name;
 }
 
+std::initializer_list<EventAttr> queryEventAttributeIds(EventType event)
+{
+    assertex(event < EventMax);
+    return eventInformation[event].attributes;
+}
+
 EventAttr queryEventAttribute(const char* token)
 {
     for (byte id = EvAttrNone + 1; id < EvAttrMax; ++id)

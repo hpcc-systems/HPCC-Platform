@@ -42,6 +42,7 @@ set (
     ${CMAKE_CURRENT_SOURCE_DIR}/eventoperation.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/eventsaveas.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/eventunittests.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/eventdescribe.cpp
 )
 
 ADD_DEFINITIONS( -D_USRDLL -DEVENTCONSUMPTION_EXPORTS )
