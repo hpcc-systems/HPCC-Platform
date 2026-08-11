@@ -104,9 +104,9 @@
 
     <para><informaltable colsep="1" frame="all" rowsep="1">
         <tgroup cols="2">
-          <colspec colwidth="115.95pt" />
+          <colspec colwidth="115.95pt"/>
 
-          <colspec />
+          <colspec/>
 
           <tbody>
             <row>
@@ -121,6 +121,16 @@
 
               <entry>Specifies a name for the entry point. By default, the
               name of the entry point is the function name.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>DEPRECATED</emphasis></entry>
+
+              <entry>Optional. Marks the service function as deprecated and
+              displays a warning if the function is used. You may include an
+              optional message, as in <literal>DEPRECATED('Use NewFunction
+              instead.')</literal>. See <link
+              linkend="DEPRECATED">DEPRECATED</link>.</entry>
             </row>
 
             <row>
@@ -544,7 +554,7 @@
   #endif //EXAMPLELIB_INCL
   </programlisting>
 
-    <para></para>
+    <para/>
 
     <programlisting>//******************************************************
 // examplelib.cpp : Defines the plugin code.
