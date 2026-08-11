@@ -1977,7 +1977,7 @@ ILogMsgFilter * CLogMsgManager::getCompoundFilter(bool locked) const
         else
             otherFilters.set(categoryFilter);
     }
-    if(!locked) monitorLock.unlock();
+    if(!locked) monitorLock.unlockRead();
     if(!otherFilters)
         return getPassNoneLogMsgFilter();
     return otherFilters.getLink();

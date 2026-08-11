@@ -362,7 +362,7 @@ void Monitor::notifyAll()
 //==================================================================================
 
 #ifdef USECHECKEDCRITICALSECTIONS
-CheckedReadLockBlock::CheckedReadLockBlock(ReadWriteLock &l, unsigned timeout, const char *fname,unsigned lnum) : lock(l)
+CheckedReadLockBlock::CheckedReadLockBlock(TimedReadWriteLock &l, unsigned timeout, const char *fname,unsigned lnum) : lock(l)
 {
     for (;;)
     {
@@ -373,7 +373,7 @@ CheckedReadLockBlock::CheckedReadLockBlock(ReadWriteLock &l, unsigned timeout, c
     }
 }
 
-CheckedWriteLockBlock::CheckedWriteLockBlock(ReadWriteLock &l, unsigned timeout, const char *fname,unsigned lnum) : lock(l)
+CheckedWriteLockBlock::CheckedWriteLockBlock(TimedReadWriteLock &l, unsigned timeout, const char *fname,unsigned lnum) : lock(l)
 {
     for (;;)
     {
@@ -384,7 +384,7 @@ CheckedWriteLockBlock::CheckedWriteLockBlock(ReadWriteLock &l, unsigned timeout,
     }
 }
 
-void checkedReadLockEnter(ReadWriteLock &lock, unsigned timeout, const char *fname, unsigned lnum)
+void checkedReadLockEnter(TimedReadWriteLock &lock, unsigned timeout, const char *fname, unsigned lnum)
 {
     for (;;)
     {
@@ -395,7 +395,7 @@ void checkedReadLockEnter(ReadWriteLock &lock, unsigned timeout, const char *fna
     }
 }
 
-void checkedWriteLockEnter(ReadWriteLock &lock, unsigned timeout, const char *fname, unsigned lnum)
+void checkedWriteLockEnter(TimedReadWriteLock &lock, unsigned timeout, const char *fname, unsigned lnum)
 {
     for (;;)
     {

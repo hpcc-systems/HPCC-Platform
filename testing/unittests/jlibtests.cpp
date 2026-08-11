@@ -4572,14 +4572,6 @@ CPPUNIT_TEST_SUITE_REGISTRATION(PTreeBinaryTimingStressTest);
 CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(PTreeBinaryTimingStressTest, "PTreeBinaryTimingStressTest");
 
 #include "jdebug.hpp"
-#include <shared_mutex>
-
-class TestLegacyReadWriteLock : public LegacyReadWriteLock
-{
-public:
-    TestLegacyReadWriteLock() : LegacyReadWriteLock(nullptr) {}
-};
-
 class TestStdReadWriteLock : public StdReadWriteLock
 {
 public:
@@ -4786,9 +4778,6 @@ public:
 #endif
 
         //Read locks will fail to prevent values being lost, but the timings are useful in comparison with CriticalSection
-        DO_TEST(TestLegacyReadWriteLock, LegacyReadLockBlock, unsigned __int64, numValues, numLocks);
-        DO_TEST(TestLegacyReadWriteLock, LegacyWriteLockBlock, unsigned __int64, numValues, numLocks);
-
         DO_TEST(TestStdReadWriteLock, StdReadLockBlock, unsigned __int64, numValues, numLocks);
         DO_TEST(TestStdReadWriteLock, StdWriteLockBlock, unsigned __int64, numValues, numLocks);
 

@@ -222,10 +222,10 @@ public:
 };
 class CLCLockBlock : public CInterface
 {
-    ReadWriteLock &lock;
+    TimedReadWriteLock &lock;
     unsigned got, lnum;
 public:
-    CLCLockBlock(ReadWriteLock &_lock, bool readLock, unsigned timeout, const char *fname, unsigned _lnum) : lock(_lock), lnum(_lnum)
+    CLCLockBlock(TimedReadWriteLock &_lock, bool readLock, unsigned timeout, const char *fname, unsigned _lnum) : lock(_lock), lnum(_lnum)
     {
         got = msTick();
         for (;;)
@@ -271,9 +271,9 @@ public:
 };
 class CLCLockBlock : public CInterface
 {
-    ReadWriteLock &lock;
+    TimedReadWriteLock &lock;
 public:
-    CLCLockBlock(ReadWriteLock &_lock, bool readLock, unsigned timeout, const char *fname, unsigned lnum) : lock(_lock)
+    CLCLockBlock(TimedReadWriteLock &_lock, bool readLock, unsigned timeout, const char *fname, unsigned lnum) : lock(_lock)
     {
         if (readLock)
             lock.lockRead();
@@ -315,8 +315,8 @@ void CLCLockBlock::changeToWrite(const char *msg)
 #define CHECKEDDALIREADLOCKBLOCK(l, timeout)  Owned<CLCLockBlock> glue(block,__LINE__) = new CLCLockBlock(l, true, timeout, __FILE__, __LINE__)
 #define CHECKEDDALIWRITELOCKBLOCK(l, timeout)  Owned<CLCLockBlock> glue(block,__LINE__) = new CLCLockBlock(l, false, timeout, __FILE__, __LINE__)
 #else
-#define CHECKEDDALIREADLOCKBLOCK(l,timeout)   ReadLockBlock glue(block,__LINE__)(l)
-#define CHECKEDDALIWRITELOCKBLOCK(l,timeout)  WriteLockBlock glue(block,__LINE__)(l)
+#define CHECKEDDALIREADLOCKBLOCK(l,timeout)   TimedReadLockBlock glue(block,__LINE__)(l)
+#define CHECKEDDALIWRITELOCKBLOCK(l,timeout)  TimedWriteLockBlock glue(block,__LINE__)(l)
 #endif
 
 #define OVERFLOWSIZE 50000
@@ -2100,7 +2100,7 @@ public:
     virtual bool fireException(IException *e);
 
 public: // data
-    mutable ReadWriteLock dataRWLock{SYNC_LOCATION};
+    mutable TimedReadWriteLock dataRWLock{SYNC_LOCATION};
     CheckedCriticalSection connectCrit{SYNC_LOCATION};
     CheckedCriticalSection connDestructCrit{SYNC_LOCATION};
     CheckedCriticalSection cTableCrit{SYNC_LOCATION};
@@ -7977,7 +7977,7 @@ void CCovenSDSManager::createConnection(SessionId sessionId, unsigned mode, unsi
     {
         struct LockUnblock
         {
-            LockUnblock(ReadWriteLock &_rWLock) : rWLock(_rWLock)
+            LockUnblock(TimedReadWriteLock &_rWLock) : rWLock(_rWLock)
             {
                 lockedForWrite = rWLock.queryWriteLocked();
                 if (lockedForWrite) rWLock.unlockWrite();
@@ -7985,7 +7985,7 @@ void CCovenSDSManager::createConnection(SessionId sessionId, unsigned mode, unsi
             }
             ~LockUnblock() { if (lockedForWrite) rWLock.lockWrite(); else rWLock.lockRead(); }
             bool lockedForWrite;
-            ReadWriteLock &rWLock;
+            TimedReadWriteLock &rWLock;
         };
         bool locked = false;
         class CConnectExistingLockCallback : implements IUnlockCallback

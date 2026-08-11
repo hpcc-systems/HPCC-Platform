@@ -903,193 +903,6 @@ public:
 
 //--------------------------------------------------------------------------------------------------------------------
 
-class jlib_decl LegacyReadWriteLock
-{
-    bool lockRead(bool timed, unsigned timeout) { 
-                                noteEvent(EventRwlockReadWait);
-                                cs.enter(); 
-                                if (writeLocks == 0) 
-                                {
-                                    readLocks++;
-                                    cs.leave();
-                                    noteEvent(EventRwlockReadAcquire);
-                                }
-                                else
-                                {
-                                    readWaiting++;
-                                    cs.leave();
-                                    if (timed)
-                                    {
-                                        if (!readSem.wait(timeout)) {
-                                            cs.enter(); 
-                                            if (!readSem.wait(0)) {
-                                                readWaiting--;
-                                                cs.leave();
-                                                noteEvent(EventRwlockReadWaitTimeout);
-                                                return false;
-                                            }
-                                            cs.leave();
-                                        }
-                                    }
-                                    else
-                                        readSem.wait();
-                                    //NB: waiting and locks adjusted before the signal occurs.
-                                    noteEvent(EventRwlockReadAcquire);
-                                }
-                                return true;
-                            }
-    bool lockWrite(bool timed, unsigned timeout) { 
-                                noteEvent(EventRwlockWriteWait);
-                                cs.enter(); 
-                                if ((readLocks == 0) && (writeLocks == 0))
-                                {
-                                    writeLocks++;
-                                    cs.leave();
-                                    noteEvent(EventRwlockWriteAcquire);
-                                }
-                                else
-                                {
-                                    writeWaiting++;
-                                    cs.leave();
-                                    if (timed)
-                                    {
-                                        if (!writeSem.wait(timeout)) {
-                                            cs.enter(); 
-                                            if (!writeSem.wait(0)) {
-                                                writeWaiting--;
-                                                cs.leave();
-                                                noteEvent(EventRwlockWriteWaitTimeout);
-                                                return false;
-                                            }
-                                            cs.leave();
-                                        }
-                                    }
-                                    else
-                                        writeSem.wait();
-                                    //NB: waiting and locks adjusted before the signal occurs.
-                                    noteEvent(EventRwlockWriteAcquire);
-                                }
-#ifdef _DEBUG
-                                exclWriteOwner = GetCurrentThreadId();
-#endif
-                                return true;
-                            }
-public:
-    LegacyReadWriteLock(const char * syncName)
-    {
-        readLocks = 0; writeLocks = 0; readWaiting = 0; writeWaiting = 0;
-#ifdef _DEBUG
-        exclWriteOwner = 0;
-#endif
-#ifdef PROTRACE_LOCKS
-        if (trackUnnamedLocks || syncName)
-            syncid = protrace::note_rwlock(syncName);
-#endif
-    }
-    ~LegacyReadWriteLock()        { assertex(readLocks == 0 && writeLocks == 0); }
-
-    void lockRead()         { lockRead(false, 0); }
-    void lockWrite()        { lockWrite(false, 0); }
-    bool lockRead(unsigned timeout) { return lockRead(true, timeout); }
-    bool lockWrite(unsigned timeout) { return lockWrite(true, timeout); }
-    unsigned queryReadLockCount() const { return readLocks; }
-    void unlock()           { 
-                                cs.enter(); 
-                                if (readLocks) 
-                                {
-                                    readLocks--;
-                                    noteEvent(EventRwlockReadRelease);
-                                }
-                                else
-                                {
-                                    writeLocks--;
-                                    noteEvent(EventRwlockWriteRelease);
-#ifdef _DEBUG
-                                    exclWriteOwner = 0;
-#endif
-                                }
-                                assertex(writeLocks == 0);
-                                if (readLocks == 0)
-                                {
-                                    if (readWaiting)
-                                    {
-                                        unsigned numWaiting = readWaiting;
-                                        readWaiting = 0;
-                                        readLocks += numWaiting;
-                                        readSem.signal(numWaiting);
-                                    }
-                                    else if (writeWaiting)
-                                    {
-                                        writeWaiting--;
-                                        writeLocks++;
-                                        writeSem.signal();
-                                    }
-                                }
-                                cs.leave();
-                            }
-    bool queryWriteLocked() { return (writeLocks != 0); }
-    void unlockRead()       { unlock(); }
-    void unlockWrite()      { unlock(); }
-
-    //MORE: May want to use the pthread implementations under linux.
-protected:
-    inline void noteEvent(EventType ev)
-    {
-#ifdef PROTRACE_LOCKS
-        protraceRecord(ev, syncid);
-#endif
-    }
-
-    CriticalSection     cs{nullptr};        // Do not trace these internal locks - only trace the rwlock
-    Semaphore           readSem{nullptr};
-    Semaphore           writeSem{nullptr};
-    unsigned            readLocks;
-    unsigned            writeLocks;
-    unsigned            readWaiting;
-    unsigned            writeWaiting;
-#ifdef PROTRACE_LOCKS
-    sync_uid_type       syncid = 0;
-#endif
-#ifdef _DEBUG
-    ThreadId            exclWriteOwner;
-#endif
-};
-
-
-class LegacyReadLockBlock
-{
-    LegacyReadWriteLock *lock;
-public:
-    LegacyReadLockBlock(LegacyReadWriteLock &l) : lock(&l)      { lock->lockRead(); }
-    ~LegacyReadLockBlock()                                { if (lock) lock->unlockRead(); }
-    void clear()
-    {
-        if (lock)
-        {
-            lock->unlockRead();
-            lock = NULL;
-        }
-    }
-};
-
-class LegacyWriteLockBlock
-{
-    LegacyReadWriteLock *lock;
-public:
-    LegacyWriteLockBlock(LegacyReadWriteLock &l) : lock(&l)     { lock->lockWrite(); }
-    ~LegacyWriteLockBlock()                               { if (lock) lock->unlockWrite(); }
-    void clear()
-    {
-        if (lock)
-        {
-            lock->unlockWrite();
-            lock = NULL;
-        }
-    }
-};
-
-//--------------------------------------------------------------------------------------------------------------------
-
 class jlib_decl StdReadWriteLock
 {
 public:
@@ -1316,9 +1129,12 @@ public:
 };
 
 
-using ReadWriteLock = LegacyReadWriteLock;
-using ReadLockBlock = LegacyReadLockBlock;
-using WriteLockBlock = LegacyWriteLockBlock;
+using ReadWriteLock = StdReadWriteLock;
+using ReadLockBlock = StdReadLockBlock;
+using WriteLockBlock = StdWriteLockBlock;
+using TimedReadWriteLock = StdTimedReadWriteLock;
+using TimedReadLockBlock = StdTimedReadLockBlock;
+using TimedWriteLockBlock = StdTimedWriteLockBlock;
 
 //--------------------------------------------------------------------------------------------------------------------
 class Barrier
@@ -1434,22 +1250,22 @@ public:
 
 class jlib_decl CheckedReadLockBlock
 {
-    ReadWriteLock &lock;
+    TimedReadWriteLock &lock;
 public:
-    CheckedReadLockBlock(ReadWriteLock &l, unsigned timeout, const char *fname,unsigned lnum);
+    CheckedReadLockBlock(TimedReadWriteLock &l, unsigned timeout, const char *fname,unsigned lnum);
     ~CheckedReadLockBlock()                             { lock.unlockRead(); }
 };
 
 class jlib_decl CheckedWriteLockBlock
 {
-    ReadWriteLock &lock;
+    TimedReadWriteLock &lock;
 public:
-    CheckedWriteLockBlock(ReadWriteLock &l, unsigned timeout, const char *fname, unsigned lnum);
+    CheckedWriteLockBlock(TimedReadWriteLock &l, unsigned timeout, const char *fname, unsigned lnum);
     ~CheckedWriteLockBlock()                                { lock.unlockWrite(); }
 };
 
-void jlib_decl checkedReadLockEnter(ReadWriteLock &l, unsigned timeout, const char *fname, unsigned lnum);
-void jlib_decl checkedWriteLockEnter(ReadWriteLock &l, unsigned timeout, const char *fname, unsigned lnum);
+void jlib_decl checkedReadLockEnter(TimedReadWriteLock &l, unsigned timeout, const char *fname, unsigned lnum);
+void jlib_decl checkedWriteLockEnter(TimedReadWriteLock &l, unsigned timeout, const char *fname, unsigned lnum);
 #define CHECKEDREADLOCKBLOCK(l,timeout)   CheckedReadLockBlock glue(block,__LINE__)(l,timeout,__FILE__,__LINE__)
 #define CHECKEDWRITELOCKBLOCK(l,timeout)  CheckedWriteLockBlock glue(block,__LINE__)(l,timeout,__FILE__,__LINE__)
 #define CHECKEDREADLOCKENTER(l,timeout) checkedReadLockEnter(l,timeout,__FILE__,__LINE__)
@@ -1462,8 +1278,8 @@ void jlib_decl checkedWriteLockEnter(ReadWriteLock &l, unsigned timeout, const c
 #define CHECKEDCRITLEAVE(sect) (sect).leave()
 #define CHECKEDCRITICALBLOCK(sect,timeout)   CheckedCriticalBlock glue(block,__LINE__)(sect)
 #define CHECKEDCRITICALUNBLOCK(sect,timeout) CheckedCriticalUnblock glue(unblock,__LINE__)(sect)
-#define CHECKEDREADLOCKBLOCK(l,timeout)   ReadLockBlock glue(block,__LINE__)(l)
-#define CHECKEDWRITELOCKBLOCK(l,timeout)  WriteLockBlock glue(block,__LINE__)(l)
+#define CHECKEDREADLOCKBLOCK(l,timeout)   TimedReadLockBlock glue(block,__LINE__)(l)
+#define CHECKEDWRITELOCKBLOCK(l,timeout)  TimedWriteLockBlock glue(block,__LINE__)(l)
 #define CHECKEDREADLOCKENTER(l,timeout) (l).lockRead()
 #define CHECKEDWRITELOCKENTER(l,timeout) (l).lockWrite()
 #endif
