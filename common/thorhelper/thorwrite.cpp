@@ -147,13 +147,9 @@ public:
     {
         if ((mode != other->queryTranslationMode()) || !streq(format, other->queryFormat()))
             return false;
-        if ((expectedCrc && expectedCrc == other->getExpectedCrc()) || (expectedMeta == other->queryExpectedMeta()))
-        {
-            if (!areMatchingPTrees(formatOptions, other->queryFormatOptions()))
-                return false;
-            return true;
-        }
-        return false;
+        bool expectedMatches = (expectedCrc && expectedCrc == other->getExpectedCrc()) || (expectedMeta == other->queryExpectedMeta());
+        bool projectedMatches = (projectedCrc && projectedCrc == other->getProjectedCrc()) || (projectedMeta == other->queryProjectedMeta());
+        return expectedMatches && projectedMatches && areMatchingPTrees(formatOptions, other->queryFormatOptions());
     }
 
 protected:
@@ -182,3 +178,179 @@ void getDefaultWritePlane(StringBuffer & plane, unsigned helperFlags)
     else
         getDefaultStoragePlane(plane);
 }
+
+//--------------------------------------------------------------------------------------------------------------------
+// IDiskRowWriter implementations
+//--------------------------------------------------------------------------------------------------------------------
+
+// Base class holding the mapping and providerOptions shared by all concrete writers.
+class DiskRowWriter : public CInterfaceOf<IDiskRowWriter>
+{
+public:
+    DiskRowWriter(IRowWriteFormatMapping * _mapping, const IPropertyTree * _providerOptions, IRowInterfaces * _rowIf)
+    : mapping(_mapping), providerOptions(_providerOptions), rowIf(_rowIf)
+    {
+    }
+
+    virtual bool matches(const IRowWriteFormatMapping * otherMapping, const IPropertyTree * otherProviderOptions) const override
+    {
+        return mapping->matches(otherMapping) && areMatchingPTrees(providerOptions, otherProviderOptions);
+    }
+
+protected:
+    Linked<IRowWriteFormatMapping> mapping;
+    Linked<const IPropertyTree> providerOptions;
+    Linked<IRowInterfaces> rowIf;
+};
+
+//--------------------------------------------------------------------------------------------------------------------
+// Format registry and factory
+//--------------------------------------------------------------------------------------------------------------------
+
+// map from lowercase format name -> factory lambda; populated in MODULE_INIT.
+static std::map<std::string, std::function<IDiskRowWriter*(IRowWriteFormatMapping*, const IPropertyTree*, IRowInterfaces*)>> genericWriterTypeMap;
+
+static void ensureCompatibleWriteLayout(const IRowWriteFormatMapping & mapping)
+{
+    if (mapping.queryExpectedMeta() == mapping.queryProjectedMeta())
+        return;
+
+    unsigned expectedCrc = mapping.getExpectedCrc();
+    unsigned projectedCrc = mapping.getProjectedCrc();
+    if (expectedCrc && projectedCrc && expectedCrc == projectedCrc)
+        return;
+
+    throwStringExceptionV(0, "createDiskWriter: expected and projected layouts differ; generic disk write layout translation is not supported");
+}
+
+IDiskRowWriter * createDiskWriter(const char * format, IRowWriteFormatMapping * mapping, const IPropertyTree * providerOptions, IRowInterfaces * rowIf)
+{
+    assertex(format && mapping && providerOptions && rowIf);
+    ensureCompatibleWriteLayout(*mapping);
+
+    // Format names are registered in lowercase; normalise so callers can pass any case.
+    StringBuffer lcFormat(format);
+    lcFormat.toLowerCase();
+    auto it = genericWriterTypeMap.find(lcFormat.str());
+    if (it == genericWriterTypeMap.end() || !it->second)
+        throwStringExceptionV(0, "createDiskWriter: unknown or disabled format '%s'", format);
+    return it->second(mapping, providerOptions, rowIf);
+}
+
+MODULE_INIT(INIT_PRIORITY_STANDARD)
+{
+    return true;
+}
+
+//--------------------------------------------------------------------------------------------------------------------
+// Unit tests
+//--------------------------------------------------------------------------------------------------------------------
+
+#ifdef _USE_CPPUNIT
+#include "unittests.hpp"
+
+struct TestRecordMetadata
+{
+    TestRecordMetadata()
+        : intType(type_int, sizeof(unsigned __int64)), idField("id", nullptr, &intType), fields{&idField, nullptr}, recordType(type_record, sizeof(unsigned __int64), fields), meta(recordType)
+    {
+    }
+
+    const RtlIntTypeInfo intType;
+    const RtlFieldInfo idField;
+    const RtlFieldInfo * const fields[2];
+    const RtlRecordTypeInfo recordType;
+    CDynamicOutputMetaData meta;
+};
+
+class DiskRowWriterTests : public CppUnit::TestFixture
+{
+    CPPUNIT_TEST_SUITE(DiskRowWriterTests);
+        CPPUNIT_TEST(testUnknownFormatThrows);
+        CPPUNIT_TEST(testLayoutTranslationThrows);
+        CPPUNIT_TEST(testEquivalentLayoutCrcAccepted);
+        CPPUNIT_TEST(testProjectedLayoutMismatchDoesNotMatch);
+    CPPUNIT_TEST_SUITE_END();
+
+    // Build a mapping for the given format.  A zero CRC forces matches() to compare on the meta
+    // pointer, and the (non-null) formatOptions satisfies the createRowWriteFormatMapping assert.
+    IRowWriteFormatMapping * createMapping(const char * format, IOutputMetaData & meta, const IPropertyTree * formatOptions)
+    {
+        return createRowWriteFormatMapping(RecordTranslationMode::None, format, meta, 0, meta, 0, formatOptions);
+    }
+
+public:
+    // An unknown / unregistered format name must be rejected by the factory.
+    void testUnknownFormatThrows()
+    {
+        TestRecordMetadata record;
+        Owned<IPropertyTree> formatOptions = createPTree("formatOptions");
+        Owned<IPropertyTree> providerOptions = createPTree("providerOptions");
+        Owned<IRowWriteFormatMapping> mapping = createMapping("flat", record.meta, formatOptions);
+        Owned<IRowInterfaces> rowIf = createRowInterfaces(&record.meta, 0, roxiemem::RHFnone, nullptr);
+
+        bool threw = false;
+        try
+        {
+            Owned<IDiskRowWriter> writer = createDiskWriter("no_such_format", mapping, providerOptions, rowIf);
+        }
+        catch (IException * e)
+        {
+            e->Release();
+            threw = true;
+        }
+        CPPUNIT_ASSERT(threw);
+    }
+
+    void testLayoutTranslationThrows()
+    {
+        TestRecordMetadata expectedRecord;
+        TestRecordMetadata projectedRecord;
+        Owned<IPropertyTree> formatOptions = createPTree("formatOptions");
+        Owned<IPropertyTree> providerOptions = createPTree("providerOptions");
+        Owned<IRowWriteFormatMapping> mapping = createRowWriteFormatMapping(RecordTranslationMode::None, "flat", projectedRecord.meta, 0x22222222, expectedRecord.meta, 0x11111111, formatOptions);
+        Owned<IRowInterfaces> rowIf = createRowInterfaces(&expectedRecord.meta, 0, roxiemem::RHFnone, nullptr);
+
+        bool threw = false;
+        StringBuffer msg;
+        try
+        {
+            Owned<IDiskRowWriter> writer = createDiskWriter("flat", mapping, providerOptions, rowIf);
+        }
+        catch (IException * e)
+        {
+            e->errorMessage(msg);
+            e->Release();
+            threw = true;
+        }
+        CPPUNIT_ASSERT(threw);
+        CPPUNIT_ASSERT(strstr(msg.str(), "layout translation is not supported") != nullptr);
+    }
+
+    void testEquivalentLayoutCrcAccepted()
+    {
+        TestRecordMetadata expectedRecord;
+        TestRecordMetadata projectedRecord;
+        Owned<IPropertyTree> formatOptions = createPTree("formatOptions");
+        Owned<IRowWriteFormatMapping> mapping = createRowWriteFormatMapping(RecordTranslationMode::None, "flat", projectedRecord.meta, 0x11111111, expectedRecord.meta, 0x11111111, formatOptions);
+
+        ensureCompatibleWriteLayout(*mapping);
+    }
+
+    void testProjectedLayoutMismatchDoesNotMatch()
+    {
+        TestRecordMetadata expectedRecord;
+        TestRecordMetadata firstProjectedRecord;
+        TestRecordMetadata secondProjectedRecord;
+        Owned<IPropertyTree> formatOptions = createPTree("formatOptions");
+        Owned<IRowWriteFormatMapping> firstMapping = createRowWriteFormatMapping(RecordTranslationMode::None, "flat", firstProjectedRecord.meta, 0, expectedRecord.meta, 0, formatOptions);
+        Owned<IRowWriteFormatMapping> secondMapping = createRowWriteFormatMapping(RecordTranslationMode::None, "flat", secondProjectedRecord.meta, 0, expectedRecord.meta, 0, formatOptions);
+
+        CPPUNIT_ASSERT(!firstMapping->matches(secondMapping));
+    }
+};
+
+CPPUNIT_TEST_SUITE_REGISTRATION(DiskRowWriterTests);
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(DiskRowWriterTests, "DiskRowWriterTests");
+
+#endif // _USE_CPPUNIT

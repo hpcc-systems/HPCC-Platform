@@ -28,6 +28,8 @@
 #include "rtlkey.hpp"
 #include "thorread.hpp"
 
+interface IRowInterfaces;
+
 //--------------------------------------------------------------------------------------------------------------------
 
 // IWriteFormatMapping interface represents the mapping when outputting a stream to a destination.
@@ -58,5 +60,30 @@ THORHELPER_API void getDefaultWritePlane(StringBuffer & plane, unsigned helperFl
 //MORE: These should probably move into jlib
 THORHELPER_API IBufferedSerialOutputStream * createBufferedOutputStream(IFileIO * io, const IPropertyTree * providerOptions);
 THORHELPER_API bool createBufferedOutputStream(Shared<IBufferedSerialOutputStream> & outputStream, Shared<IFileIO> & outputfileio, IFile * outputFile, const IPropertyTree * providerOptions);
+
+//--------------------------------------------------------------------------------------------------------------------
+
+// IDiskRowWriter is the write-side counterpart to IDiskRowReader.
+// An implementation owns its file handle; HThor provides an IFile* via setOutputFile().
+//
+// Lifecycle: construct -> setOutputFile -> putRow (repeatedly) -> flush -> close
+// Group boundary: putRow(nullptr) marks a group separator (formats that do not support grouping must throw).
+// A non-null putRow() transfers ownership to the writer, including when serialization throws.
+//
+interface IDiskRowWriter : extends IInterface
+{
+    virtual bool matches(const IRowWriteFormatMapping * mapping, const IPropertyTree * providerOptions) const = 0;
+    virtual void setOutputFile(IFile * outputFile) = 0;
+    virtual void putRow(const void * row) = 0;
+    virtual void flush() = 0;
+    virtual offset_t getPosition() = 0;
+    virtual void close() = 0;
+    virtual stat_type getStatistic(StatisticKind kind) = 0;
+};
+
+// Create a generic disk writer for the given format.  rowIf is required so the writer can construct its serializer.
+// Unknown or disabled formats throw rather than returning nullptr.
+// The caller owns the returned writer. The writer retains references to mapping, providerOptions and rowIf.
+THORHELPER_API IDiskRowWriter * createDiskWriter(const char * format, IRowWriteFormatMapping * mapping, const IPropertyTree * providerOptions, IRowInterfaces * rowIf);
 
 #endif // __THORWRITE_HPP_
