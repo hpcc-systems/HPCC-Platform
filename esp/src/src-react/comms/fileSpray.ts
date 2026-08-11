@@ -4,11 +4,49 @@ import nlsHPCC from "src/nlsHPCC";
 import { lfEncode } from "src/FileSpray";
 import { Memory } from "src/store/Memory";
 
+export { lfEncode };
+
 const logger = scopedLogger("src-react/comms/fileSpray.ts");
 
 const fileSprayService = new FileSprayService({ baseUrl: "" });
 const topologyService = new TopologyService({ baseUrl: "" });
 const userAddedFiles: { [calculatedID: string]: FileListItem } = {};
+
+export const CommandMessages = {
+    1: "Copy",
+    2: "Remove",
+    3: "Move",
+    4: "Rename",
+    5: "Replicate",
+    6: "Spray (Import)",
+    7: "Despray (Export)",
+    8: "Add",
+    9: "Transfer",
+    10: "Save Map",
+    11: "Add Group",
+    12: "Server",
+    13: "Monitor",
+    14: "Copy Merge",
+    15: "Super Copy",
+    16: "Publish"
+};
+
+export const FormatMessages = {
+    0: "fixed",
+    1: "csv",
+    2: "utf8",
+    3: "utf8n",
+    4: "utf16",
+    5: "utf16le",
+    6: "utf16be",
+    7: "utf32",
+    8: "utf32le",
+    9: "utf32be",
+    10: "variable",
+    11: "recfmvb",
+    12: "recfmv",
+    13: "variablebigendian"
+};
 
 export type DropZoneMachine = WsTopology.TpMachine;
 

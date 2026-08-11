@@ -1,10 +1,10 @@
 import * as React from "react";
 import { IDropdownOption } from "./Fields";
 import { Button, Checkbox, Field, Input, Spinner } from "@fluentui/react-components";
+import { FileSprayService, FileSpray } from "@hpcc-js/comms";
 import { scopedLogger } from "@hpcc-js/util";
 import { useForm, Controller } from "react-hook-form";
 import nlsHPCC from "src/nlsHPCC";
-import * as FileSpray from "src/FileSpray";
 import { MessageBox } from "../../layouts/MessageBox";
 import { pushUrl } from "../../util/history";
 import { TargetGroupTextField } from "./Fields";
@@ -44,6 +44,8 @@ const defaultValues: CopyFileFormValues = {
     maxConnections: ""
 };
 
+const fileSprayService = new FileSprayService({ baseUrl: "" });
+
 interface CopyFileProps {
     logicalFiles: string[];
 
@@ -76,11 +78,19 @@ export const CopyFile: React.FunctionComponent<CopyFileProps> = ({
                 const requests = [];
                 logicalFiles.forEach((logicalFile, idx) => {
                     const destLogicalName = data.targetCopyName[idx].name ? data.targetCopyName[idx].name : "";
-                    const destNumParts = data.targetCopyName[idx].numParts ? data.targetCopyName[idx].numParts : "0";
-                    const request = { ...data, sourceLogicalName: logicalFile, destLogicalName, DestNumParts: destNumParts };
-                    requests.push(FileSpray.Copy({ request: request }));
+                    const destNumParts = data.targetCopyName[idx].numParts ? data.targetCopyName[idx].numParts : "";
+                    const { maxConnections, ExpireDays, targetCopyName, ...rest } = data;
+                    const request = {
+                        ...rest,
+                        sourceLogicalName: logicalFile,
+                        destLogicalName,
+                        ...(destNumParts ? { DestNumParts: Number(destNumParts) } : {}),
+                        ...(maxConnections ? { maxConnections: Number(maxConnections) } : {}),
+                        ...(ExpireDays ? { ExpireDays: Number(ExpireDays) } : {})
+                    };
+                    requests.push(fileSprayService.Copy(request));
                 });
-                Promise.all(requests).then(responses => {
+                Promise.all(requests).then((responses: FileSpray.CopyResponse[]) => {
                     const urls: string[] = [];
                     const errors: string[] = [];
                     responses.forEach(response => {
@@ -88,8 +98,8 @@ export const CopyFile: React.FunctionComponent<CopyFileProps> = ({
                             const err = response.Exceptions.Exception[0].Message;
                             errors.push(err);
                             logger.error(err);
-                        } else if (response.CopyResponse?.result) {
-                            urls.push(`#/dfuworkunits/${response.CopyResponse.result}`);
+                        } else if (response?.result) {
+                            urls.push(`#/dfuworkunits/${response.result}`);
                         }
                     });
                     setSubmitDisabled(false);
@@ -105,6 +115,10 @@ export const CopyFile: React.FunctionComponent<CopyFileProps> = ({
                         }
                         urls.forEach(url => window.open(url));
                     }
+                }).catch(err => {
+                    setSubmitDisabled(false);
+                    setSpinnerHidden(true);
+                    logger.error(err);
                 });
             },
             err => {

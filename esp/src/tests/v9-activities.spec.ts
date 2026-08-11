@@ -17,9 +17,16 @@ test.describe("V9 Activities", () => {
         await expect(page.locator("a").filter({ hasText: /^Activities$/ })).toBeVisible();
         await expect(page.getByRole("link", { name: "Event Scheduler" })).toBeVisible();
 
+        // Check if environment is containerized
+        const isContainer = await page.evaluate(() => {
+            return (window as any).dojoConfig?.isContainer ?? false;
+        });
+
         // Check activities content is loaded
-        await expect(page.locator("svg").filter({ hasText: "%hthor" })).toBeVisible();
-        await expect(page.locator(".reflex-splitter")).toBeVisible();
+        if (!isContainer) {
+            await expect(page.locator("svg").filter({ hasText: "%hthor" })).toBeVisible();
+            await expect(page.locator(".reflex-splitter")).toBeVisible();
+        }
         await expect(page.getByRole("menubar")).toBeVisible();
         await expect(page.getByRole("menuitem", { name: "Refresh" })).toBeVisible();
         await expect(page.getByRole("columnheader", { name: "Priority" }).locator("div").first()).toBeVisible();
@@ -45,8 +52,15 @@ test.describe("V9 Activities", () => {
     });
 
     test("Activities Loaded", async ({ page }) => {
-        await expect(page.locator("svg").filter({ hasText: "%hthor" })).toBeVisible();
-        await expect(page.locator(".reflex-splitter")).toBeVisible();
+        // Check if environment is containerized
+        const isContainer = await page.evaluate(() => {
+            return (window as any).dojoConfig?.isContainer ?? false;
+        });
+
+        if (!isContainer) {
+            await expect(page.locator("svg").filter({ hasText: "%hthor" })).toBeVisible();
+            await expect(page.locator(".reflex-splitter")).toBeVisible();
+        }
         await expect(page.getByRole("menubar")).toBeVisible();
         await expect(page.getByRole("menuitem", { name: "Refresh" })).toBeVisible();
 

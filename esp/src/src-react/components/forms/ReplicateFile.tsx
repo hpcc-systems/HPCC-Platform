@@ -1,13 +1,16 @@
 import * as React from "react";
 import { IDropdownOption } from "./Fields";
 import { Button, Field, Input, Spinner } from "@fluentui/react-components";
+import { FileSprayService } from "@hpcc-js/comms";
+import { scopedLogger } from "@hpcc-js/util";
 import { useForm, Controller } from "react-hook-form";
 import nlsHPCC from "src/nlsHPCC";
-import * as FileSpray from "src/FileSpray";
 import { useFile } from "../../hooks/file";
 import { MessageBox } from "../../layouts/MessageBox";
 import { pushUrl } from "../../util/history";
 import { TargetGroupTextField } from "./Fields";
+
+const logger = scopedLogger("src-react/components/forms/ReplicateFile.tsx");
 
 interface ReplicateFileFormValues {
     sourceLogicalName: string;
@@ -20,6 +23,8 @@ const defaultValues: ReplicateFileFormValues = {
     replicateOffset: "1",
     cluster: ""
 };
+
+const fileSprayService = new FileSprayService({ baseUrl: "" });
 
 interface ReplicateFileProps {
     cluster: string;
@@ -50,12 +55,16 @@ export const ReplicateFile: React.FunctionComponent<ReplicateFileProps> = ({
             (data, evt) => {
                 setSubmitDisabled(true);
                 setSpinnerHidden(false);
-                const request = { ...data, srcname: logicalFile };
-                FileSpray.Replicate({ request: request }).then(response => {
+                const request = { ...data, srcname: logicalFile, replicateOffset: Number(data.replicateOffset) };
+                fileSprayService.Replicate(request).then(response => {
                     setSubmitDisabled(false);
                     setSpinnerHidden(true);
                     closeForm();
-                    pushUrl(`/dfuworkunits/${response?.ReplicateResponse?.wuid}`);
+                    pushUrl(`/dfuworkunits/${response?.wuid}`);
+                }).catch(err => {
+                    logger.error(err);
+                    setSubmitDisabled(false);
+                    setSpinnerHidden(true);
                 });
             },
             err => {

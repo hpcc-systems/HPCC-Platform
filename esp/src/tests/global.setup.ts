@@ -13,7 +13,7 @@ let idx = 0;
 async function despray(browserName: string, sourceLogicalName: string): Promise<DFUWorkunit> {
     const wu = await DFUWorkunit.despray({ baseUrl: baseURL, userID: userID || browserName, password }, {
         destGroup: "mydropzone",
-        destIP: ".",
+        destIP: "",
         destPath: `/var/lib/HPCCSystems/mydropzone/${browserName}_${sourceLogicalName}_${++idx}`,
         sourceLogicalName,
         overwrite: false,

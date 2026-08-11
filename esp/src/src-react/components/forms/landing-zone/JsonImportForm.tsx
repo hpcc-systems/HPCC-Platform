@@ -1,9 +1,9 @@
 import * as React from "react";
 import { IDropdownOption } from "../Fields";
 import { Button, Checkbox, Dropdown, Field, Input, makeStyles, Option, Spinner, Tooltip } from "@fluentui/react-components";
+import { FileSprayService, FileSpray } from "@hpcc-js/comms";
 import { scopedLogger } from "@hpcc-js/util";
 import { useForm, Controller } from "react-hook-form";
-import * as FileSpray from "src/FileSpray";
 import { TargetDfuSprayQueueTextField, TargetGroupTextField } from "../Fields";
 import nlsHPCC from "src/nlsHPCC";
 import { useBuildInfo } from "../../../hooks/platform";
@@ -56,6 +56,8 @@ const defaultValues: JsonImportFormValues = {
     expireDays: ""
 };
 
+const fileSprayService = new FileSprayService({ baseUrl: "" });
+
 interface JsonImportFormProps {
     formMinWidth?: number;
     showForm: boolean;
@@ -102,43 +104,39 @@ export const JsonImportForm: React.FunctionComponent<JsonImportFormProps> = ({
                     request["sourcePath"] = file.SourceFile;
                     request["isJSON"] = true;
                     request["destLogicalName"] = data.namePrefix + ((
-                        data.namePrefix && data.namePrefix.substring(-2) !== "::" &&
+                        data.namePrefix && !data.namePrefix.endsWith("::") &&
                         file.TargetName && file.TargetName.substring(0, 2) !== "::"
                     ) ? "::" : "") + file.TargetName;
                     request["sourceRowTag"] = file.TargetRowPath;
                     request["destNumParts"] = file.NumParts;
-                    requests.push(FileSpray.SprayVariable({
-                        request: request
-                    }));
+                    requests.push(fileSprayService.SprayVariable(request));
                 });
 
-                Promise.all(requests).then(responses => {
-                    if (responses.length === 1) {
-                        const response = responses[0];
+                Promise.all(requests).then((responses: FileSpray.SprayResponse[]) => {
+                    const errors: string[] = [];
+                    responses.forEach((response) => {
                         if (response?.Exceptions) {
                             const err = response.Exceptions.Exception[0].Message;
+                            errors.push(err);
                             logger.error(err);
-                        } else if (response.SprayResponse?.wuid) {
-                            pushUrl(`#/dfuworkunits/${response.SprayResponse.wuid}`);
-                        }
-                    } else {
-                        const errors = [];
-                        responses.forEach(response => {
-                            if (response?.Exceptions) {
-                                const err = response.Exceptions.Exception[0].Message;
-                                errors.push(err);
-                                logger.error(err);
-                            } else if (response.SprayResponse?.wuid) {
-                                window.open(`#/dfuworkunits/${response.SprayResponse.wuid}`);
+                        } else if (response?.wuid) {
+                            if (responses.length === 1) {
+                                pushUrl(`#/dfuworkunits/${response.wuid}`);
+                            } else {
+                                window.open(`#/dfuworkunits/${response.wuid}`);
                             }
-                        });
-                        if (errors.length === 0) {
-                            setSubmitDisabled(false);
-                            setSpinnerHidden(true);
-                            closeForm();
                         }
+                    });
+                    setSubmitDisabled(false);
+                    setSpinnerHidden(true);
+                    if (errors.length === 0) {
+                        closeForm();
                     }
-                }).catch(err => logger.error(err));
+                }).catch(err => {
+                    logger.error(err);
+                    setSubmitDisabled(false);
+                    setSpinnerHidden(true);
+                });
             },
             err => {
                 logger.error(err);

@@ -1,9 +1,9 @@
 import * as React from "react";
 import { IDropdownOption } from "../Fields";
 import { Button, Checkbox, Field, Input, Spinner, Tooltip } from "@fluentui/react-components";
+import { FileSprayService, FileSpray } from "@hpcc-js/comms";
 import { scopedLogger } from "@hpcc-js/util";
 import { useForm, Controller } from "react-hook-form";
-import * as FileSpray from "src/FileSpray";
 import { TargetDfuSprayQueueTextField, TargetGroupTextField } from "../Fields";
 import nlsHPCC from "src/nlsHPCC";
 import { useBuildInfo } from "../../../hooks/platform";
@@ -47,6 +47,8 @@ const defaultValues: BlobImportFormValues = {
     failIfNoSourceFile: false,
     expireDays: ""
 };
+
+const fileSprayService = new FileSprayService({ baseUrl: "" });
 
 interface BlobImportFormProps {
     formMinWidth?: number;
@@ -94,38 +96,34 @@ export const BlobImportForm: React.FunctionComponent<BlobImportFormProps> = ({
                     request["sourcePath"] = file.SourceFile;
                     request["fullPath"] = file.SourceFile;
                     request["destNumParts"] = file.NumParts;
-                    requests.push(FileSpray.SprayFixed({
-                        request: request
-                    }));
+                    requests.push(fileSprayService.SprayFixed(request));
                 });
 
-                Promise.all(requests).then(responses => {
-                    if (responses.length === 1) {
-                        const response = responses[0];
+                Promise.all(requests).then((responses: FileSpray.SprayFixedResponse[]) => {
+                    const errors: string[] = [];
+                    responses.forEach((response) => {
                         if (response?.Exceptions) {
                             const err = response.Exceptions.Exception[0].Message;
+                            errors.push(err);
                             logger.error(err);
-                        } else if (response.SprayFixedResponse?.wuid) {
-                            pushUrl(`#/dfuworkunits/${response.SprayFixedResponse.wuid}`);
-                        }
-                    } else {
-                        const errors = [];
-                        responses.forEach(response => {
-                            if (response?.Exceptions) {
-                                const err = response.Exceptions.Exception[0].Message;
-                                errors.push(err);
-                                logger.error(err);
-                            } else if (response.SprayFixedResponse?.wuid) {
-                                window.open(`#/dfuworkunits/${response.SprayFixedResponse.wuid}`);
+                        } else if (response?.wuid) {
+                            if (responses.length === 1) {
+                                pushUrl(`#/dfuworkunits/${response.wuid}`);
+                            } else {
+                                window.open(`#/dfuworkunits/${response.wuid}`);
                             }
-                        });
-                        if (errors.length === 0) {
-                            setSubmitDisabled(false);
-                            setSpinnerHidden(true);
-                            closeForm();
                         }
+                    });
+                    setSubmitDisabled(false);
+                    setSpinnerHidden(true);
+                    if (errors.length === 0) {
+                        closeForm();
                     }
-                }).catch(err => logger.error(err));
+                }).catch(err => {
+                    logger.error(err);
+                    setSubmitDisabled(false);
+                    setSpinnerHidden(true);
+                });
             },
             err => {
                 logger.error(err);

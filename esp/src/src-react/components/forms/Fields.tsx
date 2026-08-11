@@ -2,12 +2,10 @@ import * as React from "react";
 import { Combobox as ComboBoxBase, Dropdown as DropdownBase, Option, Field, Input, Checkbox, RadioGroup, Radio, Link, ProgressBar, Skeleton, SkeletonItem } from "@fluentui/react-components";
 import type { ComboboxProps } from "@fluentui/react-components";
 import { scopedLogger } from "@hpcc-js/util";
-import { FileSpray } from "@hpcc-js/comms";
+import { FileSpray, FileSprayService, FileSprayStates, WUStateID } from "@hpcc-js/comms";
 import { TpDropZoneQuery, TpGroupQuery, TpServiceQuery } from "src/WsTopology";
 import * as WsAccess from "src/ws_access";
 import * as WsESDLConfig from "src/WsESDLConfig";
-import { States } from "src/WsWorkunits";
-import { FileList, States as DFUStates } from "src/FileSpray";
 import { joinPath } from "src/Utility";
 import nlsHPCC from "src/nlsHPCC";
 import { useBuildInfo, useLogicalClusters } from "../../hooks/platform";
@@ -773,6 +771,7 @@ export interface TargetFolderTextFieldProps extends Omit<ComboboxProps, "options
 
 export const TargetFolderTextField: React.FunctionComponent<TargetFolderTextFieldProps> = (props) => {
 
+    const service = React.useMemo(() => new FileSprayService({ baseUrl: "" }), []);
     const [, { isContainer }] = useBuildInfo();
     const [folders, setFolders] = React.useState<IComboBoxOption[]>();
     const [selectedKey, setSelectedKey] = React.useState<string | number | undefined>();
@@ -801,12 +800,11 @@ export const TargetFolderTextField: React.FunctionComponent<TargetFolderTextFiel
                 } else {
                     request.Netaddr = Netaddr;
                 }
-                FileList({
-                    request,
-                    suppressExceptionToaster: true
-                }).then(({ FileListResponse }) => {
+                service.FileList(
+                    request
+                ).then((response) => {
                     const requests = [];
-                    FileListResponse.files?.PhysicalFileStruct?.forEach(file => {
+                    response.files?.PhysicalFileStruct?.forEach(file => {
                         if (file.isDir) {
                             if (Path + pathSepChar === "//") {
                                 requests.push(fetchFolders(pathSepChar, Netaddr, Path + file.name, OS, ++depth));
@@ -820,11 +818,11 @@ export const TargetFolderTextField: React.FunctionComponent<TargetFolderTextFiel
                             retVal = retVal.concat(response);
                         });
                         resolve(retVal);
-                    }).catch(err => logger.error(err));
-                });
+                    }).catch(err => { logger.error(err); resolve(retVal); });
+                }).catch(err => { logger.error(err); resolve(retVal); });
             }
         });
-    }, [dropzone, isContainer, machineDirectory, props.required]);
+    }, [dropzone, isContainer, machineDirectory, props.required, service]);
 
     const onChanged = React.useCallback((event: React.SyntheticEvent<HTMLElement>, option?: IComboBoxOption, index?: number, value?: string): void => {
         let key = option?.key;
@@ -1087,8 +1085,8 @@ export const DateTimeInput: React.FunctionComponent<DateTimeInputProps> = ({ val
     );
 };
 
-const states = Object.keys(States).map(s => States[s]);
-const dfustates = Object.keys(DFUStates).map(s => DFUStates[s]);
+const states = Object.keys(WUStateID).filter(k => isNaN(Number(k)) && k !== "LAST").map(k => ({ NotFound: "not found", UploadingFiled: "uploading_files" })[k] ?? k.replace(/([a-z])([A-Z])/g, "$1_$2").toLowerCase());
+const dfustates = Object.values(FileSprayStates).filter(v => typeof v === "string");
 
 export function createInputs(fields: Fields, onChange?: (id: string, newValue: any) => void) {
     const retVal: { id: string, label: string, field: any }[] = [];
