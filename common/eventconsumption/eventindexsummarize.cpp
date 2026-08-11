@@ -20,6 +20,8 @@
 #include "eventiterator.h"
 #include "eventutility.hpp"
 #include <functional>
+#include <unordered_map>
+#include <unordered_set>
 
 enum ReadBucket
 {
@@ -86,7 +88,7 @@ public:
     uint32_t payloads{0};
     uint32_t evictions{0};
 
-    std::unordered_map<std::pair<__uint64, __uint64>, __uint64, PairHash> uniqueNodesMemory;
+    std::unordered_set<std::pair<__uint64, __uint64>, PairHash> uniqueNodes;
 
     MetricStat inMemorySize;
     MetricStat readTime[NumBuckets];
@@ -97,7 +99,7 @@ public:
     __uint64 firstTimestamp{0};
     __uint64 lastTimestamp{0};
 
-    __uint64 nodeCount() const { return uniqueNodesMemory.size(); }
+    __uint64 nodeCount() const { return uniqueNodes.size(); }
     __uint64 memorySize() const
     {
         return inMemorySize.sum;
@@ -194,11 +196,11 @@ void EventSummaryMetrics::accumulateInMemorySize(const CEvent& event)
 {
     __uint64 fileId = event.queryNumericValue(EvAttrFileId);
     __uint64 fileOffset = event.queryNumericValue(EvAttrFileOffset);
-    __uint64 inMemorySize = event.queryNumericValue(EvAttrInMemorySize);
-    if (inMemorySize)
+    __uint64 nodeSize = event.queryNumericValue(EvAttrInMemorySize);
+    if (nodeSize)
     {
-        if (uniqueNodesMemory.insert({{fileId, fileOffset}, inMemorySize}).second)
-            this->inMemorySize.accumulate(inMemorySize);
+        if (uniqueNodes.insert({fileId, fileOffset}).second)
+            inMemorySize.accumulate(nodeSize);
     }
 }
 
