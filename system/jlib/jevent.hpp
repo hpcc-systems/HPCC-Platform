@@ -89,10 +89,11 @@ enum class EventTask : byte
     Graph,         // Scope of executing a graph
     SubGraph,      // Scope of executing a subgraph
     Running,       // A running thread not otherwise associated with a more specific task scope
-    Reading,       // A task for reading data
-    Processing,    // A task for processing data
-    Compressing,   // A task for compressing data
-    Decompressing, // A task for decompressing data
+    Reading,       // Reading data
+    Processing,    // Processing data
+    Compressing,   // Compressing data
+    Decompressing, // Decompressing data
+    Writing,       // Writing data
     Max
 };
 
@@ -782,6 +783,14 @@ public:
     {
         if (enabled)
             protraceRecordTaskStart(task);
+    }
+
+    // Constructor that allows an optional size to be provided - not currently used.
+    ProTraceTaskScopeTracker(EventTask _task, size32_t size, bool _enabled = true)
+        : task(_task), enabled(_enabled)
+    {
+        if (enabled)
+            protraceRecordTaskStart(task, size);
     }
 
     ~ProTraceTaskScopeTracker()

@@ -34,6 +34,7 @@
 
 #include "jmisc.hpp"
 #include "jset.hpp"
+#include "jevent.hpp"
 #include "jplane.hpp"
 #include "hlzw.h"
 
@@ -412,6 +413,8 @@ public:
 
     bool readCacheFile(offset_t cacheFileOffset, unsigned toRead, byte *data)
     {
+        ProTraceTaskScopeTracker scope(EventTask::Reading);
+
         // OPT: look into using io_uring or more iov entries, we know there will be many of these happening concurrently ...
         struct iovec iov[1];
         iov[0].iov_base = data;
@@ -435,6 +438,8 @@ public:
 
     bool writeCacheFile(offset_t cacheFileOffset, const byte *data)
     {
+        ProTraceTaskScopeTracker scope(EventTask::Writing);
+
         struct iovec iov[1];
         iov[0].iov_base = (void *)data;
         iov[0].iov_len = pageSize;

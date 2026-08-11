@@ -467,8 +467,6 @@ size32_t CExpanderBase::expandNext(MemoryBuffer & target)
 
 size32_t CExpanderBase::expandDirect(size32_t destSize, void * dest, size32_t srcSize, const void * src)
 {
-    ProTraceTaskScopeTracker scope(EventTask::Decompressing);
-
     throwUnimplemented();
 }
 

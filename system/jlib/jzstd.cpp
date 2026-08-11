@@ -43,6 +43,8 @@ public:
 
     virtual size32_t compressDirect(size32_t destSize, void * dest, size32_t srcSize, const void * src, size32_t * numCompressed) override
     {
+        ProTraceTaskScopeTracker scope(EventTask::Compressing);
+
         dbgassertex(srcSize != 0);
         //ZStd has no option to compress as much as possible - so either succeed or fail.
         size_t compressedSize = ZSTD_compress(dest, destSize, src, srcSize, compressionLevel);
@@ -209,6 +211,8 @@ protected:
         //Sanity check - this could be the case when a limit has been reduced
         if (uncompressed < minSizeToCompress)
             return false;
+
+        ProTraceTaskScopeTracker scope(EventTask::Compressing);
 
         size32_t compressedSize = outlen;
         size32_t remaining = outMax - compressedSize - outputExtra;

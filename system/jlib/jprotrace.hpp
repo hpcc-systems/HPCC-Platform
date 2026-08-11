@@ -185,6 +185,12 @@ inline void protraceRecordTaskStart(EventTask task)
     protraceRecord(getTaskStartOp(task));
 }
 
+//Allow tasks to have an optional size
+inline void protraceRecordTaskStart(EventTask task, size32_t size)
+{
+    protraceRecord(getTaskStartOp(task), size);
+}
+
 inline void protraceRecordTaskStop(EventTask task)
 {
     protraceRecord(getTaskStopOp(task));

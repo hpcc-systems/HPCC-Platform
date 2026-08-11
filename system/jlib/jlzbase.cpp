@@ -382,8 +382,6 @@ bool CBlockCompressor::processOption(const char * option, const char * textValue
 
 void CBlockExpander::expand(void *buf)
 {
-    ProTraceTaskScopeTracker scope(EventTask::Decompressing);
-
     if (!outlen)
         return;
     if (buf)

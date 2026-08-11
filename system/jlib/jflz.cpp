@@ -633,6 +633,8 @@ class CFastLZCompressor final : public CFcmpCompressor
 
     virtual void flushcommitted()
     {
+        ProTraceTaskScopeTracker scope(EventTask::Compressing);
+
         // only does non trailing
         if (trailing)
             return;
@@ -727,6 +729,8 @@ public:
 
 void fastLZCompressToBuffer(MemoryBuffer & out, size32_t len, const void * src)
 {
+  ProTraceTaskScopeTracker scope(EventTask::Compressing);
+
     size32_t outbase = out.length();
     out.append(len);
     DelayedMarker<size32_t> cmpSzMarker(out);

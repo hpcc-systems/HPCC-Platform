@@ -60,6 +60,7 @@
 #include "jmutex.hpp"
 #include "jfile.hpp"
 #include "jfile.ipp"
+#include "jevent.hpp"
 #include "jplane.hpp"
 
 #include <limits.h>
@@ -1907,6 +1908,8 @@ public:
 
     size32_t read(offset_t _pos, size32_t len, void * data)
     {
+        ProTraceTaskScopeTracker scope(EventTask::Reading);
+
         checkPos("read",_pos);
 #ifdef _WIN32
         // Can't use checked_read because don't have the c fileno for it
@@ -1927,6 +1930,8 @@ public:
 
     virtual size32_t write(offset_t _pos, size32_t len, const void * data)
     {
+        ProTraceTaskScopeTracker scope(EventTask::Writing);
+
         checkPos("write",_pos);
 
         size32_t ret;
@@ -2086,6 +2091,8 @@ offset_t CFileIO::size()
 
 size32_t CFileIO::read(offset_t pos, size32_t len, void * data)
 {
+    ProTraceTaskScopeTracker scope(EventTask::Reading);
+
     CriticalBlock procedure(cs);
 
     CCycleTimer timer;
@@ -2108,6 +2115,8 @@ void CFileIO::setPos(offset_t newPos)
 
 size32_t CFileIO::write(offset_t pos, size32_t len, const void * data)
 {
+    ProTraceTaskScopeTracker scope(EventTask::Writing);
+
     CriticalBlock procedure(cs);
 
     CCycleTimer timer;
@@ -2299,6 +2308,8 @@ size32_t CFileIO::read(offset_t pos, size32_t len, void * data)
 {
     if (0==len) return 0;
 
+    ProTraceTaskScopeTracker scope(EventTask::Reading);
+
     CCycleTimer timer;
     size32_t ret = checked_pread(querySafeFilename(), file, data, len, pos);
     stats.ioReadCycles.fetch_add(timer.elapsedCycles());
@@ -2324,6 +2335,8 @@ void CFileIO::setPos(offset_t newPos)
 
 size32_t CFileIO::write(offset_t pos, size32_t len, const void * data)
 {
+    ProTraceTaskScopeTracker scope(EventTask::Writing);
+
     CCycleTimer timer;
     size32_t ret = pwrite(file,data,len,pos);
     stats.ioWriteCycles.fetch_add(timer.elapsedCycles());
