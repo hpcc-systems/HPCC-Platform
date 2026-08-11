@@ -2275,29 +2275,29 @@ protected:
 
     bool finishAttribute(CEvent& event, EventAttr attr)
     {
-        StringBuffer value;
-        readToken(value);
-        return event.setValue(attr, value.str());
+        scratchText.clear();
+        readToken(scratchText);
+        return event.setValue(attr, scratchText.str());
     }
 
     bool finishAttribute(CEvent& event, EventAttr attr, size32_t len)
     {
-        StringBuffer value;
-        readToken(value, len);
-        return event.setValue(attr, value.str());
+        readToken(scratchText, len);
+        return event.setValue(attr, scratchText.str());
     }
 
     //Read as data, but pass through as a hex encoded string
     bool finishDataAttribute(CEvent& event, EventAttr attr, size32_t len)
     {
-        MemoryAttr buffer(len);
-        if (stream->read(len, buffer.mem()) != len)
+        scratchBinary.clear();
+        void * buffer = scratchBinary.ensureCapacity(len);
+        if (stream->read(len, buffer) != len)
             throw makeStringExceptionV(JLIBERR_SystemEofBeforeEndOfUByteString_1, "eof before end of %u byte string", len);
         properties.bytesRead += len;
 
-        StringBuffer hexText;
-        hexText.appendhex(len, buffer.mem(), true);
-        return event.setValue(attr, hexText.str());
+        scratchText.clear();
+        scratchText.appendhex(len, buffer, true);
+        return event.setValue(attr, scratchText.str());
     }
 
 protected:
@@ -2306,6 +2306,8 @@ protected:
     EventFileProperties properties;
     __uint64 baseTimestamp{0};
     bool haveRecordingSource{false};
+    StringBuffer scratchText;
+    MemoryBuffer scratchBinary;
 };
 
 class CEventFilePusher : public CEventFileConsumer
