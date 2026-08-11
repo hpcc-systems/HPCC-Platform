@@ -1,13 +1,9 @@
 import * as React from "react";
-import { scopedLogger } from "@hpcc-js/util";
-import { Checkbox, Table, TableHeader, TableRow, TableHeaderCell, TableBody, TableCell, Button, Spinner, makeStyles, mergeClasses, tokens } from "@fluentui/react-components";
-import { useConst } from "@fluentui/react-hooks";
+import { Button, Checkbox, createTableColumn, DataGrid, DataGridBody, DataGridCell, DataGridHeader, DataGridHeaderCell, DataGridRow, Spinner, TableColumnDefinition, TableColumnSizingOptions, makeStyles, tokens } from "@fluentui/react-components";
 import { FolderRegular, DocumentRegular, ServerRegular, DesktopRegular, ChevronDownRegular, ChevronRightRegular } from "@fluentui/react-icons";
-import { userKeyValStore } from "src/KeyValStore";
 import { convertedSize } from "src/Utility";
 import nlsHPCC from "src/nlsHPCC";
-
-const logger = scopedLogger("src-react/components/controls/LandingZoneTreeTable.tsx");
+import { useTreeExpansion } from "../../hooks/useTreeExpansion";
 
 const useStyles = makeStyles({
     container: {
@@ -19,36 +15,14 @@ const useStyles = makeStyles({
         flex: 1,
         overflow: "auto"
     },
-    table: {
-        width: "100%",
-        tableLayout: "fixed"
-    },
-    resizableHeaderCell: {
-        position: "relative",
-        overflow: "hidden",
-        minWidth: "60px",
-        userSelect: "none"
-    },
-    resizeHandle: {
-        position: "absolute",
-        right: "-8px",
-        top: 0,
-        bottom: 0,
-        width: "4px",
-        cursor: "ew-resize",
-        backgroundColor: "transparent",
-        ":hover": {
-            backgroundColor: tokens.colorNeutralBackground5
-        }
+    grid: {
+        width: "100%"
     },
     nameCell: {
         display: "flex",
         alignItems: "center",
         gap: "8px",
         overflow: "hidden"
-    },
-    indentedRow: {
-        paddingLeft: "24px"
     },
     loadingContainer: {
         display: "flex",
@@ -98,40 +72,22 @@ const useStyles = makeStyles({
     }
 });
 
-const OPEN_ITEMS_STORAGE_KEY = "LandingZone_ExpandedItems";
-
-const usePersistedExpansion = () => {
-    const store = useConst(() => userKeyValStore());
-    const [expandedItems, setExpandedItems] = React.useState<Set<string>>(new Set());
-    const [isLoaded, setIsLoaded] = React.useState(false);
-
-    React.useEffect(() => {
-        store.get(OPEN_ITEMS_STORAGE_KEY).then((stored) => {
-            if (stored) {
-                try {
-                    const parsed = JSON.parse(stored);
-                    if (Array.isArray(parsed)) {
-                        setExpandedItems(new Set(parsed));
-                    }
-                } catch (err) {
-                    logger.error(nlsHPCC.StorageStateParseFailure);
-                }
-            }
-            setIsLoaded(true);
-        }).catch(() => {
-            setIsLoaded(true);
-        });
-    }, [store]);
-
-    const updateExpandedItems = React.useCallback((newExpandedItems: Set<string>) => {
-        setExpandedItems(newExpandedItems);
-        store.set(OPEN_ITEMS_STORAGE_KEY, JSON.stringify(Array.from(newExpandedItems))).catch(_err => {
-            logger.error(nlsHPCC.StorageStateWriteFailure);
-        });
-    }, [store]);
-
-    return { expandedItems, updateExpandedItems, isLoaded };
+const getIcon = (item: LandingZoneItem) => {
+    switch (item.type) {
+        case "dropzone":
+            return <ServerRegular />;
+        case "machine":
+            return <DesktopRegular />;
+        case "folder":
+            return <FolderRegular />;
+        case "file":
+            return <DocumentRegular />;
+        default:
+            return <DocumentRegular />;
+    }
 };
+
+const EXPANSION_STORAGE_KEY = "LandingZone_ExpandedItems";
 
 export interface LandingZoneItem {
     id: string;
@@ -169,99 +125,29 @@ export const LandingZoneTreeTable: React.FunctionComponent<LandingZoneTreeTableP
     onExpansionChange
 }) => {
     const styles = useStyles();
-    const { expandedItems: persistedExpandedItems, updateExpandedItems, isLoaded } = usePersistedExpansion();
+    const { expandedItems, isLoaded, toggle } = useTreeExpansion(EXPANSION_STORAGE_KEY, externalExpandedItems);
     const hasNotifiedParent = React.useRef(false);
 
-    const mergedExpandedItems = React.useMemo(() => {
-        if (!isLoaded) {
-            return externalExpandedItems;
-        }
-        return new Set([...externalExpandedItems, ...persistedExpandedItems]);
-    }, [externalExpandedItems, persistedExpandedItems, isLoaded]);
-
+    // Notify parent when persisted expansion items are loaded
     React.useEffect(() => {
-        if (isLoaded && !hasNotifiedParent.current && persistedExpandedItems.size > 0) {
+        if (isLoaded && !hasNotifiedParent.current && expandedItems.size > externalExpandedItems.size) {
             hasNotifiedParent.current = true;
-            onExpansionChange(new Set(persistedExpandedItems));
+            onExpansionChange(new Set(expandedItems));
         }
-    }, [isLoaded, persistedExpandedItems, onExpansionChange]);
+    }, [isLoaded, expandedItems, externalExpandedItems, onExpansionChange]);
 
-
-    const [columnWidths, setColumnWidths] = React.useState({
-        selection: 60,
-        name: 300,
-        size: 120,
-        modified: 180
-    });
-
-    const [isResizing, setIsResizing] = React.useState<string | null>(null);
-    const [startX, setStartX] = React.useState(0);
-    const [startWidth, setStartWidth] = React.useState(0);
-
-    const handleResizeMouseDown = React.useCallback((columnId: keyof typeof columnWidths) => (evt: React.MouseEvent) => {
-        setIsResizing(columnId);
-        setStartX(evt.clientX);
-        setStartWidth(columnWidths[columnId]);
-        evt.preventDefault();
-    }, [columnWidths]);
-
-    const handleResizeMouseMove = React.useCallback((evt: MouseEvent) => {
-        if (!isResizing) return;
-
-        const diff = evt.clientX - startX;
-        const newWidth = Math.max(60, startWidth + diff); // minimum width of 60px
-
-        setColumnWidths(prev => ({
-            ...prev,
-            [isResizing]: newWidth
-        }));
-    }, [isResizing, startX, startWidth]);
-
-    const handleResizeMouseUp = React.useCallback(() => {
-        setIsResizing(null);
-    }, []);
-
-    React.useEffect(() => {
-        if (isResizing) {
-            document.addEventListener("mousemove", handleResizeMouseMove);
-            document.addEventListener("mouseup", handleResizeMouseUp);
-            return () => {
-                document.removeEventListener("mousemove", handleResizeMouseMove);
-                document.removeEventListener("mouseup", handleResizeMouseUp);
-            };
-        }
-    }, [isResizing, handleResizeMouseMove, handleResizeMouseUp]);
-
-    const getIcon = (item: LandingZoneItem) => {
-        switch (item.type) {
-            case "dropzone":
-                return <ServerRegular />;
-            case "machine":
-                return <DesktopRegular />;
-            case "folder":
-                return <FolderRegular />;
-            case "file":
-                return <DocumentRegular />;
-            default:
-                return <DocumentRegular />;
-        }
-    };
+    const visibleItems = items;
+    const selectableItems = visibleItems.filter(item => item.type === "file");
+    const allSelectableSelected = selectableItems.length > 0 && selectableItems.every(item => selectedItems.has(item.id));
 
     const getIndentLevel = React.useCallback((level: number) => ({
         paddingLeft: `${level * 20}px`
     }), []);
 
     const handleExpansionToggle = React.useCallback((item: LandingZoneItem) => {
-        const newExpandedItems = new Set(mergedExpandedItems);
-        if (mergedExpandedItems.has(item.id)) {
-            newExpandedItems.delete(item.id);
-        } else {
-            newExpandedItems.add(item.id);
-        }
-
-        updateExpandedItems(newExpandedItems);
-        onExpansionChange(newExpandedItems);
-    }, [mergedExpandedItems, updateExpandedItems, onExpansionChange]);
+        const newExpandedItems = toggle(item.id);
+        onExpansionChange(new Set(newExpandedItems));
+    }, [toggle, onExpansionChange]);
 
     const handleSelectionToggle = React.useCallback((item: LandingZoneItem) => {
         if (item.type === "dropzone" || item.type === "machine" || item.type === "folder") {
@@ -307,6 +193,70 @@ export const LandingZoneTreeTable: React.FunctionComponent<LandingZoneTreeTableP
         handleSelectionToggle(item);
     }, [handleSelectionToggle]);
 
+    const columnSizingOptions = React.useMemo<TableColumnSizingOptions>(() => ({
+        selection: { minWidth: 24, idealWidth: 24 },
+        name: { minWidth: 220, idealWidth: 420 },
+        size: { minWidth: 100, idealWidth: 140 },
+        modified: { minWidth: 120, idealWidth: 180 }
+    }), []);
+
+    const columns = React.useMemo<TableColumnDefinition<LandingZoneItem>[]>(() => [
+        createTableColumn<LandingZoneItem>({
+            columnId: "selection",
+            renderHeaderCell: () => (
+                <Checkbox
+                    className={styles.roundCheckbox}
+                    checked={allSelectableSelected}
+                    onChange={handleSelectAll}
+                />
+            ),
+            renderCell: (item) => item.type === "file" ? (
+                <Checkbox className={styles.roundCheckbox} checked={selectedItems.has(item.id)} onChange={() => handleSelectionToggle(item)} />
+            ) : (
+                <div style={{ width: "20px" }} />
+            )
+        }),
+        createTableColumn<LandingZoneItem>({
+            columnId: "name",
+            renderHeaderCell: () => nlsHPCC.Name,
+            renderCell: (item) => (
+                <div className={styles.nameCell} style={getIndentLevel(item.level)}>
+                    {item.hasChildren ? (
+                        <Button
+                            appearance="subtle"
+                            size="small"
+                            icon={
+                                loadingItems.has(item.id) ? (
+                                    <Spinner size="extra-small" className={styles.compactSpinner} />
+                                ) : expandedItems.has(item.id) ? (
+                                    <ChevronDownRegular />
+                                ) : (
+                                    <ChevronRightRegular />
+                                )
+                            }
+                            onClick={() => handleExpansionToggle(item)}
+                            disabled={loadingItems.has(item.id)}
+                        />
+                    ) : (
+                        <div style={{ width: "24px" }} />
+                    )}
+                    {getIcon(item)}
+                    <span>{item.displayName}</span>
+                </div>
+            )
+        }),
+        createTableColumn<LandingZoneItem>({
+            columnId: "size",
+            renderHeaderCell: () => nlsHPCC.FileSize,
+            renderCell: (item) => <span>{item.size ? convertedSize(item.size) : ""}</span>
+        }),
+        createTableColumn<LandingZoneItem>({
+            columnId: "modified",
+            renderHeaderCell: () => nlsHPCC.Date,
+            renderCell: (item) => <span>{item.modifiedTime || ""}</span>
+        })
+    ], [allSelectableSelected, expandedItems, getIndentLevel, handleExpansionToggle, handleSelectAll, handleSelectionToggle, loadingItems, selectedItems, styles.compactSpinner, styles.nameCell, styles.roundCheckbox]);
+
     if (loading) {
         return <div className={styles.loadingContainer}>
             <Spinner label={nlsHPCC.Loading} />
@@ -315,82 +265,41 @@ export const LandingZoneTreeTable: React.FunctionComponent<LandingZoneTreeTableP
 
     return <div className={styles.container}>
         <div className={styles.tableContainer}>
-            <Table className={styles.table} size="small">
-                <TableHeader className={styles.tableHeader}>
-                    <TableRow>
-                        <TableHeaderCell className={mergeClasses(styles.resizableHeaderCell, styles.tableCell)} style={{ width: `${columnWidths.selection}px` }} >
-                            <Checkbox
-                                className={styles.roundCheckbox}
-                                checked={items.some(item => item.type === "file") && items.filter(item => item.type === "file").every(item => selectedItems.has(item.id))}
-                                onChange={handleSelectAll}
-                            />
-                            <div className={styles.resizeHandle} onMouseDown={handleResizeMouseDown("selection")} />
-                        </TableHeaderCell>
-                        <TableHeaderCell className={mergeClasses(styles.resizableHeaderCell, styles.tableCell)} style={{ width: `${columnWidths.name}px` }}>
-                            {nlsHPCC.Name}
-                            <div className={styles.resizeHandle} onMouseDown={handleResizeMouseDown("name")} />
-                        </TableHeaderCell>
-                        <TableHeaderCell className={mergeClasses(styles.resizableHeaderCell, styles.tableCell)} style={{ width: `${columnWidths.size}px` }}>
-                            {nlsHPCC.FileSize}
-                            <div className={styles.resizeHandle} onMouseDown={handleResizeMouseDown("size")} />
-                        </TableHeaderCell>
-                        <TableHeaderCell className={mergeClasses(styles.resizableHeaderCell, styles.tableCell)} style={{ width: `${columnWidths.modified}px` }}>
-                            {nlsHPCC.Date}
-                            <div className={styles.resizeHandle} onMouseDown={handleResizeMouseDown("modified")} />
-                        </TableHeaderCell>
-                    </TableRow>
-                </TableHeader>
-                <TableBody>
-                    {items.map((item) => (
-                        <TableRow
-                            key={item.id}
+            <DataGrid
+                className={styles.grid}
+                items={visibleItems}
+                columns={columns}
+                getRowId={(item) => item.id}
+                resizableColumns
+                columnSizingOptions={columnSizingOptions}
+                focusMode="cell"
+                size="small"
+            >
+                <DataGridHeader className={styles.tableHeader}>
+                    <DataGridRow<LandingZoneItem>>
+                        {({ renderHeaderCell }) => (
+                            <DataGridHeaderCell className={styles.tableCell}>
+                                {renderHeaderCell()}
+                            </DataGridHeaderCell>
+                        )}
+                    </DataGridRow>
+                </DataGridHeader>
+                <DataGridBody<LandingZoneItem>>
+                    {({ item, rowId }) => (
+                        <DataGridRow<LandingZoneItem>
+                            key={rowId}
                             className={item.type === "file" ? styles.fileRow : undefined}
                             onClick={(evt) => handleRowClick(item, evt)}
                         >
-                            <TableCell className={styles.tableCell} style={{ width: `${columnWidths.selection}px` }}>
-                                <div style={getIndentLevel(item.level)}>
-                                    {(item.type === "file") ? (
-                                        <Checkbox className={styles.roundCheckbox} checked={selectedItems.has(item.id)} onChange={() => handleSelectionToggle(item)} />
-                                    ) : (
-                                        <div style={{ width: "20px" }} />
-                                    )}
-                                </div>
-                            </TableCell>
-                            <TableCell className={styles.tableCell} style={{ width: `${columnWidths.name}px` }}>
-                                <div className={styles.nameCell} style={getIndentLevel(item.level)}>
-                                    {item.hasChildren ? (
-                                        <Button
-                                            appearance="subtle"
-                                            size="small"
-                                            icon={
-                                                loadingItems.has(item.id) ? (
-                                                    <Spinner size="extra-small" className={styles.compactSpinner} />
-                                                ) : mergedExpandedItems.has(item.id) ? (
-                                                    <ChevronDownRegular />
-                                                ) : (
-                                                    <ChevronRightRegular />
-                                                )
-                                            }
-                                            onClick={() => handleExpansionToggle(item)}
-                                            disabled={loadingItems.has(item.id)}
-                                        />
-                                    ) : (
-                                        <div style={{ width: "24px" }} />
-                                    )}
-                                    {getIcon(item)}
-                                    <span>{item.displayName}</span>
-                                </div>
-                            </TableCell>
-                            <TableCell className={styles.tableCell} style={{ width: `${columnWidths.size}px` }}>
-                                <span>{item.size ? convertedSize(item.size) : ""}</span>
-                            </TableCell>
-                            <TableCell className={styles.tableCell} style={{ width: `${columnWidths.modified}px` }}>
-                                <span>{item.modifiedTime || ""}</span>
-                            </TableCell>
-                        </TableRow>
-                    ))}
-                </TableBody>
-            </Table>
+                            {({ renderCell }) => (
+                                <DataGridCell className={styles.tableCell}>
+                                    {renderCell(item)}
+                                </DataGridCell>
+                            )}
+                        </DataGridRow>
+                    )}
+                </DataGridBody>
+            </DataGrid>
         </div>
     </div>;
 };

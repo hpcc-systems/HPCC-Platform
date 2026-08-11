@@ -1,6 +1,7 @@
 import * as React from "react";
 import { Route, RouterContext } from "universal-router";
 import { initialize, parsePage, parseSearch, parseSort, parseFullscreen, pushUrl, replaceUrl } from "./util/history";
+import nlsHPCC from "src/nlsHPCC";
 
 declare const dojoConfig;
 
@@ -514,7 +515,7 @@ export const routes: RoutesEx = [
             },
             {
                 path: "/security",
-                action: () => { if (!dojoConfig.isAdmin) { replaceUrl("/topology"); } },
+                action: () => { if (!dojoConfig.isAdmin) { replaceUrl("/topology"); return false; } },
                 children: [
                     {
                         path: "", action: (ctx, params) => import("./components/Security").then(_ => {
@@ -609,10 +610,36 @@ export const routes: RoutesEx = [
         mainNav: ["operations"],
         path: "/operations",
         children: [
+            { path: "", action: () => { replaceUrl("/operations/topology/clusters"); return false; } },
             {
-                path: "", action: () => import("./layouts/DojoAdapter").then(_ => {
-                    return <_.DojoAdapter widgetClassID="TopologyWidget" />;
-                })
+                path: "/topology",
+                children: [
+                    {
+                        path: "", action: (ctx) => import("./components/Topology").then(_ => {
+                            return <_.Topology />;
+                        }),
+                    },
+                    {
+                        path: "/:Tab", action: (ctx, params) => import("./components/Topology").then(_ => {
+                            return <_.Topology tab={params.Tab as string} />;
+                        })
+                    },
+                    {
+                        path: "/:Tab/:Node", action: (ctx, params) => import("./components/Topology").then(_ => {
+                            return <_.Topology tab={params.Tab as string} node={params.Node as string} />;
+                        })
+                    },
+                    {
+                        path: "/:Tab/:Node/preflight", action: (ctx, params) => import("./components/Topology").then(_ => {
+                            return <_.Topology tab={params.Tab as string} node={params.Node as string} preflightDrawerParams={parseSearch(ctx.search) as any} />;
+                        })
+                    },
+                    {
+                        path: "/:Tab/:Node/:DetailTab", action: (ctx, params) => import("./components/Topology").then(_ => {
+                            return <_.Topology tab={params.Tab as string} node={params.Node as string} detailTab={params.DetailTab as string} />;
+                        })
+                    }
+                ]
             },
             {
                 path: "/diskusage", action: (ctx) => import("./components/DiskUsage").then(_ => {
@@ -623,13 +650,30 @@ export const routes: RoutesEx = [
                 path: "/clusters",
                 children: [
                     {
-                        path: "", action: () => import("./layouts/DojoAdapter").then(_ => {
-                            return <_.DojoAdapter widgetClassID="TargetClustersQueryWidget" />;
+                        path: "", action: (ctx) => import("./components/controls/TargetClustersQueryTable").then(_ => {
+                            return <_.TargetClustersQueryTable />;
+                        })
+                    },
+                    {
+                        path: "/preflight", action: (ctx) => import("./components/controls/TargetClustersQueryTable").then(_ => {
+                            return <_.TargetClustersQueryTable preflightDrawerParams={parseSearch(ctx.search) as any} />;
                         })
                     },
                     {
                         path: "/:ClusterName", action: (ctx, params) => import("./layouts/DojoAdapter").then(_ => {
                             return <_.DojoAdapter widgetClassID="TpClusterInfoWidget" params={params} />;
+                        })
+                    },
+                    {
+                        path: "/:ClusterName/config", action: (ctx, params) => import("./components/controls/TargetClustersQueryTable").then(_ => {
+                            const qs = parseSearch(ctx.search);
+                            return <_.TargetClustersQueryTable configDrawerParams={qs as any} configDrawerTitle={`${params.ClusterName}: ${qs.CompName} ${nlsHPCC.Configuration}`} />;
+                        })
+                    },
+                    {
+                        path: "/:ClusterName/logs", action: (ctx, params) => import("./components/controls/TargetClustersQueryTable").then(_ => {
+                            const qs = parseSearch(ctx.search);
+                            return <_.TargetClustersQueryTable logsDrawerParams={qs as any} logsDrawerTitle={`${params.ClusterName}: ${qs.CompName} ${nlsHPCC.Logs}`} />;
                         })
                     },
                     {
@@ -640,14 +684,58 @@ export const routes: RoutesEx = [
                 ]
             },
             {
-                path: "/processes", action: () => import("./layouts/DojoAdapter").then(_ => {
-                    return <_.DojoAdapter widgetClassID="ClusterProcessesQueryWidget" />;
-                })
+                path: "/processes",
+                children: [
+                    {
+                        path: "", action: () => import("./components/controls/ClusterProcessesQueryTable").then(_ => {
+                            return <_.ClusterProcessesQueryTable />;
+                        })
+                    },
+                    {
+                        path: "/preflight", action: (ctx) => import("./components/controls/ClusterProcessesQueryTable").then(_ => {
+                            return <_.ClusterProcessesQueryTable preflightDrawerParams={parseSearch(ctx.search) as any} />;
+                        })
+                    },
+                    {
+                        path: "/:ProcessName/config", action: (ctx, params) => import("./components/controls/ClusterProcessesQueryTable").then(_ => {
+                            const qs = parseSearch(ctx.search);
+                            return <_.ClusterProcessesQueryTable configDrawerParams={qs as any} configDrawerTitle={`${params.ProcessName}: ${qs.CompName} ${nlsHPCC.Configuration}`} />;
+                        })
+                    },
+                    {
+                        path: "/:ProcessName/logs", action: (ctx, params) => import("./components/controls/ClusterProcessesQueryTable").then(_ => {
+                            const qs = parseSearch(ctx.search);
+                            return <_.ClusterProcessesQueryTable logsDrawerParams={qs as any} logsDrawerTitle={`${params.ProcessName}: ${qs.CompName} ${nlsHPCC.Logs}`} />;
+                        })
+                    },
+                ],
             },
             {
-                path: "/servers", action: () => import("./layouts/DojoAdapter").then(_ => {
-                    return <_.DojoAdapter widgetClassID="SystemServersQueryWidget" />;
-                })
+                path: "/servers",
+                children: [
+                    {
+                        path: "", action: () => import("./components/controls/SystemServersQueryTable").then(_ => {
+                            return <_.SystemServersQueryTable />;
+                        })
+                    },
+                    {
+                        path: "/preflight", action: (ctx) => import("./components/controls/SystemServersQueryTable").then(_ => {
+                            return <_.SystemServersQueryTable preflightDrawerParams={parseSearch(ctx.search) as any} />;
+                        })
+                    },
+                    {
+                        path: "/:ServerName/config", action: (ctx, params) => import("./components/controls/SystemServersQueryTable").then(_ => {
+                            const qs = parseSearch(ctx.search);
+                            return <_.SystemServersQueryTable configDrawerParams={qs as any} configDrawerTitle={`${params.ServerName}: ${qs.CompName} ${nlsHPCC.Configuration}`} />;
+                        })
+                    },
+                    {
+                        path: "/:ServerName/logs", action: (ctx, params) => import("./components/controls/SystemServersQueryTable").then(_ => {
+                            const qs = parseSearch(ctx.search);
+                            return <_.SystemServersQueryTable logsDrawerParams={qs as any} logsDrawerTitle={`${params.ServerName}: ${nlsHPCC.Logs}`} />;
+                        })
+                    },
+                ]
             },
             {
                 path: "/machines",
@@ -668,7 +756,7 @@ export const routes: RoutesEx = [
             },
             {
                 path: "/security",
-                action: () => { if (!dojoConfig.isAdmin) { replaceUrl("/operations"); } },
+                action: () => { if (!dojoConfig.isAdmin) { replaceUrl("/operations"); return false; } },
                 children: [
                     {
                         path: "", action: (ctx, params) => import("./components/Security").then(_ => {

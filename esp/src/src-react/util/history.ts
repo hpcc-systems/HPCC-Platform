@@ -232,8 +232,13 @@ export function updateSearch(searchParams: SearchParams) {
 
 export function pushUrl(_: string) {
     hashHistory.push({
-        pathname: _
+        pathname: _,
+        search: ""
     });
+}
+
+export function goBack() {
+    globalHistory.back();
 }
 
 export function replaceUrl(_: string, refresh: boolean = false) {

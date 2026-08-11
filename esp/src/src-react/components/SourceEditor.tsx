@@ -72,6 +72,7 @@ interface SourceEditorProps {
     previewUrl?: string;
     readonly?: boolean;
     toolbar?: boolean;
+    wordWrap?: boolean;
     onTextChange?: (text: string) => void;
     onFetchHints?: (cm: any, option: any) => Promise<ICompletion>;
     onSubmit?: () => void;
@@ -83,6 +84,7 @@ export const SourceEditor: React.FunctionComponent<SourceEditorProps> = ({
     previewUrl = "",
     readonly = false,
     toolbar = true,
+    wordWrap = false,
     onTextChange = (text: string) => { },
     onFetchHints,
     onSubmit
@@ -132,6 +134,10 @@ export const SourceEditor: React.FunctionComponent<SourceEditorProps> = ({
         }
     }, [editor]);
     useOnEvent(document, "eclwatch-theme-toggle", handleThemeToggle);
+
+    React.useEffect(() => {
+        editor.option("lineWrapping", wordWrap.toString());
+    }, [editor, wordWrap]);
 
     React.useEffect(() => {
         editor.option("theme", isDark ? "darcula" : "default");
