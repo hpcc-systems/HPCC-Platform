@@ -1210,6 +1210,44 @@ public:
     virtual void endReport() override {}
 };
 
+class CFlatSummaryCollector : public CSummaryCollector
+{
+public:
+    CFlatSummaryCollector(CIndexFileSummary& _operation, IBufferedSerialOutputStream* _out)
+        : CSummaryCollector(_operation, IndexSummarization::byGroup, _out)
+    {
+    }
+
+    virtual bool visitEvent(CEvent& event) override
+    {
+        switch (event.queryType())
+        {
+        case EventIndexCacheHit:
+        case EventIndexCacheMiss:
+        case EventIndexLoad:
+        case EventIndexPayload:
+        case EventIndexEviction:
+        case EventIndexOpen:
+            summary.accumulate(event, &operation.queryMetaInfoState());
+            break;
+        default:
+            break;
+        }
+        return true;
+    }
+
+    virtual void summarize() override
+    {
+        CCsvGroupFormatter formatter(out);
+        formatter.beginReport({});
+        formatter.outputLeafSummary({}, summary);
+        formatter.endReport();
+    }
+
+protected:
+    EventSummaryMetrics summary;
+};
+
 class CGenericGroupCollector : public CSummaryCollector
 {
     std::vector<std::vector<std::string>> groupAttributesStrs;
@@ -1322,7 +1360,10 @@ bool CIndexFileSummary::doOp()
     switch (summarization)
     {
     case IndexSummarization::byGroup:
-        collector.setown(new CGenericGroupCollector(*this, out, groupAttributes, groupAttributeIds));
+        if (groupAttributeIds.empty())
+            collector.setown(new CFlatSummaryCollector(*this, out));
+        else
+            collector.setown(new CGenericGroupCollector(*this, out, groupAttributes, groupAttributeIds));
         break;
     // TODO: The legacy collectors below are retained for verification of the generic byGroup
     // output. Once the byGroup output is confirmed as an adequate replacement, these
