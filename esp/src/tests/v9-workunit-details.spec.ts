@@ -95,10 +95,6 @@ test.describe("V9 Workunit Details", () => {
     });
 
     test("Should display workunit summary with correct information", async ({ page, browserName }) => {
-        // Verify WUID field is displayed - use more specific selector for the label
-        await expect(page.getByText("WUID", { exact: true })).toBeVisible();
-        await expect(page.getByRole("tab", { name: wuid })).toBeVisible();
-
         // Check for key summary fields
         const expectedFields = [
             "Action",
@@ -138,7 +134,6 @@ test.describe("V9 Workunit Details", () => {
         // Check for main action buttons
         const expectedButtons = [
             "Refresh",
-            "Copy WUID",
             "Save",
             "Delete"
         ];
@@ -194,27 +189,16 @@ test.describe("V9 Workunit Details", () => {
         await page.waitForLoadState("networkidle");
 
         // Verify page still displays correctly after refresh
-        await expect(page.getByText("WUID", { exact: true })).toBeVisible();
         await expect(page.getByText("State")).toBeVisible();
+        await expect(page.getByText("Cluster", { exact: true })).toBeVisible();
     });
 
     test("Should copy WUID to clipboard when copy button is clicked", async ({ page, browserName }) => {
         // Grant clipboard permissions
         await page.context().grantPermissions(["clipboard-write", "clipboard-read"]);
 
-        // CommandBar items may be in overflow menu, click it first
-        const overflowButton = page.locator(".ms-CommandBar .ms-OverflowSet-overflowButton").or(
-            page.locator("button[aria-label='More items']")).or(
-                page.locator(".ms-CommandBar button").last()
-            );
-
-        if (await overflowButton.count() > 0) {
-            await overflowButton.first().click();
-            await page.waitForTimeout(300);
-        }
-
         // Click copy WUID button
-        await page.getByRole("menuitem", { name: "Copy WUID" }).click();
+        await page.locator("button[aria-label='Copy WUID']").click();
 
         // Verify clipboard contains the WUID
         const clipboardText = await page.evaluate(async () => {
@@ -231,7 +215,7 @@ test.describe("V9 Workunit Details", () => {
         await expect(page.getByRole("checkbox", { name: "Protected" })).toBeVisible();
 
         // Check for readonly fields - look for readonly textboxes instead
-        await expect(page.getByRole("textbox", { name: "WUID" })).toHaveAttribute("readonly");
+        await expect(page.getByRole("textbox", { name: "Cluster", exact: true })).toHaveAttribute("readonly");
         await expect(page.getByRole("textbox", { name: "Action" })).toHaveAttribute("readonly").catch(() => {
             // Alternative way to check if field is readonly
             expect(page.getByRole("textbox", { name: "Action" })).toBeDisabled();

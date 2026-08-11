@@ -46,6 +46,7 @@ const useStyles = makeStyles({
     toolbar: {
         justifyContent: "space-between",
         gap: "0",
+        flexWrap: "nowrap"
     },
     itemsGroup: {
         flex: "1 1 0",

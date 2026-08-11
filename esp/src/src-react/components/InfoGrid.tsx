@@ -1,9 +1,13 @@
 import * as React from "react";
+import { createPortal } from "react-dom";
 import { CommandBar, ICommandBarItemProps } from "./CommandBarV9";
-import { Badge, Checkbox, Link, tokens } from "@fluentui/react-components";
+import { Badge, Checkbox, FluentProvider, Link, tokens } from "@fluentui/react-components";
+import { ArrowMaximizeRegular, ArrowMinimizeRegular, ArrowMinimizeVerticalRegular, ArrowMaximizeVerticalRegular } from "@fluentui/react-icons";
 import { SizeMe } from "../layouts/SizeMe";
+import { warningBadgeStyle, dangerBadgeStyle } from "../themes";
 import { formatCost, formatTwoDigits } from "src/Session";
 import nlsHPCC from "src/nlsHPCC";
+import { useUserTheme } from "../hooks/theme";
 import { useWorkunitExceptions } from "../hooks/workunit";
 import { FluentGrid, useCopyButtons, useFluentStoreState, FluentColumns } from "./controls/Grid";
 
@@ -34,11 +38,17 @@ interface FilterCounts {
 interface InfoGridProps {
     wuid?: string;
     syntaxErrors?: any[];
+    minimized?: boolean;
+    onMinimize?: (commandBarHeight: number) => void;
+    onRestore?: () => void;
 }
 
 export const InfoGrid: React.FunctionComponent<InfoGridProps> = ({
     wuid = null,
-    syntaxErrors = []
+    syntaxErrors = [],
+    minimized = false,
+    onMinimize,
+    onRestore
 }) => {
 
     const [costChecked, setCostChecked] = React.useState(true);
@@ -50,6 +60,8 @@ export const InfoGrid: React.FunctionComponent<InfoGridProps> = ({
     const [exceptions] = useWorkunitExceptions(wuid);
     const [errors, setErrors] = React.useState<any[]>([]);
     const [data, setData] = React.useState<any[]>([]);
+    const [fullscreen, setFullscreen] = React.useState(false);
+    const { themeV9 } = useUserTheme();
     const {
         selection, setSelection,
         setTotal,
@@ -57,11 +69,11 @@ export const InfoGrid: React.FunctionComponent<InfoGridProps> = ({
 
     //  Command Bar  ---
     const buttons = React.useMemo((): ICommandBarItemProps[] => [
-        { key: "errors", onRender: () => <Checkbox defaultChecked onChange={(_, data) => setErrorChecked(!!data.checked)} style={{ marginRight: 8 }} label={<><span style={{ color: tokens.colorStatusDangerForeground1 }}>{nlsHPCC.Errors} </span><Badge appearance="tint" color="danger">{filterCounts.error || 0}</Badge></>} /> },
-        { key: "costs", onRender: () => <Checkbox defaultChecked onChange={(_, data) => setCostChecked(!!data.checked)} style={{ marginRight: 8 }} label={<><span style={{ color: tokens.colorStatusDangerForeground1 }}>{nlsHPCC.Costs} </span><Badge appearance="tint" color="danger">{filterCounts.cost || 0}</Badge></>} /> },
-        { key: "warnings", onRender: () => <Checkbox defaultChecked onChange={(_, data) => setWarningChecked(!!data.checked)} style={{ marginRight: 8 }} label={<><span style={{ color: tokens.colorStatusWarningForeground1 }}>{nlsHPCC.Warnings} </span><Badge appearance="tint" color="warning">{filterCounts.warning || 0}</Badge></>} /> },
-        { key: "infos", onRender: () => <Checkbox checked={infoChecked} onChange={(_, data) => setInfoChecked(!!data.checked)} style={{ marginRight: 8 }} label={<><span>{nlsHPCC.Infos} </span><Badge appearance="tint" color="informative">{filterCounts.info || 0}</Badge></>} /> },
-        { key: "others", onRender: () => <Checkbox defaultChecked onChange={(_, data) => setOtherChecked(!!data.checked)} style={{ marginRight: 8 }} label={<><span>{nlsHPCC.Others} </span><Badge appearance="tint" color="informative">{filterCounts.other || 0}</Badge></>} /> }
+        { key: "errors", onRender: () => <Checkbox defaultChecked onChange={(_, data) => setErrorChecked(!!data.checked)} style={{ marginRight: 8 }} label={<span style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}><span style={{ color: tokens.colorStatusDangerForeground1 }}>{nlsHPCC.Errors} </span><Badge appearance="tint" color="danger" style={dangerBadgeStyle}>{filterCounts.error || 0}</Badge></span>} /> },
+        { key: "costs", onRender: () => <Checkbox defaultChecked onChange={(_, data) => setCostChecked(!!data.checked)} style={{ marginRight: 8 }} label={<span style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}><span style={{ color: tokens.colorStatusDangerForeground1 }}>{nlsHPCC.Costs} </span><Badge appearance="tint" color="danger" style={dangerBadgeStyle}>{filterCounts.cost || 0}</Badge></span>} /> },
+        { key: "warnings", onRender: () => <Checkbox defaultChecked onChange={(_, data) => setWarningChecked(!!data.checked)} style={{ marginRight: 8 }} label={<span style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}><span style={{ color: tokens.colorStatusWarningForeground1 }}>{nlsHPCC.Warnings} </span><Badge appearance="tint" color="warning" style={warningBadgeStyle}>{filterCounts.warning || 0}</Badge></span>} /> },
+        { key: "infos", onRender: () => <Checkbox checked={infoChecked} onChange={(_, data) => setInfoChecked(!!data.checked)} style={{ marginRight: 8 }} label={<span style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}><span>{nlsHPCC.Infos} </span><Badge appearance="tint" color="informative">{filterCounts.info || 0}</Badge></span>} /> },
+        { key: "others", onRender: () => <Checkbox defaultChecked onChange={(_, data) => setOtherChecked(!!data.checked)} style={{ marginRight: 8 }} label={<span style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}><span>{nlsHPCC.Others} </span><Badge appearance="tint" color="informative">{filterCounts.other || 0}</Badge></span>} /> }
     ], [infoChecked, filterCounts.cost, filterCounts.error, filterCounts.info, filterCounts.other, filterCounts.warning]);
 
     React.useEffect(() => {
@@ -236,8 +248,31 @@ export const InfoGrid: React.FunctionComponent<InfoGridProps> = ({
         }
     }, [filterCounts?.cost, filterCounts?.error, filterCounts?.warning]);
 
-    return <div style={{ height: "100%", overflow: "hidden" }}>
-        <CommandBar items={buttons} farItems={copyButtons} />
+    const fullscreenButton = React.useMemo((): ICommandBarItemProps[] => {
+        return [{
+            key: "fullscreen",
+            iconOnly: true,
+            iconElement: fullscreen ? <ArrowMinimizeRegular /> : <ArrowMaximizeRegular />,
+            onClick: () => setFullscreen(!fullscreen)
+        }];
+    }, [fullscreen]);
+
+    const commandBarRef = React.useRef<HTMLDivElement>(null);
+
+    const minimizeButton = React.useMemo((): ICommandBarItemProps[] => {
+        if (!onMinimize && !onRestore) return [];
+        return [{
+            key: "minimize",
+            text: minimized ? nlsHPCC.Restore : nlsHPCC.Minimize,
+            iconOnly: true,
+            disabled: fullscreen,
+            iconElement: minimized ? <ArrowMaximizeVerticalRegular /> : <ArrowMinimizeVerticalRegular />,
+            onClick: () => minimized ? onRestore?.() : onMinimize?.(commandBarRef.current?.offsetHeight ?? 44)
+        }];
+    }, [fullscreen, minimized, onMinimize, onRestore]);
+
+    const content = <div style={{ height: "100%", overflow: "hidden" }}>
+        <div ref={commandBarRef}><CommandBar items={buttons} farItems={[...copyButtons, ...minimizeButton, ...fullscreenButton]} /></div>
         <SizeMe >{({ size }) =>
             <FluentGrid
                 data={data}
@@ -250,4 +285,15 @@ export const InfoGrid: React.FunctionComponent<InfoGridProps> = ({
             ></FluentGrid>
         }</SizeMe>
     </div>;
+
+    if (fullscreen) {
+        return createPortal(
+            <FluentProvider theme={themeV9} style={{ position: "fixed", top: 0, left: 0, width: "100%", height: "100%", zIndex: 10 }}>
+                {content}
+            </FluentProvider>,
+            document.body
+        );
+    }
+
+    return content;
 };

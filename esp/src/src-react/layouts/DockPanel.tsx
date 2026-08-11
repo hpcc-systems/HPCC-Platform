@@ -136,6 +136,11 @@ export class ResetableDockPanel extends HPCCDockPanel {
         return formatLayout(this.layout()) ?? this._lastLayout ?? this._origLayout;
     }
 
+    //  The underlying lumino DockPanel is private in @hpcc-js/phosphor - keep the reach-through here.
+    dockNode(): HTMLElement | undefined {
+        return (this as any)._dock?.node;
+    }
+
     getVisibility() {
         return this._visibility;
     }

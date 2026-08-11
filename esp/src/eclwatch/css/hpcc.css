@@ -1253,32 +1253,35 @@ table.miniSelect span {
     height: 16px;
 }
 
+/*  Fluent v9 theme variables (with fallbacks for the non-FluentProvider dojo pages)  */
 .ErrorCell {
     padding-left: 4px;
-    background: red;
-    color: white;
+    background: var(--colorStatusDangerBackground3, #c50f1f);
+    color: var(--colorNeutralForegroundStaticInverted, #ffffff);
 }
 
 .AlertCell {
     padding-left: 4px;
-    background: #febe47;
+    background: var(--colorPaletteMarigoldBackground3, #eaa300);
+    color: var(--colorNeutralForeground1Static, #242424);
 }
 
 .CostCell {
     padding-left: 4px;
-    background: #fe4747;
-    color: white;
+    background: var(--colorPaletteRedBackground3, #d13438);
+    color: var(--colorNeutralForegroundStaticInverted, #ffffff);
 }
 
 .WarningCell {
     padding-left: 4px;
-    background: yellow;
-    color: black;
+    background: var(--colorStatusWarningBackground3, #f7630c);
+    color: var(--colorNeutralForeground1Static, #242424);
 }
 
 .NormalCell {
     padding-left: 4px;
-    background: rgba(0, 181, 0, 1);
+    background: var(--colorStatusSuccessBackground3, #107c10);
+    color: var(--colorNeutralForegroundStaticInverted, #ffffff);
 }
 
 .Prompt {

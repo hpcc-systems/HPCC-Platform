@@ -1,7 +1,7 @@
 import * as React from "react";
-import { FluentProvider, makeStyles, Text } from "@fluentui/react-components";
+import { Button, FluentProvider, makeStyles, Text } from "@fluentui/react-components";
 import {
-    ArchiveRegular, CheckmarkCircleRegular, ClockRegular, FlashRegular,
+    ArchiveRegular, CheckmarkCircleRegular, ClockRegular, CopyRegular, FlashRegular,
     LockClosedFilled, LockOpenRegular, PauseCircleRegular, PlayRegular,
     ProhibitedRegular, QuestionCircleRegular, SettingsRegular, WarningRegular
 } from "@fluentui/react-icons";
@@ -9,6 +9,8 @@ import { Palette } from "@hpcc-js/common";
 import { WUStateID } from "@hpcc-js/comms";
 import { useWorkunit } from "../../hooks/workunit";
 import { useUserTheme } from "../../hooks/theme";
+import { copyToClipboard } from "src/Utility";
+import nlsHPCC from "src/nlsHPCC";
 
 const ICON_MAP: Record<string, React.FunctionComponent<{ className?: string; style?: React.CSSProperties }>> = {
     "Archive": ArchiveRegular,
@@ -128,6 +130,23 @@ export const StateIcon: React.FunctionComponent<StateIconProps> = ({
     </FluentProvider>;
 };
 
+const usePersonaStyles = makeStyles({
+    wuid: {
+        paddingLeft: "4px",
+        fontWeight: "bold"
+    },
+    copyButton: {
+        minWidth: "24px",
+        maxWidth: "24px",
+        height: "23px",
+        margin: "2px 0 0 6px",
+        "& .fui-Button__icon": {
+            height: "16px",
+            width: "16px"
+        }
+    }
+});
+
 interface WorkunitPersonaProps {
     wuid: string;
     showProtected?: boolean;
@@ -146,6 +165,7 @@ export const WorkunitPersona: React.FunctionComponent<WorkunitPersonaProps> = ({
     const [overlayName, setOverlayName] = React.useState("");
     const [overlayColor, setOverlayColor] = React.useState("");
     const { themeV9 } = useUserTheme();
+    const styles = usePersonaStyles();
 
     React.useEffect(() => {
         switch (workunit?.StateID) {
@@ -205,7 +225,7 @@ export const WorkunitPersona: React.FunctionComponent<WorkunitPersonaProps> = ({
         }
     }, [workunit, workunit?.StateID]);
 
-    return <FluentProvider theme={themeV9} style={{ paddingTop: 4, flexGrow: 1, height: 26 }} title={workunit?.State}>
+    return <FluentProvider theme={themeV9} style={{ display: "flex", alignItems: "center", height: 26 }} title={workunit?.State}>
         {showProtected &&
             <span style={{ marginLeft: 8, marginRight: 2 }}>
                 <StateIcon iconName={workunit?.Protected ? "LockSolid" : "Unlock"} size={size} />
@@ -213,7 +233,12 @@ export const WorkunitPersona: React.FunctionComponent<WorkunitPersonaProps> = ({
         }
         <StateIcon iconName="Settings" overlayName={overlayName} overlayColor={overlayColor} size={size} />
         {showWuid &&
-            <Text size={500} weight="bold" style={{ paddingLeft: "4px" }}>{wuid}</Text>
+            <>
+                <Text size={500} className={styles.wuid}>{wuid}</Text>
+                <Button title={nlsHPCC.CopyWUID} aria-label={nlsHPCC.CopyWUID} className={styles.copyButton} icon={<CopyRegular />}
+                    onClick={() => copyToClipboard(wuid)}
+                />
+            </>
         }
     </FluentProvider>;
 };

@@ -218,8 +218,8 @@ test.describe("V9 Workunits", () => {
         expect(compareMatch).toBeTruthy();
         const compareWuids = compareMatch![1].split(",");
         expect(compareWuids).toEqual(expect.arrayContaining(selectedWuids));
-        // The compare page uses a split layout - verify we're on the compare page
-        await expect(page.locator("[class*='compare'], .fui-FluentProvider, #root")).toBeVisible();
+        // The compare page uses a split layout with WUID inputs - verify we're on the compare page
+        await expect(page.locator("#wuid-input-0")).toBeVisible();
 
         await page.getByRole("tab", { name: "Variables" }).first().click();
         await page.waitForLoadState("networkidle");

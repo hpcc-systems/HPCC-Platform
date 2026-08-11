@@ -4,7 +4,8 @@
  *  Keep in sync with themes.css
  */
 
-import { BrandVariants, createDarkTheme, createLightTheme } from "@fluentui/react-components";
+import { CSSProperties } from "react";
+import { BrandVariants, createDarkTheme, createLightTheme, tokens } from "@fluentui/react-components";
 
 const brandWeb: BrandVariants = {
     10: "#061724",
@@ -72,3 +73,16 @@ const brand = brands["web"];
 
 export const lightThemeV9 = createLightTheme(brand);
 export const darkThemeV9 = createDarkTheme(brand);
+
+//  Fluent's "warning" and "danger" badge palettes are yellow / palette red, which clash with the status colors used elsewhere.
+export const warningBadgeStyle: CSSProperties = {
+    backgroundColor: tokens.colorStatusWarningBackground1,
+    color: tokens.colorStatusWarningForeground1,
+    borderColor: tokens.colorStatusWarningBorder1
+};
+
+export const dangerBadgeStyle: CSSProperties = {
+    backgroundColor: tokens.colorStatusDangerBackground1,
+    color: tokens.colorStatusDangerForeground1,
+    borderColor: tokens.colorStatusDangerBorder1
+};

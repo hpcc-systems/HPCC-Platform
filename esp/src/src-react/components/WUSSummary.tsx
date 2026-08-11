@@ -12,6 +12,7 @@ import { HolyGrail } from "../layouts/HolyGrail";
 import { pushParams } from "../util/history";
 import { throttle, ThrottleQueueItem } from "../util/throttle";
 import { SizeMe } from "../layouts/SizeMe";
+import { warningBadgeStyle, dangerBadgeStyle } from "../themes";
 import { useUserStore } from "../hooks/store";
 
 const logger = scopedLogger("src-react/components/WUSSummary.tsx");
@@ -459,7 +460,7 @@ export const WUSSummary: React.FunctionComponent<WUSSummaryProps> = ({
                         <ToolbarDivider />
                     </ToolbarGroup>
                     <ToolbarGroup>
-                        <Checkbox checked={showFailed} onChange={onToggleShowFailed} className={styles.checkbox} label={<><span style={{ color: tokens.colorStatusDangerForeground1 }}>{nlsHPCC.Failed} </span><Badge appearance="tint" color="danger">{failed.length}</Badge></>} />
+                        <Checkbox checked={showFailed} onChange={onToggleShowFailed} className={styles.checkbox} label={<><span style={{ color: tokens.colorStatusDangerForeground1 }}>{nlsHPCC.Failed} </span><Badge appearance="tint" color="danger" style={dangerBadgeStyle}>{failed.length}</Badge></>} />
                         <Checkbox checked={showCompleted} onChange={onToggleShowCompleted} className={styles.checkbox} label={<><span style={{ color: tokens.colorStatusSuccessForeground1 }}>{nlsHPCC.Completed} </span><Badge appearance="tint" color="success">{completed.length}</Badge></>} />
                         <Checkbox checked={showOther} onChange={onToggleShowOther} className={styles.checkbox} label={<><span>{nlsHPCC.Other} </span><Badge appearance="tint" color="informative">{other.length}</Badge></>} />
                     </ToolbarGroup>
@@ -468,8 +469,8 @@ export const WUSSummary: React.FunctionComponent<WUSSummaryProps> = ({
                     <SearchBox key="filter" value={searchBoxValue} onChange={onFilterChange} placeholder={nlsHPCC.Filter} contentBefore={<FilterRegular />} className={styles.searchBox} />
                     <ToolbarGroup>
                         <ToolbarDivider />
-                        <Checkbox checked={showError} onChange={onToggleShowError} className={styles.checkbox} label={<><span style={{ color: tokens.colorStatusDangerForeground1 }}>{nlsHPCC.Error} </span><Badge appearance="tint" color="danger">{severityCounts.Error}</Badge></>} />
-                        <Checkbox checked={showWarning} onChange={onToggleShowWarning} className={styles.checkbox} label={<><span style={{ color: tokens.colorStatusWarningForeground1 }}>{nlsHPCC.Warning} </span><Badge appearance="tint" color="warning">{severityCounts.Warning}</Badge></>} />
+                        <Checkbox checked={showError} onChange={onToggleShowError} className={styles.checkbox} label={<><span style={{ color: tokens.colorStatusDangerForeground1 }}>{nlsHPCC.Error} </span><Badge appearance="tint" color="danger" style={dangerBadgeStyle}>{severityCounts.Error}</Badge></>} />
+                        <Checkbox checked={showWarning} onChange={onToggleShowWarning} className={styles.checkbox} label={<><span style={{ color: tokens.colorStatusWarningForeground1 }}>{nlsHPCC.Warning} </span><Badge appearance="tint" color="warning" style={warningBadgeStyle}>{severityCounts.Warning}</Badge></>} />
                         <Checkbox checked={showInfo} onChange={onToggleShowInfo} className={styles.checkbox} label={<><span>{nlsHPCC.Info} </span><Badge appearance="tint" color="informative">{severityCounts.Info}</Badge></>} />
                     </ToolbarGroup>
                 </Toolbar>

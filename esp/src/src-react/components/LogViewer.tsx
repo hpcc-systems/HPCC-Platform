@@ -7,6 +7,7 @@ import nlsHPCC from "src/nlsHPCC";
 import { QuerySortItem } from "src/store/Store";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { SizeMe } from "../layouts/SizeMe";
+import { warningBadgeStyle, dangerBadgeStyle } from "../themes";
 import { useECLWatchLogger } from "../hooks/logging";
 import { FluentGrid, useCopyButtons, useFluentStoreState, FluentColumns } from "./controls/Grid";
 
@@ -34,8 +35,8 @@ export const LogViewer: React.FunctionComponent<LogViewerProps> = ({
 
     //  Command Bar  ---
     const buttons = React.useMemo((): ICommandBarItemProps[] => [
-        { key: "errors", onRender: () => <Checkbox defaultChecked onChange={(_, data) => setErrorChecked(!!data.checked)} style={{ marginRight: 8 }} label={<><span style={{ color: tokens.colorStatusDangerForeground1 }}>{nlsHPCC.Errors} </span><Badge appearance="tint" color="danger">{filterCounts.error || 0}</Badge></>} /> },
-        { key: "warnings", onRender: () => <Checkbox defaultChecked onChange={(_, data) => setWarningChecked(!!data.checked)} style={{ marginRight: 8 }} label={<><span style={{ color: tokens.colorStatusWarningForeground1 }}>{nlsHPCC.Warnings} </span><Badge appearance="tint" color="warning">{filterCounts.warning || 0}</Badge></>} /> },
+        { key: "errors", onRender: () => <Checkbox defaultChecked onChange={(_, data) => setErrorChecked(!!data.checked)} style={{ marginRight: 8 }} label={<><span style={{ color: tokens.colorStatusDangerForeground1 }}>{nlsHPCC.Errors} </span><Badge appearance="tint" color="danger" style={dangerBadgeStyle}>{filterCounts.error || 0}</Badge></>} /> },
+        { key: "warnings", onRender: () => <Checkbox defaultChecked onChange={(_, data) => setWarningChecked(!!data.checked)} style={{ marginRight: 8 }} label={<><span style={{ color: tokens.colorStatusWarningForeground1 }}>{nlsHPCC.Warnings} </span><Badge appearance="tint" color="warning" style={warningBadgeStyle}>{filterCounts.warning || 0}</Badge></>} /> },
         { key: "infos", onRender: () => <Checkbox defaultChecked onChange={(_, data) => setInfoChecked(!!data.checked)} style={{ marginRight: 8 }} label={<><span>{nlsHPCC.Infos} </span><Badge appearance="tint" color="informative">{filterCounts.info || 0}</Badge></>} /> },
         { key: "others", onRender: () => <Checkbox defaultChecked onChange={(_, data) => setOtherChecked(!!data.checked)} style={{ marginRight: 8 }} label={<><span>{nlsHPCC.Others} </span><Badge appearance="tint" color="informative">{filterCounts.other || 0}</Badge></>} /> }
     ], [filterCounts.error, filterCounts.info, filterCounts.other, filterCounts.warning]);

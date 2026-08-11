@@ -1,41 +1,63 @@
 import * as React from "react";
-import { makeStyles, tokens } from "@fluentui/react-components";
+import { makeStyles, mergeClasses, tokens } from "@fluentui/react-components";
+import { CheckmarkCircle20Filled, Warning20Filled } from "@fluentui/react-icons";
 
 const useStepStyles = makeStyles({
     wrapper: {
         display: "flex",
-        flexDirection: "column",
+        flexDirection: "row",
         position: "relative",
         alignItems: "center",
-        padding: "0 8px",
-        minWidth: "100px",
+        padding: "3px 8px",
+        marginLeft: "1px",
+        border: `1px solid ${tokens.colorNeutralForegroundDisabled}`,
+        borderRadius: "5px"
     },
-    svg: {
-        color: tokens.colorNeutralForeground1,
-        fill: "currentColor",
-        width: "1em",
-        height: "1em",
-        fontSize: "1.5rem",
-        "& text": { color: tokens.colorNeutralBackground1 }
+    icon: {
+        marginRight: "3px"
+    },
+    stepNumber: {
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        width: "20px",
+        height: "20px",
+        marginRight: "3px",
+        borderRadius: "50%",
+        backgroundColor: tokens.colorNeutralForeground1,
+        color: tokens.colorNeutralBackground1,
+        fontSize: "0.75rem",
+        fontWeight: 600
     },
     failed: { color: `${tokens.colorPaletteRedForeground1} !important` },
     completed: {
-        color: tokens.colorBrandBackground,
-        "& circle": { color: tokens.colorNeutralBackground1 }
+        color: tokens.colorBrandBackground
     },
     label: {
-        margin: "16px 0 0 0",
         fontSize: "0.875rem",
         fontWeight: 500,
         fontFamily: "'Segoe UI', 'Segoe UI Web (West European)', 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, 'Helvetica Neue', sans-serif",
     },
+    timing: {
+        marginLeft: "6px",
+        fontSize: "0.75rem",
+    },
     connector: {
-        top: "12px",
-        left: "calc(-50% + 20px)",
-        right: "calc(50% + 20px)",
-        position: "absolute",
-        borderTopStyle: "solid",
-        borderTopWidth: "1px"
+        height: "2px",
+        width: "14px",
+        backgroundColor: tokens.colorNeutralForegroundDisabled,
+        position: "relative",
+        "::after": {
+            content: '""',
+            position: "absolute",
+            right: "-1px",
+            top: "-5px",
+            width: 0,
+            height: 0,
+            borderTop: "6px solid transparent",
+            borderBottom: "6px solid transparent",
+            borderLeft: `6px solid ${tokens.colorNeutralForegroundDisabled}`,
+        }
     }
 });
 
@@ -43,7 +65,13 @@ const useStepperStyles = makeStyles({
     wrapper: {
         display: "flex",
         flexDirection: "row",
-        padding: "8px"
+        flexWrap: "wrap",
+        alignItems: "center",
+        marginLeft: "auto",
+        padding: "0 8px 8px 0",
+        "@container (max-width: 900px)": {
+            margin: "4px 0 0 10px"
+        }
     },
 });
 
@@ -52,6 +80,7 @@ export interface StepProps {
     completed?: boolean;
     failed?: boolean;
     step?: number;
+    timing?: string;
     showConnector?: boolean;
 }
 
@@ -60,32 +89,30 @@ const Step: React.FunctionComponent<StepProps> = ({
     completed = false,
     failed = false,
     step = 1,
+    timing = "",
     showConnector = false
 }) => {
 
     const stepStyles = useStepStyles();
 
-    return <div className={stepStyles.wrapper}>
+    return <>
         {showConnector ? <div className={stepStyles.connector}></div> : ""}
-        {failed ?
-            <svg className={[stepStyles.svg, stepStyles.failed].join(" ")} viewBox={"0 0 24 24"}>
-                <path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"></path>
-            </svg> :
-            completed ?
-                <svg className={[stepStyles.svg, stepStyles.completed].join(" ")} viewBox={"0 0 24 24"}>
-                    <circle cx="12" cy="12" r="12"></circle>
-                    <path d="M12 0a12 12 0 1 0 0 24 12 12 0 0 0 0-24zm-2 17l-5-5 1.4-1.4 3.6 3.6 7.6-7.6L19 8l-9 9z"></path>
-                </svg> :
-                <svg className={stepStyles.svg} viewBox={"0 0 24 24"}>
-                    <circle cx="12" cy="12" r="12"></circle>
-                    <text x="7" y="18">{step}</text>
-                </svg>
-        }
-        {failed ?
-            <span className={[stepStyles.failed, stepStyles.label].join(" ")}>{label}</span> :
-            <span className={stepStyles.label}>{label}</span>
-        }
-    </div>;
+        <div className={stepStyles.wrapper}>
+            {failed ?
+                <Warning20Filled className={mergeClasses(stepStyles.icon, stepStyles.failed)} /> :
+                completed ?
+                    <CheckmarkCircle20Filled className={mergeClasses(stepStyles.icon, stepStyles.completed)} /> :
+                    <span className={stepStyles.stepNumber}>{step}</span>
+            }
+            {failed ?
+                <span className={mergeClasses(stepStyles.label, stepStyles.failed)}>{label}</span> :
+                <>
+                    <span className={stepStyles.label}>{label}</span>
+                    {timing ? <span className={stepStyles.timing}>{timing}</span> : <></>}
+                </>
+            }
+        </div>
+    </>;
 
 };
 
@@ -106,8 +133,8 @@ export const Stepper: React.FunctionComponent<StepperProps> = ({
 
     return <div className={stepperStyles.wrapper}>
         {steps && steps.map((props, i) => {
-            const { label, completed, failed, step, showConnector } = { ...props };
-            return <Step key={`${label}_${i}`} label={label} step={step} failed={failed} completed={completed} showConnector={showConnector}></Step>;
+            const { label, completed, failed, step, timing, showConnector } = { ...props };
+            return <Step key={`${label}_${i}`} label={label} step={step} failed={failed} completed={completed} timing={timing} showConnector={showConnector}></Step>;
         })}
     </div >;
 

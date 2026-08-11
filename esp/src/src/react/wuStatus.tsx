@@ -64,6 +64,18 @@ interface WUStatus {
     workunit?: Workunit;
 }
 
+const stepTimings = (wu: Workunit, isCompile: boolean): string[] => {
+    const timers = wu.CTimers ?? [];
+    const compileTimer = timers.find(t => t.Name === "compile" || t.Name === ">compile");
+    const executeTimer = timers.find(t => t.Name === "Total cluster time" || t.Name === "Total thor time");
+    if (isCompile) {
+        // Steps: Created(0), Compiled(1), Completed(2)
+        return ["", compileTimer?.Value ?? "", ""];
+    }
+    // Steps: Created(0), Compiled(1), Executed(2), Completed(3)
+    return ["", compileTimer?.Value ?? "", executeTimer?.Value ?? "", ""];
+};
+
 export const WUStatus: React.FunctionComponent<WUStatus> = ({
     wuid,
     workunit
@@ -72,6 +84,7 @@ export const WUStatus: React.FunctionComponent<WUStatus> = ({
     const [failed, setFailed] = React.useState(false);
     const [stepProps, setStepProps] = React.useState<StepProps[]>();
     const [steps, setSteps] = React.useState([]);
+    const [timing, setTiming] = React.useState<string[]>([]);
 
     React.useEffect(() => {
         if (!wuid && !workunit) {
@@ -81,6 +94,7 @@ export const WUStatus: React.FunctionComponent<WUStatus> = ({
             setActiveStep(wuStep(wu));
             setFailed(wu.isFailed());
             setSteps(wuSteps(wu.ActionEx === "compile"));
+            setTiming(stepTimings(wu, wu.ActionEx === "compile"));
         };
         const wu = workunit ?? Workunit.attach({ baseUrl: "" }, wuid);
         updateWUStatus(wu);
@@ -88,7 +102,7 @@ export const WUStatus: React.FunctionComponent<WUStatus> = ({
         const wuWatchHandle = wu.watch(() => updateWUStatus(wu));
 
         if (!workunit) {
-            wu.refresh(true);
+            wu.refresh(true, { IncludeTimers: true });
         }
 
         return () => {
@@ -105,10 +119,11 @@ export const WUStatus: React.FunctionComponent<WUStatus> = ({
                 step: i + 1,
                 failed: failed,
                 completed: activeStep > i,
-                showConnector: i > 0 && i < steps.length + 1
+                showConnector: i > 0 && i < steps.length + 1,
+                timing: timing[i]
             };
         }));
-    }, [activeStep, failed, steps]);
+    }, [activeStep, failed, steps, timing]);
 
     return <Stepper activeStep={activeStep} steps={stepProps}></Stepper>;
 };

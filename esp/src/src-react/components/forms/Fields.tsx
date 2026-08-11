@@ -370,6 +370,7 @@ interface BaseField {
     readonly?: boolean;
     required?: boolean;
     optional?: boolean;
+    onCopy?: () => void;
 }
 
 interface StringField extends BaseField {

@@ -567,6 +567,10 @@ export function createAlphanumSortFunc(cols: string[], caseInsensitive: boolean,
     };
 }
 
+export function copyToClipboard(value: string) {
+    navigator?.clipboard?.writeText(value);
+}
+
 export function alphanumSort(arr, col, caseInsensitive, reverse: boolean = false) {
     if (arr && arr instanceof Array) {
         arr.sort(createAlphanumSortFunc(col, caseInsensitive, reverse));
