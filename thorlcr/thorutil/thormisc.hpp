@@ -68,6 +68,7 @@
 #define THOROPT_PARALLEL_MATCH "parallel_match"                                   // Use multi-threaded join helper (retains sort order without unsorted_output)   (default = false)
 #define THOROPT_UNSORTED_OUTPUT "unsorted_output"                                 // Allow Join results to be reodered, implies parallel match                     (default = false)
 #define THOROPT_JOINHELPER_THREADS "joinHelperThreads"                            // Number of threads to use in threaded variety of join helper
+#define THOROPT_JOIN_BATCH_LIMIT "joinBatchLimit"                                 // Max number of candidate join pairs to batch into a single multicore work item (default = 10000)
 #define THOROPT_LKJOIN_LOCALFAILOVER "lkjoin_localfailover"                       // Force SMART to failover to distributed local lookup join (for testing only)   (default = false)
 #define THOROPT_LKJOIN_HASHJOINFAILOVER "lkjoin_hashjoinfailover"                 // Force SMART to failover to hash join (for testing only)                     (default = false)
 #define THOROPT_MAX_KERNLOG "max_kern_level"                                      // Max kernel logging level, to push to workunit, -1 to disable                  (default = 3)
