@@ -1345,6 +1345,8 @@ private:
         LDAPMessage *   entry;
         BerElement *    elem;
         char *          attribute;
+        CLDAPGetAttributesWrapper(const CLDAPGetAttributesWrapper&) = delete;
+        CLDAPGetAttributesWrapper& operator=(const CLDAPGetAttributesWrapper&) = delete;
 public:
     CLDAPGetAttributesWrapper(LDAP * _ld, LDAPMessage * _entry)
         : ld(_ld), entry(_entry)
@@ -1376,12 +1378,40 @@ public:
 
 class CLDAPMessage
 {
+private:
+    CLDAPMessage(const CLDAPMessage&) = delete;
+    CLDAPMessage& operator=(const CLDAPMessage&) = delete;
 public:
     LDAPMessage *msg;
     CLDAPMessage()       { msg = NULL; }
     ~CLDAPMessage()      { ldapMsgFree(); }
     inline void ldapMsgFree()  { if (msg) { ldap_msgfree(msg); msg = NULL;} }
     inline operator LDAPMessage *() const { return msg; }
+};
+
+class CLDAPErrString
+{
+private:
+    char *errString;
+    CLDAPErrString(const CLDAPErrString&) = delete;
+    CLDAPErrString& operator=(const CLDAPErrString&) = delete;
+public:
+    CLDAPErrString() : errString(NULL) {}
+    ~CLDAPErrString() { if (errString) ldap_memfree(errString); }
+
+    // Retrieves LDAP_OPT_ERROR_STRING for ld, freeing any previously retrieved value first
+    // so this can safely be called again (e.g. on each retry iteration) without leaking.
+    void retrieve(LDAP *ld)
+    {
+        if (errString)
+        {
+            ldap_memfree(errString);
+            errString = NULL;
+        }
+        ldap_get_option(ld, LDAP_OPT_ERROR_STRING, &errString);
+    }
+
+    inline operator const char *() const { return errString; }
 };
 
 //------------------------------------------------------
@@ -2036,7 +2066,7 @@ public:
 
             StringBuffer hostbuf;
             int rc = LDAP_SERVER_DOWN;
-            char *ldap_errstring=NULL;
+            CLDAPErrString ldapErrString;
 #ifndef _WIN32
             // 389ds doesn't surface expiration/lockout status via the plain bind error string (that's
             // AD-specific), so LdapBindDetectExpiry() uses the expiration-status-aware bind for LDAP_389DS
@@ -2058,7 +2088,7 @@ public:
                         rc = LdapUtils::LdapBind(user_ld, m_ldapconfig->getLdapTimeout(), m_ldapconfig->getDomain(), username, password, userdnbuf.str(), m_ldapconfig->getServerType(), m_ldapconfig->getAuthMethod());
 #endif
                         if(rc != LDAP_SUCCESS)
-                            ldap_get_option(user_ld, LDAP_OPT_ERROR_STRING, &ldap_errstring);
+                            ldapErrString.retrieve(user_ld);
                         LDAP_UNBIND(user_ld);
                     }
                     DBGLOG("finished LdapBind for user %s, rc=%d", username, rc);
@@ -2094,7 +2124,7 @@ public:
                     rc = LdapUtils::LdapBind(user_ld, m_ldapconfig->getLdapTimeout(), m_ldapconfig->getDomain(), username, password, userdnbuf.str(), m_ldapconfig->getServerType(), m_ldapconfig->getAuthMethod());
 #endif
                     if(rc != LDAP_SUCCESS)
-                        ldap_get_option(user_ld, LDAP_OPT_ERROR_STRING, &ldap_errstring);
+                        ldapErrString.retrieve(user_ld);
                     LDAP_UNBIND(user_ld);
                 }
             }
@@ -2107,32 +2137,32 @@ public:
                     return false;
                 }
 #endif
-                if (ldap_errstring && *ldap_errstring && strstr(ldap_errstring, " data "))//if extended error strings are available (they are not in windows clients)
+                if (ldapErrString && *ldapErrString && strstr(ldapErrString, " data "))//if extended error strings are available (they are not in windows clients)
                 {
 #ifdef _DEBUG
-                    DBGLOG("LDAPBIND ERR: RC=%d, - '%s'", rc, ldap_errstring);
+                    DBGLOG("LDAPBIND ERR: RC=%d, - '%s'", rc, (const char *)ldapErrString);
 #endif
-                    if (strstr(ldap_errstring, "data 532"))//80090308: LdapErr: DSID-0C0903A9, comment: AcceptSecurityContext error, data 532, v1db0.
+                    if (strstr(ldapErrString, "data 532"))//80090308: LdapErr: DSID-0C0903A9, comment: AcceptSecurityContext error, data 532, v1db0.
                     {
                         DBGLOG("LDAP: Password Expired(1) for user %s", username);
                         user.setAuthenticateStatus(AS_PASSWORD_VALID_BUT_EXPIRED);
                     }
-                    else if (strstr(ldap_errstring, "data 773"))//User must reset password "80090308: LdapErr: DSID-0C0903A9, comment: AcceptSecurityContext error, data 773, v1db1'
+                    else if (strstr(ldapErrString, "data 773"))//User must reset password "80090308: LdapErr: DSID-0C0903A9, comment: AcceptSecurityContext error, data 773, v1db1'
                     {
                         DBGLOG("LDAP: User %s Must Reset Password", username);
                         user.setAuthenticateStatus(AS_PASSWORD_VALID_BUT_EXPIRED);
                     }
-                    else if (strstr(ldap_errstring, "data 533"))
+                    else if (strstr(ldapErrString, "data 533"))
                     {
                         DBGLOG("LDAP: User %s Account Disabled", username);
                         user.setAuthenticateStatus(AS_ACCOUNT_DISABLED);
                     }
-                    else if (strstr(ldap_errstring, "data 701"))
+                    else if (strstr(ldapErrString, "data 701"))
                     {
                         DBGLOG("LDAP: User %s Account Expired", username);
                         user.setAuthenticateStatus(AS_ACCOUNT_EXPIRED);
                     }
-                    else if (strstr(ldap_errstring, "data 775"))
+                    else if (strstr(ldapErrString, "data 775"))
                     {
                         DBGLOG("LDAP: User %s Account Locked Out", username);
                         user.setAuthenticateStatus(AS_ACCOUNT_LOCKED);
@@ -3493,7 +3523,7 @@ public:
 
     virtual bool queryPasswordStatus(ISecUser& user, const char* password)
     {
-        char *ldap_errstring = NULL;
+        CLDAPErrString ldapErrString;
         const char * username = user.getName();
 
         StringBuffer userdn;
@@ -3518,12 +3548,12 @@ public:
 #endif
         int rc = LdapUtils::LdapBind(user_ld, m_ldapconfig->getLdapTimeout(),m_ldapconfig->getDomain(), username, password, userdn, m_ldapconfig->getServerType(), m_ldapconfig->getAuthMethod());
         if(rc != LDAP_SUCCESS)
-            ldap_get_option(user_ld, LDAP_OPT_ERROR_STRING, &ldap_errstring);
+            ldapErrString.retrieve(user_ld);
         LDAP_UNBIND(user_ld);
 
         //Error string ""80090308: LdapErr: DSID-0C0903A9, comment: AcceptSecurityContext error, data 532, v1db0."
         //is returned if pw valid but expired
-        if(rc == LDAP_SUCCESS || strstr(ldap_errstring, "data 532") || strstr(ldap_errstring, "data 773"))//
+        if(rc == LDAP_SUCCESS || (ldapErrString && (strstr(ldapErrString, "data 532") || strstr(ldapErrString, "data 773"))))//
             return true;
         else
             return false;
