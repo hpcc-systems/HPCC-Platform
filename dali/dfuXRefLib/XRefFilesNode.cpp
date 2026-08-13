@@ -492,7 +492,7 @@ bool CXRefFilesNode::AttachPhysical(const char *Partmask, IUserDescriptor* udesc
         IPropertyTree& part = partItr->query();
 
         unsigned partNo = part.getPropInt("Num")-1;
-        makePhysicalPartName(logicalName.str(), partNo+1, numparts, filePath.clear(), 0, DFD_OSdefault, prefix.str(), isDirPerPart, calcStripeNumber(partNo, lfnHash, numStripedDevices));
+        makePhysicalPartName(logicalName.str(), partNo+1, numparts, filePath.clear(), 0, DFD_OSdefault, prefix.str(), isDirPerPart && (numparts>1) ? partNo+1 : 0, calcStripeNumber(partNo, lfnHash, numStripedDevices));
         const char *filename = strrchr(filePath.str(), PATHSEPCHAR) + 1;
 
         const char* _node = part.queryProp("Node[1]");

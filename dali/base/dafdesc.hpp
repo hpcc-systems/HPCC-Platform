@@ -334,7 +334,7 @@ extern da_decl StringBuffer &makePhysicalPartName(
                                 unsigned replicateLevel,            // uses replication directory
                                 DFD_OS os,                          // os must be specified if no dir specified
                                 const char *diroverride,            // override default directory
-                                bool dirPerPart,                    // generate a subdirectory per part
+                                unsigned dirPerPartNum,             // explicit dir-per-part directory number (0 for none)
                                 unsigned stripeNum);                // stripe number
 extern da_decl StringBuffer &makeSinglePhysicalPartName(const char *lname, // single part file
                                                         StringBuffer &result,

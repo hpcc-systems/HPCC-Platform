@@ -155,19 +155,22 @@ public:
     unsigned short nn = 0;  // node on (+N*drv)
     unsigned short pn = 0;  // part number
     bool marked = false;
-    unsigned short stripeNum = 0;      // stripe number
+    unsigned short stripeNum = 0;      // actual stripe directory number (0 if non-striped)
+    unsigned short dirPerPartNum = 0;  // actual dir-per-part directory number (0 if none)
 
     void init(unsigned drv,
               unsigned pf,      // part
               unsigned xn,      // node located on
               unsigned tn,      // total nodes
-              unsigned sn)      // stripe number
+              unsigned sn,      // stripe number
+              unsigned dn)      // dir-per-part number
     {
         nn = (unsigned short)(xn+tn*drv);
         pn = (unsigned short)pf;
         marked = false;
         next = nullptr;
         stripeNum = (unsigned short)sn;
+        dirPerPartNum = (unsigned short)dn;
     }
 
     bool eq(unsigned drv,
@@ -184,9 +187,12 @@ public:
               unsigned pf,      // part
               unsigned xn,      // node located on
               unsigned tn,      // total nodes
-              unsigned sn)      // stripe number
+              unsigned sn,      // stripe number
+              unsigned dn)      // dir-per-part number
     {
         if (stripeNum != (unsigned short)sn)
+            return false;
+        if (dirPerPartNum != (unsigned short)dn)
             return false;
         return eq(drv, pf, xn, tn);
     }
@@ -603,7 +609,7 @@ public:
         if (numParts==NotFound)
             return true;
 
-        if (isContainerized())
+        if (isDirPerPartSupported() || numStripedDevices > 1)
         {
             // MORE: How can we check hosted planes?
             // Checking against group info would still make sense in containerized if hosted plane
@@ -721,21 +727,21 @@ public:
             return numParts!=grp.ordinality() || partNum>=grp.ordinality() || !grp.queryNode(partNum).endpoint().equals(ep);
     }
 
-    void setMisplacedAndPresent(cFileDesc *file, bool misplaced, unsigned partNum, unsigned drv, const char *filePath, unsigned node, unsigned numnodes, unsigned stripeNum)
+    void setMisplacedAndPresent(cFileDesc *file, bool misplaced, unsigned partNum, unsigned drv, const char *filePath, unsigned node, unsigned numnodes, unsigned stripeNum, unsigned dirPerPartNum)
     {
         CriticalBlock block(filesCrit);
 
         if (misplaced) {
             cMisplacedRec *mp = file->misplaced;
             while (mp) {
-                if (mp->eq(drv,partNum,node,numnodes,stripeNum)) {
+                if (mp->eq(drv,partNum,node,numnodes,stripeNum,dirPerPartNum)) {
                     OERRLOG(LOGPFX "Duplicate file with mismatched tail (%d,%d) %s",partNum,node,filePath);
                     return;
                 }
                 mp = mp->next;
             }
             mp = cMisplacedRec::create(allocator);
-            mp->init(drv,partNum,node,numnodes,stripeNum);
+            mp->init(drv,partNum,node,numnodes,stripeNum,dirPerPartNum);
             mp->next = file->misplaced;
             file->misplaced = mp;
             // NB: still perform setpresent() below, so that later 'orphan' and 'found' scanning can spot the part as orphaned or part of a found file.
@@ -1399,10 +1405,8 @@ public:
             clusters.append(gname.str());
             clusterscsl.append(',').append(gname.str());
         }
-        if (isContainerized()) {
-            Owned<const IPropertyTree> plane = getStoragePlaneConfig(_clustname, true);
-            rootdir.set(plane->queryProp("@prefix"));
-        }
+        if (isContainerized())
+            rootdir.set(storagePlane->queryProp("@prefix"));
         else if (basedir.length()==0) {
             const char *ddir = "thor";
             const char *rdir = "thor";
@@ -1639,7 +1643,7 @@ public:
 
                         cFileDesc *file = nullptr;
                         bool addToParent = false;
-                        if (isContainerized()&&parent&&!misplaced) // misplaced files should not be candidates for dir-per-part logic
+                        if (parent)
                         {
                             if (pdir->isDirPerPartCandidate())
                             {
@@ -1667,31 +1671,42 @@ public:
                                 }
                                 else // we are in a dir-per-part directory, but part doesn't look like it belongs in a dir-per-part structure
                                 {
-                                    // Not a dir-per-part file, check for previously moved file
-                                    CLeavableCriticalBlock parentBlock(parent->filesCrit);
-                                    auto it = parent->files.find(fn);
-                                    if (it != parent->files.end() && it->second->isDirPerPart)
+                                    if (misplaced)
                                     {
-                                        // Move file to current directory
-                                        it->second->isDirPerPart = false;
-                                        file = it->second.release();
-                                        parent->files.erase(it);
-                                        parentScopeSz -= filesz;
-
-                                        parentBlock.ensureLeave();
-
-                                        pdir->addExistingFile(fn, file);
-                                        scopeSz += filesz; // moved file - MORE this isn't really correct
+                                        // Keep misplaced dir-per-part parts attached to the parent logical file.
+                                        // Otherwise the misplaced part is tracked as a separate local file and
+                                        // xref emits duplicate orphan entries for the same logical file.
+                                        file = parent->ensureFile(fn, numParts, true, filenameLen, &allocator);
+                                        parentScopeSz += filesz;
+                                        addToParent = true;
                                     }
                                     else
                                     {
-                                        // No previously moved file and no dir-per-part. Create in current directory
-                                        parentBlock.ensureLeave();
+                                        // Not a dir-per-part file, check for previously moved file
+                                        CLeavableCriticalBlock parentBlock(parent->filesCrit);
+                                        auto it = parent->files.find(fn);
+                                        if (it != parent->files.end() && it->second->isDirPerPart)
+                                        {
+                                            // Move file to current directory
+                                            it->second->isDirPerPart = false;
+                                            file = it->second.release();
+                                            parent->files.erase(it);
+                                            parentScopeSz -= filesz;
 
-                                        file = pdir->ensureFile(fn, numParts, false, filenameLen, &allocator);
+                                            parentBlock.ensureLeave();
 
+                                            pdir->addExistingFile(fn, file);
+                                            scopeSz += filesz; // moved file - MORE this isn't really correct
+                                        }
+                                        else
+                                        {
+                                            // No previously moved file and no dir-per-part. Create in current directory
+                                            parentBlock.ensureLeave();
+
+                                            file = pdir->ensureFile(fn, numParts, false, filenameLen, &allocator);
+                                        }
+                                        scopeSz += filesz;
                                     }
-                                    scopeSz += filesz;
                                 }
                             }
                             else
@@ -1707,7 +1722,7 @@ public:
                         }
 
                         cDirDesc *currentOrParent = addToParent ? parent : pdir;
-                        currentOrParent->setMisplacedAndPresent(file, misplaced, partNum, drv, path, node, numnodes, stripeNum);
+                        currentOrParent->setMisplacedAndPresent(file, misplaced, partNum, drv, path, node, numnodes, stripeNum, pdir->dirPerPartNum);
 
                         processedFiles++;
                     }
@@ -2195,7 +2210,6 @@ public:
         ndone[0] = 0;
         ndone[1] = 0;
         unsigned fnameHash = getFilenameHash(scopeBuf.str());
-        const char * prefix = storagePlane->queryProp("@prefix");
         for (drv=0;drv<drvs;drv++) {
             if (abort)
                 return;
@@ -2208,7 +2222,7 @@ public:
             for (unsigned pn=0;pn<f->N;pn++) {
                 if (f->testpresent(drv,pn)&&!f->testmarked(drv,pn)) {
                     RemoteFilename rfn;
-                    constructPartFilename(grp, pn+1, drv, f->N, fnameHash, drv, f->isDirPerPart, scopeBuf.str(), prefix, mask.str(), numStripedDevices, rfn);
+                    constructPartFilename(grp, pn+1, drv, f->N, fnameHash, drv, f->isDirPerPart, scopeBuf.str(), rootdir, mask.str(), numStripedDevices, rfn);
                     offset_t sz;
                     CDateTime dt;
                     bool found;
@@ -2253,8 +2267,9 @@ public:
                     return;
                 if (!mp->marked) {
                     unsigned drv = mp->getDrv(numnodes);
+                    unsigned node = mp->getNode(numnodes);
                     RemoteFilename rfn;
-                    constructPartFilename(grp, mp->pn, drv, f->N, fnameHash, drv, f->isDirPerPart, scopeBuf.str(), prefix, mask.str(), numStripedDevices, rfn);
+                    constructPartFilename(grp, mp->pn+1, f->N, node, drv, f->isDirPerPart ? mp->dirPerPartNum : 0, scopeBuf.str(), rootdir, mask.str(), mp->stripeNum, rfn);
                     offset_t sz;
                     CDateTime dt;
                     if (checkOrphanPhysicalFile(rfn,sz,dt)) {
@@ -3815,10 +3830,12 @@ public:
         XRefAllocator allocator(1);
         std::unique_ptr<cMisplacedRec> rec(cMisplacedRec::create(&allocator));
 
-        rec->init(0, 5, 2, 4, 0); // drv=0, part=5, node=2, totalNodes=4, stripe=0
+        rec->init(0, 5, 2, 4, 4, 2); // drv=0, part=5, node=2, totalNodes=4, stripe=4, dir-per-part=2
 
         CPPUNIT_ASSERT_EQUAL((unsigned short)5, rec->pn);
         CPPUNIT_ASSERT_EQUAL((unsigned short)2, rec->nn);
+        CPPUNIT_ASSERT_EQUAL((unsigned short)4, rec->stripeNum);
+        CPPUNIT_ASSERT_EQUAL((unsigned short)2, rec->dirPerPartNum);
         CPPUNIT_ASSERT_EQUAL(false, rec->marked);
         CPPUNIT_ASSERT(rec->next == nullptr);
     }
@@ -3828,7 +3845,7 @@ public:
         XRefAllocator allocator(1);
         std::unique_ptr<cMisplacedRec> rec(cMisplacedRec::create(&allocator));
 
-        rec->init(0, 5, 2, 4, 0);
+        rec->init(0, 5, 2, 4, 0, 0);
 
         CPPUNIT_ASSERT(rec->eq(0, 5, 2, 4));
         CPPUNIT_ASSERT(!rec->eq(0, 6, 2, 4)); // different part
@@ -3840,7 +3857,7 @@ public:
         XRefAllocator allocator(1);
         std::unique_ptr<cMisplacedRec> rec(cMisplacedRec::create(&allocator));
 
-        rec->init(1, 5, 2, 4, 0); // drv=1, part=5, node=2, totalNodes=4, stripe=0
+        rec->init(1, 5, 2, 4, 0, 0); // drv=1, part=5, node=2, totalNodes=4, stripe=0
 
         CPPUNIT_ASSERT_EQUAL(1U, rec->getDrv(4));
         CPPUNIT_ASSERT_EQUAL(2U, rec->getNode(4));
@@ -4010,7 +4027,7 @@ public:
         unsigned filenameLen = 8; // length of "testfile"
         const char *fn = "testfile._$P$_of_456";
         cFileDesc *file = dir->ensureFile(fn, numParts, false, filenameLen, &allocator);
-        dir->setMisplacedAndPresent(file, false, partNum, drv, "/home/test/testfile._123_of_456", nodeNum, numNodes, 0);
+        dir->setMisplacedAndPresent(file, false, partNum, drv, "/home/test/testfile._123_of_456", nodeNum, numNodes, 0, 0);
         CPPUNIT_ASSERT(!dir->empty(0));
         CPPUNIT_ASSERT(!dir->empty(1));
 
@@ -4041,14 +4058,14 @@ public:
         cFileDesc *file = dir->ensureFile(fn, numParts, false, filenameLen, &allocator);
 
         // Mark as misplaced
-        dir->setMisplacedAndPresent(file, true, partNum, drv, "/home/test/misplacedfile._6_of_10", nodeNum, numNodes, 0);
+        dir->setMisplacedAndPresent(file, true, partNum, drv, "/home/test/misplacedfile._6_of_10", nodeNum, numNodes, 0, 0);
         CPPUNIT_ASSERT(file->misplaced != nullptr);
         CPPUNIT_ASSERT(file->misplaced->pn == partNum);
         CPPUNIT_ASSERT(file->misplaced->nn == nodeNum);
         CPPUNIT_ASSERT(file->misplaced->marked == false);
 
         // Mark as present (not misplaced)
-        dir->setMisplacedAndPresent(file, false, partNum, drv, "/home/test/misplacedfile._6_of_10", nodeNum, numNodes, 0);
+        dir->setMisplacedAndPresent(file, false, partNum, drv, "/home/test/misplacedfile._6_of_10", nodeNum, numNodes, 0, 0);
         CPPUNIT_ASSERT(file->testpresent(drv, partNum));
     }
 
@@ -4154,8 +4171,8 @@ public:
         std::unique_ptr<cDirDesc> dir(cDirDesc::create("directory", &allocator));
         const char *fn = "multi._$P$_of_10";
         cFileDesc *file = dir->ensureFile(fn, 10, false, 8, &allocator);
-        dir->setMisplacedAndPresent(file, true, 1, 0, "/home/test/multi._2_of_10", 0, 20, 0);
-        dir->setMisplacedAndPresent(file, true, 2, 0, "/home/test/multi._3_of_10", 0, 20, 0);
+        dir->setMisplacedAndPresent(file, true, 1, 0, "/home/test/multi._2_of_10", 0, 20, 0, 0);
+        dir->setMisplacedAndPresent(file, true, 2, 0, "/home/test/multi._3_of_10", 0, 20, 0, 0);
         CPPUNIT_ASSERT(file->misplaced != nullptr);
         CPPUNIT_ASSERT(file->misplaced->next != nullptr);
         CPPUNIT_ASSERT(file->misplaced->pn == 2 && file->misplaced->next->pn == 1);
@@ -4176,7 +4193,7 @@ public:
         cFileDesc *file = dir->ensureFile(fn, NotFound, false, 0, &allocator);
         CPPUNIT_ASSERT(file != nullptr);
         CPPUNIT_ASSERT(file->N == 1);
-        dir->setMisplacedAndPresent(file, true, 0, 0, "/home/test/externalfile.dat", 0, 1, 0);
+        dir->setMisplacedAndPresent(file, true, 0, 0, "/home/test/externalfile.dat", 0, 1, 0, 0);
         CPPUNIT_ASSERT(file->misplaced != nullptr);
     }
 };
