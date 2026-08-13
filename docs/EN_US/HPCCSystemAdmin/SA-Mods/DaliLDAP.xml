@@ -56,8 +56,6 @@
           has access to the given file scope.</para>
         </listitem>
 
-        <!-- Removed deprecated filesDefaultUser fallback credentials. All file access must be explicitly authorized. -->
-
         <listitem>
           <para>Since the CheckScopeScans setting is disabled, users can see
           the entire list of logical files, even if user does not have access

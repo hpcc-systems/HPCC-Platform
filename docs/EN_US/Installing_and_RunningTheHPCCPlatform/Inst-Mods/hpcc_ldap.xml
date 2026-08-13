@@ -685,8 +685,6 @@
               <emphasis>ldapserver.</emphasis></para>
 
               <para>Confirm the change when prompted.</para>
-
-              <!-- Removed deprecated filesDefaultUser and filesDefaultPassword fallback credentials. All file access must be explicitly authorized. -->
             </listitem>
 
             <listitem>
