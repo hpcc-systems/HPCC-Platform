@@ -76,6 +76,69 @@ OUTPUT(MySet);
     implicit conversions.</para>
   </sect2>
 
+  <sect2 id="Signed_Unsigned_Integer_Mixing">
+    <title>Signed and Unsigned Integer Mixing<indexterm>
+        <primary>Signed and Unsigned Integer Mixing</primary>
+      </indexterm></title>
+
+    <para>When an expression mixes SIGNED and UNSIGNED integer values, ECL
+    determines a common base type for the sub-expression. That common type is
+    always <emphasis role="bold">SIGNED</emphasis>. This means that an
+    explicit cast to an UNSIGNED type can be silently undone when the other
+    operand in the same expression is SIGNED.</para>
+
+    <para>Bare integer literals (such as <emphasis>100</emphasis>) are treated
+    as SIGNED. Therefore an expression of the form <emphasis>(UNSIGNED8)value
+    % 100</emphasis> is evaluated as <emphasis>(SIGNED) % (SIGNED)</emphasis>,
+    and the result is SIGNED—even though one operand was explicitly cast to
+    UNSIGNED8.</para>
+
+    <para>To guarantee unsigned arithmetic, every operand in the
+    sub-expression must be explicitly cast to an UNSIGNED type.</para>
+
+    <programlisting lang="ECL_Runnable">ExampleRec := RECORD
+    INTEGER8    signed_hash64_value;
+    UNSIGNED8   unsigned_hash64_value;
+    INTEGER2    implicit_casting_result;
+    INTEGER2    explicit_casting_result;
+END;
+
+ExampleRec MakeExampleRec(UNSIGNED1 c) := TRANSFORM
+    h := HASH64(c);
+    SELF.signed_hash64_value    := h;
+    SELF.unsigned_hash64_value  := (UNSIGNED8)h;
+    // bare 100 is SIGNED, so (UNSIGNED8)h % 100 resolves as (SIGNED) % (SIGNED)
+    SELF.implicit_casting_result := (UNSIGNED8)h % 100;
+    // both operands explicitly UNSIGNED: result stays UNSIGNED
+    SELF.explicit_casting_result := (UNSIGNED8)h % (UNSIGNED1)100;
+END;
+
+ds := DATASET(10, MakeExampleRec(COUNTER));
+OUTPUT(ds);
+//*********************************************************************************************
+/*
+Results:
+ signed_hash64_value    unsigned_hash64_value   implicit_casting_result explicit_casting_result
+ ----------------------------------------------------------------------------------------------
+-2056600594528442646    16390143479181108970            -46                     70
+ 2171580671610491919     2171580671610491919            19                      19
+ 6399761937749426484     6399761937749426484            84                      84
+-7818800869821190567    10627943203888361049            -67                     49
+-3590619603682256002    14856124470027295614            -2                      14
+  637561662456678563      637561662456678563            63                      63
+ 4865742928595613128     4865742928595613128            28                      28
+ 9093924194734547693     9093924194734547693            93                      93
+-5124638612836069358    13322105460873482258            -58                     58
+ -896457346697134793    17550286727012416823            -93                     23
+*/</programlisting>
+
+    <para>The <emphasis>implicit_casting_result</emphasis> column produces
+    negative values for rows where HASH64 returned a negative signed integer,
+    because the explicit UNSIGNED8 cast is overridden by implicit promotion.
+    The <emphasis>explicit_casting_result</emphasis> column always produces a
+    non-negative value because both operands are unsigned.</para>
+  </sect2>
+
   <sect2 id="Type_Transfer">
     <title>Type Transfer<indexterm>
         <primary>Type Transfer</primary>
@@ -101,11 +164,11 @@ OUTPUT(MyVal);
 
     <informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="3">
-        <colspec colwidth="90pt" />
+        <colspec colwidth="90pt"/>
 
-        <colspec colwidth="95.00pt" />
+        <colspec colwidth="95.00pt"/>
 
-        <colspec />
+        <colspec/>
 
         <tbody>
           <row>
