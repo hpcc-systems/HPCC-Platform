@@ -14199,7 +14199,7 @@ unsigned exportField(IPropertyTree *table, IHqlExpression *field, unsigned & off
     case type_varunicode:
         //Slightly strange code to remove suffix from various types.  This should really be done a different way
         //since it doesn't really work for unicode locales...
-        while (isdigit_or_underbar((unsigned char)typeName.charAt(typeName.length()-1)))
+        while (typeName.length() && isdigit_or_underbar((unsigned char)typeName.charAt(typeName.length()-1)))
             typeName.remove(typeName.length()-1, 1);
         break;
     }
