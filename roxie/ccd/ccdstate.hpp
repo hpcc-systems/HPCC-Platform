@@ -63,6 +63,8 @@ interface IRoxiePackage : public IHpccPackage
     virtual IPropertyTreeIterator *getInMemoryIndexInfo(const IPropertyTree &graphNode) const = 0;
     // Set the hash to be used for this package
     virtual void setHash(hash64_t newhash)  = 0;
+    // Returns a key identifying packages that resolve file names identically, for pre-load deduplication.
+    virtual hash64_t queryFileResolutionKey() const = 0;
 };
 
 interface IResolvedFileCache

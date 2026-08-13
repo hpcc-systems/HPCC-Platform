@@ -738,6 +738,54 @@ public:
         hash = newhash;
     }
 
+    // Returns a key identifying whether two packages will resolve logical file names identically,
+    // for use in deduplicating the file pre-resolution pass in CRoxieQuerySetManager::load().
+    //
+    // Problem: filenameSummaryMap in load() was keyed by package pointer. In typical production
+    // deployments each query has its own named package (e.g. "MyQuery_Service") that contains
+    // only <Base> references and no direct file content. All such packages share the same ordered
+    // set of base package objects and therefore resolve every logical file name identically.
+    // With N query packages and M files per query the resolution work is O(N*M) even though only
+    // O(M) unique resolutions exist. A representative production package map had 576 such query
+    // packages all with identical 266-base sets, giving a ~576x expansion of the work queue.
+    //
+    // Solution: key the map by a hash of the base package object POINTERS in order. Base objects
+    // are shared instances within a CRoxiePackageMap, so two packages referencing the same bases
+    // in the same order produce the same pointer sequence and therefore the same key. Only one
+    // representative from each equivalence class performs the actual lookupExpandedFileName calls,
+    // collapsing N*M entries to M. Packages that carry their own direct <SuperFile> or <File>
+    // content mix their own object pointer in first, ensuring they never share a key with a
+    // purely base-derived package even if the base sets happen to be identical.
+    //
+    // Why queryHash() cannot be used: the standard hash is seeded with the package's own
+    // serialised XML, which includes the @id attribute (the query name). Every query package
+    // therefore has a unique hash even when packages are file-resolution-equivalent. This is
+    // intentional for query factory cache keying, where two queries with different names must
+    // not share a cache entry, but that property makes it useless for this deduplication.
+    //
+    // NOTE: The following are not hashed because they are not used at this point - they are only
+    // used when the package map is deployed:
+    //          @daliip @remoteStorage @sourceCluster
+    virtual hash64_t queryFileResolutionKey() const override
+    {
+        hash64_t h = HASH64_INIT;
+        const bool compulsory = isCompulsory();
+        h = rtlHash64Data(sizeof(compulsory), &compulsory, h);
+        const bool resolveLocal = resolveLocally();
+        h = rtlHash64Data(sizeof(resolveLocal), &resolveLocal, h);
+        if (node->hasProp("SuperFile") || node->hasProp("File"))
+        {
+            const void *self = this;
+            h = rtlHash64Data(sizeof(self), &self, h);
+        }
+        for (aindex_t i = 0, n = getBaseCount(); i < n; i++)
+        {
+            const void *p = getBaseNode(i);
+            h = rtlHash64Data(sizeof(p), &p, h);
+        }
+        return h;
+    }
+
     virtual IPropertyTreeIterator *getInMemoryIndexInfo(const IPropertyTree &graphNode) const 
     {
         StringBuffer xpath;
@@ -1091,7 +1139,7 @@ public:
                 //Currently keep a single critical section for all packages - could be optimized if necessary
                 CCycleTimer resolveTimer;
                 CriticalSection filenameCrit{SYNC_LOCATION};
-                std::map<const IRoxiePackage *, SummaryMap> filenameSummaryMap;
+                std::map<hash64_t, std::pair<const IRoxiePackage *, SummaryMap>> filenameSummaryMap;
 
                 asyncFor("Async Gather Filenames", numQueries, parallelQueryLoadThreads, [this, querySet, &queryDlls, &filenameCrit, &filenameSummaryMap, &packages](unsigned i)
                 {
@@ -1112,15 +1160,17 @@ public:
                         if (!wu || !package)
                             return;
 
-                        //The filename resolution depends on the package - so we need to create a unique list for each package
+                        //The filename resolution depends on the package - so we need to create a unique list for each resolution-equivalent package class
                         // Gather all the filenames from the workunit
                         SummaryMap wuFilenameSummary;
                         wu->getSummary(SummaryType::ReadIndex, wuFilenameSummary);
                         wu->getSummary(SummaryType::ReadFile, wuFilenameSummary);
 
-                        // Now expand each of the filenames and add them to a unique list for each package
+                        // Group by file-resolution equivalence rather than object identity (see queryFileResolutionKey)
                         CriticalBlock block(filenameCrit);
-                        SummaryMap & filenameSummary = filenameSummaryMap[package];
+                        auto &[representative, filenameSummary] = filenameSummaryMap[package->queryFileResolutionKey()];
+                        if (!representative)
+                            representative = package;
                         StringBuffer expandedFilename;
                         for (auto &entry : wuFilenameSummary)
                         {
@@ -1144,10 +1194,10 @@ public:
 
                 // Expand the nested maps of packages and filenames into a linear list that is easy to walk in parallel.
                 std::vector<std::pair<const IRoxiePackage *, const SummaryMap::value_type *>> filenames;
-                for (auto & packageFilenames : filenameSummaryMap)
+                for (auto & [resKey, pkgEntry] : filenameSummaryMap)
                 {
-                    for (auto &entry : packageFilenames.second)
-                        filenames.emplace_back(packageFilenames.first, &entry);
+                    for (auto &entry : pkgEntry.second)
+                        filenames.emplace_back(pkgEntry.first, &entry);
                 }
 
                 resolvedFiles.reset(new Owned<const IResolvedFile> [filenames.size()]);
