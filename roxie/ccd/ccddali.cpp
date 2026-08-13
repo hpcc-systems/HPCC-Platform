@@ -343,7 +343,8 @@ private:
         {
             try
             {
-                Owned<IRemoteConnection> conn = querySDS().connect(xpath, myProcessSession(), 0, 30*1000);
+                //The whole tree will be cloned - so fetch it all in one go
+                Owned<IRemoteConnection> conn = querySDS().connect(xpath, myProcessSession(), RTM_SUB, 30*1000);
                 if (conn)
                 {
                     Owned <IPropertyTree> daliTree = conn->getRoot();
