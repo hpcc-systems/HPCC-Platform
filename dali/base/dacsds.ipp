@@ -310,6 +310,9 @@ public:
     virtual void deserializeSelfRT(MemoryBuffer &mb) override;
     virtual void deserializeChildrenRT(MemoryBuffer &src) override;
 
+    virtual void deserializeSelfRT(IBufferedSerialInputStream &src, PTreeDeserializeContext &ctx) override;
+    virtual void deserializeChildrenRT(IBufferedSerialInputStream &src, PTreeDeserializeContext &ctx) override;
+
     inline void addServerTreeInfo(byte STIInfo) { serverTreeInfo.store(serverTreeInfo.load() | STIInfo); }
     inline bool queryLazyFetch() const { return connection.queryLazyFetch(); }
     inline CRemoteConnection &queryConnection() { return connection; }

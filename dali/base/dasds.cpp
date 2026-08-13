@@ -2536,7 +2536,7 @@ void CRemoteTreeBase::deserializeChildrenRT(MemoryBuffer &src)
         src.reset(pos); // reset to re-read tree name
         CRemoteTreeBase *child = (CRemoteTreeBase *) create(NULL);
         child->deserializeRT(src);
-        addPropTree(eName, child);
+        deserializeAddPropTree(child);
     }
 }
 
@@ -2548,6 +2548,44 @@ void CRemoteTreeBase::deserializeSelfRT(MemoryBuffer &mb)
     mb.read(_serverId);
     if (_serverId)
         setServerId(_serverId); // ignore deserializing 0 serverId (indicated new)
+}
+
+void CRemoteTreeBase::deserializeRT(IBufferedSerialInputStream &src, PTreeDeserializeContext &ctx)
+{
+    deserializeSelfRT(src, ctx);
+    deserializeChildrenRT(src, ctx);
+}
+
+void CRemoteTreeBase::deserializeSelfRT(IBufferedSerialInputStream &src, PTreeDeserializeContext &ctx)
+{
+    deserializeSelf(src, ctx);
+    assertex(!isnocase());
+    __int64 _serverId;
+    ctx.readEndian(src, _serverId);
+    if (_serverId)
+        setServerId(_serverId); // ignore deserializing 0 serverId (indicated new)
+}
+
+void CRemoteTreeBase::deserializeChildrenRT(IBufferedSerialInputStream &src, PTreeDeserializeContext &ctx)
+{
+    for (;;)
+    {
+        switch (isNextByteZero(src))
+        {
+        case NextByteStatus::nextByteIsNonZero:
+        {
+            CRemoteTreeBase *child = (CRemoteTreeBase *) create(NULL);
+            child->deserializeRT(src, ctx);
+            deserializeAddPropTree(child);
+            break;
+        }
+        case NextByteStatus::nextByteIsZero:
+            src.skip(1);
+            return;
+        case NextByteStatus::endOfStream:
+            throwUnexpectedX("deserializeChildrenRT: end of stream, expected child name or terminator");
+        }
+    }
 }
 
 void CRemoteTreeBase::setServerId(__int64 _serverId)
@@ -2861,6 +2899,14 @@ public:
         assertex(!isnocase());
         byte STIInfo;
         src.read(STIInfo);
+    }
+
+    virtual void deserializeSelfRT(IBufferedSerialInputStream &src, PTreeDeserializeContext &ctx) override
+    {
+        CRemoteTreeBase::deserializeSelfRT(src, ctx);
+        assertex(!isnocase());
+        byte STIInfo;
+        ::read(src, STIInfo);
     }
 
     virtual void removingElement(IPropertyTree *tree, unsigned pos) override
@@ -6961,7 +7007,9 @@ inline void serverToClientTree(CServerRemoteTree &src, CClientRemoteTree &dst)
     {
         MemoryBuffer mb;
         src.serializeSelfRT(mb, false);
-        dst.deserializeSelfRT(mb);
+        Owned<IBufferedSerialInputStream> mbStream(createMemoryBufferSerialStream(mb));
+        PTreeDeserializeContext ctx;
+        dst.deserializeSelfRT(*mbStream, ctx);
     }
     else
         dst.cloneIntoSelf(src, false);

@@ -236,6 +236,11 @@ public:
     void deserializeRT(MemoryBuffer &src);
     virtual void deserializeSelfRT(MemoryBuffer &src);
     virtual void deserializeChildrenRT(MemoryBuffer &src);
+
+    void deserializeRT(IBufferedSerialInputStream &src, PTreeDeserializeContext &ctx);
+    virtual void deserializeSelfRT(IBufferedSerialInputStream &src, PTreeDeserializeContext &ctx);
+    virtual void deserializeChildrenRT(IBufferedSerialInputStream &src, PTreeDeserializeContext &ctx);
+
     virtual bool isOrphaned() const { return false; }
 
     void clearChildren();

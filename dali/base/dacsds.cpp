@@ -454,16 +454,14 @@ void extractServerIds(IPropertyTree &tree, MemoryBuffer &mb, bool completeTailBr
         mb.append(completeTailBranch ? (unsigned)0 : (unsigned)1);
 }
 
-static void walkAndFill(IPropertyTree &tree, CClientRemoteTree &parent, MemoryBuffer &mb, bool childrenCanBeMissing)
+static void walkAndFill(IPropertyTree &tree, CClientRemoteTree &parent, IBufferedSerialInputStream &src, PTreeDeserializeContext &ctx, bool childrenCanBeMissing)
 {
     parent.createChildMap();
-    bool r;
+    bool r = true;
     if (childrenCanBeMissing)
-        mb.read(r);
-    else
-        r = true;
+        ::read(src, r);
     if (r)
-        parent.deserializeChildrenRT(mb);
+        parent.deserializeChildrenRT(src, ctx);
     Owned<IPropertyTreeIterator> iter = tree.getElements("*");
     ForEach (*iter)
     {
@@ -472,7 +470,7 @@ static void walkAndFill(IPropertyTree &tree, CClientRemoteTree &parent, MemoryBu
         path.append("[").append(elem.queryProp("@pos")).append("]");
         CClientRemoteTree *child = (CClientRemoteTree *)parent.queryPropTree(path.str());
         assertex(child);
-        walkAndFill(elem, *child, mb, childrenCanBeMissing);
+        walkAndFill(elem, *child, src, ctx, childrenCanBeMissing);
     }
 }
 
@@ -585,6 +583,34 @@ void CClientRemoteTree::deserializeChildrenRT(MemoryBuffer &src)
         src.reset(pos);
     }
     CRemoteTreeBase::deserializeChildrenRT(src);
+}
+
+void CClientRemoteTree::deserializeSelfRT(IBufferedSerialInputStream &src, PTreeDeserializeContext &ctx)
+{
+    CRemoteTreeBase::deserializeSelfRT(src, ctx);
+    byte serializedServerTreeInfo;
+    ::read(src, serializedServerTreeInfo);
+    serverTreeInfo.store(serializedServerTreeInfo);
+}
+
+void CClientRemoteTree::deserializeChildrenRT(IBufferedSerialInputStream &src, PTreeDeserializeContext &ctx)
+{
+    if (!children)
+    {
+        switch (isNextByteZero(src))
+        {
+        case NextByteStatus::nextByteIsNonZero:
+            createChildMap();
+            break;
+        case NextByteStatus::nextByteIsZero:
+        case NextByteStatus::endOfStream:
+            break;
+        }
+    }
+    CRemoteTreeBase::deserializeChildrenRT(src, ctx);
+    //If children have been deserialized, then clear the STI_HaveChildren flag to avoid having to lock the cs in checkChildren()
+    if (children)
+        serverTreeInfo.store(serverTreeInfo.load() & ~STI_HaveChildren);
 }
 
 bool CClientRemoteTree::renameTree(IPropertyTree *child, const char *newName)
@@ -1375,7 +1401,11 @@ CRemoteTreeBase *CClientSDSManager::get(CRemoteConnection &connection, __int64 s
         {
             CDisableFetchChangeBlock block(connection);
             tree = new CClientRemoteTree(connection);
-            tree->deserializeSelfRT(mb);
+            {
+                Owned<IBufferedSerialInputStream> mbStream(createMemoryBufferSerialStream(mb));
+                PTreeDeserializeContext ctx(mb);
+                tree->deserializeSelfRT(*mbStream, ctx);
+            }
             break;
         }
         case DAMP_SDSREPLY_EMPTY:
@@ -1430,7 +1460,11 @@ void CClientSDSManager::getChildren(CRemoteTreeBase &parent, CRemoteConnection &
         mb.read(r);
         if (!r) return;
     }
-    parent.deserializeChildrenRT(mb);
+    {
+        Owned<IBufferedSerialInputStream> mbStream(createMemoryBufferSerialStream(mb));
+        PTreeDeserializeContext ctx(mb);
+        parent.deserializeChildrenRT(*mbStream, ctx);
+    }
 
     protraceRecordAt(EventDaliGetChildren, elapsedTime.startCycles(), getProtraceTicks(elapsedTime.elapsedCycles()));
     if (unlikely(recordingEvents()))
@@ -1521,8 +1555,12 @@ void CClientSDSManager::ensureLocal(CRemoteConnection &connection, CRemoteTreeBa
             assertex(false);
     }
 
-    ForEachItemIn(m, matched)
-        walkAndFill(matched.item(m), matchedLocals.item(m), remoteGetMb, childrenCanBeMissing);
+    {
+        Owned<IBufferedSerialInputStream> mbStream(createMemoryBufferSerialStream(remoteGetMb));
+        PTreeDeserializeContext ctx(remoteGetMb);
+        ForEachItemIn(m, matched)
+            walkAndFill(matched.item(m), matchedLocals.item(m), *mbStream, ctx, childrenCanBeMissing);
+    }
 
     protraceRecordAt(EventDaliEnsureLocal, elapsedTime.startCycles(), getProtraceTicks(elapsedTime.elapsedCycles()));
     if (unlikely(recordingEvents()))
@@ -1571,19 +1609,19 @@ void CClientSDSManager::getChildrenFor(CRTArray &childLessList, CRemoteConnectio
     }
 
     CDisableFetchChangeBlock block(connection);
+    Owned<IBufferedSerialInputStream> mbStream(createMemoryBufferSerialStream(mb));
+    PTreeDeserializeContext ctx(mb);
     ForEachItemIn(f2, childLessList)
     {
         CRemoteTreeBase &parent = childLessList.item(f2);
         parent.createChildMap();
         if (parent.queryServerId())
         {
-            bool r;
+            bool r = true;
             if (childrenCanBeMissing)
-                mb.read(r);
-            else
-                r = true;
+                ::read(*mbStream, r);
             if (r)
-                parent.deserializeChildrenRT(mb);
+                parent.deserializeChildrenRT(*mbStream, ctx);
         }
     }
 
@@ -1617,11 +1655,13 @@ IPropertyTreeIterator *CClientSDSManager::getElements(CRemoteConnection &connect
             mb.read(count);
             CDisableFetchChangeBlock block(connection);
             Owned<DaliPTArrayIterator> iter = new DaliPTArrayIterator();
+            Owned<IBufferedSerialInputStream> mbStream(createMemoryBufferSerialStream(mb));
+            PTreeDeserializeContext ctx(mb);
             while (count--)
             {
                 CClientRemoteTree *tree = new CClientRemoteTree(connection);
                 iter->array.append(*tree);
-                tree->deserializeSelfRT(mb);
+                tree->deserializeSelfRT(*mbStream, ctx);
             }
 
             protraceRecordAt(EventDaliGetElements, elapsedTime.startCycles(), getProtraceTicks(elapsedTime.elapsedCycles()));
@@ -1820,10 +1860,13 @@ IRemoteConnections *CClientSDSManager::connect(IMultipleConnector *mConnect, Ses
                 if (queryProperties().getPropBool("Client/@LogConnection"))
                     DBGLOG("SDSManager::connect() - IMultipleConnector: RemoteConnection ID<%" I64F "x>, timeout<%d>", connId, timeout);
 
+                Owned<IBufferedSerialInputStream> mbStream(createMemoryBufferSerialStream(mb));
+                PTreeDeserializeContext ctx(mb);
                 CClientRemoteTree *tree;
-                { CDisableFetchChangeBlock block(*conn);
+                {
+                    CDisableFetchChangeBlock block(*conn);
                     tree = new CClientRemoteTree(*conn);
-                    tree->deserializeRT(mb);
+                    tree->deserializeRT(*mbStream, ctx);
                 }
                 conn->setRoot(tree);
                 connections.replace(*conn);
@@ -1875,10 +1918,13 @@ IRemoteConnection *CClientSDSManager::connect(const char *xpath, SessionId id, u
             if (queryProperties().getPropBool("Client/@LogConnection"))
                 DBGLOG("SDSManager::connect(): xpath<%s>, RemoteConnection ID<%" I64F "x>, mode<%x>, timeout<%d>", xpath, connId, mode, timeout);
 
+            Owned<IBufferedSerialInputStream> mbStream(createMemoryBufferSerialStream(mb));
+            PTreeDeserializeContext ctx(mb);
             CClientRemoteTree *tree;
-            { CDisableFetchChangeBlock block(*conn);
+            {
+                CDisableFetchChangeBlock block(*conn);
                 tree = new CClientRemoteTree(*conn);
-                tree->deserializeRT(mb);
+                tree->deserializeRT(*mbStream, ctx);
             }
             conn->setRoot(tree);
             connections.replace(*conn);

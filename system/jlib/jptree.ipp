@@ -39,15 +39,17 @@
 class PTreeDeserializeContext
 {
 public:
-    std::vector<size32_t> matchOffsets;
-    bool swapEndian = false;
-
     PTreeDeserializeContext()
     {
         // Since most nodes have <= 15 attribute name/value pairs;
         // reserve space up front to avoid reallocations.
         constexpr size32_t expectedMaximumAttributeOffsetCount = 15 * 2;
         matchOffsets.reserve(expectedMaximumAttributeOffsetCount);
+    }
+
+    PTreeDeserializeContext(const MemoryBuffer & mb) : PTreeDeserializeContext()
+    {
+        swapEndian = mb.needSwapEndian();
     }
 
     template <class T>
@@ -65,6 +67,12 @@ public:
         for (size32_t i = 0; i < sizeof(T); ++i)
             dst[i] = temp[sizeof(T) - 1 - i];
     }
+
+public:
+    std::vector<size32_t> matchOffsets;
+
+protected:
+    bool swapEndian = false;
 };
 
 ///////////////////
@@ -946,6 +954,7 @@ protected:
     AttrValue *findAttribute(const char *k) const;
     const char *getAttributeValue(const char *k, const char * dft) const;
     AttrValue *getNextAttribute(AttrValue *cur) const;
+    IPropertyTree *deserializeAddPropTree(IPropertyTree *child);
 
 private:
     void addLocal(size32_t l, const void *data, bool binary=false, int pos=-1);

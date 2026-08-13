@@ -190,7 +190,7 @@ public:
     
     inline MemoryBuffer &  clear() { curLen = 0; readPos = 0; return *this; }
 
-    inline bool     needSwapEndian() { return swapEndian; }
+    inline bool     needSwapEndian() const { return swapEndian; }
     int             setEndian(int endian);          // pass __[BIG|LITTLE]_ENDIAN
     bool            setSwapEndian(bool swap);
     void            swapWith(MemoryBuffer & other);

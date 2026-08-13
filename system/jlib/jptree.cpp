@@ -2372,6 +2372,38 @@ void PTree::addPTreeArrayItem(IPropertyTree *existing, const char *xpath, PTree 
     }
 }
 
+// Optimize addPropTree directly: during deserialization
+// 1. we own the child, so the connection lock in CClientRemoteTree::addPropTree is unnecessary.
+// 2. The xpath matches the name of the element so no need to set
+// 3. alwaysUseArray is false
+// 4. Don't call checkChildren() - that can cause a dependency issue when deserializing on Demand
+// 5. No need to check if it is shared
+IPropertyTree * PTree::deserializeAddPropTree(IPropertyTree * newChild)
+{
+    dbgassertex(isEquivalent(newChild) && !newChild->IsShared() && isCaseInsensitive() == newChild->isCaseInsensitive());
+
+    PTree * val = static_cast<PTree *>(newChild);
+
+    const char * xpath = val->queryName();
+
+    addingNewElement(*newChild, -1);
+    if (children)
+    {
+        IPropertyTree *child = children->query(xpath);
+        if (child)
+        {
+            addPTreeArrayItem(child, xpath, val);
+            return newChild;
+        }
+    }
+    else
+        createChildMap();
+
+    children->set(xpath, newChild);
+    return newChild;
+}
+
+
 IPropertyTree *PTree::addPropTree(const char *xpath, IPropertyTree *val, bool alwaysUseArray)
 {
     if (!xpath || '\0' == *xpath)
@@ -3192,7 +3224,7 @@ void PTree::deserializeFromStream(IBufferedSerialInputStream &src, PTreeDeserial
         case NextByteStatus::nextByteIsNonZero:
         {
             IPropertyTree *child = create(src, ctx);
-            addPropTree(child->queryName(), child);
+            deserializeAddPropTree(child);
             break;
         }
         case NextByteStatus::nextByteIsZero:
@@ -4671,8 +4703,7 @@ IPropertyTree *createPTree(MemoryBuffer &src, byte flags)
 {
     Owned<IBufferedSerialInputStream> stream = createBufferedSerialInputStream(src);
     Owned<IPropertyTree> tree = createPTree(nullptr, flags);
-    PTreeDeserializeContext ctx;
-    ctx.swapEndian = src.needSwapEndian();
+    PTreeDeserializeContext ctx(src);
     tree->deserializeFromStream(*stream, ctx);
     return tree.getClear();
 }
