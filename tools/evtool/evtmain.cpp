@@ -37,6 +37,7 @@ int main(int argc, const char* argv[])
     InitModuleObjects();
 
     CEvtCommandGroup evtool({
+        { "describe", createDescribeCommand },
         { "dump", createDumpCommand },
         { "save-as", createSaveAsCommand },
         { "sim", createSimCommand },

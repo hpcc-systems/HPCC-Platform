@@ -43,7 +43,8 @@ class event_decl CDescribeEventsOp : public CEventConsumingOp
 {
 public:
     void setFormat(DescribeOutputFormat _format);
-    void selectSection(DescribeSection section);
+    void setSectionOverrides(DescribeSection sections);
+    void addSectionOverride(DescribeSection section);
 
     virtual bool ready() const override;
     virtual bool doOp() override;
@@ -54,6 +55,5 @@ private:
 
 private:
     DescribeOutputFormat format{DescribeOutputFormat::yaml};
-    DescribeSection selectedSections{DescribeSection::none};
-    bool explicitSectionSelection{false};
+    DescribeSection sectionOverrides{DescribeSection::none};
 };

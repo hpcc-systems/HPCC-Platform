@@ -81,8 +81,8 @@ public:
     }
 
 private:
-    Enum beginValue;
-    Enum endValue;
+    const Enum beginValue;
+    const Enum endValue;
 };
 
 constexpr EnumRange<EventType> allEventTypes()
@@ -247,10 +247,14 @@ void CDescribeEventsOp::setFormat(DescribeOutputFormat _format)
     format = _format;
 }
 
-void CDescribeEventsOp::selectSection(DescribeSection section)
+void CDescribeEventsOp::setSectionOverrides(DescribeSection sections)
 {
-    explicitSectionSelection = true;
-    selectedSections |= section;
+    sectionOverrides = sections;
+}
+
+void CDescribeEventsOp::addSectionOverride(DescribeSection section)
+{
+    sectionOverrides |= section;
 }
 
 bool CDescribeEventsOp::ready() const
@@ -541,9 +545,9 @@ void CDescribeEventsOp::appendDescriptionTree(IPropertyTree& description)
 
 bool CDescribeEventsOp::isSectionEnabled(DescribeSection section) const
 {
-    if (!explicitSectionSelection)
+    if (sectionOverrides == DescribeSection::none)
         return true;
-    return hasMask(selectedSections, section);
+    return hasMask(sectionOverrides, section);
 }
 
 #undef ForEachContextBitIn
@@ -608,7 +612,7 @@ public:
         START_TEST
         CDescribeEventsOp op;
         op.setFormat(DescribeOutputFormat::json);
-        op.selectSection(DescribeSection::attributes);
+        op.addSectionOverride(DescribeSection::attributes);
 
         StringBuffer output;
         Owned<IBufferedSerialOutputStream> stream;
@@ -659,7 +663,7 @@ public:
         {
             CDescribeEventsOp op;
             op.setFormat(DescribeOutputFormat::json);
-            op.selectSection(section);
+            op.addSectionOverride(section);
 
             StringBuffer output;
             Owned<IBufferedSerialOutputStream> stream;
@@ -684,8 +688,8 @@ public:
         START_TEST
         CDescribeEventsOp op;
         op.setFormat(DescribeOutputFormat::json);
-        op.selectSection(DescribeSection::contexts);
-        op.selectSection(DescribeSection::attributes);
+        op.addSectionOverride(DescribeSection::contexts);
+        op.addSectionOverride(DescribeSection::attributes);
 
         StringBuffer output;
         Owned<IBufferedSerialOutputStream> stream;
