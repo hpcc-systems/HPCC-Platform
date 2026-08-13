@@ -17,6 +17,7 @@ These documents are generated from Markdown by VitePress.  See [VitePress Markdo
 - [Code Submission Guidelines](CodeSubmissions.md):  Guidelines for submitting PRs
 - [Code Review Guidelines](CodeReviews.md):  Guidelines for reviewing submissions PRs
 - [Building with Github Actions](UserBuildAssets.md): How to build source using Github Actions
+- [Running HPCC Platform on macOS](RunningHPCCOnMacOS.md): Manual configuration for a local macOS runtime
 - [Writing Developer Documentation](/devdoc/docs/ContributeDocs.md): How to ensure your documentation conforms to our style and voice
 - [Log Cost Mitigation Outline](/devdoc/docs/LogCostMitigation.md): Outline of log cost mitigation heuristics for developers
 
