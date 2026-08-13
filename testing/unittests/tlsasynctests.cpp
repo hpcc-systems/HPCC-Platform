@@ -133,8 +133,10 @@ private:
     std::atomic<unsigned> acceptCount{0};
 
 public:
-    SimpleTLSEchoServer() : Thread("SimpleTLSEchoServer"), port(0)
+    SimpleTLSEchoServer(ISecureSocketContext *_secureContext = nullptr) : Thread("SimpleTLSEchoServer"), port(0)
     {
+        if (_secureContext)
+            secureContext.setown(_secureContext);
     }
 
     ~SimpleTLSEchoServer()
@@ -187,11 +189,14 @@ public:
         {
             startupSucceeded = false;
 
-            // Create TLS context for server
-            Owned<IPropertyTree> config = createPTree("tls");
-            config->setProp("certificate", cert.queryCert());
-            config->setProp("privatekey", cert.queryKey());
-            secureContext.setown(createSecureSocketContextEx2(config, ServerSocket));
+            // Create default TLS context for server if one was not injected.
+            if (!secureContext)
+            {
+                Owned<IPropertyTree> config = createPTree("tls");
+                config->setProp("certificate", cert.queryCert());
+                config->setProp("privatekey", cert.queryKey());
+                secureContext.setown(createSecureSocketContextEx2(config, ServerSocket));
+            }
 
             // Create listening socket on any available port
             listenSocket.setown(createTestListenerSocket().getClear());
@@ -684,6 +689,88 @@ public:
     }
 };
 
+class CTestSyncedTlsConfig final : public CInterfaceOf<ISyncedPropertyTree>
+{
+private:
+    mutable CriticalSection crit{SYNC_LOCATION};
+    Owned<IPropertyTree> tree;
+    unsigned version = 1;
+
+public:
+    CTestSyncedTlsConfig(const char *certPem, const char *keyPem)
+    {
+        tree.setown(createPTree("tls"));
+        tree->setProp("certificate", certPem);
+        tree->setProp("privatekey", keyPem);
+    }
+
+    void setInvalidPrivateKey()
+    {
+        CriticalBlock block(crit);
+        Owned<IPropertyTree> updated = createPTreeFromIPT(tree);
+        updated->setProp("privatekey", "not-a-private-key");
+        tree.setown(updated.getClear());
+        version++;
+    }
+
+    void setTrustedPeersForVerify(const char *trustedPeers)
+    {
+        CriticalBlock block(crit);
+        Owned<IPropertyTree> updated = createPTreeFromIPT(tree);
+        if (!updated->queryPropTree("verify"))
+            updated->addPropTree("verify", createPTree());
+        updated->setPropBool("verify/@enable", true);
+        updated->setPropBool("verify/@accept_selfsigned", true);
+        updated->setProp("verify/trusted_peers", trustedPeers);
+        tree.setown(updated.getClear());
+        version++;
+    }
+
+    virtual unsigned getVersion() const override
+    {
+        CriticalBlock block(crit);
+        return version;
+    }
+
+    virtual const IPropertyTree * getTree() const override
+    {
+        CriticalBlock block(crit);
+        return LINK(tree);
+    }
+
+    virtual bool getProp(MemoryBuffer & result, const char * xpath) const override
+    {
+        StringBuffer value;
+        if (!getProp(value, xpath))
+            return false;
+        result.clear().append(value.length(), value.str());
+        return true;
+    }
+
+    virtual bool getProp(StringBuffer & result, const char * xpath) const override
+    {
+        CriticalBlock block(crit);
+        if (!tree)
+            return false;
+        const char *value = tree->queryProp(xpath);
+        if (!value)
+            return false;
+        result.set(value);
+        return true;
+    }
+
+    virtual bool isStale() const override
+    {
+        return false;
+    }
+
+    virtual bool isValid() const override
+    {
+        CriticalBlock block(crit);
+        return (tree != nullptr);
+    }
+};
+
 class TLSAsyncTests : public CppUnit::TestFixture
 {
 private:
@@ -693,6 +780,9 @@ private:
 
     CPPUNIT_TEST_SUITE(TLSAsyncTests);
         CPPUNIT_TEST(testSyncTLSAccept);
+
+        CPPUNIT_TEST(testSyncedContextRefreshOnVersionChange);
+        CPPUNIT_TEST(testSyncedContextPeerPolicyRotationStress);
         CPPUNIT_TEST(testAsyncTLSAcceptBasic);
         CPPUNIT_TEST(testAsyncTLSAcceptFallback);
         CPPUNIT_TEST(testAsyncTLSAcceptMultiple);
@@ -720,6 +810,7 @@ private:
         CPPUNIT_TEST(testIOUringDisabledViaParameter);
         CPPUNIT_TEST(testIOUringDisabledViaConfig);
         CPPUNIT_TEST(testTLSIOUringDisabledViaConfig);
+
         // Note: testAsyncTLSBothSidesAsync is not included - both client and server async
         // on the same TCP connection within the same process is not a real-world scenario.
         // In production, async client and async server are in different processes with
@@ -779,11 +870,16 @@ protected:
         return config.getClear();
     }
 
-    Owned<IPropertyTree> createTLSClientConfig()
+    Owned<IPropertyTree> createTLSClientConfig(bool includeClientCert = false)
     {
         Owned<IPropertyTree> config = createPTree("tls");
-        // Client doesn't need cert/key for basic testing
-        // In production, you would configure proper client certs
+        if (includeClientCert)
+        {
+            CTLSTestCertificate cert;
+            config->setProp("certificate", cert.queryCert());
+            config->setProp("privatekey", cert.queryKey());
+        }
+        // Most tests do not require client cert/key.
         return config.getClear();
     }
 
@@ -833,6 +929,189 @@ public:
         }
 
         server.stop();
+    }
+
+    void testSyncedContextRefreshOnVersionChange()
+    {
+        // Intent:
+        // 1) Perform an initial TLS handshake that should succeed with the baseline key/cert.
+        // 2) Rotate the synced server config to an invalid private key (and bump version), then
+        //    perform a second handshake that should fail.
+        //
+        // The expected failure of the second handshake is the proof that the server consumed
+        // the refreshed synced context instead of continuing to use stale SSL state.
+        CTLSTestCertificate cert;
+        Owned<CTestSyncedTlsConfig> syncedConfig = new CTestSyncedTlsConfig(cert.queryCert(), cert.queryKey());
+        Owned<ISecureSocketContext> serverContext = createSecureSocketContextSynced(syncedConfig, ServerSocket);
+
+        SimpleTLSEchoServer server(serverContext.getClear());
+        server.start();
+
+        try
+        {
+            SocketEndpoint ep("127.0.0.1", server.getPort());
+
+            auto tryHandshake = [&](bool expectSuccess)
+            {
+                bool success = false;
+                StringBuffer failureReason;
+                try
+                {
+                    // Use a generous timeout so interactive debugging/breakpoints are less likely
+                    // to cause false failures in this test.
+                    Owned<ISocket> socket = ISocket::connect_timeout(ep, 30000);
+                    ASSERT(socket.get() != nullptr);
+
+                    Owned<IPropertyTree> tlsConfig = createTLSClientConfig();
+                    Owned<ISecureSocketContext> clientContext = createSecureSocketContextEx2(tlsConfig, ClientSocket);
+                    Owned<ISecureSocket> secureSocket = clientContext->createSecureSocket(socket.getClear());
+
+                    int status = secureSocket->secure_connect(SSLogMin);
+                    success = (status == 0);
+                    if (!success)
+                        failureReason.appendf("secure_connect returned %d", status);
+                    secureSocket->close();
+                }
+                catch (IException *e)
+                {
+                    e->errorMessage(failureReason);
+                    e->Release();
+                    success = false;
+                }
+
+                if (expectSuccess)
+                {
+                    CPPUNIT_ASSERT_MESSAGE(failureReason.length() ? failureReason.str() : "Expected TLS handshake to succeed", success);
+                }
+                else
+                {
+                    // Intentional: after rotating to an invalid private key, a new handshake
+                    // should fail if synced-context refresh is applied.
+                    CPPUNIT_ASSERT_MESSAGE("Expected TLS handshake failure after invalid key rotation", !success);
+                }
+            };
+
+            auto waitForAcceptCount = [&](unsigned expected)
+            {
+                unsigned retries = 20;
+                while (server.getAcceptCount() < expected && retries--)
+                    Sleep(50);
+            };
+
+            // Baseline handshake should succeed using the initial synced TLS context.
+            tryHandshake(true);
+            waitForAcceptCount(1);
+            ASSERT(server.getAcceptCount() == 1);
+
+            // Rotate to an invalid key and bump the synced version. The next handshake
+            // is expected to fail; this negative check proves the server consumed the
+            // updated synced context instead of continuing with stale SSL state.
+            syncedConfig->setInvalidPrivateKey();
+            tryHandshake(false);
+
+            Sleep(200);
+            ASSERT(server.getAcceptCount() == 1);
+        }
+        catch (IException *e)
+        {
+            StringBuffer msg;
+            e->errorMessage(msg);
+            e->Release();
+            CPPUNIT_FAIL(msg.str());
+        }
+
+        server.stop();
+    }
+
+    void testSyncedContextPeerPolicyRotationStress()
+    {
+        // Intent:
+        // Exercise concurrency by repeatedly rotating synced context
+        // verify/trusted_peers policy while creating new sockets and handshakes.
+        //
+        // verify/trusted_peers is toggled between allow("localhost") and deny("blocked-peer").
+        // The client always presents a cert with CN=localhost, so handshakes should show a
+        // deterministic alternation of success/failure if each new socket gets the updated
+        // snapshot consistently. The regression value is stability and correct peer-policy
+        // application under repeated context rotation.
+        try
+        {
+            CTLSTestCertificate cert;
+            Owned<CTestSyncedTlsConfig> syncedConfig = new CTestSyncedTlsConfig(cert.queryCert(), cert.queryKey());
+            syncedConfig->setTrustedPeersForVerify("localhost");
+            Owned<ISecureSocketContext> serverContext = createSecureSocketContextSynced(syncedConfig, ServerSocket);
+
+            SimpleTLSEchoServer server(serverContext.getClear());
+            server.start();
+
+            SocketEndpoint ep("127.0.0.1", server.getPort());
+
+            auto tryHandshakeWithClientCert = [&]() -> bool
+            {
+                try
+                {
+                    Owned<ISocket> socket = ISocket::connect_timeout(ep, 5000);
+                    if (!socket)
+                        return false;
+
+                    Owned<IPropertyTree> tlsConfig = createTLSClientConfig(true);
+                    Owned<ISecureSocketContext> clientContext = createSecureSocketContextEx2(tlsConfig, ClientSocket);
+                    Owned<ISecureSocket> secureSocket = clientContext->createSecureSocket(socket.getClear());
+
+                    int status = secureSocket->secure_connect(SSLogMin);
+                    if (status != 0)
+                        return false;
+
+                    // secure_connect() may succeed before the server later rejects the peer.
+                    // Require an echo round-trip so denied peers are counted as failures.
+                    const char *msg = "x";
+                    secureSocket->write(msg, 1);
+
+                    char reply = 0;
+                    size32_t bytesRead = 0;
+                    secureSocket->read(&reply, 1, 1, bytesRead, 2);
+                    secureSocket->close();
+                    if (bytesRead == 1 && reply == 'x')
+                        return true;
+                    return false;
+                }
+                catch (IException *e)
+                {
+                    e->Release();
+                    return false;
+                }
+            };
+
+            constexpr unsigned attempts = 40;
+            unsigned successCount = 0;
+            unsigned failureCount = 0;
+
+            for (unsigned i = 0; i < attempts; i++)
+            {
+                bool allowLocalhost = ((i % 2) == 0);
+                syncedConfig->setTrustedPeersForVerify(allowLocalhost ? "localhost" : "blocked-peer");
+
+                bool handshakeSucceeded = tryHandshakeWithClientCert();
+                if (handshakeSucceeded)
+                    successCount++;
+                else
+                    failureCount++;
+            }
+
+            if (successCount == 0)
+                CPPUNIT_FAIL("Expected at least one successful handshake during peer-policy rotation");
+            if (failureCount == 0)
+                CPPUNIT_FAIL("Expected at least one failed handshake during peer-policy rotation");
+
+            server.stop();
+        }
+        catch (IException *e)
+        {
+            StringBuffer msg;
+            e->errorMessage(msg);
+            e->Release();
+            CPPUNIT_FAIL(msg.str());
+        }
     }
 
     void testAsyncTLSAcceptBasic()
