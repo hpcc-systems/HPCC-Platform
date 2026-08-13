@@ -602,7 +602,7 @@ public:
         return fn;
     }
 
-    static bool isMisplaced(unsigned partNum, unsigned numParts, const SocketEndpoint &ep, IGroup &grp, const char *fullPath, unsigned filePathOffset, unsigned stripeNum, unsigned numStripedDevices)
+    static bool isMisplaced(unsigned partNum, unsigned numParts, const SocketEndpoint &ep, IGroup &grp, const char *fullPath, unsigned filePathOffset, unsigned stripeNum, unsigned numStripedDevices, unsigned filenameLen)
     {
         // External files (i.e. no ._n_of_m suffix) are considered misplaced so we can get
         // the node where the external file was found for addExternalFoundFile later
@@ -691,19 +691,33 @@ public:
             if (numStripedDevices==1)
                 return false;
 
-            // Get pointer to extension in filename to exclude for hashing
-            const char *ext = filenameEndPtr-1;
-            while (true)
+            // Use filenameLen to determine the end of the base filename (excluding the ._P_of_N
+            // part mask and any trailing extension like .tmp). The hash should only cover the
+            // logical file name (scopes + base filename), matching how the stripe was originally calculated.
+            const char *ext = nullptr;
+            if (filenameLen > 0)
             {
-                if (ext==filename)
+                // filename points at the '/' separating the last scope from the base filename,
+                // except for a file in the root directory where it points at the first character
+                // of the base filename itself (no leading '/' to skip).
+                const char *baseName = (filename==filePath) ? filename : filename + 1;
+                ext = baseName + filenameLen; // points past the base filename to the part mask
+            }
+            else
+            {
+                ext = filenameEndPtr - 1;
+                while (true)
                 {
-                    // No extension found, reset to end ptr to use full filename in code below
-                    ext = filenameEndPtr;
-                    break;
+                    if (ext==filename)
+                    {
+                        // No extension found, reset to end ptr to use full filename for hashing
+                        ext = filenameEndPtr;
+                        break;
+                    }
+                    else if (*ext=='.')
+                        break;
+                    ext--;
                 }
-                else if (*ext=='.')
-                    break;
-                ext--;
             }
 
             // Calculate hash from the file path
@@ -1639,7 +1653,7 @@ public:
                         unsigned filenameLen; // length of file name excluding extension i.e. ._$P$_of_$N$
                         StringAttr mask;
                         const char *fn = cDirDesc::decodeName(drv,fname,node,numnodes,mask,partNum,numParts,filenameLen);
-                        bool misplaced = cDirDesc::isMisplaced(partNum,numParts,ep,*grp,path,filePathOffset,stripeNum,numStripedDevices);
+                        bool misplaced = cDirDesc::isMisplaced(partNum,numParts,ep,*grp,path,filePathOffset,stripeNum,numStripedDevices,filenameLen);
 
                         cFileDesc *file = nullptr;
                         bool addToParent = false;
@@ -4102,39 +4116,46 @@ public:
         // Test external files (numParts == NotFound) - should always return true
         SocketEndpointArray emptyEpa;
         Owned<IGroup> emptyGroup = createIGroup(emptyEpa);
-        CPPUNIT_ASSERT(dir->isMisplaced(0, NotFound, SocketEndpoint(), *emptyGroup, "/test/file.dat", 5, 1, 1));
+        CPPUNIT_ASSERT(dir->isMisplaced(0, NotFound, SocketEndpoint(), *emptyGroup, "/test/file.dat", 5, 1, 1, 0));
 
         if (isContainerized())
         {
             // Test stripe number validation - invalid stripe numbers should return true
-            CPPUNIT_ASSERT(dir->isMisplaced(0, 4, SocketEndpoint(), *emptyGroup, "/test/file._1_of_4", 5, 0, 2)); // stripeNum < 1
-            CPPUNIT_ASSERT(dir->isMisplaced(0, 4, SocketEndpoint(), *emptyGroup, "/test/file._1_of_4", 5, 3, 2)); // stripeNum > numStripedDevices
+            CPPUNIT_ASSERT(dir->isMisplaced(0, 4, SocketEndpoint(), *emptyGroup, "/test/file._1_of_4", 5, 0, 2, 4)); // stripeNum < 1
+            CPPUNIT_ASSERT(dir->isMisplaced(0, 4, SocketEndpoint(), *emptyGroup, "/test/file._1_of_4", 5, 3, 2, 4)); // stripeNum > numStripedDevices
 
             // Test dir-per-part detection
 
             // Valid dir-per-part where part matches directory number
-            CPPUNIT_ASSERT(!dir->isMisplaced(41, 4, SocketEndpoint(), *emptyGroup, "/test/scope/42/file._42_of_45", 11, 1, 1));
+            CPPUNIT_ASSERT(!dir->isMisplaced(41, 4, SocketEndpoint(), *emptyGroup, "/test/scope/42/file._42_of_45", 11, 1, 1, 4));
 
             // Invalid dir-per-part where part doesn't match directory number
-            CPPUNIT_ASSERT(dir->isMisplaced(19, 40, SocketEndpoint(), *emptyGroup, "/test/scope/21/file._20_of_40", 11, 1, 1));
+            CPPUNIT_ASSERT(dir->isMisplaced(19, 40, SocketEndpoint(), *emptyGroup, "/test/scope/21/file._20_of_40", 11, 1, 1, 4));
 
             // Directory number too large (beyond numParts) - should be ignored, not considered misplaced
-            CPPUNIT_ASSERT(!dir->isMisplaced(0, 4, SocketEndpoint(), *emptyGroup, "/test/scope/999/file._1_of_4", 11, 1, 1));
-            CPPUNIT_ASSERT(!dir->isMisplaced(0, 4, SocketEndpoint(), *emptyGroup, "/test/scope/20250101/file._1_of_4", 11, 1, 1));
+            CPPUNIT_ASSERT(!dir->isMisplaced(0, 4, SocketEndpoint(), *emptyGroup, "/test/scope/999/file._1_of_4", 11, 1, 1, 4));
+            CPPUNIT_ASSERT(!dir->isMisplaced(0, 4, SocketEndpoint(), *emptyGroup, "/test/scope/20250101/file._1_of_4", 11, 1, 1, 4));
 
             // Test files in root directory (no dir-per-part to check)
-            CPPUNIT_ASSERT(!dir->isMisplaced(0, 4, SocketEndpoint(), *emptyGroup, "/file._1_of_4", 0, 1, 1));
+            CPPUNIT_ASSERT(!dir->isMisplaced(0, 4, SocketEndpoint(), *emptyGroup, "/file._1_of_4", 0, 1, 1, 4));
 
             // Test striped files
-            CPPUNIT_ASSERT(!dir->isMisplaced(0, 4, SocketEndpoint(), *emptyGroup, "/test/scope/subdir/file._1_of_4", 11, calcStripeNumber(0, "subdir::file", 20), 20));
-            CPPUNIT_ASSERT(!dir->isMisplaced(99, 4, SocketEndpoint(), *emptyGroup, "/test/scope/subdir/100/file._100_of_400", 11, calcStripeNumber(99, "subdir::file", 20), 20));
+            CPPUNIT_ASSERT(!dir->isMisplaced(0, 4, SocketEndpoint(), *emptyGroup, "/test/scope/subdir/file._1_of_4", 11, calcStripeNumber(0, "subdir::file", 20), 20, 4));
+            CPPUNIT_ASSERT(!dir->isMisplaced(0, 4, SocketEndpoint(), *emptyGroup, "/test/scope/subdir/file._1_of_4.tmp", 11, calcStripeNumber(0, "subdir::file", 20), 20, 4));
+            CPPUNIT_ASSERT(!dir->isMisplaced(99, 4, SocketEndpoint(), *emptyGroup, "/test/scope/subdir/100/file._100_of_400", 11, calcStripeNumber(99, "subdir::file", 20), 20, 4));
+
+            // Test striped file in the root directory (no scopes). The stripe hash must cover only
+            // the base logical filename ("rootfile"), excluding the ._$P$_of_$N$ part mask. If the
+            // filename-boundary handling is off-by-one for root-scope files, the hash covers
+            // "rootfile." instead and this file is wrongly flagged as misplaced.
+            CPPUNIT_ASSERT(!dir->isMisplaced(0, 4, SocketEndpoint(), *emptyGroup, "/rootfile._1_of_4", 0, calcStripeNumber(0, "rootfile", 20), 20, 8));
 
             // Test edge case with single digit dir-per-part
-            CPPUNIT_ASSERT(!dir->isMisplaced(2, 4, SocketEndpoint(), *emptyGroup, "/test/scope/3/file._3_of_4", 11, 1, 1));
+            CPPUNIT_ASSERT(!dir->isMisplaced(2, 4, SocketEndpoint(), *emptyGroup, "/test/scope/3/file._3_of_4", 11, 1, 1, 4));
 
             // Test leading zeros in directory names (should still parse correctly)
             // MORE: I don't think an actual dir-per-part will have leading zeros. This may be an edge case to handle.
-            CPPUNIT_ASSERT(!dir->isMisplaced(0, 4, SocketEndpoint(), *emptyGroup, "/test/scope/01/file._1_of_4", 11, 1, 1));
+            CPPUNIT_ASSERT(!dir->isMisplaced(0, 4, SocketEndpoint(), *emptyGroup, "/test/scope/01/file._1_of_4", 11, 1, 1, 4));
         }
         else
         {
@@ -4149,19 +4170,19 @@ public:
             Owned<IGroup> grp = createIGroup(epa);
 
             // Test mismatched group size
-            CPPUNIT_ASSERT(dir->isMisplaced(0, 5, epa.item(0), *grp, "/test/file._1_of_5", 5, 1, 1)); // numParts != grp.ordinality()
+            CPPUNIT_ASSERT(dir->isMisplaced(0, 5, epa.item(0), *grp, "/test/file._1_of_5", 5, 1, 1, 4)); // numParts != grp.ordinality()
 
             // Test part number out of range
-            CPPUNIT_ASSERT(dir->isMisplaced(4, 4, epa.item(0), *grp, "/test/file._5_of_4", 5, 1, 1)); // partNum >= grp.ordinality()
+            CPPUNIT_ASSERT(dir->isMisplaced(4, 4, epa.item(0), *grp, "/test/file._5_of_4", 5, 1, 1, 4)); // partNum >= grp.ordinality()
 
             // Test endpoint mismatch
             SocketEndpoint wrongEp;
             wrongEp.set("192.168.1.1", 8080);
-            CPPUNIT_ASSERT(dir->isMisplaced(0, 4, wrongEp, *grp, "/test/file._1_of_4", 5, 1, 1)); // endpoint not in group
+            CPPUNIT_ASSERT(dir->isMisplaced(0, 4, wrongEp, *grp, "/test/file._1_of_4", 5, 1, 1, 4)); // endpoint not in group
 
             // Test correct placement
-            CPPUNIT_ASSERT(!dir->isMisplaced(0, 4, epa.item(0), *grp, "/test/file._1_of_4", 5, 1, 1)); // correct placement
-            CPPUNIT_ASSERT(!dir->isMisplaced(1, 4, epa.item(1), *grp, "/test/file._2_of_4", 5, 1, 1)); // correct placement
+            CPPUNIT_ASSERT(!dir->isMisplaced(0, 4, epa.item(0), *grp, "/test/file._1_of_4", 5, 1, 1, 4)); // correct placement
+            CPPUNIT_ASSERT(!dir->isMisplaced(1, 4, epa.item(1), *grp, "/test/file._2_of_4", 5, 1, 1, 4)); // correct placement
         }
     }
 
