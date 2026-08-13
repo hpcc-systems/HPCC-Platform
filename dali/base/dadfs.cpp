@@ -4542,7 +4542,7 @@ public:
 
     virtual void addCluster(const char *clustername,const ClusterPartDiskMapSpec &mspec) override
     {
-        if (!clustername&&!*clustername)
+        if (isEmptyString(clustername))
             return;
         CClustersLockedSection cls(CDistributedFileBase<IDistributedFile>::logicalName, true);
         reloadClusters();
