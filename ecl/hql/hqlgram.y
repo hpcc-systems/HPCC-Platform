@@ -13348,7 +13348,7 @@ bool HqlGram::canFollowCurrentState(int yychar, const short * activeState)
   const yytype_int16 * yyssp = activeState;
   const yytype_int16 * maxyyssp = yyssp;
   const unsigned MaxTempStates = 4;
-  yytype_int16 tempstate[MaxTempStates];
+  yytype_int16 tempstate[MaxTempStates] = { 0 };
 
   int yystate = *yyssp;
   int yyn;
