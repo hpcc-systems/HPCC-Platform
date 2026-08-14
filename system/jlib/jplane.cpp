@@ -408,12 +408,12 @@ private:
 
 // {prefix, {key1: value1, key2: value2, ...}}
 static std::unordered_map<std::string, Owned<CStoragePlane>> storagePlaneMap;
-static CriticalSection storagePlaneMapCrit(SYNC_LOCATION);
+static ReadWriteLock storagePlaneMapRWLock(SYNC_LOCATION);
 MODULE_INIT(INIT_PRIORITY_STANDARD)
 {
     auto updateFunc = [&](const IPropertyTree *oldComponentConfiguration, const IPropertyTree *oldGlobalConfiguration)
     {
-        CriticalBlock b(storagePlaneMapCrit);
+        WriteLockBlock b(storagePlaneMapRWLock);
         storagePlaneMap.clear();
 
         Owned<IPropertyTree> storage = getGlobalConfigSP()->getPropTree("storage");
@@ -466,7 +466,7 @@ static bool isPathInPrefix(const char * prefix, const char *path)
     return false;
 }
 
-// The following static functions must be called with the storagePlaneMapCrit held
+// The following static functions must be called with the storagePlaneMapRWLock held (read or write)
 
 // Find the storage plane that best matches the path - it is possible on some pathological configurations
 // that a drop zone is configured with a prefix of '/'.  To avoid this, check all paths and return the
@@ -566,7 +566,7 @@ const IStoragePlane * getStoragePlaneByName(const char * name, bool required)
     if (isEmptyString(name))
         return nullptr;
 
-    CriticalBlock b(storagePlaneMapCrit);
+    ReadLockBlock b(storagePlaneMapRWLock);
     const CStoragePlane *e = doFindStoragePlaneByName(name, required);
     if (!e)
         return nullptr;
@@ -577,7 +577,7 @@ const IStoragePlane * getStoragePlaneByName(const char * name, bool required)
 
 const IStoragePlane * getStoragePlaneFromPath(const char *filePath, bool required)
 {
-    CriticalBlock b(storagePlaneMapCrit);
+    ReadLockBlock b(storagePlaneMapRWLock);
     const CStoragePlane *e = doFindStoragePlaneFromPath(filePath, required);
     if (!e)
         return nullptr;
@@ -593,7 +593,7 @@ const IPropertyTree * getStoragePlaneConfig(const char * name, bool required)
     if (isEmptyString(name))
         return nullptr;
 
-    CriticalBlock b(storagePlaneMapCrit);
+    ReadLockBlock b(storagePlaneMapRWLock);
     auto it = storagePlaneMap.find(name);
     if (it != storagePlaneMap.end())
         return LINK(it->second->queryConfig());
@@ -619,7 +619,7 @@ unsigned __int64 getPlaneAttributeValue(const char *planeName, PlaneAttributeTyp
     if (!planeName)
         return defaultValue;
     assertex(planeAttrType < PlaneAttributeCount);
-    CriticalBlock b(storagePlaneMapCrit);
+    ReadLockBlock b(storagePlaneMapRWLock);
     auto it = storagePlaneMap.find(planeName);
     if (it != storagePlaneMap.end())
         return it->second->getAttribute(planeAttrType, defaultValue);
@@ -629,7 +629,7 @@ unsigned __int64 getPlaneAttributeValue(const char *planeName, PlaneAttributeTyp
 
 const char *findPlaneFromPath(const char *filePath, StringBuffer &result)
 {
-    CriticalBlock b(storagePlaneMapCrit);
+    ReadLockBlock b(storagePlaneMapRWLock);
     const CStoragePlane *e = doFindStoragePlaneFromPath(filePath, false);
     if (!e)
         return nullptr;
@@ -641,7 +641,7 @@ const char *findPlaneFromPath(const char *filePath, StringBuffer &result)
 
 bool findPlaneAttrFromPath(const char *filePath, PlaneAttributeType planeAttrType, unsigned __int64 defaultValue, unsigned __int64 &resultValue)
 {
-    CriticalBlock b(storagePlaneMapCrit);
+    ReadLockBlock b(storagePlaneMapRWLock);
     const CStoragePlane *e = doFindStoragePlaneFromPath(filePath, false);
     if (e)
     {
@@ -994,7 +994,7 @@ bool getRenameSupportedFromPath(const char *filePath) // NB: no default, let the
     // check plane property first
     Linked<const CStoragePlane> plane;
     {
-        CriticalBlock b(storagePlaneMapCrit);
+        ReadLockBlock b(storagePlaneMapRWLock);
         plane.set(doFindStoragePlaneFromPath(filePath, false));
     }
 
@@ -1183,7 +1183,7 @@ void getPlaneHosts(StringArray &hosts, const IPropertyTree *plane)
 //MORE: This could be cached
 static const IStoragePlane * getStoragePlane(const char * name, const std::vector<std::string> &categories, bool required)
 {
-    CriticalBlock b(storagePlaneMapCrit);
+    ReadLockBlock b(storagePlaneMapRWLock);
     const CStoragePlane * match = doFindStoragePlaneByName(name, required);
     if (!match)
         return nullptr;
@@ -1203,7 +1203,7 @@ static const IStoragePlane * getStoragePlane(const char * name, const std::vecto
 
 static void getStoragePlanes(StoragePlaneArray & planes, const std::vector<std::string> &categories)
 {
-    CriticalBlock b(storagePlaneMapCrit);
+    ReadLockBlock b(storagePlaneMapRWLock);
     for (auto &e: storagePlaneMap)
     {
         const CStoragePlane * plane = e.second;
