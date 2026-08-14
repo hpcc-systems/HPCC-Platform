@@ -69,11 +69,10 @@ protected:
 
     virtual void flushcommitted() override
     {
-        ProTraceTaskScopeTracker scope(EventTask::Compressing);
-
         // only does non trailing
         if (trailing)
             return;
+
         size32_t toflush = inlen;
         if (toflush == 0)
             return;
@@ -81,6 +80,7 @@ protected:
         if (toflush > LZ4_MAX_INPUT_SIZE)
             throw makeStringExceptionV(JLIBERR_CompressLz4compressorFlushcommittedInputSizeUExceedsMaximum, "LZ4Compressor::flushcommitted - input size %u exceeds maximum %d", toflush, LZ4_MAX_INPUT_SIZE);
 
+        ProTraceTaskScopeTracker scope(EventTask::Compressing, toflush);
         size32_t outSzRequired = outlen+sizeof(size32_t)*2+LZ4_COMPRESSBOUND(toflush);
         if (!dynamicOutSz)
             assertex(outSzRequired<=blksz);
@@ -159,7 +159,7 @@ protected:
 
     virtual size32_t compressDirect(size32_t destSize, void * dest, size32_t srcSize, const void * src, size32_t * numCompressed) override
     {
-        ProTraceTaskScopeTracker scope(EventTask::Compressing);
+        ProTraceTaskScopeTracker scope(EventTask::Compressing, srcSize);
 
         dbgassertex(srcSize != 0);
         int compressedSize;
@@ -223,7 +223,7 @@ class CLZ4NewCompressor final : public CBlockCompressor
 public:
     virtual size32_t compressDirect(size32_t destSize, void * dest, size32_t srcSize, const void * src, size32_t * numCompressed) override
     {
-        ProTraceTaskScopeTracker scope(EventTask::Compressing);
+        ProTraceTaskScopeTracker scope(EventTask::Compressing, srcSize);
 
         dbgassertex(srcSize != 0);
         int compressedSize;
@@ -257,7 +257,7 @@ public:
 
     virtual size32_t expandDirect(size32_t destSize, void * dest, size32_t srcSize, const void * src) override
     {
-        ProTraceTaskScopeTracker scope(EventTask::Decompressing);
+        ProTraceTaskScopeTracker scope(EventTask::Decompressing, srcSize);
 
         assertex(destSize != 0);
         return LZ4_decompress_safe((const char *)src, (char *)dest, srcSize, destSize);
@@ -289,7 +289,7 @@ class CLZ4Expander final : public CBlockExpander
 public:
     virtual size32_t expandDirect(size32_t destSize, void * dest, size32_t srcSize, const void * src) override
     {
-        ProTraceTaskScopeTracker scope(EventTask::Decompressing);
+        ProTraceTaskScopeTracker scope(EventTask::Decompressing, srcSize);
 
         assertex(destSize != 0);
         return LZ4_decompress_safe((const char *)src, (char *)dest, srcSize, destSize);
@@ -370,7 +370,7 @@ protected:
         if (uncompressed < minSizeToCompress)
             return false;
 
-        ProTraceTaskScopeTracker scope(EventTask::Compressing);
+        ProTraceTaskScopeTracker scope(EventTask::Compressing, uncompressed);
 
         size32_t compressedSize = outlen;
         size32_t remaining = outMax - compressedSize - outputExtra;
@@ -428,7 +428,7 @@ public:
 
     virtual size32_t expandDirect(size32_t destSize, void * dest, size32_t srcSize, const void * src) override
     {
-        ProTraceTaskScopeTracker scope(EventTask::Decompressing);
+        ProTraceTaskScopeTracker scope(EventTask::Decompressing, srcSize);
 
         assertex(destSize != 0);
         return LZ4_decompress_safe((const char *)src, (char *)dest, srcSize, destSize);

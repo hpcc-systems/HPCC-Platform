@@ -633,14 +633,15 @@ class CFastLZCompressor final : public CFcmpCompressor
 
     virtual void flushcommitted()
     {
-        ProTraceTaskScopeTracker scope(EventTask::Compressing);
-
         // only does non trailing
         if (trailing)
             return;
+
         size32_t toflush = inlen;
         if (toflush == 0)
             return;
+
+        ProTraceTaskScopeTracker scope(EventTask::Compressing, toflush);
         size32_t outSzRequired = outlen+sizeof(size32_t)*2+toflush+fastlzSlack(toflush);
         if (!dynamicOutSz)
             assertex(outSzRequired<=blksz);
@@ -687,8 +688,6 @@ class jlib_decl CFastLZExpander : public CFcmpExpander
 public:
     virtual void expand(void *buf) override
     {
-        ProTraceTaskScopeTracker scope(EventTask::Decompressing);
-
         if (!outlen)
             return;
         if (buf) {
@@ -710,6 +709,8 @@ public:
             const size32_t szchunk = *in;
             in++;
             if (szchunk+done<outlen) {
+                ProTraceTaskScopeTracker scope(EventTask::Decompressing, szchunk);
+
                 size32_t written = fastlz_decompress(in,szchunk,(byte *)buf+done,outlen-done);
                 done += written;
                 if (!written||(done>outlen))
@@ -729,7 +730,7 @@ public:
 
 void fastLZCompressToBuffer(MemoryBuffer & out, size32_t len, const void * src)
 {
-  ProTraceTaskScopeTracker scope(EventTask::Compressing);
+    ProTraceTaskScopeTracker scope(EventTask::Compressing, len);
 
     size32_t outbase = out.length();
     out.append(len);

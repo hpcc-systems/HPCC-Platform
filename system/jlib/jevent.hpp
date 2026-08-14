@@ -789,12 +789,16 @@ public:
             protraceRecordTaskStart(task);
     }
 
-    // Constructor that allows an optional size to be provided - not currently used.
-    ProTraceTaskScopeTracker(EventTask _task, size32_t size, bool _enabled = true)
+    // Constructor that allows an optional size to be provided
+    ProTraceTaskScopeTracker(EventTask _task, [[maybe_unused]] size32_t size, bool _enabled = true)
         : task(_task), enabled(_enabled)
     {
         if (enabled)
+#ifdef PROTRACE_TASK_SIZES
             protraceRecordTaskStart(task, size);
+#else
+            protraceRecordTaskStart(task);
+#endif
     }
 
     ~ProTraceTaskScopeTracker()

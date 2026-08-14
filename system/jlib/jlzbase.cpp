@@ -801,8 +801,6 @@ bool CStreamCompressor::recompressInput(bool isFinalCompression)
 
 void CStreamExpander::expand(void *buf)
 {
-    ProTraceTaskScopeTracker scope(EventTask::Decompressing);
-
     assertex(buf);
     if (!outlen)
         return;

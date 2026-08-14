@@ -1908,7 +1908,7 @@ public:
 
     size32_t read(offset_t _pos, size32_t len, void * data)
     {
-        ProTraceTaskScopeTracker scope(EventTask::Reading);
+        ProTraceTaskScopeTracker scope(EventTask::Reading, len);
 
         checkPos("read",_pos);
 #ifdef _WIN32
@@ -1930,7 +1930,7 @@ public:
 
     virtual size32_t write(offset_t _pos, size32_t len, const void * data)
     {
-        ProTraceTaskScopeTracker scope(EventTask::Writing);
+        ProTraceTaskScopeTracker scope(EventTask::Writing, len);
 
         checkPos("write",_pos);
 
@@ -2091,7 +2091,7 @@ offset_t CFileIO::size()
 
 size32_t CFileIO::read(offset_t pos, size32_t len, void * data)
 {
-    ProTraceTaskScopeTracker scope(EventTask::Reading);
+    ProTraceTaskScopeTracker scope(EventTask::Reading, len);
 
     CriticalBlock procedure(cs);
 
@@ -2115,7 +2115,7 @@ void CFileIO::setPos(offset_t newPos)
 
 size32_t CFileIO::write(offset_t pos, size32_t len, const void * data)
 {
-    ProTraceTaskScopeTracker scope(EventTask::Writing);
+    ProTraceTaskScopeTracker scope(EventTask::Writing, len);
 
     CriticalBlock procedure(cs);
 
@@ -2308,7 +2308,7 @@ size32_t CFileIO::read(offset_t pos, size32_t len, void * data)
 {
     if (0==len) return 0;
 
-    ProTraceTaskScopeTracker scope(EventTask::Reading);
+    ProTraceTaskScopeTracker scope(EventTask::Reading, len);
 
     CCycleTimer timer;
     size32_t ret = checked_pread(querySafeFilename(), file, data, len, pos);
@@ -2335,7 +2335,7 @@ void CFileIO::setPos(offset_t newPos)
 
 size32_t CFileIO::write(offset_t pos, size32_t len, const void * data)
 {
-    ProTraceTaskScopeTracker scope(EventTask::Writing);
+    ProTraceTaskScopeTracker scope(EventTask::Writing, len);
 
     CCycleTimer timer;
     size32_t ret = pwrite(file,data,len,pos);

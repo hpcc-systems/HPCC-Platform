@@ -413,7 +413,7 @@ public:
 
     bool readCacheFile(offset_t cacheFileOffset, unsigned toRead, byte *data)
     {
-        ProTraceTaskScopeTracker scope(EventTask::Reading);
+        ProTraceTaskScopeTracker scope(EventTask::Reading, toRead);
 
         // OPT: look into using io_uring or more iov entries, we know there will be many of these happening concurrently ...
         struct iovec iov[1];
@@ -438,7 +438,7 @@ public:
 
     bool writeCacheFile(offset_t cacheFileOffset, const byte *data)
     {
-        ProTraceTaskScopeTracker scope(EventTask::Writing);
+        ProTraceTaskScopeTracker scope(EventTask::Writing, pageSize);
 
         struct iovec iov[1];
         iov[0].iov_base = (void *)data;

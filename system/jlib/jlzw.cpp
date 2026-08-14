@@ -503,10 +503,11 @@ size32_t CLZWExpander::init(const void *blk)
 
 void CLZWExpander::expand(void *buf)
 {
-    ProTraceTaskScopeTracker scope(EventTask::Decompressing);
-
     if (!outlen)
         return;
+
+    //The input size is not known at this point - so use the output size for the trace.
+    ProTraceTaskScopeTracker scope(EventTask::Decompressing, outlen);
     if (buf) {
         if (bufalloc)
             free(outbuf);
@@ -1521,10 +1522,11 @@ public:
 
     void expand(void *buf)
     {
-        ProTraceTaskScopeTracker scope(EventTask::Decompressing);
-
         if (!outlen)
             return;
+
+        //outlen is not the compressed size, but this is not used enough to be worth fixing
+        ProTraceTaskScopeTracker scope(EventTask::Decompressing, outlen);
         if (buf) {
             if (bufalloc)
                 free(outbuf);
@@ -2975,8 +2977,6 @@ public:
 
     void   expand(void *target)
     {
-        ProTraceTaskScopeTracker scope(EventTask::Decompressing);
-
         exp->expand(target);
     }
 

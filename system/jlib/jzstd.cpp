@@ -43,7 +43,7 @@ public:
 
     virtual size32_t compressDirect(size32_t destSize, void * dest, size32_t srcSize, const void * src, size32_t * numCompressed) override
     {
-        ProTraceTaskScopeTracker scope(EventTask::Compressing);
+        ProTraceTaskScopeTracker scope(EventTask::Compressing, srcSize);
 
         dbgassertex(srcSize != 0);
         //ZStd has no option to compress as much as possible - so either succeed or fail.
@@ -64,7 +64,7 @@ public:
 
     virtual size32_t expandDirect(size32_t destSize, void * dest, size32_t srcSize, const void * src) override
     {
-        ProTraceTaskScopeTracker scope(EventTask::Decompressing);
+        ProTraceTaskScopeTracker scope(EventTask::Decompressing, srcSize);
 
         assertex(destSize != 0);
         size_t result = ZSTD_decompress(dest, destSize, src, srcSize);
@@ -110,7 +110,7 @@ public:
 
     virtual size32_t expandDirect(size32_t destSize, void * dest, size32_t srcSize, const void * src) override
     {
-        ProTraceTaskScopeTracker scope(EventTask::Decompressing);
+        ProTraceTaskScopeTracker scope(EventTask::Decompressing, srcSize);
 
         assertex(destSize != 0);
         size_t result = ZSTD_decompress(dest, destSize, src, srcSize);
@@ -212,7 +212,7 @@ protected:
         if (uncompressed < minSizeToCompress)
             return false;
 
-        ProTraceTaskScopeTracker scope(EventTask::Compressing);
+        ProTraceTaskScopeTracker scope(EventTask::Compressing, uncompressed);
 
         size32_t compressedSize = outlen;
         size32_t remaining = outMax - compressedSize - outputExtra;
@@ -283,7 +283,7 @@ public:
 
     virtual size32_t expandDirect(size32_t destSize, void * dest, size32_t srcSize, const void * src) override
     {
-        ProTraceTaskScopeTracker scope(EventTask::Decompressing);
+        ProTraceTaskScopeTracker scope(EventTask::Decompressing, srcSize);
 
         assertex(destSize != 0);
         size_t result = ZSTD_decompress(dest, destSize, src, srcSize);
