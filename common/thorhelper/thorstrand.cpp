@@ -554,7 +554,9 @@ protected:
 class SingleItemBlockQueue
 {
 public:
-    SingleItemBlockQueue() : space(SYNC_LOCATION, 1U), avail(SYNC_LOCATION, 0U)
+    SingleItemBlockQueue()
+    : space(SYNC_LOCATION, 1U),
+      avail(SYNC_LOCATION, 0U)
     {
     }
 

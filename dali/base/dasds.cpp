@@ -426,7 +426,11 @@ StringBuffer &constructStoreName(const char *storeBase, unsigned e, StringBuffer
 }
 
 ////////////////
-static CheckedCriticalSection saveStoreCrit{SYNC_LOCATION}, saveIncCrit{SYNC_LOCATION}, nfyTableCrit{SYNC_LOCATION}, extCrit{SYNC_LOCATION}, blockedSaveCrit{SYNC_LOCATION};
+static CheckedCriticalSection saveStoreCrit{SYNC_LOCATION};
+static CheckedCriticalSection saveIncCrit{SYNC_LOCATION};
+static CheckedCriticalSection nfyTableCrit{SYNC_LOCATION};
+static CheckedCriticalSection extCrit{SYNC_LOCATION};
+static CheckedCriticalSection blockedSaveCrit{SYNC_LOCATION};
 class CCovenSDSManager;
 static CCovenSDSManager *SDSManager;
 

@@ -1664,7 +1664,8 @@ public:
             pool->setPoolSize(2, 0);  // Set pool size to 2 to create burst conditions
 
             // Set up shared semaphores and counters
-            Semaphore startSem{SYNC_LOCATION}, stopSem{SYNC_LOCATION};
+            Semaphore startSem{SYNC_LOCATION};
+            Semaphore stopSem{SYNC_LOCATION};
             std::atomic<unsigned> startCount{0};
             std::atomic<unsigned> stopCount{0};
             void *params[] = {&startSem, &stopSem, &startCount, &stopCount};

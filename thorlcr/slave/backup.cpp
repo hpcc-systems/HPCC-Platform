@@ -39,7 +39,8 @@ class CThorBackupHandler : public CSimpleInterface, implements IBackup, implemen
 {
     CThreaded threaded;
     bool aborted, currentAbort;
-    Semaphore sem{SYNC_LOCATION}, cancelSem{SYNC_LOCATION};
+    Semaphore sem{SYNC_LOCATION};
+    Semaphore cancelSem{SYNC_LOCATION};
     CriticalSection crit{SYNC_LOCATION};
     StringSuperHashTableOf<CStringTuple> lookup;
     QueueOf<CStringTuple, false> todo;

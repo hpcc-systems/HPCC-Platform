@@ -218,7 +218,8 @@ class jlib_decl CThreadedPersistent
     } athread;
     Owned<IException> exception;
     IThreaded *owner;
-    Semaphore sem{SYNC_LOCATION}, joinSem{SYNC_LOCATION};
+    Semaphore sem{SYNC_LOCATION};
+    Semaphore joinSem{SYNC_LOCATION};
     std::atomic_uint state;
     bool halt;
     enum ThreadStates { s_ready, s_running, s_joining };

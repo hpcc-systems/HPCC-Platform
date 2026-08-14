@@ -2830,7 +2830,8 @@ class CRowMultiWriterReader : public CSimpleInterface, implements IRowMultiWrite
     CActivityBase &activity;
     IThorRowInterfaces *rowIf;
     bool readerBlocked, eos, eow;
-    Semaphore emptySem{SYNC_LOCATION}, fullSem{SYNC_LOCATION};
+    Semaphore emptySem{SYNC_LOCATION};
+    Semaphore fullSem{SYNC_LOCATION};
     unsigned numWriters, writersComplete, writersBlocked;
 
     class CAWriter : public CSimpleInterface, implements IRowWriter

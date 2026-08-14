@@ -3427,7 +3427,9 @@ class CHThorKeyedJoinActivity  : public CHThorThreadedActivityBase, implements I
     bool preserveGroups;
     Owned<JoinGroupPool> pool;
     QueueOf<const void, true> pending;
-    CriticalSection statsCrit{SYNC_LOCATION}, imatchCrit{SYNC_LOCATION}, fmatchCrit{SYNC_LOCATION};
+    CriticalSection statsCrit{SYNC_LOCATION};
+    CriticalSection imatchCrit{SYNC_LOCATION};
+    CriticalSection fmatchCrit{SYNC_LOCATION};
     RelaxedAtomic<unsigned> prefiltered;
     RelaxedAtomic<unsigned> postfiltered;
     RelaxedAtomic<unsigned> skips;

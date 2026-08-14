@@ -3309,7 +3309,8 @@ class CRemoteFileServer : implements IRemoteFileServer, public CInterface
     class CThrottler
     {
         Semaphore sem{SYNC_LOCATION};
-        CriticalSection crit, configureCrit;
+        CriticalSection crit{SYNC_LOCATION};
+        CriticalSection configureCrit{SYNC_LOCATION};
         StringAttr title;
         unsigned limit, delayMs, cpuThreshold, queueLimit;
         unsigned disabledLimit;
@@ -3319,7 +3320,7 @@ class CRemoteFileServer : implements IRemoteFileServer, public CInterface
         unsigned statsIntervalSecs;
 
     public:
-        CThrottler(const char *_title) : crit(SYNC_LOCATION), configureCrit(SYNC_LOCATION), title(_title)
+        CThrottler(const char *_title) : title(_title)
         {
             totalThrottleDelay = 0;
             limit = 0;
