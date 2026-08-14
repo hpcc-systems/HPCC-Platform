@@ -34,8 +34,18 @@
 #include "mpcomm.hpp"
 #include "ws_dfsclient.hpp"
 
+// The following ROXIE_DALI_CACHE option allows Roxie to save the dali state to a local file, so that
+// if a roxie process restarts, it can come back up even if dali was down.
+// It only works in non-containerized environments because it writes data to the local disk.
+//
+// It is DISABLED because the cost is not considered worth the benefit.
+//
+// * It is unusual for roxie nodes to restart, and it would be very unusual for dali to also be down at the same time.
+// * It adds a notable delay to starting roxie while it serializes the state to disk.
+//
+// If it is reinstated it should be changed to save in an efficient binary format and changed to use a dynamic option.
 #ifndef _CONTAINERIZED
-#define ROXIE_DALI_CACHE
+//#define ROXIE_DALI_CACHE
 #endif
 
 #ifdef ROXIE_DALI_CACHE
