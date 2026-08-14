@@ -32,6 +32,7 @@ include_directories (
 set (  SRCS
        evtmain.cpp
        evtool.cpp
+       evtdescribe.cpp
        evtdump.cpp
        evtsim.cpp
        evtindex.cpp

@@ -3115,7 +3115,7 @@ StringBuffer &getPartMask(StringBuffer &ret,const char *lname,unsigned partmax)
     return ret;
 }
 
-StringBuffer &makePhysicalPartName(const char *lname, unsigned partno, unsigned partmax, StringBuffer &result, unsigned replicateLevel, DFD_OS os,const char *diroverride,bool dirPerPart,unsigned stripeNum)
+StringBuffer &makePhysicalPartName(const char *lname, unsigned partno, unsigned partmax, StringBuffer &result, unsigned replicateLevel, DFD_OS os,const char *diroverride,unsigned dirPerPartNum,unsigned stripeNum)
 {
     assertex(lname);
     if (strstr(lname,"::>")) { // probably query
@@ -3175,8 +3175,8 @@ StringBuffer &makePhysicalPartName(const char *lname, unsigned partno, unsigned 
             StringBuffer tail(result.str()+l);
             tail.trim();
             result.setLength(l);
-            if (dirPerPart && (partmax>1))
-                result.append(partno).append(OsSepChar(os));
+            if (dirPerPartNum)
+                result.append(dirPerPartNum).append(OsSepChar(os));
             const char *m = queryPartMask();
             while ((c=*(m++))!=0) {
                 if (c=='$') {
@@ -3207,7 +3207,7 @@ StringBuffer &makePhysicalPartName(const char *lname, unsigned partno, unsigned 
 
 StringBuffer &makePhysicalDirectory(StringBuffer &result, const char *lname, unsigned replicateLevel, DFD_OS os,const char *diroverride)
 {
-    return makePhysicalPartName(lname, 0, 0, result, replicateLevel, os, diroverride, false, 0);
+    return makePhysicalPartName(lname, 0, 0, result, replicateLevel, os, diroverride, 0, 0);
 }
 
 
@@ -3215,7 +3215,7 @@ StringBuffer &makeSinglePhysicalPartName(const char *lname, StringBuffer &result
 {
     wasdfs = !(allowospath&&(isAbsolutePath(lname)||(stdIoHandle(lname)>=0)));
     if (wasdfs)
-        return makePhysicalPartName(lname, 1, 1, result, 0, DFD_OSdefault, diroverride, false, 0);
+        return makePhysicalPartName(lname, 1, 1, result, 0, DFD_OSdefault, diroverride, 0, 0);
     return result.append(lname);
 }
 

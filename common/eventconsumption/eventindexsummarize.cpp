@@ -20,6 +20,8 @@
 #include "eventiterator.h"
 #include "eventutility.hpp"
 #include <functional>
+#include <unordered_map>
+#include <unordered_set>
 
 enum ReadBucket
 {
@@ -86,7 +88,7 @@ public:
     uint32_t payloads{0};
     uint32_t evictions{0};
 
-    std::unordered_map<std::pair<__uint64, __uint64>, __uint64, PairHash> uniqueNodesMemory;
+    std::unordered_set<std::pair<__uint64, __uint64>, PairHash> uniqueNodes;
 
     MetricStat inMemorySize;
     MetricStat readTime[NumBuckets];
@@ -97,7 +99,7 @@ public:
     __uint64 firstTimestamp{0};
     __uint64 lastTimestamp{0};
 
-    __uint64 nodeCount() const { return uniqueNodesMemory.size(); }
+    __uint64 nodeCount() const { return uniqueNodes.size(); }
     __uint64 memorySize() const
     {
         return inMemorySize.sum;
@@ -194,11 +196,11 @@ void EventSummaryMetrics::accumulateInMemorySize(const CEvent& event)
 {
     __uint64 fileId = event.queryNumericValue(EvAttrFileId);
     __uint64 fileOffset = event.queryNumericValue(EvAttrFileOffset);
-    __uint64 inMemorySize = event.queryNumericValue(EvAttrInMemorySize);
-    if (inMemorySize)
+    __uint64 nodeSize = event.queryNumericValue(EvAttrInMemorySize);
+    if (nodeSize)
     {
-        if (uniqueNodesMemory.insert({{fileId, fileOffset}, inMemorySize}).second)
-            this->inMemorySize.accumulate(inMemorySize);
+        if (uniqueNodes.insert({fileId, fileOffset}).second)
+            inMemorySize.accumulate(nodeSize);
     }
 }
 
@@ -1208,6 +1210,44 @@ public:
     virtual void endReport() override {}
 };
 
+class CFlatSummaryCollector : public CSummaryCollector
+{
+public:
+    CFlatSummaryCollector(CIndexFileSummary& _operation, IBufferedSerialOutputStream* _out)
+        : CSummaryCollector(_operation, IndexSummarization::byGroup, _out)
+    {
+    }
+
+    virtual bool visitEvent(CEvent& event) override
+    {
+        switch (event.queryType())
+        {
+        case EventIndexCacheHit:
+        case EventIndexCacheMiss:
+        case EventIndexLoad:
+        case EventIndexPayload:
+        case EventIndexEviction:
+        case EventIndexOpen:
+            summary.accumulate(event, &operation.queryMetaInfoState());
+            break;
+        default:
+            break;
+        }
+        return true;
+    }
+
+    virtual void summarize() override
+    {
+        CCsvGroupFormatter formatter(out);
+        formatter.beginReport({});
+        formatter.outputLeafSummary({}, summary);
+        formatter.endReport();
+    }
+
+protected:
+    EventSummaryMetrics summary;
+};
+
 class CGenericGroupCollector : public CSummaryCollector
 {
     std::vector<std::vector<std::string>> groupAttributesStrs;
@@ -1320,7 +1360,10 @@ bool CIndexFileSummary::doOp()
     switch (summarization)
     {
     case IndexSummarization::byGroup:
-        collector.setown(new CGenericGroupCollector(*this, out, groupAttributes, groupAttributeIds));
+        if (groupAttributeIds.empty())
+            collector.setown(new CFlatSummaryCollector(*this, out));
+        else
+            collector.setown(new CGenericGroupCollector(*this, out, groupAttributes, groupAttributeIds));
         break;
     // TODO: The legacy collectors below are retained for verification of the generic byGroup
     // output. Once the byGroup output is confirmed as an adequate replacement, these

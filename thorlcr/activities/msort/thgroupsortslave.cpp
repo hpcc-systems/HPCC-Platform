@@ -84,7 +84,7 @@ public:
     {
         PARENT::gatherActiveStats(activeStats);
         if (hasStarted())
-            setStats(activeStats, iLoader, spillStatistics);
+            mergeRemappedStats(activeStats, iLoader, diskToTempStatsMap);
     }
     virtual void stop() override
     {

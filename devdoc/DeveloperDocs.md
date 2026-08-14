@@ -51,6 +51,9 @@ Instructions for building the HPCC Systems Platform from source.
 
 [Platform Overview](../README.md) Overview of the HPCC Systems Platform.
 
+[Running HPCC Platform on macOS](RunningHPCCOnMacOS.md)
+Manual configuration for a local macOS runtime.
+
 [New Activities](newActivity.md)
 Instructions for adding new activities to the platform.
 

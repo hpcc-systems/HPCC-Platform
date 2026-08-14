@@ -1544,6 +1544,7 @@ public:
     Owned<IException> exc;
     CriticalSection sect{SYNC_LOCATION};
     bool eos, selfJoin;
+    unsigned candidateBatchLimit;
     JoinMatchStats matchStats;
 
     void setException(IException *e,const char *title)
@@ -1562,89 +1563,133 @@ public:
     public:
         CThorExpandingRowArray lgroup;
         CThorExpandingRowArray rgroup;
+        UnsignedArray leftOffsets;
+        UnsignedArray rightOffsets;
+        unsigned numCandidates;
         const void *row;
+        MemoryBuffer rmatchedbuf;
         inline cWorkItem(CActivityBase &_activity, CThorExpandingRowArray *_lgroup, CThorExpandingRowArray *_rgroup)
             : lgroup(_activity, &_activity), rgroup(_activity, &_activity)
         {
-            set(_lgroup,_rgroup);
+            numCandidates = 0;
+            append(_lgroup,_rgroup);
         }
         inline cWorkItem(CActivityBase &_activity) : lgroup(_activity, &_activity), rgroup(_activity, &_activity)
         {
             clear();
         }
 
-        inline void set(CThorExpandingRowArray *_lgroup, CThorExpandingRowArray *_rgroup)
+        inline void append(CThorExpandingRowArray *_lgroup, CThorExpandingRowArray *_rgroup)
         {
-            if (_lgroup)
-                lgroup.transfer(*_lgroup);
-            else
-                lgroup.kill();
-            if (_rgroup)
-                rgroup.transfer(*_rgroup);
-            else
-                rgroup.kill();
+            // _rgroup == nullptr signals a self-join: the right side is the same as the left side
+            bool isSelfJoin = (_rgroup == nullptr);
+            unsigned lCount = _lgroup ? _lgroup->ordinality() : 0;
+            unsigned rCount = isSelfJoin ? lCount : _rgroup->ordinality();
+
+            if (lCount)
+                lgroup.appendRows(*_lgroup, true); // moves rows, takes ownership, clears source
+            if (!isSelfJoin && rCount)
+                rgroup.appendRows(*_rgroup, true); // moves rows, takes ownership, clears source
+
+            leftOffsets.append(lgroup.ordinality());
+            // For self-join, doMatch uses lgroup as rgroup, so right offsets must match left offsets
+            rightOffsets.append(isSelfJoin ? lgroup.ordinality() : rgroup.ordinality());
             row = NULL;
+            //Unlikely - but check for overflow in the number of potential candidates
+            __uint64 groupCandidates = (unsigned __int64)lCount * (unsigned __int64)rCount;
+            if (numCandidates + groupCandidates > UINT_MAX)
+                numCandidates = UINT_MAX;
+            else
+                numCandidates += (unsigned)groupCandidates;
         }
+
+        inline void swap(cWorkItem &other)
+        {
+            lgroup.swap(other.lgroup);
+            rgroup.swap(other.rgroup);
+            leftOffsets.swapWith(other.leftOffsets);
+            rightOffsets.swapWith(other.rightOffsets);
+            std::swap(numCandidates, other.numCandidates);
+            std::swap(row, other.row);
+        }
+
         inline void set(const void *_row)
         {
-            lgroup.kill();
-            rgroup.kill();
+            lgroup.clearRows();
+            rgroup.clearRows();
+            leftOffsets.kill();
+            rightOffsets.kill();
+            numCandidates = 0;
             row = _row;
         }
         inline void clear()
         {
-            set(NULL);
+            set(nullptr);
         }
     };
 
     void doMatch(cWorkItem &work, IRowWriter &writer, IEngineRowAllocator *theAllocator)
     {
-        MemoryBuffer rmatchedbuf;  
         CThorExpandingRowArray &rgroup = selfJoin?work.lgroup:work.rgroup;
         bool *rmatched = NULL;
         if (rightouter) {
-            rmatched = (bool *)rmatchedbuf.clear().reserve(rgroup.ordinality());
+            rmatched = (bool *)work.rmatchedbuf.clear().reserve(rgroup.ordinality());
             memset_iflen(rmatched,0,rgroup.ordinality());
         }
-        ForEachItemIn(leftidx,work.lgroup)
-        {
-            bool lmatched = !leftouter;
-            unsigned joinCounter = 0;
-            for (unsigned rightidx=0; rightidx<rgroup.ordinality(); rightidx++) {
-                if (helper->match(work.lgroup.query(leftidx),rgroup.query(rightidx))) {
-                    lmatched = true;
-                    if (rightouter)
-                        rmatched[rightidx] = true;
-                    RtlDynamicRowBuilder ret(theAllocator);
-                    size32_t sz = exclude?0:helper->transform(ret,work.lgroup.query(leftidx),rgroup.query(rightidx),++joinCounter,JTFmatchedleft|JTFmatchedright);
-                    if (sz)
-                        writer.putRow(ret.finalizeRowClear(sz));
 
+        unsigned leftStart = 0;
+        unsigned rightStart = 0;
+        for (unsigned batch = 0; batch < work.leftOffsets.ordinality(); batch++)
+        {
+            unsigned leftEnd = work.leftOffsets.item(batch);
+            unsigned rightEnd = work.rightOffsets.item(batch);
+
+            for (unsigned leftidx = leftStart; leftidx < leftEnd; leftidx++)
+            {
+                bool lmatched = !leftouter;
+                unsigned joinCounter = 0;
+                for (unsigned rightidx = rightStart; rightidx < rightEnd; rightidx++)
+                {
+                    if (helper->match(work.lgroup.query(leftidx),rgroup.query(rightidx)))
+                    {
+                        lmatched = true;
+                        if (rightouter)
+                            rmatched[rightidx] = true;
+                        RtlDynamicRowBuilder ret(theAllocator);
+                        size32_t sz = exclude?0:helper->transform(ret,work.lgroup.query(leftidx),rgroup.query(rightidx),++joinCounter,JTFmatchedleft|JTFmatchedright);
+                        if (sz)
+                            writer.putRow(ret.finalizeRowClear(sz));
+
+                    }
                 }
-            }
-            if (!lmatched) {
-                RtlDynamicRowBuilder ret(theAllocator);
-                size32_t sz =  helper->transform(ret, work.lgroup.query(leftidx), defaultRight, 0, JTFmatchedleft);
-                if (sz)
-                    writer.putRow(ret.finalizeRowClear(sz));
-            }
-        }
-        if (rightouter) {
-            ForEachItemIn(rightidx2,rgroup) {
-                if (!rmatched[rightidx2]) {
+                if (!lmatched) {
                     RtlDynamicRowBuilder ret(theAllocator);
-                    size32_t sz =  helper->transform(ret, defaultLeft, rgroup.query(rightidx2), 0, JTFmatchedright);
+                    size32_t sz =  helper->transform(ret, work.lgroup.query(leftidx), defaultRight, 0, JTFmatchedleft);
                     if (sz)
                         writer.putRow(ret.finalizeRowClear(sz));
                 }
             }
+            if (rightouter) {
+                for (unsigned rightidx2 = rightStart; rightidx2 < rightEnd; rightidx2++)
+                {
+                    if (!rmatched[rightidx2])
+                    {
+                        RtlDynamicRowBuilder ret(theAllocator);
+                        size32_t sz =  helper->transform(ret, defaultLeft, rgroup.query(rightidx2), 0, JTFmatchedright);
+                        if (sz)
+                            writer.putRow(ret.finalizeRowClear(sz));
+                    }
+                }
+            }
+            leftStart = leftEnd;
+            rightStart = rightEnd;
         }
     }
 
     void noteGroupSizes(CThorExpandingRowArray *lgroup,CThorExpandingRowArray *rgroup)
     {
         rowidx_t numLeft = lgroup ? lgroup->ordinality() : 0;
-        rowidx_t numRight = lgroup ? lgroup->ordinality() : 0;
+        rowidx_t numRight = selfJoin ? numLeft : rgroup ? rgroup->ordinality() : 0;
         matchStats.noteGroup(numLeft, numRight);
     }
 
@@ -1656,6 +1701,7 @@ public:
     CMultiCoreJoinHelperBase(CActivityBase &_activity, unsigned numthreads, bool _selfJoin, IJoinHelper *_jhelper, IHThorJoinArg *_helper, IThorRowInterfaces *_rowIf)
         : activity(_activity), rowIf(_rowIf)
     {
+        candidateBatchLimit = (unsigned)_activity.getOptInt(THOROPT_JOIN_BATCH_LIMIT, 10000);
         allocator.set(rowIf->queryRowAllocator());
         kind = activity.queryContainer().getKind();
         jhelper = _jhelper;
@@ -1718,6 +1764,7 @@ class CMultiCoreJoinHelper: public CMultiCoreJoinHelperBase
     unsigned curin;         // only updated from cReader thread
     unsigned curout;            // only updated from cReader thread
     bool stopped;
+    cWorkItem activeItem;
     
     class cReader: public Thread
     {
@@ -1737,8 +1784,7 @@ class CMultiCoreJoinHelper: public CMultiCoreJoinHelperBase
             catch (IException *e) {
                 parent->setException(e,"CMultiCoreJoinHelper::cReader");
             }
-            for (unsigned i=0;i<parent->numworkers;i++) 
-                parent->addWork(NULL,NULL);
+            parent->stopWorkers();
             LOG(MCthorDetailedDebugInfo, "CMultiCoreJoinHelper::cReader exit");
             return 0;
         }
@@ -1780,7 +1826,7 @@ class CMultiCoreJoinHelper: public CMultiCoreJoinHelperBase
                         rowWriter->putRow(work.row);
                     else
                     {
-                        if (work.lgroup.ordinality()==0)
+                        if (work.leftOffsets.ordinality()==0)
                             break;
                         parent->doMatch(work, *rowWriter, allocator);
                     }
@@ -1804,7 +1850,7 @@ class CMultiCoreJoinHelper: public CMultiCoreJoinHelperBase
 
 public:
     CMultiCoreJoinHelper(CActivityBase &activity, unsigned numthreads, bool selfJoin, IJoinHelper *_jhelper, IHThorJoinArg *_helper, IThorRowInterfaces *_rowIf)
-        : CMultiCoreJoinHelperBase(activity, numthreads, selfJoin, _jhelper, _helper, _rowIf)
+        : CMultiCoreJoinHelperBase(activity, numthreads, selfJoin, _jhelper, _helper, _rowIf), activeItem(activity)
     {
         reader.parent = this;
         stopped = false;
@@ -1889,26 +1935,57 @@ public:
             workers[i]->rowStream->stop();
     }
 
+    void sendWorkItem(cWorkItem * item)
+    {
+        cWorker *worker = workers[curin];
+        worker->workready.wait();
+        if (item)
+            worker->work.swap(*item);
+        else
+            worker->work.clear();
+        worker->workwait.signal();
+        curin = (curin+1)%numworkers;
+    }
+
+    void sendTerminator()
+    {
+        sendWorkItem(nullptr);
+    }
+
 // IMulticoreIntercept impl.
     virtual void addWork(CThorExpandingRowArray *lgroup,CThorExpandingRowArray *rgroup)
     {
         /* NB: This adds a work item to each worker in sequence
          * The pull side, also pulls from the workers in sequence
          * This ensures the output is return in input order.
+         * Multiple blocks of work are accumulated in activeItem and combined into a single work item before being
+         * dispatched to a worker.  The different work blocks are delimited by the leftOffsets and rightOffsets arrays,
+         * which allows the worker to know how many rows in each group, and where each group starts.
          */
         noteGroupSizes(lgroup, rgroup);
 
-        cWorker *worker = workers[curin];
-        worker->workready.wait();
-        workers[curin]->work.set(lgroup,rgroup);
-        worker->workwait.signal();
-        curin = (curin+1)%numworkers;
+        activeItem.append(lgroup, rgroup);
+        if (activeItem.numCandidates >= candidateBatchLimit)
+            sendWorkItem(&activeItem);
+    }
+    void stopWorkers()
+    {
+        // Flush any remaining active work item
+        if (activeItem.leftOffsets.ordinality())
+            sendWorkItem(&activeItem);
+
+        // Send terminator to each worker
+        for (unsigned i=0;i<numworkers;i++)
+            sendTerminator();
     }
     virtual void addRow(const void *row)
     {
+        if (activeItem.leftOffsets.ordinality())
+            sendWorkItem(&activeItem);
+
         cWorker *worker = workers[curin];
         worker->workready.wait();
-        workers[curin]->work.set(row);
+        worker->work.set(row);
         worker->workwait.signal();
         curin = (curin+1)%numworkers;
     }
@@ -1929,8 +2006,10 @@ class CMultiCoreUnorderedJoinHelper: public CMultiCoreJoinHelperBase
     }
 
     ReallySimpleInterThreadQueueOf<cWorkItem,false> workqueue;
+    SafeQueueOf<cWorkItem,false> freequeue;
     Owned<IRowMultiWriterReader> multiWriter;
     Owned<IRowWriter> rowWriter;
+    cWorkItem *activeItem = nullptr;
 
     class cReader: public Thread
     {
@@ -1974,7 +2053,7 @@ class CMultiCoreUnorderedJoinHelper: public CMultiCoreJoinHelperBase
             for (;;)
             {
                 cWorkItem *work = parent->workqueue.dequeue();
-                if (!work||((work->lgroup.ordinality()==0)&&(work->rgroup.ordinality()==0)))
+                if (!work||((work->leftOffsets.ordinality()==0)&&(work->row==NULL)))
                 {
                     delete work;
                     break;
@@ -1982,7 +2061,8 @@ class CMultiCoreUnorderedJoinHelper: public CMultiCoreJoinHelperBase
                 try
                 {
                     parent->doMatch(*work, *rowWriter, allocator);
-                    delete work;
+                    work->clear(); // release rows and reset offsets/counts before recycling
+                    parent->freequeue.enqueue(work);
                 }
                 catch (IException *e)
                 {
@@ -2019,11 +2099,21 @@ public:
             delete workers[i];
         delete [] workers;
         ::Release(jhelper);
+        delete activeItem;
     }
     void stopWorkers()
     {
+        if (activeItem && activeItem->leftOffsets.ordinality())
+        {
+            workqueue.enqueue(activeItem);
+            activeItem = nullptr;
+        }
         for (unsigned i=0;i<numworkers;i++)
-            addWork(NULL, NULL);
+        {
+            cWorkItem *item = freequeue.dequeue();
+            if (!item) item = new cWorkItem(activity);
+            workqueue.enqueue(item);
+        }
         rowWriter.clear();
     }
 
@@ -2076,14 +2166,25 @@ public:
         }
         while (workqueue.ordinality())
             delete workqueue.dequeueNow();
+        while (freequeue.ordinality())
+            delete freequeue.dequeue();
     }
 
 // IMulticoreIntercept impl.
     virtual void addWork(CThorExpandingRowArray *lgroup,CThorExpandingRowArray *rgroup)
     {
+        //NOTE: Unlike the ordered version, this is not called with addWork(nullptr, nullptr) at the end of work
+        //So this logic does not need to check for that case.
         noteGroupSizes(lgroup, rgroup);
-        cWorkItem *item = new cWorkItem(activity, lgroup, rgroup);
-        workqueue.enqueue(item);
+        if (!activeItem) {
+            activeItem = freequeue.dequeue();
+            if (!activeItem) activeItem = new cWorkItem(activity);
+        }
+        activeItem->append(lgroup, rgroup);
+        if (activeItem->numCandidates >= candidateBatchLimit) {
+            workqueue.enqueue(activeItem);
+            activeItem = nullptr;
+        }
     }
     virtual void addRow(const void *row)
     {

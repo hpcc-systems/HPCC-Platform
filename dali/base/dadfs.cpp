@@ -307,7 +307,7 @@ RemoteFilename &deprecatedConstructPartFilename(IGroup *grp,unsigned partno,unsi
     return rfn;
 }
 
-RemoteFilename &constructPartFilename(IGroup *grp,unsigned partNo,unsigned copy,unsigned max,unsigned lfnHash,int replicateOffset,bool dirPerPart,const char *lname,const char *prefix,const char *pmask,unsigned numDevices,RemoteFilename &rfn)
+RemoteFilename &constructPartFilename(IGroup *grp,unsigned partNo,unsigned max,unsigned node,unsigned replicateLevel,unsigned dirPerPartNum,const char *lname,const char *prefix,const char *pmask,unsigned stripeNum,RemoteFilename &rfn)
 {
     partNo--;
     StringBuffer partName;
@@ -329,33 +329,39 @@ RemoteFilename &constructPartFilename(IGroup *grp,unsigned partNo,unsigned copy,
         tailExt = strchr(ext+1, '.');
     }
 
-    // NB: calcStripeNumber expects a 0-based part number. 'partNo' is already decremented earlier to make it 0-based.
-    unsigned stripeNum = calcStripeNumber(partNo, lfnHash, numDevices);
-
     StringBuffer fullname;
-    makePhysicalPartName(lname, partNo+1, max, fullname, 0, DFD_OSdefault, prefix, dirPerPart, stripeNum);
+    makePhysicalPartName(lname, partNo+1, max, fullname, 0, DFD_OSdefault, prefix, dirPerPartNum, stripeNum);
 
     if (!isEmptyString(tailExt))
         fullname.append(tailExt);
 
+    if (!isContainerized())
+        setReplicateFilename(fullname, replicateLevel);
+
+    SocketEndpoint ep;
+    if (grp)
+        ep = grp->queryNode(node).endpoint();
+    rfn.setPath(ep, fullname.str());
+
+    return rfn;
+}
+
+RemoteFilename &constructPartFilename(IGroup *grp,unsigned partNo,unsigned copy,unsigned max,unsigned lfnHash,int replicateOffset,bool dirPerPart,const char *lname,const char *prefix,const char *pmask,unsigned numDevices,RemoteFilename &rfn)
+{
     // revisit: constructPartFilename should be refactored not to deal with replicate directories, by pre-determining the alternate prefix if copy>0
-    // If copy>0 it could do calcPartLocation, find the replicate plane, get it's prefix, and pass to makePhysicalPartName
-    unsigned n = 0;
+    // If copy>0 it could do calcPartLocation, find the replicate plane, get its prefix, and pass it to makePhysicalPartName
+    unsigned node = 0;
+    unsigned replicateLevel = 0;
     if (!isContainerized())
     {
         ClusterPartDiskMapSpec mspec;
         mspec.replicateOffset = replicateOffset;
-        unsigned d;
-        mspec.calcPartLocation(partNo, max, copy, grp?grp->ordinality():max, n, d);
-        setReplicateFilename(fullname, d);
+        mspec.calcPartLocation(partNo-1, max, copy, grp?grp->ordinality():max, node, replicateLevel);
     }
 
-    SocketEndpoint ep;
-    if (grp)
-        ep = grp->queryNode(n).endpoint();
-    rfn.setPath(ep, fullname.str());
-
-    return rfn;
+    unsigned stripeNum = calcStripeNumber(partNo-1, lfnHash, numDevices);
+    unsigned dirPerPartNum = dirPerPart && (max>1) ? partNo : 0;
+    return constructPartFilename(grp, partNo, max, node, replicateLevel, dirPerPartNum, lname, prefix, pmask, stripeNum, rfn);
 }
 
 inline void LOGPTREE(const char *title,IPropertyTree *pt)
@@ -4291,7 +4297,7 @@ public:
             queryAttributes().setPropInt64("@uncompressedSize", totalUncompressedSize);
         if (useableCheckSum)
             queryAttributes().setPropInt64("@checkSum", checkSum);
-        setModified();
+        setModified(); // superseded by attach() when published; retained for external/unattached files
 #ifdef EXTRA_LOGGING
         LOGPTREE("CDistributedFile.b root.2",root);
 #endif
@@ -4506,23 +4512,27 @@ public:
 
     virtual void addCluster(const char *clustername,const ClusterPartDiskMapSpec &mspec) override
     {
-        if (!clustername&&!*clustername)
+        if (isEmptyString(clustername))
             return;
-        CClustersLockedSection cls(CDistributedFileBase<IDistributedFile>::logicalName, true);
-        reloadClusters();
-        if (findCluster(clustername)!=NotFound) {
-            IDFS_Exception *e = new CDFS_Exception(DFSERR_ClusterAlreadyExists,clustername);
-            throw e;
+
+        {
+            CClustersLockedSection cls(CDistributedFileBase<IDistributedFile>::logicalName, true);
+            reloadClusters();
+            if (findCluster(clustername)!=NotFound) {
+                IDFS_Exception *e = new CDFS_Exception(DFSERR_ClusterAlreadyExists,clustername);
+                throw e;
+            }
+            Owned<IClusterInfo> cluster = createClusterInfo(clustername,NULL,mspec,&queryNamedGroupStore());
+            if (cluster->queryGroup(&queryNamedGroupStore())) {
+                clusters.append(*cluster.getClear());
+            }
+            else {
+                IDFS_Exception *e = new CDFS_Exception(DFSERR_ClusterNotFound,clustername);
+                throw e;
+            }
+            saveClusters();
         }
-        Owned<IClusterInfo> cluster = createClusterInfo(clustername,NULL,mspec,&queryNamedGroupStore());
-        if (cluster->queryGroup(&queryNamedGroupStore())) {
-            clusters.append(*cluster.getClear());
-        }
-        else {
-            IDFS_Exception *e = new CDFS_Exception(DFSERR_ClusterNotFound,clustername);
-            throw e;
-        }
-        saveClusters();
+        setModified(); // a new cluster's parts have been materialised - treat as modified
     }
 
     virtual bool removeCluster(const char *clustername) override
@@ -4822,6 +4832,7 @@ public:
                 lfnHash = getFilenameHash(logicalName.get());
                 queryAttributes().setPropInt("@lfnHash", lfnHash);
             }
+            setModified(); // stamp @modified at publish (materialisation) time, overriding the value set at construction
             parent->addEntry(logicalName,root.getClear(),false,false);
             killParts();
             clusters.kill();
@@ -5036,7 +5047,7 @@ public:
                 unsigned numStripedDevices = queryPartDiskMapping(cn).numStripedDevices;
                 unsigned stripeNum = calcStripeNumber(i, lfnHash, numStripedDevices);
 
-                makePhysicalPartName(newname, i+1, width, newPath.clear(), 0, os, myBase, hasDirPerPart(), stripeNum);
+                makePhysicalPartName(newname, i+1, width, newPath.clear(), 0, os, myBase, hasDirPerPart() && (width>1) ? i+1 : 0, stripeNum);
                 newPath.remove(0, myBase.length());
 
                 StringBuffer copyDir(baseDir);

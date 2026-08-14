@@ -61,7 +61,7 @@ private:
         ::ActPrintLog(this, thorDetailedLogLevel, "SELFJOIN: Performing local self-join");
         Owned<IThorRowLoader> iLoader = createThorRowLoader(*this, ::queryRowInterfaces(input), compare, isUnstable() ? stableSort_none : stableSort_earlyAlloc, rc_mixed, SPILL_PRIORITY_SELFJOIN);
         Owned<IRowStream> rs = iLoader->load(inputStream, abortSoon);
-        mergeStats(inactiveStats, iLoader, spillStatistics);  // Not sure of the best policy if rs spills later on.
+        mergeRemappedStats(inactiveStats, iLoader, diskToTempStatsMap);  // Not sure of the best policy if rs spills later on.
         PARENT::stopInput(0);
         return rs.getClear();
     }

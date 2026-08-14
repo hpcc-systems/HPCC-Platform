@@ -76,7 +76,7 @@ setup above. This uses a self-signed CA and server certificate.
 > feature. See [LDAPCertificateValidation.md](LDAPCertificateValidation.md) for details on that
 > feature.
 
-### Step 1 — Generate Certificates
+### Step 1: Generate Certificates
 
 Run these commands on the host (outside Docker). The server certificate must include a
 **Subject Alternative Name (SAN)** matching the hostname HPCC uses to connect to 389ds.
@@ -142,7 +142,7 @@ openssl x509 -in server.crt -noout -text | grep -A2 "Subject Alternative"
 > ```
 > Then set `ldapCACertFile="/etc/HPCCSystems/certs/ldap-ca.crt"` in `environment.xml`.
 
-### Step 2 — Install the Certificate on 389ds
+### Step 2: Install the Certificate on 389ds
 
 389ds does not read PEM files directly — it stores TLS material in an NSS certificate database.
 The CA cert is imported with `certutil`, and the server cert + private key must be bundled into
@@ -210,7 +210,7 @@ docker restart 389ds
 The TLS configuration is persisted in the mounted volume (`${HOME}/389ds`). Subsequent
 `docker compose up` runs will have TLS enabled without repeating these steps.
 
-### Step 3 — Verify TLS is Working
+### Step 3: Verify TLS is Working
 
 ```bash
 openssl s_client -connect localhost:636 -CAfile <ldap-certs-dir>/ca.crt </dev/null 2>&1 | grep -E "subject|issuer|Verify return"
@@ -222,7 +222,7 @@ cert CN and `issuer` matching your CA.
 > **Note:** `openssl s_client` without `</dev/null` will hang waiting for stdin. Always redirect
 > stdin to avoid this.
 
-### Step 4 — Configure HPCC to Validate the Certificate
+### Step 4: Configure HPCC to Validate the Certificate
 
 Copy `ca.crt` to a stable path accessible by the `hpcc` user on each HPCC node:
 
@@ -495,7 +495,7 @@ These directions assume you're starting with a vanilla configuration from a fres
     >
     > This writes `ldapAddress="127.0.0.1"` into the generated component config, matching the
     > `IP:127.0.0.1` SAN in the server certificate.
-    > See [Step 1 of the TLS setup](#step-1--generate-certificates) for cert SAN requirements.
+    > See [Step 1 of the TLS setup](#step-1-generate-certificates) for cert SAN requirements.
 2. In the component "Esp - myesp", navigate to the Authentication tab and change these properties:
     - `ldapServer = ldapserver`
     - `method = ldap`
@@ -531,7 +531,7 @@ First note the root of your platform install location, which we'll refer to as `
     ```bash
     hpcc-init start
     ```
-2. Login to ECL Watch at [http://127.0.0.1/8010](http://127.0.0.1/8010) using the credentials:
+2. Login to ECL Watch at [http://127.0.0.1:8010](http://127.0.0.1:8010) using the credentials:
     - user: `hpcc_admin`
     - password: `<hpcc_admin_pw>` (that you added to the secret above)
 
@@ -577,7 +577,7 @@ Run from the root of your platform source, or provide an absolute path to the He
 ```bash
 helm install mycluster hpcc/hpcc -f helm/examples/ldap/hpcc-values.yaml
 ```
-2. Login to ECL Watch at [http://127.0.0.1/8010](http://127.0.0.1/8010) using the credentials:
+2. Login to ECL Watch at [http://127.0.0.1:8010](http://127.0.0.1:8010) using the credentials:
     - user: `hpcc_admin`
     - password: `<hpcc_admin_pw>` Created in step [Add secret for HPCC Admin user](#add-secret-for-hpcc-admin-user)
 

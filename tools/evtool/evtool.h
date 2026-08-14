@@ -112,6 +112,7 @@ extern IBufferedSerialOutputStream& consoleErr();
 extern void cleanupConsole();
 
 // Command factory functions.
+extern IEvToolCommand* createDescribeCommand();
 extern IEvToolCommand* createDumpCommand();
 extern IEvToolCommand* createSaveAsCommand();
 extern IEvToolCommand* createSimCommand();

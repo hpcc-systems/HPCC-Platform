@@ -925,6 +925,7 @@ void mergeRemappedStats(CRuntimeStatisticCollection & stats, INTERFACE * source,
     }
 }
 
+// versions of mergeRemappedStats without explicitly passing the mapping - uses the mapping of the target stats collection
 template <class INTERFACE>
 void mergeRemappedStats(CRuntimeStatisticCollection & stats, INTERFACE * source, const StatKindMap & remaps)
 {

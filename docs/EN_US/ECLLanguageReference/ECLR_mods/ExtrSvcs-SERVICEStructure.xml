@@ -83,6 +83,11 @@
             STRING subject) : LIBRARY='ecl2cw',
                  INITFUNCTION='initEcl2Cw';
     END;
+
+  display := SERVICE
+    echo(CONST STRING src)
+      : entrypoint='rtlEcho',DEPRECATED('Use function echoecho instead.');
+  END;
 <!--#synthpii-->
   MyAttr := COUNT(Trades): FAILURE(email.simpleSend('help@example.com',
                           'FailTemplate',

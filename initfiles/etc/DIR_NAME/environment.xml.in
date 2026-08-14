@@ -981,7 +981,7 @@
   <home>${HOME_DIR}</home>
   <blockname>HPCCSystems</blockname>
   <mpEnd>7500</mpEnd>
-  <group>${RUNTIME_USER}</group>
+  <group>${RUNTIME_GROUP}</group>
   <interface>*</interface>
   <mpSoMaxConn>128</mpSoMaxConn>
   <user>${RUNTIME_USER}</user>

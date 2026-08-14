@@ -23,7 +23,6 @@
 #include "eventindexmodel.hpp"
 #include "eventoperation.h"
 #include "eventvisitor.h"
-#include <unordered_map>
 #include <string>
 #include <vector>
 

@@ -459,7 +459,7 @@ public:
             isemptylhs = 0 == iLoaderL->numRows();
             stopLeftInput();
 
-            mergeStats(inactiveStats, iLoaderL, spillStatistics);
+            mergeRemappedStats(inactiveStats, iLoaderL, diskToTempStatsMap);
         }
         IEngineRowStream *rightInputStream = queryInputStream(1);
         if (isemptylhs&&((helper->getJoinFlags()&JFrightouter)==0))
@@ -480,7 +480,7 @@ public:
             rightStream.setown(iLoaderR->load(rightInputStream, abortSoon));
             stopRightInput();
 
-            mergeStats(inactiveStats, iLoaderR, spillStatistics);
+            mergeRemappedStats(inactiveStats, iLoaderR, diskToTempStatsMap);
         }
     }
     bool doglobaljoin()
