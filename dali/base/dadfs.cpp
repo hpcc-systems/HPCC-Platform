@@ -4286,7 +4286,7 @@ public:
             queryAttributes().setPropInt64("@uncompressedSize", totalUncompressedSize);
         if (useableCheckSum)
             queryAttributes().setPropInt64("@checkSum", checkSum);
-        setModified();
+        setModified(); // superseded by attach() when published; retained for external/unattached files
 #ifdef EXTRA_LOGGING
         LOGPTREE("CDistributedFile.b root.2",root);
 #endif
@@ -4544,21 +4544,25 @@ public:
     {
         if (isEmptyString(clustername))
             return;
-        CClustersLockedSection cls(CDistributedFileBase<IDistributedFile>::logicalName, true);
-        reloadClusters();
-        if (findCluster(clustername)!=NotFound) {
-            IDFS_Exception *e = new CDFS_Exception(DFSERR_ClusterAlreadyExists,clustername);
-            throw e;
+
+        {
+            CClustersLockedSection cls(CDistributedFileBase<IDistributedFile>::logicalName, true);
+            reloadClusters();
+            if (findCluster(clustername)!=NotFound) {
+                IDFS_Exception *e = new CDFS_Exception(DFSERR_ClusterAlreadyExists,clustername);
+                throw e;
+            }
+            Owned<IClusterInfo> cluster = createClusterInfo(clustername,NULL,mspec,&queryNamedGroupStore());
+            if (cluster->queryGroup(&queryNamedGroupStore())) {
+                clusters.append(*cluster.getClear());
+            }
+            else {
+                IDFS_Exception *e = new CDFS_Exception(DFSERR_ClusterNotFound,clustername);
+                throw e;
+            }
+            saveClusters();
         }
-        Owned<IClusterInfo> cluster = createClusterInfo(clustername,NULL,mspec,&queryNamedGroupStore());
-        if (cluster->queryGroup(&queryNamedGroupStore())) {
-            clusters.append(*cluster.getClear());
-        }
-        else {
-            IDFS_Exception *e = new CDFS_Exception(DFSERR_ClusterNotFound,clustername);
-            throw e;
-        }
-        saveClusters();
+        setModified(); // a new cluster's parts have been materialised - treat as modified
     }
 
     virtual bool removeCluster(const char *clustername) override
@@ -4858,6 +4862,7 @@ public:
                 lfnHash = getFilenameHash(logicalName.get());
                 queryAttributes().setPropInt("@lfnHash", lfnHash);
             }
+            setModified(); // stamp @modified at publish (materialisation) time, overriding the value set at construction
             parent->addEntry(logicalName,root.getClear(),false,false);
             killParts();
             clusters.kill();
