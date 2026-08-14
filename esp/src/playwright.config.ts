@@ -6,9 +6,9 @@ const isCI = isCIL || !!process.env.CI;
 const isFull = !!process.env.FULL;
 const useAuth = !!process.env.AUTH;
 if (isCI && !isCIL) {
-    setBaseURL("http://127.0.0.1:8010");
+    setBaseURL("http://localhost:8010");
 } else {
-    setBaseURL("http://127.0.0.1:8080");
+    setBaseURL("http://localhost:8080");
 }
 
 console.log("target URL", baseURL);
