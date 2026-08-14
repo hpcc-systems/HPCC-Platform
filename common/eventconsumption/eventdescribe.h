@@ -50,7 +50,7 @@ public:
     virtual bool doOp() override;
 
 private:
-    void appendDescriptionTree(IPropertyTree& description);
+    void appendDescriptionTree(IPropertyTree& description, const std::array<__uint64, EventMax>& eventCounts, bool filterByObserved, const EventFileProperties* props);
     bool isSectionEnabled(DescribeSection section) const;
 
 private:
