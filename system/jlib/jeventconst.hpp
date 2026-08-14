@@ -77,6 +77,8 @@ enum EventType : unsigned char
     EventRwlockWriteRelease,
     EventRwlockReadWaitTimeout,
     EventRwlockWriteWaitTimeout,
+    EventFunctionEnter,
+    EventFunctionExit,
     EventMax
 };
 

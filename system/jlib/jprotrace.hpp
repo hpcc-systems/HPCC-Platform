@@ -203,37 +203,50 @@ inline void protraceNoteThreadName([[maybe_unused]] const char *name)
 #endif
 }
 
-inline void protraceNoteSemaphore([[maybe_unused]] unsigned syncId, [[maybe_unused]] const char *name)
+inline uint32_t protraceNoteFunction([[maybe_unused]] const char *name)
 {
 #ifdef _USE_PROTRACE
-    if (name)
-        protrace::note_semaphore(syncId, name);
+    return protrace::note_function(name);
+#else
+    return 0;
 #endif
 }
 
-inline void protraceNoteLock([[maybe_unused]] unsigned syncId, [[maybe_unused]] const char *name)
+// Registers a function name with protrace and holds the assigned ID.
+// Intended for use as a static local variable; zero-overhead when protrace is disabled.
+class TracedFunction
 {
+public:
 #ifdef _USE_PROTRACE
-    if (name)
-        protrace::note_lock(syncId, name);
+    explicit TracedFunction(const char * name) : id(protrace::note_function(name)) {}
+    uint32_t getId() const { return id; }
+private:
+    const uint32_t id;
+#else
+    explicit TracedFunction(const char *) {}
+    constexpr uint32_t getId() const { return 0; }
 #endif
-}
+};
 
-inline void protraceNoteSpinLock([[maybe_unused]] unsigned syncId, [[maybe_unused]] const char *name)
+// RAII tracker for the scope of a function call; records enter/exit to protrace only.
+class FunctionScopeTracker
 {
+public:
 #ifdef _USE_PROTRACE
-    if (name)
-        protrace::note_spinlock(syncId, name);
+    explicit FunctionScopeTracker(const TracedFunction & func) : id(func.getId())
+    {
+        protraceRecord(EventFunctionEnter, id);
+    }
+    ~FunctionScopeTracker()
+    {
+        protraceRecord(EventFunctionExit, id);
+    }
+private:
+    const uint32_t id;
+#else
+    explicit FunctionScopeTracker(const TracedFunction &) {}
 #endif
-}
-
-inline void protraceNoteRwLock([[maybe_unused]] unsigned syncId, [[maybe_unused]] const char *name)
-{
-#ifdef _USE_PROTRACE
-    if (name)
-        protrace::note_rwlock(syncId, name);
-#endif
-}
+};
 
 extern jlib_decl bool protraceResumeRecording();
 extern jlib_decl bool protraceSuspendRecording();

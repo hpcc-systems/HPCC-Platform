@@ -119,6 +119,7 @@ static const char * queryIndexNodeTypeText(unsigned type)
 #define JEVENT_MPRESPONSERECEIVE_ATTRS JEVENT_COMMON_ATTRS, EvAttrResponseId
 #define JEVENT_ENQUEUE_ATTRS           JEVENT_COMMON_ATTRS, EvAttrElementId
 #define JEVENT_DEQUEUE_ATTRS           JEVENT_COMMON_ATTRS, EvAttrElementId
+#define JEVENT_FUNCTION_ATTRS          JEVENT_COMMON_ATTRS, EvAttrFunctionId
 
 // Table expansion helpers
 #define DEFINE_EVENT(name, ctx, attrs)           { Event##name, #name, false, EventNone, EventCtx##ctx, { attrs } },
@@ -189,8 +190,10 @@ static constexpr EventInformation eventInformation[] = {
     DEFINE_EVENT(RwlockWriteWait,    Mutex, JEVENT_MUTEX_ATTRS)
     DEFINE_EVENT(RwlockWriteAcquire, Mutex, JEVENT_MUTEX_ATTRS)
     DEFINE_EVENT(RwlockWriteRelease, Mutex, JEVENT_MUTEX_ATTRS)
-    DEFINE_EVENT(RwlockReadWaitTimeout,  Mutex, JEVENT_MUTEX_ATTRS)
-    DEFINE_EVENT(RwlockWriteWaitTimeout, Mutex, JEVENT_MUTEX_ATTRS)
+    DEFINE_EVENT(RwlockReadWaitTimeout,  Mutex,    JEVENT_MUTEX_ATTRS)
+    DEFINE_EVENT(RwlockWriteWaitTimeout, Mutex,    JEVENT_MUTEX_ATTRS)
+    DEFINE_EVENT(FunctionEnter,          Function, JEVENT_FUNCTION_ATTRS)
+    DEFINE_EVENT(FunctionExit,           Function, JEVENT_FUNCTION_ATTRS)
 };
 
 static_assert(_elements_in(eventInformation) == EventMax);

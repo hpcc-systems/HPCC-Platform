@@ -697,6 +697,7 @@ static void roxieAbortHandler([[maybe_unused]] ahType type)
     sigShutdownRequested.store(true);
 }
 
+const TracedFunction mainFunction("roxie_main");
 int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
 {
     if (!checkCreateDaemon(argc, argv))
@@ -804,6 +805,9 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         topologyFile.append(codeDirectory).append(PATHSEPCHAR).append("RoxieTopology.xml");
         useOldTopology = checkFileExists(topologyFile.str());
         topology = loadConfiguration(useOldTopology ? nullptr : defaultYaml, argv, "roxie", "ROXIE", topologyFile, nullptr, "@netAddress");
+
+        // Can only trace functions once protrace has been initialised
+        FunctionScopeTracker tracker(mainFunction);
 
         saveTopology(topology->getPropBool("@lockDali", false));
         originalTopologyHash = currentTopologyHash = getTopologyHash();

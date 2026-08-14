@@ -1376,6 +1376,18 @@ attribute: DataSize = 73
         recordRwlockEvent(EventRwlockReadWaitTimeout);
         recordRwlockEvent(EventRwlockWriteWaitTimeout);
 
+        // Function events (protrace-only; recorded via generic recordEvent for completeness)
+        constexpr unsigned functionId = 1;
+        CEvent functionEvent;
+        auto recordFunctionEvent = [&](EventType type)
+        {
+            functionEvent.reset(type);
+            functionEvent.setValue(EvAttrFunctionId, functionId);
+            recorder.recordEvent(functionEvent);
+        };
+        recordFunctionEvent(EventFunctionEnter);
+        recordFunctionEvent(EventFunctionExit);
+
         // Remote events
         recorder.recordRequestSend(1, 1);
         recorder.recordRequestReceive(1, 1);

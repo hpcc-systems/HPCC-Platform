@@ -37,13 +37,14 @@
 // Reusable EventContext values for collection construction.
 // EventCtxNone and reserved/sentinel values are intentionally excluded.
 #define FOR_EACH_EVENT_CONTEXT_VALUE(DEFINE) \
-    DEFINE(Dali,   0x0001) \
-    DEFINE(Index,  0x0002) \
-    DEFINE(Other,  0x0004) \
-    DEFINE(Meta,   0x0008) \
-    DEFINE(Remote, 0x0010) \
-    DEFINE(Query,  0x0020) \
-    DEFINE(Mutex,  0x0040)
+    DEFINE(Dali,     0x0001) \
+    DEFINE(Index,    0x0002) \
+    DEFINE(Other,    0x0004) \
+    DEFINE(Meta,     0x0008) \
+    DEFINE(Remote,   0x0010) \
+    DEFINE(Query,    0x0020) \
+    DEFINE(Mutex,    0x0040) \
+    DEFINE(Function, 0x0080)
 
 // Reusable EventAttr values for collection construction.
 // EvAttrNone is intentionally excluded and remains explicitly defined in enum EventAttr.
@@ -79,7 +80,8 @@
     DEFINE(ResponseSeq,       u4,        none) \
     DEFINE(Task,              u1,        none) \
     DEFINE(LockId,            u4,        none) \
-    DEFINE(ElementId,         u8,        none)
+    DEFINE(ElementId,         u8,        none) \
+    DEFINE(FunctionId,        u4,        none)
 
 // Tasks represent a logical step in processing.  They will always start and stop on the same thread.
 enum class EventTask : byte
