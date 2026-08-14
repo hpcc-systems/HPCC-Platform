@@ -747,14 +747,13 @@ IPropertyTree *CClientRemoteTree::_queryBranch(const char *xpath)
 
 ChildMap *CClientRemoteTree::checkChildren() const
 {
+    if (!queryLazyFetch() || (!(STI_HaveChildren & serverTreeInfo.load())))
+        return children;
     return const_cast<CClientRemoteTree *>(this)->_checkChildren();
 }
 
 ChildMap *CClientRemoteTree::_checkChildren()
 {
-    if (!(STI_HaveChildren & serverTreeInfo.load()))
-        return children;
-
     CConnectionLock b(connection);
     byte treeInfo = serverTreeInfo.load();
     if (!children && (STI_HaveChildren & treeInfo))
