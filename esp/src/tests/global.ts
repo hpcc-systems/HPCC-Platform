@@ -2,7 +2,7 @@ import { DFUWorkunit, Workunit } from "@hpcc-js/comms";
 import * as fs from "fs";
 import * as path from "path";
 
-export let baseURL = "http://127.0.0.1:8080";
+export let baseURL = "http://localhost:8080";
 export function setBaseURL(baseUrl: string) {
     baseURL = baseUrl;
 }
