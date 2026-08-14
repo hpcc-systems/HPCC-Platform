@@ -3390,6 +3390,15 @@ void PTree::cloneIntoSelf(const IPropertyTree &srcTree, bool sub)
     cloneContents(srcTree, sub);
 }
 
+AttrValue *PTree::rawCloneAttributes() const
+{
+    if (!numAttrs)
+        return nullptr;
+    AttrValue *cloned = static_cast<AttrValue *>(checked_malloc(sizeof(AttrValue) * numAttrs, -605));
+    memcpy(cloned, attrs, sizeof(AttrValue) * numAttrs);
+    return cloned;
+}
+
 IPTArrayValue * PTree::cloneValue() const
 {
     IPTArrayValue *v = queryValue();
@@ -3398,25 +3407,16 @@ IPTArrayValue * PTree::cloneValue() const
     return new CPTValue(v->queryValueRawSize(), v->queryValueRaw(), isBinary(nullptr), v->getCompressionType(), COMPRESS_METHOD_NONE);
 }
 
-
 void PTree::cloneContents(const IPropertyTree &srcTree, bool sub)
 {
     //MORE: Should any flags be cloned from the srcTree?
 
+    const PTree &src = static_cast<const PTree &>(srcTree);
     bool srcBinary = srcTree.isBinary(NULL);
     //All implementations of IPropertyTree have PTree as a base class, therefore static cast is ok.
-    IPTArrayValue *v = static_cast<const PTree &>(srcTree).cloneValue();
+    IPTArrayValue *v = src.cloneValue();
     setValue(v, srcBinary);
-
-    Owned<IAttributeIterator> attrs = srcTree.getAttributes();
-    if (attrs->first())
-    {
-        do
-        {
-            setProp(attrs->queryName(), attrs->queryValue());
-        }
-        while (attrs->next());
-    }
+    cloneAttributes(src);
 
     if (sub)
     {
@@ -3922,6 +3922,21 @@ AttrValue *PTree::getNextAttribute(AttrValue *cur) const
     }
 }
 
+static AttrValue *newAttrArray(unsigned n)
+{
+    return n ? static_cast<AttrValue *>(checked_malloc(sizeof(AttrValue) * n, -605)) : nullptr;
+}
+
+static AttrValue *resizeAttrArray(AttrValue *attrs, unsigned oldCount, unsigned newCount)
+{
+    return static_cast<AttrValue *>(checked_realloc(attrs, sizeof(AttrValue) * newCount, sizeof(AttrValue) * oldCount, -605));
+}
+
+static void freeAttrArray(AttrValue *attrs)
+{
+    free(attrs);
+}
+
 
 //////////////////////
 
@@ -3953,7 +3968,7 @@ LocalPTree::~LocalPTree()
         a->key.destroy();
         a->value.destroy();
     }
-    free(attrs);
+    freeAttrArray(attrs);
 }
 
 const char *LocalPTree::queryName() const
@@ -4002,13 +4017,7 @@ void LocalPTree::deserializeAttributes(const char *base, PTreeDeserializeContext
     dbgassertex(!(numAttrs || arrayOwner || attrs));
 
     // Allocate space for new attributes
-    AttrValue *newAttrs = (AttrValue *)realloc(attrs, newAttrPairs * sizeof(AttrValue));
-    if (unlikely(!newAttrs))
-    {
-        VStringBuffer err("PTree deserialization error: out of memory reading attributes, numAttrs=%u, newAttrPairs=%u", numAttrs, newAttrPairs);
-        throwUnexpectedX(err.str());
-    }
-    attrs = newAttrs;
+    attrs = resizeAttrArray(attrs, numAttrs, newAttrPairs);
 
     // Process each name/value pair
     for (unsigned i = 0; i < ctx.matchOffsets.size(); i += 2)
@@ -4050,7 +4059,7 @@ void LocalPTree::setAttribute(const char *inputkey, const char *val, bool encode
     }
     else
     {
-        attrs = (AttrValue *)realloc(attrs, (numAttrs+1)*sizeof(AttrValue));
+        attrs = resizeAttrArray(attrs, numAttrs, numAttrs+1);
         v = new(&attrs[numAttrs++]) AttrValue;  // Initialize new AttrValue
         if (!v->key.set(inputkey)) //AtomStr will not return encoding marker when get() is called
             v->key.setPtr(isnocase() ? AtomStr::createNC(inputkey) : AtomStr::create(inputkey));
@@ -4071,6 +4080,60 @@ void LocalPTree::setAttribute(const char *inputkey, const char *val, bool encode
         v->value.setPtr(AtomStr::create(val));
     if (goer)
         AtomStr::destroy(goer);
+}
+
+void LocalPTree::cloneAttributes(const PTree &src)
+{
+    //This is only ever called when the target tree is empty
+    dbgassertex(!attrs);
+    const unsigned newNumAttrs = src.getAttributeCount();
+    if (!newNumAttrs)
+        return;
+
+    AttrValue *newAttrs = src.rawCloneAttributes();
+    const bool nc = isnocase();
+    unsigned curKeyAttr = 0;
+    unsigned curValueAttr = 0;
+    try
+    {
+        for (; curKeyAttr < newNumAttrs; curKeyAttr++)
+        {
+            if (newAttrs[curKeyAttr].key.isPtr())
+            {
+                const char *key = newAttrs[curKeyAttr].key.get();
+                newAttrs[curKeyAttr].key.setPtr(nc ? AtomStr::createNC(key) : AtomStr::create(key));
+            }
+        }
+
+        for (; curValueAttr < newNumAttrs; curValueAttr++)
+        {
+            if (newAttrs[curValueAttr].value.isPtr())
+            {
+                const char *value = newAttrs[curValueAttr].value.get();
+                newAttrs[curValueAttr].value.setPtr(AtomStr::create(value));
+            }
+        }
+    }
+    catch (...)
+    {
+        for (unsigned i = 0; i < curKeyAttr; i++)
+        {
+            AtomStr *k = newAttrs[i].key.getPtr();
+            if (k)
+                AtomStr::destroy(k);
+        }
+        for (unsigned i = 0; i < curValueAttr; i++)
+        {
+            AtomStr *v = newAttrs[i].value.getPtr();
+            if (v)
+                AtomStr::destroy(v);
+        }
+        freeAttrArray(newAttrs);
+        throw;
+    }
+
+    attrs = newAttrs;
+    numAttrs = newNumAttrs;
 }
 
 #ifdef TRACE_STRING_SIZE
@@ -4165,11 +4228,6 @@ unsigned CAtomPTree::queryHash() const
     return hash_fnv1a((const byte *)_name, nl, fnvInitialHash32, isnocase());
 }
 
-static AttrValue *newAttrArray(unsigned n)
-{
-    return n ? (AttrValue *)checked_malloc(sizeof(AttrValue) * n, -605) : nullptr;
-}
-
 void CAtomPTree::deserializeAttributes(const char *base, PTreeDeserializeContext &ctx)
 {
     const unsigned newAttrPairs = ctx.matchOffsets.size() / 2;
@@ -4205,7 +4263,7 @@ void CAtomPTree::deserializeAttributes(const char *base, PTreeDeserializeContext
     }
     catch (...)
     {
-        free(newAttrs);
+        freeAttrArray(newAttrs);
         throw;
     }
 
@@ -4245,12 +4303,7 @@ void CAtomPTree::setAttribute(const char *key, const char *val, bool encoded)
     }
     else
     {
-        AttrValue *newattrs = newAttrArray(numAttrs+1);
-        if (attrs)
-        {
-            memcpy(newattrs, attrs, numAttrs*sizeof(AttrValue));
-            free(attrs);
-        }
+        AttrValue *newattrs = resizeAttrArray(attrs, numAttrs, numAttrs+1);
         if (arrayOwner)
         {
             CQualifierMap *map = arrayOwner->queryMap();
@@ -4269,6 +4322,82 @@ void CAtomPTree::setAttribute(const char *key, const char *val, bool encoded)
         numAttrs++;
         attrs = newattrs;
     }
+}
+
+void CAtomPTree::cloneAttributes(const PTree &src)
+{
+    //This is only ever called when the target tree is empty
+    dbgassertex(!attrs);
+    const unsigned newNumAttrs = src.getAttributeCount();
+    if (!newNumAttrs)
+        return;
+
+    AttrValue *newAttrs = src.rawCloneAttributes();
+    const bool nc = isCaseInsensitive();
+    bool srcLowMemory = src.isLowMemory();
+    if (srcLowMemory && (src.isCaseInsensitive() != nc))
+        srcLowMemory = false; // fall back to resolving in the hash table
+
+    unsigned curKeyAttr = 0;
+    unsigned curValueAttr = 0;
+    try
+    {
+        for (; curKeyAttr < newNumAttrs; curKeyAttr++)
+        {
+            if (newAttrs[curKeyAttr].key.isPtr())
+            {
+                AtomStr *keyPtr = newAttrs[curKeyAttr].key.getPtr();
+                if (srcLowMemory)
+                {
+                    if (!AtomStrAtom::toAtom(keyPtr)->link())
+                        throw MakeIPTException(PTreeExcpt_InternalError, "CAtomPTree::cloneAttributes: failed to link attribute key atom");
+                }
+                else
+                {
+                    const char *key = newAttrs[curKeyAttr].key.get();
+                    newAttrs[curKeyAttr].key.setPtr(ensureAttributeName(key, nc));
+                }
+            }
+        }
+
+        for (; curValueAttr < newNumAttrs; curValueAttr++)
+        {
+            if (newAttrs[curValueAttr].value.isPtr())
+            {
+                AtomStr *valuePtr = newAttrs[curValueAttr].value.getPtr();
+                if (srcLowMemory)
+                {
+                    if (!AtomStrAtom::toAtom(valuePtr)->link())
+                        throw MakeIPTException(PTreeExcpt_InternalError, "CAtomPTree::cloneAttributes: failed to link attribute value atom");
+                }
+                else
+                {
+                    const char *value = newAttrs[curValueAttr].value.get();
+                    newAttrs[curValueAttr].value.setPtr(ensureAttributeValue(value));
+                }
+            }
+        }
+    }
+    catch (...)
+    {
+        for (unsigned i = 0; i < curKeyAttr; i++)
+        {
+            AtomStr *k = newAttrs[i].key.getPtr();
+            if (k)
+                removeAttrKeyByPtr(k, nc);
+        }
+        for (unsigned i = 0; i < curValueAttr; i++)
+        {
+            AtomStr *v = newAttrs[i].value.getPtr();
+            if (v)
+                removeAttrValByPtr(v);
+        }
+        freeAttrArray(newAttrs);
+        throw;
+    }
+
+    attrs = newAttrs;
+    numAttrs = newNumAttrs;
 }
 
 bool CAtomPTree::removeAttribute(const char *key)
@@ -4300,7 +4429,7 @@ bool CAtomPTree::removeAttribute(const char *key)
         memcpy(newattrs, attrs, pos*sizeof(AttrValue));
         memcpy(newattrs+pos, attrs+pos+1, (numAttrs-pos)*sizeof(AttrValue));
     }
-    free(attrs);
+    freeAttrArray(attrs);
     attrs = newattrs;
     return true;
 }

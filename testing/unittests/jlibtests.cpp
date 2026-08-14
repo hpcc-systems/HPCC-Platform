@@ -3957,6 +3957,7 @@ class PTreeBinaryTimingStressTest : public CppUnit::TestFixture
 {
     CPPUNIT_TEST_SUITE(PTreeBinaryTimingStressTest);
     CPPUNIT_TEST(testPTreeTiming);
+    CPPUNIT_TEST(testPTreeCloneTiming);
     CPPUNIT_TEST_SUITE_END();
 
 public:
@@ -4183,6 +4184,76 @@ public:
         END_TEST
     }
 
+    void testPTreeCloneTiming()
+    {
+        START_TEST
+
+        MemoryBuffer binaryInput;
+        readBinaryFile(binaryInput);
+
+        Owned<IPropertyTree> lowMemSource = createTreeFromBinary(binaryInput, ipt_lowmem);
+        Owned<IPropertyTree> fastSource = createTreeFromBinary(binaryInput, ipt_fast);
+        constexpr ipt_flags cloneFlags[] = { ipt_lowmem, ipt_fast };
+
+        DBGLOG("=== PTree CLONE PARALLEL BENCHMARK (size=%u bytes, iters=%u) ===", binaryInput.length(), iterations);
+        DBGLOG("create/dtor/total avg/sd/min/max = per-iteration ms pooled across all %u iterations.", iterations);
+        if (!synchronizePhases)
+            DBGLOG("NOTE: phase synchronization is OFF - create and dtor phases overlap across threads, so their timings may be misleading.");
+
+        StringBuffer groupHeader;
+        StringBuffer colHeader;
+        groupHeader.appendf("%7s %-15s", "", "");
+        colHeader.appendf("%7s %-15s", "Threads", "Mode");
+        for (const char *grp : {"create", "dtor", "total"})
+        {
+            groupHeader.appendf(" |%45s", grp);
+            colHeader.appendf(" |%9s%9s%9s%9s%9s", "avg", "sd", "min", "max", "wall");
+        }
+        DBGLOG("%s", groupHeader.str());
+        DBGLOG("%s", colHeader.str());
+
+        for (ipt_flags sourceFlags : cloneFlags)
+        {
+            for (ipt_flags targetFlags : cloneFlags)
+            {
+                const IPropertyTree *source = queryCloneSource(sourceFlags, lowMemSource, fastSource);
+                CPPUNIT_ASSERT_MESSAGE("Clone mode source selection failed", source != nullptr);
+                validateCloneMode(source, targetFlags);
+            }
+        }
+
+        for (unsigned threadCount : threadCounts)
+        {
+            for (ipt_flags sourceFlags : cloneFlags)
+            {
+                for (ipt_flags targetFlags : cloneFlags)
+                {
+                    const IPropertyTree *source = queryCloneSource(sourceFlags, lowMemSource, fastSource);
+                    CPPUNIT_ASSERT_MESSAGE("Clone mode source selection failed", source != nullptr);
+
+                    auto cloneTreeFunc = [source, targetFlags]()
+                    {
+                        return createPTreeFromIPT(source, targetFlags);
+                    };
+                    TimingResult result = runParallelTimingTest(threadCount, cloneTreeFunc);
+
+                    StringBuffer row;
+                    row.appendf("%7u %-15s", threadCount, queryCloneModeToken(sourceFlags, targetFlags));
+                    auto appendStats = [&](const TimingResult::Stats &st)
+                    {
+                        row.appendf(" |%9.2f%9.2f%9.2f%9.2f%9.2f", st.avgMs, st.stddevMs, st.minMs, st.maxMs, st.wallMs);
+                    };
+                    appendStats(result.create);
+                    appendStats(result.dtor);
+                    appendStats(result.total);
+                    DBGLOG("%s", row.str());
+                }
+            }
+        }
+
+        END_TEST
+    }
+
 protected:
     // Timing distribution from a single parallel run. Every iteration on every thread
     // contributes one create sample and one dtor sample (total = the two summed for the
@@ -4252,15 +4323,52 @@ protected:
         }
     }
 
+    const char *queryCloneModeToken(ipt_flags sourceFlags, ipt_flags targetFlags) const
+    {
+        if (sourceFlags == ipt_lowmem && targetFlags == ipt_lowmem)
+            return "lowmem->lowmem";
+        if (sourceFlags == ipt_lowmem && targetFlags == ipt_fast)
+            return "lowmem->fast";
+        if (sourceFlags == ipt_fast && targetFlags == ipt_lowmem)
+            return "fast->lowmem";
+        if (sourceFlags == ipt_fast && targetFlags == ipt_fast)
+            return "fast->fast";
+        return "unknown";
+    }
+
+    IPropertyTree * createTreeFromBinary(const MemoryBuffer &binaryInput, unsigned ptreeFlags)
+    {
+        MemoryBuffer workingBuffer;
+        workingBuffer.setBuffer(binaryInput.length(), (void *)binaryInput.bufferBase(), false);
+        Owned<IBufferedSerialInputStream> in = createBufferedSerialInputStream(workingBuffer.reset());
+        return createPTreeFromBinary(*in, ptreeFlags);
+    }
+
+    const IPropertyTree *queryCloneSource(ipt_flags sourceFlags, const IPropertyTree *lowMemSource, const IPropertyTree *fastSource) const
+    {
+        switch (sourceFlags)
+        {
+            case ipt_lowmem:
+                return lowMemSource;
+            case ipt_fast:
+                return fastSource;
+            default:
+                return nullptr;
+        }
+    }
+
+    void validateCloneMode(const IPropertyTree *sourceTree, ipt_flags targetFlags)
+    {
+        Owned<IPropertyTree> cloned = createPTreeFromIPT(sourceTree, targetFlags);
+        CPPUNIT_ASSERT(areMatchingPTrees(sourceTree, cloned));
+    }
+
     TimingResult runBinaryMode(unsigned threadCount, const MemoryBuffer &binaryInput, unsigned ptreeFlags,
                          const MemoryBuffer *validationReference)
     {
         auto createTreeFunc = [&]()
         {
-            MemoryBuffer workingBuffer;
-            workingBuffer.setBuffer(binaryInput.length(), (void *)binaryInput.bufferBase(), false);
-            Owned<IBufferedSerialInputStream> in = createBufferedSerialInputStream(workingBuffer.reset());
-            return createPTreeFromBinary(*in, ptreeFlags);
+            return createTreeFromBinary(binaryInput, ptreeFlags);
         };
 
         validateMode(createTreeFunc, validationReference);

@@ -821,6 +821,7 @@ public:
     void cloneIntoSelf(const IPropertyTree &srcTree, bool sub);     // clone the name and contents of srcTree into "this" tree
     IPropertyTree * clone(const IPropertyTree &srcTree, bool sub);  // create a node (that matches the type of this) and clone the source
     void cloneContents(const IPropertyTree &srcTree, bool sub);
+    AttrValue *rawCloneAttributes() const;
     virtual IPTArrayValue * cloneValue() const;
 
     inline void setOwner(IPTArrayValue *_arrayOwner) { arrayOwner = _arrayOwner; }
@@ -867,6 +868,7 @@ public:
         return a->key.isEncoded();
     }
     virtual void setAttribute(const char *attr, const char *val, bool encoded) = 0;
+    virtual void cloneAttributes(const PTree &src) = 0;
 
 // IPropertyTree impl.
     virtual bool hasProp(const char * xpath) const override;
@@ -914,11 +916,11 @@ public:
     virtual bool hasChildren() const override { return children && children->count()?true:false; }
     virtual unsigned numUniq() const override { return checkChildren()?children->count():0; }
     virtual unsigned numChildren() const override;
-    virtual bool isCaseInsensitive() const override { return isnocase(); }
+    virtual bool isCaseInsensitive() const override final { return isnocase(); }
     virtual unsigned getCount(const char *xpath) const override;
     virtual IPropertyTree *addPropTreeArrayItem(const char *xpath, IPropertyTree *val) override;
     virtual bool isArray(const char *xpath=NULL) const override;
-    virtual unsigned getAttributeCount() const override;
+    virtual unsigned getAttributeCount() const override final;
     virtual void serializeToStream(IBufferedSerialOutputStream &out) const override;
     virtual void deserializeFromStream(IBufferedSerialInputStream &src, PTreeDeserializeContext &ctx) override;
 // serializable impl.
@@ -995,6 +997,8 @@ public:
     CAtomPTree(const char *name=nullptr, byte flags=ipt_none, IPTArrayValue *value=nullptr, ChildMap *children=nullptr);
     ~CAtomPTree();
     const char *queryName() const override;
+    virtual bool isLowMemory() const override { return true; }
+    virtual void cloneAttributes(const PTree &src) override;
     virtual unsigned queryHash() const override;
     virtual void setName(const char *_name) override;
     virtual void setAttribute(const char *attr, const char *val, bool encoded) override;
@@ -1029,6 +1033,8 @@ public:
     ~LocalPTree();
 
     const char *queryName() const override;
+    virtual bool isLowMemory() const override { return false; }
+    virtual void cloneAttributes(const PTree &src) override;
     virtual unsigned queryHash() const override
     {
         const char *myname = queryName();

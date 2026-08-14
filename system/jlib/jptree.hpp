@@ -151,6 +151,7 @@ interface jlib_decl IPropertyTree : extends serializable
     virtual unsigned numUniq() const = 0;
     virtual unsigned numChildren() const = 0;
     virtual bool isCaseInsensitive() const = 0;
+    virtual bool isLowMemory() const = 0;
     virtual bool IsShared() const = 0;
     virtual void localizeElements(const char *xpath, bool allTail=false) = 0;
     virtual unsigned getCount(const char *xpath) const = 0;
