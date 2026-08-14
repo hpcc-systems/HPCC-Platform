@@ -2918,12 +2918,11 @@ public:
 
 // --------------------------------------------------------
 
-class CDistributedFilePart: public CInterface, implements IDistributedFilePart
+class CDistributedFilePart: implements IDistributedFilePart, public CInterface
 {
     unsigned partIndex;
     CDistributedFile &parent;
-    Owned<IPropertyTree> attr;
-    CriticalSection sect{SYNC_LOCATION};
+    AtomicShared<IPropertyTree> attr;
     StringAttr overridename;    // may or not be relative to directory
     bool            dirty;      // whether needs updating in tree
     std::vector<unsigned> stripeNumber;
@@ -2989,7 +2988,7 @@ public:
 
     IPropertyTree *queryAttr()
     {
-        return attr;
+        return attr.query();
     }
 
     inline CDistributedFile &queryParent()
@@ -8030,15 +8029,18 @@ bool CDistributedFilePart::isHost(unsigned copy)
     return (queryNode(copy)->isHost());
 }
 
-
+//This is only ever used for an error condition - so no problem sharing with all instances
+static CriticalSection emptyAttrCritSec{SYNC_LOCATION};
 IPropertyTree &CDistributedFilePart::queryAttributes()
 {
-    CriticalBlock block (sect);     // avoid nested blocks
-    if (attr)
-        return *attr;
+    IPropertyTree * ret = attr.query();
+    if (ret)
+        return *ret;
+
     DBGLOG("CDistributedFilePart::queryAttributes missing part attributes");
+    CriticalBlock block (emptyAttrCritSec);     // avoid nested blocks
     attr.setown(getEmptyAttr());
-    return *attr;
+    return *attr.query();
 }
 
 RemoteFilename &CDistributedFilePart::getFilename(RemoteFilename &ret,unsigned copy)
