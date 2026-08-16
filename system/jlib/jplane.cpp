@@ -111,7 +111,7 @@ private:
 class CStorageApiInfo : public CInterfaceOf<IStorageApiInfo>
 {
 public:
-    CStorageApiInfo(const IPropertyTree * _xml) : xml(_xml)
+    CStorageApiInfo(const char * _planeName, const IPropertyTree * _xml) : planeName(_planeName), xml(_xml)
     {
         if (!xml) // shouldn't happen
             throw makeStringException(MSGAUD_programmer, -1, "Invalid call: CStorageApiInfo(nullptr)");
@@ -119,6 +119,10 @@ public:
     virtual const char * getStorageType() const override
     {
         return xml->queryProp("@type");
+    }
+    virtual const char * queryPlaneName() const override
+    {
+        return planeName.str();
     }
     virtual const char * queryStorageApiAccount(unsigned stripeNumber) const override
     {
@@ -159,6 +163,7 @@ private:
             throw makeStringExceptionV(JLIBERR_UtilNoContainerProvidedPathS, "No container provided: path %s", path.str());
         return container;
     }
+    StringAttr planeName;
     Owned<const IPropertyTree> xml;
 };
 
@@ -340,7 +345,7 @@ public:
     {
         IPropertyTree *apiInfo = config->getPropTree("storageapi");
         if (apiInfo)
-            return new CStorageApiInfo(apiInfo);
+            return new CStorageApiInfo(queryName(), apiInfo);
         return nullptr;
     }
 
