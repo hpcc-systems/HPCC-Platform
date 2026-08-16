@@ -3452,6 +3452,15 @@ indexOrBuildFlag
                         {
                             $$.setExpr(createExprAttribute(trimAtom), $1);
                         }
+    | PACKED
+                        {
+                            $$.setExpr(createExprAttribute(packedAtom), $1);
+                        }
+    | PACKED '(' constExpression ')'
+                        {
+                            parser->normalizeExpression($3, type_numeric, false);
+                            $$.setExpr(createExprAttribute(packedAtom, $3.getExpr()), $1);
+                        }
     | FILEPOSITION optConstBoolArg
                         {
                             $$.setExpr(createExprAttribute(filepositionAtom, $2.getExpr()), $1);
@@ -9324,6 +9333,7 @@ simpleDataSet
                             OwnedHqlExpr transform = parser->extractTransformFromExtra(extra);
 
                             parser->inheritRecordMaxLength(dataset, record);
+                            // "packed" attribute is applied in the checkIndexRecord() function
 
                             record.setown(parser->checkIndexRecord(record, $5, extra));
 

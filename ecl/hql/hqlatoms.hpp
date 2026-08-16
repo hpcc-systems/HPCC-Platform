@@ -353,7 +353,6 @@ extern HQL_API IAtom * partitionAtom;
 extern HQL_API IAtom * partitionLeftAtom;
 extern HQL_API IAtom * partitionRightAtom;
 extern HQL_API IAtom * passParameterMetaAtom;
-extern HQL_API IAtom * payloadAtom;
 extern HQL_API IAtom * _payload_Atom;
 extern HQL_API IAtom * persistAtom;
 extern HQL_API IAtom * physicalFilenameAtom;
