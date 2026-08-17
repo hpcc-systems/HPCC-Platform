@@ -18,7 +18,7 @@
 #include "evtool.hpp"
 #include "eventdescribe.h"
 
-class CEvtDescribeCommand : public TEvtCLIConnector<CDescribeEventsOp>
+class CEvtDescribeCommand : public TEventConsumingCommand<CDescribeEventsOp>
 {
 public:
     CEvtDescribeCommand()
@@ -57,11 +57,6 @@ protected:
         return true;
     }
 
-    virtual bool acceptParameter(const char* arg) override
-    {
-        throw makeStringExceptionV(0, "describe: input files are not supported: %s", arg);
-    }
-
     virtual const char* getVerboseDescription() const override
     {
         return R"!!!(Describe known event contexts, events, and attributes.
@@ -77,13 +72,13 @@ narrowed to one or more sections and emitted as XML, JSON, or YAML.
 
     virtual void usageSyntax(StringBuffer& helpText) override
     {
-        helpText.append(R"!!!([options]
+        helpText.append(R"!!!([options] [<filename> ...]
 )!!!");
     }
 
     virtual void usageOptions(IBufferedSerialOutputStream& out) override
     {
-        TEvtCLIConnector<CDescribeEventsOp>::usageOptions(out);
+        TEventConsumingCommand<CDescribeEventsOp>::usageOptions(out);
         constexpr const char* usageStr =
 R"!!!(    -x, -j, -y                Output format: XML, JSON, or YAML.
                               If more than one output option is supplied,
@@ -97,21 +92,31 @@ R"!!!(    -x, -j, -y                Output format: XML, JSON, or YAML.
 
     virtual void usageParameters(IBufferedSerialOutputStream& out) override
     {
-        // Intentionally empty: this phase documents option-only usage.
+        constexpr const char* usageStr = R"!!!(
+Parameters:
+    <filename>                Optional input event file. Multiple may be
+                              supplied.
+)!!!";
+        out.put(size32_t(strlen(usageStr)), usageStr);
     }
 
     virtual void usageDetails(IBufferedSerialOutputStream& out) override
     {
         constexpr const char* usageStr = R"!!!(
-    Used without input event files. All observable events, contexts, and
-    attributes are described. Derived meta.* names are included in the
-    attribute section.
+Used without input event files, all observable events, contexts, and
+attributes are described. When input files are provided, the output is limited
+to names observed in those inputs.
 
 If none of -x, -j, or -y are provided, YAML output is used.
 
-    If none of -c, -e, or -a are provided, all sections are emitted. If one
+If none of -c, -e, or -a are provided, all sections are emitted. If one
 or more section options are provided, output is limited to the selected
 sections.
+
+When input files are provided, observed output is derived from the stream after
+all processing options are applied. In particular, --model=<filename> and any
+filters (for example --events=... and --attribute:<attr>=<val>) can change
+which names are observed and therefore shown.
 )!!!";
         out.put(size32_t(strlen(usageStr)), usageStr);
     }
