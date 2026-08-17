@@ -11,9 +11,9 @@
 
   <para><informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
-        <colspec colwidth="76.70pt" />
+        <colspec colwidth="76.70pt"/>
 
-        <colspec colwidth="276.10pt" />
+        <colspec colwidth="276.10pt"/>
 
         <tbody>
           <row>
@@ -29,7 +29,19 @@
   user-defined <emphasis>symbol</emphasis> for use in the template. The
   <emphasis>symbol</emphasis> is simply created and not initialized to any
   particular value, therefore it may be destined to contain either string or
-  numeric data.</para>
+  numeric data. This creates a <emphasis>Template Symbol</emphasis> that can
+  then be used in other Template Language statements (such as <link
+  linkend="_SET">#SET</link> and <link
+  linkend="_APPEND">#APPEND</link>).</para>
+
+  <para>Unlike <link linkend="_UNIQUENAME">#UNIQUENAME</link>, which generates
+  a unique name automatically, <emphasis role="bold">#DECLARE</emphasis> only
+  declares a template symbol with the name provided and does not itself
+  generate a unique ECL identifier. If that symbol is later assigned and used
+  to generate ECL, the caller is responsible for avoiding name collisions,
+  which is especially important when using <emphasis
+  role="bold">#DECLARE</emphasis> inside a MACRO structure that may be called
+  multiple times in the same scope.</para>
 
   <para>Example:</para>
 
@@ -39,5 +51,6 @@ OUTPUT(%'MySymbol'%)
 </programlisting>
 
   <para>See Also: <link linkend="_SET">#SET</link>, <link
-  linkend="_APPEND">#APPEND</link></para>
+  linkend="_APPEND">#APPEND</link>, <link
+  linkend="_UNIQUENAME">#UNIQUENAME</link></para>
 </sect1>
