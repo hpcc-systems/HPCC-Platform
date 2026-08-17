@@ -11,14 +11,14 @@ test.describe("V5-Basic", () => {
 
     test("Basic Frame", async ({ page }) => {
         await page.goto("stub.htm");
-        await page.waitForLoadState("networkidle");
+        await page.waitForLoadState("load");
         await expect(page.locator("#stubStackController_stub_Main span").first()).toBeVisible();
         await expect(page.getByLabel("Advanced")).toBeVisible();
     });
 
     test("Activities", async ({ page }) => {
         await page.goto("stub.htm");
-        await page.waitForLoadState("networkidle");
+        await page.waitForLoadState("load");
         await expect(page.locator("#stub_Main-DLStackController_stub_Main-DL_Activity_label")).toBeVisible();
         await expect(page.getByLabel("Auto Refresh")).toBeVisible();
         await expect(page.getByLabel("Maximize/Restore")).toBeVisible();

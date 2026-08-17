@@ -94,17 +94,19 @@ test.describe("V9 Workunits", () => {
 
             await protectBtn.click();
 
-            // Wait for action state to change instead of sleeping
-            const unprotectBtn = page.getByRole("menuitem", { name: "Unprotect", exact: true });
-            await expect(unprotectBtn).toBeVisible({ timeout: 10000 });
+            // Wait for grid to refresh after protect action
+            await page.waitForLoadState("networkidle");
 
-            // Reselect only if selection was cleared by refresh
+            const unprotectBtn = page.getByRole("menuitem", { name: "Unprotect", exact: true });
+
+            // Reselect via checkbox (nth(0)) if selection was cleared by the grid refresh
             const stillSelected = await firstRow.getAttribute("aria-selected");
             if (stillSelected !== "true") {
-                await firstRow.locator("[role='gridcell']").nth(3).click();
-                await expect(firstRow).toHaveAttribute("aria-selected", "true");
+                await firstRow.locator("[role='gridcell']").nth(0).click();
+                await expect(firstRow).toHaveAttribute("aria-selected", "true", { timeout: 10000 });
             }
 
+            await expect(unprotectBtn).toBeEnabled({ timeout: 10000 });
             await unprotectBtn.click();
         }
     });

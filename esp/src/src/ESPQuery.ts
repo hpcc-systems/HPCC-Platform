@@ -195,12 +195,18 @@ function processQueryRow(qry: WsWorkunitsNS.QuerySetQuery) {
         statusMessage = nlsHPCC.SuspendedByUser;
     }
 
-    return { ...qry, ErrorCount: errorCount, Status: statusMessage, MixedNodeStates: mixedNodeStates };
+    return {
+        ...qry,
+        __hpcc_id: `${qry.QuerySetId}:${qry.Id}`,
+        ErrorCount: errorCount,
+        Status: statusMessage,
+        MixedNodeStates: mixedNodeStates
+    };
 }
 
 export function Get(QuerySetId, Id, data?) {
     const store = new Store();
-    const retVal = store.get(QuerySetId + ":" + Id);
+    const retVal = store.get(`${QuerySetId}:${Id}`);
     if (data) {
         retVal.updateData(data);
     }
@@ -234,7 +240,7 @@ export function CreateQueryStore(): BaseStore<WsWorkunitsNS.WUListQueries, WsWor
         count: "PageSize",
         sortBy: "Sortby",
         descending: "Descending"
-    }, "Id", (request) => {
+    }, "__hpcc_id", (request) => {
         return service.WUListQueries(request).then(response => {
             return {
                 data: response?.QuerysetQueries?.QuerySetQuery?.map(qry => Get(qry.QuerySetId, qry.Id, processQueryRow(qry))) ?? [],
