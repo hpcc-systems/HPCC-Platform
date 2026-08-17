@@ -1,10 +1,11 @@
-import { test, expect } from "./fixtures";
+import { test, expect, openOverflowMenu } from "./fixtures";
 
 test.describe("V9 Cluster Processes", () => {
 
     test.beforeEach(async ({ page }) => {
         await page.goto("index.html#/operations/processes");
         await page.waitForLoadState("networkidle");
+        await openOverflowMenu(page);
     });
 
     test("Page loads with command bar and grid", async ({ page }) => {

@@ -1,10 +1,11 @@
-import { test, expect } from "./fixtures";
+import { test, expect, openOverflowMenu } from "./fixtures";
 
 test.describe("V9 Topology", () => {
 
     test.beforeEach(async ({ page }) => {
         await page.goto("index.html#/operations/topology/clusters");
         await page.waitForLoadState("networkidle");
+        await openOverflowMenu(page);
     });
 
     test("Page loads with view tabs and toolbar", async ({ page }) => {

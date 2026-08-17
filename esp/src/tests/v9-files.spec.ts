@@ -1,4 +1,4 @@
-import { test, expect } from "./fixtures";
+import { test, expect, openOverflowMenu } from "./fixtures";
 
 test.describe("V9 Files - Logical Files", () => {
 
@@ -6,6 +6,7 @@ test.describe("V9 Files - Logical Files", () => {
         await page.goto("index.html#/files");
         await page.waitForLoadState("networkidle");
         await page.locator(".fui-NavDrawerBody").waitFor({ state: "visible", timeout: 15000 });
+        await openOverflowMenu(page);
     });
 
     test("Should display the Logical Files page with all expected columns and controls", async ({ page }) => {
@@ -172,6 +173,7 @@ test.describe("V9 Files - Protected By tab", () => {
         }
         await protectedByTab.click();
         await page.waitForTimeout(1000);
+        await openOverflowMenu(page);
 
         const unprotectAllBtn = page.getByRole("menuitem", { name: /Unprotect All/i });
         await expect(unprotectAllBtn).toBeVisible({ timeout: 5000 });
@@ -201,6 +203,7 @@ test.describe("V9 Files - Protected By tab", () => {
         }
         await protectedByTab.click();
         await page.waitForTimeout(1000);
+        await openOverflowMenu(page);
 
         const unprotectAllBtn = page.getByRole("menuitem", { name: /Unprotect All/i });
         await expect(unprotectAllBtn).toBeVisible({ timeout: 5000 });

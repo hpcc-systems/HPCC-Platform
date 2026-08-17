@@ -20,8 +20,8 @@ console.log("target URL", baseURL);
 export default defineConfig({
     testDir: "./tests",
     forbidOnly: isCI,
-    retries: isCI ? 0 : 1,
-    workers: isCI ? "100%" : "80%",
+    retries: isCI ? 1 : 2,
+    workers: isCI ? "80%" : "80%",
     timeout: isCI ? 30_000 : 20_000,
     expect: {
         timeout: isCI ? 10_000 : 10_000

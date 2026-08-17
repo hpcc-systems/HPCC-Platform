@@ -1,10 +1,11 @@
-import { test, expect } from './fixtures';
+import { test, expect, openOverflowMenu } from './fixtures';
 
 test.describe("V9 Landing Zone - File Operations", () => {
     test.beforeEach(async ({ page }) => {
         await page.goto('/esp/files/index.html#/landingzone');
         await page.waitForLoadState('networkidle');
         await page.locator(".fui-NavDrawerBody").waitFor({ state: "visible", timeout: 15000 });
+        await openOverflowMenu(page);
     });
 
     test.describe("Tree Expansion and State Management", () => {

@@ -1,10 +1,11 @@
-import { test, expect } from "./fixtures";
+import { test, expect, openOverflowMenu } from "./fixtures";
 
 test.describe("V9 Activities", () => {
 
     test.beforeEach(async ({ page }) => {
         await page.goto("index.html#/activities-legacy");
         await page.waitForLoadState("networkidle");
+        await openOverflowMenu(page);
     });
 
     test("Activities page loaded with frame and content", async ({ page }) => {

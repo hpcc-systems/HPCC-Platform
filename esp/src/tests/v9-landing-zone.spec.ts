@@ -1,4 +1,4 @@
-import { test, expect } from "./fixtures";
+import { test, expect, openOverflowMenu } from "./fixtures";
 
 test.describe("V9 Landing Zone", () => {
 
@@ -11,6 +11,7 @@ test.describe("V9 Landing Zone", () => {
     test("Should display the Landing Zone page with expected toolbar and components", async ({ page }) => {
         // Check that the main toolbar is visible
         await expect(page.getByRole("menubar")).toBeVisible();
+        await openOverflowMenu(page);
 
         // Check for main toolbar buttons
         await expect(page.getByRole("menuitem", { name: "Refresh" })).toBeVisible();
@@ -46,6 +47,7 @@ test.describe("V9 Landing Zone", () => {
     test("Should have disabled action buttons when no items are selected", async ({ page }) => {
         // Wait for page to fully load
         await page.waitForTimeout(1000);
+        await openOverflowMenu(page);
 
         // These buttons should be disabled when nothing is selected
         await expect(page.getByRole("menuitem", { name: "Preview" })).toBeDisabled();
@@ -216,19 +218,11 @@ test.describe("V9 Landing Zone", () => {
 
     test.describe("Drag and Drop Functionality", () => {
         test("Should show drop zone overlay on drag enter", async ({ page }) => {
-            // Simulate drag enter on the body element instead of document
-            await page.dispatchEvent("body", "dragenter");
+            await page.evaluate(() => {
+                document.dispatchEvent(new Event("dragenter", { bubbles: true, cancelable: true }));
+            });
 
-            // Check if drop zone overlay becomes visible
-            const dropZoneOverlay = page.locator(".dzWrapper");
-
-            // The overlay might be visible temporarily
-            try {
-                await expect(dropZoneOverlay).toBeVisible({ timeout: 1000 });
-            } catch {
-                // If the overlay doesn't appear, that's also acceptable depending on implementation
-                console.log("Drop zone overlay not detected");
-            }
+            await expect(page.getByText("Drop file(s) to upload.")).toBeVisible();
         });
     });
 

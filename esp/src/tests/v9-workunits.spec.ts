@@ -1,4 +1,4 @@
-import { test, expect } from "./fixtures";
+import { test, expect, openOverflowMenu } from "./fixtures";
 
 test.describe("V9 Workunits", () => {
 
@@ -6,6 +6,7 @@ test.describe("V9 Workunits", () => {
         await page.goto("index.html#/workunits");
         await page.waitForLoadState("networkidle");
         await page.locator(".fui-NavDrawerBody").waitFor({ state: "visible", timeout: 15000 });
+        await openOverflowMenu(page);
     });
 
     test("Should display the Workunits page with all expected columns and controls", async ({ page }) => {

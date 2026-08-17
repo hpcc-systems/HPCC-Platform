@@ -1,4 +1,4 @@
-import { test, expect } from "./fixtures";
+import { test, expect, openOverflowMenu } from "./fixtures";
 
 test.describe("V9 Landing Zone - State Preservation", () => {
 
@@ -6,6 +6,7 @@ test.describe("V9 Landing Zone - State Preservation", () => {
         await page.goto("index.html#/landingzone");
         await page.waitForLoadState("networkidle");
         await page.locator(".fui-NavDrawerBody").waitFor({ state: "visible", timeout: 15000 });
+        await openOverflowMenu(page);
     });
 
     test.describe("Tree State Management During File Operations", () => {

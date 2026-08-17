@@ -1,37 +1,5 @@
-import { Page } from "@playwright/test";
-import { test, expect } from "./fixtures";
+import { test, expect, openOverflowMenu, clickTab } from "./fixtures";
 import { getWuid, loadWUs, replaceTextboxValue } from "./global";
-
-/**
- * Helper function to click a tab that might be in the overflow menu
- * Tabs can be either directly visible or in an overflow menu dropdown
- */
-async function clickTab(page: Page, tabName: string) {
-    // First try to find the tab directly visible
-    const directTab = page.getByRole("tab", { name: tabName });
-
-    if (await directTab.isVisible({ timeout: 1000 }).catch(() => false)) {
-        await directTab.click();
-        return;
-    }
-
-    // If not visible, it might be in the overflow menu
-    // Look for the overflow menu button (usually has "More tabs" or ellipsis icon)
-    const overflowButton = page.getByRole("button", { name: /more|overflow/i }).or(
-        page.locator("button[aria-label*='overflow']")
-    ).or(
-        page.locator("button[aria-haspopup='menu']").last()
-    );
-
-    if (await overflowButton.isVisible({ timeout: 1000 }).catch(() => false)) {
-        await overflowButton.click();
-        // Wait for menu to appear and click the menu item
-        await page.getByRole("menuitem", { name: tabName }).click();
-    } else {
-        // Fallback to direct click if overflow menu not found
-        await directTab.click();
-    }
-}
 
 test.describe("V9 Workunit Details", () => {
 
@@ -88,7 +56,7 @@ test.describe("V9 Workunit Details", () => {
 
             if (!isVisible) {
                 // Check if overflow menu button exists
-                const overflowButton = page.locator("button[aria-haspopup='menu']").last();
+                const overflowButton = page.getByRole("button", { name: /more menu items/i });
                 await expect(overflowButton).toBeVisible();
             }
         }
@@ -119,17 +87,7 @@ test.describe("V9 Workunit Details", () => {
     });
 
     test("Should display command bar buttons", async ({ page }) => {
-        // CommandBar items may be in overflow menu, click it first
-        const overflowButton = page.locator(".ms-CommandBar .ms-OverflowSet-overflowButton").or(
-            page.locator("button[aria-label='More items']")).or(
-                page.locator(".ms-CommandBar button").last()
-            );
-
-        // Click overflow if it exists
-        if (await overflowButton.count() > 0) {
-            await overflowButton.first().click();
-            await page.waitForTimeout(300);
-        }
+        await openOverflowMenu(page);
 
         // Check for main action buttons
         const expectedButtons = [
@@ -236,29 +194,17 @@ test.describe("V9 Workunit Details", () => {
     });
 
     test("Should display ECL tab content when clicked", async ({ page }) => {
-        // ECL tab may be in overflow menu or may not exist for all workunit types
-        const eclTab = page.getByRole("tab", { name: "ECL" });
+        // ECL tab may be in overflow menu or may not exist for all workunit types.
+        // Scope to .fui-Tab: the loaded ECL content can embed its own (Lumino) tab
+        // widget which also exposes a role="tab" named "ECL", causing ambiguity.
+        const eclTab = page.getByRole("tab", { name: "ECL" }).and(page.locator(".fui-Tab"));
         const isVisible = await eclTab.isVisible({ timeout: 2000 }).catch(() => false);
-        if (!isVisible) {
-            // Try overflow menu
-            const overflowButton = page.getByRole("button", { name: /more|overflow/i }).or(
-                page.locator("button[aria-label*='overflow']")
-            ).or(
-                page.locator("button[aria-haspopup='menu']").last()
-            );
-            if (await overflowButton.isVisible({ timeout: 1000 }).catch(() => false)) {
-                await overflowButton.click();
-                const menuItem = page.getByRole("menuitem", { name: "ECL" });
-                if (await menuItem.isVisible({ timeout: 1000 }).catch(() => false)) {
-                    await menuItem.click();
-                    await page.waitForLoadState("networkidle");
-                    return; // success
-                }
-            }
+        const overflowButton = page.getByRole("button", { name: /more menu items/i });
+        if (!isVisible && !(await overflowButton.isVisible({ timeout: 1000 }).catch(() => false))) {
             test.skip(true, "ECL tab not accessible");
             return;
         }
-        await eclTab.click();
+        await clickTab(page, "ECL");
         await page.waitForLoadState("networkidle");
         // Tab navigated — just verify it's selected
         await expect(eclTab).toHaveAttribute("aria-selected", "true");
@@ -305,11 +251,15 @@ test.describe("V9 Workunit Details", () => {
         await replaceTextboxValue(descriptionField, testDescription);
 
         // Verify the save button is not aria-disabled after modification.
-        // NOTE: isEnabled() does NOT check aria-disabled (FluentUI v9 uses aria-disabled rather than
-        // the native disabled attribute), so we must check the attribute directly.
+        // NOTE: Waiting for an enabled state alone can be flaky here because the
+        // controlled input may briefly enable Save before settling back to a
+        // disabled state. Re-check aria-disabled immediately before clicking.
         const saveButton = page.getByRole("menuitem", { name: "Save" });
-        const ariaDisabled = await saveButton.getAttribute("aria-disabled").catch(() => "true");
-        if (ariaDisabled === "true") {
+        const saveButtonEnabled = await expect(saveButton)
+            .not.toHaveAttribute("aria-disabled", "true", { timeout: 5000 })
+            .then(() => true)
+            .catch(() => false);
+        if (!saveButtonEnabled) {
             test.skip(true, "Save button is aria-disabled - workunit may be protected or input change was not detected");
             return;
         }
@@ -321,7 +271,7 @@ test.describe("V9 Workunit Details", () => {
         }
 
         // Click save button
-        await saveButton.click();
+        await saveButton.click({ timeout: 5000 });
 
         // Wait for save lifecycle to complete and for explicit success feedback.
         await expect(saveButton).toHaveAttribute("aria-disabled", "true", { timeout: 10000 });
@@ -343,7 +293,7 @@ test.describe("V9 Workunit Details", () => {
             await replaceTextboxValue(descriptionField, originalDescription);
             const cleanupAriaDisabled = await saveButton.getAttribute("aria-disabled").catch(() => "true");
             if (cleanupAriaDisabled !== "true") {
-                await saveButton.click();
+                await saveButton.click({ timeout: 5000 });
                 await expect(saveButton).toHaveAttribute("aria-disabled", "true", { timeout: 10000 });
                 await expect(page.getByText(/Successfully Saved/i)).toBeVisible({ timeout: 10000 });
             }
