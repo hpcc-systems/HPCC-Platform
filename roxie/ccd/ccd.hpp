@@ -155,7 +155,7 @@ public:
     unsigned activityId = 0;            // identifies the helper factory to be used (activityId in graph)
     hash64_t queryHash = 0;             // identifies the query
 
-    std::atomic<ruid_t> uid = 0;        // unique id
+    ruid_t uid = 0;                     // unique id
     ServerIdentifier serverId;
     ServerIdentifier subChannels[MAX_SUBCHANNEL];
     unsigned filler = 0; // keeps valgrind happy
@@ -167,7 +167,6 @@ public:
 
     static unsigned getSubChannelMask(unsigned subChannel);
     unsigned priorityHash() const;
-    void clear();
     void copy(const RoxiePacketHeader &oh);
     bool matchPacket(const RoxiePacketHeader &oh) const;
     void init(const RemoteActivityId &_remoteId, ruid_t _uid, unsigned _channel, unsigned _overflowSequence);
@@ -222,7 +221,7 @@ public:
     // Excludes channel/activityId (not in UdpPacketHeader) and any resent/SKIPTO flags.
     inline unsigned __int64 getRequestId() const
     {
-        unsigned __int64 id = uid.load();
+        unsigned __int64 id = uid;
         id |= (static_cast<unsigned __int64>(overflowSequence & OVERFLOWSEQUENCE_MAX)) << 32;
         id |= (static_cast<unsigned __int64>(continueSequence & 0x1f)) << 47;
         return id;

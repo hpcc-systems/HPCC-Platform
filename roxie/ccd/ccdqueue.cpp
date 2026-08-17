@@ -60,7 +60,7 @@ RoxiePacketHeader::RoxiePacketHeader(const RoxiePacketHeader &source, unsigned _
 {
     // Used to create the header to send a callback to originating server or an IBYTI to a buddy
     activityId = _activityId;
-    uid.store(source.uid);
+    uid = source.uid;
     queryHash = source.queryHash;
     channel = source.channel;
     overflowSequence = source.overflowSequence;
@@ -90,19 +90,11 @@ unsigned RoxiePacketHeader::priorityHash() const
 
 void RoxiePacketHeader::copy(const RoxiePacketHeader &oh)
 {
-    // used for saving away info for later matching by match, without having to lock
+    uid = oh.uid;
     overflowSequence = oh.overflowSequence;
     continueSequence = oh.continueSequence;
     serverId = oh.serverId;
     channel = oh.channel;
-    uid.store(oh.uid);
-    // MORE - would it be safer, maybe even faster to copy the rest too?
-}
-
-void RoxiePacketHeader::clear()
-{
-    // used for saving away kill packets for later matching by match
-    uid = RUID_NONE;  // Will never match a queued packet
 }
 
 bool RoxiePacketHeader::matchPacket(const RoxiePacketHeader &oh) const
@@ -159,7 +151,7 @@ StringBuffer &RoxiePacketHeader::toString(StringBuffer &ret) const
             ret.appendf(" (fetch part)");
         break;
     }
-    ret.appendf(" uid=" RUIDF " pri=", uid.load());
+    ret.appendf(" uid=" RUIDF " pri=", uid);
     switch (activityId & ROXIE_PRIORITY_MASK)
     {
         case ROXIE_SLA_PRIORITY: ret.append("SLA"); break;
@@ -1598,6 +1590,7 @@ class CRoxieWorker : public CInterface, implements IPooledThread
     Owned<IRoxieQueryPacket> packet;
     AgentContextLogger logctx;
     RoxiePacketHeader packetHeader;
+    std::atomic<ruid_t> uid = RUID_NONE;
 
 public:
     IMPLEMENT_IINTERFACE;
@@ -1636,30 +1629,29 @@ public:
     {
         Owned<IRoxieQueryPacket> temp(p);
         CriticalBlock b(actCrit);
+        uid = RUID_NONE;
         if (p)
         {
             packet.swap(temp);
             packetHeader.copy(p->queryHeader());
+            uid = packetHeader.uid;
         }
         else
-        {
-            packetHeader.clear();
             packet.swap(temp);
-        }
     }
-    inline bool match(RoxiePacketHeader &h)
+    inline bool match(const RoxiePacketHeader &h) const
     {
         // There is a window between getting packet from queue and being able to match it. 
         // This could cause some deduping to fail, but it does not matter if it does (so long as it is rare!)
-        return packetHeader.matchPacket(h);
+        return uid == h.uid && packetHeader.matchPacket(h);
     }
 
     bool checkAbort(RoxiePacketHeader &h, bool checkRank, bool &queryFound, bool &preActivity)
     {
-        if (packetHeader.matchPacket(h))
+        if (match(h))
         {
             CriticalBlock b(actCrit);
-            if (!packetHeader.matchPacket(h))
+            if (!match(h))
                 return false;
             queryFound = true;
             abortLaunch = true;
