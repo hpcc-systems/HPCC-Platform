@@ -83,6 +83,18 @@ static inline cycle_t getTSC()
     return result;
 }
 
+#elif defined(_ARCH_ARM64_)
+
+#define HAS_GOOD_CYCLE_COUNTER
+
+static inline cycle_t getTSC()
+{
+    cycle_t val;
+    // __asm__ __volatile__("mrs %0, cntvct_el0" : "=r"(val));
+    __asm__ __volatile__("isb\n\t" "mrs %0, cntvct_el0" : "=r"(val) :: "memory");
+    return val;
+}
+
 #else
 // ARMFIX: cycle-count is not always available in user mode
 // http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.ddi0338g/Bihbeabc.html
