@@ -87,7 +87,6 @@
             display: none;
         }
     </style>
-    <script type="text/javascript" src="/esp/files/dist/src-dojo.eclwatch.js" charset="utf-8"></script>
 </head>
 
 <body>
@@ -105,76 +104,68 @@
             </div>
         </div>
     </div>
-    <script type="text/javascript">
-        require(["dojo/ready", "src-dojo/index"],
-            function (ready, nlsHPCCMod) {
-                var nlsHPCC = nlsHPCCMod.default;
-                ready(function () {
-                    window.localStorage.setItem("redirectAfterLogin", window.location.hash);
+    <script type="module">
+        import nlsHPCC from "src-dojo/index";
 
-                    var loginStr = document.getElementById("loginStr");
-                    var error = document.getElementById("hidden_msg");
-                    var username = document.getElementById("username");
-                    var password = document.getElementById("password");
-                    var button = document.getElementById("button");
-                    var enableCookies = "";
-                    var HPCCSystems = document.getElementById("logo");
+        window.localStorage.setItem("redirectAfterLogin", window.location.hash);
 
-                    loginStr.innerHTML = nlsHPCC.PleaseLogIntoECLWatch;
-                    error.innerHTML = nlsHPCC.InvalidUsernamePassword;
-                    username.innerHTML = nlsHPCC.Username;
-                    password.innerHTML = nlsHPCC.Password;
-                    button.innerHTML = nlsHPCC.Login;
-                    enableCookies = nlsHPCC.PleaseEnableCookies;
-                    HPCCSystems.setAttribute("alt", nlsHPCC.HPCCSystems);
+        var loginStr = document.getElementById("loginStr");
+        var error = document.getElementById("hidden_msg");
+        var username = document.getElementById("username");
+        var password = document.getElementById("password");
+        var button = document.getElementById("button");
+        var enableCookies = "";
+        var HPCCSystems = document.getElementById("logo");
 
-                    var element = document.getElementById('container');
+        loginStr.innerHTML = nlsHPCC.PleaseLogIntoECLWatch;
+        error.innerHTML = nlsHPCC.InvalidUsernamePassword;
+        username.innerHTML = nlsHPCC.Username;
+        password.innerHTML = nlsHPCC.Password;
+        button.innerHTML = nlsHPCC.Login;
+        enableCookies = nlsHPCC.PleaseEnableCookies;
+        HPCCSystems.setAttribute("alt", nlsHPCC.HPCCSystems);
 
-                    if (navigator.cookieEnabled) {
-                        var element = document.getElementById("container");
-                        element.classList.remove("visible");
-                    } else {
-                        alert(enableCookies);
+        if (navigator.cookieEnabled) {
+            document.getElementById("container").classList.remove("visible");
+        } else {
+            alert(enableCookies);
+        }
+
+        function deleteCookie(cname) {
+            // Clear cookie using the same root path and explicit expiration.
+            document.cookie = cname + "=; Expires=Thu, 01 Jan 1970 00:00:00 GMT; Max-Age=0; Path=/;";
+        }
+
+        function getCookie(name) {
+            var key = name + "=";
+            var cookieParts = document.cookie.split(";");
+            for (var i = 0; i < cookieParts.length; i++) {
+                var c = cookieParts[i].trim();
+                if (c.indexOf(key) === 0) {
+                    var rawValue = c.substring(key.length, c.length);
+                    try {
+                        return decodeURIComponent(rawValue);
+                    } catch (e) {
+                        return rawValue;
                     }
-
-                    function deleteCookie(cname) {
-                        // Clear cookie using the same root path and explicit expiration.
-                        document.cookie = cname + "=; Expires=Thu, 01 Jan 1970 00:00:00 GMT; Max-Age=0; Path=/;";
-                    }
-
-                    function getCookie(name) {
-                        var key = name + "=";
-                        var cookieParts = document.cookie.split(";");
-                        for (var i = 0; i < cookieParts.length; i++) {
-                            var c = cookieParts[i].trim();
-                            if (c.indexOf(key) === 0) {
-                                var rawValue = c.substring(key.length, c.length);
-                                try {
-                                    return decodeURIComponent(rawValue);
-                                } catch (e) {
-                                    return rawValue;
-                                }
-                            }
-                        }
-                        return "";
-                    }
-
-                    function consumeLoginMessage() {
-                        var loginMessage = getCookie("ESPAuthenticationMSG") || getCookie("ESPUserAcctError");
-                        deleteCookie('ESPAuthenticationMSG');
-                        deleteCookie('ESPUserAcctError');
-                        return loginMessage;
-                    }
-
-                    var loginMessage = consumeLoginMessage();
-                    if (loginMessage) {
-                        var element = document.getElementById('hidden_msg');
-                        element.textContent = loginMessage;
-                        element.style.display = "inline-block";
-                    }
-                });
+                }
             }
-        );
+            return "";
+        }
+
+        function consumeLoginMessage() {
+            var loginMessage = getCookie("ESPAuthenticationMSG") || getCookie("ESPUserAcctError");
+            deleteCookie('ESPAuthenticationMSG');
+            deleteCookie('ESPUserAcctError');
+            return loginMessage;
+        }
+
+        var loginMessage = consumeLoginMessage();
+        if (loginMessage) {
+            var element = document.getElementById('hidden_msg');
+            element.textContent = loginMessage;
+            element.style.display = "inline-block";
+        }
     </script>
 </body>
 

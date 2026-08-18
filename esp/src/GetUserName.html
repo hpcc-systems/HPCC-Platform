@@ -79,7 +79,6 @@
             display: none;
         }
     </style>
-    <script type="text/javascript" src="/esp/files/dist/src-dojo.eclwatch.js" charset="utf-8"></script>
 </head>
 
 <body>
@@ -96,36 +95,26 @@
         </div>
     </div>
 
-    <script type="text/javascript">
-        require(["dojo/ready", "src-dojo/index"],
-            function (ready, nlsHPCCMod) {
-                var nlsHPCC = nlsHPCCMod.default;
-                ready(function () {
-                    var HPCCSystems = document.getElementById("logo");
-                    var loginStr = document.getElementById("loginStr");
-                    var error = document.getElementById("hidden_msg");
-                    var disabled = document.getElementById("disabled_msg");
-                    var username = document.getElementById("username");
-                    var button = document.getElementById("button");
-                    var enableCookies = "";
+    <script type="module">
+        import nlsHPCC from "src-dojo/index";
 
-                    HPCCSystems.setAttribute("alt", nlsHPCC.HPCCSystems);
-                    loginStr.innerHTML = nlsHPCC.PleaseLogIntoECLWatch;
-                    username.innerHTML = nlsHPCC.Username;
-                    button.innerHTML = nlsHPCC.Login;
-                    enableCookies = nlsHPCC.PleaseEnableCookies;
+        var HPCCSystems = document.getElementById("logo");
+        var loginStr = document.getElementById("loginStr");
+        var username = document.getElementById("username");
+        var button = document.getElementById("button");
+        var enableCookies = "";
 
-                    var element = document.getElementById('container');
+        HPCCSystems.setAttribute("alt", nlsHPCC.HPCCSystems);
+        loginStr.innerHTML = nlsHPCC.PleaseLogIntoECLWatch;
+        username.innerHTML = nlsHPCC.Username;
+        button.innerHTML = nlsHPCC.Login;
+        enableCookies = nlsHPCC.PleaseEnableCookies;
 
-                    if (navigator.cookieEnabled) {
-                        var element = document.getElementById("container");
-                        element.classList.remove("visible");
-                    } else {
-                        alert(enableCookies);
-                    }
-                });
-            }
-        );
+        if (navigator.cookieEnabled) {
+            document.getElementById("container").classList.remove("visible");
+        } else {
+            alert(enableCookies);
+        }
     </script>
 </body>
 

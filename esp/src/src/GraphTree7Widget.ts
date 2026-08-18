@@ -4,8 +4,7 @@ import { ECLGraph, ScopeGraph, Workunit } from "@hpcc-js/comms";
 import { Graph as GraphWidget, Graph2 as Graph2Widget, Subgraph, Vertex } from "@hpcc-js/graph";
 import { hashSum } from "@hpcc-js/util";
 
-// @ts-expect-error
-import * as _Widget from "hpcc/_Widget";
+import _Widget from "hpcc/_Widget";
 import { Grid, maximizeWidget } from "./ESPUtil";
 import { GraphStore, GraphTreeStore } from "./GraphStore";
 import nlsHPCC from "./nlsHPCC";
@@ -15,7 +14,7 @@ import { WUGraphLegend } from "./WUGraphLegend";
 import { WUScopeController, WUScopeController8 } from "./WUScopeController";
 
 // @ts-expect-error
-import * as template from "dojo/text!hpcc/templates/GraphTree7Widget.html";
+import template from "dojo/text!hpcc/templates/GraphTree7Widget.html";
 
 import "hpcc/TableContainer";
 

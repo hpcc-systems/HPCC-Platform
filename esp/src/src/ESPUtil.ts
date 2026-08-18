@@ -1,5 +1,5 @@
 ﻿import { select as d3Select } from "@hpcc-js/common";
-import { registry, arrayUtil, declare, lang, aspect, domClass, domStyle, Evented, json, on, query, Stateful, Tooltip, ColumnResizer, CompoundColumns, DijitRegistry, Grid, Keyboard, OnDemandGrid, Selection } from "src-dojo/index";
+import { registry, arrayUtil, declare, lang, aspect, domClass, domStyle, Evented, json, on, query, Stateful, Tooltip, ColumnResizer, CompoundColumns, DijitRegistry, Grid as DGridGrid, Keyboard, OnDemandGrid, Selection } from "src-dojo/index";
 import { Memory } from "./store/Memory";
 
 import nlsHPCC from "./nlsHPCC";
@@ -408,7 +408,7 @@ export function Grid(pagination?, selection?, overrides?: object, compoundColumn
     const rows = Number(localStorage.getItem(gridName + "_GridRowsPerPage"));
 
     if (pagination) {
-        baseClass = [Grid, Pagination, ColumnResizer, Keyboard, DijitRegistry, CompoundColumns];
+        baseClass = [DGridGrid, Pagination, ColumnResizer, Keyboard, DijitRegistry, CompoundColumns];
         lang.mixin(params, {
             rowsPerPage: rows || 50,
             pagingLinks: 1,

@@ -8,13 +8,11 @@ import { DPWorkunit } from "./DataPatterns/DPWorkunit";
 import { Report } from "./DataPatterns/Report";
 import { getStateIconClass } from "./ESPWorkunit";
 
-// @ts-expect-error
 import * as _TabContainerWidget from "hpcc/_TabContainerWidget";
-// @ts-expect-error
 import * as DelayLoadWidget from "hpcc/DelayLoadWidget";
 
 // @ts-expect-error
-import * as template from "dojo/text!hpcc/templates/DataPatternsWidget.html";
+import template from "dojo/text!hpcc/templates/DataPatternsWidget.html";
 
 import "hpcc/TableContainer";
 import "hpcc/TargetSelectWidget";

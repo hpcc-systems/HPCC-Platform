@@ -1,5 +1,5 @@
 {
-    "extends": "./tsconfig.json",
+    "extends": "./tsconfig.dojo.json",
     "compilerOptions": {
         "noEmit": true
     },
@@ -8,6 +8,7 @@
         "src/**/*.tsx",
         "src-react/**/*.ts",
         "src-react/**/*.tsx",
-        "src-dojo/**/*.ts"
+        "src-dojo/**/*.ts",
+        "vite.config.mts"
     ]
 }

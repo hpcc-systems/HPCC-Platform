@@ -175,7 +175,7 @@ let WsEclIFrameURL: Promise<string>;
 export function GetWsEclIFrameURL(type): Promise<string> {
     if (!WsEclIFrameURL) {
         WsEclIFrameURL = GetESPServiceBaseURL(containerized ? "eclqueries" : "ws_ecl").then(response => {
-            return response + dojoConfig.urlInfo.basePath + "/stub.htm?Widget=IFrameWidget&src=" + encodeURIComponent("/WsEcl/");
+            return response + dojoConfig.urlInfo.basePath + "/stub.html?Widget=IFrameWidget&src=" + encodeURIComponent("/WsEcl/");
         });
     }
     return WsEclIFrameURL.then(url => url + encodeURIComponent(type + "/query/"));

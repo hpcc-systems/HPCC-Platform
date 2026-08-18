@@ -9,13 +9,14 @@ test.describe("V5-Basic", () => {
     });
 
     test("Basic Frame", async ({ page }) => {
-        await page.goto("stub.htm");
+        await page.goto("stub.html");
+
         await expect(page.locator("#stubStackController_stub_Main span").first()).toBeVisible();
         await expect(page.getByLabel("Advanced")).toBeVisible();
     });
 
     test("Activities", async ({ page }) => {
-        await page.goto("stub.htm");
+        await page.goto("stub.html");
 
         // Check if environment is containerized
         const isContainer = await page.evaluate(() => {
@@ -30,10 +31,10 @@ test.describe("V5-Basic", () => {
             await expect(page.locator("svg").filter({ hasText: "%hthor" })).toBeVisible();
         }
         await expect(page.getByRole("img", { name: "Priority" })).toBeVisible();
-        await expect(page.getByText("Target/Wuid")).toBeVisible();
-        await expect(page.getByText("Graph")).toBeVisible();
-        await expect(page.getByText("State")).toBeVisible();
-        await expect(page.getByText("Owner")).toBeVisible();
-        await expect(page.getByText("Job Name")).toBeVisible();
+        await expect(page.getByText("Target/Wuid", { exact: true })).toBeVisible();
+        await expect(page.getByText("Graph", { exact: true })).toBeVisible();
+        await expect(page.getByText("State", { exact: true })).toBeVisible();
+        await expect(page.getByText("Owner", { exact: true })).toBeVisible();
+        await expect(page.getByText("Job Name", { exact: true })).toBeVisible();
     });
 });

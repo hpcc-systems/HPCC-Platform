@@ -152,6 +152,7 @@ export const WorkunitSummary: React.FunctionComponent<WorkunitSummaryProps> = ({
     const [exceptions, , refreshSavings] = useWorkunitExceptions(wuid);
     const [jobname, setJobname] = React.useState("");
     const [description, setDescription] = React.useState("");
+    const userEditedRef = React.useRef(false);
     const [otTraceId, setOtTraceId] = React.useState("");
     const [otSpanId, setOtSpanId] = React.useState("");
     const [wuProtected, setWuProtected] = React.useState(false);
@@ -270,9 +271,11 @@ export const WorkunitSummary: React.FunctionComponent<WorkunitSummaryProps> = ({
     }, [dockpanel]);
 
     React.useEffect(() => {
-        setJobname(workunit?.Jobname);
-        setDescription(workunit?.Description);
-        setWuProtected(workunit?.Protected);
+        if (!userEditedRef.current) {
+            setJobname(workunit?.Jobname);
+            setDescription(workunit?.Description);
+            setWuProtected(workunit?.Protected);
+        }
     }, [workunit?.Description, workunit?.Jobname, workunit?.Protected, lastUpdate]);
 
     React.useEffect(() => {
@@ -321,6 +324,7 @@ export const WorkunitSummary: React.FunctionComponent<WorkunitSummaryProps> = ({
                     Description: description,
                     Protected: wuProtected
                 }).then(_ => {
+                    userEditedRef.current = false;
                     showMessageBar({ type: "success", message: nlsHPCC.SuccessfullySaved });
                 }).catch(err => logger.error(err));
             }
@@ -493,12 +497,15 @@ export const WorkunitSummary: React.FunctionComponent<WorkunitSummaryProps> = ({
                                     }} onChange={(id, value) => {
                                         switch (id) {
                                             case "jobname":
+                                                userEditedRef.current = true;
                                                 setJobname(value);
                                                 break;
                                             case "description":
+                                                userEditedRef.current = true;
                                                 setDescription(value);
                                                 break;
                                             case "protected":
+                                                userEditedRef.current = true;
                                                 setWuProtected(value);
                                                 break;
                                             default:

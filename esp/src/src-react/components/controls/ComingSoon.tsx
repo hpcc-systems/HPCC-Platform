@@ -75,7 +75,7 @@ export function switchTechPreview(checked: boolean, opsCategory: string) {
                 break;
             }
         }
-        window.location.replace(`/esp/files/stub.htm${bookmark}`);
+        window.location.replace(`/esp/files/stub.html${bookmark}`);
     }
 }
 

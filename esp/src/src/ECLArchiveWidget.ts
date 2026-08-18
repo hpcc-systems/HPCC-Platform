@@ -9,9 +9,8 @@ import { RecursivePartial, xml2json } from "@hpcc-js/util";
 import nlsHPCC from "./nlsHPCC";
 import { themeIsDark } from "./Utility";
 // @ts-expect-error
-import * as template from "dojo/text!hpcc/templates/ECLArchiveWidget.html";
-// @ts-expect-error
-import * as _Widget from "hpcc/_Widget";
+import template from "dojo/text!hpcc/templates/ECLArchiveWidget.html";
+import _Widget from "hpcc/_Widget";
 
 const TIME_NAMES = ["TimeMaxLocalExecute", "TimeAvgLocalExecute", "TimeLocalExecute"];
 

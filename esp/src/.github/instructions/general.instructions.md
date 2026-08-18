@@ -1,6 +1,7 @@
 ---
-applyTo: '**'
+applyTo: "**"
 ---
+
 # GitHub Copilot Instructions for ECL Watch (TypeScript/React Project)
 
 ## Project Overview
@@ -8,9 +9,10 @@ applyTo: '**'
 This is the **ECL Watch** web interface for the HPCC Platform, located in the `esp/src/` directory. This is a **separate TypeScript/React project** from the main C++ codebase.
 
 ## Build System
+
 - **Build tool**: npm
 - **Package manager**: npm (with package-lock.json)
-- **Bundler**: Webpack
+- **Bundler**: Vite
 - **TypeScript**: Yes, with tsconfig.json
 - **Testing**: Playwright
 
@@ -32,7 +34,7 @@ npm run build
 # Individual commands
 npm run copy-redux     # Copy static resources
 npm run compile        # TypeScript compilation
-npm run bundle         # Webpack bundling
+npm run bundle         # Vite bundling
 npm run lint           # ESLint
 npm run test           # Playwright tests
 ```
@@ -40,35 +42,40 @@ npm run test           # Playwright tests
 ## Project Structure
 
 ### Key Directories
+
 - `eclwatch/` - Legacy Dojo-based interface
 - `src/` - Modern TypeScript source code shared with dojo and react
 - `src-react/` - React components and modern UI
 - `tests/` - Playwright test files
 
 ### Key Files
+
 - `package.json` - npm configuration and scripts
 - `tsconfig.json` - TypeScript configuration
-- `webpack.config.js` - Webpack bundling configuration
+- `vite.config.mts` - Vite bundling configuration
 - `eslint.config.mjs` - ESLint configuration
 - `playwright.config.ts` - Playwright test configuration
 
 ## Technology Stack
 
 ### Core Technologies
+
 - **TypeScript** - Primary language
 - **React 17.0.2** - UI framework
 - **Dojo 1.17.3** - Legacy UI framework (being migrated from)
-- **Webpack 5** - Module bundler
+- **Vite** - Module bundler
 - **ESLint** - Code linting
 - **Playwright** - End-to-end testing
 
 ### UI Libraries
+
 - **@fluentui/react** - Microsoft Fluent UI components
 - **@hpcc-js/** - HPCC-specific visualization and utility libraries
 - **formik** - Form handling
 - **react-hook-form** - Modern form handling
 
 ### Visualization
+
 - **@hpcc-js/chart** - Charting components
 - **@hpcc-js/graph** - Graph visualization
 - **@hpcc-js/map** - Mapping components
@@ -77,6 +84,7 @@ npm run test           # Playwright tests
 ## Development Workflow
 
 ### Code Quality
+
 ```bash
 # Lint code
 npm run lint
@@ -86,6 +94,7 @@ npm run lint-fix
 ```
 
 ### Testing
+
 ```bash
 # Run tests
 npm test
@@ -98,26 +107,31 @@ npm run test-codegen
 ```
 
 ## Code Style
+
 - Follow TypeScript best practices
 - Use ESLint configuration in `eslint.config.mjs`
 - React components should use hooks pattern
 - Prefer functional components over class components
 
 ## Key npm Scripts
+
 - `watch` - Start development with watch mode
 - `build` - Full production build
 - `compile` - TypeScript compilation only
-- `bundle` - Webpack bundling only
+- `bundle` - Vite bundling only
 - `test` - Run Playwright tests
 - `lint` - Run ESLint
 
 ## Migration Notes
+
 This project is in the process of migrating from Dojo to React. When working on the codebase:
+
 - New features should use React (`src-react/`)
 - Legacy Dojo code exists in `eclwatch/`
 - Prefer modern TypeScript patterns
 
 # Language localisation
+
 - Any english language strings should be extracted to nlsHPCC for localization.
 - Localization files are located in the src/nls directory.
 - The `nlsHPCC` module is imported using the path alias `"src/nlsHPCC"`.

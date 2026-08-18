@@ -5,7 +5,6 @@ import nlsHPCC from "./nlsHPCC";
 
 declare const dojoConfig;
 declare const ActiveXObject;
-declare const require;
 
 export function encodeXML(str) {
     str = "" + str;
@@ -587,6 +586,7 @@ export function stringLowerSort(arr: object[], col: string) {
 
 export function resolve(hpccWidget, callback) {
     function doLoad(widget) {
+        widget = widget.default ?? widget;
         if (widget[hpccWidget]) {
             widget = widget[hpccWidget];
         }
@@ -598,357 +598,357 @@ export function resolve(hpccWidget, callback) {
 
     switch (hpccWidget) {
         case "ActivityWidget":
-            require(["hpcc/ActivityWidget"], doLoad);
+            import("hpcc/ActivityWidget").then(doLoad);
             break;
         case "ClusterProcessesQueryWidget":
-            require(["hpcc/ClusterProcessesQueryWidget"], doLoad);
+            import("hpcc/ClusterProcessesQueryWidget").then(doLoad);
             break;
         case "CurrentUserDetailsWidget":
-            require(["hpcc/CurrentUserDetailsWidget"], doLoad);
+            import("hpcc/CurrentUserDetailsWidget").then(doLoad);
             break;
         case "DelayLoadWidget":
-            require(["hpcc/DelayLoadWidget"], doLoad);
+            import("hpcc/DelayLoadWidget").then(doLoad);
             break;
         case "DFUQueryWidget":
-            require(["hpcc/DFUQueryWidget"], doLoad);
+            import("hpcc/DFUQueryWidget").then(doLoad);
             break;
         case "DFUSearchWidget":
-            require(["hpcc/DFUSearchWidget"], doLoad);
+            import("hpcc/DFUSearchWidget").then(doLoad);
             break;
         case "DFUWUDetailsWidget":
-            require(["hpcc/DFUWUDetailsWidget"], doLoad);
+            import("hpcc/DFUWUDetailsWidget").then(doLoad);
             break;
         case "DiskUsageWidget":
-            require(["hpcc/DiskUsageWidget"], doLoad);
+            import("hpcc/DiskUsageWidget").then(doLoad);
             break;
         case "DiskUsageDetails":
-            require(["hpcc/DiskUsageDetails"], doLoad);
+            import("hpcc/DiskUsageDetails").then(doLoad);
             break;
         case "ComponentUsageDetails":
-            require(["hpcc/ComponentUsageDetails"], doLoad);
+            import("hpcc/ComponentUsageDetails").then(doLoad);
             break;
         case "viz/DojoD3Choropleth":
-            require(["hpcc/viz/DojoD3Choropleth"], doLoad);
+            import("hpcc/viz/DojoD3Choropleth").then(doLoad);
             break;
         case "viz/DojoD32DChart":
-            require(["hpcc/viz/DojoD32DChart"], doLoad);
+            import("hpcc/viz/DojoD32DChart").then(doLoad);
             break;
         case "viz/DojoD3NDChart":
-            require(["hpcc/viz/DojoD3NDChart"], doLoad);
+            import("hpcc/viz/DojoD3NDChart").then(doLoad);
             break;
         case "DataPatternsWidget":
-            require(["src/DataPatternsWidget"], doLoad);
+            import("src/DataPatternsWidget").then(doLoad);
             break;
         case "DynamicESDLDefinitionDetailsWidget":
-            require(["hpcc/DynamicESDLDefinitionDetailsWidget"], doLoad);
+            import("hpcc/DynamicESDLDefinitionDetailsWidget").then(doLoad);
             break;
         case "DynamicESDLDefinitionQueryWidget":
-            require(["hpcc/DynamicESDLDefinitionQueryWidget"], doLoad);
+            import("hpcc/DynamicESDLDefinitionQueryWidget").then(doLoad);
             break;
         case "DynamicESDLDetailsWidget":
-            require(["hpcc/DynamicESDLDetailsWidget"], doLoad);
+            import("hpcc/DynamicESDLDetailsWidget").then(doLoad);
             break;
         case "DynamicESDLMethodWidget":
-            require(["hpcc/DynamicESDLMethodWidget"], doLoad);
+            import("hpcc/DynamicESDLMethodWidget").then(doLoad);
             break;
         case "DynamicESDLQueryWidget":
-            require(["hpcc/DynamicESDLQueryWidget"], doLoad);
+            import("hpcc/DynamicESDLQueryWidget").then(doLoad);
             break;
         case "ECLPlaygroundResultsWidget":
-            require(["hpcc/ECLPlaygroundResultsWidget"], doLoad);
+            import("hpcc/ECLPlaygroundResultsWidget").then(doLoad);
             break;
         case "ECLPlaygroundWidget":
-            require(["hpcc/ECLPlaygroundWidget"], doLoad);
+            import("hpcc/ECLPlaygroundWidget").then(doLoad);
             break;
         case "ECLArchiveWidget":
-            require(["src/ECLArchiveWidget"], doLoad);
+            import("src/ECLArchiveWidget").then(doLoad);
             break;
         case "ECLSourceWidget":
-            require(["hpcc/ECLSourceWidget"], doLoad);
+            import("hpcc/ECLSourceWidget").then(doLoad);
             break;
         case "EventScheduleWorkunitWidget":
-            require(["hpcc/EventScheduleWorkunitWidget"], doLoad);
+            import("hpcc/EventScheduleWorkunitWidget").then(doLoad);
             break;
         case "FileBloomsWidget":
-            require(["hpcc/FileBloomsWidget"], doLoad);
+            import("hpcc/FileBloomsWidget").then(doLoad);
             break;
         case "FileBelongsToWidget":
-            require(["hpcc/FileBelongsToWidget"], doLoad);
+            import("hpcc/FileBelongsToWidget").then(doLoad);
             break;
         case "FileHistoryWidget":
-            require(["hpcc/FileHistoryWidget"], doLoad);
+            import("hpcc/FileHistoryWidget").then(doLoad);
             break;
         case "FilePartsWidget":
-            require(["hpcc/FilePartsWidget"], doLoad);
+            import("hpcc/FilePartsWidget").then(doLoad);
             break;
         case "FileProtectListWidget":
-            require(["hpcc/FileProtectListWidget"], doLoad);
+            import("hpcc/FileProtectListWidget").then(doLoad);
             break;
         case "FilterDropDownWidget":
-            require(["hpcc/FilterDropDownWidget"], doLoad);
+            import("hpcc/FilterDropDownWidget").then(doLoad);
             break;
         case "FullResultWidget":
-            require(["hpcc/FullResultWidget"], doLoad);
+            import("hpcc/FullResultWidget").then(doLoad);
             break;
         case "GangliaWidget":
-            require(["ganglia/GangliaWidget"], doLoad);
+            import("ganglia/GangliaWidget").then(doLoad);
             break;
         case "GetDFUWorkunitsWidget":
-            require(["hpcc/GetDFUWorkunitsWidget"], doLoad);
+            import("hpcc/GetDFUWorkunitsWidget").then(doLoad);
             break;
         case "GetNumberOfFilesToCopyWidget":
-            require(["hpcc/GetNumberOfFilesToCopyWidget"], doLoad);
+            import("hpcc/GetNumberOfFilesToCopyWidget").then(doLoad);
             break;
         case "GraphPageWidget":
-            require(["hpcc/GraphPageWidget"], doLoad);
+            import("hpcc/GraphPageWidget").then(doLoad);
             break;
         case "GraphsWidget":
             //  ECLIDE Backward Compatibility  ---
-            require(["hpcc/GraphsWUWidget"], doLoad);
+            import("hpcc/GraphsWUWidget").then(doLoad);
             break;
         case "GraphsWUWidget":
-            require(["hpcc/GraphsWUWidget"], doLoad);
+            import("hpcc/GraphsWUWidget").then(doLoad);
             break;
         case "GraphsQueryWidget":
-            require(["hpcc/GraphsQueryWidget"], doLoad);
+            import("hpcc/GraphsQueryWidget").then(doLoad);
             break;
         case "GraphsLFWidget":
-            require(["hpcc/GraphsLFWidget"], doLoad);
+            import("hpcc/GraphsLFWidget").then(doLoad);
             break;
         case "GraphTree7Widget":
-            require(["src/GraphTree7Widget"], doLoad);
+            import("src/GraphTree7Widget").then(doLoad);
             break;
         case "Graph7Widget":
-            require(["src/Graph7Widget"], doLoad);
+            import("src/Graph7Widget").then(doLoad);
             break;
         case "GridDetailsWidget":
-            require(["hpcc/GridDetailsWidget"], doLoad);
+            import("hpcc/GridDetailsWidget").then(doLoad);
             break;
         case "GroupDetailsWidget":
-            require(["hpcc/GroupDetailsWidget"], doLoad);
+            import("hpcc/GroupDetailsWidget").then(doLoad);
             break;
         case "HelpersWidget":
-            require(["hpcc/HelpersWidget"], doLoad);
+            import("hpcc/HelpersWidget").then(doLoad);
             break;
         case "HexViewWidget":
-            require(["hpcc/HexViewWidget"], doLoad);
+            import("hpcc/HexViewWidget").then(doLoad);
             break;
         case "HPCCPlatformECLWidget":
-            require(["hpcc/HPCCPlatformECLWidget"], doLoad);
+            import("hpcc/HPCCPlatformECLWidget").then(doLoad);
             break;
         case "HPCCPlatformFilesWidget":
-            require(["hpcc/HPCCPlatformFilesWidget"], doLoad);
+            import("hpcc/HPCCPlatformFilesWidget").then(doLoad);
             break;
         case "HPCCPlatformMainWidget":
-            require(["hpcc/HPCCPlatformMainWidget"], doLoad);
+            import("hpcc/HPCCPlatformMainWidget").then(doLoad);
             break;
         case "HPCCPlatformOpsWidget":
-            require(["hpcc/HPCCPlatformOpsWidget"], doLoad);
+            import("hpcc/HPCCPlatformOpsWidget").then(doLoad);
             break;
         case "HPCCPlatformRoxieWidget":
-            require(["hpcc/HPCCPlatformRoxieWidget"], doLoad);
+            import("hpcc/HPCCPlatformRoxieWidget").then(doLoad);
             break;
         case "HPCCPlatformServicesPluginWidget":
-            require(["hpcc/HPCCPlatformServicesPluginWidget"], doLoad);
+            import("hpcc/HPCCPlatformServicesPluginWidget").then(doLoad);
             break;
         case "HPCCPlatformWidget":
-            require(["hpcc/HPCCPlatformWidget"], doLoad);
+            import("hpcc/HPCCPlatformWidget").then(doLoad);
             break;
         case "IFrameWidget":
-            require(["hpcc/IFrameWidget"], doLoad);
+            import("hpcc/IFrameWidget").then(doLoad);
             break;
         case "InfoGridWidget":
-            require(["hpcc/InfoGridWidget"], doLoad);
+            import("hpcc/InfoGridWidget").then(doLoad);
             break;
         case "JSGraphWidget":
-            require(["hpcc/JSGraphWidget"], doLoad);
+            import("hpcc/JSGraphWidget").then(doLoad);
             break;
         case "LFDetailsWidget":
-            require(["hpcc/LFDetailsWidget"], doLoad);
+            import("hpcc/LFDetailsWidget").then(doLoad);
             break;
         case "LibrariesUsedWidget":
-            require(["hpcc/LibrariesUsedWidget"], doLoad);
+            import("hpcc/LibrariesUsedWidget").then(doLoad);
             break;
         case "LogsWidget":
-            require(["hpcc/HelpersWidget"], doLoad);
+            import("hpcc/HelpersWidget").then(doLoad);
             break;
         case "LogWidget":
-            require(["hpcc/LogWidget"], doLoad);
+            import("hpcc/LogWidget").then(doLoad);
             break;
         case "LogVisualizationWidget":
-            require(["hpcc/LogVisualizationWidget"], doLoad);
+            import("hpcc/LogVisualizationWidget").then(doLoad);
             break;
         case "LZBrowseWidget":
-            require(["hpcc/LZBrowseWidget"], doLoad);
+            import("hpcc/LZBrowseWidget").then(doLoad);
             break;
         case "MachineInformationWidget":
-            require(["hpcc/MachineInformationWidget"], doLoad);
+            import("hpcc/MachineInformationWidget").then(doLoad);
             break;
         case "MemberOfWidget":
-            require(["hpcc/MemberOfWidget"], doLoad);
+            import("hpcc/MemberOfWidget").then(doLoad);
             break;
         case "MembersWidget":
-            require(["hpcc/MembersWidget"], doLoad);
+            import("hpcc/MembersWidget").then(doLoad);
             break;
         case "PackageMapDetailsWidget":
-            require(["hpcc/PackageMapDetailsWidget"], doLoad);
+            import("hpcc/PackageMapDetailsWidget").then(doLoad);
             break;
         case "PackageMapPartsWidget":
-            require(["hpcc/PackageMapPartsWidget"], doLoad);
+            import("hpcc/PackageMapPartsWidget").then(doLoad);
             break;
         case "PackageMapQueryWidget":
-            require(["hpcc/PackageMapQueryWidget"], doLoad);
+            import("hpcc/PackageMapQueryWidget").then(doLoad);
             break;
         case "PackageMapValidateContentWidget":
-            require(["hpcc/PackageMapValidateContentWidget"], doLoad);
+            import("hpcc/PackageMapValidateContentWidget").then(doLoad);
             break;
         case "PackageMapValidateWidget":
-            require(["hpcc/PackageMapValidateWidget"], doLoad);
+            import("hpcc/PackageMapValidateWidget").then(doLoad);
             break;
         case "PackageSourceWidget":
-            require(["hpcc/PackageSourceWidget"], doLoad);
+            import("hpcc/PackageSourceWidget").then(doLoad);
             break;
         case "PermissionsWidget":
-            require(["hpcc/PermissionsWidget"], doLoad);
+            import("hpcc/PermissionsWidget").then(doLoad);
             break;
         case "PreflightDetailsWidget":
-            require(["hpcc/PreflightDetailsWidget"], doLoad);
+            import("hpcc/PreflightDetailsWidget").then(doLoad);
             break;
         case "QuerySetDetailsWidget":
-            require(["hpcc/QuerySetDetailsWidget"], doLoad);
+            import("hpcc/QuerySetDetailsWidget").then(doLoad);
             break;
         case "QuerySetErrorsWidget":
-            require(["hpcc/QuerySetErrorsWidget"], doLoad);
+            import("hpcc/QuerySetErrorsWidget").then(doLoad);
             break;
         case "QuerySetLogicalFilesWidget":
-            require(["hpcc/QuerySetLogicalFilesWidget"], doLoad);
+            import("hpcc/QuerySetLogicalFilesWidget").then(doLoad);
             break;
         case "QuerySetQueryWidget":
-            require(["hpcc/QuerySetQueryWidget"], doLoad);
+            import("hpcc/QuerySetQueryWidget").then(doLoad);
             break;
         case "QuerySetSuperFilesWidget":
-            require(["hpcc/QuerySetSuperFilesWidget"], doLoad);
+            import("hpcc/QuerySetSuperFilesWidget").then(doLoad);
             break;
         case "QueryTestWidget":
-            require(["hpcc/QueryTestWidget"], doLoad);
+            import("hpcc/QueryTestWidget").then(doLoad);
             break;
         case "RequestInformationWidget":
-            require(["hpcc/RequestInformationWidget"], doLoad);
+            import("hpcc/RequestInformationWidget").then(doLoad);
             break;
         case "ResourcesWidget":
-            require(["hpcc/ResourcesWidget"], doLoad);
+            import("hpcc/ResourcesWidget").then(doLoad);
             break;
         case "ResultsWidget":
-            require(["hpcc/ResultsWidget"], doLoad);
+            import("hpcc/ResultsWidget").then(doLoad);
             break;
         case "ResultWidget":
-            require(["hpcc/ResultWidget"], doLoad);
+            import("hpcc/ResultWidget").then(doLoad);
             break;
         case "SearchResultsWidget":
-            require(["hpcc/SearchResultsWidget"], doLoad);
+            import("hpcc/SearchResultsWidget").then(doLoad);
             break;
         case "SelectionGridWidget":
-            require(["hpcc/SelectionGridWidget"], doLoad);
+            import("hpcc/SelectionGridWidget").then(doLoad);
             break;
         case "SFDetailsWidget":
-            require(["hpcc/SFDetailsWidget"], doLoad);
+            import("hpcc/SFDetailsWidget").then(doLoad);
             break;
         case "ShowAccountPermissionsWidget":
-            require(["hpcc/ShowAccountPermissionsWidget"], doLoad);
+            import("hpcc/ShowAccountPermissionsWidget").then(doLoad);
             break;
         case "ShowIndividualPermissionsWidget":
-            require(["hpcc/ShowIndividualPermissionsWidget"], doLoad);
+            import("hpcc/ShowIndividualPermissionsWidget").then(doLoad);
             break;
         case "ShowInheritedPermissionsWidget":
-            require(["hpcc/ShowInheritedPermissionsWidget"], doLoad);
+            import("hpcc/ShowInheritedPermissionsWidget").then(doLoad);
             break;
         case "ShowPermissionsWidget":
-            require(["hpcc/ShowPermissionsWidget"], doLoad);
+            import("hpcc/ShowPermissionsWidget").then(doLoad);
             break;
         case "SourceFilesWidget":
-            require(["hpcc/SourceFilesWidget"], doLoad);
+            import("hpcc/SourceFilesWidget").then(doLoad);
             break;
         case "SummaryStatsQueryWidget":
-            require(["hpcc/SummaryStatsQueryWidget"], doLoad);
+            import("hpcc/SummaryStatsQueryWidget").then(doLoad);
             break;
         case "SystemServersQueryWidget":
-            require(["hpcc/SystemServersQueryWidget"], doLoad);
+            import("hpcc/SystemServersQueryWidget").then(doLoad);
             break;
         case "TargetClustersQueryWidget":
-            require(["hpcc/TargetClustersQueryWidget"], doLoad);
+            import("hpcc/TargetClustersQueryWidget").then(doLoad);
             break;
         case "TargetComboBoxWidget":
-            require(["hpcc/TargetComboBoxWidget"], doLoad);
+            import("hpcc/TargetComboBoxWidget").then(doLoad);
             break;
         case "TargetSelectWidget":
-            require(["hpcc/TargetSelectWidget"], doLoad);
+            import("hpcc/TargetSelectWidget").then(doLoad);
             break;
         case "TimingPageWidget":
-            require(["hpcc/TimingPageWidget"], doLoad);
+            import("hpcc/TimingPageWidget").then(doLoad);
             break;
         case "TimingTreeMapWidget":
-            require(["hpcc/TimingTreeMapWidget"], doLoad);
+            import("hpcc/TimingTreeMapWidget").then(doLoad);
             break;
         case "TopologyDetailsWidget":
-            require(["hpcc/TopologyDetailsWidget"], doLoad);
+            import("hpcc/TopologyDetailsWidget").then(doLoad);
             break;
         case "TopologyWidget":
-            require(["hpcc/TopologyWidget"], doLoad);
+            import("hpcc/TopologyWidget").then(doLoad);
             break;
         case "TpClusterInfoWidget":
-            require(["hpcc/TpClusterInfoWidget"], doLoad);
+            import("hpcc/TpClusterInfoWidget").then(doLoad);
             break;
         case "TpThorStatusWidget":
-            require(["hpcc/TpThorStatusWidget"], doLoad);
+            import("hpcc/TpThorStatusWidget").then(doLoad);
             break;
         case "UserDetailsWidget":
-            require(["hpcc/UserDetailsWidget"], doLoad);
+            import("hpcc/UserDetailsWidget").then(doLoad);
             break;
         case "UserQueryWidget":
-            require(["hpcc/UserQueryWidget"], doLoad);
+            import("hpcc/UserQueryWidget").then(doLoad);
             break;
         case "VariablesWidget":
-            require(["hpcc/VariablesWidget"], doLoad);
+            import("hpcc/VariablesWidget").then(doLoad);
             break;
         case "VizWidget":
-            require(["hpcc/VizWidget"], doLoad);
+            import("hpcc/VizWidget").then(doLoad);
             break;
         case "WorkflowsWidget":
-            require(["hpcc/WorkflowsWidget"], doLoad);
+            import("hpcc/WorkflowsWidget").then(doLoad);
             break;
         case "ProcessesWidget":
-            require(["hpcc/ProcessesWidget"], doLoad);
+            import("hpcc/ProcessesWidget").then(doLoad);
             break;
         case "WUDetailsWidget":
-            require(["hpcc/WUDetailsWidget"], doLoad);
+            import("hpcc/WUDetailsWidget").then(doLoad);
             break;
         case "WUQueryWidget":
-            require(["hpcc/WUQueryWidget"], doLoad);
+            import("hpcc/WUQueryWidget").then(doLoad);
             break;
         case "XrefDetailsWidget":
-            require(["hpcc/XrefDetailsWidget"], doLoad);
+            import("hpcc/XrefDetailsWidget").then(doLoad);
             break;
         case "XrefDirectoriesWidget":
-            require(["hpcc/XrefDirectoriesWidget"], doLoad);
+            import("hpcc/XrefDirectoriesWidget").then(doLoad);
             break;
         case "XrefErrorsWarningsWidget":
-            require(["hpcc/XrefErrorsWarningsWidget"], doLoad);
+            import("hpcc/XrefErrorsWarningsWidget").then(doLoad);
             break;
         case "XrefFoundFilesWidget":
-            require(["hpcc/XrefFoundFilesWidget"], doLoad);
+            import("hpcc/XrefFoundFilesWidget").then(doLoad);
             break;
         case "XrefLostFilesWidget":
-            require(["hpcc/XrefLostFilesWidget"], doLoad);
+            import("hpcc/XrefLostFilesWidget").then(doLoad);
             break;
         case "XrefOrphanFilesWidget":
-            require(["hpcc/XrefOrphanFilesWidget"], doLoad);
+            import("hpcc/XrefOrphanFilesWidget").then(doLoad);
             break;
         case "XrefQueryWidget":
-            require(["hpcc/XrefQueryWidget"], doLoad);
+            import("hpcc/XrefQueryWidget").then(doLoad);
             break;
         default:
             console.log("case \"" + hpccWidget + "\":\n" +
-                "    require([\"hpcc/" + hpccWidget + "\"], doLoad);\n" +
+                "    import(\"hpcc/" + hpccWidget + "\").then(doLoad);\n" +
                 "    break;\n");
     }
 }

@@ -16,16 +16,7 @@
         },
         {
             "type": "npm",
-            "label": "bundle watch",
-            "script": "bundle-watch",
-            "problemMatcher": [],
-            "presentation": {
-                "group": "group-build"
-            }
-        },
-        {
-            "type": "npm",
-            "label": "webpack-dev-server",
+            "label": "dev start vite",
             "script": "start",
             "problemMatcher": [],
             "presentation": {
@@ -33,31 +24,10 @@
             }
         },
         {
-            "type": "npm",
-            "label": "dev server",
-            "script": "dev-start-ws",
-            "problemMatcher": [],
-            "presentation": {
-                "group": "group-build"
-            }
-        },
-        {
-            "label": "build-webpack-dev-server",
+            "label": "build-all",
             "dependsOn": [
                 "tsc watch",
-                "webpack-dev-server"
-            ],
-            "group": {
-                "kind": "build"
-            },
-            "problemMatcher": []
-        },
-        {
-            "label": "build-local-dev-server",
-            "dependsOn": [
-                "tsc watch",
-                "bundle watch",
-                "dev server"
+                "dev start vite"
             ],
             "group": {
                 "kind": "build",

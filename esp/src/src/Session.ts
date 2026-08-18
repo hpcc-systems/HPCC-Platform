@@ -56,8 +56,8 @@ export async function needsRedirectV5(): Promise<boolean> {
         window.location.replace(`/esp/files/index.html${window.location.hash}`);
         return true;
     }
-    if (window.location.pathname.indexOf("/esp/files/stub.htm") < 0) {
-        window.location.replace(`/esp/files/stub.htm${window.location.search}${window.location.hash}`);
+    if (window.location.pathname.indexOf("/esp/files/stub.html") < 0) {
+        window.location.replace(`/esp/files/stub.html${window.location.search}${window.location.hash}`);
         return true;
     }
     if (isV5DirectURL()) {
@@ -93,7 +93,7 @@ export async function needsRedirectV5(): Promise<boolean> {
 
 export async function needsRedirectV9(): Promise<boolean> {
     if (isV5DirectURL()) {
-        window.location.replace(`/esp/files/stub.htm${window.location.search}`);
+        window.location.replace(`/esp/files/stub.html${window.location.search}`);
         return true;
     }
     if (isV9DirectURL()) {
@@ -102,7 +102,7 @@ export async function needsRedirectV9(): Promise<boolean> {
 
     const v5Mode = await fetchModernMode() === String(false);
     if (v5Mode) {
-        window.location.replace(`/esp/files/stub.htm${window.location.search}`);
+        window.location.replace(`/esp/files/stub.html${window.location.search}`);
         return true;
     }
     return false;

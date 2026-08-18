@@ -41,9 +41,10 @@ file(COPY
     ${CMAKE_CURRENT_SOURCE_DIR}/package-lock.json
     ${CMAKE_CURRENT_SOURCE_DIR}/package.json
     ${CMAKE_CURRENT_SOURCE_DIR}/playwright.config.ts
-    ${CMAKE_CURRENT_SOURCE_DIR}/stub.htm
+    ${CMAKE_CURRENT_SOURCE_DIR}/stub.html
+    ${CMAKE_CURRENT_SOURCE_DIR}/tsconfig.dojo.json
     ${CMAKE_CURRENT_SOURCE_DIR}/tsconfig.json
-    ${CMAKE_CURRENT_SOURCE_DIR}/webpack.config.js
+    ${CMAKE_CURRENT_SOURCE_DIR}/vite.config.mts
     DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/src/BuildInfo.ts ${CMAKE_CURRENT_BINARY_DIR}/src/BuildInfo.ts @ONLY)
@@ -134,7 +135,6 @@ set ( SRCS
     ${CMAKE_CURRENT_BINARY_DIR}/eclwatch/DFUWUDetailsWidget.js
     ${CMAKE_CURRENT_BINARY_DIR}/eclwatch/DiskUsageDetails.js
     ${CMAKE_CURRENT_BINARY_DIR}/eclwatch/DiskUsageWidget.js
-    ${CMAKE_CURRENT_BINARY_DIR}/eclwatch/dojoConfig.js
     ${CMAKE_CURRENT_BINARY_DIR}/eclwatch/DynamicESDLDefinitionDetailsWidget.js
     ${CMAKE_CURRENT_BINARY_DIR}/eclwatch/DynamicESDLDefinitionQueryWidget.js
     ${CMAKE_CURRENT_BINARY_DIR}/eclwatch/DynamicESDLDetailsWidget.js
@@ -389,9 +389,10 @@ set ( SRCS
     ${CMAKE_CURRENT_SOURCE_DIR}/lws.config.js
     ${CMAKE_CURRENT_SOURCE_DIR}/package-lock.json
     ${CMAKE_CURRENT_SOURCE_DIR}/package.json
-    ${CMAKE_CURRENT_SOURCE_DIR}/stub.htm
+    ${CMAKE_CURRENT_SOURCE_DIR}/stub.html
+    ${CMAKE_CURRENT_SOURCE_DIR}/tsconfig.dojo.json
     ${CMAKE_CURRENT_SOURCE_DIR}/tsconfig.json
-    ${CMAKE_CURRENT_SOURCE_DIR}/webpack.config.js
+    ${CMAKE_CURRENT_SOURCE_DIR}/vite.config.mts
 )
 
 if ( "${CMAKE_BUILD_TYPE}" STREQUAL "Debug" )

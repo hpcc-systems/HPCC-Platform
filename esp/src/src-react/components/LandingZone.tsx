@@ -4,7 +4,7 @@ import { makeStyles } from "@fluentui/react-components";
 import { useOnEvent } from "@fluentui/react-hooks";
 import { FileSprayService } from "@hpcc-js/comms";
 import { scopedLogger } from "@hpcc-js/util";
-import * as iframe from "dojo/request/iframe";
+import { iframe } from "src-dojo/index";
 import { TpDropZoneQuery } from "src/WsTopology";
 import { normalizePath } from "src/Utility";
 import nlsHPCC from "src/nlsHPCC";

@@ -48,8 +48,8 @@
         </style>
 
         <script>dojoConfig = {async:true, parseOnLoad:false}</script>
-        <script src="/esp/files/dist/src-dojo.eclwatch.js"></script>
-        <script type="text/javascript" src="files_/logout.js"/>
+        <script type="module" src="/esp/files/dist/src-dojo.eclwatch.js"></script>
+        <script type="text/javascript" src="/esp/files/logout.js"></script>
 
         <script type="text/javascript">
           <![CDATA[
@@ -178,7 +178,7 @@
         </table>
       </form>
     </span>
-        <script type="text/javascript">
+        <script type="module">
 <xsl:text disable-output-escaping="yes">
 <![CDATA[
           function jsonPrettyIndent(indent)
@@ -244,46 +244,43 @@
               }
               return pretty;
           }
-          require(["dojo/ready", "dojo/request/handlers", "dojo/request/xhr", "dojo/json", "dojo/dom", "dojo/on"],
-          function(ready, handlers, xhr, JSON, dom, on){
-            ready(function(){
-              var jsonreq = ']]></xsl:text><xsl:value-of select="/srcxml/jsonreq"/><xsl:text disable-output-escaping="yes"><![CDATA[';
+          var jsonreq = ']]></xsl:text><xsl:value-of select="/srcxml/jsonreq"/><xsl:text disable-output-escaping="yes"><![CDATA[';
+          try {
+            JSON.parse(jsonreq); //validate
+            document.getElementById("req_body").value = jsonPretty(jsonreq); //JSON.stringify can't handle 64bit integers
+          } catch (err){
+            document.getElementById("req_body").value = err.toString() + ": \n\n" + jsonreq;
+          }
+          document.getElementById("sendButton").addEventListener("click", function(){
+            var responseBody = document.getElementById("resp_body");
+            responseBody.value = "";
+            var requestBody = document.getElementById("req_body").value;
+            if (document.getElementById("check_req").checked)
+            {
               try {
-                var obj = JSON.parse(jsonreq); //validate
-                var output = jsonPretty(jsonreq); //obj.stringify can't handle 64bit integers
-                dom.byId("req_body").value = output;
+                JSON.parse(requestBody);
               } catch (err){
-                dom.byId("req_body").value = err.toString() + ": \n\n" + jsonreq;
-              };
-            });
-            handlers.register("json_show_headers", function(response){
-              dom.byId("resp_header").value = "Content-Type: " + response.getHeader("Content-Type");
-              JSON.parse(response.text); //validate
-              return response.text; //JSON.parse can't handle 64 bit integers, so just format the original response string
-            });
-            on(dom.byId("sendButton"), "click", function(){
-              dom.byId("resp_body").value = "";
-              var jsonreq = dom.byId("req_body").value;
-              if (dom.byId("check_req").checked)
-              {
-                try {
-                  JSON.parse(jsonreq);
-                } catch (err){
-                  alert(err.toString() + ": \n\n" + jsonreq);
-                  return;
-                }
+                alert(err.toString() + ": \n\n" + requestBody);
+                return;
               }
-              xhr("]]></xsl:text><xsl:value-of disable-output-escaping="yes" select="$destination"/><xsl:text disable-output-escaping="yes"><![CDATA[", {
-                handleAs: "json_show_headers",
-                method: "POST",
-                data: jsonreq,
-                headers: { 'Content-Type': 'application/json' }
-              }).then(function(data){
-                dom.byId("resp_body").value = jsonPretty(data);
-              }, function(err){
-                dom.byId("resp_body").value = jsonPretty(err.response.text);
-                alert(err.toString());
+            }
+            fetch("]]></xsl:text><xsl:value-of disable-output-escaping="yes" select="$destination"/><xsl:text disable-output-escaping="yes"><![CDATA[", {
+              method: "POST",
+              body: requestBody,
+              headers: { "Content-Type": "application/json" }
+            }).then(function(response){
+              document.getElementById("resp_header").value = "Content-Type: " + response.headers.get("Content-Type");
+              return response.text().then(function(text){
+                if (!response.ok)
+                  throw new Error(text);
+                JSON.parse(text); //validate
+                return text; //JSON.parse can't handle 64 bit integers, so just format the original response string
               });
+            }).then(function(data){
+              responseBody.value = jsonPretty(data);
+            }).catch(function(err){
+              responseBody.value = jsonPretty(err.message);
+              alert(err.toString());
             });
           });
 ]]>

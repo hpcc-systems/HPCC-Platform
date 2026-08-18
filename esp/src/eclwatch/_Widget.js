@@ -131,7 +131,7 @@ define([
         },
 
         getURL: function (componentFilterParams) {
-            var baseUrl = document.URL.split("#")[0].replace("index.html", "stub.htm");
+            var baseUrl = document.URL.split("#")[0].replace("index.html", "stub.html");
             var baseUrlParts = baseUrl.split("?");
             baseUrl = baseUrlParts[0];
             var args = baseUrlParts[1];

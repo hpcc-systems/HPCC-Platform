@@ -1,4 +1,4 @@
-import * as Clipboard from "clipboard";
+import Clipboard from "clipboard";
 import { dom, mouse, on, Tooltip } from "src-dojo/index";
 import nlsHPCC from "./nlsHPCC";
 

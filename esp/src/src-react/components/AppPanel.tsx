@@ -1,6 +1,6 @@
 import * as React from "react";
 import { Button, DrawerBody, DrawerHeader, DrawerHeaderTitle, OverlayDrawer } from "@fluentui/react-components";
-import { WaffleOffice365Regular } from "@fluentui/react-icons";
+import { AppsRegular } from "@fluentui/react-icons";
 import nlsHPCC from "src/nlsHPCC";
 import { useWebLinks } from "../hooks/resources";
 
@@ -40,7 +40,7 @@ export const AppPanel: React.FunctionComponent<AppPanelProps> = ({
     >
         <DrawerHeader>
             <div style={{ display: "flex", alignItems: "center" }}>
-                <Button appearance="subtle" icon={<WaffleOffice365Regular />} onClick={onDismiss} style={{ width: 48, height: 48 }} />
+                <Button appearance="subtle" icon={<AppsRegular />} onClick={onDismiss} style={{ width: 48, height: 48 }} />
                 <span style={paddingStyle} />
                 <DrawerHeaderTitle>{nlsHPCC.Links}</DrawerHeaderTitle>
             </div>

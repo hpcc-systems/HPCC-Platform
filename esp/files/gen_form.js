@@ -133,7 +133,7 @@ function onPageLoad()
    }
   
    var form = document.forms['esp_form'];
-   initFormValues(form, getUrlFormValues(top.location.href));
+   initFormValues(form, getUrlFormValues(window.location.href));
 
    disableInputControls(form);     
 

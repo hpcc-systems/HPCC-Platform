@@ -5,7 +5,6 @@ define([
     "dojo/i18n",
     "dojo/i18n!./nls/ganglia",
     "dojo/dom",
-    "dojo/_base/array",
     "dojo/dom-construct",
     "dojo/store/Memory",
     "dojo/request/xhr",
@@ -39,7 +38,7 @@ define([
     "dijit/MenuSeparator",
     "dijit/PopupMenuItem"
 
-], function (declare, arrayUtil, lang, i18n, nlsHPCC, dom, arrayUtil, domConstruct, Memory, xhr, query,
+], function (declare, arrayUtil, lang, i18n, nlsHPCC, dom, domConstruct, Memory, xhr, query,
     registry, Menu, MenuItem,
     GangliaFilterDropDownWidget, WsRrd, _TabContainerWidget,
     template,

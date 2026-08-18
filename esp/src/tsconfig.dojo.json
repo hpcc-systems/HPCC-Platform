@@ -1,11 +1,14 @@
 {
     "compilerOptions": {
+        "ignoreDeprecations": "6.0",
         "baseUrl": ".",
         "outDir": "./lib",
         "declarationDir": "./types",
         "target": "es2022",
-        "noEmit": true,
-        "esModuleInterop": true,
+        "module": "AMD",
+        "moduleResolution": "Node",
+        "allowSyntheticDefaultImports": true,
+        "esModuleInterop": false,
         "sourceMap": true,
         "declaration": true,
         "noImplicitAny": false,
@@ -20,31 +23,15 @@
         "importHelpers": true,
         "allowJs": true,
         "skipLibCheck": true,
+        "downlevelIteration": true,
         "jsx": "react",
         "lib": [
             "DOM",
-            "DOM.Iterable",
             "ES2022"
         ],
+        "typeRoots": [],
+        "types": [],
         "paths": {
-            "hpcc/*": [
-                "./src/legacyModules.d.ts"
-            ],
-            "ganglia/*": [
-                "./src/legacyModules.d.ts"
-            ],
-            "src/*": [
-                "./src/*"
-            ],
-            "src-dojo/*": [
-                "./types/src-dojo/*"
-            ],
-            "src-react/*": [
-                "./src-react/*"
-            ],
-            "src-react-css/*": [
-                "./src-react/*"
-            ],
             "@hpcc-js/wasm-duckdb": [
                 "./node_modules/@hpcc-js/wasm-duckdb",
                 "../../../hpcc-js-wasm/packages/duckdb"
@@ -61,9 +48,8 @@
         }
     },
     "include": [
-        "src/index.ts",
-        "src/legacyModules.d.ts",
-        "src-react/index.tsx"
+        "src-dojo/index.ts",
+        "src-dojo/nls/**/*"
     ],
     "watchOptions": {
         "watchFile": "useFsEvents",

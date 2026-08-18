@@ -43,7 +43,7 @@ console.log("IP:  " + ip);
 console.log("Port:  " + port);
 
 let rewrite = [
-    { from: "/esp/files/stub.htm", to: "/stub.htm" },
+    { from: "/esp/files/stub.html", to: "/stub.html" },
     { from: "/esp/files/index.html", to: "/index.html" },
     { from: "/esp/files/nightly.html", to: "/nightly.html" },
     { from: "/esp/files/Login.html", to: "/Login.html" },

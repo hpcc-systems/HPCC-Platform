@@ -643,7 +643,7 @@ export class WUScopeController extends WUScopeControllerBase<Subgraph, VertexTyp
     filterPartial(graphDB: ScopeGraph) {
         for (const subgraph of graphDB.subgraphs) {
             const sg = this.subgraphsMap[subgraph._.Id];
-            switch (sg.minState()) {
+            switch (sg?.minState()) {
                 case "partial":
                     const childVertices: ReadonlyArray<ScopeVertex> = subgraph.vertices;
                     const vShow: ScopeVertex[] = [];
