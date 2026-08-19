@@ -70,6 +70,7 @@ const brands = {
     "teams": brandTeams
 };
 const brand = brands["web"];
+export { brand as brandVariants };
 
 export const lightThemeV9 = createLightTheme(brand);
 export const darkThemeV9 = createDarkTheme(brand);

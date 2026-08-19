@@ -31,6 +31,7 @@ setup("Setup", async () => {
     browsers.forEach(browserName => {
         jobs.push(submit(browserName, ecl.helloWorld));
         jobs.push(submit(browserName, ecl.normDenorm));
+        jobs.push(submit(browserName, ecl.heatmap));
     });
     const wus = await Promise.all(jobs);
     for (const wu of wus) {

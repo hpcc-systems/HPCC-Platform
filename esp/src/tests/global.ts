@@ -182,6 +182,16 @@ export namespace ecl {
 OUTPUT('Hello World');
 `;
 
+    export const heatmap = `\
+Rec := RECORD
+    UNSIGNED1 value;
+END;
+
+Input := DATASET([{1}, {2}, {3}], Rec);
+Projected := PROJECT(Input, TRANSFORM(Rec, SELF.value := LEFT.value * 2));
+OUTPUT(SORT(Projected, value));
+`;
+
     export const normDenorm = `\
 #option('generateLogicalGraph', true);
 ParentRec := RECORD

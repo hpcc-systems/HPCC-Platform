@@ -23,6 +23,7 @@ import { MetricsPropertiesTables } from "./MetricsPropertiesTables";
 import { MetricsSQL } from "./MetricsSQL";
 import { ScopesTable } from "./MetricsScopes";
 import { useMetricsGraphData, MetricsGraph, calcLineage, idsToScopes } from "./MetricsGraph";
+import { MetricsHeatmap } from "./MetricsHeatmap";
 import { useUserTheme } from "../hooks/theme";
 
 const logger = scopedLogger("src-react/components/Metrics.tsx");
@@ -36,7 +37,7 @@ const useStyles = makeStyles({
     }
 });
 
-type SelectedMetricsSource = "" | "scopesTable" | "scopesSqlTable" | "metricGraphWidget" | "hotspot" | "reset";
+type SelectedMetricsSource = "" | "scopesTable" | "scopesSqlTable" | "metricGraphWidget" | "hotspot" | "heatmap" | "reset";
 const TIMELINE_FIXEDHEIGHT = 152;
 const METRICS_SHOWTIMELINE = "metrics_showTimeline";
 
@@ -455,6 +456,11 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
         pushSelectionUrl(parentUrl, viewId, lineageSelectionScope?.name, selection);
     }, [lineageSelectionScope?.name, parentUrl, pushSelectionUrl, viewId]);
 
+    const onHeatmapActivitySelected = React.useCallback((activityIds: string[]) => {
+        setSelectedMetricsSource("heatmap");
+        pushSelectionUrl(parentUrl, viewId, lineageSelectionScope?.name, activityIds);
+    }, [lineageSelectionScope?.name, parentUrl, pushSelectionUrl, viewId]);
+
     return <HolyGrail
         header={<>
             <CommandBar items={buttons} farItems={rightButtons} />
@@ -478,7 +484,17 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
                             main={<AutosizeHpccJSComponent widget={scopesTable} ></AutosizeHpccJSComponent>}
                         />
                     </DockPanelItem>
-                    <DockPanelItem key="metricsSql" title={nlsHPCC.MetricsSQL} location="tab-after" relativeTo="scopesTable">
+                    <DockPanelItem key="metricsHeatmap" title={nlsHPCC.HeatMap} location="tab-after" relativeTo="scopesTable">
+                        <MetricsHeatmap
+                            scopes={metrics}
+                            columns={columns}
+                            preferredViewProperties={view.properties}
+                            selectedActivityIds={selection ?? []}
+                            metricGraph={metricGraph}
+                            onActivitySelected={onHeatmapActivitySelected}
+                        />
+                    </DockPanelItem>
+                    <DockPanelItem key="metricsSql" title={nlsHPCC.MetricsSQL} location="tab-after" relativeTo="metricsHeatmap">
                         <MetricsSQL wuid={wuid} defaultSql={view.sql} scopes={metrics} onSelectionChanged={selection => scopesSelectionChanged("scopesSqlTable", lineageSelectionScope?.name, selection)}></MetricsSQL>
                     </DockPanelItem>
                     <DockPanelItem key="metricGraph" title={nlsHPCC.Graph} location="split-right" relativeTo="scopesTable" >

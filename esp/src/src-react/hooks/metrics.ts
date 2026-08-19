@@ -467,60 +467,80 @@ export function useWorkunitMetrics(
     const [count, increment] = useCounter();
 
     React.useEffect(() => {
-        if (wuid && workunit) {
-            const fetchInfo = singletonDebounce(workunit, "fetchInfo");
-            const fetchDetailsNormalized = singletonDebounce(workunit, "fetchDetailsNormalized");
-            setStatus(FetchStatus.STARTED);
-            Promise.all([
-                fetchInfo({ IncludeExceptions: true }),
-                fetchDetailsNormalized({
-                    ScopeFilter: scopeFilter,
-                    NestedFilter: nestedFilter,
-                    PropertiesToReturn: {
-                        AllScopes: true,
-                        AllAttributes: true,
-                        AllProperties: true,
-                        AllNotes: true,
-                        AllStatistics: true,
-                        AllHints: true
-                    },
-                    ScopeOptions: {
-                        IncludeId: true,
-                        IncludeScope: true,
-                        IncludeScopeType: true,
-                        IncludeMatchedScopesInResults: true
-                    },
-                    PropertyOptions: {
-                        IncludeName: true,
-                        IncludeRawValue: true,
-                        IncludeFormatted: true,
-                        IncludeMeasure: true,
-                        IncludeCreator: false,
-                        IncludeCreatorType: false
-                    }
-                })
-            ]).then(([info, response]) => {
-                const exceptionsMap: { [scope: string]: WsWorkunits.ECLException[] } = {};
-                for (const exception of info?.Workunit?.Exceptions?.ECLException ?? []) {
-                    if (exception.Scope) {
-                        if (!exceptionsMap[exception.Scope]) {
-                            exceptionsMap[exception.Scope] = [];
-                        }
-                        exceptionsMap[exception.Scope].push(exception);
-                    }
-                }
-                setData(response?.data.map(row => normalizeMetricScope(row, exceptionsMap)));
-                setColumns(response?.columns);
-                setActivities(response?.meta?.Activities?.Activity ?? []);
-                setProperties(response?.meta?.Properties?.Property ?? []);
-                setMeasures(response?.meta?.Measures?.Measure ?? []);
-                setScopeTypes(response?.meta?.ScopeTypes?.ScopeType ?? []);
-            }).catch(e => {
-                logger.error(e);
-            }).finally(() => {
-                setStatus(FetchStatus.COMPLETE);
-            });
+        if (!wuid || !workunit || workunit.Wuid !== wuid) {
+            setData([]);
+            setColumns({});
+            setActivities([]);
+            setProperties([]);
+            setMeasures([]);
+            setScopeTypes([]);
+            setStatus(FetchStatus.COMPLETE);
+            return;
         }
+
+        let cancelled = false;
+        const fetchInfo = singletonDebounce(workunit, "fetchInfo");
+        const fetchDetailsNormalized = singletonDebounce(workunit, "fetchDetailsNormalized");
+        setStatus(FetchStatus.STARTED);
+        Promise.all([
+            fetchInfo({ IncludeExceptions: true }),
+            fetchDetailsNormalized({
+                ScopeFilter: scopeFilter,
+                NestedFilter: nestedFilter,
+                PropertiesToReturn: {
+                    AllScopes: true,
+                    AllAttributes: true,
+                    AllProperties: true,
+                    AllNotes: true,
+                    AllStatistics: true,
+                    AllHints: true
+                },
+                ScopeOptions: {
+                    IncludeId: true,
+                    IncludeScope: true,
+                    IncludeScopeType: true,
+                    IncludeMatchedScopesInResults: true
+                },
+                PropertyOptions: {
+                    IncludeName: true,
+                    IncludeRawValue: true,
+                    IncludeFormatted: true,
+                    IncludeMeasure: true,
+                    IncludeCreator: false,
+                    IncludeCreatorType: false
+                }
+            })
+        ]).then(([info, response]) => {
+            if (cancelled) return;
+
+            const exceptionsMap: { [scope: string]: WsWorkunits.ECLException[] } = {};
+            for (const exception of info?.Workunit?.Exceptions?.ECLException ?? []) {
+                if (exception.Scope) {
+                    if (!exceptionsMap[exception.Scope]) {
+                        exceptionsMap[exception.Scope] = [];
+                    }
+                    exceptionsMap[exception.Scope].push(exception);
+                }
+            }
+            setData(response?.data.map(row => normalizeMetricScope(row, exceptionsMap)) ?? []);
+            setColumns(response?.columns ?? {});
+            setActivities(response?.meta?.Activities?.Activity ?? []);
+            setProperties(response?.meta?.Properties?.Property ?? []);
+            setMeasures(response?.meta?.Measures?.Measure ?? []);
+            setScopeTypes(response?.meta?.ScopeTypes?.ScopeType ?? []);
+        }).catch(e => {
+            if (!cancelled) {
+                logger.error(e);
+            }
+        }).finally(() => {
+            if (!cancelled) {
+                setStatus(FetchStatus.COMPLETE);
+            }
+        });
+
+        return () => {
+            cancelled = true;
+        };
     }, [workunit, state, count, scopeFilter, nestedFilter, wuid]);
 
     return { metrics: data, columns, activities, properties, measures, scopeTypes, status, refresh: increment };
