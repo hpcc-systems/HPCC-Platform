@@ -235,6 +235,19 @@ inline const char* queryMetaAttributeName(EventMetaAttr attr)
     return nullptr;
 }
 
+inline EventMetaAttr queryMetaAttribute(const char* name)
+{
+    if (!isEmptyString(name))
+    {
+        for (unsigned m = 0; m < MetaAttrMax; ++m)
+        {
+            if (strieq(metaAttrNames[m], name))
+                return EventMetaAttr(m);
+        }
+    }
+    return MetaAttrMax;
+}
+
 static inline const MetaRule* getMetaRule(EventMetaAttr attr)
 {
     if (attr >= MetaAttrMax)
@@ -270,6 +283,94 @@ public:
 private:
     std::array<__uint64, EventMax>& counts;
 };
+
+enum class NamedSelectionKind : byte
+{
+    none = 0,
+    context = 0x01,
+    event = 0x02,
+    attribute = 0x04,
+    meta = 0x08,
+};
+BITMASK_ENUM(NamedSelectionKind);
+
+struct NamedSelection
+{
+    NamedSelectionKind kinds{NamedSelectionKind::none};
+    EventContext context{EventCtxInvalid};
+    EventType event{EventNone};
+    EventAttr attribute{EvAttrNone};
+    EventMetaAttr meta{MetaAttrMax};
+
+    bool empty() const
+    {
+        return kinds == NamedSelectionKind::none;
+    }
+
+    bool has(NamedSelectionKind kind) const
+    {
+        return hasMask(kinds, kind);
+    }
+};
+
+struct DescribeNamedRequest
+{
+    const char* rawText{nullptr};
+    NamedSelection selection;
+    bool enabled{false};
+};
+
+struct DescribeRenderRequest
+{
+    DescribeSection sectionOverrides{DescribeSection::none};
+    const std::array<__uint64, EventMax>& eventCounts;
+    bool filterByObserved{false};
+    const EventFileProperties* props{nullptr};
+    DescribeNamedRequest named;
+
+    DescribeRenderRequest(DescribeSection _sectionOverrides, const std::array<__uint64, EventMax>& _eventCounts, bool _filterByObserved, const EventFileProperties* _props, const DescribeNamedRequest& _named)
+        : sectionOverrides(_sectionOverrides)
+        , eventCounts(_eventCounts)
+        , filterByObserved(_filterByObserved)
+        , props(_props)
+        , named(_named)
+    {
+    }
+};
+
+// Resolves a user-supplied name to all matching entity kinds. Matching is case-insensitive.
+// A name may match at most one kind (no name currently spans multiple namespaces), but all
+// matching kinds are populated for correctness if collisions are introduced later.
+// Returns an empty NamedSelection if the name does not match any known entity.
+static NamedSelection resolveNamedSelectionFrom(const char* text)
+{
+    NamedSelection selection;
+    if (isEmptyString(text))
+        return selection;
+    if (auto context = queryEventContext(text); context != EventCtxInvalid)
+    {
+        selection.context = context;
+        selection.kinds |= NamedSelectionKind::context;
+    }
+    if (auto event = queryEventType(text); event != EventNone)
+    {
+        selection.event = event;
+        selection.kinds |= NamedSelectionKind::event;
+    }
+    if (auto attribute = queryEventAttribute(text); attribute != EvAttrNone)
+    {
+        selection.attribute = attribute;
+        selection.kinds |= NamedSelectionKind::attribute;
+    }
+    if (auto meta = queryMetaAttribute(text); meta != MetaAttrMax)
+    {
+        selection.meta = meta;
+        selection.kinds |= NamedSelectionKind::meta;
+    }
+    return selection;
+}
+
+static void appendDescriptionTree(IPropertyTree& description, const DescribeRenderRequest& request);
 } // namespace
 
 #define JEVENT_EVENT_ATTR_VALUE_ENTRY(name, type, unit) EvAttr##name,
@@ -324,6 +425,11 @@ void CDescribeEventsOp::addSectionOverride(DescribeSection section)
     sectionOverrides |= section;
 }
 
+void CDescribeEventsOp::setNamedEntity(const char* _namedEntity)
+{
+    namedEntity.set(_namedEntity);
+}
+
 bool CDescribeEventsOp::ready() const
 {
     // Unlike most consuming operations, describe supports schema-only output.
@@ -337,6 +443,17 @@ bool CDescribeEventsOp::doOp()
     EventFileProperties fileProperties;
     const EventFileProperties* props = nullptr;
 
+    DescribeNamedRequest namedRequest;
+    if (!isEmptyString(namedEntity))
+    {
+        namedRequest.selection = resolveNamedSelectionFrom(namedEntity);
+        if (namedRequest.selection.empty())
+            throwStringExceptionV(-1, "unknown named entity '%s'", namedEntity.get());
+
+        namedRequest.rawText = namedEntity;
+        namedRequest.enabled = true;
+    }
+
     if (!inputPaths.empty())
     {
         fileProperties = queryIteratorProperties();
@@ -347,7 +464,8 @@ bool CDescribeEventsOp::doOp()
     }
 
     Owned<IPropertyTree> description = createPTree("describe");
-    appendDescriptionTree(*description, eventCounts, filterByObserved, props);
+    DescribeRenderRequest renderRequest(sectionOverrides, eventCounts, filterByObserved, props, namedRequest);
+    appendDescriptionTree(*description, renderRequest);
 
     StringBuffer output;
     switch (format)
@@ -409,13 +527,16 @@ public:
     std::array<std::vector<EventType>, numEventContexts> contextEvents;
     std::array<std::vector<EventType>, EvAttrMax>      attrEvents;
     std::array<std::vector<EventType>, numEventMetaAttrs> metaEvents;
+    NamedSelection                                     namedSelection;
     EventFileOption                                    includeTraceIds{EventFileOption::Ambiguous};
     EventFileOption                                    includeThreadIds{EventFileOption::Ambiguous};
     EventFileOption                                    includeStackTraces{EventFileOption::Ambiguous};
 
 public:
-    DescribeContext(const std::array<__uint64, EventMax>& _counts, bool _filterByObserved, const EventFileProperties* props);
+    DescribeContext(const std::array<__uint64, EventMax>& _counts, bool _filterByObserved, const NamedSelection& _namedSelection, const EventFileProperties* props);
 
+    bool anyEventPassesObservedFilter(const std::vector<EventType>& events) const;
+    bool eventPassesObservedFilter(EventType type) const;
     bool eventMatches(EventType t) const;
     bool attrMatches(EventAttr a) const;
     bool contextMatches(EventContext c) const;
@@ -434,9 +555,10 @@ private:
     bool isEventEligibleForMeta(EventType type, const MetaRule& rule) const;
 };
 
-DescribeContext::DescribeContext(const std::array<__uint64, EventMax>& _counts, bool _filterByObserved, const EventFileProperties* props)
+DescribeContext::DescribeContext(const std::array<__uint64, EventMax>& _counts, bool _filterByObserved, const NamedSelection& _namedSelection, const EventFileProperties* props)
     : counts(_counts)
     , filterByObserved(_filterByObserved)
+    , namedSelection(_namedSelection)
 {
     if (props)
     {
@@ -614,7 +736,7 @@ void DescribeContext::indexEventMeta(EventType type)
     }
 }
 
-bool DescribeContext::eventMatches(EventType type) const
+bool DescribeContext::eventPassesObservedFilter(EventType type) const
 {
     if (!filterByObserved)
         return true;
@@ -626,61 +748,92 @@ bool DescribeContext::eventMatches(EventType type) const
     return counts[typeIndex] > 0;
 }
 
-bool DescribeContext::attrMatches(EventAttr attr) const
+bool DescribeContext::anyEventPassesObservedFilter(const std::vector<EventType>& events) const
 {
-    if (!filterByObserved)
-        return true;
-
-    const size_t attrIndex = static_cast<size_t>(attr);
-    if (attrIndex >= attrEvents.size())
-        return false;
-
-    for (EventType type : attrEvents[attrIndex])
+    for (EventType type : events)
     {
-        if (eventMatches(type))
+        if (eventPassesObservedFilter(type))
             return true;
     }
 
     return false;
 }
 
-bool DescribeContext::contextMatches(EventContext context) const
+bool DescribeContext::eventMatches(EventType t) const
 {
+    if (!namedSelection.empty())
+    {
+        if (!namedSelection.has(NamedSelectionKind::event))
+            return false;
+        if (t != namedSelection.event)
+            return false;
+    }
+
+    return eventPassesObservedFilter(t);
+}
+
+bool DescribeContext::attrMatches(EventAttr a) const
+{
+    if (!namedSelection.empty())
+    {
+        if (!namedSelection.has(NamedSelectionKind::attribute))
+            return false;
+        if (a != namedSelection.attribute)
+            return false;
+    }
+
+    if (!filterByObserved)
+        return true;
+
+    const size_t attrIndex = static_cast<size_t>(a);
+    if (attrIndex >= attrEvents.size())
+        return false;
+
+    return anyEventPassesObservedFilter(attrEvents[attrIndex]);
+}
+
+bool DescribeContext::contextMatches(EventContext c) const
+{
+    if (!namedSelection.empty())
+    {
+        if (!namedSelection.has(NamedSelectionKind::context))
+            return false;
+        if (c != namedSelection.context)
+            return false;
+    }
+
     if (!filterByObserved)
         return true;
 
     for (size_t contextIndex = 0; contextIndex < numEventContexts; ++contextIndex)
     {
-        if (eventContexts[contextIndex] != context)
+        if (eventContexts[contextIndex] != c)
             continue;
 
-        for (EventType type : contextEvents[contextIndex])
-        {
-            if (eventMatches(type))
-                return true;
-        }
-        return false;
+        return anyEventPassesObservedFilter(contextEvents[contextIndex]);
     }
 
     return false;
 }
 
-bool DescribeContext::metaMatches(EventMetaAttr metaAttr) const
+bool DescribeContext::metaMatches(EventMetaAttr idx) const
 {
+    if (!namedSelection.empty())
+    {
+        if (!namedSelection.has(NamedSelectionKind::meta))
+            return false;
+        if (idx != namedSelection.meta)
+            return false;
+    }
+
     if (!filterByObserved)
         return true;
 
-    const size_t metaIndex = static_cast<size_t>(metaAttr);
+    const size_t metaIndex = static_cast<size_t>(idx);
     if (metaIndex >= metaEvents.size())
         return false;
 
-    for (EventType type : metaEvents[metaIndex])
-    {
-        if (eventMatches(type))
-            return true;
-    }
-
-    return false;
+    return anyEventPassesObservedFilter(metaEvents[metaIndex]);
 }
 
 class DescribeRenderer
@@ -723,14 +876,7 @@ void DescribeRenderer::appendTerseMetaItems(const char* elementName)
 {
     forEachRenderableMeta([&](EventMetaAttr metaAttr, const MetaRule& rule)
     {
-        for (EventType t : ctx.metaEvents[metaAttr])
-        {
-            if (ctx.eventMatches(t))
-            {
-                output.addPropTreeArrayItem(elementName, createPTree())->setProp(nullptr, rule.name);
-                break;
-            }
-        }
+        output.addPropTreeArrayItem(elementName, createPTree())->setProp(nullptr, rule.name);
     });
 }
 
@@ -744,6 +890,13 @@ void DescribeRenderer::appendContexts()
             continue;
         if (!ctx.contextMatches(context))
             continue;
+
+        if (ctx.namedSelection.has(NamedSelectionKind::context))
+        {
+            if (ctx.anyEventPassesObservedFilter(ctx.contextEvents[contextIndex]))
+                output.addPropTreeArrayItem("context", createPTree())->setProp(nullptr, contextName);
+            continue;
+        }
 
         for (EventType t : ctx.contextEvents[contextIndex])
         {
@@ -774,6 +927,13 @@ void DescribeRenderer::appendAttributes()
         if (!ctx.attrMatches(attr))
             continue;
 
+        if (ctx.namedSelection.has(NamedSelectionKind::attribute))
+        {
+            if (ctx.anyEventPassesObservedFilter(ctx.attrEvents[attr]))
+                output.addPropTreeArrayItem("attribute", createPTree())->setProp(nullptr, queryEventAttributeName(attr));
+            continue;
+        }
+
         for (EventType t : ctx.attrEvents[attr])
         {
             if (ctx.eventMatches(t))
@@ -788,26 +948,71 @@ void DescribeRenderer::appendAttributes()
 }
 }
 
-void CDescribeEventsOp::appendDescriptionTree(IPropertyTree& description, const std::array<__uint64, EventMax>& eventCounts, bool filterByObserved, const EventFileProperties* props)
+namespace
 {
-    // Build cross-reference index once, then project into enabled sections.
-    DescribeContext ctx(eventCounts, filterByObserved, props);
-    DescribeRenderer renderer(description, ctx);
-
-    if (isSectionEnabled(DescribeSection::contexts))
-        renderer.appendContexts();
-    if (isSectionEnabled(DescribeSection::events))
-        renderer.appendEvents();
-    if (isSectionEnabled(DescribeSection::attributes))
-        renderer.appendAttributes();
-}
-
-bool CDescribeEventsOp::isSectionEnabled(DescribeSection section) const
+static bool isSectionEnabled(DescribeSection sectionOverrides, DescribeSection section)
 {
     if (sectionOverrides == DescribeSection::none)
         return true;
     return hasMask(sectionOverrides, section);
 }
+
+static void appendDescriptionTree(IPropertyTree& description, const DescribeRenderRequest& request)
+{
+    // Build cross-reference index using the pre-resolved named filter, then project into enabled sections.
+    DescribeContext ctx(request.eventCounts, request.filterByObserved, request.named.selection, request.props);
+
+    bool contextsEnabled = isSectionEnabled(request.sectionOverrides, DescribeSection::contexts);
+    bool eventsEnabled = isSectionEnabled(request.sectionOverrides, DescribeSection::events);
+    bool attributesEnabled = isSectionEnabled(request.sectionOverrides, DescribeSection::attributes);
+
+    if (request.named.enabled && !ctx.namedSelection.empty())
+    {
+        const bool canRenderInEnabledSection =
+            (contextsEnabled && ctx.namedSelection.has(NamedSelectionKind::context))
+            || (eventsEnabled && ctx.namedSelection.has(NamedSelectionKind::event))
+            || (attributesEnabled && (ctx.namedSelection.has(NamedSelectionKind::attribute) || ctx.namedSelection.has(NamedSelectionKind::meta)));
+
+        if (!canRenderInEnabledSection)
+        {
+            const char* excludedType = nullptr;
+            const char* neededSection = nullptr;
+            const char* sectionFlag = nullptr;
+            if (ctx.namedSelection.has(NamedSelectionKind::context))
+            {
+                excludedType = "context";
+                neededSection = "contexts";
+                sectionFlag = "-c";
+            }
+            else if (ctx.namedSelection.has(NamedSelectionKind::event))
+            {
+                excludedType = "event";
+                neededSection = "events";
+                sectionFlag = "-e";
+            }
+            else if (ctx.namedSelection.has(NamedSelectionKind::attribute) || ctx.namedSelection.has(NamedSelectionKind::meta))
+            {
+                excludedType = "attribute";
+                neededSection = "attributes";
+                sectionFlag = "-a";
+            }
+
+            if (excludedType)
+                throwStringExceptionV(-1, "named entity '%s' has type '%s'; enable the %s section (%s) to show it",
+                    request.named.rawText, excludedType, neededSection, sectionFlag);
+        }
+    }
+
+    DescribeRenderer renderer(description, ctx);
+
+    if (contextsEnabled)
+        renderer.appendContexts();
+    if (eventsEnabled)
+        renderer.appendEvents();
+    if (attributesEnabled)
+        renderer.appendAttributes();
+}
+} // namespace
 
 #undef ForEachContextBitIn
 
@@ -821,6 +1026,17 @@ class EventDescribeTests : public CppUnit::TestFixture
         CPPUNIT_TEST(testUnsupportedFormatThrows);
         CPPUNIT_TEST(testNamesAttributesOmitMetadata);
         CPPUNIT_TEST(testMetaRulesHaveRequiredDependencies);
+        CPPUNIT_TEST(testNamedEntitySelection);
+        CPPUNIT_TEST(testNamedEntitySelectionCaseInsensitive);
+        CPPUNIT_TEST(testNamedMetaSelectionRendersInAttributeList);
+        CPPUNIT_TEST(testNamedContextSelection);
+        CPPUNIT_TEST(testNamedAttributeSelection);
+        CPPUNIT_TEST(testNamedEntityUnknownThrows);
+        CPPUNIT_TEST(testNamedEntityUnknownThrowsBeforeTraversal);
+        CPPUNIT_TEST(testNamedEntityExcludedBySectionThrows);
+        CPPUNIT_TEST(testNamedContextExcludedBySectionThrows);
+        CPPUNIT_TEST(testNamedAttributeExcludedBySectionThrows);
+        CPPUNIT_TEST(testNamedMetaExcludedBySectionThrows);
         CPPUNIT_TEST(testSemanticMetaEligibilityRules);
         CPPUNIT_TEST(testObservedMetaEligibilityDependencyCombinations);
         CPPUNIT_TEST(testObservedMetaEligibilityOptionGating);
@@ -830,6 +1046,8 @@ class EventDescribeTests : public CppUnit::TestFixture
         CPPUNIT_TEST(testSectionSelectionEachSingleSectionOnly);
         CPPUNIT_TEST(testSectionSelectionCombinedSectionsOnly);
         CPPUNIT_TEST(testNamesAllSectionsEmitCompleteExpectedNames);
+        CPPUNIT_TEST(testNamedEntityNamesResolveToKnownKinds);
+        CPPUNIT_TEST(testNamedMetaObservedInteraction);
     CPPUNIT_TEST_SUITE_END();
 
     static const IPropertyTree& queryDescribeRoot(const IPropertyTree& tree)
@@ -847,6 +1065,32 @@ class EventDescribeTests : public CppUnit::TestFixture
             const char* value = it->query().queryProp(nullptr);
             if (!isEmptyString(value))
                 values.emplace(value);
+        }
+    }
+
+    static void assertExactSectionValues(const IPropertyTree& tree, const char* sectionName, std::initializer_list<const char*> expected)
+    {
+        std::vector<std::string> actual;
+        Owned<IPropertyTreeIterator> it = tree.getElements(sectionName);
+        ForEach(*it)
+        {
+            const char* value = it->query().queryProp(nullptr);
+            if (!isEmptyString(value))
+                actual.emplace_back(value);
+        }
+        std::sort(actual.begin(), actual.end());
+
+        std::vector<std::string> expectedValues;
+        expectedValues.reserve(expected.size());
+        for (const char* value : expected)
+            expectedValues.emplace_back(value);
+        std::sort(expectedValues.begin(), expectedValues.end());
+
+        if (actual != expectedValues)
+        {
+            StringBuffer msg;
+            msg.appendf("section '%s' mismatch", sectionName);
+            CPPUNIT_FAIL(msg.str());
         }
     }
 
@@ -908,6 +1152,28 @@ class EventDescribeTests : public CppUnit::TestFixture
         return output.str();
     }
 
+    static void assertThrowsMessageContains(const std::function<void()>& action, std::initializer_list<const char*> fragments)
+    {
+        try
+        {
+            action();
+            CPPUNIT_FAIL("expected IException");
+        }
+        catch (IException* e)
+        {
+            StringBuffer message;
+            e->errorMessage(message);
+            e->Release();
+
+            for (const char* fragment : fragments)
+            {
+                StringBuffer failure;
+                failure.appendf("expected exception containing '%s', actual='%s'", fragment, message.str());
+                CPPUNIT_ASSERT_MESSAGE(failure.str(), strstr(message.str(), fragment) != nullptr);
+            }
+        }
+    }
+
 public:
     void testMetaRulesHaveRequiredDependencies()
     {
@@ -967,7 +1233,7 @@ public:
         Owned<IBufferedSerialOutputStream> stream;
         setupOutput(op, output, stream);
 
-        CPPUNIT_ASSERT_THROWS_IEXCEPTION(op.doOp(), "unsupported output format value");
+        assertThrowsMessageContains([&]() { op.doOp(); }, { "unsupported output format value" });
         END_TEST
     }
 
@@ -988,6 +1254,325 @@ public:
         CPPUNIT_ASSERT(strstr(result, "\"attribute\"") != nullptr);
         CPPUNIT_ASSERT(strstr(result, "\"@category\"") == nullptr);
         CPPUNIT_ASSERT(strstr(result, "\"@presence\"") == nullptr);
+        END_TEST
+    }
+
+    void testNamedEntitySelection()
+    {
+        START_TEST
+
+        CDescribeEventsOp op;
+        op.setFormat(DescribeOutputFormat::json);
+        op.setNamedEntity("QueryStart");
+
+        StringBuffer output;
+        Owned<IBufferedSerialOutputStream> stream;
+        setupOutput(op, output, stream);
+
+        CPPUNIT_ASSERT(op.doOp());
+        stream->flush();
+
+        Owned<IPropertyTree> jsonTree = createPTreeFromJSONString(output.str());
+        const IPropertyTree& describeTree = queryDescribeRoot(*jsonTree);
+
+        assertExactSectionValues(describeTree, "context", {});
+        assertExactSectionValues(describeTree, "event", { "QueryStart" });
+        assertExactSectionValues(describeTree, "attribute", {});
+        END_TEST
+    }
+
+    void testNamedEntitySelectionCaseInsensitive()
+    {
+        START_TEST
+
+        {
+            CDescribeEventsOp op;
+            op.setFormat(DescribeOutputFormat::json);
+            op.setNamedEntity("querystart");
+
+            StringBuffer output;
+            Owned<IBufferedSerialOutputStream> stream;
+            setupOutput(op, output, stream);
+
+            CPPUNIT_ASSERT(op.doOp());
+            stream->flush();
+
+            Owned<IPropertyTree> jsonTree = createPTreeFromJSONString(output.str());
+            const IPropertyTree& describeTree = queryDescribeRoot(*jsonTree);
+
+            assertExactSectionValues(describeTree, "context", {});
+            assertExactSectionValues(describeTree, "event", { "QueryStart" });
+            assertExactSectionValues(describeTree, "attribute", {});
+        }
+
+        {
+            CDescribeEventsOp op;
+            op.setFormat(DescribeOutputFormat::json);
+            op.setNamedEntity("META.pAtH");
+
+            StringBuffer output;
+            Owned<IBufferedSerialOutputStream> stream;
+            setupOutput(op, output, stream);
+
+            CPPUNIT_ASSERT(op.doOp());
+            stream->flush();
+
+            Owned<IPropertyTree> jsonTree = createPTreeFromJSONString(output.str());
+            const IPropertyTree& describeTree = queryDescribeRoot(*jsonTree);
+
+            assertExactSectionValues(describeTree, "context", {});
+            assertExactSectionValues(describeTree, "event", {});
+            assertExactSectionValues(describeTree, "attribute", { "meta.Path" });
+        }
+
+        END_TEST
+    }
+
+    void testNamedMetaSelectionRendersInAttributeList()
+    {
+        START_TEST
+
+        CDescribeEventsOp op;
+        op.setFormat(DescribeOutputFormat::json);
+        op.setNamedEntity("meta.Path");
+
+        StringBuffer output;
+        Owned<IBufferedSerialOutputStream> stream;
+        setupOutput(op, output, stream);
+
+        CPPUNIT_ASSERT(op.doOp());
+        stream->flush();
+
+        Owned<IPropertyTree> jsonTree = createPTreeFromJSONString(output.str());
+        const IPropertyTree& describeTree = queryDescribeRoot(*jsonTree);
+
+        assertExactSectionValues(describeTree, "context", {});
+        assertExactSectionValues(describeTree, "event", {});
+        assertExactSectionValues(describeTree, "attribute", { "meta.Path" });
+        END_TEST
+    }
+
+    void testNamedContextSelection()
+    {
+        START_TEST
+
+        CDescribeEventsOp op;
+        op.setFormat(DescribeOutputFormat::json);
+        op.setNamedEntity("Index");
+
+        StringBuffer output;
+        Owned<IBufferedSerialOutputStream> stream;
+        setupOutput(op, output, stream);
+
+        CPPUNIT_ASSERT(op.doOp());
+        stream->flush();
+
+        Owned<IPropertyTree> jsonTree = createPTreeFromJSONString(output.str());
+        const IPropertyTree& describeTree = queryDescribeRoot(*jsonTree);
+
+        assertExactSectionValues(describeTree, "context", { "Index" });
+        assertExactSectionValues(describeTree, "event", {});
+        assertExactSectionValues(describeTree, "attribute", {});
+        END_TEST
+    }
+
+    void testNamedAttributeSelection()
+    {
+        START_TEST
+
+        CDescribeEventsOp op;
+        op.setFormat(DescribeOutputFormat::json);
+        op.setNamedEntity("ServiceName");
+
+        StringBuffer output;
+        Owned<IBufferedSerialOutputStream> stream;
+        setupOutput(op, output, stream);
+
+        CPPUNIT_ASSERT(op.doOp());
+        stream->flush();
+
+        Owned<IPropertyTree> jsonTree = createPTreeFromJSONString(output.str());
+        const IPropertyTree& describeTree = queryDescribeRoot(*jsonTree);
+
+        assertExactSectionValues(describeTree, "context", {});
+        assertExactSectionValues(describeTree, "event", {});
+        assertExactSectionValues(describeTree, "attribute", { "ServiceName" });
+        END_TEST
+    }
+
+    void testNamedEntityUnknownThrows()
+    {
+        START_TEST
+
+        CDescribeEventsOp op;
+        op.setFormat(DescribeOutputFormat::json);
+        op.setNamedEntity("NotARealEntity");
+
+        StringBuffer output;
+        Owned<IBufferedSerialOutputStream> stream;
+        setupOutput(op, output, stream);
+
+        assertThrowsMessageContains([&]() { op.doOp(); }, { "unknown named entity", "NotARealEntity" });
+        END_TEST
+    }
+
+    void testNamedEntityUnknownThrowsBeforeTraversal()
+    {
+        START_TEST
+
+        CDescribeEventsOp op;
+        op.setFormat(DescribeOutputFormat::json);
+        op.setNamedEntity("Enqueued");
+        op.setInputPath("definitely_missing_describe_input.evt");
+
+        StringBuffer output;
+        Owned<IBufferedSerialOutputStream> stream;
+        setupOutput(op, output, stream);
+
+        assertThrowsMessageContains([&]() { op.doOp(); }, { "unknown named entity", "Enqueued" });
+        END_TEST
+    }
+
+    void testNamedEntityExcludedBySectionThrows()
+    {
+        START_TEST
+
+        CDescribeEventsOp op;
+        op.setFormat(DescribeOutputFormat::json);
+        op.setNamedEntity("QueryStart");
+        op.addSectionOverride(DescribeSection::attributes);
+
+        StringBuffer output;
+        Owned<IBufferedSerialOutputStream> stream;
+        setupOutput(op, output, stream);
+
+        assertThrowsMessageContains([&]() { op.doOp(); }, { "QueryStart", "event", "-e" });
+        END_TEST
+    }
+
+    void testNamedContextExcludedBySectionThrows()
+    {
+        START_TEST
+
+        CDescribeEventsOp op;
+        op.setFormat(DescribeOutputFormat::json);
+        op.setNamedEntity("Query");
+        op.addSectionOverride(DescribeSection::events);
+
+        StringBuffer output;
+        Owned<IBufferedSerialOutputStream> stream;
+        setupOutput(op, output, stream);
+
+        assertThrowsMessageContains([&]() { op.doOp(); }, { "Query", "context", "-c" });
+        END_TEST
+    }
+
+    void testNamedAttributeExcludedBySectionThrows()
+    {
+        START_TEST
+
+        CDescribeEventsOp op;
+        op.setFormat(DescribeOutputFormat::json);
+        op.setNamedEntity("ServiceName");
+        op.addSectionOverride(DescribeSection::events);
+
+        StringBuffer output;
+        Owned<IBufferedSerialOutputStream> stream;
+        setupOutput(op, output, stream);
+
+        assertThrowsMessageContains([&]() { op.doOp(); }, { "ServiceName", "attribute", "-a" });
+        END_TEST
+    }
+
+    void testNamedMetaExcludedBySectionThrows()
+    {
+        START_TEST
+
+        CDescribeEventsOp op;
+        op.setFormat(DescribeOutputFormat::json);
+        op.setNamedEntity("meta.ServiceName");
+        op.addSectionOverride(DescribeSection::events);
+
+        StringBuffer output;
+        Owned<IBufferedSerialOutputStream> stream;
+        setupOutput(op, output, stream);
+
+        assertThrowsMessageContains([&]() { op.doOp(); }, { "meta.ServiceName", "attribute", "-a" });
+        END_TEST
+    }
+
+    void testNamedEntityNamesResolveToKnownKinds()
+    {
+        START_TEST
+
+        // Verify that every known entity name resolves to at least one kind.
+        // Name collisions across namespaces are allowed; resolution remains valid
+        // as long as the result is non-empty.
+        auto hasAnyKind = [](NamedSelectionKind kinds) -> bool {
+            return kinds != NamedSelectionKind::none;
+        };
+
+        auto assertResolvable = [&](const char* name) {
+            NamedSelection sel = resolveNamedSelectionFrom(name);
+            if (!hasAnyKind(sel.kinds))
+            {
+                StringBuffer msg;
+                msg.appendf("entity name did not resolve to any known kind: %s", name);
+                CPPUNIT_FAIL(msg.str());
+            }
+        };
+
+        for (EventType type : allEventTypes())
+            assertResolvable(queryEventName(type));
+
+        for (EventContext ctx : eventContexts)
+        {
+            const char* name = queryLocalEventContextName(ctx);
+            if (!isEmptyString(name))
+                assertResolvable(name);
+        }
+
+        for (EventAttr attr : eventAttrs)
+            assertResolvable(queryEventAttributeName(attr));
+
+        for (EventMetaAttr metaAttr : eventMetaAttrs)
+            assertResolvable(queryMetaAttributeName(metaAttr));
+
+        END_TEST
+    }
+
+    void testNamedMetaObservedInteraction()
+    {
+        START_TEST
+
+        // Record events that do not include MetaFileInformation. Meta attributes that
+        // depend on MetaFileInformation (e.g., meta.Path) are not derivable from these
+        // events and should not appear even when requested via --named in observed mode.
+        const char* filename = "describe_named_meta_no_file_info.evt";
+        COnScopeExit cleanup([&]() { removeFile(filename); });
+        writeObservedRecording(filename, "all=false");
+
+        CDescribeEventsOp op;
+        op.setFormat(DescribeOutputFormat::json);
+        op.setNamedEntity("meta.Path");
+        op.setInputPath(filename);
+
+        StringBuffer output;
+        Owned<IBufferedSerialOutputStream> stream;
+        setupOutput(op, output, stream);
+
+        CPPUNIT_ASSERT(op.doOp());
+        stream->flush();
+
+        Owned<IPropertyTree> jsonTree = createPTreeFromJSONString(output.str());
+        const IPropertyTree& describeTree = queryDescribeRoot(*jsonTree);
+
+        // meta.Path is not derivable without MetaFileInformation being observed.
+        // With --named=meta.Path, output should remain limited to that selected entity,
+        // so no other section should render values either.
+        assertExactSectionValues(describeTree, "context", {});
+        assertExactSectionValues(describeTree, "event", {});
+        assertExactSectionValues(describeTree, "attribute", {});
         END_TEST
     }
 
@@ -1025,7 +1610,7 @@ public:
         props.options.includeTraceIds = includeTraceIds;
         props.options.includeThreadIds = includeThreadIds;
         props.options.includeStackTraces = includeStackTraces;
-        DescribeContext observedCtx({}, true, &props);
+        DescribeContext observedCtx({}, true, NamedSelection{}, &props);
 
         for (EventMetaAttr metaAttr : eventMetaAttrs)
         {
@@ -1142,7 +1727,7 @@ public:
         enabledProps.options.includeTraceIds = EventFileOption::Enabled;
         enabledProps.options.includeThreadIds = EventFileOption::Enabled;
         enabledProps.options.includeStackTraces = EventFileOption::Enabled;
-        DescribeContext enabledCtx({}, true, &enabledProps);
+        DescribeContext enabledCtx({}, true, NamedSelection{}, &enabledProps);
 
         unsigned coveredAttrs = 0;
         for (EventAttr gatedAttr : gatedAttrs)
@@ -1162,7 +1747,7 @@ public:
             default:
                 continue;
             }
-            DescribeContext disabledCtx({}, true, &disabledProps);
+            DescribeContext disabledCtx({}, true, NamedSelection{}, &disabledProps);
 
             bool foundMatchingRule = false;
             for (EventMetaAttr metaAttr : eventMetaAttrs)
@@ -1244,11 +1829,9 @@ public:
         std::set<std::string> contexts;
         std::set<std::string> events;
         std::set<std::string> attributes;
-        std::set<std::string> metaAttributes;
         collectScalarList(contexts, describeTree, "context");
         collectScalarList(events, describeTree, "event");
         collectScalarList(attributes, describeTree, "attribute");
-        collectScalarList(metaAttributes, describeTree, "metaAttribute");
 
         CPPUNIT_ASSERT(contexts.count("Index") != 0);
         CPPUNIT_ASSERT(contexts.count("Query") != 0);
@@ -1269,11 +1852,11 @@ public:
         CPPUNIT_ASSERT(attributes.count("InMemorySize") != 0);
         CPPUNIT_ASSERT(attributes.count("ExpandTime") != 0);
         CPPUNIT_ASSERT(attributes.count("ReadTime") != 0);
+        CPPUNIT_ASSERT(attributes.count("meta.ServiceName") == 0);
+        CPPUNIT_ASSERT(attributes.count("meta.LogicalFileName") == 0);
+        CPPUNIT_ASSERT(attributes.count("meta.Path") == 0);
+        CPPUNIT_ASSERT(attributes.count("meta.Plane") == 0);
 
-        CPPUNIT_ASSERT(metaAttributes.count("meta.ServiceName") == 0);
-        CPPUNIT_ASSERT(metaAttributes.count("meta.LogicalFileName") == 0);
-        CPPUNIT_ASSERT(metaAttributes.count("meta.Path") == 0);
-        CPPUNIT_ASSERT(metaAttributes.count("meta.Plane") == 0);
         END_TEST
     }
 
@@ -1290,16 +1873,16 @@ public:
         const IPropertyTree& describeTree = queryDescribeRoot(*jsonTree);
 
         std::set<std::string> attributes;
-        std::set<std::string> metaAttributes;
         collectScalarList(attributes, describeTree, "attribute");
-        collectScalarList(metaAttributes, describeTree, "metaAttribute");
 
         CPPUNIT_ASSERT(attributes.count("EventTraceId") != 0);
         CPPUNIT_ASSERT(attributes.count("EventThreadId") != 0);
         CPPUNIT_ASSERT(attributes.count("EventStackTrace") == 0);
         CPPUNIT_ASSERT(attributes.count("ServiceName") != 0);
         CPPUNIT_ASSERT(attributes.count("meta.ServiceName") != 0);
-        CPPUNIT_ASSERT(metaAttributes.count("meta.ServiceName") == 0);
+        CPPUNIT_ASSERT(attributes.count("meta.LogicalFileName") == 0);
+        CPPUNIT_ASSERT(attributes.count("meta.Path") == 0);
+        CPPUNIT_ASSERT(attributes.count("meta.Plane") == 0);
         END_TEST
     }
 
@@ -1332,6 +1915,10 @@ public:
         CPPUNIT_ASSERT(events.count("QueryStop") != 0);
         CPPUNIT_ASSERT(attributes.count("EventTraceId") != 0);
         CPPUNIT_ASSERT(attributes.count("EventThreadId") != 0);
+        CPPUNIT_ASSERT(attributes.count("meta.ServiceName") != 0);
+        CPPUNIT_ASSERT(attributes.count("meta.LogicalFileName") == 0);
+        CPPUNIT_ASSERT(attributes.count("meta.Path") == 0);
+        CPPUNIT_ASSERT(attributes.count("meta.Plane") == 0);
         END_TEST
     }
 
@@ -1363,7 +1950,6 @@ public:
             CPPUNIT_ASSERT(describeTree.hasProp(section == DescribeSection::contexts ? "context" : section == DescribeSection::events ? "event" : "attribute"));
             CPPUNIT_ASSERT(!describeTree.hasProp(section == DescribeSection::contexts ? "event" : "context"));
             CPPUNIT_ASSERT(!describeTree.hasProp(section == DescribeSection::attributes ? "event" : "attribute"));
-            CPPUNIT_ASSERT(!describeTree.hasProp("metaAttribute"));
         }
         END_TEST
     }
@@ -1390,7 +1976,6 @@ public:
         CPPUNIT_ASSERT(describeTree.hasProp("context"));
         CPPUNIT_ASSERT(describeTree.hasProp("attribute"));
         CPPUNIT_ASSERT(!describeTree.hasProp("event"));
-        CPPUNIT_ASSERT(!describeTree.hasProp("metaAttribute"));
         END_TEST
     }
 
@@ -1485,7 +2070,6 @@ public:
         CPPUNIT_ASSERT(strstr(result, "\"context\"") != nullptr);
         CPPUNIT_ASSERT(strstr(result, "\"event\"") != nullptr);
         CPPUNIT_ASSERT(strstr(result, "\"attribute\"") != nullptr);
-        CPPUNIT_ASSERT(strstr(result, "\"metaAttribute\"") == nullptr);
         CPPUNIT_ASSERT(strstr(result, "\"@name\"") == nullptr);
         END_TEST
     }

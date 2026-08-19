@@ -29,6 +29,31 @@ public:
     }
 
 protected:
+    virtual unsigned acceptLongOption(const char* key, const char* nextArg) override
+    {
+        if (streq(key, "named"))
+        {
+            if (!nextArg || nextArg[0] == '-')
+                throw makeStringExceptionV(-1, "missing value for --named");
+
+            op.setNamedEntity(nextArg);
+            return 2;
+        }
+        return CEvToolCommand::acceptLongOption(key, nextArg);
+    }
+
+    virtual bool acceptKVOption(const char* key, const char* value) override
+    {
+        if (streq(key, "named"))
+        {
+            if (isEmptyString(value))
+                return false;
+            op.setNamedEntity(value);
+            return true;
+        }
+        return TEventConsumingCommand<CDescribeEventsOp>::acceptKVOption(key, value);
+    }
+
     virtual bool acceptTerseOption(char opt) override
     {
         switch (opt)
@@ -83,6 +108,17 @@ narrowed to one or more sections and emitted as XML, JSON, or YAML.
 R"!!!(    -x, -j, -y                Output format: XML, JSON, or YAML.
                               If more than one output option is supplied,
                               the last one wins.
+    --named ( '=' | ' ' ) <entity>
+                              Limit output to entries whose name matches
+                              the supplied entity text. Accepted
+                              values: event names (e.g. IndexLoad), context
+                              names (e.g. Index), attribute names (e.g.
+                              ServiceName), and meta-derived names with the
+                              meta. prefix (e.g. meta.Path). Matching is
+                              case-insensitive and can match more than one
+                              entity kind.
+                              When -c, -e, or -a are also given, the entity
+                              type must fall within a selected section.
     -c                        Include contexts section.
     -e                        Include events section.
     -a                        Include attributes section.
@@ -117,6 +153,9 @@ When input files are provided, observed output is derived from the stream after
 all processing options are applied. In particular, --model=<filename> and any
 filters (for example --events=... and --attribute:<attr>=<val>) can change
 which names are observed and therefore shown.
+
+When --named is provided, output is limited to entries whose name matches
+the supplied text.
 )!!!";
         out.put(size32_t(strlen(usageStr)), usageStr);
     }
