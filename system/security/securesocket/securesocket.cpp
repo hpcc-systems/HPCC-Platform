@@ -590,7 +590,7 @@ private:
     SocketStats     stats;
 private:
     StringBuffer& get_cn(X509* cert, StringBuffer& cn);
-    void handleError(int ssl_err, bool writing, bool wait, unsigned timeoutMs, const char *opStr);
+    void handleError(int ssl_err, bool writing, bool wait, unsigned timeoutMs, const char *opStr, unsigned long errnum=0);
     bool flushPendingEncryptedOutput(CCycleTimer &timer, unsigned timeoutMs, const char *opStr);
     size32_t readAndQueueEncryptedSocketInput(CCycleTimer &timer, unsigned timeoutMs, const char *opStr);
     
@@ -1269,7 +1269,7 @@ int CSecureSocket::secure_accept(int logLevel)
 #endif
             // JCSMORE this should really handle accept_cancel_pending
             if (PORT_CHECK_SSL_ACCEPT_ERROR != srtn)
-                handleError(ret, false, true, WAIT_FOREVER, "SSL_accept");
+                handleError(ret, false, true, WAIT_FOREVER, "SSL_accept", errnum);
             else
             {
                 if ((logLevel <= SSLogNormal) && (srtn == PORT_CHECK_SSL_ACCEPT_ERROR))
@@ -1869,7 +1869,7 @@ void CSecureSocket::startAsyncWrite(IAsyncProcessor * processor, const void * bu
     }
 }
 
-void CSecureSocket::handleError(int ssl_err, bool writing, bool wait, unsigned timeoutMs, const char *opStr)
+void CSecureSocket::handleError(int ssl_err, bool writing, bool wait, unsigned timeoutMs, const char *opStr, unsigned long errnum)
 {
     // if !wait, then we only perform ssl_err checking, we do not wait_read/wait_write or timeout
     int rc = 0;
@@ -1912,12 +1912,17 @@ void CSecureSocket::handleError(int ssl_err, bool writing, bool wait, unsigned t
         default:
         {
             char errbuf[512];
-            ERR_error_string_n(ssl_err, errbuf, 512);
+            if (!errnum)
+                errnum = ERR_get_error();
+            if (errnum)
+                ERR_error_string_n(errnum, errbuf, 512);
+            else
+                strcpy(errbuf, "no OpenSSL error queued");
             ERR_clear_error();
             VStringBuffer errmsg("%s error %d (%d) - %s", opStr, ssl_err, sockErr, errbuf);
             if (m_loglevel >= SSLogMax)
                 DBGLOG("Warning: %s", errmsg.str());
-            THROWJSOCKEXCEPTION_MSG(ssl_err, errmsg);
+            THROWJSOCKEXCEPTION_MSG(sockErr ? sockErr : JSOCKERR_connection_failed, errmsg);
         }
     }
     if (wait && rc <= 0)
