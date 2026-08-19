@@ -12,9 +12,9 @@
 
   <para><informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
-        <colspec colwidth="76.20pt" />
+        <colspec colwidth="76.20pt"/>
 
-        <colspec />
+        <colspec/>
 
         <tbody>
           <row>
@@ -43,12 +43,26 @@
     </informaltable></para>
 
   <para>The <emphasis role="bold">#UNIQUENAME </emphasis>statement creates a
-  valid unique ECL identifier within the context of the current scope limit.
-  This is particularly useful in MACRO structures as it allows the macro to be
-  used multiple times in the same scope without creating duplicate attribute
-  name errors from the attribute definitions within the macro. This statement
-  may be used outside an XML scope and does not require a previous LOADXML to
+  valid unique ECL identifier within the context of the current scope limit,
+  and generates a <emphasis>Template Symbol</emphasis> that can then be used
+  in other Template Language statements (such as <link
+  linkend="_SET">#SET</link> and <link linkend="_APPEND">#APPEND</link>). This
+  is particularly useful in MACRO structures as it allows the macro to be used
+  multiple times in the same scope without creating duplicate attribute name
+  errors from the attribute definitions within the macro. This statement may
+  be used outside an XML scope and does not require a previous LOADXML to
   instantiate an XML scope.</para>
+
+  <para>The key difference between <emphasis
+  role="bold">#UNIQUENAME</emphasis> and <link
+  linkend="_DECLARE">#DECLARE</link> is automatic unique name generation:
+  <emphasis role="bold">#UNIQUENAME</emphasis> declares a template symbol and
+  assigns it a unique identifier automatically to prevent name collisions when
+  the enclosing MACRO is called multiple times in the same scope, while <link
+  linkend="_DECLARE">#DECLARE</link> only declares the template symbol; its
+  value must be set later (for example with <link linkend="_SET">#SET</link>
+  or <link linkend="_APPEND">#APPEND</link>), and uniqueness must be managed
+  explicitly if needed.</para>
 
   <para>Example:</para>
 
@@ -115,5 +129,6 @@ EXPORT MAC_Compare_Result(module_name, attribute_name) := MACRO
 ENDMACRO;
 </programlisting>
 
-  <para>See Also: <link linkend="MACRO_Structure">MACRO</link></para>
+  <para>See Also: <link linkend="MACRO_Structure">MACRO</link>, <link
+  linkend="_DECLARE">#DECLARE</link></para>
 </sect1>

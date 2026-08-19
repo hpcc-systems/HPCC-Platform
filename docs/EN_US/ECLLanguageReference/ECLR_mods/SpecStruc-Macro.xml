@@ -11,10 +11,9 @@
   role="bold">(</emphasis><emphasis> parameterlist </emphasis><emphasis
   role="bold">) := MACRO</emphasis><emphasis role="bold"><indexterm>
       <primary>MACRO</primary>
-    </indexterm> </emphasis><emphasis></emphasis></para>
+    </indexterm> </emphasis><emphasis/></para>
 
-  <para><emphasis> tokenstream</emphasis>;<emphasis
-  role="bold"></emphasis></para>
+  <para><emphasis> tokenstream</emphasis>;<emphasis role="bold"/></para>
 
   <para><emphasis role="bold">ENDMACRO<indexterm>
       <primary>ENDMACRO</primary>
@@ -22,9 +21,9 @@
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
-      <colspec align="left" colwidth="122.40pt" />
+      <colspec align="left" colwidth="122.40pt"/>
 
-      <colspec />
+      <colspec/>
 
       <tbody>
         <row>
@@ -87,6 +86,15 @@
   in the <emphasis>parameterlist</emphasis> should generally name the
   Attribute to be used to contain the result of the macro (so any code
   following the macro call can make use of the result).</para>
+
+  <para>When an Attribute macro is called multiple times within the same
+  visibility scope, internal definition names can collide. Use <link
+  linkend="_UNIQUENAME">#UNIQUENAME</link> to generate unique names
+  automatically. <link linkend="_DECLARE">#DECLARE</link> declares a template
+  symbol only; when used (typically with <literal>#SET</literal> or
+  <literal>#APPEND</literal>) you must still ensure that the generated ECL
+  identifier is unique, for example by incorporating parameters or another
+  disambiguator.</para>
 
   <para>Example:</para>
 
@@ -161,6 +169,7 @@ MAC_join(J1,People,Property,'LEFT.ID=RIGHT.PeopleID,LEFT  OUTER')
 
   <para>See Also: <link linkend="TRANSFORM_Structure">TRANSFORM
   Structure</link>, <link linkend="RECORD_Structure">RECORD Structure</link>,
-  <link linkend="_UNIQUENAME">#UNIQUENAME</link>, <link
+  <link linkend="_DECLARE">#DECLARE</link>, <link
+  linkend="_UNIQUENAME">#UNIQUENAME</link>, <link
   linkend="_EXPAND">#EXPAND</link></para>
 </sect1>

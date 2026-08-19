@@ -45,15 +45,13 @@ public:
     void setFormat(DescribeOutputFormat _format);
     void setSectionOverrides(DescribeSection sections);
     void addSectionOverride(DescribeSection section);
+    void setNamedEntity(const char* _namedEntity);
 
     virtual bool ready() const override;
     virtual bool doOp() override;
 
 private:
-    void appendDescriptionTree(IPropertyTree& description, const std::array<__uint64, EventMax>& eventCounts, bool filterByObserved, const EventFileProperties* props);
-    bool isSectionEnabled(DescribeSection section) const;
-
-private:
     DescribeOutputFormat format{DescribeOutputFormat::yaml};
     DescribeSection sectionOverrides{DescribeSection::none};
+    StringAttr namedEntity;
 };

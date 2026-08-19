@@ -359,7 +359,7 @@ export const WorkunitSummary: React.FunctionComponent<WorkunitSummaryProps> = ({
         { key: "divider_4", itemType: ContextualMenuItemType.Divider },
         {
             key: "recover", text: nlsHPCC.Recover, disabled: workunit?.Archived || !workunit?.isComplete() || workunit?.isDeleted(),
-            onClick: () => workunit?.resubmit().catch(err => logger.error(err))
+            onClick: () => workunit?.recover().catch(err => logger.error(err))
         },
         {
             key: "resubmit", text: nlsHPCC.Resubmit, disabled: workunit?.Archived || !workunit?.isComplete() || workunit?.isDeleted(),

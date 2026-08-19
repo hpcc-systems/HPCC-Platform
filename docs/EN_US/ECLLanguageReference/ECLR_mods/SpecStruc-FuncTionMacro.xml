@@ -13,8 +13,8 @@
       <primary>FUNCTIONMACRO</primary>
     </indexterm></emphasis><emphasis role="bold"> </emphasis></para>
 
-  <para><emphasis role="bold"></emphasis><emphasis>code</emphasis> <emphasis
-  role="bold"></emphasis></para>
+  <para><emphasis role="bold"/><emphasis>code</emphasis> <emphasis
+  role="bold"/></para>
 
   <para><emphasis role="bold"> RETURN</emphasis>
   <emphasis>retval</emphasis>;</para>
@@ -23,9 +23,9 @@
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
-      <colspec align="left" colwidth="122.40pt" />
+      <colspec align="left" colwidth="122.40pt"/>
 
-      <colspec />
+      <colspec/>
 
       <tbody>
         <row>
@@ -87,9 +87,11 @@
   FUNCTIONMACRO has over the MACRO structure is that it may be called in an
   expression context, just like a FUNCTION would be.</para>
 
-  <para>Unlike the MACRO structure, #UNIQUENAME is not necessary to prevent
-  internal definition name clashes when the FUNCTIONMACRO is used multiple
-  times within the same visibility scope. However, the <emphasis
+  <para>Unlike the MACRO structure, neither <link
+  linkend="_UNIQUENAME">#UNIQUENAME</link> nor <link
+  linkend="_DECLARE">#DECLARE</link> is necessary to prevent internal
+  definition name clashes when the FUNCTIONMACRO is used multiple times within
+  the same visibility scope. However, the <emphasis
   role="bold">LOCAL</emphasis> keyword must be explicitly used within the
   FUNCTIONMACRO if a definition name in its <emphasis>code</emphasis> may also
   have been defined outside the FUNCTIONMACRO and within the same visibility
@@ -137,6 +139,7 @@ AddOne(5);
 AddTwo(8);</programlisting>
 
   <para>See Also: <link linkend="FUNCTION_Structure">FUNCTION
-  Structure</link>, <link linkend="MACRO_Structure">MACRO
-  Structure</link></para>
+  Structure</link>, <link linkend="MACRO_Structure">MACRO Structure</link>,
+  <link linkend="_DECLARE">#DECLARE</link>, <link
+  linkend="_UNIQUENAME">#UNIQUENAME</link></para>
 </sect1>
