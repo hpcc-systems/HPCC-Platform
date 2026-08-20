@@ -79,6 +79,7 @@ typedef unsigned IPTIteratorCodes;
 
 extern jlib_decl unsigned queryNumLocalTrees();
 extern jlib_decl unsigned queryNumAtomTrees();
+extern jlib_decl void dumpTopAtoms(unsigned topN, unsigned minLinkCount = 1);
 
 /**
  * Note regarding IPropertyTree lifetime and safety:

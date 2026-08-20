@@ -20,6 +20,8 @@
 #include <string>
 #include <tuple>
 #include <algorithm>
+#include <vector>
+#include <utility>
 
 #include "platform.h"
 #include "jarray.hpp"
@@ -140,6 +142,19 @@ struct alignas(64) CAtomShard
         // created a new one).
         ht.remove((ATOM_TYPE *)a);
     }
+
+    // Collect all atoms with linkcount >= minLinkCount into items
+    void gatherTopAtoms(std::vector<std::pair<unsigned, std::string>> &items, unsigned minLinkCount)
+    {
+        CriticalBlock block(crit);
+        unsigned i = 0;
+        for (ATOM_TYPE *a = ht.first(i); a; a = ht.next(i))
+        {
+            unsigned count = a->linkcount.load(std::memory_order_relaxed);
+            if (count >= minLinkCount)
+                items.emplace_back(count, a->toAtomStr()->get());
+        }
+    }
 };
 
 static CAtomShard<AtomStrC>  nameShardsC[kNameShards];
@@ -217,6 +232,46 @@ static inline void removeAttrValByPtr(AtomStr *v)
 {
     AtomStrAtom *a = AtomStrAtom::toAtom(v);
     attrValShards[a->hash & (kAttrShards - 1)].remove(a);
+}
+
+template <class ATOM_TYPE, unsigned N>
+static void gatherShardsTopAtoms(CAtomShard<ATOM_TYPE> (&shards)[N], std::vector<std::pair<unsigned, std::string>> &items, unsigned minLinkCount)
+{
+    for (unsigned i = 0; i < N; i++)
+        shards[i].gatherTopAtoms(items, minLinkCount);
+}
+
+static void logTopAtoms(const char *tableName, std::vector<std::pair<unsigned, std::string>> &items, unsigned topN)
+{
+    std::sort(items.begin(), items.end(), [](const auto &a, const auto &b) { return a.first > b.first; });
+    unsigned limit = std::min((unsigned)items.size(), topN);
+    DBGLOG("Top %u atoms in %s (%zu total qualifying):", limit, tableName, items.size());
+    for (unsigned i = 0; i < limit; i++)
+        DBGLOG("  [%u] count=%-8u \"%s\"", i + 1, items[i].first, items[i].second.c_str());
+}
+
+void dumpTopAtoms(unsigned topN, unsigned minLinkCount)
+{
+    std::vector<std::pair<unsigned, std::string>> items;
+
+    gatherShardsTopAtoms(nameShardsC, items, minLinkCount);
+    logTopAtoms("node-name (case-sensitive)", items, topN);
+
+    items.clear();
+    gatherShardsTopAtoms(nameShardsNC, items, minLinkCount);
+    logTopAtoms("node-name (case-insensitive)", items, topN);
+
+    items.clear();
+    gatherShardsTopAtoms(attrKeyShardsC, items, minLinkCount);
+    logTopAtoms("attribute-key (case-sensitive)", items, topN);
+
+    items.clear();
+    gatherShardsTopAtoms(attrKeyShardsNC, items, minLinkCount);
+    logTopAtoms("attribute-key (case-insensitive)", items, topN);
+
+    items.clear();
+    gatherShardsTopAtoms(attrValShards, items, minLinkCount);
+    logTopAtoms("attribute-value", items, topN);
 }
 
 #ifdef USE_READONLY_ATOMTABLE
