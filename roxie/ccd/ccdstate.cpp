@@ -400,7 +400,7 @@ public:
 
 class CResolvedFileCache : implements IResolvedFileCache
 {
-    CriticalSection cacheLock{SYNC_LOCATION};
+    ReadWriteLock cacheLock{SYNC_LOCATION};
     CopyMapStringToMyClass<IResolvedFile> files;
 
 public:
@@ -413,17 +413,18 @@ public:
     // Add a filename and the corresponding IResolvedFile to the cache
     virtual void addCache(const char *filename, const IResolvedFile *file)
     {
-        CriticalBlock b(cacheLock);
         IResolvedFile *add = const_cast<IResolvedFile *>(file);
+        WriteLockBlock b(cacheLock);
         add->setCache(this);
         files.setValue(filename, add);
     }
     // Remove an IResolvedFile from the cache
     virtual void removeCache(const IResolvedFile *file)
     {
-        CriticalBlock b(cacheLock);
         if (doTrace(traceRoxieFiles, TraceFlags::Detailed))
             DBGLOG("removeCache %s", file->queryFileName());
+
+        WriteLockBlock b(cacheLock);
         // NOTE: it's theoretically possible for the final release to happen after a replacement has been inserted into hash table. 
         // So only remove from hash table if what we find there matches the item that is being deleted.
         IResolvedFile *goer = files.getValue(file->queryFileName());
@@ -434,15 +435,22 @@ public:
     // Lookup a filename in the cache
     virtual IResolvedFile *lookupCache(const char *filename)
     {
-        CriticalBlock b(cacheLock);
-        IResolvedFile *cache = files.getValue(filename);
-        if (cache)
+        bool traceNotAlive = false;
         {
-            if (cache->isAliveAndLink())
-                return cache;
-            if (traceLevel)
-                DBGLOG("Not returning %s from cache as isAlive() returned false", filename);
+            ReadLockBlock b(cacheLock);
+            IResolvedFile *cache = files.getValue(filename);
+            if (cache)
+            {
+                if (cache->isAliveAndLink())
+                    return cache;
+                if (traceLevel)
+                    traceNotAlive = true;
+            }
         }
+
+        if (traceNotAlive)
+            DBGLOG("Not returning %s from cache as isAlive() returned false", filename);
+
         return NULL;
     }
 };
