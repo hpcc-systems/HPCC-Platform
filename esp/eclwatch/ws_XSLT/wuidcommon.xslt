@@ -25,7 +25,7 @@
     <form name="protect" id="protect" action="/WsWorkunits/WUUpdate?Wuid={$wuid}" method="post">
       <div id="wudetails" xmlns="http://www.w3.org/1999/xhtml">
         <table id="wudetailsContent" class="workunit">
-          <xsl:text disable-output-escaping="yes"><![CDATA[        
+          <xsl:text disable-output-escaping="yes"><![CDATA[
         <colgroup>
           <col width="30%"/>
           <col width="70%"/>
@@ -48,7 +48,7 @@
                   &nbsp;
                   <a href="/esp/iframe?esp_iframe_title=Download ECL Workunit XML - {$wuid}&amp;inner=/WsWorkunits/WUFile%3fWuid%3d{$wuid}%26Type%3dXML%26Option%3d2" >Download XML</a>
                   &nbsp;
-                  <a href="/esp/iframe?esp_iframe_title=ECL Playground - {$wuid}&amp;inner=/esp/files/stub.htm%3fWidget%3dECLPlaygroundWidget%26Wuid%3d{$wuid}%26Target%3d{Cluster}" >ECL Playground</a>
+                  <a href="/esp/iframe?esp_iframe_title=ECL Playground - {$wuid}&amp;inner=/esp/files/stub.html%3fWidget%3dECLPlaygroundWidget%26Wuid%3d{$wuid}%26Target%3d{Cluster}" >ECL Playground</a>
                 </xsl:otherwise>
               </xsl:choose>
             </td>
@@ -290,7 +290,7 @@
           </tr>
         </table>
       </div>
-      
+
       <xsl:if test="HasDebugValue &gt; 0 or DebugValuesDesc != ''">
         <p>
           <div>
@@ -345,7 +345,7 @@
           </div>
         </p>
       </xsl:if>
-      
+
       <xsl:if test="WarningCount &gt; 0">
         <p>
           <div>
@@ -369,7 +369,7 @@
           </div>
         </p>
       </xsl:if>
-      
+
       <xsl:if test="InfoCount &gt; 0">
         <p>
           <div>
@@ -393,7 +393,7 @@
           </div>
         </p>
       </xsl:if>
-      
+
       <xsl:if test="AlertCount &gt; 0">
         <p>
           <div>
@@ -417,7 +417,7 @@
           </div>
         </p>
       </xsl:if>
-      
+
       <xsl:if test="ResultCount &gt; 0 or ResultsDesc != ''">
         <p>
           <div>
@@ -427,7 +427,7 @@
                   Results: (<xsl:value-of select="ResultCount"/>)
                 </A>
                 &nbsp;-&nbsp;
-                <a href="/esp/iframe?esp_iframe_title=Results - {$wuid}&amp;inner=/esp/files/stub.htm%3fWidget%3dResultsWidget%26Wuid%3d{$wuid}%26TabPosition%3dtop" >Show</a>
+                <a href="/esp/iframe?esp_iframe_title=Results - {$wuid}&amp;inner=/esp/files/stub.html%3fWidget%3dResultsWidget%26Wuid%3d{$wuid}%26TabPosition%3dtop" >Show</a>
               </div>
             </div>
             <div id="Results" class="wusectioncontent">
@@ -464,7 +464,7 @@
           </div>
         </p>
       </xsl:if>
-      
+
       <xsl:if test="SourceFileCount &gt; 0 or SourceFilesDesc != ''">
         <p>
           <div>
@@ -543,7 +543,7 @@
           </div>
         </p>
       </xsl:if>
-      
+
       <xsl:if test="GraphCount &gt; 0 or GraphsDesc != ''">
         <p>
           <div>
@@ -587,7 +587,7 @@
           </div>
         </p>
       </xsl:if>
-      
+
       <xsl:if test="TimerCount &gt; 0 or TimersDesc != ''">
         <p>
           <div>
@@ -848,7 +848,7 @@
             </td></tr>
         </table>
       </xsl:if>
-    </form>       
+    </form>
    <div id="wufooterContent">
    <div id="wufooter">
     <xsl:choose>
@@ -1392,15 +1392,15 @@
                             document.getElementById("deleteBtn").disabled = false;
                             document.getElementById("protectBtn").disabled = false;
                         }
-                     }                     
+                     }
                  function launch(link)
                  {
                     document.location.href=link.href;
-                 }                     
+                 }
                      function onLoad()
                      {
                         initSelection('resultsTable');
-                     }       
+                     }
                ]]></xsl:text>
         </script>
       </head>
@@ -1498,12 +1498,12 @@
         <script type="text/javascript">
           var wuid = '<xsl:value-of select="$wuid0"/>';
           <xsl:text disable-output-escaping="yes"><![CDATA[
-                  
+
                      function onLoad()
                      {
                         initSelection('resultsTable');
-                     }               
-                       
+                     }
+
                      function ChangeHeader(o1, headerid)
                      {
                         if (headerid%2)
@@ -1519,8 +1519,8 @@
                      function launch(link)
                      {
                         document.location.href=link.href;
-                     }     
-   
+                     }
+
                ]]></xsl:text>
         </script>
       </head>

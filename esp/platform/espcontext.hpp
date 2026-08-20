@@ -48,7 +48,7 @@ static const char* const USER_ACCT_ERROR_COOKIE = "ESPUserAcctError";
 static const char* const DEFAULT_LOGIN_URL = "/esp/files/Login.html";
 static const char* const DEFAULT_LOGIN_LOGO_URL = "/esp/files/eclwatch/img/Loginlogo.png";
 static const char* const DEFAULT_GET_USER_NAME_URL = "/esp/files/GetUserName.html";
-static const char* const ECLWATCH_STUB_REQ = "/esp/files/stub.htm";
+static const char* const ECLWATCH_STUB_REQ = "/esp/files/stub.html";
 static const char* const ECLWATCH_INDEX_REQ = "/esp/files/index.html";
 static const char* const DEFAULT_UNRESTRICTED_RESOURCES = "/favicon.ico,/esp/files/*,/esp/xslt/*";
 static const char* const AUTH_STATUS_NA = "NA";
@@ -115,12 +115,12 @@ interface IDataMaskingProfile;
 esp_http_decl IEspContext* createEspContext(IEspSecureContextEx* secureContext = nullptr);
 
 // Get URL parameters (include these from Content)
-// Return: a=b&c=d format. 
+// Return: a=b&c=d format.
 esp_http_decl bool getUrlParams(IProperties *props, StringBuffer& params);
 
 // Only the original URL (not these from Content: URL form encoded)
 // Also remove these params that start with dot (.).
-// Return: a=b&c=d format. 
+// Return: a=b&c=d format.
 esp_http_decl void getEspUrlParams(IEspContext& ctx, StringBuffer& params, const char* excludeParams[]);
 
 esp_http_decl void addEspNativeArray(StringBuffer& schema, const char* xsdType, const char* arrayType);

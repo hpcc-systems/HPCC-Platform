@@ -147,7 +147,7 @@ public:
         }
         //Add navigation link here
         IPropertyTree *folderQueryset = ensureNavFolder(data, "Queries", NULL);
-        CEspBinding::ensureNavLink(*folderQueryset, "Package Maps", "/esp/files/stub.htm?Widget=PackageMapQueryWidget", "Browse Package Maps", NULL, NULL, 2);
+        CEspBinding::ensureNavLink(*folderQueryset, "Package Maps", "/esp/files/stub.html?Widget=PackageMapQueryWidget", "Browse Package Maps", NULL, NULL, 2);
     }
     int onFinishUpload(IEspContext &ctx, CHttpRequest* request, CHttpResponse* response, const char *service,
         const char *method, StringArray& fileNames, StringArray& files, IMultiException *me);

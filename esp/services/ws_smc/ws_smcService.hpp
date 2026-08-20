@@ -296,7 +296,7 @@ public:
             return nullptr;
         if (ctx->queryRequestParameters()->hasProp("legacy"))
             return NULL;
-        return "stub.htm";
+        return "stub.html";
     }
     virtual int onGet(CHttpRequest* request,  CHttpResponse* response);
     void handleHttpPost(CHttpRequest *request, CHttpResponse *response);
