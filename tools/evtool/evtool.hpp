@@ -191,114 +191,89 @@ R"!!!(    --model=<filename>        Apply a model to the data using the specifie
     {
         constexpr const char* usageStr = R"!!!(
 Filters:
-    --events=<events>         Skip events not in the specified comm-delimited
-                              event list.
-                              Event type names, accepted values are derived
-                              from the EventType enumeration:
-                                - IndexCacheHit
-                                - IndexCacheMiss
-                                - IndexLoad
-                                - IndexPayload
-                                - IndexEviction
-                                - DaliChangeMode
-                                - DaliCommit
-                                - DaliConnect
-                                - DaliEnsureLocal
-                                - DaliGet
-                                - DaliGetChildren
-                                - DaliGetChildrenFor
-                                - DaliGetElements
-                                - DaliSubscribe
-                                - FileInformation
-                                - RecordingActive
-                                - IndexPayload
-                                - QueryStart
-                                - QueryStop
-                                - RecordingSource
-                                - IndexOpen
-                                - PlaneInformation
-                              Event context names are also accepted. An event
-                              context is a built-in grouping of related events
-                              including:
-                                - Dali:
-                                  - DaliChangeMode
-                                  - DaliCommit
-                                  - DaliConnect
-                                  - DaliEnsureLocal
-                                  - DaliGet
-                                  - DaliGetChildren
-                                  - DaliGetChildrenFor
-                                  - DaliGetElements
-                                  - DaliSubscribe
-                                - Index
-                                  - IndexCacheHit
-                                  - IndexCacheMiss
-                                  - IndexLoad
-                                  - IndexEviction
-                                  - FileInformation
-                                  - IndexPayload
-                                  - QueryStart
-                                  - QueryStop
-                                  - IndexOpen
-                                - Other
-                                  - RecordingActive
-                                  - RecordingSource
-                                  - PlaneInformation
-    --attribute:<attr>=<val>  Skip events the include the specified attribute
-                              but which do not have a specified value. Events
-                              without the specified attribute are not skipped.
-                              <val> may be a comma-delimited list of value
-                              tokens. Except as noted below, accepted tokens
-                              depend on the attribute value type:
-                                - Boolean: true and false as recognized by the
-                                    strToBool utility function
-                                - Numeric: a single numeric value or a range of
-                                    numeric values delimited by a hyphen
-                                    - "#-#": a range of numeric values, bounded
-                                        on both ends
-                                    - "#-": a range of numeric values, bounded
-                                        only on the lower end
-                                    - "-#": a range of numeric values, bounded
-                                        only on the upper end
-                                - String: a case-sensitive match or a wildcard
-                                  pattern
-                              Choices for <attr> include EventAttr enumeration
-                              names and the special meta-derived names listed
-                              below:
-                                - FileId: numeric only
-                                - FileOffset: numeric
-                                - NodeKind: numeric (0, 1, or 2) or text
-                                    equivalent (branch, leaf, or blob)
-                                - ReadTime: numeric
-                                - ElapsedTime: numeric
-                                - InMemorySize: numeric
-                                - Path: string
-                                - ConnectId: numeric
-                                - Enabled: Boolean
-                                - FileSize: numeric
-                                - EventTimestamp: numeric or fully formed time-
-                                    stamp strings as recognized by the
-                                    CDateTime::setString method.
-                                - EventTraceId: trace ID pattern only
-                                - EventThreadId: numeric
-                                - EventStackTrace: string
-                                - DataSize: numeric
-                                - ExpandTime: numeric
-                                - FirstUse: Boolean
-                                - ServiceName: string
-                                - ChannelId: numeric
-                                - ReplicaId: numeric
-                                - InstanceId: numeric
-                                - ProcessDescriptor: string
-                                - OpenTime: numeric
-                                - Plane: string
-                                - IsStriped: Boolean
-                                - meta.Path: path derived from FileId
-                                - meta.Plane: plane derived from FileId
-                                - meta.LogicalFileName: logical file name
-                                    derived from FileId
-                                - meta.ServiceName: service name derived from
-                                    EventTraceId
+    --events=<term>[,<term>...]
+        Filter by event name or context name. Terms are evaluated from left
+        to right. Terms may be prefixed with a comparison selector.
+
+        Event selectors (default: [eq]):
+            [eq]      include matching event name
+            [neq]     include all event names except match
+            [except]  exclude the event from the set of prior inclusions;
+                      exceptions are only effective when specified after
+                      another inclusive term
+        Context selectors (default: [in]):
+            [in]      include all events matching the context
+            [out]     include all events not matching the context
+
+        Examples:
+            --events=[eq]QueryStart
+            --events=[in]Dali,[except]DaliCommit
+
+        Discover valid names with:
+            evtool describe -e   (events)
+            evtool describe -c   (contexts)
+    --attribute:<name>=<term>[,<term>...]
+        Filter by attribute value. Events without the specified attribute are
+        unaffected by the filter. Events with the specified attribute must
+        satisfy at least one term to avoid suppression.
+
+        <name> is any filterable attribute name from:
+            evtool describe -a
+
+        The meaning of <term> depends on attribute value type.
+
+        Multiple comma-delimited terms are combined as a set of allowed terms;
+        negated terms exclude matches.
+
+        String-valued attributes:
+            A term is a single string optionally prefixed by a comparison
+            selector. The string may include wildcard characters for pattern
+            matching.
+
+            Selectors (default: [wild]):
+                [eq]    case-insensitive exact match
+                [neq]   exclude case-insensitive exact match; include all others
+                [lt]    case-insensitive lexical less-than comparison
+                [lte]   case-insensitive lexical less-than-or-equal comparison
+                [gt]    case-insensitive lexical greater-than comparison
+                [gte]   case-insensitive lexical greater-than-or-equal comparison
+                [wild]  case-sensitive wildcard pattern match
+
+            Examples:
+                --attribute:Path=*.csv
+                --attribute:ServiceName=[eq]warehouse,[neq]archive
+
+        Boolean-valued attributes:
+            A term is true or false with no selector.
+
+        Numeric- and timestamp-valued attributes:
+            Timestamps accept yyyy-mm-ddThh:mm:ss[.nnnnnnnnn] text (no timezone
+            suffix) and are interpreted as UTC.
+            Numeric values are integer-only; unit suffixes are not supported.
+
+            A term is a single value or a hyphen-delimited range, optionally
+            prefixed by a comparison selector. Terms are interpreted as ranges
+            [N,M], where N and M are unsigned integers, with these shortcuts:
+                N      range N-N
+                -M     range 0-M
+                N-     range N-max
+                N-M    range N-M
+
+            Arithmetic Selectors (default: [in]):
+                [eq]      matches range [N,N] only
+                [neq]     excludes range [N,N] only
+                [lt]      matches values less than N
+                [lte]     matches values less than or equal to N
+                [gt]      matches values greater than M
+                [gte]     matches values greater than or equal to M
+                [in]      matches values within [N,M]
+                [out]     excludes values within [N,M]
+
+            Examples:
+                --attribute:ElapsedTime=[in]10-50
+                --attribute:ElapsedTime=[out]10-50
+                --attribute:EventTimestamp=[lt]2024-01-01T08:01:00
+
 )!!!";
         size32_t usageStrLength = size32_t(strlen(usageStr));
         out.put(usageStrLength, usageStr);
