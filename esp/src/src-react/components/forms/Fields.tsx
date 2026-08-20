@@ -523,6 +523,7 @@ interface LinkField extends BaseField {
     type: "link";
     href: string;
     value?: string;
+    title?: string;
     newTab?: boolean;
 }
 
@@ -1289,6 +1290,7 @@ export function createInputs(fields: Fields, onChange?: (id: string, newValue: a
                     label: field.label,
                     field: <Link
                         key={fieldID}
+                        title={field.title ?? ""}
                         href={field.href}
                         target={field.newTab ? "_blank" : "_self"}
                     >{field.value || ""}</Link>

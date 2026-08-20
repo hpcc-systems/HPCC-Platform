@@ -1223,6 +1223,7 @@ export = {
         Version: "Version",
         ViewByScope: "View By Scope",
         Views: "Views",
+        ViewFilesByOwner: "View Files By Owner",
         ViewSparkClusterInfo: "View Spark Cluster Information",
         ViewWUsByOwner: "View WUs By Owner",
         ViewWUsWithSimilarName: "View WUs With Similar Name",

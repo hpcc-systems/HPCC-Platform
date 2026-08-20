@@ -1,15 +1,17 @@
 import * as React from "react";
+import { createPortal } from "react-dom";
 import { CommandBar, ContextualMenuItemType, ICommandBarItemProps } from "./CommandBarV9";
-import { FolderZipRegular, KeyRegular, FolderRegular } from "@fluentui/react-icons";
-import { Link } from "@fluentui/react-components";
+import { ArrowMaximizeRegular, ArrowMinimizeRegular, FolderZipRegular, KeyRegular, FolderRegular } from "@fluentui/react-icons";
+import { Link, FluentProvider } from "@fluentui/react-components";
+import { SizeMe } from "../layouts/SizeMe";
 import * as ESPLogicalFile from "src/ESPLogicalFile";
 import nlsHPCC from "src/nlsHPCC";
 import { QuerySortItem } from "src/store/Store";
 import * as WsDfu from "src/WsDfu";
 import { useConfirm } from "../hooks/confirm";
 import { useFile, useSubfiles } from "../hooks/file";
-import { HolyGrail } from "../layouts/HolyGrail";
-import { AutoSizeFluentGrid, useCopyButtons, useFluentStoreState, FluentColumns } from "./controls/Grid";
+import { useUserTheme } from "../hooks/theme";
+import { FluentGrid, useCopyButtons, useFluentStoreState, FluentColumns } from "./controls/Grid";
 import { pushUrl } from "../util/history";
 
 const defaultUIState = {
@@ -34,6 +36,8 @@ export const SubFiles: React.FunctionComponent<SubFilesProps> = ({
     const [subfiles, refreshSubfiles] = useSubfiles(cluster, logicalFile);
     const [uiState, setUIState] = React.useState({ ...defaultUIState });
     const [data, setData] = React.useState<any[]>([]);
+    const [fullscreen, setFullscreen] = React.useState(false);
+    const { themeV9 } = useUserTheme();
     const {
         selection, setSelection,
         setTotal,
@@ -45,7 +49,7 @@ export const SubFiles: React.FunctionComponent<SubFilesProps> = ({
         return {
             sel: { width: 27, selectorType: "checkbox" },
             IsCompressed: {
-                width: 25, sortable: false,
+                width: 12, sortable: false,
                 headerIconElement: <FolderZipRegular aria-label={nlsHPCC.Compressed} />,
                 headerTooltip: nlsHPCC.Compressed,
                 formatter: (compressed) => {
@@ -56,7 +60,7 @@ export const SubFiles: React.FunctionComponent<SubFilesProps> = ({
                 }
             },
             IsKeyFile: {
-                width: 25, sortable: false,
+                width: 12, sortable: false,
                 headerIconElement: <KeyRegular aria-label={nlsHPCC.Index} />,
                 headerTooltip: nlsHPCC.Index,
                 formatter: (keyfile, row) => {
@@ -67,7 +71,7 @@ export const SubFiles: React.FunctionComponent<SubFilesProps> = ({
                 }
             },
             isSuperfile: {
-                width: 25, sortable: false,
+                width: 12, sortable: false,
                 headerIconElement: <FolderRegular aria-label={nlsHPCC.Superfile} />,
                 headerTooltip: nlsHPCC.Superfile,
                 formatter: (superfile) => {
@@ -78,19 +82,19 @@ export const SubFiles: React.FunctionComponent<SubFilesProps> = ({
                 }
             },
             Name: {
-                label: nlsHPCC.LogicalName,
+                label: nlsHPCC.LogicalName, width: 320,
                 formatter: (name, row) => {
                     const url = "#/files/" + (row.NodeGroup ? row.NodeGroup + "/" : "") + name;
                     return <Link href={url}>{name}</Link>;
                 }
             },
-            Owner: { label: nlsHPCC.Owner, width: 72 },
+            Owner: { label: nlsHPCC.Owner, width: 100 },
             Description: { label: nlsHPCC.Description, width: 153 },
             RecordCount: {
-                label: nlsHPCC.Records, width: 72, sortable: false,
+                label: nlsHPCC.Records, width: 100, sortable: false,
             },
             Totalsize: {
-                label: nlsHPCC.Size, width: 72, sortable: false,
+                label: nlsHPCC.Size, width: 100, sortable: false,
             },
             Parts: {
                 label: nlsHPCC.Parts, width: 45, sortable: false,
@@ -151,6 +155,19 @@ export const SubFiles: React.FunctionComponent<SubFilesProps> = ({
 
     const copyButtons = useCopyButtons(columns, selection, "subfiles");
 
+    const fullscreenButton = React.useMemo((): ICommandBarItemProps[] => {
+        return [{
+            key: "fullscreen",
+            text: nlsHPCC.MaximizeRestore,
+            title: nlsHPCC.MaximizeRestore,
+            iconOnly: true,
+            iconElement: fullscreen ? <ArrowMinimizeRegular /> : <ArrowMaximizeRegular />,
+            onClick: () => setFullscreen(prev => !prev)
+        }];
+    }, [fullscreen]);
+
+    const commandBarRef = React.useRef<HTMLDivElement>(null);
+
     //  Selection  ---
     React.useEffect(() => {
         const state = { ...defaultUIState };
@@ -161,10 +178,11 @@ export const SubFiles: React.FunctionComponent<SubFilesProps> = ({
         setUIState(state);
     }, [selection]);
 
-    return <HolyGrail
-        header={<CommandBar items={buttons} farItems={copyButtons} />}
-        main={<>
-            <AutoSizeFluentGrid
+
+    const content = <div style={{ height: "100%", overflow: "hidden" }}>
+        <div ref={commandBarRef}><CommandBar items={buttons} farItems={[...copyButtons, ...fullscreenButton]} /></div>
+        <SizeMe >{({ size }) =>
+            <FluentGrid
                 data={data}
                 primaryID={"Name"}
                 columns={columns}
@@ -172,8 +190,19 @@ export const SubFiles: React.FunctionComponent<SubFilesProps> = ({
                 setSelection={setSelection}
                 setTotal={setTotal}
                 refresh={refreshTable}
-            ></AutoSizeFluentGrid>
-            <DeleteSubfilesConfirm />
-        </>}
-    />;
+            ></FluentGrid>
+        }</SizeMe>
+        <DeleteSubfilesConfirm />
+    </div>;
+
+    if (fullscreen) {
+        return createPortal(
+            <FluentProvider theme={themeV9} style={{ position: "fixed", top: 0, left: 0, width: "100%", height: "100%", zIndex: 10 }}>
+                {content}
+            </FluentProvider>,
+            document.body
+        );
+    }
+
+    return content;
 };

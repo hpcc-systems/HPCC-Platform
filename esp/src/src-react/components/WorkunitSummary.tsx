@@ -7,7 +7,7 @@ import { scopedLogger } from "@hpcc-js/util";
 import nlsHPCC from "src/nlsHPCC";
 import { WUStatus } from "src/react/index";
 import { formatCost } from "src/Session";
-import { isNumeric } from "src/Utility";
+import { copyToClipboard, isNumeric } from "src/Utility";
 import { useConfirm } from "../hooks/confirm";
 import { useWorkunit, useWorkunitExceptions } from "../hooks/workunit";
 import { useLocalStore } from "../hooks/store";
@@ -21,7 +21,6 @@ import { ZAPDialog } from "./forms/ZAPDialog";
 import { InfoGrid } from "./InfoGrid";
 import { WorkunitPersona } from "./controls/StateIcon";
 import { localKeyValStore } from "src/KeyValStore";
-import { copyToClipboard } from "src/Utility";
 
 const logger = scopedLogger("../components/WorkunitSummary.tsx");
 
@@ -107,7 +106,6 @@ const useStyles = makeStyles({
         alignItems: "flex-start",
         containerType: "inline-size",
         flexWrap: "wrap"
-
     },
     detailsPanel: {
         alignSelf: "flex-start",

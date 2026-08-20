@@ -251,9 +251,11 @@ export const InfoGrid: React.FunctionComponent<InfoGridProps> = ({
     const fullscreenButton = React.useMemo((): ICommandBarItemProps[] => {
         return [{
             key: "fullscreen",
+            text: nlsHPCC.MaximizeRestore,
+            title: nlsHPCC.MaximizeRestore,
             iconOnly: true,
             iconElement: fullscreen ? <ArrowMinimizeRegular /> : <ArrowMaximizeRegular />,
-            onClick: () => setFullscreen(!fullscreen)
+            onClick: () => setFullscreen(prev => !prev)
         }];
     }, [fullscreen]);
 

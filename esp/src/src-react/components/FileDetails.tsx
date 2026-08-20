@@ -74,15 +74,11 @@ export const FileDetails: React.FunctionComponent<FileDetailsProps> = ({
         }, {
             id: "xml",
             label: nlsHPCC.XML,
-        }, file?.isSuperfile ? {
-            id: "subfiles",
-            label: nlsHPCC.Subfiles,
-            count: file?.subfiles?.Item.length ?? 0
-        } : {
+        }, ...(!file?.isSuperfile ? [{
             id: "superfiles",
             label: nlsHPCC.Superfiles,
             count: superfiles?.length ?? 0
-        }, {
+        }] : []), {
             id: "parts",
             label: nlsHPCC.FileParts,
             count: file?.fileParts().length ?? 0

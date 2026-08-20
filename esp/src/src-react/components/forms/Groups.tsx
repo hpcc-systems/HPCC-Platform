@@ -25,6 +25,7 @@ const useStyles = makeStyles({
     multiColumnRoot: {
         borderCollapse: "collapse",
         minWidth: "80%",
+        width: "100%",
         "& tbody tr:nth-child(odd)": { backgroundColor: "var(--colorNeutralBackground3)" },
         "& th": {
             padding: "0 1em 1em 1em",
