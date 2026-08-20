@@ -123,6 +123,7 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
 
   if (USE_PROTRACE)
     find_package(protrace_user CONFIG REQUIRED)
+    find_package(protrace_translate CONFIG REQUIRED)
     add_definitions(-D_USE_PROTRACE)
 
     if (PROTRACE_LOCKS)
@@ -144,6 +145,40 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
       protrace_user::protrace_emit
       protrace_user::protrace_user
     )
+
+    if (NOT TARGET protrace_translate::protrace_translate)
+      message(FATAL_ERROR "protrace_translate package found, but target protrace_translate::protrace_translate is missing")
+    endif()
+
+    install(IMPORTED_RUNTIME_ARTIFACTS protrace_translate::protrace_translate
+      RUNTIME DESTINATION ${EXEC_DIR}
+      COMPONENT Runtime)
+
+    # Also install translate schemas with HPCC so the translator can resolve built-in formats.
+    get_target_property(PROTRACE_TRANSLATE_EXE_PATH protrace_translate::protrace_translate IMPORTED_LOCATION)
+    if (PROTRACE_TRANSLATE_EXE_PATH)
+      get_filename_component(PROTRACE_TRANSLATE_BIN_DIR "${PROTRACE_TRANSLATE_EXE_PATH}" DIRECTORY)
+      set(PROTRACE_TRANSLATE_SCHEMA_SRC_DIR "")
+      if (EXISTS "${PROTRACE_TRANSLATE_BIN_DIR}/schemas")
+        set(PROTRACE_TRANSLATE_SCHEMA_SRC_DIR "${PROTRACE_TRANSLATE_BIN_DIR}/schemas")
+      else()
+        get_filename_component(PROTRACE_TRANSLATE_PREFIX_DIR "${PROTRACE_TRANSLATE_BIN_DIR}" DIRECTORY)
+        if (EXISTS "${PROTRACE_TRANSLATE_PREFIX_DIR}/share/protrace/schemas")
+          set(PROTRACE_TRANSLATE_SCHEMA_SRC_DIR "${PROTRACE_TRANSLATE_PREFIX_DIR}/share/protrace/schemas")
+        endif()
+      endif()
+
+      if (PROTRACE_TRANSLATE_SCHEMA_SRC_DIR)
+        install(DIRECTORY "${PROTRACE_TRANSLATE_SCHEMA_SRC_DIR}/"
+          DESTINATION share/protrace/schemas
+          COMPONENT Runtime)
+      else()
+        message(WARNING "protrace_translate schemas directory not found for ${PROTRACE_TRANSLATE_EXE_PATH}
+  Expected either ${PROTRACE_TRANSLATE_BIN_DIR}/schemas or ../share/protrace/schemas")
+      endif()
+    else()
+      message(WARNING "Unable to resolve IMPORTED_LOCATION for protrace_translate::protrace_translate; schema files will not be installed")
+    endif()
 
     link_libraries(protrace_user_all)
   endif()

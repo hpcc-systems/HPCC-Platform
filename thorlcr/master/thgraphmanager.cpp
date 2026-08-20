@@ -59,6 +59,7 @@
 #include "environment.hpp"
 #include "anawu.hpp"
 #include "workunit.hpp"
+#include "jprotrace.hpp"
 
 static const StatisticsMapping podStatistics({StNumPods});
 
@@ -243,13 +244,14 @@ class CJobManager : public CSimpleInterface, implements IJobManager, implements 
 
             Linked<CJobMaster> job = mgr.getCurrentJob();
             if (!job)
-                throw MakeStringException(5300, "Command not available when no job active");
+                throwStringExceptionV(5300, "Command not available when no job active");
             const char *graphId = job->queryGraphName();
             if (!graphId)
-                throw MakeStringException(5300, "Command not available when no graph active");
+                throwStringExceptionV(5300, "Command not available when no graph active");
 
             const char *command = queryXml->queryName();
-            if (!command) throw MakeStringException(5300, "Invalid debug command");
+            if (!command)
+                throwStringExceptionV(5300, "Invalid debug command");
 
             FlushingStringBuffer response(&ssock, false, MarkupFmt_XML, false, false, queryDummyContextLogger());
             response.startDataset("Debug", NULL, (unsigned) -1);
@@ -257,7 +259,8 @@ class CJobManager : public CSimpleInterface, implements IJobManager, implements 
             if (strieq(command, "print"))
             {
                 const char *edgeId = queryXml->queryProp("@edgeId");
-                if (!edgeId) throw MakeStringException(5300, "Debug command requires edgeId");
+                if (!edgeId)
+                    throwStringExceptionV(5300, "Debug command requires edgeId");
                 response.appendf("<print graphId='%s' edgeId='%s'>", graphId, edgeId);
                 auto responseFunc = [&response](unsigned worker, MemoryBuffer &mb)
                 {
@@ -275,6 +278,47 @@ class CJobManager : public CSimpleInterface, implements IJobManager, implements 
                 Owned<IException> e = MakeThorException(TE_WorkUnitAborting, "User signalled abort during debug session");
                 job->fireException(e);
                 response.appendf("<quit state='quit'/>");
+            }
+            else if (strieq(command, "protraceresume"))
+            {
+                graph_id subGraphId = (graph_id) queryXml->getPropInt64("@graphId", job->queryCurrentSubGraphId());
+                response.appendf("<protraceresume graphId='%'" GIDPF "d'>", subGraphId);
+                protraceClearRecording(false);
+                protraceResumeRecording();
+                job->issueWorkerDebugCmd(rawText.str(), 0, [](unsigned, MemoryBuffer &mb)
+                {
+                    bool ok;
+                    mb.read(ok);
+                    if (!ok)
+                        throw deserializeException(mb);
+                }, LONGTIMEOUT);
+                response.append("</protraceresume>");
+            }
+            else if (strieq(command, "protracesave"))
+            {
+                graph_id subGraphId = (graph_id) queryXml->getPropInt64("@graphId", job->queryCurrentSubGraphId());
+                response.appendf("<protracesave graphId='%'" GIDPF "d'>", subGraphId);
+
+                StringBuffer masterFilename;
+                protraceSuspendRecording();
+                protraceSaveRecording(masterFilename, nullptr);
+                response.appendf("<file node='master' host='localhost' path='%s'/>", masterFilename.str());
+
+                auto responseFunc = [&response](unsigned worker, MemoryBuffer &mb)
+                {
+                    bool ok;
+                    mb.read(ok);
+                    if (!ok)
+                        throw deserializeException(mb);
+
+                    StringAttr host;
+                    StringAttr filename;
+                    mb.read(host);
+                    mb.read(filename);
+                    response.appendf("<file node='worker' rank='%u' host='%s' path='%s'/>", worker, host.get(), filename.get());
+                };
+                job->issueWorkerDebugCmd(rawText.str(), 0, responseFunc, LONGTIMEOUT);
+                response.append("</protracesave>");
             }
             else
                 throw makeStringExceptionV(5300, "Command '%s' not supported by Thor", command);

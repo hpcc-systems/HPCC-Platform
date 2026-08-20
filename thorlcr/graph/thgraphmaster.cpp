@@ -20,6 +20,7 @@
 #include <future>
 #include <vector>
 #include <iterator>
+#include <utility>
 #include "jcontainerized.hpp"
 #include "jexcept.hpp"
 #include "jiter.ipp"
@@ -50,6 +51,7 @@
 #include "thactivitymaster.ipp"
 #include "thmem.hpp"
 #include "thcompressutil.hpp"
+#include "jprotrace.hpp"
 
 using roxiemem::OwnedRoxieString;
 
@@ -1521,6 +1523,7 @@ CJobMaster::CJobMaster(IConstWorkUnit &_workunit, const char *graphName, ILoaded
     resumed = WUActionResume == workunit->getAction();
     fatalHandler.setown(new CFatalHandler(globals->getPropInt("@fatal_timeout", FATAL_TIMEOUT)));
     querySent = spillsSaved = false;
+    protraceSubgraph = (graph_id)workunit->getDebugValueInt64("protraceSubgraph", 0);
 
     StringBuffer pluginsDir;
     globals->getProp("@pluginsPath", pluginsDir);
@@ -2873,34 +2876,111 @@ void CMasterGraph::executeSubGraph(size32_t parentExtractSz, const byte *parentE
     }
     fatalHandler.clear();
     fatalHandler.setown(new CFatalHandler(globals->getPropInt("@fatal_timeout", FATAL_TIMEOUT)));
-    CGraphBase::executeSubGraph(parentExtractSz, parentExtract);
-    if (TAG_NULL != executeReplyTag)
+    bool doProtrace = hasProtrace() && (jobM->queryProtraceSubgraph() == graphId);
+    if (doProtrace)
     {
-        rank_t sender;
-        unsigned s=0;
-        for (; s<queryJob().querySlaves(); s++)
+        protraceClearRecording(false);
+        protraceResumeRecording();
+    }
+    try
+    {
+        CGraphBase::executeSubGraph(parentExtractSz, parentExtract);
+        if (TAG_NULL != executeReplyTag)
         {
-            CMessageBuffer msg;
-            if (!executeReplyMsgHandler.recv(queryJobChannel().queryJobComm(), msg, RANK_ALL, executeReplyTag, &sender))
-                break;
-            bool error;
-            msg.read(error);
-            if (error)
+            rank_t sender;
+            unsigned s=0;
+            for (; s<queryJob().querySlaves(); s++)
             {
-                Owned<IThorException> exception = deserializeThorException(msg);
-                exception->setSlave(sender);
-                GraphPrintLog(exception, "slave execute reply exception");
-                throw exception.getClear();
+                CMessageBuffer msg;
+                if (!executeReplyMsgHandler.recv(queryJobChannel().queryJobComm(), msg, RANK_ALL, executeReplyTag, &sender))
+                    break;
+                bool error;
+                msg.read(error);
+                if (error)
+                {
+                    Owned<IThorException> exception = deserializeThorException(msg);
+                    exception->setSlave(sender);
+                    GraphPrintLog(exception, "slave execute reply exception");
+                    throw exception.getClear();
+                }
             }
         }
-        if (fatalHandler)
-            fatalHandler->clear();
     }
+    catch (IException *e)
+    {
+        if (doProtrace)
+            collectProtrace();
+        throw;
+    }
+    if (fatalHandler)
+        fatalHandler->clear();
     fatalHandler.clear();
+    if (doProtrace)
+        collectProtrace();
 #ifndef _CONTAINERIZED
     Owned<IWorkUnit> wu = &job.queryWorkUnit().lock();
     queryJobManager().updateWorkUnitLog(*wu);
 #endif
+}
+
+void CMasterGraph::collectProtrace()
+{
+    struct CSlaveProtraceFile
+    {
+        CSlaveProtraceFile(unsigned _slave, StringAttr && _host, StringAttr && _filename)
+            : slave(_slave), host(std::move(_host)), filename(std::move(_filename))
+        {
+        }
+
+        unsigned slave = 0;
+        StringAttr host;
+        StringAttr filename;
+    };
+
+    try
+    {
+        protraceSuspendRecording();
+        StringBuffer masterFilename;
+        protraceSaveRecording(masterFilename, nullptr);
+
+        std::vector<CSlaveProtraceFile> slaveFiles;
+        slaveFiles.reserve(queryJob().queryNodes());
+        auto responseFunc = [&slaveFiles](unsigned sender, MemoryBuffer &mb)
+        {
+            bool ok;
+            mb.read(ok);
+            if (!ok)
+            {
+                Owned<IException> e = deserializeException(mb);
+                VStringBuffer msg("Slave %u failed to save protrace", sender);
+                IWARNLOG(e, msg);
+                return;
+            }
+            StringAttr host, filename;
+            mb.read(host);
+            mb.read(filename);
+            if (filename.length())
+                slaveFiles.emplace_back(sender, std::move(host), std::move(filename));
+        };
+
+        VStringBuffer cmd("<protracesave graphId=\"%" GIDPF "d\"/>", queryGraphId());
+        jobM->issueWorkerDebugCmd(cmd, 0, responseFunc, LONGTIMEOUT);
+
+        Owned<IWorkUnit> wu = &job.queryWorkUnit().lock();
+        Owned<IWUQuery> query = wu->updateQuery();
+        VStringBuffer masterDesc("protrace master subgraph %" GIDPF "d", graphId);
+        query->addAssociatedFile(FileTypePostMortem, masterFilename.str(), "localhost", masterDesc.str(), 0, 0, 0);
+        for (auto & slaveFile : slaveFiles)
+        {
+            VStringBuffer slaveDesc("protrace slave %u subgraph %" GIDPF "d", slaveFile.slave, graphId);
+            query->addAssociatedFile(FileTypePostMortem, slaveFile.filename.str(), slaveFile.host.str(), slaveDesc.str(), 0, 0, 0);
+        }
+    }
+    catch (IException *e)
+    {
+        GraphPrintLog(e, "collectProtrace failed");
+        e->Release();
+    }
 }
 
 void CMasterGraph::sendGraph()

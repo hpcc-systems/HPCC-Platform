@@ -1959,6 +1959,41 @@ void CJobSlave::debugRequest(MemoryBuffer &msg, const char *request) const
             e->Release();
         }
     }
+    else if (strieq(command, "protraceresume"))
+    {
+        try
+        {
+            protraceClearRecording(false);
+            protraceResumeRecording();
+            msg.append(true);
+        }
+        catch (IException *e)
+        {
+            msg.append(false);
+            serializeException(e, msg);
+            e->Release();
+        }
+    }
+    else if (strieq(command, "protracesave"))
+    {
+        try
+        {
+            StringBuffer outputFilename;
+            StringBuffer host;
+            protraceSuspendRecording();
+            protraceSaveRecording(outputFilename, nullptr);
+            queryMyNode()->endpoint().getEndpointHostText(host);
+            msg.append(true);
+            msg.append(host.str());
+            msg.append(outputFilename.str());
+        }
+        catch (IException *e)
+        {
+            msg.append(false);
+            serializeException(e, msg);
+            e->Release();
+        }
+    }
     else
         throw makeStringExceptionV(5300, "Command '%s' not supported by Thor", command);
 }

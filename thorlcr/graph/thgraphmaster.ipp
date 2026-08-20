@@ -114,6 +114,7 @@ class graphmaster_decl CMasterGraph : public CGraphBase
     void jobDone();
     void sendGraph();
     void getFinalProgress(bool aborting=false);
+    void collectProtrace();
     void configure();
     void sendActivityInitData();
     void recvSlaveInitResp();
@@ -187,6 +188,7 @@ class graphmaster_decl CJobMaster : public CJobBase
     CriticalSection sendQueryCrit{SYNC_LOCATION};
     CriticalSection spillCrit{SYNC_LOCATION};
     graph_id currentSubGraphId = 0;
+    graph_id protraceSubgraph = 0;
 
     void initNodeDUCache();
 
@@ -210,6 +212,7 @@ public:
     void captureJobInfo(IConstWorkUnit &wu, JobInfoCaptureType flags);
     void setCurrentSubGraphId(graph_id _subGraphId) { currentSubGraphId = _subGraphId; }
     graph_id queryCurrentSubGraphId() const { return currentSubGraphId; }
+    graph_id queryProtraceSubgraph() const { return protraceSubgraph; }
 
     virtual IConstWorkUnit &queryWorkUnit() const
     {

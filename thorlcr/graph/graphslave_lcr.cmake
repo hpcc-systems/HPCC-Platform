@@ -63,7 +63,8 @@ target_link_libraries ( graphslave_lcr PRIVATE
          dllserver 
          workunit 
          thorcodectx_lcr 
-         jhtree 
+         jhtree
+         mp
          graph_lcr 
     )
 

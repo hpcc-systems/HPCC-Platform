@@ -36,6 +36,7 @@
 
 #include "jhtree.hpp"
 
+#include "jprotrace.hpp"
 #include "thormisc.hpp"
 #include "slavmain.hpp"
 #include "thorport.hpp"
@@ -166,6 +167,10 @@ static bool RegisterSelf(SocketEndpoint &masterEp)
         }
         replaceComponentConfig(mergedComponentConfig, masterGlobalConfig);
         globals.set(mergedComponentConfig);
+
+        StringBuffer protraceComponent;
+        protraceComponent.appendf("thorworker_%u", mySlaveNum);
+        protraceInitialize(protraceComponent.str(), mergedComponentConfig);
 #ifdef _DEBUG
         unsigned holdSlave = globals->getPropInt("@holdSlave", NotFound);
         if (mySlaveNum == holdSlave)

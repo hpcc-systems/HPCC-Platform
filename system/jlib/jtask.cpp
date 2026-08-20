@@ -20,6 +20,7 @@
 #include <limits.h>
 #include <algorithm>
 #include "jtask.hpp"
+#include "jevent.hpp"
 #include "jlog.hpp"
 #include "jqueue.hpp"
 
@@ -377,7 +378,11 @@ void CTaskProcessor::doRun()
 
             try
             {
-                CTask * follow = next->execute();
+                CTask * follow;
+                {
+                    TaskScopeTracker scope(EventTask::Running);
+                    follow = next->execute();
+                }
                 //Not sure this should even be special cased - more sensible would be a loop within execute if you want to rerun
                 if (likely(follow != next))
                 {

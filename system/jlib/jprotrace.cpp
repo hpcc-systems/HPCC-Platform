@@ -28,6 +28,7 @@
 
 #ifdef _USE_PROTRACE
 static StringBuffer exitTraceFilename;
+static StringBuffer protraceComponent;
 static bool writeTraceAtExit = false;
 
 MODULE_INIT(INIT_PRIORITY_STANDARD)
@@ -46,6 +47,8 @@ void protraceInitialize(const char * component, IPropertyTree * componentConfig)
 #ifdef _USE_PROTRACE
     if (!componentConfig)
         return;
+
+    protraceComponent.set(component);
 
     size_t protraceMemoryMB = 0;
     protrace::trace_options protraceOptions = (protrace::trace_options)0;
@@ -158,7 +161,7 @@ void protraceSaveRecording(StringBuffer & outputFilename, const char * filename)
     else
     {
         __uint64 timestamp = getTimeStampNowValue();
-        outputFilename.appendf("protrace_%" I64F "u", timestamp);
+        outputFilename.appendf("protrace_%s_%" I64F "u", protraceComponent.str(), timestamp);
     }
 
     if (!pathExtension(outputFilename.str()))

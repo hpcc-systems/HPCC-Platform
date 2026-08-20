@@ -54,6 +54,7 @@
 #include "eclhelper_dyn.hpp"
 #include "rtlcommon.hpp"
 #include "../activities/keyedjoin/thkeyedjoincommon.hpp"
+#include "jprotrace.hpp"
 
 bool recvShutdown = false;
 
@@ -2019,6 +2020,13 @@ public:
                         VStringBuffer xpath("node[@id='%" GIDPF "u']", subGraphId);
                         Owned<IPropertyTree> graphNode = job->queryGraphXGMML()->getPropTree(xpath.str());
                         job->addSubGraph(*graphNode);
+
+                        graph_id protraceSubgraph = (graph_id) job->getWorkUnitValueInt("protraceSubgraph", 0);
+                        if (protraceSubgraph == subGraphId)
+                        {
+                            protraceClearRecording(false);
+                            protraceResumeRecording();
+                        }
 
                         /* JCSMORE - should improve, create 1st graph with create context/init data and clone
                          * Should perhaps do this initialization in parallel..
