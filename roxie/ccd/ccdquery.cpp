@@ -30,6 +30,53 @@
 #include <thread>
 #include <mutex>
 
+
+unsigned checkWorkunitVersionConsistency(const IConstWorkUnit *wu)
+{
+    assertex(wu);
+    unsigned wuVersion = wu->getCodeVersion();
+    if (wuVersion == 0)
+        throw makeStringException(ROXIE_MISMATCH, "Attempting to execute a workunit that hasn't been compiled");
+    if (wuVersion > ACTIVITY_INTERFACE_VERSION || wuVersion < MIN_ACTIVITY_INTERFACE_VERSION)
+        throw MakeStringException(ROXIE_MISMATCH, "Workunit was compiled for eclhelper interface version %d, this roxie requires version %d..%d", wuVersion, MIN_ACTIVITY_INTERFACE_VERSION, ACTIVITY_INTERFACE_VERSION);
+    if (wuVersion == 652)
+    {
+        // Any workunit compiled using eclcc 7.12.0-7.12.18 is not compatible
+        StringBuffer buildVersion, eclVersion;
+        wu->getBuildVersion(StringBufferAdaptor(buildVersion), StringBufferAdaptor(eclVersion));
+        const char *version = strstr(buildVersion, "7.12.");
+
+        //Avoid matching a version number in the path that was used to build (enclosed in [] at the end)
+        const char *extra = strchr(buildVersion, '[');
+        if (version && (!extra || version < extra))
+        {
+            const char *point = version + strlen("7.12.");
+            unsigned pointVer = atoi(point);
+            if (pointVer <= 18)
+                throw MakeStringException(ROXIE_MISMATCH, "Workunit was compiled by eclcc version %s which is not compatible with this runtime", buildVersion.str());
+        }
+    }
+    return wuVersion;
+}
+
+static void checkWorkunitVersionConsistency(const IQueryDll *dll)
+{
+    unsigned wuVersion = checkWorkunitVersionConsistency(dll->queryWorkUnit());
+
+    EclProcessFactory processFactory = (EclProcessFactory) dll->queryDll()->getEntry("createProcess");
+    if (processFactory)
+    {
+        Owned<IEclProcess> process = processFactory();
+        assertex(process);
+        if (process->getActivityVersion() != wuVersion)
+            throw MakeStringException(ROXIE_MISMATCH, "Inconsistent interface versions.  Workunit was created using eclcc for version %u, but the c++ compiler used version %u", wuVersion, process->getActivityVersion());
+    }
+    else
+        throw MakeStringException(ROXIE_MISMATCH, "Workunit did not export createProcess function");
+}
+
+//---------------------------------------------------------------------------------------------------------------------
+
 void ActivityArray::append(IActivityFactory &cur)
 {
     hash.setValue(cur.queryId(), activities.ordinality());
@@ -1192,8 +1239,8 @@ public:
     IMPLEMENT_IINTERFACE;
     unsigned channelNo;
 
-    CQueryFactory(const char *_id, const IQueryDll *_dll, const IRoxiePackage &_package, hash64_t _hashValue, unsigned _channelNo, ISharedOnceContext *_sharedOnceContext, bool _dynamic)
-        : package(_package), dll(_dll), sharedOnceContext(_sharedOnceContext), id(_id), dynamic(_dynamic), hashValue(_hashValue), stats(accumulatedStatistics), channelNo(_channelNo)
+    CQueryFactory(const char *_id, const IQueryDll *_dll, const IRoxiePackage &_package, hash64_t _hashValue, unsigned _channelNo, bool _dynamic)
+        : package(_package), dll(_dll), id(_id), dynamic(_dynamic), hashValue(_hashValue), stats(accumulatedStatistics), channelNo(_channelNo)
     {
         package.Link();
         targetClusterType = RoxieCluster;
@@ -1223,12 +1270,21 @@ private:
     std::once_flag started;
     Owned<IException> e;
 public:
-    void init(const IPropertyTree *stateInfo)
+    // Perform any delayed initialization - moved out of the constructor so that the critical section is not held
+    // for too long
+    virtual void initialize(const IPropertyTree *stateInfo)
+    {
+        if (dll && !selfTestMode)
+            checkWorkunitVersionConsistency(dll);
+    }
+
+    void ensureReady(const IPropertyTree *stateInfo)
     {
         std::call_once(started, [this, stateInfo]()
         {
             try
             {
+                initialize(stateInfo);
                 load(stateInfo);
                 addToMap();  // Publishes for agents to see
             }
@@ -1816,11 +1872,23 @@ class CRoxieServerQueryFactory : public CQueryFactory
 protected:
     Owned<IQueryStatsAggregator> queryStats;
 public:
-    CRoxieServerQueryFactory(const char *_id, const IQueryDll *_dll, const IRoxiePackage &_package, hash64_t _hashValue, ISharedOnceContext *_sharedOnceContext, bool _dynamic)
-        : CQueryFactory(_id, _dll, _package, _hashValue, 0, _sharedOnceContext, _dynamic)
+    CRoxieServerQueryFactory(const char *_id, const IQueryDll *_dll, const IRoxiePackage &_package, hash64_t _hashValue, bool _dynamic)
+        : CQueryFactory(_id, _dll, _package, _hashValue, 0, _dynamic)
     {
-        queryStats.setown(createQueryStatsAggregator(id.get(), statsExpiryTime));
     }
+
+    virtual void initialize(const IPropertyTree *stateInfo) override final
+    {
+        CQueryFactory::initialize(stateInfo);
+        queryStats.setown(createQueryStatsAggregator(id.get(), statsExpiryTime));
+        if (dll && !selfTestMode)
+        {
+            IPropertyTree *workflow = dll->queryWorkUnit()->queryWorkflowTree();
+            if (workflow && workflow->hasProp("Item[@mode='once']"))
+                sharedOnceContext.setown(new CSharedOnceContext);
+        }
+    }
+
     virtual void noteQuery(time_t startTime, bool failed, unsigned elapsed, unsigned memused, unsigned agentsReplyLen, unsigned bytesOut)
     {
         queryStats->noteQuery(startTime, failed, elapsed, memused, agentsReplyLen, bytesOut);
@@ -1891,54 +1959,8 @@ public:
     }
 };
 
-unsigned checkWorkunitVersionConsistency(const IConstWorkUnit *wu)
+static IQueryFactory *createServerQueryFactory(hash64_t hashValue, const char *id, const IQueryDll *dll, const IRoxiePackage &package, const IPropertyTree *stateInfo, bool isDynamic, bool forceRetry)
 {
-    assertex(wu);
-    unsigned wuVersion = wu->getCodeVersion();
-    if (wuVersion == 0)
-        throw makeStringException(ROXIE_MISMATCH, "Attempting to execute a workunit that hasn't been compiled");
-    if (wuVersion > ACTIVITY_INTERFACE_VERSION || wuVersion < MIN_ACTIVITY_INTERFACE_VERSION)
-        throw MakeStringException(ROXIE_MISMATCH, "Workunit was compiled for eclhelper interface version %d, this roxie requires version %d..%d", wuVersion, MIN_ACTIVITY_INTERFACE_VERSION, ACTIVITY_INTERFACE_VERSION);
-    if (wuVersion == 652)
-    {
-        // Any workunit compiled using eclcc 7.12.0-7.12.18 is not compatible
-        StringBuffer buildVersion, eclVersion;
-        wu->getBuildVersion(StringBufferAdaptor(buildVersion), StringBufferAdaptor(eclVersion));
-        const char *version = strstr(buildVersion, "7.12.");
-
-        //Avoid matching a version number in the path that was used to build (enclosed in [] at the end)
-        const char *extra = strchr(buildVersion, '[');
-        if (version && (!extra || version < extra))
-        {
-            const char *point = version + strlen("7.12.");
-            unsigned pointVer = atoi(point);
-            if (pointVer <= 18)
-                throw MakeStringException(ROXIE_MISMATCH, "Workunit was compiled by eclcc version %s which is not compatible with this runtime", buildVersion.str());
-        }
-    }
-    return wuVersion;
-}
-
-static void checkWorkunitVersionConsistency(const IQueryDll *dll)
-{
-    unsigned wuVersion = checkWorkunitVersionConsistency(dll->queryWorkUnit());
-
-    EclProcessFactory processFactory = (EclProcessFactory) dll->queryDll()->getEntry("createProcess");
-    if (processFactory)
-    {
-        Owned<IEclProcess> process = processFactory();
-        assertex(process);
-        if (process->getActivityVersion() != wuVersion)
-            throw MakeStringException(ROXIE_MISMATCH, "Inconsistent interface versions.  Workunit was created using eclcc for version %u, but the c++ compiler used version %u", wuVersion, process->getActivityVersion());
-    }
-    else
-        throw MakeStringException(ROXIE_MISMATCH, "Workunit did not export createProcess function");
-}
-
-extern IQueryFactory *createServerQueryFactory(const char *id, const IQueryDll *dll, const IRoxiePackage &package, const IPropertyTree *stateInfo, bool isDynamic, bool forceRetry)
-{
-    IArrayOf<IResolvedFile> queryFiles; // Note - these should stay in scope long enough to ensure still cached when (if) query is loaded for real
-    hash64_t hashValue = CQueryFactory::getQueryHash(id, dll, package, stateInfo, queryFiles, isDynamic);
     Owned<CQueryFactory> ret;
     {
         CriticalBlock b(CQueryFactory::queryCacheCrit);
@@ -1947,25 +1969,22 @@ extern IQueryFactory *createServerQueryFactory(const char *id, const IQueryDll *
         {
             ret.clear();
         }
+
 		if (ret)
 		    ::Release(dll);
         else
-        {
-            if (dll && !selfTestMode)
-            {
-                checkWorkunitVersionConsistency(dll);
-                Owned<ISharedOnceContext> sharedOnceContext;
-                IPropertyTree *workflow = dll->queryWorkUnit()->queryWorkflowTree();
-                if (workflow && workflow->hasProp("Item[@mode='once']"))
-                    sharedOnceContext.setown(new CSharedOnceContext);
-                ret.setown(new CRoxieServerQueryFactory(id, dll, package, hashValue, sharedOnceContext, isDynamic));
-            }
-            else
-                ret.setown(new CRoxieServerQueryFactory(id, NULL, package, hashValue, NULL, isDynamic));
-        }
+            ret.setown(new CRoxieServerQueryFactory(id, dll, package, hashValue, isDynamic));
     }
-    ret->init(stateInfo);
+    ret->ensureReady(stateInfo);
     return ret.getClear();
+}
+
+extern IQueryFactory *createServerQueryFactory(const char *id, const IQueryDll *dll, const IRoxiePackage &package, const IPropertyTree *stateInfo, bool isDynamic, bool forceRetry)
+{
+    IArrayOf<IResolvedFile> queryFiles; // Note - these should stay in scope long enough to ensure still cached when (if) query is loaded for real
+    hash64_t hashValue = CQueryFactory::getQueryHash(id, dll, package, stateInfo, queryFiles, isDynamic);
+
+    return createServerQueryFactory(hashValue, id, dll, package, stateInfo, isDynamic, forceRetry);
 }
 
 extern IQueryFactory *createServerQueryFactoryFromWu(IConstWorkUnit *wu, const IQueryDll *_dll)
@@ -2157,9 +2176,18 @@ class CAgentQueryFactory : public CQueryFactory
     }
 
 public:
-    CAgentQueryFactory(const char *_id, const IQueryDll *_dll, const IRoxiePackage &_package, hash64_t _hashValue, unsigned _channelNo, ISharedOnceContext *_sharedOnceContext, bool _dynamic)
-        : CQueryFactory(_id, _dll, _package, _hashValue, _channelNo, _sharedOnceContext, _dynamic)
+    CAgentQueryFactory(const char *_id, const IQueryDll *_dll, const IRoxiePackage &_package, hash64_t _hashValue, unsigned _channelNo, bool _dynamic)
+        : CQueryFactory(_id, _dll, _package, _hashValue, _channelNo, _dynamic)
     {
+    }
+
+    virtual void initialize(const IPropertyTree *stateInfo) override final
+    {
+        CQueryFactory::initialize(stateInfo);
+
+        Owned<IQueryFactory> serverFactory = createServerQueryFactory(hashValue, id, LINK(dll), package, stateInfo, dynamic, false);
+        assertex(serverFactory);
+        sharedOnceContext.set(serverFactory->querySharedOnceContext());
     }
 
     virtual IRoxieAgentContext *createAgentContext(const AgentContextLogger &logctx, IRoxieQueryPacket *packet, bool hasChildren) const
@@ -2218,21 +2246,13 @@ IQueryFactory *createAgentQueryFactory(const char *id, const IQueryDll *dll, con
     {
         CriticalBlock b(CQueryFactory::queryCacheCrit);
         ret.setown(CQueryFactory::getCachedQuery(hashValue, channel));
+
         if (ret)
-        {
             ::Release(dll);
-        }
-        else if (dll)
-        {
-            checkWorkunitVersionConsistency(dll);
-            Owned<IQueryFactory> serverFactory = createServerQueryFactory(id, LINK(dll), package, stateInfo, isDynamic, forceRetry);
-            assertex(serverFactory);
-            ret.setown(new CAgentQueryFactory(id, dll, package, hashValue, channel, serverFactory->querySharedOnceContext(), isDynamic));
-        }
         else
-            ret.setown(new CAgentQueryFactory(id, NULL, package, hashValue, channel, NULL, isDynamic));
+            ret.setown(new CAgentQueryFactory(id, dll, package, hashValue, channel, isDynamic));
     }
-    ret->init(stateInfo);
+    ret->ensureReady(stateInfo);
     return ret.getClear();
 }
 
@@ -2244,5 +2264,4 @@ extern IQueryFactory *createAgentQueryFactoryFromWu(IConstWorkUnit *wu, unsigned
     Owned<IQueryFactory> ret = createAgentQueryFactory(wu->queryWuid(), dll.getClear(), queryRootRoxiePackage(), channelNo, NULL, true, false);  // MORE - if use a constant for id might cache better?
     ret->preloadOnce();
     return ret.getClear();
-
 }

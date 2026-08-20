@@ -23,6 +23,8 @@
 #include "jdebug.hpp"
 #include "jregexp.hpp"
 #include "jlzw.hpp"
+#include "jevent.hpp"
+
 #include "eclrtl.hpp"
 #include <ctype.h>
 #if defined(__APPLE__)
@@ -636,6 +638,8 @@ void PluginDll::logLoaded()
 
 extern DLLSERVER_API ILoadedDllEntry * createDllEntry(const char *path, bool isGlobal, const IFileIO *dllFile, bool resourcesOnly)
 {
+    ProTraceTaskScopeTracker tracker(EventTask::Reading);
+
     Owned<HelperDll> result = new HelperDll(path, dllFile);
     bool ok;
     if (!resourcesOnly)
