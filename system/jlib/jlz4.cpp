@@ -442,8 +442,9 @@ protected:
 
     virtual int decodeStreamBlock(const void * src, size32_t srcSize, void * dest, size32_t destSize) override
     {
-        return LZ4_decompress_safe_continue(lz4Stream, (const char *)src, (char *)dest, srcSize, destSize);
+        ProTraceTaskScopeTracker scope(EventTask::Decompressing, srcSize);
 
+        return LZ4_decompress_safe_continue(lz4Stream, (const char *)src, (char *)dest, srcSize, destSize);
     }
 
     virtual void *bufptr() { return nullptr;}
