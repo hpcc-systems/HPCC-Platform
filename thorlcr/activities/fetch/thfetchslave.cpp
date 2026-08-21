@@ -334,7 +334,8 @@ public:
     CFetchSlaveBase(CGraphElementBase *_container) : CSlaveActivity(_container, diskReadActivityStatistics)
     {
         fetchBaseHelper = (IHThorFetchBaseArg *)queryHelper();
-        reInit = 0 != (fetchBaseHelper->getFetchFlags() & (FFvarfilename|FFdynamicfilename));
+        unsigned flags = fetchBaseHelper->getFetchFlags();
+        reInit = (flags & (FFvarfilename|FFdynamicfilename)) && !(flags & FFinvariantfilename);
         appendOutputLinked(this);
     }
 

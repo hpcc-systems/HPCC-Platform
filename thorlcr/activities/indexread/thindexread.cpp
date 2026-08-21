@@ -229,7 +229,8 @@ public:
         indexBaseHelper = (IHThorIndexReadBaseArg *)queryHelper();
         if (!container.queryLocalOrGrouped())
             mpTag = container.queryJob().allocateMPTag();
-        reInit = 0 != (indexBaseHelper->getFlags() & (TIRvarfilename|TIRdynamicfilename));
+        unsigned flags = indexBaseHelper->getFlags();
+        reInit = (0 != (flags & (TIRvarfilename|TIRdynamicfilename))) && (0 == (flags & TIRinvariantfilename));
     }
     virtual void init() override
     {
