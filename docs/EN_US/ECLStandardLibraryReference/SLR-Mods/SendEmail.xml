@@ -12,9 +12,9 @@
       <primary>Email.SendEmail</primary>
     </indexterm> <indexterm>
       <primary>SendEmail</primary>
-    </indexterm>( </emphasis> <emphasis>to, subject, body, attachment,
-  mimietype, filename, mailServer, port, sender, cc, bcc,
-  highPriority</emphasis> <emphasis role="bold"> )</emphasis></para>
+    </indexterm>( </emphasis> <emphasis>to, subject, body, mailServer, port,
+  sender, cc, bcc, highPriority, rptErrAsFail</emphasis> <emphasis
+  role="bold"> )</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -44,8 +44,11 @@
           <entry>A null-terminated string containing the text of the email to
           send. This must be character encoding "ISO-8859-1 (latin1)" (the ECL
           default character set). Text in any other character set must be sent
-          as an attachment (see the STD.System.Email.SendEmailAttachText()
-          function).</entry>
+          as an attachment (see the <link
+          linkend="SendEmailAttachText">STD.System.Email.SendEmailAttachText()</link>
+          or <link
+          linkend="SendEmailAttachData">STD.System.Email.SendEmailAttachData()
+          </link> functions).</entry>
         </row>
 
         <row>
@@ -75,22 +78,31 @@
         <row>
           <entry><emphasis>cc</emphasis></entry>
 
-          <entry>Optional. comma-delimited addresses of carbon-copy
+          <entry>Optional. comma-delimited addresses of carbon copy
           recipients. Defaults to an empty string (none).</entry>
         </row>
 
         <row>
           <entry><emphasis>bcc</emphasis></entry>
 
-          <entry>Optional. comma-delimited addresses of blind-carbon-copy
+          <entry>Optional. comma-delimited addresses of blind carbon copy
           recipients. Defaults to an empty string (none).</entry>
         </row>
 
         <row>
           <entry><emphasis>highPriority</emphasis></entry>
 
-          <entry>Optional. If true, the message is sent with high priority.
-          Defaults to false (normal priority).</entry>
+          <entry>Optional. A boolean TRUE/FALSE flag that, when TRUE, the
+          message is sent with high priority. Defaults to FALSE (normal
+          priority).</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>rptErrAsFail</emphasis></entry>
+
+          <entry>Optional. A boolean TRUE/FALSE flag that, when TRUE, any
+          error while trying to send the email results in an error/exception.
+          Defaults to TRUE.</entry>
         </row>
       </tbody>
     </tgroup>
@@ -101,7 +113,6 @@
 
   <para>Example:</para>
 
-  <!--#synthpii-->
-
-  <programlisting format="linespecific">STD.System.Email.SendEmail( 'me@example.com', 'testing 1,2,3', 'this is a test message');</programlisting>
+  <programlisting format="linespecific">IMPORT STD;
+<!--#synthpii-->STD.System.Email.SendEmail( 'me@example.com', 'testing 1,2,3', 'this is a test message');</programlisting>
 </sect1>
