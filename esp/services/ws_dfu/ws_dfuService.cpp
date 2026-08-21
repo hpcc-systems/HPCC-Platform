@@ -59,6 +59,7 @@
 #include "eclrtl.hpp"
 #include "package.h"
 #include "daaudit.hpp"
+#include "dafsaudit.hpp"
 
 #include "jflz.hpp"
 #include "digisign.hpp"
@@ -1148,7 +1149,7 @@ int CWsDfuEx::superfileAction(IEspContext &context, const char* action, const ch
 
     if (!autocreatesuper)
     {//a file lock created by the lookup() will be released after '}'
-        Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(superfile, userdesc.get(), AccessMode::tbdWrite, false, false, nullptr, defaultPrivilegedUser);
+        Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(superfile, userdesc.get(), AccessMode::writeLogicalMeta, false, false, nullptr, defaultPrivilegedUser);
         if (existingSuperfile)
         {
             if (!df)
@@ -1306,8 +1307,8 @@ bool CWsDfuEx::DFUDeleteFiles(IEspContext &context, IEspDFUArrayActionRequest &r
         IEspContext &context;
         Owned<IUserDescriptor> userdesc;
         IArrayOf<IEspDFUActionInfo> actionResults;
-        StringBuffer returnStr, auditStr;
-        StringAttr espProcess;
+        StringBuffer returnStr;
+        DFSAuditContext dfsBulkDeleteCtx;
 
         void deleteFile(const char *fn)
         {
@@ -1322,9 +1323,8 @@ bool CWsDfuEx::DFUDeleteFiles(IEspContext &context, IEspDFUArrayActionRequest &r
             try
             {
                 PROGLOG("Deleting %s", fn);
-                queryDistributedFileDirectory().removeEntry(fn, userdesc, nullptr, REMOVE_FILE_SDS_CONNECT_TIMEOUT, true);
+                queryDistributedFileDirectory().removeEntry(fn, userdesc, nullptr, REMOVE_FILE_SDS_CONNECT_TIMEOUT, true, dfsBulkDeleteCtx);
 
-                LOG(MCauditInfo, "%s,%s", auditStr.str(), fn);
                 VStringBuffer message("File %s deleted.", fn);
                 addResult(dfsLFN.get(), group, false, message);
             }
@@ -1365,7 +1365,8 @@ bool CWsDfuEx::DFUDeleteFiles(IEspContext &context, IEspDFUArrayActionRequest &r
             actionResults.append(*resultObj.getClear());
         }
     public:
-        CDFUDeleteFilesHelper(IEspContext &ctx, const char *process) : context(ctx), espProcess(process)
+        CDFUDeleteFilesHelper(IEspContext &ctx, const DFSAuditContext &baseAuditCtx)
+            : context(ctx), dfsBulkDeleteCtx(baseAuditCtx)
         {
             const char *user = context.queryUserId();
             if (!isEmptyString(user))
@@ -1374,12 +1375,15 @@ bool CWsDfuEx::DFUDeleteFiles(IEspContext &context, IEspDFUArrayActionRequest &r
                 userdesc->set(user, context.queryPassword(), context.querySignature());
             }
 
-            auditStr.set(",FileAccess,WsDfu,DELETED,");
-            auditStr.append(espProcess.get());
-            auditStr.append(',');
+            // Add request-scoped fields to the per-service invariant context.
             if (!isEmptyString(user))
-                auditStr.append(user).append('@');
-            context.getPeer(auditStr);
+                dfsBulkDeleteCtx.setValue("user", user);
+            {
+                StringBuffer peer;
+                context.getPeer(peer);
+                if (peer.length())
+                    dfsBulkDeleteCtx.setValue("peer", peer.str());
+            }
         }
 
         const char *getReturnStr() const { return returnStr.str(); }
@@ -1410,7 +1414,7 @@ bool CWsDfuEx::DFUDeleteFiles(IEspContext &context, IEspDFUArrayActionRequest &r
                 if (emptyOwningSuperFiles.contains(lfn))
                     continue;
 
-                Owned<IDistributedFile> df = fdir.lookup(lfn, userdesc, AccessMode::tbdWrite, false, false, nullptr, defaultPrivilegedUser, 30000); // 30 sec timeout
+                Owned<IDistributedFile> df = fdir.lookup(lfn, userdesc, AccessMode::erase, false, false, nullptr, defaultPrivilegedUser, 30000); // 30 sec timeout
                 if (!df)
                 {
                     VStringBuffer message("Could not delete file %s: file not found.", lfn);
@@ -1476,7 +1480,7 @@ bool CWsDfuEx::DFUDeleteFiles(IEspContext &context, IEspDFUArrayActionRequest &r
     if (!logicalFileNames.length())
         return true;
 
-    CDFUDeleteFilesHelper helper(context, espProcess);
+    CDFUDeleteFilesHelper helper(context, queryDefaultDFSAuditContext());
     helper.deleteFiles(logicalFileNames, req.getRemoveFromSuperfiles(), req.getRemoveRecursively());
 
     double version = context.getClientVersion();
@@ -1554,7 +1558,7 @@ bool CWsDfuEx::onDFUArrayAction(IEspContext &context, IEspDFUArrayActionRequest 
 
             try
             {
-                Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(curfile, userdesc.get(), AccessMode::tbdWrite, false, false, nullptr, defaultPrivilegedUser);
+                Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(curfile, userdesc.get(), AccessMode::writeLogicalMeta, false, false, nullptr, defaultPrivilegedUser);
                 if (df)
                 {
                     if (subfiles.length() > 0)
@@ -1646,7 +1650,8 @@ bool CWsDfuEx::changeFileProtections(IEspContext &context, IEspDFUArrayActionReq
         if (isEmptyString(file))
             continue;
 
-        Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(file, userDesc, AccessMode::tbdRead, false, true, nullptr, defaultPrivilegedUser); // lock super-owners
+        // df->setProtect()/clearFileProtections() below mutate the file's protection metadata - use writeMeta.
+        Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(file, userDesc, AccessMode::writeLogicalMeta, false, true, nullptr, defaultPrivilegedUser); // lock super-owners
         if (!df)
         {
             addFileActionResult(file, nullptr, true, "Cannot find file.", actionResults);
@@ -1706,7 +1711,8 @@ bool CWsDfuEx::changeFileRestrictions(IEspContext &context, IEspDFUArrayActionRe
         if (isEmptyString(file))
             continue;
 
-        Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(file, userDesc, AccessMode::tbdRead, false, true, nullptr, defaultPrivilegedUser); // lock super-owners
+        // df->setRestrictedAccess() below mutates the file's restricted-access metadata - use writeMeta.
+        Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(file, userDesc, AccessMode::writeLogicalMeta, false, true, nullptr, defaultPrivilegedUser); // lock super-owners
         if (!df)
         {
             addFileActionResult(file, nullptr, true, "Cannot find file.", actionResults);
@@ -1791,7 +1797,7 @@ IHqlExpression * getEclRecordDefinition(const char * ecl)
 
 IHqlExpression * getEclRecordDefinition(IUserDescriptor* udesc, const char* FileName)
 {
-    Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(FileName, udesc, AccessMode::tbdRead, false, false, nullptr, defaultPrivilegedUser);
+    Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(FileName, udesc, AccessMode::readLogicalMeta, false, false, nullptr, defaultPrivilegedUser);
     if(!df)
         throw MakeStringException(ECLWATCH_FILE_NOT_EXIST,"Cannot find file %s.",FileName);
     if(!df->queryAttributes().hasProp("ECL"))
@@ -1866,7 +1872,7 @@ bool CWsDfuEx::onDFURecordTypeInfo(IEspContext &context, IEspDFURecordTypeInfoRe
             throw MakeStringException(ECLWATCH_MISSING_PARAMS, "File name required");
         PROGLOG("DFURecordTypeInfo file: %s", fileName);
 
-        Owned<IDistributedFile> df = lookupLogicalName(context, fileName, AccessMode::tbdRead, false, false, nullptr, defaultPrivilegedUser);
+        Owned<IDistributedFile> df = lookupLogicalName(context, fileName, AccessMode::readLogicalMeta, false, false, nullptr, defaultPrivilegedUser);
         if (!df)
             throw MakeStringException(ECLWATCH_FILE_NOT_EXIST,"Cannot find file %s.",fileName);
 
@@ -1942,7 +1948,7 @@ void CWsDfuEx::getDefFile(IUserDescriptor* udesc, const char* FileName,StringBuf
 
 bool CWsDfuEx::checkFileContent(IEspContext &context, IUserDescriptor* udesc, const char * logicalName, const char * cluster)
 {
-    Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(logicalName, udesc, AccessMode::tbdRead, false, false, nullptr, defaultPrivilegedUser);
+    Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(logicalName, udesc, AccessMode::readLogicalMeta, false, false, nullptr, defaultPrivilegedUser);
     if (!df)
         return false;
 
@@ -2240,7 +2246,10 @@ void CWsDfuEx::doGetFileDetails(IEspContext &context, IUserDescriptor *udesc, co
             return;
     }
 
-    Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(name, udesc, AccessMode::tbdRead, false, true, nullptr, defaultPrivilegedUser); // lock super-owners
+    // A requested protect/restrict change below mutates metadata, so use writeMeta only when a change is
+    // requested; a plain (read-only) details view stays readMeta to avoid requiring write permission.
+    AccessMode accessMode = ((protect != CDFUChangeProtection_NoChange) || (changeRestriction != CDFUChangeRestriction_NoChange)) ? AccessMode::writeLogicalMeta : AccessMode::readLogicalMeta;
+    Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(name, udesc, accessMode, false, true, nullptr, defaultPrivilegedUser); // lock super-owners
     if(!df)
         throw MakeStringException(ECLWATCH_FILE_NOT_EXIST,"Cannot find file %s.",name);
 
@@ -4059,7 +4068,7 @@ bool CWsDfuEx::onSuperfileAction(IEspContext &context, IEspSuperfileActionReques
             Owned<IUserDescriptor> udesc;
             udesc.setown(createUserDescriptor());
             udesc->set(context.queryUserId(), context.queryPassword(), context.querySignature());
-            Owned<IDistributedSuperFile> fp = queryDistributedFileDirectory().lookupSuperFile(superfile, udesc, AccessMode::tbdWrite);
+            Owned<IDistributedSuperFile> fp = queryDistributedFileDirectory().lookupSuperFile(superfile, udesc, AccessMode::writeLogicalMeta);
             if (!fp)
                 resp.setRetcode(-1); //Superfile has been removed.
         }
@@ -4198,6 +4207,10 @@ bool CWsDfuEx::onDFUFileRename(IEspContext &context, IEspDFUFileRenameRequest &r
         IArrayOf<IEspDFUFileRenameResult> results;
         IDistributedFileDirectory &fdir = queryDistributedFileDirectory();
 
+        // Build once per request from global defaults; DFS adds lfn/lfn2 at emit points.
+        DFSAuditContext renameBaseCtx = queryDefaultDFSAuditContext();
+        renameBaseCtx.setValue("user", username.str());
+
         ForEachItemIn(i, items)
         {
             IConstDFUFileRenameItem &item = items.item(i);
@@ -4218,8 +4231,7 @@ bool CWsDfuEx::onDFUFileRename(IEspContext &context, IEspDFUFileRenameRequest &r
                 PROGLOG("DFUFileRename: Renaming %s to %s", oldname, newname);
 
                 // Use renamePhysical to rename both logical entry and physical files
-                fdir.renamePhysical(oldname, newname, userdesc.get(), nullptr);
-                LOG(MCauditInfo,",FileAccess,WsDfu,RENAME,,%s,%s,%s", username.str(), oldname, newname); // NB: auditing needs to move to DFS (see HPCC-35853)
+                fdir.renamePhysical(oldname, newname, userdesc.get(), nullptr, renameBaseCtx);
 
                 result->setSuccess(true);
                 result->setMessage("Successfully renamed.");
@@ -5265,7 +5277,7 @@ bool CWsDfuEx::onListHistory(IEspContext &context, IEspListHistoryRequest &req, 
 
         MemoryBuffer xmlmap;
         IArrayOf<IEspHistory> arrHistory;
-        Owned<IDistributedFile> file = lookupLogicalName(context, req.getName(), AccessMode::tbdRead, false, false, nullptr, defaultPrivilegedUser);
+        Owned<IDistributedFile> file = lookupLogicalName(context, req.getName(), AccessMode::readLogicalMeta, false, false, nullptr, defaultPrivilegedUser);
         if (file)
         {
             IPropertyTree *history = file->queryHistory();
@@ -5304,7 +5316,8 @@ bool CWsDfuEx::onEraseHistory(IEspContext &context, IEspEraseHistoryRequest &req
 
         MemoryBuffer xmlmap;
         IArrayOf<IEspHistory> arrHistory;
-        Owned<IDistributedFile> file = lookupLogicalName(context, req.getName(), AccessMode::tbdRead, false, false, nullptr, defaultPrivilegedUser);
+        // file->resetHistory() below mutates the file's stored history metadata, so this is a metadata write.
+        Owned<IDistributedFile> file = lookupLogicalName(context, req.getName(), AccessMode::writeLogicalMeta, false, false, nullptr, defaultPrivilegedUser);
         if (file)
         {
             IPropertyTree *history = file->queryHistory();
@@ -5905,7 +5918,7 @@ int CWsDfuEx::GetIndexData(IEspContext &context, bool bSchemaOnly, const char* i
     Owned<IDistributedFile> df;
     try
     {
-        df.setown(lookupLogicalName(context, indexName, AccessMode::tbdRead, false, false, nullptr, defaultPrivilegedUser));
+        df.setown(lookupLogicalName(context, indexName, AccessMode::readLogicalMeta, false, false, nullptr, defaultPrivilegedUser));
         if(!df)
             throw MakeStringException(ECLWATCH_FILE_NOT_EXIST,"Could not find file %s.", indexName);
 
@@ -6242,7 +6255,13 @@ void CWsDfuEx::dFUFileAccessCommon(IEspContext &context, const CDfsLogicalFileNa
 
     checkLogicalName(fileName, userDesc, true, false, false, nullptr); // check for read permissions
 
-    Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(fileName, userDesc, AccessMode::tbdRead, false, true, nullptr, defaultPrivilegedUser, lockTimeoutMs); // lock super-owners
+    // Build request context from global defaults, then add call-scoped fields.
+    DFSAuditContext readCtx = queryDefaultDFSAuditContext();
+    readCtx.setValue("user", userID.str());
+    readCtx.setValue("jobid", requestId ? requestId : "");
+    readCtx.setValue("expirySecs", StringBuffer().append(expirySecs).str());
+
+    Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(fileName, userDesc, AccessMode::readSequential, false, true, nullptr, defaultPrivilegedUser, lockTimeoutMs, readCtx); // lock super-owners
     if (!df)
         throw MakeStringException(ECLWATCH_FILE_NOT_EXIST,"Cannot find file '%s'.", fileName.str());
 
@@ -6329,8 +6348,6 @@ void CWsDfuEx::dFUFileAccessCommon(IEspContext &context, const CDfsLogicalFileNa
     resp.setType(kind);
 
     df->setAccessed();
-
-    LOG(MCauditInfo,",FileAccess,EspProcess,READ,%s,%s,%s,jobid=%s,expirySecs=%d", cluster.str(), userID.str(), fileName.str(), requestId, expirySecs);
 }
 
 // NB: deprecated from ver >= 1.50
@@ -6838,7 +6855,9 @@ bool CWsDfuEx::onDFUFilePublish(IEspContext &context, IEspDFUFilePublishRequest 
             userDesc->set(userId.str(), context.queryPassword(), context.querySignature());
             fileDesc->queryProperties().setProp("@owner", userId);
         }
-        Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(newFileName, userDesc, AccessMode::tbdRead, false, true, nullptr, defaultPrivilegedUser, req.getLockTimeoutMs());
+        // On overwrite, df->detach() removes the existing published file's logical entry AND physical
+        // part files, so this lookup is a logical + physical delete - use write, not readMeta.
+        Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(newFileName, userDesc, AccessMode::erase, false, true, nullptr, defaultPrivilegedUser, req.getLockTimeoutMs());
         if (df)
         {
             if (!req.getOverwrite())
@@ -6850,15 +6869,18 @@ bool CWsDfuEx::onDFUFilePublish(IEspContext &context, IEspDFUFilePublishRequest 
         newFile.setown(queryDistributedFileDirectory().createNew(fileDesc));
         newFile->validate();
         // JCSMORE attach() should have a timeout, then req.getLockTimeoutMs() should be used here.
-        newFile->attach(normalizeTempFileName, userDesc);
+
+        DFSAuditContext publishCtx = queryDefaultDFSAuditContext();
+        publishCtx.setValue("user", userId.str());
+        if (!isEmptyString(groupName))
+            publishCtx.setValue("cluster", groupName);
+        newFile->attach(normalizeTempFileName, userDesc, publishCtx);
         newFileAttached = true;
 
         if (!newFile->renamePhysicalPartFiles(newFileName, nullptr, nullptr, fileDesc->queryDefaultDir()))
             throw makeStringExceptionV(ECLWATCH_FILE_NOT_EXIST, "DFUFilePublish: Failed in renamePhysicalPartFiles %s.", newFileName.str());
 
-        newFile->rename(newFileName, userDesc);
-
-        LOG(MCauditInfo,",FileAccess,EspProcess,CREATED,%s,%s,%s", groupName, userId.str(), newFileName.str());
+        newFile->rename(newFileName, userDesc, publishCtx);
     }
     catch (IException *e)
     {

@@ -90,30 +90,42 @@ extern jlib_decl void resetWriteSyncStateForTest();
 
 enum class AccessMode : unsigned
 {
+    // read | write - the access type required for this use of the file
+    // meta | physicalMeta | physical - which aspect of the data is going to be accessed.
+    // sequential | random - how is the physical data going to be accessed.
+
     none            = 0x00000000,
-    read            = 0x00000001,
-    write           = 0x00000002,
-    sequential      = 0x00000004,
+    read            = 0x00000001,           // read access required (additional flags specify whether logical,physical,meta,random/sequential)
+    write           = 0x00000002,           // write access required (additional flags specify whether logical,physical,meta,random/sequential)
+    sequential      = 0x00000004,           // sequential read or write required
     random          = 0x00000008,           // corresponds to "random" reason in alias reasons
-    meta            = 0x00000010,
+    meta            = 0x00000010,           // meta data access (use if reading/writing to a logical file)
+    physicalMeta    = 0x00000020,           // physical meta data access (e.g. stat/exists)
+    physical        = 0x00000040,           // physical file access (use if reading/writing to a physical file)
+    extend          = 0x00000080,           // physically extend a file
     noMount         = 0x01000000,           // corresponds to "api" reason in alias reasons
 
-    readRandom      = read | random,
-    readSequential  = read | sequential,
-    readNoMount     = read | noMount,
-    writeSequential = write | sequential,
+    readLogicalMeta   = read | meta,          // read access - may not actually read the contents
+    writeLogicalMeta  = write | meta,         // write access - may also be used for delete
+    readPhysicalMeta  = read | physicalMeta,  // read access - may not actually read the contents
+    writePhysicalMeta = write | physicalMeta, // write access - may also be used
 
-    readMeta        = read | meta,                  // read access - may not actually read the contents
-    writeMeta       = write | meta,                 // write access - may also be used for delete
+    readMeta        = read | meta | physicalMeta,  // read logical + physical meta info
+    writeMeta       = write | meta | physicalMeta, // write logical + physical meta info
+    erase           = writeMeta,                   // alias for writeMeta - used for delete operations
 
-//The following are used for mechanical replacement of writeattr to update the function prototypes but not change
-//the behaviour but allow all the calls to be revisited later to ensure the correct parameter is used.
-
-    tbdRead          = read,                 // writeattr was false
-    tbdWrite         = write,                // writeattr was true
+    // physical read patterns
+    readRandom      = readLogicalMeta | readPhysicalMeta | physical | random,
+    readSequential  = readLogicalMeta | readPhysicalMeta | physical | sequential,
+    readNoMount     = readLogicalMeta | readPhysicalMeta | physical | noMount,
+    // physical write patterns
+    writeRandom     = writeLogicalMeta | writePhysicalMeta | physical | random,
+    writeSequential = writeLogicalMeta | writePhysicalMeta | physical | sequential,
 };
 BITMASK_ENUM(AccessMode);
 inline bool isWrite(AccessMode mode) { return (mode & AccessMode::write) != AccessMode::none; }
+inline bool isPhysicalAccessMode(AccessMode accessMode) { return (accessMode & AccessMode::physical) != AccessMode::none; } // physically reading data
+
 
 extern jlib_decl AccessMode getAccessModeFromString(const char *access); // single access mode
 

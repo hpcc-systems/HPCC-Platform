@@ -566,7 +566,7 @@ public:
         CDfsLogicalFileName dstlfn;
         if (!dstlfn.setValidate(destfilename,true))
             throw MakeStringException(-1,"Logical name %s invalid",destfilename);
-        Owned<IDistributedFile> dfile = fdir->lookup(dstlfn,userdesc,AccessMode::tbdWrite,false,false,nullptr,defaultPrivilegedUser);
+        Owned<IDistributedFile> dfile = fdir->lookup(dstlfn,userdesc,AccessMode::writeLogicalMeta,false,false,nullptr,defaultPrivilegedUser);
         if (dfile) {
             ClusterPartDiskMapSpec spec = spec1;
             const char * kind = ftree->queryProp("Attr/@kind");
@@ -588,7 +588,7 @@ public:
         CDfsLogicalFileName dstlfn;
         if (!dstlfn.setValidate(destfilename,true))
             throw MakeStringException(-1,"Logical name %s invalid",destfilename);
-        Owned<IDistributedFile> dfile = fdir->lookup(dstlfn,userdesc,AccessMode::tbdWrite,false,false,nullptr,defaultPrivilegedUser);
+        Owned<IDistributedFile> dfile = fdir->lookup(dstlfn,userdesc,AccessMode::writeLogicalMeta,false,false,nullptr,defaultPrivilegedUser);
         if (dfile) {
             ClusterPartDiskMapSpec spec = spec1;
             const char * kind = ftree->queryProp("Attr/@kind");
@@ -684,7 +684,7 @@ public:
             slfn.clearForeign();
             srcdali.setown(createINode(ep));
         }
-        AccessMode mode = copyphysical ? AccessMode::read : AccessMode::readMeta;
+        AccessMode mode = copyphysical ? AccessMode::readSequential : AccessMode::readLogicalMeta;
         Owned<IPropertyTree> ftree = fdir->getFileTree(slfn.get(), foreignuserdesc, mode, srcdali, FOREIGN_DALI_TIMEOUT, GetFileTreeOpts::appendForeign);
         if (!ftree.get()) {
             StringBuffer s;
@@ -727,7 +727,7 @@ public:
         }
 
         // first see if target exists (and remove if does and overwrite specified)
-        Owned<IDistributedFile> dfile = fdir->lookup(dlfn,userdesc,AccessMode::tbdWrite,false,false,nullptr,defaultPrivilegedUser);
+        Owned<IDistributedFile> dfile = fdir->lookup(dlfn,userdesc,AccessMode::erase,false,false,nullptr,defaultPrivilegedUser);
         if (dfile) {
             if (!checkOverwrite(DALI_UPDATEF_REPLACE_FILE))
                 throw MakeStringException(-1,"Destination file %s already exists",dlfn.get());
@@ -777,7 +777,7 @@ public:
             slfn.clearForeign();
             srcdali.setown(createINode(ep));
         }
-        AccessMode mode = copyphysical ? AccessMode::read : AccessMode::readMeta;
+        AccessMode mode = copyphysical ? AccessMode::readSequential : AccessMode::readLogicalMeta;
         Owned<IPropertyTree> ftree = fdir->getFileTree(slfn.get(), foreignuserdesc, mode, srcdali, FOREIGN_DALI_TIMEOUT, GetFileTreeOpts::appendForeign);
         if (!ftree.get()) {
             StringBuffer s;
@@ -804,7 +804,7 @@ public:
         }
 
         // first see if target exists (and remove if does and overwrite specified)
-        Owned<IDistributedFile> dfile = fdir->lookup(dlfn,userdesc,AccessMode::tbdWrite,false,false,nullptr,defaultPrivilegedUser);
+        Owned<IDistributedFile> dfile = fdir->lookup(dlfn,userdesc,AccessMode::erase,false,false,nullptr,defaultPrivilegedUser);
         if (dfile) {
             if (!checkOverwrite(DALI_UPDATEF_REPLACE_FILE))
                 throw MakeStringException(-1,"Destination file %s already exists",dlfn.get());
@@ -946,14 +946,17 @@ public:
                 remoteLFN.append("remote::").append(remoteStorage).append("::");
             srcLFN.get(remoteLFN);
 
-            Owned<wsdfs::IDFSFile> dfsFile = wsdfs::lookupDFSFile(remoteLFN.str(), AccessMode::readSequential, INFINITE, wsdfs::keepAliveExpiryFrequency, foreignuserdesc);
+            // Only the file metadata tree is extracted here; mirror the non-remote branch below
+            // (physical content is only read when copyphysical is set).
+            AccessMode mode = copyphysical ? AccessMode::readSequential : AccessMode::readLogicalMeta;
+            Owned<wsdfs::IDFSFile> dfsFile = wsdfs::lookupDFSFile(remoteLFN.str(), mode, INFINITE, wsdfs::keepAliveExpiryFrequency, foreignuserdesc);
             if (!dfsFile)
                 throw makeStringExceptionV(-1,"Source file %s could not be found in Remote Storage", remoteLFN.str()); //remote scope already included in remoteLFN
             ftree.setown(dfsFile->queryFileMeta()->getPropTree("File"));
         }
         else
         {
-            AccessMode mode = copyphysical ? AccessMode::read : AccessMode::readMeta;
+            AccessMode mode = copyphysical ? AccessMode::readSequential : AccessMode::readLogicalMeta;
             ftree.setown(fdir->getFileTree(srcLFN.get(), foreignuserdesc, mode, srcdali, FOREIGN_DALI_TIMEOUT, GetFileTreeOpts::appendForeign));
             if (!ftree.get())
                 throw MakeStringException(-1,"Source file %s could not be found in Dali %s",srcLFN.get(), getDaliEndPointStr(srcdali, s));
@@ -978,7 +981,7 @@ public:
         }
 
         //see if target already exists
-        Owned<IDistributedFile> dfile = fdir->lookup(dlfn, userdesc, AccessMode::tbdWrite, false, false, nullptr, defaultPrivilegedUser);
+        Owned<IDistributedFile> dfile = fdir->lookup(dlfn, userdesc, AccessMode::erase, false, false, nullptr, defaultPrivilegedUser);
         if (dfile)
         {
             if (!checkOverwrite(DALI_UPDATEF_SUBFILE_MASK))
@@ -1023,7 +1026,7 @@ public:
         Owned<IDistributedFileTransaction> transaction = createDistributedFileTransaction(user);
         transaction->start();
 
-        Owned<IDistributedSuperFile> superfile = transaction->lookupSuperFile(superfname, AccessMode::writeMeta);
+        Owned<IDistributedSuperFile> superfile = transaction->lookupSuperFile(superfname, AccessMode::writeLogicalMeta);
         if (!superfile)
         {
             if (!autocreatesuper)
@@ -1051,7 +1054,7 @@ public:
         Owned<IDistributedFileTransaction> transaction = createDistributedFileTransaction(user);
         // We need this here, since caching only happens with active transactions
         // MORE - abstract this with DFSAccess, or at least enable caching with a flag
-        Owned<IDistributedSuperFile> superfile = transaction->lookupSuperFile(superfname, AccessMode::writeMeta);
+        Owned<IDistributedSuperFile> superfile = transaction->lookupSuperFile(superfname, AccessMode::writeLogicalMeta);
 
         if (!superfile)
             throwError1(DFUERR_DSuperFileNotFound, superfname);
@@ -1103,7 +1106,7 @@ public:
 
     void listSubFiles(const char *superfname,StringAttrArray &out,IUserDescriptor *user)
     {
-        Owned<IDistributedSuperFile> superfile = queryDistributedFileDirectory().lookupSuperFile(superfname, user, AccessMode::readMeta);
+        Owned<IDistributedSuperFile> superfile = queryDistributedFileDirectory().lookupSuperFile(superfname, user, AccessMode::readLogicalMeta);
         if (!superfile)
             throwError1(DFUERR_DSuperFileNotFound, superfname);
         Owned<IDistributedFileIterator> iter=superfile->getSubFileIterator();
@@ -1116,7 +1119,7 @@ public:
 
     StringBuffer &getFileXML(const char *lfn, StringBuffer &out, IUserDescriptor *user)
     {
-        Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup(lfn, user, AccessMode::tbdRead, false, false, nullptr, defaultPrivilegedUser);
+        Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup(lfn, user, AccessMode::readLogicalMeta, false, false, nullptr, defaultPrivilegedUser);
         if (!file) {
             INamedGroupStore  &grpstore= queryNamedGroupStore();
             Owned<IGroup> grp = grpstore.lookup(lfn);
@@ -1135,7 +1138,7 @@ public:
         }
         else
         {
-            Owned<IPropertyTree> t = queryDistributedFileDirectory().getFileTree(lfn, user, AccessMode::readMeta);
+            Owned<IPropertyTree> t = queryDistributedFileDirectory().getFileTree(lfn, user, AccessMode::readLogicalMeta);
             toXML(t, out, true);
         }
         return out;
@@ -1207,8 +1210,15 @@ public:
         SocketEndpoint daliep = srcdali;
         if (daliep.port==0)
             daliep.port= DALI_SERVER_PORT;
-        Owned<INode> node = createINode(daliep);
-        Owned<IFileDescriptor> fdesc = queryDistributedFileDirectory().getFileDescriptor(srclfn, AccessMode::tbdRead, srcuser, node);
+        CDfsLogicalFileName sourceLogicalName;
+        sourceLogicalName.set(srclfn);
+        if (!sourceLogicalName.isForeign())
+            sourceLogicalName.setForeign(daliep, false);
+
+        Owned<IDistributedFile> srcFile = wsdfs::lookup(sourceLogicalName, srcuser, AccessMode::readLogicalMeta, false, false, nullptr, false, FOREIGN_DALI_TIMEOUT);
+        Owned<IFileDescriptor> fdesc;
+        if (srcFile)
+            fdesc.setown(srcFile->getFileDescriptor());
         if (!fdesc) {
             StringBuffer s;
             throw MakeStringException(-1,"Source file %s could not be found in Dali %s",srclfn,daliep.getEndpointHostText(s).str());
@@ -1243,14 +1253,17 @@ public:
                 return;
             }
         }
-        Owned<IPropertyTree> ftree = queryDistributedFileDirectory().getFileTree(srclfn,srcuser,AccessMode::read,srcnode, FOREIGN_DALI_TIMEOUT, GetFileTreeOpts::appendForeign);
+        // getFileTree only returns the Dali metadata tree (used here for CRC/size skip-check and
+        // file-vs-superfile structure); the physical copy is delegated to copier->copyFile() which
+        // re-resolves the source by name, so this lookup reads metadata only - use readMeta.
+        Owned<IPropertyTree> ftree = queryDistributedFileDirectory().getFileTree(srclfn,srcuser,AccessMode::readLogicalMeta,srcnode, FOREIGN_DALI_TIMEOUT, GetFileTreeOpts::appendForeign);
         if (!ftree.get())
         {
             StringBuffer s;
             throw MakeStringException(-1,"Source file %s could not be found in Dali %s",srclfn,daliep.getEndpointHostText(s).str());
         }
         // first see if target exists (and remove if does and overwrite specified)
-        Owned<IDistributedFile> dfile = queryDistributedFileDirectory().lookup(lfn,user,AccessMode::tbdWrite,false,false,nullptr,defaultPrivilegedUser);
+        Owned<IDistributedFile> dfile = queryDistributedFileDirectory().lookup(lfn,user,AccessMode::erase,false,false,nullptr,defaultPrivilegedUser);
         if (dfile)
         {
             if (!overwrite)

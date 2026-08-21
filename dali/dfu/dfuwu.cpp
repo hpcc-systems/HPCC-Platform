@@ -991,7 +991,9 @@ public:
                     parent->getPassword(password);
                 }
                 userdesc->set(username.str(),password.str());
-                Owned<IDistributedFile> file = wsdfs::lookup(lfn,userdesc,AccessMode::tbdRead,false,false,nullptr,defaultPrivilegedUser,INFINITE);
+                // The returned file descriptor is handed off to the physical transfer engine (fsys copy/import/transfer)
+                // to read the file contents, so this lookup is the audit checkpoint for a content read - use read, not readMeta.
+                Owned<IDistributedFile> file = wsdfs::lookup(lfn,userdesc,AccessMode::readLogicalMeta,false,false,nullptr,defaultPrivilegedUser,INFINITE);
                 if (file)
                     return file->getFileDescriptor();
             }

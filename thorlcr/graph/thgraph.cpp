@@ -2837,6 +2837,12 @@ CActivityBase &CJobBase::queryChannelActivity(unsigned c, graph_id gid, activity
 void CJobBase::startJob()
 {
     DBGLOG("New Graph started : %s", graphName.get());
+    baseAuditContext = DFSAuditContext({
+        {"user", queryUser()},
+        {"wuid", queryWuid()},
+        {"graph", queryGraphName()}
+    });
+
     perfmonhook.setown(createThorMemStatsPerfMonHook(*this, getOptInt(THOROPT_MAX_KERNLOG, 3)));
     setPerformanceMonitorHook(perfmonhook);
     PrintMemoryStatusLog();

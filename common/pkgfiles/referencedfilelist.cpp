@@ -474,7 +474,10 @@ void ReferencedFile::resolveLocal(const StringArray &locations, const char *srcC
         return;
     }
     reset();
-    Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(logicalName.str(), user, AccessMode::tbdRead, false, false, nullptr, defaultPrivilegedUser);
+    AccessMode accessMode = AccessMode::meta;
+    if (calcFileSize) // physical parts are only inspected (getFileSize) when calculating the size
+        accessMode |= AccessMode::readPhysicalMeta;
+    Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(logicalName.str(), user, accessMode, false, false, nullptr, defaultPrivilegedUser);
     if(df)
         processLocalFileInfo(df, locations, srcCluster, subfiles);
     else
@@ -499,7 +502,8 @@ IPropertyTree *ReferencedFile::getForeignFileTree(IUserDescriptor *user, INode *
     StringBuffer remoteLFN;
     if (remotePrefix && *remotePrefix)
         remoteLFN.append(remotePrefix).append("::").append(logicalName);
-    return queryDistributedFileDirectory().getFileTree(remoteLFN.length() ? remoteLFN.str() : logicalName.str(), user, AccessMode::read, daliNode, WF_LOOKUP_TIMEOUT, GetFileTreeOpts::none);
+    // Only the file metadata tree is fetched here (no contents are read).
+    return queryDistributedFileDirectory().getFileTree(remoteLFN.length() ? remoteLFN.str() : logicalName.str(), user, AccessMode::readLogicalMeta, daliNode, WF_LOOKUP_TIMEOUT, GetFileTreeOpts::none);
 }
 
 IPropertyTree *ReferencedFile::getFileOrProvidedForeignFileTree(IUserDescriptor *user, INode *providedDaliNode, const char *remotePrefix)
@@ -543,7 +547,10 @@ void ReferencedFile::resolveForeign(IUserDescriptor *user, INode *remote, const 
     reset();
     if (checkLocalFirst) //usually means we don't want to overwrite existing file info
     {
-        Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(logicalName.str(), user, AccessMode::tbdRead, false, false, nullptr, defaultPrivilegedUser);
+        AccessMode accessMode = AccessMode::meta;
+        if (calcFileSize) // physical parts are only inspected (getFileSize) when calculating the size
+            accessMode |= AccessMode::readPhysicalMeta;
+        Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(logicalName.str(), user, accessMode, false, false, nullptr, defaultPrivilegedUser);
         if(df)
         {
             processLocalFileInfo(df, locations, NULL, subfiles);
@@ -574,7 +581,8 @@ IPropertyTree *ReferencedFile::getRemoteStorageFileTree(IUserDescriptor *user, c
     StringBuffer remoteLFN;
     makeRemoteLFN(remoteLFN, remoteStorageName, remotePrefix, logicalName);
 
-    Owned<wsdfs::IDFSFile> dfsFile = wsdfs::lookupDFSFile(remoteLFN.str(), AccessMode::readSequential, INFINITE, wsdfs::keepAliveExpiryFrequency, user);
+    // Only the file metadata tree is fetched here (no contents are read).
+    Owned<wsdfs::IDFSFile> dfsFile = wsdfs::lookupDFSFile(remoteLFN.str(), AccessMode::readLogicalMeta, INFINITE, wsdfs::keepAliveExpiryFrequency, user);
     IPropertyTree *tree = (dfsFile) ? dfsFile->queryFileMeta() : nullptr;
     if (!tree)
     {
@@ -603,7 +611,10 @@ void ReferencedFile::resolveRemote(IUserDescriptor *user, const char *remoteStor
     reset();
     if (checkLocalFirst) //usually means we don't want to overwrite existing file info
     {
-        Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(logicalName.str(), user, AccessMode::tbdRead, false, false, nullptr, defaultPrivilegedUser);
+        AccessMode accessMode = AccessMode::meta;
+        if (calcFileSize) // physical parts are only inspected (getFileSize) when calculating the size
+            accessMode |= AccessMode::readPhysicalMeta;
+        Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(logicalName.str(), user, accessMode, false, false, nullptr, defaultPrivilegedUser);
         if(df)
         {
             processLocalFileInfo(df, locations, NULL, subfiles);
@@ -729,7 +740,7 @@ static void dfuCopy(IDFUWorkUnit *publisherWu, IUserDescriptor *user, const char
             logicalName.setForeign(ep,false);
         }
     }
-    Owned<IDistributedFile> file = wsdfs::lookup(logicalName, user, AccessMode::tbdRead, false, false, nullptr, defaultPrivilegedUser, INFINITE);
+    Owned<IDistributedFile> file = wsdfs::lookup(logicalName, user, AccessMode::readLogicalMeta, false, false, nullptr, defaultPrivilegedUser, INFINITE);
     if (!file)
         throw MakeStringException(-1, "ReferencedFile failed to find file: %s", logicalName.get());
 
@@ -855,7 +866,9 @@ void ReferencedFile::cloneSuperInfo(IDFUWorkUnit *publisherWu, unsigned updateFl
             return;
 
         IDistributedFileDirectory &dir = queryDistributedFileDirectory();
-        Owned<IDistributedFile> df = dir.lookup(logicalName.str(), user, AccessMode::tbdRead, false, false, nullptr, defaultPrivilegedUser);
+        // This path only runs for superfiles (early-returned above unless RefFileSuper). df->detach()
+        // removes the existing superfile - a metadata-only delete (no physical parts) - so use writeMeta.
+        Owned<IDistributedFile> df = dir.lookup(logicalName.str(), user, AccessMode::writeLogicalMeta, false, false, nullptr, defaultPrivilegedUser);
         if(df)
         {
             if (!(updateFlags & DALI_UPDATEF_SUPERFILES))

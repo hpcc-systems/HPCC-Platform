@@ -221,7 +221,7 @@ public:
 
     void verifyFile(const char *name,CDateTime *cutoff)
     {
-        Owned<IDistributedFile> file=queryDistributedFileDirectory().lookup(name,udesc,AccessMode::tbdRead,false,false,nullptr,defaultPrivilegedUser);
+        Owned<IDistributedFile> file=queryDistributedFileDirectory().lookup(name,udesc,AccessMode::readSequential,false,false,nullptr,defaultPrivilegedUser);
         if (!file)
             return;
         IPropertyTree &fileprops = file->queryAttributes();
@@ -343,7 +343,9 @@ public:
             }
         }
         if (!stopped) {
-            file.setown(queryDistributedFileDirectory().lookup(name,udesc,AccessMode::tbdRead,false,false,nullptr,defaultPrivilegedUser));
+            // On success the @verified attribute is written below (DistributedFilePropertyLock + setProp),
+            // so this lookup mutates metadata - use writeMeta.
+            file.setown(queryDistributedFileDirectory().lookup(name,udesc,AccessMode::writeLogicalMeta,false,false,nullptr,defaultPrivilegedUser));
             if (!file)
                 return;
             if (afor.ok) {

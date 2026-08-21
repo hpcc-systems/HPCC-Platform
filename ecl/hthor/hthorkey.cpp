@@ -335,7 +335,7 @@ void CHThorIndexReadActivityBase::resolveIndexFilename()
     CDfsLogicalFileName dlfn;
     dlfn.set(lfn);
     foreignBlockedIOSize = dlfn.isForeign() ? getForeignBlockedIOSize(helper.hasSegmentMonitors()) : (size32_t)-1;
-    Owned<ILocalOrDistributedFile> ldFile = resolveLFNIndex(agent, lfn, "IndexRead", 0 != (helper.getFlags() & TIRoptional),true, AccessMode::tbdRead, defaultPrivilegedUser);
+    Owned<ILocalOrDistributedFile> ldFile = resolveLFNIndex(agent, lfn, "IndexRead", 0 != (helper.getFlags() & TIRoptional),true, AccessMode::readRandom, defaultPrivilegedUser);
     df.set(ldFile ? ldFile->queryDistributedFile() : NULL);
     if (!df)
     {
@@ -345,7 +345,6 @@ void CHThorIndexReadActivityBase::resolveIndexFilename()
     }
     else
     {
-        agent.logFileAccess(df, "HThor", "READ", graph);
         enterSingletonSuperfiles(df);
 
         singlePart = false;
@@ -2226,7 +2225,6 @@ public:
             if(dFile)
             {
                 verifyFetchFormatCrc(dFile);
-                agent.logFileAccess(dFile, "HThor", "READ", graph);
                 initParts(dFile);
             }
             else
@@ -2552,7 +2550,6 @@ public:
             separators = options.queryProp("@csvSeparate");
             terminators = options.queryProp("@csvTerminate");
             escapes = options.queryProp("@csvEscape");
-            agent.logFileAccess(dFile, "HThor", "READ", graph);
         }
         else
         {
@@ -3987,7 +3984,7 @@ public:
     virtual void start()
     {
         OwnedRoxieString lfn(helper.getIndexFileName());
-        Owned<ILocalOrDistributedFile> ldFile = resolveLFNIndex(agent, lfn, "KeyedJoin", 0 != (helper.getJoinFlags() & JFindexoptional), true, AccessMode::tbdRead, isCodeSigned);
+        Owned<ILocalOrDistributedFile> ldFile = resolveLFNIndex(agent, lfn, "KeyedJoin", 0 != (helper.getJoinFlags() & JFindexoptional), true, AccessMode::readRandom, isCodeSigned);
         dFile = ldFile ? ldFile->queryDistributedFile() : NULL;
         if (dFile)
         {
@@ -4011,7 +4008,6 @@ public:
                 lookup.setown(new MonolithicKeyLookupHandler(dFile, *this, agent, contextLogger));
             else
                 lookup.setown(new DistributedKeyLookupHandler(dFile, *this, agent, contextLogger));
-            agent.logFileAccess(dFile, "HThor", "READ", graph);
         }
         else
         {

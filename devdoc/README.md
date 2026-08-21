@@ -26,6 +26,7 @@ These documents are generated from Markdown by VitePress.  See [VitePress Markdo
 ## Implementation details for different parts of the system
 
 - [Workunit Workflow](Workunits.md): An explanation of workunits, and a walk-through of the steps in executing a query.
+- [DFS FileAccess Audit Centralization](DFSAuditFileAccess.md): Contract and migration guide for DFS-owned FileAccess auditing.
 - [Code Generator](CodeGenerator.md): Details of the internals of eclcc.
 - [Roxie](roxie.md): History and design details for roxie.
 - [Memory Manager](MemoryManager.md): Details of the memory manager (roxiemem) used by the query engines.

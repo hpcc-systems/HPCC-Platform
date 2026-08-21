@@ -321,15 +321,15 @@ public:
     {
         UNIMPLEMENTED_X("CServiceDistributedFileBase::renamePhysicalPartFiles");
     }
-    virtual void rename(const char *logicalname,IUserDescriptor *user) override
+    virtual void rename(const char *logicalname,IUserDescriptor *user, const DFSAuditContext &auditCtx = DFSAuditContext{}) override
     {
         UNIMPLEMENTED_X("CServiceDistributedFileBase::rename");
     }
-    virtual void attach(const char *logicalname,IUserDescriptor *user) override
+    virtual void attach(const char *logicalname, IUserDescriptor *user, const DFSAuditContext &auditCtx) override
     {
-        UNIMPLEMENTED_X("CServiceDistributedFileBase::rename");
+        UNIMPLEMENTED_X("CServiceDistributedFileBase::attach");
     }
-    virtual void detach(unsigned timeoutms=INFINITE, ICodeContext *ctx=NULL) override
+    virtual void detach(unsigned timeoutms=INFINITE, ICodeContext *ctx=NULL, const DFSAuditContext &auditCtx = DFSAuditContext{}) override
     {
         UNIMPLEMENTED_X("CServiceDistributedFileBase::detach");
     }
@@ -792,11 +792,14 @@ IDFSFile *lookupDFSFile(const char *logicalName, AccessMode accessMode, unsigned
 
     unsigned __int64 clientLeaseId = ensureClientLease(dfsClient, serviceUrl, serviceSecret, userDesc);
 
-    LogfmtKVList clientInfoItems;
+    DFSAuditContext clientInfoItems;
     buildClientInfoLogfmt(clientInfoItems);
-    setLogfmtValue(clientInfoItems, "mode", "wsdfs");
+    clientInfoItems.setValue("mode", "wsdfs");
+    DFSAuditContext selfCtx = queryDefaultDFSAuditContext();
+    clientInfoItems.setValue("clientComponent", selfCtx.queryValue("component"));
+    clientInfoItems.setValue("clientInstance", selfCtx.queryValue("instance"));
     StringBuffer clientInfo;
-    logfmtKVListToString(clientInfoItems, clientInfo);
+    clientInfoItems.toLogfmt(clientInfo);
 
     Owned<IClientDFSFileLookupResponse> dfsResp;
     Owned<IClientDFSFileLookupRequest> dfsReq = dfsClient->createDFSFileLookupRequest();
@@ -868,7 +871,7 @@ IDistributedFile *lookupLegacyDFSFile(const char *logicalName, AccessMode access
     return createLegacyDFSFile(dfsFile);
 }
 
-IDistributedFile *lookup(CDfsLogicalFileName &lfn, IUserDescriptor *user, AccessMode accessMode, bool hold, bool lockSuperOwner, IDistributedFileTransaction *transaction, bool priviledged, unsigned timeout)
+IDistributedFile *lookup(CDfsLogicalFileName &lfn, IUserDescriptor *user, AccessMode accessMode, bool hold, bool lockSuperOwner, IDistributedFileTransaction *transaction, bool priviledged, unsigned timeout, const DFSAuditContext &auditCtx)
 {
     bool viaDali = false;
 
@@ -891,16 +894,16 @@ IDistributedFile *lookup(CDfsLogicalFileName &lfn, IUserDescriptor *user, Access
         }
     }
     if (viaDali)
-        return queryDistributedFileDirectory().lookup(lfn, user, accessMode, hold, lockSuperOwner, transaction, priviledged, timeout);
+        return queryDistributedFileDirectory().lookup(lfn, user, accessMode, hold, lockSuperOwner, transaction, priviledged, timeout, auditCtx);
 
     return wsdfs::lookupLegacyDFSFile(lfn.get(), accessMode, timeout, wsdfs::keepAliveExpiryFrequency, user);
 }
 
-IDistributedFile *lookup(const char *logicalFilename, IUserDescriptor *user, AccessMode accessMode, bool hold, bool lockSuperOwner, IDistributedFileTransaction *transaction, bool priviledged, unsigned timeout)
+IDistributedFile *lookup(const char *logicalFilename, IUserDescriptor *user, AccessMode accessMode, bool hold, bool lockSuperOwner, IDistributedFileTransaction *transaction, bool priviledged, unsigned timeout, const DFSAuditContext &auditCtx)
 {
     CDfsLogicalFileName lfn;
     lfn.set(logicalFilename);
-    return lookup(lfn, user, accessMode, hold, lockSuperOwner, transaction, priviledged, timeout);
+    return lookup(lfn, user, accessMode, hold, lockSuperOwner, transaction, priviledged, timeout, auditCtx);
 }
 
 bool exists(CDfsLogicalFileName &lfn, IUserDescriptor *user, bool notSuper, bool superOnly, unsigned timeout)
@@ -908,7 +911,7 @@ bool exists(CDfsLogicalFileName &lfn, IUserDescriptor *user, bool notSuper, bool
     if (!lfn.isRemote())
         return queryDistributedFileDirectory().exists(lfn.get(), user, notSuper, superOnly);
 
-    Owned<IDistributedFile> file = lookup(lfn, user, AccessMode::readMeta, false, false, nullptr, false, timeout);
+    Owned<IDistributedFile> file = lookup(lfn, user, AccessMode::readLogicalMeta, false, false, nullptr, false, timeout);
     if (!file)
         return false;
     bool isSuper = nullptr != file->querySuperFile();
@@ -935,13 +938,19 @@ bool exists(const char *logicalFilename, IUserDescriptor *user, bool notSuper, b
 
 DistributedFileCompareResult fileCompare(const char *lfn1, const char *lfn2, DistributedFileCompareMode mode, StringBuffer &errstr, IUserDescriptor *user, unsigned timeout)
 {
-    Owned<IDistributedFile> file1 = lookup(lfn1, user, AccessMode::tbdRead, false, false, nullptr, defaultPrivilegedUser, timeout);
+    AccessMode accessMode = AccessMode::readLogicalMeta;
+    if (mode == DFS_COMPARE_FILES_PHYSICAL_CRCS)
+        accessMode = AccessMode::readSequential;
+    else if (mode == DFS_COMPARE_FILES_PHYSICAL)
+        accessMode = AccessMode::readMeta;
+
+    Owned<IDistributedFile> file1 = lookup(lfn1, user, accessMode, false, false, nullptr, defaultPrivilegedUser, timeout);
     if (!file1)
     {
         errstr.appendf("File %s not found", lfn1);
         return DFS_COMPARE_RESULT_FAILURE;
     }
-    Owned<IDistributedFile> file2 = lookup(lfn2, user, AccessMode::tbdRead, false, false, nullptr, defaultPrivilegedUser, timeout);
+    Owned<IDistributedFile> file2 = lookup(lfn2, user, accessMode, false, false, nullptr, defaultPrivilegedUser, timeout);
     if (!file2)
     {
         errstr.appendf("File %s not found", lfn2);
@@ -977,7 +986,7 @@ public:
         return dfile.get(); 
     }
 
-    bool init(const char *fname,IUserDescriptor *user,bool onlylocal,bool onlydfs, AccessMode accessMode, bool isPrivilegedUser, const StringArray *clusters)
+    bool init(const char *fname,IUserDescriptor *user,bool onlylocal,bool onlydfs, AccessMode accessMode, bool isPrivilegedUser, const StringArray *clusters, const DFSAuditContext &auditCtx)
     {
         fileExists = false;
         if (!onlydfs)
@@ -1001,7 +1010,7 @@ public:
             if (gotlocal)
             {
                 if (!write && !onlylocal) // MORE - this means the dali access checks not happening... maybe that's ok?
-                    dfile.setown(wsdfs::lookup(lfn, user, accessMode, false, false, nullptr, isPrivilegedUser, INFINITE));
+                    dfile.setown(wsdfs::lookup(lfn, user, accessMode, false, false, nullptr, isPrivilegedUser, INFINITE, auditCtx));
                 Owned<IFile> file = getPartFile(0,0);
                 if (file.get())
                 {
@@ -1025,7 +1034,7 @@ public:
             }
             else
             {
-                dfile.setown(wsdfs::lookup(lfn, user, accessMode, false, false, nullptr, isPrivilegedUser, INFINITE));
+                dfile.setown(wsdfs::lookup(lfn, user, accessMode, false, false, nullptr, isPrivilegedUser, INFINITE, auditCtx));
                 if (dfile.get())
                     return true;
             }
@@ -1226,10 +1235,10 @@ public:
 };
 
 
-ILocalOrDistributedFile* createLocalOrDistributedFile(const char *fname,IUserDescriptor *user,bool onlylocal,bool onlydfs, AccessMode accessMode, bool isPrivilegedUser, const StringArray *clusters)
+ILocalOrDistributedFile* createLocalOrDistributedFile(const char *fname,IUserDescriptor *user,bool onlylocal,bool onlydfs, AccessMode accessMode, bool isPrivilegedUser, const StringArray *clusters, const DFSAuditContext &auditCtx)
 {
     Owned<CLocalOrDistributedFile> ret = new CLocalOrDistributedFile();
-    if (ret->init(fname,user,onlylocal,onlydfs,accessMode,isPrivilegedUser,clusters))
+    if (ret->init(fname,user,onlylocal,onlydfs,accessMode,isPrivilegedUser,clusters,auditCtx))
         return ret.getClear();
     return NULL;
 }

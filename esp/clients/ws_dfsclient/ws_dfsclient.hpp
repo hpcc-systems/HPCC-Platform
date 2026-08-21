@@ -51,8 +51,8 @@ WS_DFSCLIENT_API IDFSFile *lookupDFSFile(const char *logicalName, AccessMode acc
 WS_DFSCLIENT_API IDistributedFile *createLegacyDFSFile(IDFSFile *dfsFile);
 WS_DFSCLIENT_API IDistributedFile *lookupLegacyDFSFile(const char *logicalName, AccessMode accessMode, unsigned timeoutSecs, unsigned keepAliveExpiryFrequency, IUserDescriptor *userDesc);
 
-WS_DFSCLIENT_API IDistributedFile *lookup(CDfsLogicalFileName &lfn, IUserDescriptor *user, AccessMode accessMode, bool hold, bool lockSuperOwner, IDistributedFileTransaction *transaction, bool priviledged, unsigned timeout);
-WS_DFSCLIENT_API IDistributedFile *lookup(const char *logicalFilename, IUserDescriptor *user, AccessMode accessMode, bool hold, bool lockSuperOwner, IDistributedFileTransaction *transaction, bool priviledged, unsigned timeout);
+WS_DFSCLIENT_API IDistributedFile *lookup(CDfsLogicalFileName &lfn, IUserDescriptor *user, AccessMode accessMode, bool hold, bool lockSuperOwner, IDistributedFileTransaction *transaction, bool priviledged, unsigned timeout, const DFSAuditContext &auditCtx = DFSAuditContext{});
+WS_DFSCLIENT_API IDistributedFile *lookup(const char *logicalFilename, IUserDescriptor *user, AccessMode accessMode, bool hold, bool lockSuperOwner, IDistributedFileTransaction *transaction, bool priviledged, unsigned timeout, const DFSAuditContext &auditCtx = DFSAuditContext{});
 WS_DFSCLIENT_API bool exists(CDfsLogicalFileName &lfn, IUserDescriptor *user, bool notSuper, bool superonly, unsigned timeout);
 WS_DFSCLIENT_API bool exists(const char *logicalFilename, IUserDescriptor *user, bool notWuper, bool superOnly, unsigned timeout);
 
@@ -61,6 +61,6 @@ WS_DFSCLIENT_API DistributedFileCompareResult fileCompare(const char *lfn1, cons
 } // end of namespace wsdfs
 
 interface ILocalOrDistributedFile;
-WS_DFSCLIENT_API ILocalOrDistributedFile* createLocalOrDistributedFile(const char *fname,IUserDescriptor *user,bool onlylocal,bool onlydfs,AccessMode accessMode, bool isPrivilegedUser, const StringArray *clusters);
+WS_DFSCLIENT_API ILocalOrDistributedFile* createLocalOrDistributedFile(const char *fname,IUserDescriptor *user,bool onlylocal,bool onlydfs,AccessMode accessMode, bool isPrivilegedUser, const StringArray *clusters, const DFSAuditContext &auditCtx = DFSAuditContext{});
 
 #endif // _WS_DFSCLIENT_HPP

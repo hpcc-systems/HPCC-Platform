@@ -182,7 +182,7 @@ public:
         if (0==(KDPoverwrite & helper->getFlags()))
         {
             if (KDPvaroutputname & helper->getFlags()) return;
-            Owned<IDistributedFile> file = queryThorFileManager().lookup(container.queryJob(), outputName, AccessMode::readMeta, false, true, false, container.activityIsCodeSigned());
+            Owned<IDistributedFile> file = queryThorFileManager().lookup(container.queryJob(), outputName, AccessMode::readLogicalMeta, false, true, false, container.activityIsCodeSigned());
             if (file)
                 throw MakeActivityException(this, TE_OverwriteNotSpecified, "Cannot write %s, file already exists (missing OVERWRITE attribute?)", file->queryLogicalName());
         }

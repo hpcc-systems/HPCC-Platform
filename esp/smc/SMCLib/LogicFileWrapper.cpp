@@ -42,7 +42,7 @@ LogicFileWrapper::~LogicFileWrapper()
 void LogicFileWrapper::FindClusterName(const char* logicalName, StringBuffer& returnCluster, IUserDescriptor* udesc)
 {
     try {
-        Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(logicalName, udesc, AccessMode::tbdRead, false, false, nullptr, defaultPrivilegedUser) ;
+        Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(logicalName, udesc, AccessMode::readLogicalMeta, false, false, nullptr, defaultPrivilegedUser) ;
         if(!df)
             throw MakeStringException(-1,"Could not find logical file");
         df->getClusterName(0,returnCluster);    // ** TBD other cluster
@@ -72,7 +72,7 @@ bool LogicFileWrapper::doDeleteFile(const char* logicalName,const char *cluster,
     {
         IDistributedFileDirectory &fdir = queryDistributedFileDirectory();
         {
-            Owned<IDistributedFile> df = fdir.lookup(cname.str(), udesc, AccessMode::tbdWrite, false, false, nullptr, defaultPrivilegedUser) ;
+            Owned<IDistributedFile> df = fdir.lookup(cname.str(), udesc, AccessMode::erase, false, false, nullptr, defaultPrivilegedUser) ;
             if(!df)
             {
                 returnStr.appendf("<Message><Value>File %s not found</Value></Message>", cname.str());
@@ -114,7 +114,7 @@ IDistributedFile* lookupLogicalName(IEspContext& context, const char* logicalNam
 
 void getNodeGroupFromLFN(IEspContext& context, const char* lfn, StringBuffer& nodeGroup)
 {
-    Owned<IDistributedFile> df = lookupLogicalName(context, lfn, AccessMode::tbdRead, false, false, nullptr, defaultPrivilegedUser);
+    Owned<IDistributedFile> df = lookupLogicalName(context, lfn, AccessMode::readLogicalMeta, false, false, nullptr, defaultPrivilegedUser);
     if (!df)
         throw makeStringExceptionV(ECLWATCH_FILE_NOT_EXIST, "Failed to find file: %s", lfn);
     df->getClusterGroupName(0, nodeGroup);

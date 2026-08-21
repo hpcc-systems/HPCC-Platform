@@ -449,7 +449,7 @@ bool dfsfile(const char *lname, IUserDescriptor *userDesc, StringBuffer &out, Un
     CDfsLogicalFileName lfn;
     lfn.set(lname);
     if (!lfn.isExternal()) {
-        Owned<IPropertyTree> tree = queryDistributedFileDirectory().getFileTree(lname,userDesc,AccessMode::readMeta,NULL,daliConnectTimeoutMs,GetFileTreeOpts::expandNodes|GetFileTreeOpts::appendForeign); //,userDesc);
+        Owned<IPropertyTree> tree = queryDistributedFileDirectory().getFileTree(lname,userDesc,AccessMode::readLogicalMeta,NULL,daliConnectTimeoutMs,GetFileTreeOpts::expandNodes|GetFileTreeOpts::appendForeign); //,userDesc);
         if (partslist)
             filterParts(tree,*partslist);
         if (!tree) {
@@ -459,7 +459,7 @@ bool dfsfile(const char *lname, IUserDescriptor *userDesc, StringBuffer &out, Un
         toXML(tree,out);
     }
     else {
-        Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup(lname,userDesc,AccessMode::tbdRead,false,false,nullptr,defaultPrivilegedUser);
+        Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup(lname,userDesc,AccessMode::readLogicalMeta,false,false,nullptr,defaultPrivilegedUser);
         if (file) {
             Owned<IFileDescriptor> fdesc = file->getFileDescriptor();
             Owned<IPropertyTree> t = createPTree("File");
@@ -504,7 +504,7 @@ void setdfspartattr(const char *lname, unsigned partNum, const char *attr, const
         throw MakeStringException(0, "External file not supported");
     if (lfn.isForeign())
         throw MakeStringException(0, "Foreign file not supported");
-    Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup(lname, userDesc, AccessMode::tbdRead, false, false, nullptr, defaultPrivilegedUser);
+    Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup(lname, userDesc, AccessMode::writeLogicalMeta, false, false, nullptr, defaultPrivilegedUser);
     if (!file)
         throw MakeStringException(0, "Could not find file: '%s'", lname);
     if (file->querySuperFile())
@@ -779,7 +779,7 @@ bool dfsLs(const char *name, const char *options, StringBuffer &out)
 
 bool dfsmap(const char *lname, IUserDescriptor *user, StringBuffer &out)
 {
-    Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup(lname,user,AccessMode::tbdRead,false,false,nullptr,defaultPrivilegedUser);
+    Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup(lname,user,AccessMode::readLogicalMeta,false,false,nullptr,defaultPrivilegedUser);
     if (!file) {
         out.appendf("File %s not found",lname);
         return false;
@@ -813,7 +813,7 @@ int dfsexists(const char *lname,IUserDescriptor *user)
 
 void dfsparents(const char *lname, IUserDescriptor *user, StringBuffer &out)
 {
-    Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup(lname,user,AccessMode::tbdRead,false,true,nullptr,defaultPrivilegedUser);
+    Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup(lname,user,AccessMode::readLogicalMeta,false,true,nullptr,defaultPrivilegedUser);
     if (file) {
         Owned<IDistributedSuperFileIterator> iter = file->getOwningSuperFiles();
         ForEach(*iter)
@@ -827,7 +827,7 @@ void dfsunlink(const char *lname, IUserDescriptor *user)
 {
     for (;;)
     {
-        Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup(lname,user,AccessMode::tbdRead,false,true,nullptr,defaultPrivilegedUser);
+        Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup(lname,user,AccessMode::writeLogicalMeta,false,true,nullptr,defaultPrivilegedUser);
         if (!file)
         {
             UERRLOG("File '%s' not found", lname);
@@ -954,7 +954,9 @@ public:
 int dfsverify(const char *name,CDateTime *cutoff, IUserDescriptor *user)
 {
     static CIpTable dafilesrvips;
-    Owned<IDistributedFile> file=queryDistributedFileDirectory().lookup(name,user,AccessMode::tbdRead,false,false,nullptr,defaultPrivilegedUser);
+    // Every part's full content is physically read to compute its CRC (partfile->getCRC()), so this is a
+    // genuine content read (matching sasha verifyFile) - use read, not meta|metaPhysical.
+    Owned<IDistributedFile> file=queryDistributedFileDirectory().lookup(name,user,AccessMode::readMeta,false,false,nullptr,defaultPrivilegedUser);
     if (!file) {
         UERRLOG("VERIFY: cannot find %s",name);
         return 1;
@@ -1073,7 +1075,8 @@ int dfsverify(const char *name,CDateTime *cutoff, IUserDescriptor *user)
 
 void setprotect(const char *filename, const char *callerid, IUserDescriptor *user, StringBuffer &out)
 {
-    Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup(filename,user,AccessMode::tbdRead,false,false,nullptr,defaultPrivilegedUser);
+    // file->setProtect() mutates the file's protection metadata - use writeMeta.
+    Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup(filename,user,AccessMode::writeLogicalMeta,false,false,nullptr,defaultPrivilegedUser);
     file->setProtect(callerid,true);
     out.appendf("%s is protected", file->queryLogicalName());
 }
@@ -1082,7 +1085,8 @@ void setprotect(const char *filename, const char *callerid, IUserDescriptor *use
 
 void unprotect(const char *filename, const char *callerid, IUserDescriptor *user, StringBuffer &out)
 {
-    Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup(filename,user,AccessMode::tbdRead,false,false,nullptr,defaultPrivilegedUser);
+    // file->setProtect(...,false) mutates the file's protection metadata - use writeMeta.
+    Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup(filename,user,AccessMode::writeLogicalMeta,false,false,nullptr,defaultPrivilegedUser);
     file->setProtect((strcmp(callerid,"*")==0)?NULL:callerid,false);
     out.appendf("%s is unprotected", file->queryLogicalName());
 }
@@ -1536,7 +1540,7 @@ static offset_t getCompressedSize(IDistributedFile *file)
 
 void dfscompratio (const char *lname, IUserDescriptor *user)
 {
-    Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup(lname,user,AccessMode::tbdRead,false,false,nullptr,defaultPrivilegedUser);
+    Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup(lname,user,AccessMode::readMeta,false,false,nullptr,defaultPrivilegedUser);
     StringBuffer out;
     out.appendf("File %s ",lname);
     if (file) {
@@ -1719,7 +1723,7 @@ void normalizeFileNames(IUserDescriptor *user, const char *name)
         Owned<IDistributedFile> dFile;
         try
         {
-            dFile.setown(queryDistributedFileDirectory().lookup(dlfn, user, AccessMode::tbdWrite, false, false, nullptr, defaultPrivilegedUser, 30000)); // 30 sec timeout
+            dFile.setown(queryDistributedFileDirectory().lookup(dlfn, user, AccessMode::writeMeta, false, false, nullptr, defaultPrivilegedUser, 30000)); // 30 sec timeout
             if (!dFile)
                 UWARNLOG("Could not find file lfn = %s", dlfn.get());
         }
@@ -1886,9 +1890,9 @@ void holdlock(const char *logicalFile, const char *mode, IUserDescriptor *userDe
 {
     AccessMode accessMode;
     if (strieq(mode, "read"))
-        accessMode = AccessMode::tbdRead;
+        accessMode = AccessMode::readLogicalMeta;
     else if (strieq(mode, "write"))
-        accessMode = AccessMode::tbdWrite;
+        accessMode = AccessMode::writeLogicalMeta;
     else
         throw MakeStringException(0,"Invalid mode: %s", mode);
 
@@ -2237,7 +2241,7 @@ void checkFileSizeOne(IUserDescriptor *user, const char *lfn, bool fix)
     {
         CDfsLogicalFileName dlfn;
         dlfn.set(lfn);
-        Owned<IDistributedFile> dFile = queryDistributedFileDirectory().lookup(dlfn, user, AccessMode::tbdRead, false, false, nullptr, defaultPrivilegedUser, 30000); // 30 sec timeout
+        Owned<IDistributedFile> dFile = queryDistributedFileDirectory().lookup(dlfn, user, AccessMode::readMeta, false, false, nullptr, defaultPrivilegedUser, 30000); // 30 sec timeout
         if (dFile)
         {
             if (dFile->querySuperFile())

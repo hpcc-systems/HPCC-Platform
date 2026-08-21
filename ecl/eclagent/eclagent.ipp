@@ -194,9 +194,9 @@ public:
     {
         return ctx->resolveName(in, out, outlen);
     }
-    virtual void logFileAccess(IDistributedFile * file, char const * component, char const * type, EclGraph & graph)
+    virtual const DFSAuditContext & queryBaseAuditContext() const
     {
-        ctx->logFileAccess(file, component, type, graph);
+        return ctx->queryBaseAuditContext();
     }
     virtual void addWuException(const char * text, unsigned code, unsigned severity, char const * source)
     {
@@ -402,6 +402,7 @@ private:
     int retcode;
     double agentMachineCost = 0;
     StatisticsAggregator statsAggregator;
+    DFSAuditContext baseAuditContext;
 
 private:
     void doSetResultString(type_t type, const char * stepname, unsigned sequence, int len, const char *val);
@@ -605,7 +606,7 @@ public:
     virtual void getEventExtra(size32_t & outLen, char * & outStr, const char * tag);
     //virtual void logException(IEclException *e);
     virtual char *resolveName(const char *in, char *out, unsigned outlen);
-    virtual void logFileAccess(IDistributedFile * file, char const * component, char const * type, EclGraph & graph);
+    virtual const DFSAuditContext & queryBaseAuditContext() const;
     virtual ILocalOrDistributedFile  *resolveLFN(const char *logicalName, const char *errorTxt, bool optional, bool noteRead, AccessMode accessMode, StringBuffer * expandedlfn, bool isPrivilegedUser);
 
     virtual void executeGraph(const char * graphName, bool realThor, size32_t parentExtractSize, const void * parentExtract);

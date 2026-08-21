@@ -164,7 +164,7 @@ void CWriteMasterBase::init()
     if (diskHelperBase->getFlags() & TDWextend)
     {
         assertex(0 == (diskHelperBase->getFlags() & (TDXtemporary|TDXjobtemp)));
-        Owned<IDistributedFile> file = queryThorFileManager().lookup(container.queryJob(), helperFileName, AccessMode::writeSequential, false, true, false, container.activityIsCodeSigned());
+        Owned<IDistributedFile> file = queryThorFileManager().lookup(container.queryJob(), helperFileName, AccessMode::writeRandom | AccessMode::extend, false, true, false, container.activityIsCodeSigned());
         if (file.get())
         {
             fileDesc.setown(file->getFileDescriptor());
@@ -418,7 +418,7 @@ void CWriteMasterBase::preStart(size32_t parentExtractSz, const byte *parentExtr
         if (0 == ((TDXvarfilename|TDXtemporary|TDXjobtemp) & diskHelperBase->getFlags()))
         {
             OwnedRoxieString fname(diskHelperBase->getFileName());
-            Owned<IDistributedFile> file = queryThorFileManager().lookup(container.queryJob(), fname, AccessMode::readMeta, false, true, false, container.activityIsCodeSigned());
+            Owned<IDistributedFile> file = queryThorFileManager().lookup(container.queryJob(), fname, AccessMode::readLogicalMeta, false, true, false, container.activityIsCodeSigned());
             if (file)
             {
                 if (0 == ((TDWextend+TDWoverwrite) & diskHelperBase->getFlags()))

@@ -59,7 +59,7 @@ static void populateLFNMeta(IUserDescriptor *userDesc, const char *logicalName, 
 
     assertex(!lfn.isMulti()); // not supported, don't think needs to be/will be.
 
-    Owned<IPropertyTree> tree = queryDistributedFileDirectory().getFileTree(logicalName, userDesc, AccessMode::readMeta);
+    Owned<IPropertyTree> tree = queryDistributedFileDirectory().getFileTree(logicalName, userDesc, AccessMode::readLogicalMeta);
     if (!tree)
         return;
     if (hasMask(opts, LfnMOptRemap))
@@ -229,22 +229,21 @@ bool CWsDfsEx::onDFSFileLookup(IEspContext &context, IEspDFSFileLookupRequest &r
             dt.setNow();
             queryDistributedFileDirectory().setFileAccessed(userDesc, logicalName, dt);
 
-            // Log audit info only if not readMeta access
-            if (AccessMode::none == (accessMode & AccessMode::meta))
+            if (isPhysicalAccessMode(accessMode))
             {
-                // Parse logfmt client info, add user field, and convert back to logfmt
-                LogfmtKVList context;
-                parseLogfmtToKVList(clientInfo, context);
-                setLogfmtValue(context, "user", userID.str());
-
-                const char *component = queryLogfmtValue(context, "component", "EspProcess");
-
-                StringBuffer logfmtInfo;
-                logfmtKVListToString(context, logfmtInfo, "component");
-
-                StringBuffer logEntry;
-                logEntry.appendf(",FileAccess,%s,READ,%s,%s", component, logicalName, logfmtInfo.str());
-                LOG(MCauditInfo, "%s", logEntry.str());
+                // Start from process defaults, then overlay any client-provided context.
+                DFSAuditContext context = queryDefaultDFSAuditContext();
+                DFSAuditContext clientContext = DFSAuditContext::fromLogfmt(clientInfo);
+                for (const auto &kv : clientContext.queryPairs())
+                {
+                    // check 1st if already part of the default context and skip if so
+                    const char *res = context.queryValue(kv.first.c_str(), nullptr);
+                    if (nullptr == res)
+                        context.setValue(kv.first.c_str(), kv.second.c_str());
+                }
+                context.setValue("user", userID.str());
+                context.setValue("lfn", logicalName);
+                context.logFileAccess("READ");
             }
         }
     }
