@@ -106,8 +106,8 @@
           url="http://hpccsystems.com/download">https://hpccsystems.com/download</ulink></para>
 
           <para>Download the appropriate Client Tools for your Operating
-          System. (available for RPM-Based systems, Debian-Based systems, Mac
-          OSX, or Windows)</para>
+          System (available for RPM-Based systems, Debian-Based systems, Mac
+          OSX, or Windows).</para>
         </listitem>
 
         <listitem>
@@ -118,8 +118,9 @@
       <para><emphasis role="bold">Windows: </emphasis></para>
 
       <para>Run the executable file, for example:
-      hpccsystems-clienttools_community-7.X.X-XWindows-i386.exe on your
-      machine. Follow the prompts to complete the installation.</para>
+      <emphasis>hpccsystems-clienttools-community_10.6.6-1Windows-x86_64.exe
+      </emphasis>on your machine. Follow the prompts to complete the
+      installation.</para>
 
       <para><emphasis role="bold">RPM-Based Systems (CentOS/RedHat):
       </emphasis></para>
@@ -151,8 +152,13 @@
     <sect2 id="Other_Installs">
       <title>Multiple Version Installations</title>
 
-      <para>It is possible to install multiple versions of the client tools if
-      you need to work with multiple versions of the platform.</para>
+      <para>In Windows or OSX, it is possible to install multiple versions of
+      the client tools if you need to work with multiple versions of the
+      platform. You can then choose the one you wish to use manually or allow
+      the ECL IDE or VS Code to automatically choose the best one. <emphasis
+      role="bold">In most cases, allowing the IDE or VS Code to Auto Detect is
+      best. </emphasis> Multiple versions are not supported for
+      RPM or DEB installations.</para>
 
       <para>To install the client tools, obtain the appropriate installation
       package for your operating system and the version to match your HPCC
@@ -189,16 +195,19 @@
       </orderedlist>
 
       <para>Client tool packages starting with 4.2 have built in logic to
-      allow for multiple installations. Prior versions of the client tools
-      package would just overwrite the existing components. The default
-      behavior is that the client tools will use the last one installed,
-      except if you are working directly on the platform. If you are working
-      directly on the platform then it would use the client tools package that
-      gets installed with the platform.</para>
+      allow for multiple installations on Windows or OSX. Multiple versions
+      are not supported for RPM or DEB installations. Prior versions of the
+      Client Tools package would just overwrite the existing components. The
+      Client Tools installer defaults to overwrite new point releases, but
+      will install "side-by-side" if the major or minor version is different.
+      The default behavior is that the Client Tools will use the last one
+      installed, except if you are working directly on the platform. If you
+      are working directly on the platform then it would use the Client Tools
+      package that gets installed with the platform.</para>
 
       <para>If you install a version other than the delivered client tools you
       will have a folder in /opt/HPCCSystems that corresponds to the set of
-      client tools. So you could have a client tools 7.0.x, 7.2.x, 7.4.x,
+      client tools. So you could have a client tools 10.0.x, 10.2.x, 10.4.x,
       etc.</para>
 
       <para>For older versions, download the package(s), and install. Install
@@ -219,26 +228,25 @@
       <programlisting>dfuplus action=list server=http://127.0.0.1:8010</programlisting>
 
       <para>To run DFUplus for an older or another version of client tools,
-      for instance 7.0.x:</para>
+      for instance 10.0.x:</para>
 
-      <para><programlisting>/opt/HPCCSystems/7.0.x/clienttools/bin/dfuplus action=list server=http://127.0.0.1:8010</programlisting></para>
+      <para><programlisting>/opt/HPCCSystems/10.0.x/clienttools/bin/dfuplus action=list server=http://127.0.0.1:8010</programlisting></para>
 
       <para><emphasis role="bold">Windows</emphasis></para>
 
       <para>Client tools for Windows installs in a directory such as:
-      C:\Program Files (x86)\HPCCSystems\7.2.0\clienttools\bin where the
-      number (7.2.0 for example) corresponds to the version of the client
+      C:\Program Files\HPCCSystems\10.6.0\clienttools\bin where the number
+      (10.6.0 for example) corresponds to the version of the client
       tools.</para>
 
       <para>If you want access to one version of the command line client tools
       from any folder, you can add the \bin folder to your Path in Windows
-      (for example, <emphasis role="bold">C:\Program Files
-      (x86)\HPCCSystems\7.2.0\clienttools\bin</emphasis> )</para>
+      (for example, <emphasis role="bold">C:\Program
+      Files\HPCCSystems\10.6.0\clienttools\bin</emphasis> )</para>
 
       <para>The Windows installer will prompt you to delete the previous
       version during installation. If you want to keep both, decline the offer
-      to uninstall, and choose a different installation directory at the next
-      prompt.</para>
+      to uninstall, and install to a different installation directory.</para>
     </sect2>
   </sect1>
 </chapter>
