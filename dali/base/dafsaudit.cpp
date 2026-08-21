@@ -195,7 +195,7 @@ static void logfmtKVListToString(const LogfmtKVList &items, StringBuffer &output
 // DFSAuditContext
 //------------------------------------------------------------------------------
 
-static ReadWriteLock defaultAuditContextRWLock;
+static ReadWriteLock defaultAuditContextRWLock{SYNC_LOCATION};
 static DFSAuditContext globalDefaultAuditContext;
 
 void setDefaultDFSAuditContext(const DFSAuditContext &ctx)
