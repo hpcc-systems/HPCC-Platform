@@ -65,7 +65,11 @@ gantt
         Critical:        3M
         Security:        3M
     section v10.6.x
-        Expected:        milestone, 2026-07-01, 0M
+        Active:          active, 2026-07-07, 6M
+        Critical:        3M
+        Security:        3M
+    section v10.8.x
+        Expected:        milestone, 2026-10-01, 0M
 ```
 
 # Architecture
