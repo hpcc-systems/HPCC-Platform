@@ -303,8 +303,6 @@ protected:
 
     virtual int decodeStreamBlock(const void * src, size32_t srcSize, void * dest, size32_t destSize) override
     {
-        ProTraceTaskScopeTracker scope(EventTask::Decompressing, srcSize);
-
         ZSTD_inBuffer input = { src, srcSize, 0 };
         ZSTD_outBuffer output = { dest, destSize, 0 };
 

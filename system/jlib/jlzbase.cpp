@@ -20,6 +20,7 @@
 #include "jlog.hpp"
 #include "jevent.hpp"
 #include "jlzbase.hpp"
+#include "jevent.hpp"
 
 //---------------------------------------------------------------------------------------------------------------------
 
@@ -819,6 +820,8 @@ void CStreamExpander::expand(void *buf)
             next = *src++;
     }
 
+    //MORE: The size is not known at this point.  Only calculate if interested in details.
+    ProTraceTaskScopeTracker scope(EventTask::Decompressing);
 
     char * out = (char *)buf;
     const byte * sizes = in;
