@@ -65,6 +65,7 @@
 
 #include "thorplugin.hpp"
 #include "jstats.h"
+#include "dafsaudit.hpp"
 
 #define THORDATALINK_STOPPED            (RCMAX&~(RCMAX>>1))                         // dataLinkStop() was called
 #define THORDATALINK_STARTED            (RCMAX&~THORDATALINK_STOPPED&~(RCMAX>>2))   // dataLinkStart() was called
@@ -910,6 +911,7 @@ protected:
     memsize_t keyLeafCacheBytes = 0;
     memsize_t keyBlobCacheBytes = 0;
     JobInfoCaptureBehaviour jobInfoCaptureBehaviour = JobInfoCaptureBehaviour::onFailure;
+    DFSAuditContext baseAuditContext;
 
 
     class CThorPluginCtx : public SimplePluginCtx
@@ -976,6 +978,7 @@ public:
     const char *queryWuid() const { return wuid.str(); }
     const char *queryUser() const { return user.str(); }
     const char *queryScope() const { return scope.str(); }
+    const DFSAuditContext &queryBaseAuditContext() const { return baseAuditContext; }
     mptag_t querySlaveMpTag() const { return slavemptag; }
     unsigned querySlaves() const { return slaveGroup->ordinality(); }
     unsigned queryNodes() const { return nodeGroup->ordinality()-1; }

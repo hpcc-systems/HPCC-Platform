@@ -22,6 +22,7 @@
 #include "eclhelper.hpp"
 #include "rtldynfield.hpp"
 #include "workunit.hpp"
+#include "dafsaudit.hpp"
 
 #if (ECLAGENT_ERROR_START != 5400 || ECLAGENT_ERROR_END != 5499)
 #error "ECLAGENT_ERROR_START has changed"
@@ -108,7 +109,7 @@ struct IAgentContext : extends IGlobalCodeContext, extends ITempFileHandler
     virtual void reloadWorkUnit() = 0;
 
     virtual char *resolveName(const char *in, char *out, unsigned outlen) = 0;
-    virtual void logFileAccess(IDistributedFile * file, char const * component, char const * type, EclGraph & graph) = 0;
+    virtual const DFSAuditContext & queryBaseAuditContext() const = 0;
     virtual void addWuException(const char * text, unsigned code, unsigned severity, char const * source) = 0;
 
     virtual IHThorGraphResults * executeLibraryGraph(const char * libraryName, unsigned expectedInterfaceHash, unsigned activityId, const char * embeddedGraphName, const byte * parentExtract) = 0;

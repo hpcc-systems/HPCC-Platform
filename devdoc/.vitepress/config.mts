@@ -54,6 +54,7 @@ export default async () => {
                     text: 'Other',
                     items: [
                         { text: 'Workunit Workflow', link: '/devdoc/Workunits' },
+                        { text: 'DFS FileAccess Audit Centralization', link: '/devdoc/DFSAuditFileAccess' },
                         { text: 'Code Generator', link: '/devdoc/CodeGenerator' },
                         { text: 'Roxie', link: '/devdoc/roxie' },
                         { text: 'Memory Manager', link: '/devdoc/MemoryManager' },

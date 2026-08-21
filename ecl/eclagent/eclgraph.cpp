@@ -400,7 +400,7 @@ bool EclGraphElement::alreadyUpToDate(IAgentContext & agent)
         UNIMPLEMENTED;
     }
 
-    Owned<ILocalOrDistributedFile> ldFile = agent.resolveLFN(filename.get(), "Read", true, false, AccessMode::tbdRead, nullptr, isCodeSigned);
+    Owned<ILocalOrDistributedFile> ldFile = agent.resolveLFN(filename.get(), "Read", true, false, AccessMode::readMeta, nullptr, isCodeSigned);
     if (!ldFile)
         return false;
     IDistributedFile * f = ldFile->queryDistributedFile();

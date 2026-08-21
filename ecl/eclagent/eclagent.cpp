@@ -565,6 +565,9 @@ EclAgent::EclAgent(IConstWorkUnit *wu, const char *_wuid, bool _checkVersion, bo
     abortmonitor->setGuillotineCost(getGuillotineCost(wu));
     configurePreferredPlanes();
     agentMachineCost = getMachineCostRate();
+    baseAuditContext = queryDefaultDFSAuditContext();
+    baseAuditContext.setValue("user", wuRead->queryUser());
+    baseAuditContext.setValue("wuid", _wuid);
 }
 
 EclAgent::~EclAgent()
@@ -1362,18 +1365,9 @@ char * EclAgent::resolveName(const char *in, char *out, unsigned outlen)
     return NULL;
 }
 
-void EclAgent::logFileAccess(IDistributedFile * file, char const * component, char const * type, EclGraph & activeGraph)
+const DFSAuditContext & EclAgent::queryBaseAuditContext() const
 {
-    const char * cluster = clusterNames.item(clusterNames.length()-1);
-    LOG(MCauditInfo,
-        ",FileAccess,%s,%s,%s,%s,%s,%s,%s",
-        component,
-        type,
-        ensureText(cluster),
-        ensureText(userid.get()),
-        file->queryLogicalName(),
-        wuid.get(),
-        activeGraph.queryGraphName());
+    return baseAuditContext;
 }
 
 bool EclAgent::expandLogicalName(StringBuffer & fullname, const char * logicalName)
@@ -1426,7 +1420,7 @@ ILocalOrDistributedFile *EclAgent::resolveLFN(const char *fname, const char *err
      * hthor doesn't use it to write, but instead uses createClusterWriteHandler to handle cluster writing.
      * See code in e.g.: CHThorDiskWriteActivity::resolve
      */
-    Owned<ILocalOrDistributedFile> ldFile = createLocalOrDistributedFile(lfn.str(), queryUserDescriptor(), resolveFilesLocally, !resolveFilesLocally, accessMode, isPrivilegedUser, nullptr);
+    Owned<ILocalOrDistributedFile> ldFile = createLocalOrDistributedFile(lfn.str(), queryUserDescriptor(), resolveFilesLocally, !resolveFilesLocally, accessMode, isPrivilegedUser, nullptr, baseAuditContext);
     if (ldFile)
     {
         IDistributedFile * dFile = ldFile->queryDistributedFile();
@@ -1463,7 +1457,7 @@ bool EclAgent::fileExists(const char *name)
     StringBuffer lfn;
     expandLogicalName(lfn, name);
 
-    Owned<IDistributedFile> f = wsdfs::lookup(lfn.str(), queryUserDescriptor(), AccessMode::tbdRead, false, false, nullptr, defaultPrivilegedUser, INFINITE);
+    Owned<IDistributedFile> f = wsdfs::lookup(lfn.str(), queryUserDescriptor(), AccessMode::readLogicalMeta, false, false, nullptr, defaultPrivilegedUser, INFINITE);
     if (f)
         return true;
     return false;
@@ -2763,7 +2757,7 @@ unsigned __int64 EclAgent::getDatasetHash(const char * logicalName, unsigned __i
         return crc;
     }
 
-    Owned<IDistributedFile> file = wsdfs::lookup(fullname.str(),queryUserDescriptor(), AccessMode::tbdRead, false, false, nullptr, defaultPrivilegedUser, INFINITE);
+    Owned<IDistributedFile> file = wsdfs::lookup(fullname.str(),queryUserDescriptor(), AccessMode::readLogicalMeta, false, false, nullptr, defaultPrivilegedUser, INFINITE);
     if (file)
     {
         WorkunitUpdate wu = updateWorkUnit();
@@ -3069,7 +3063,7 @@ restart:     // If things change beneath us as we are deleting, repeat the proce
                 MilliSleep(PERSIST_LOCK_SLEEP + (getRandom()%PERSIST_LOCK_SLEEP));
                 persistLock.setown(getPersistReadLock(goer));
             }
-            Owned<IDistributedFile> f = wsdfs::lookup(goer, queryUserDescriptor(), AccessMode::tbdWrite, false, false, nullptr, defaultPrivilegedUser, INFINITE);
+            Owned<IDistributedFile> f = wsdfs::lookup(goer, queryUserDescriptor(), AccessMode::erase, false, false, nullptr, defaultPrivilegedUser, INFINITE);
             if (!f)
                 goto restart; // Persist has been deleted since last checked - repeat the whole process
             const char *newAccessTime = f->queryAttributes().queryProp("@accessed");
@@ -3167,7 +3161,9 @@ char * EclAgent::getGroupName()
 
 char * EclAgent::queryIndexMetaData(char const * lfn, char const * xpath)
 {
-    Owned<ILocalOrDistributedFile> ldFile = resolveLFN(lfn, "IndexMetaData", false, true, AccessMode::tbdRead, nullptr, defaultPrivilegedUser);
+    // The index file is opened only to read its embedded metadata node (key->getMetadata()); no index
+    // entries/data rows are ever read, so this is physical part inspection, not a data content read.
+    Owned<ILocalOrDistributedFile> ldFile = resolveLFN(lfn, "IndexMetaData", false, true, AccessMode::readMeta, nullptr, defaultPrivilegedUser);
     IDistributedFile * dFile = ldFile->queryDistributedFile();
     if (!dFile)
         return NULL;
@@ -3256,7 +3252,7 @@ char *EclAgent::getFilePart(const char *lfn, bool create)
     }
     else
     {
-        Owned<ILocalOrDistributedFile> ldFile = resolveLFN(lfn, "l2p", false, false, AccessMode::tbdRead, nullptr, defaultPrivilegedUser);
+        Owned<ILocalOrDistributedFile> ldFile = resolveLFN(lfn, "l2p", false, false, AccessMode::readMeta, nullptr, defaultPrivilegedUser);
         if (!ldFile)
             return NULL;
         unsigned numParts = ldFile->numParts();

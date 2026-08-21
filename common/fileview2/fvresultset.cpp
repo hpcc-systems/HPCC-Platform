@@ -98,7 +98,7 @@ IFvDataSource * createFileDataSource(const char * logicalName, const char * clus
         udesc->set(username, password);
     }
 
-    Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(logicalName, udesc.get(),AccessMode::tbdRead,false,false,nullptr,defaultPrivilegedUser);
+    Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(logicalName, udesc.get(),AccessMode::readRandom,false,false,nullptr,defaultPrivilegedUser);
     if (!df)
         throwError1(FVERR_CouldNotResolveX, logicalName);
     return createFileDataSource(df, logicalName, cluster, username, password);
@@ -2118,7 +2118,7 @@ IDistributedFile * CResultSetFactory::lookupLogicalName(const char * logicalName
         udesc->set(username, password);
     }
 
-    Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(logicalName, udesc.get(),AccessMode::tbdRead,false,false,nullptr,defaultPrivilegedUser);
+    Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(logicalName, udesc.get(),AccessMode::readRandom,false,false,nullptr,defaultPrivilegedUser);
     if (!df)
         throwError1(FVERR_CouldNotResolveX, logicalName);
     return df.getClear();

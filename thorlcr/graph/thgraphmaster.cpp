@@ -793,7 +793,7 @@ bool CMasterGraphElement::checkUpdate()
     if (doCheckUpdate)
     {
         StringAttr lfn;
-        Owned<IDistributedFile> file = queryThorFileManager().lookup(queryJob(), filename, AccessMode::readMeta, temporary, true, false, defaultPrivilegedUser);
+        Owned<IDistributedFile> file = queryThorFileManager().lookup(queryJob(), filename, AccessMode::readLogicalMeta, temporary, true, false, defaultPrivilegedUser);
         if (file)
         {
             IPropertyTree &props = file->queryAttributes();
@@ -1369,7 +1369,7 @@ public:
     {
         StringBuffer fullname('~');
         expandLogicalName(fullname, name);
-        Owned<IDistributedFile> iDfsFile = queryThorFileManager().lookup(jobChannel.queryJob(), fullname, AccessMode::readMeta, false, true, false, defaultPrivilegedUser); // NB: do not update accessed
+        Owned<IDistributedFile> iDfsFile = queryThorFileManager().lookup(jobChannel.queryJob(), fullname, AccessMode::readLogicalMeta, false, true, false, defaultPrivilegedUser); // NB: do not update accessed
         if (iDfsFile.get())
         {
             // NB: if the file or any of the subfiles are compressed, then we cannot rely on the checksum

@@ -170,7 +170,7 @@ const void * CRowBuffer::next()
 
 ILocalOrDistributedFile *resolveLFNFlat(IAgentContext &agent, const char *logicalName, const char *errorTxt, bool optional, bool isPrivilegedUser)
 {
-    Owned<ILocalOrDistributedFile> ldFile = agent.resolveLFN(logicalName, errorTxt, optional, true, AccessMode::tbdRead, nullptr, isPrivilegedUser);
+    Owned<ILocalOrDistributedFile> ldFile = agent.resolveLFN(logicalName, errorTxt, optional, true, AccessMode::readSequential, nullptr, isPrivilegedUser);
     if (!ldFile)
         return nullptr;
     IDistributedFile *dFile = ldFile->queryDistributedFile();
@@ -539,19 +539,16 @@ void CHThorDiskWriteActivity::resolve()
 
     if((helperFlags & temporaryFileMask(agent)) == 0)
     {
-        Owned<ILocalOrDistributedFile> f = agent.resolveLFN(mangledHelperFileName.str(),"Cannot write, invalid logical name",true,false,AccessMode::tbdWrite,&lfn,defaultPrivilegedUser);
+        Owned<ILocalOrDistributedFile> f = agent.resolveLFN(mangledHelperFileName.str(), "Cannot write, invalid logical name", true, false, extend ? (AccessMode::writeRandom | AccessMode::extend) : AccessMode::erase, &lfn, defaultPrivilegedUser);
         if (f)
         {
             if (f->queryDistributedFile())
             {
-                // An already existing dali file
-                if(extend)
-                    agent.logFileAccess(f->queryDistributedFile(), "HThor", "EXTENDED", graph);
-                else if(overwrite) {
+                if (overwrite)
+                {
                     LOG(MCoperatorInfo, "Removing %s from DFS", lfn.str());
-                    agent.logFileAccess(f->queryDistributedFile(), "HThor", "DELETED", graph);
                     if (!agent.queryResolveFilesLocally())
-                        f->queryDistributedFile()->detach();
+                        f->queryDistributedFile()->detach(INFINITE, nullptr, agent.queryBaseAuditContext());
                     else
                     {
                         Owned<IFile> file = createIFile(lfn);
@@ -559,7 +556,7 @@ void CHThorDiskWriteActivity::resolve()
                             file->remove();
                     }
                 }
-                else
+                else if (!extend)
                     throw MakeStringException(99, "Cannot write %s, file already exists (missing OVERWRITE attribute?)", lfn.str());
             }
             else if (f->exists() || f->isExternalFile() || agent.queryResolveFilesLocally())
@@ -568,7 +565,7 @@ void CHThorDiskWriteActivity::resolve()
                 if (f->numParts()!=1)
                     throw MakeStringException(99, "Cannot write %s, external file has multiple parts)", lfn.str());
                 RemoteFilename rfn;
-                f->getPartFilename(rfn,0);
+                f->getPartFilename(rfn, 0);
                 StringBuffer full;
                 if (rfn.isLocal())
                     rfn.getLocalPath(full);
@@ -580,7 +577,8 @@ void CHThorDiskWriteActivity::resolve()
                     PROGLOG("Writing to query %s", filename.get());
                     return;
                 }
-                if (stdIoHandle(filename)>=0) {
+                if (stdIoHandle(filename) >= 0)
+                {
                     PROGLOG("Writing to %s", filename.get());
                     return;
                 }
@@ -858,8 +856,7 @@ void CHThorDiskWriteActivity::publish()
             diskAccessCost = calcFileAccessCost(clusterName, numDiskWrites, 0);
             properties.setPropInt64(getDFUQResultFieldName(DFUQResultField::writeCost), diskAccessCost);
         }
-        file->attach(logicalName.get(), agent.queryCodeContext()->queryUserDescriptor());
-        agent.logFileAccess(file, "HThor", "CREATED", graph);
+        file->attach(logicalName.get(), agent.queryCodeContext()->queryUserDescriptor(), agent.queryBaseAuditContext());
     }
 }
 
@@ -1193,15 +1190,14 @@ CHThorIndexWriteActivity::CHThorIndexWriteActivity(IAgentContext &_agent, unsign
     expandLogicalFilename(lfn, fname, agent.queryWorkUnit(), agent.queryResolveFilesLocally(), false);
     if (!agent.queryResolveFilesLocally())
     {
-        Owned<IDistributedFile> f = wsdfs::lookup(lfn, agent.queryCodeContext()->queryUserDescriptor(), AccessMode::tbdWrite, false, false, nullptr, defaultNonPrivilegedUser, INFINITE);
+        Owned<IDistributedFile> f = wsdfs::lookup(lfn, agent.queryCodeContext()->queryUserDescriptor(), AccessMode::erase, false, false, nullptr, defaultNonPrivilegedUser, INFINITE);
 
         if (f)
         {
             if (TIWoverwrite & helper.getFlags())
             {
                 LOG(MCuserInfo, "Removing %s from DFS", lfn.str());
-                agent.logFileAccess(f, "HThor", "DELETED", _graph);
-                f->detach();
+                f->detach(INFINITE, nullptr, agent.queryBaseAuditContext());
             }
             else // not quite sure about raising exceptions in constructors
                 throw MakeStringException(99, "Cannot write %s, file already exists (missing OVERWRITE attribute?)", lfn.str());
@@ -1501,8 +1497,7 @@ void CHThorIndexWriteActivity::execute()
         dfile.setown(queryDistributedFileDirectory().createNew(desc));
         OwnedRoxieString fname(helper.getFileName());
         expandLogicalFilename(lfn, fname, agent.queryWorkUnit(), agent.queryResolveFilesLocally(), false);
-        dfile->attach(lfn.str(),agent.queryCodeContext()->queryUserDescriptor());
-        agent.logFileAccess(dfile, "HThor", "CREATED", graph);
+        dfile->attach(lfn.str(),agent.queryCodeContext()->queryUserDescriptor(), agent.queryBaseAuditContext());
 
         StringBuffer clusterName;
         dfile->getClusterName(0, clusterName);
@@ -8647,8 +8642,6 @@ void CHThorDiskReadBaseActivity::resolve()
                             logicalFileName.set(subfileLogicalFilenames.item(0));
                     }
                 }
-                if((helper.getFlags() & (TDXtemporary | TDXjobtemp)) == 0)
-                    agent.logFileAccess(dFile, "HThor", "READ", graph);
                 if(getLayoutTranslationMode()==RecordTranslationMode::None)
                     verifyRecordFormatCrc();
             }
@@ -11098,8 +11091,6 @@ void CHThorNewDiskReadBaseActivity::resolveFile()
                 else
                     subfiles.append(*extractFileInformation(dFile, helperFileAccessOptions));
 
-                if((helperFlags & (TDXtemporary | TDXjobtemp)) == 0)
-                    agent.logFileAccess(dFile, "HThor", "READ", graph);
             }
             else
                 subfiles.append(*extractFileInformation(nullptr, helperFileAccessOptions));

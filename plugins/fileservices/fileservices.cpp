@@ -41,6 +41,7 @@
 #include "eclrtl.hpp"
 #include "rtlds_imp.hpp"
 #include "jplane.hpp"
+#include "dafsaudit.hpp"
 
 #define USE_DALIDFS
 #define SDS_LOCK_TIMEOUT  10000
@@ -338,26 +339,44 @@ static void WUmessage(ICodeContext *ctx, ErrorSeverity sev, const char *fn, cons
     return;
 }
 
+// Build a request/base audit context for a code context.
+static DFSAuditContext buildFSAuditBaseContext(ICodeContext *ctx)
+{
+    DFSAuditContext baseAuditCtx = queryDefaultDFSAuditContext();
+    StringAttr wuid;
+    wuid.setown(ctx->getWuid());
+    if (wuid.length())
+        baseAuditCtx.setValue("wuid", wuid.str());
+    IUserDescriptor *udesc = ctx->queryUserDescriptor();
+    if (udesc)
+    {
+        StringBuffer userName;
+        udesc->getUserName(userName);
+        if (userName.length())
+            baseAuditCtx.setValue("user", userName.str());
+    }
+    return baseAuditCtx;
+}
+
+// Build a per-operation context by extending invariants with optional logical names.
+static DFSAuditContext buildFSAuditOperationContext(ICodeContext *ctx, const char *lfn1=nullptr, const char *lfn2=nullptr)
+{
+    DFSAuditContext auditCtx = buildFSAuditBaseContext(ctx);
+    if (!isEmptyString(lfn1))
+        auditCtx.setValue("lfn", lfn1);
+    if (!isEmptyString(lfn2))
+        auditCtx.setValue("lfn2", lfn2);
+    return auditCtx;
+}
+
 static void AuditMessage(ICodeContext *ctx,
                          const char *func,
                          const char *lfn1,
                          const char *lfn2=NULL)
 {
     // FileServices,WUID,user,function,LFN1,LFN2
-    Linked<IUserDescriptor> udesc = ctx->queryUserDescriptor();
-    StringBuffer aln;
-    StringAttr wuid;
-    wuid.setown(ctx->getWuid());
-    aln.append(",FileAccess,FileServices,").append(func).append(',').append(wuid).append(',');
-    if (udesc)
-        udesc->getUserName(aln);
-    if (lfn1&&*lfn1) {
-        aln.append(',').append(lfn1);
-        if (lfn2&&*lfn2) {
-            aln.append(',').append(lfn2);
-        }
-    }
-    LOG(MCauditInfo,"%s",aln.str());
+    DFSAuditContext auditCtx = buildFSAuditOperationContext(ctx, lfn1, lfn2);
+    auditCtx.logFileAccess(func);
 }
 
 
@@ -382,7 +401,8 @@ FILESERVICES_API void FILESERVICES_CALL fsDeleteLogicalFile(ICodeContext *ctx, c
     Linked<IUserDescriptor> udesc = ctx->queryUserDescriptor();
     StringBuffer uname;
     DBGLOG("Deleting NS logical file %s for user %s", lfn.str(),udesc?udesc->getUserName(uname).str():"");
-    if (queryDistributedFileDirectory().removeEntry(lfn.str(),udesc,transaction, INFINITE, true))
+    DFSAuditContext auditCtx = buildFSAuditOperationContext(ctx);
+    if (queryDistributedFileDirectory().removeEntry(lfn.str(), udesc, transaction, INFINITE, true, auditCtx))
     {
         StringBuffer s("DeleteLogicalFile ('");
         s.append(lfn);
@@ -391,8 +411,6 @@ FILESERVICES_API void FILESERVICES_CALL fsDeleteLogicalFile(ICodeContext *ctx, c
         else
             s.append("') done");
         WUmessage(ctx,SeverityInformation,NULL,s.str());
-        AuditMessage(ctx,"DeleteLogicalFile",lfn.str());
-
     }
     else if (!ifexists)
     {
@@ -416,7 +434,7 @@ FILESERVICES_API bool FILESERVICES_CALL fsFileValidate(ICodeContext *ctx, const 
     constructLogicalName(ctx, name, lfn);
 
     Linked<IUserDescriptor> udesc = ctx->queryUserDescriptor();
-    Owned<IDistributedFile> df = wsdfs::lookup(lfn.str(), udesc, AccessMode::tbdRead, false, false, nullptr, defaultPrivilegedUser, INFINITE);
+    Owned<IDistributedFile> df = wsdfs::lookup(lfn.str(), udesc, AccessMode::readMeta, false, false, nullptr, defaultPrivilegedUser, INFINITE);
     if (df)
     {
         Owned<IDistributedFilePartIterator> partIter = df->getIterator();
@@ -457,7 +475,7 @@ FILESERVICES_API void FILESERVICES_CALL fsSetReadOnly(ICodeContext *ctx, const c
 
     Linked<IUserDescriptor> udesc = ctx->queryUserDescriptor();
     Owned<IException> error;
-    Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(lfn.str(),udesc, AccessMode::tbdWrite, false, false, nullptr, defaultPrivilegedUser);
+    Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(lfn.str(),udesc, AccessMode::writeLogicalMeta, false, false, nullptr, defaultPrivilegedUser);
     if (df)
     {
         LOG(MCauditInfo, "Set ReadOnly:  %s", name);
@@ -507,12 +525,13 @@ FILESERVICES_API void FILESERVICES_CALL implementRenameLogicalFile(ICodeContext 
     if (overwrite && distributedDirectory.exists(newLfn.str(), udesc, false, false))
         fsDeleteLogicalFile(ctx, newname, true);
 
-    try {
-        distributedDirectory.renamePhysical(oldLfn.str(), newLfn.str(), udesc, transaction);
+    try
+    {
+        DFSAuditContext auditCtx = buildFSAuditOperationContext(ctx, oldLfn.str(), newLfn.str());
+        distributedDirectory.renamePhysical(oldLfn.str(), newLfn.str(), udesc, transaction, auditCtx);
         StringBuffer s("RenameLogicalFile ('");
         s.append(oldLfn).append(", '").append(newLfn).append("') done");
         WUmessage(ctx, SeverityInformation, NULL, s.str());
-        AuditMessage(ctx, "RENAMED", oldLfn.str(), newLfn.str());
     }
     catch (IException *e)
     {
@@ -520,7 +539,7 @@ FILESERVICES_API void FILESERVICES_CALL implementRenameLogicalFile(ICodeContext 
         e->errorMessage(s);
         WUmessage(ctx, SeverityWarning, "RenameLogicalFile", s.str());
         throw e;
-     }
+    }
 }
 
 FILESERVICES_API void FILESERVICES_CALL fsRenameLogicalFile(ICodeContext *ctx, const char *oldname, const char *newname)
@@ -1718,7 +1737,7 @@ static IDistributedSuperFile *lookupRemoteOrForeignSuper(ICodeContext *ctx, cons
     // from the transaction's perspective — the wsdfs lookup below reads current state
     // without participating in the Dali locking protocol, which is safe for these
     // read-only superfile enquiry operations.
-    Owned<IDistributedFile> df = wsdfs::lookup(slfn, ctx->queryUserDescriptor(), AccessMode::readMeta, false, false, nullptr, defaultPrivilegedUser, INFINITE);
+    Owned<IDistributedFile> df = wsdfs::lookup(slfn, ctx->queryUserDescriptor(), AccessMode::readLogicalMeta, false, false, nullptr, defaultPrivilegedUser, INFINITE);
     if (!df)
         throw makeStringExceptionV(0, "%s: Could not locate superfile: %s", caller, slfn.get());
     IDistributedSuperFile *superFile = df->querySuperFile();
@@ -1738,7 +1757,9 @@ FILESERVICES_API void FILESERVICES_CALL fsCreateSuperFile(ICodeContext *ctx, con
     Owned<IDistributedSuperFile> file = queryDistributedFileDirectory().createSuperFile(lsfn,udesc,!sequentialparts,ifdoesnotexist,transaction);
     StringBuffer s("CreateSuperFile ('");
     s.append(lsfn).append("') done");
-    AuditMessage(ctx,"CreateSuperFile",lsfn.str());
+    // Temporary exception: superfile create/delete still emit here because the DFS
+    // create/remove superfile APIs do not yet accept DFSAuditContext for ownership transfer.
+    AuditMessage(ctx,"SUPER_CREATE",lsfn.str());
     WUmessage(ctx,SeverityInformation,NULL,s.str());
 }
 
@@ -1755,7 +1776,7 @@ FILESERVICES_API void FILESERVICES_CALL fsDeleteSuperFile(ICodeContext *ctx, con
     Linked<IUserDescriptor> udesc = ctx->queryUserDescriptor();
     Owned<IDistributedSuperFile> file;
     StringBuffer lsfn;
-    bool found = lookupSuperFile(ctx, lsuperfn, AccessMode::writeMeta, file, false, lsfn, false);
+    bool found = lookupSuperFile(ctx, lsuperfn, AccessMode::writeLogicalMeta, file, false, lsfn, false);
     file.clear(); // MORE: this should really be exists(file)
     StringBuffer s("DeleteSuperFile ('");
     s.append(lsfn).appendf("')");
@@ -1770,7 +1791,11 @@ FILESERVICES_API void FILESERVICES_CALL fsDeleteSuperFile(ICodeContext *ctx, con
     }
     WUmessage(ctx,SeverityInformation,NULL,s.str());
     if (found)
-        AuditMessage(ctx,"DeleteSuperFile",lsfn.str());
+    {
+        // Temporary exception: superfile create/delete still emit here because the DFS
+        // create/remove superfile APIs do not yet accept DFSAuditContext for ownership transfer.
+        AuditMessage(ctx,"SUPER_DELETE",lsfn.str());
+    }
 }
 
 FILESERVICES_API unsigned FILESERVICES_CALL fsGetSuperFileSubCount(ICodeContext *ctx, const char *lsuperfn)
@@ -1788,7 +1813,7 @@ FILESERVICES_API unsigned FILESERVICES_CALL fsGetSuperFileSubCount(ICodeContext 
             return enq->numSubFiles();
         implicitTransaction = std::make_unique<CImplicitSuperTransaction>(ctx->querySuperFileTransaction());
         StringBuffer lsfn;
-        lookupSuperFile(ctx, lsuperfn, AccessMode::readMeta, superFile, true, lsfn, true);
+        lookupSuperFile(ctx, lsuperfn, AccessMode::readLogicalMeta, superFile, true, lsfn, true);
     }
     return superFile->numSubFiles();
 }
@@ -1815,7 +1840,7 @@ FILESERVICES_API char *  FILESERVICES_CALL fsGetSuperFileSubName(ICodeContext *c
         }
         implicitTransaction = std::make_unique<CImplicitSuperTransaction>(ctx->querySuperFileTransaction());
         StringBuffer lsfn;
-        lookupSuperFile(ctx, lsuperfn, AccessMode::readMeta, superFile, true, lsfn, true);
+        lookupSuperFile(ctx, lsuperfn, AccessMode::readLogicalMeta, superFile, true, lsfn, true);
     }
     if (!filenum||filenum>superFile->numSubFiles())
         return CTXSTRDUP(parentCtx, "");
@@ -1843,7 +1868,7 @@ FILESERVICES_API unsigned FILESERVICES_CALL fsFindSuperFileSubName(ICodeContext 
         }
         implicitTransaction = std::make_unique<CImplicitSuperTransaction>(ctx->querySuperFileTransaction());
         StringBuffer lsfn;
-        lookupSuperFile(ctx, lsuperfn, AccessMode::readMeta, superFile, true, lsfn, true);
+        lookupSuperFile(ctx, lsuperfn, AccessMode::readLogicalMeta, superFile, true, lsfn, true);
     }
     unsigned n = 0;
     // could do with better version of this TBD
@@ -1881,10 +1906,10 @@ FILESERVICES_API void FILESERVICES_CALL fslAddSuperFile(ICodeContext *ctx, const
     Owned<IDistributedSuperFile> file;
     StringBuffer lsfn;
     // NB: if adding contents, tell lookupSuperFile to cache the subfiles in the transaction
-    if (!lookupSuperFile(ctx, lsuperfn, AccessMode::writeMeta, file, strict, lsfn, false, addcontents)) {
+    if (!lookupSuperFile(ctx, lsuperfn, AccessMode::writeLogicalMeta, file, strict, lsfn, false, addcontents)) {
         // auto create
         fsCreateSuperFile(ctx,lsuperfn,false,false);
-        lookupSuperFile(ctx, lsuperfn, AccessMode::writeMeta, file, true, lsfn, false, addcontents);
+        lookupSuperFile(ctx, lsuperfn, AccessMode::writeLogicalMeta, file, true, lsfn, false, addcontents);
     }
     // Never add super file to itself
     StringBuffer lfn;
@@ -1896,7 +1921,7 @@ FILESERVICES_API void FILESERVICES_CALL fslAddSuperFile(ICodeContext *ctx, const
     assertex(transaction);
     if  (strict||addcontents) {
         Owned<IDistributedSuperFile> subfile;
-        subfile.setown(transaction->lookupSuperFile(lfn.str(), AccessMode::writeMeta));
+        subfile.setown(transaction->lookupSuperFile(lfn.str(), AccessMode::writeLogicalMeta));
         if (!subfile.get())
             throw MakeStringException(0, "AddSuperFile%s: Could not locate super file %s", addcontents?"(addcontents)":"",lfn.str());
         if (strict&&(subfile->numSubFiles()<1))
@@ -1923,7 +1948,7 @@ FILESERVICES_API void FILESERVICES_CALL fslAddSuperFile(ICodeContext *ctx, const
     else
         s.append("done");
     WUmessage(ctx,SeverityInformation,NULL,s.str());
-    AuditMessage(ctx,"AddSuperFile",lsfn.str(),lfn.str());
+    AuditMessage(ctx,"SUPER_ADD",lsfn.str(),lfn.str()); // metadata op - keep explicit FileServices audit for now; move to DFS when DFSAuditContext-enabled API exists
 }
 
 FILESERVICES_API void FILESERVICES_CALL fsRemoveSuperFile(IGlobalCodeContext *gctx, const char *lsuperfn,const char *_lfn,bool del,bool remcontents)
@@ -1938,7 +1963,7 @@ FILESERVICES_API void FILESERVICES_CALL fslRemoveSuperFile(ICodeContext *ctx, co
     StringBuffer lfn;
     if (_lfn)
         constructLogicalName(ctx, _lfn, lfn);
-    lookupSuperFile(ctx, lsuperfn, AccessMode::writeMeta, file, true, lsfn, false, true);
+    lookupSuperFile(ctx, lsuperfn, AccessMode::writeLogicalMeta, file, true, lsfn, false, true);
     IDistributedFileTransaction *transaction = ctx->querySuperFileTransaction();
     assertex(transaction);
     {
@@ -1964,7 +1989,7 @@ FILESERVICES_API void FILESERVICES_CALL fslRemoveSuperFile(ICodeContext *ctx, co
     else
         s.append("done");
     WUmessage(ctx,SeverityInformation,NULL,s.str());
-    AuditMessage(ctx,"RemoveSuperFile",lsfn.str(),lfn.str());
+    AuditMessage(ctx,"SUPER_REMOVE",lsfn.str(),lfn.str()); // metadata op - keep explicit FileServices audit for now; move to DFS when DFSAuditContext-enabled API exists
 }
 
 FILESERVICES_API void FILESERVICES_CALL fsClearSuperFile(IGlobalCodeContext *gctx, const char *lsuperfn,bool del)
@@ -1986,7 +2011,7 @@ FILESERVICES_API void FILESERVICES_CALL fslRemoveOwnedSubFiles(ICodeContext *ctx
 {
     Owned<IDistributedSuperFile> file;
     StringBuffer lsfn;
-    lookupSuperFile(ctx, lsuperfn, AccessMode::tbdWrite, file, true, lsfn, false, true);
+    lookupSuperFile(ctx, lsuperfn, del ? AccessMode::erase : AccessMode::writeLogicalMeta, file, true, lsfn, false, true);
     IDistributedFileTransaction *transaction = ctx->querySuperFileTransaction();
     assertex(transaction);
     {
@@ -2003,7 +2028,7 @@ FILESERVICES_API void FILESERVICES_CALL fslRemoveOwnedSubFiles(ICodeContext *ctx
     else
         s.append("done");
     WUmessage(ctx,SeverityInformation,NULL,s.str());
-    AuditMessage(ctx,"RemoveOwnedSubFiles",lsfn.str());
+    AuditMessage(ctx,"SUPER_REMOVEOWNEDSUBS",lsfn.str()); // metadata op - keep explicit FileServices audit for now; move to DFS when DFSAuditContext-enabled API exists
 }
 
 FILESERVICES_API void FILESERVICES_CALL fslClearSuperFile(ICodeContext *ctx, const char *lsuperfn,bool del)
@@ -2022,8 +2047,8 @@ FILESERVICES_API void FILESERVICES_CALL fslSwapSuperFile(ICodeContext *ctx, cons
     StringBuffer lsfn2;
     Owned<IDistributedSuperFile> file1;
     Owned<IDistributedSuperFile> file2;
-    lookupSuperFile(ctx, lsuperfn1, AccessMode::writeMeta, file1, true, lsfn1,false);
-    lookupSuperFile(ctx, lsuperfn2, AccessMode::writeMeta, file2, true,lsfn2,false);
+    lookupSuperFile(ctx, lsuperfn1, AccessMode::writeLogicalMeta, file1, true, lsfn1,false);
+    lookupSuperFile(ctx, lsuperfn2, AccessMode::writeLogicalMeta, file2, true,lsfn2,false);
 
     IDistributedFileTransaction *transaction = ctx->querySuperFileTransaction();
     assertex(transaction);
@@ -2042,7 +2067,7 @@ FILESERVICES_API void FILESERVICES_CALL fslSwapSuperFile(ICodeContext *ctx, cons
     else
         s.append("done");
     WUmessage(ctx,SeverityInformation,NULL,s.str());
-    AuditMessage(ctx,"SwapSuperFile",lsfn1.str(),lsfn2.str());
+    AuditMessage(ctx,"SUPER_SWAP",lsfn1.str(),lsfn2.str()); // metadata op - keep explicit FileServices audit for now; move to DFS when DFSAuditContext-enabled API exists
 }
 
 FILESERVICES_API void FILESERVICES_CALL fsReplaceSuperFile(IGlobalCodeContext *gctx, const char *lsuperfn,const char *lfn,const char *bylfn)
@@ -2301,7 +2326,7 @@ FILESERVICES_API void FILESERVICES_CALL fsSetFileDescription(ICodeContext *ctx, 
     constructLogicalName(ctx, logicalfilename, lfn);
 
     Linked<IUserDescriptor> udesc = ctx->queryUserDescriptor();
-    Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(lfn.str(),udesc, AccessMode::tbdRead, false, false, nullptr, defaultPrivilegedUser);
+    Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(lfn.str(),udesc, AccessMode::writeLogicalMeta, false, false, nullptr, defaultPrivilegedUser);
     if (df) {
         DistributedFilePropertyLock lock(df);
         lock.queryAttributes().setProp("@description",value);
@@ -2316,7 +2341,7 @@ FILESERVICES_API char *  FILESERVICES_CALL fsGetFileDescription(ICodeContext *ct
     constructLogicalName(ctx, logicalfilename, lfn);
 
     Linked<IUserDescriptor> udesc = ctx->queryUserDescriptor();
-    Owned<IDistributedFile> df = wsdfs::lookup(lfn.str(), udesc, AccessMode::tbdRead, false, false, nullptr, defaultPrivilegedUser, INFINITE);
+    Owned<IDistributedFile> df = wsdfs::lookup(lfn.str(), udesc, AccessMode::readLogicalMeta, false, false, nullptr, defaultPrivilegedUser, INFINITE);
     if (!df)
         throw MakeStringException(0, "GetFileDescription: Could not locate file %s", lfn.str());
     const char * ret = df->queryAttributes().queryProp("@description");
@@ -3117,7 +3142,7 @@ FILESERVICES_API void FILESERVICES_CALL fsSuperFileContents(ICodeContext *ctx, s
         {
             implicitTransaction.reset(new CImplicitSuperTransaction(ctx->querySuperFileTransaction()));
             StringBuffer lsfn;
-            lookupSuperFile(ctx, lsuperfn, AccessMode::readMeta, superFile, true, lsfn, true);
+            lookupSuperFile(ctx, lsuperfn, AccessMode::readLogicalMeta, superFile, true, lsfn, true);
         }
         Owned<IDistributedFileIterator> iter = superFile->getSubFileIterator(recurse);
         StringBuffer name;
@@ -3151,7 +3176,7 @@ FILESERVICES_API void FILESERVICES_CALL fsLogicalFileSuperOwners(ICodeContext *c
     }
     else {
         Linked<IUserDescriptor> udesc = ctx->queryUserDescriptor();
-        Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(lfn.str(),udesc,AccessMode::tbdRead,false,true, nullptr, defaultPrivilegedUser); // lock super-owners
+        Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(lfn.str(),udesc,AccessMode::readLogicalMeta,false,true, nullptr, defaultPrivilegedUser); // lock super-owners
         if (df) {
             Owned<IDistributedSuperFileIterator> iter = df->getOwningSuperFiles();
             ForEach(*iter) {
@@ -3583,7 +3608,7 @@ FILESERVICES_API void FILESERVICES_CALL fsSetColumnMapping(ICodeContext * ctx,co
 {
     StringBuffer lfn;
     constructLogicalName(ctx, filename, lfn);
-    Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(lfn.str(),ctx->queryUserDescriptor(),AccessMode::tbdWrite,false,false,nullptr,defaultPrivilegedUser);
+    Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(lfn.str(),ctx->queryUserDescriptor(),AccessMode::writeLogicalMeta,false,false,nullptr,defaultPrivilegedUser);
     if (df)
         df->setColumnMapping(mapping);
     else
@@ -3594,7 +3619,7 @@ FILESERVICES_API char *  FILESERVICES_CALL fsfGetColumnMapping(ICodeContext * ct
 {
     StringBuffer lfn;
     constructLogicalName(ctx, filename, lfn);
-    Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(lfn.str(),ctx->queryUserDescriptor(),AccessMode::tbdWrite,false,false,nullptr,defaultPrivilegedUser);
+    Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(lfn.str(),ctx->queryUserDescriptor(),AccessMode::readLogicalMeta,false,false,nullptr,defaultPrivilegedUser);
     if (df) {
         StringBuffer mapping;
         df->getColumnMapping(mapping);
@@ -3759,7 +3784,7 @@ static void implementMoveExternalFile(ICodeContext *ctx,const char *location,
     StringBuffer s("MoveExternalFile ('");
     s.append(location).append(',').append(frompath).append(',').append(topath).append(") done");
     WUmessage(ctx,SeverityInformation,NULL,s.str());
-    AuditMessage(ctx,"MoveExternalFile",frompath,topath);
+    AuditMessage(ctx,"EXTERNAL_MOVE",frompath,topath);
 }
 
 FILESERVICES_API void  FILESERVICES_CALL fsMoveExternalFile(ICodeContext *ctx,const char *location,const char *frompath,const char *topath)
@@ -3783,7 +3808,7 @@ static void implementDeleteExternalFile(ICodeContext *ctx,const char *location,c
     StringBuffer s("DeleteExternalFile ('");
     s.append(location).append(',').append(path).append(") done");
     WUmessage(ctx,SeverityInformation,NULL,s.str());
-    AuditMessage(ctx,"DeleteExternalFile",path);
+    AuditMessage(ctx,"EXTERNAL_DELETE",path);
 }
 
 FILESERVICES_API void FILESERVICES_CALL fsDeleteExternalFile(ICodeContext *ctx,const char *location,const char *path)
@@ -3805,7 +3830,7 @@ static void implementCreateExternalDirectory(ICodeContext *ctx,const char *locat
     StringBuffer s("CreateExternalDirectory ('");
     s.append(location).append(',').append(path).append(") done");
     WUmessage(ctx,SeverityInformation,NULL,s.str());
-    AuditMessage(ctx,"CreateExternalDirectory",path);
+    AuditMessage(ctx,"EXTERNAL_CREATEDIRECTORY",path);
 }
 
 FILESERVICES_API void FILESERVICES_CALL fsCreateExternalDirectory(ICodeContext *ctx,const char *location,const char *path)
@@ -3863,7 +3888,7 @@ FILESERVICES_API char * FILESERVICES_CALL fsfGetLogicalFileAttribute(ICodeContex
     StringBuffer lfn;
     constructLogicalName(ctx, _lfn, lfn);
     Linked<IUserDescriptor> udesc = ctx->queryUserDescriptor();
-    Owned<IDistributedFile> df = wsdfs::lookup(lfn.str(), udesc, AccessMode::tbdRead, false, false, nullptr, defaultPrivilegedUser, INFINITE);
+    Owned<IDistributedFile> df = wsdfs::lookup(lfn.str(), udesc, AccessMode::readLogicalMeta, false, false, nullptr, defaultPrivilegedUser, INFINITE);
     StringBuffer ret;
     if (df) {
         if (strcmp(attrname,"ECL")==0)
@@ -3912,7 +3937,7 @@ FILESERVICES_API void FILESERVICES_CALL fsProtectLogicalFile(ICodeContext * ctx,
     StringBuffer lfn;
     constructLogicalName(ctx, _lfn, lfn);
     Linked<IUserDescriptor> udesc = ctx->queryUserDescriptor();
-    Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(lfn.str(), udesc, AccessMode::tbdRead, false, false, nullptr, defaultPrivilegedUser);
+    Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(lfn.str(), udesc, AccessMode::writeLogicalMeta, false, false, nullptr, defaultPrivilegedUser);
     if (df)
     {
         StringBuffer uname;
@@ -4213,7 +4238,7 @@ FILESERVICES_API int FILESERVICES_CALL fsGetExpireDays(ICodeContext * ctx, const
     StringBuffer lfn;
     constructLogicalName(ctx, _lfn, lfn);
     Linked<IUserDescriptor> udesc = ctx->queryUserDescriptor();
-    Owned<IDistributedFile> df = wsdfs::lookup(lfn.str(), udesc, AccessMode::tbdRead, false, false, nullptr, defaultPrivilegedUser, INFINITE);
+    Owned<IDistributedFile> df = wsdfs::lookup(lfn.str(), udesc, AccessMode::readLogicalMeta, false, false, nullptr, defaultPrivilegedUser, INFINITE);
     if (df)
         return df->getExpire(nullptr);
     else
@@ -4228,7 +4253,7 @@ FILESERVICES_API void FILESERVICES_CALL fsSetExpireDays(ICodeContext * ctx, cons
     StringBuffer lfn;
     constructLogicalName(ctx, _lfn, lfn);
     Linked<IUserDescriptor> udesc = ctx->queryUserDescriptor();
-    Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(lfn.str(),udesc, AccessMode::tbdRead,false, false, nullptr, defaultPrivilegedUser);
+    Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(lfn.str(),udesc, AccessMode::writeLogicalMeta,false, false, nullptr, defaultPrivilegedUser);
     if (df)
         df->setExpire(expireDays);
     else
@@ -4240,7 +4265,7 @@ FILESERVICES_API void FILESERVICES_CALL fsClearExpireDays(ICodeContext * ctx, co
     StringBuffer lfn;
     constructLogicalName(ctx, _lfn, lfn);
     Linked<IUserDescriptor> udesc = ctx->queryUserDescriptor();
-    Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(lfn.str(),udesc, AccessMode::tbdRead,false, false, nullptr, defaultPrivilegedUser);
+    Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(lfn.str(),udesc, AccessMode::writeLogicalMeta,false, false, nullptr, defaultPrivilegedUser);
     if (df)
         df->setExpire(-1);
     else

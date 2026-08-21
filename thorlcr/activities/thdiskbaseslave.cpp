@@ -185,7 +185,8 @@ CDiskReadSlaveActivityBase::CDiskReadSlaveActivityBase(CGraphElementBase *_conta
     if (_helper)
         baseHelper.set(_helper);
     helper = (IHThorDiskReadBaseArg *)queryHelper();
-    reInit = 0 != (helper->getFlags() & (TDXvarfilename|TDXdynamicfilename));
+    unsigned flags = helper->getFlags();
+    reInit = (flags & (TDXvarfilename|TDXdynamicfilename)) && !(flags & TDRinvariantfilename);
     markStart = gotMeta = false;
     checkFileDates = getOptBool(THOROPT_CHECK_FILE_DATES, checkFileDates);
 }

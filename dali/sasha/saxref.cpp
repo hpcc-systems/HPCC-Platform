@@ -2502,7 +2502,8 @@ public:
             }
             Owned<IDistributedFile> file;
             try {
-                file.setown(queryDistributedFileDirectory().lookup(lfn,udesc,AccessMode::tbdRead,false,false,nullptr,defaultPrivilegedUser));
+                // setPreferredClusters()/setSingleClusterOnly() below mutate the file's cluster metadata - use writeMeta.
+                file.setown(queryDistributedFileDirectory().lookup(lfn,udesc,AccessMode::writeLogicalMeta,false,false,nullptr,defaultPrivilegedUser));
             }
             catch (IException *e) {
                 EXCLOG(e,"CNewXRefManager::listLost");

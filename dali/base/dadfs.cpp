@@ -1229,7 +1229,7 @@ interface IDistributedFileTransactionExt : extends IDistributedFileTransaction
     virtual void noteRename(IDistributedFile *file, const char *newName) = 0;
     virtual void validateAddSubFile(IDistributedSuperFile *super, IDistributedFile *sub, const char *subName) = 0;
     virtual bool isSubFile(IDistributedSuperFile *super, const char *subFile, bool sub) = 0;
-    virtual bool addDelayedDelete(CDfsLogicalFileName &lfn,unsigned timeoutms=INFINITE)=0; // used internally to delay deletes until commit
+    virtual bool addDelayedDelete(CDfsLogicalFileName &lfn,unsigned timeoutms=INFINITE, const DFSAuditContext &auditCtx = DFSAuditContext{})=0; // used internally to delay deletes until commit
     virtual bool prepareActions()=0;
     virtual void retryActions()=0;
     virtual void runActions()=0;
@@ -1270,8 +1270,8 @@ public:
 
     IDistributedFile *dolookup(CDfsLogicalFileName &logicalname, IUserDescriptor *user, AccessMode accessMode, bool hold, bool lockSuperOwner, IDistributedFileTransaction *transaction, unsigned timeout);
 
-    IDistributedFile *lookup(const char *_logicalname, IUserDescriptor *user, AccessMode accessMode, bool hold, bool lockSuperOwner, IDistributedFileTransaction *transaction, bool privilegedUser, unsigned timeout) override;
-    IDistributedFile *lookup(CDfsLogicalFileName &logicalname, IUserDescriptor *user, AccessMode accessMode, bool hold, bool lockSuperOwner, IDistributedFileTransaction *transaction, bool privilegedUser, unsigned timeout) override;
+    IDistributedFile *lookup(const char *_logicalname, IUserDescriptor *user, AccessMode accessMode, bool hold, bool lockSuperOwner, IDistributedFileTransaction *transaction, bool privilegedUser, unsigned timeout, const DFSAuditContext &auditCtx = DFSAuditContext{}) override;
+    IDistributedFile *lookup(CDfsLogicalFileName &logicalname, IUserDescriptor *user, AccessMode accessMode, bool hold, bool lockSuperOwner, IDistributedFileTransaction *transaction, bool privilegedUser, unsigned timeout, const DFSAuditContext &auditCtx = DFSAuditContext{}) override;
 
     /* createNew always creates an unnamed unattached distributed file
      * The caller must associated it with a name and credentials when it is attached (attach())
@@ -1282,7 +1282,7 @@ public:
     IDistributedSuperFile *createNewSuperFile(IPropertyTree *tree, const char *optionalName=nullptr, IArrayOf<IDistributedFile> *subFiles=nullptr);
     void removeSuperFile(const char *_logicalname, bool delSubs, IUserDescriptor *user, IDistributedFileTransaction *transaction);
 
-    IDistributedFileIterator *getIterator(const char *wildname, bool includesuper,IUserDescriptor *user,bool isPrivilegedUser);
+    IDistributedFileIterator *getIterator(const char *wildname, bool includesuper,IUserDescriptor *user,bool isPrivilegedUser, AccessMode accessMode = AccessMode::readLogicalMeta) override;
     IPropertyTreeIterator *getDFAttributesIterator(const char *wildname, IUserDescriptor *user, bool recursive, bool includesuper,INode *foreigndali,unsigned foreigndalitimeout);
     IPropertyTreeIterator *getDFAttributesFilteredIterator(const char *filters, const char *localFilters, const DFUQResultField *fields,
         IUserDescriptor *user, bool recursive, bool& allMatchingFilesReceived, unsigned *total, INode *foreigndali,unsigned foreigndalitimeout);
@@ -1292,15 +1292,14 @@ public:
 
     IPropertyTree *getFileTree(const char *lname,IUserDescriptor *user,AccessMode accessMode,const INode *foreigndali,unsigned foreigndalitimeout,GetFileTreeOpts opts = GetFileTreeOpts::expandNodes|GetFileTreeOpts::appendForeign);
     void setFileAccessed(CDfsLogicalFileName &dlfn, IUserDescriptor *user,const CDateTime &dt,const INode *foreigndali=NULL,unsigned foreigndalitimeout=FOREIGN_DALI_TIMEOUT);
-    IFileDescriptor *getFileDescriptor(const char *lname, AccessMode accessMode, IUserDescriptor *user, const INode *foreigndali=NULL, unsigned foreigndalitimeout=FOREIGN_DALI_TIMEOUT);
     IDistributedFile *getFile(const char *lname, AccessMode accessMode, IUserDescriptor *user, const INode *foreigndali=NULL, unsigned foreigndalitimeout=FOREIGN_DALI_TIMEOUT);
 
     bool exists(const char *_logicalname,IUserDescriptor *user,bool notsuper=false,bool superonly=false);
     bool existsPhysical(const char *_logicalname,IUserDescriptor *user);
 
     void addEntry(CDfsLogicalFileName &lfn,IPropertyTree *root,bool superfile, bool ignoreexists);
-    bool removeEntry(const char *name, IUserDescriptor *user, IDistributedFileTransaction *transaction=NULL, unsigned timeoutms=INFINITE, bool throwException=false);
-    void renamePhysical(const char *oldname,const char *newname,IUserDescriptor *user,IDistributedFileTransaction *transaction);
+    bool removeEntry(const char *name, IUserDescriptor *user, IDistributedFileTransaction *transaction=NULL, unsigned timeoutms=INFINITE, bool throwException=false, const DFSAuditContext &auditCtx = DFSAuditContext{});
+    void renamePhysical(const char *oldname, const char *newname, IUserDescriptor *user, IDistributedFileTransaction *transaction, const DFSAuditContext &auditCtx = DFSAuditContext{});
     void removeEmptyScope(const char *name);
 
     IDistributedSuperFile *lookupSuperFile(const char *logicalname, IUserDescriptor *user, AccessMode accessMode, IDistributedFileTransaction *transaction, unsigned timeout=INFINITE);
@@ -1570,10 +1569,11 @@ class CDelayedDelete: public CInterface
     CDfsLogicalFileName lfn;
     Linked<IUserDescriptor> user;
     unsigned timeoutms;
+    DFSAuditContext auditCtx;
 
 public:
-    CDelayedDelete(CDfsLogicalFileName &_lfn,IUserDescriptor *_user,unsigned _timeoutms)
-        : user(_user), timeoutms(_timeoutms)
+    CDelayedDelete(CDfsLogicalFileName &_lfn,IUserDescriptor *_user,unsigned _timeoutms, const DFSAuditContext &_auditCtx)
+        : user(_user), timeoutms(_timeoutms), auditCtx(_auditCtx)
     {
         lfn.set(_lfn);
     }
@@ -1588,7 +1588,7 @@ public:
         for (;;)
         {
             // Transaction files have already been unlocked at this point, delete all remaining files
-            Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup(lfn, user, AccessMode::tbdWrite, false, true, nullptr, defaultPrivilegedUser, SDS_SUB_LOCK_TIMEOUT);
+            Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup(lfn, user, AccessMode::erase, false, true, nullptr, defaultPrivilegedUser, SDS_SUB_LOCK_TIMEOUT, auditCtx.nested());
             if (!file.get())
                 return;
             StringBuffer reason;
@@ -1599,7 +1599,7 @@ public:
             // This will do the right thing for either super-files and logical-files.
             try
             {
-                file->detach(0, NULL); // 0 == timeout immediately if cannot get exclusive lock
+                file->detach(0, NULL, auditCtx); // 0 == timeout immediately if cannot get exclusive lock
                 return;
             }
             catch (ISDSException *e)
@@ -2047,9 +2047,9 @@ public:
             return false;
         return trackedSuper->find(subFile, sub);
     }
-    virtual bool addDelayedDelete(CDfsLogicalFileName &lfn,unsigned timeoutms)
+    virtual bool addDelayedDelete(CDfsLogicalFileName &lfn,unsigned timeoutms, const DFSAuditContext &auditCtx = DFSAuditContext{})
     {
-        delayeddelete.append(*new CDelayedDelete(lfn,udesc,timeoutms));
+        delayeddelete.append(*new CDelayedDelete(lfn,udesc,timeoutms,auditCtx));
         return true;
     }
     virtual bool prepareActions()
@@ -2285,6 +2285,34 @@ static const DFUQResultFieldMap dfuResultFieldStringMap = []
     }
     return map;
 }();
+
+// Add plane fields using a stable convention: plane, plane2, plane3, ...
+static void addAuditPlaneFields(DFSAuditContext &ctx, IDistributedFile &file)
+{
+    unsigned nc = file.numClusters();
+    if (nc >= 1)
+    {
+        StringBuffer clusterName;
+        file.getClusterName(0, clusterName);
+        ctx.setValue("plane", clusterName.str());
+        for (unsigned i = 1; i < nc; i++)
+        {
+            file.getClusterName(i, clusterName.clear());
+            VStringBuffer planeKey("plane%u", i+1);
+            ctx.setValue(planeKey.str(), clusterName.str());
+        }
+    }
+}
+
+static void addAuditSizeFields(DFSAuditContext &ctx, IDistributedFile &file)
+{
+    __int64 fSize = file.getFileSize(false, false);
+    if ((offset_t)-1 != fSize)
+        ctx.setValue("fileSize", StringBuffer().append(fSize).str());
+    __int64 dSize = file.getDiskSize(false, false);
+    if ((offset_t)-1 != dSize)
+        ctx.setValue("diskSize", StringBuffer().append(dSize).str());
+}
 
 /* Field name to attribute path map: maps simple field names to their full File attribute paths
    key = simple field name (e.g., "name", "size", "recordcount")
@@ -3129,11 +3157,12 @@ class CDistributedFileIterator: public CDistributedFileIteratorBase<IDistributed
     Linked<IUserDescriptor> udesc;
     Linked<IDistributedFileTransaction> transaction;
     bool isPrivilegedUser = false;
+    AccessMode accessMode;
 
     bool set()
     {
         while (isValid()) {
-            cur.setown(parent->lookup(queryName(),udesc, AccessMode::tbdRead, false, false, nullptr, isPrivilegedUser));
+            cur.setown(parent->lookup(queryName(),udesc, accessMode, false, false, nullptr, isPrivilegedUser));
             if (cur)
                 return true;
             index++;
@@ -3142,8 +3171,8 @@ class CDistributedFileIterator: public CDistributedFileIteratorBase<IDistributed
     }
 
 public:
-    CDistributedFileIterator(IDistributedFileDirectory *_dir,const char *wildname,bool includesuper,IUserDescriptor *user,bool _isPrivilegedUser, IDistributedFileTransaction *_transaction=NULL)
-        : transaction(_transaction), isPrivilegedUser(_isPrivilegedUser)
+    CDistributedFileIterator(IDistributedFileDirectory *_dir,const char *wildname,bool includesuper,IUserDescriptor *user,bool _isPrivilegedUser, AccessMode _accessMode=AccessMode::readLogicalMeta, IDistributedFileTransaction *_transaction=NULL)
+        : transaction(_transaction), isPrivilegedUser(_isPrivilegedUser), accessMode(_accessMode)
     {
         setUserDescriptor(udesc,user);
         if (!wildname||!*wildname)
@@ -3221,9 +3250,9 @@ public:
         // this should never be needed but match previous semantics
         // throwing an exception now, to catch the error early on
         if (transaction.get())
-            cur.setown(transaction->lookupSuperFile(queryName(), AccessMode::tbdRead));
+            cur.setown(transaction->lookupSuperFile(queryName(), AccessMode::readLogicalMeta));
         else
-            cur.setown(parent->lookupSuperFile(queryName(), udesc, AccessMode::tbdRead, NULL));
+            cur.setown(parent->lookupSuperFile(queryName(), udesc, AccessMode::readLogicalMeta, NULL));
 
         if (!cur.get())
             throw  MakeStringException(-1,"superFileIter: invalid super-file on query at %s", queryName());
@@ -4020,9 +4049,10 @@ protected:
                 parts.item(i1++).clearDirty();
         }
     }
-    void detach(unsigned timeoutMs, bool removePhysicals, ICodeContext *ctx)
+    void detach(unsigned timeoutMs, bool removePhysicals, ICodeContext *ctx, const DFSAuditContext &auditCtx)
     {
         // Removes either a cluster in case of multi cluster file or the whole File entry from DFS
+        StringBuffer lfnStr(logicalName.get()); // capture before logicalName.clear()
 
         assert(proplockcount == 0 && "CDistributedFile detach: Some properties are still locked");
         assertex(!isAnon()); // not attached!
@@ -4094,6 +4124,18 @@ protected:
             removePhysicalPartFiles(fileDescCopy, exceptions);
             if (exceptions->ordinality())
                 throw exceptions.getClear();
+        }
+
+        if (!auditCtx.isNested())
+        {
+            DFSAuditContext ctx = auditCtx;
+            ctx.setValue("lfn", lfnStr.str());
+            if (clusterName.length())
+                ctx.setValue("plane", clusterName.str());
+            else
+                addAuditPlaneFields(ctx, *this);
+            addAuditSizeFields(ctx, *this);
+            ctx.logFileAccess("DELETE");
         }
     }
     bool removePhysicalPartFiles(IFileDescriptor *fileDesc, IMultiException *mexcept, unsigned numParallelDeletes=0)
@@ -4756,7 +4798,7 @@ public:
         return new CDistributedFilePartIterator(queryParts(),filter);
     }
 
-    virtual void rename(const char *_logicalname,IUserDescriptor *user) override
+    virtual void rename(const char *_logicalname,IUserDescriptor *user, const DFSAuditContext &auditCtx = DFSAuditContext{}) override
     {
         StringBuffer prevname;
         Owned<IFileRelationshipIterator> reliter;
@@ -4771,9 +4813,9 @@ public:
                 EXCLOG(e,"CDistributedFile::rename");
                 e->Release();
             }
-            detachLogical();
+            detachLogical(INFINITE, auditCtx.nested());
         }
-        attach(_logicalname,user);
+        attach(_logicalname, user, auditCtx.nested());
         if (prevname.length()) {
             DistributedFilePropertyLock lock(this);
             IPropertyTree &pt = queryAttributes();
@@ -4785,6 +4827,14 @@ public:
         if (reliter.get()) {
             // add back any relationships with new name
             parent->renameFileRelationships(prevname.str(),_logicalname,reliter,user);
+        }
+
+        if (!auditCtx.isNested()) {
+            DFSAuditContext ctx = auditCtx;
+            ctx.setValue("lfn", logicalName.get());
+            if (prevname.length())
+                ctx.setValue("lfn2", prevname.str());
+            ctx.logFileAccess("RENAME");
         }
     }
 
@@ -4810,7 +4860,7 @@ public:
         return (!logicalName.isSet());
     }
 
-    virtual void attach(const char *_logicalname,IUserDescriptor *user) override
+    virtual void attach(const char *_logicalname, IUserDescriptor *user, const DFSAuditContext &auditCtx) override
     {
         CriticalBlock block (sect);
         assertex(isAnon()); // already attached!
@@ -4847,6 +4897,20 @@ public:
             setParts(fdesc,false);
             setUserDescriptor(udesc, user);
             setAccessed();
+
+            if (!auditCtx.isNested())
+            {
+                DFSAuditContext ctx = auditCtx;
+                ctx.setValue("lfn", logicalName.get());
+                if (clusters.ordinality() == 1)
+                {
+                    StringBuffer clusterName;
+                    getClusterName(0, clusterName);
+                    ctx.setValue("plane", clusterName.str());
+                }
+                addAuditSizeFields(ctx, *this);
+                ctx.logFileAccess("PUBLISH");
+            }
 #ifdef EXTRA_LOGGING
             LOGFDESC("CDistributedFile::attach fdesc",fdesc);
             LOGPTREE("CDistributedFile::attach root.2",root);
@@ -4870,15 +4934,15 @@ public:
      * See removeLogical()
      */
 public:
-    void detachLogical(unsigned timeoutms=INFINITE)
+    void detachLogical(unsigned timeoutms=INFINITE, const DFSAuditContext &auditCtx = DFSAuditContext{})
     {
-        detach(timeoutms, false, NULL);
+        detach(timeoutms, false, NULL, auditCtx.nested());
     }
 
 public:
-    virtual void detach(unsigned timeoutMs=INFINITE, ICodeContext *ctx=NULL) override
+    virtual void detach(unsigned timeoutMs=INFINITE, ICodeContext *ctx=NULL, const DFSAuditContext &auditCtx = DFSAuditContext{}) override
     {
-        detach(timeoutMs, true, ctx);
+        detach(timeoutMs, true, ctx, auditCtx);
     }
 
     virtual bool existsPhysicalPartFiles(unsigned short port) override
@@ -5707,14 +5771,14 @@ class CDistributedSuperFile: public CDistributedFileBase<IDistributedSuperFile>
         }
         virtual bool prepare()
         {
-            parent.setown(transaction->lookupSuperFile(parentlname, AccessMode::tbdWrite));
+            parent.setown(transaction->lookupSuperFile(parentlname, AccessMode::writeLogicalMeta));
             if (!parent)
                 throw MakeStringException(-1,"addSubFile: SuperFile %s cannot be found",parentlname.get());
             if (!subfile.isEmpty())
             {
                 try
                 {
-                    sub.setown(transaction->lookupFile(subfile, AccessMode::tbdWrite, SDS_SUB_LOCK_TIMEOUT));
+                    sub.setown(transaction->lookupFile(subfile, AccessMode::writeLogicalMeta, SDS_SUB_LOCK_TIMEOUT));
                     if (!sub)
                         throw MakeStringException(-1,"cAddSubFileAction: sub file %s not found", subfile.str());
                     // Must validate before locking for update below, to check sub is not already in parent (and therefore locked already)
@@ -5783,14 +5847,14 @@ class CDistributedSuperFile: public CDistributedFileBase<IDistributedSuperFile>
         }
         virtual bool prepare()
         {
-            parent.setown(transaction->lookupSuperFile(parentlname, AccessMode::tbdWrite));
+            parent.setown(transaction->lookupSuperFile(parentlname, AccessMode::writeLogicalMeta));
             if (!parent)
                 throw MakeStringException(-1,"removeSubFile: SuperFile %s cannot be found",parentlname.get());
             if (!subfile.isEmpty())
             {
                 try
                 {
-                    sub.setown(transaction->lookupFile(subfile, AccessMode::tbdWrite, SDS_SUB_LOCK_TIMEOUT));
+                    sub.setown(transaction->lookupFile(subfile, remsub ? AccessMode::erase : AccessMode::writeLogicalMeta, SDS_SUB_LOCK_TIMEOUT));
                 }
                 catch (ISDSException *e)
                 {
@@ -5875,7 +5939,7 @@ class CDistributedSuperFile: public CDistributedFileBase<IDistributedSuperFile>
         }
         virtual bool prepare()
         {
-            parent.setown(transaction->lookupSuperFile(parentlname, AccessMode::tbdWrite));
+            parent.setown(transaction->lookupSuperFile(parentlname, AccessMode::writeLogicalMeta));
             if (!parent)
                 throw MakeStringException(-1,"removeOwnedSubFiles: SuperFile %s cannot be found", parentlname.get());
             // Try to lock all files
@@ -5958,10 +6022,10 @@ class CDistributedSuperFile: public CDistributedFileBase<IDistributedSuperFile>
         }
         virtual bool prepare()
         {
-            super1.setown(transaction->lookupSuperFile(super1Name, AccessMode::writeMeta));
+            super1.setown(transaction->lookupSuperFile(super1Name, AccessMode::writeLogicalMeta));
             if (!super1)
                 throw MakeStringException(-1,"swapSuperFile: SuperFile %s cannot be found", super1Name.get());
-            super2.setown(transaction->lookupSuperFile(super2Name, AccessMode::writeMeta));
+            super2.setown(transaction->lookupSuperFile(super2Name, AccessMode::writeLogicalMeta));
             if (!super2)
             {
                 super1.clear();
@@ -6673,7 +6737,7 @@ public:
         return ret;
     }
 
-    virtual void rename(const char *_logicalname,IUserDescriptor *user) override
+    virtual void rename(const char *_logicalname,IUserDescriptor *user, const DFSAuditContext &auditCtx = DFSAuditContext{}) override
     {
         StringBuffer prevname;
         Owned<IFileRelationshipIterator> reliter;
@@ -6688,12 +6752,20 @@ public:
                 EXCLOG(e,"CDistributedFileDirectory::rename");
                 e->Release();
             }
-            detach();
+            detach(INFINITE, NULL, auditCtx.nested());
         }
-        attach(_logicalname,user);
+        attach(_logicalname, user, auditCtx.nested());
         if (reliter.get()) {
             // add back any relationships with new name
             parent->renameFileRelationships(prevname.str(),_logicalname,reliter,user);
+        }
+
+        if (!auditCtx.isNested()) {
+            DFSAuditContext ctx = auditCtx;
+            ctx.setValue("lfn", logicalName.get());
+            if (prevname.length())
+                ctx.setValue("lfn2", prevname.str());
+            ctx.logFileAccess("RENAME");
         }
     }
 
@@ -6735,7 +6807,7 @@ public:
         return ret;
     }
 
-    virtual void attach(const char *_logicalname,IUserDescriptor *user) override
+    virtual void attach(const char *_logicalname, IUserDescriptor *user, const DFSAuditContext &auditCtx) override
     {
         assertex(!conn.get()); // already attached
         CriticalBlock block (sect);
@@ -6762,7 +6834,7 @@ public:
         }
     }
 
-    virtual void detach(unsigned timeoutMs=INFINITE, ICodeContext *ctx=NULL) override
+    virtual void detach(unsigned timeoutMs=INFINITE, ICodeContext *ctx=NULL, const DFSAuditContext &auditCtx = DFSAuditContext{}) override
     {
         assertex(conn.get()); // must be attached
         CriticalBlock block(sect);
@@ -7265,8 +7337,8 @@ public:
         StringBuffer pname;
         ForEach(*iter) {
             iter->query().getProp("@name",pname.clear());
-            Owned<IDistributedSuperFile> psfile = transaction?transaction->lookupSuperFile(pname.str(), AccessMode::writeMeta):
-                queryDistributedFileDirectory().lookupSuperFile(pname.str(), udesc, AccessMode::writeMeta, NULL);
+            Owned<IDistributedSuperFile> psfile = transaction?transaction->lookupSuperFile(pname.str(), AccessMode::writeLogicalMeta):
+                queryDistributedFileDirectory().lookupSuperFile(pname.str(), udesc, AccessMode::writeLogicalMeta, NULL);
             CDistributedSuperFile *file = QUERYINTERFACE(psfile.get(),CDistributedSuperFile);
             if (file) {
                 {
@@ -7418,22 +7490,22 @@ private:
                 subnames2.append(file->querySubFile(i, false).queryLogicalName());
         // Delete all files
         ForEachItemIn(d1,subnames1) {
-            Owned<IDistributedFile> sub = transaction->lookupFile(subnames1.item(d1), AccessMode::writeMeta);
+            Owned<IDistributedFile> sub = transaction->lookupFile(subnames1.item(d1), AccessMode::writeLogicalMeta);
             if (!doRemoveSubFile(sub->queryLogicalName(), transaction))
                 return false;
         }
         ForEachItemIn(d2,subnames2) {
-            Owned<IDistributedFile> sub = transaction->lookupFile(subnames2.item(d2), AccessMode::writeMeta);
+            Owned<IDistributedFile> sub = transaction->lookupFile(subnames2.item(d2), AccessMode::writeLogicalMeta);
             if (!file->doRemoveSubFile(sub->queryLogicalName(), transaction))
                 return false;
         }
         // Add files swapped
         ForEachItemIn(a1,subnames1) {
-            Owned<IDistributedFile> sub = transaction->lookupFile(subnames1.item(a1), AccessMode::writeMeta);
+            Owned<IDistributedFile> sub = transaction->lookupFile(subnames1.item(a1), AccessMode::writeLogicalMeta);
             file->doAddSubFile(LINK(sub), false, NULL, transaction);
         }
         ForEachItemIn(a2,subnames2) {
-            Owned<IDistributedFile> sub = transaction->lookupFile(subnames2.item(a2), AccessMode::writeMeta);
+            Owned<IDistributedFile> sub = transaction->lookupFile(subnames2.item(a2), AccessMode::writeLogicalMeta);
             doAddSubFile(LINK(sub), false, NULL, transaction);
         }
         return true;
@@ -7467,7 +7539,7 @@ public:
         {
             localtrans->descend();
             StringArray subs;
-            Owned<IDistributedSuperFile> sfile = localtrans->lookupSuperFile(subfile, AccessMode::writeMeta);
+            Owned<IDistributedSuperFile> sfile = localtrans->lookupSuperFile(subfile, AccessMode::writeLogicalMeta);
             if (sfile)
             {
                 Owned<IDistributedFileIterator> iter = sfile->getSubFileIterator();
@@ -8951,11 +9023,11 @@ INamedGroupStore &queryNamedGroupStore()
 
 // --------------------------------------------------------
 
-IDistributedFile *CDistributedFileDirectory::lookup(const char *_logicalname, IUserDescriptor *user, AccessMode accessMode, bool hold, bool lockSuperOwner, IDistributedFileTransaction *transaction, bool privilegedUser, unsigned timeout)
+IDistributedFile *CDistributedFileDirectory::lookup(const char *_logicalname, IUserDescriptor *user, AccessMode accessMode, bool hold, bool lockSuperOwner, IDistributedFileTransaction *transaction, bool privilegedUser, unsigned timeout, const DFSAuditContext &auditCtx)
 {
     CDfsLogicalFileName logicalname;
     logicalname.set(_logicalname);
-    return lookup(logicalname, user, accessMode, hold, lockSuperOwner, transaction, privilegedUser, timeout);
+    return lookup(logicalname, user, accessMode, hold, lockSuperOwner, transaction, privilegedUser, timeout, auditCtx);
 }
 
 IDistributedFile *CDistributedFileDirectory::dolookup(CDfsLogicalFileName &_logicalname, IUserDescriptor *user, AccessMode accessMode, bool hold, bool lockSuperOwner, IDistributedFileTransaction *transaction, unsigned timeout)
@@ -9056,17 +9128,47 @@ IDistributedFile *CDistributedFileDirectory::dolookup(CDfsLogicalFileName &_logi
     return NULL;
 }
 
-IDistributedFile *CDistributedFileDirectory::lookup(CDfsLogicalFileName &logicalname, IUserDescriptor *user, AccessMode accessMode, bool hold, bool lockSuperOwner, IDistributedFileTransaction *transaction, bool privilegedUser, unsigned timeout)
+IDistributedFile *CDistributedFileDirectory::lookup(CDfsLogicalFileName &logicalname, IUserDescriptor *user, AccessMode accessMode, bool hold, bool lockSuperOwner, IDistributedFileTransaction *transaction, bool privilegedUser, unsigned timeout, const DFSAuditContext &auditCtx)
 {
     if (logicalname.isRemote())
     {
         PrintStackReport(); // to help locate contexts it was called in
         throw new CDFS_Exception(DFSERR_InvalidRemoteFileContext, logicalname.get());
     }
-    Owned <IDistributedFile>distributedFile = dolookup(logicalname, user, accessMode, hold, lockSuperOwner, transaction, timeout);
+    Owned<IDistributedFile> distributedFile = dolookup(logicalname, user, accessMode, hold, lockSuperOwner, transaction, timeout);
+    if (!distributedFile)
+        return nullptr;
+
     // Restricted access is currently designed to stop users viewing sensitive information. It is not designed to stop users deleting or overwriting existing restricted files
-    if (!isWrite(accessMode) && distributedFile && distributedFile->isRestrictedAccess() && !privilegedUser)
+    if (!isWrite(accessMode) && distributedFile->isRestrictedAccess() && !privilegedUser)
         throw new CDFS_Exception(DFSERR_RestrictedFileAccessDenied,logicalname.get());
+
+    if (!auditCtx.isNested() && isPhysicalAccessMode(accessMode))
+    {
+        const char *verb = (AccessMode::none != (accessMode & AccessMode::extend)) ? "EXTEND" : "READ";
+        // Emit for the resolved file (superfile or regular).
+        {
+            DFSAuditContext ctx = auditCtx;
+            ctx.setValue("lfn", logicalname.get());
+            addAuditPlaneFields(ctx, *distributedFile);
+            addAuditSizeFields(ctx, *distributedFile);
+            ctx.logFileAccess(verb);
+        }
+        // For superfiles, also emit one record per leaf subfile.
+        IDistributedSuperFile *sf = distributedFile->querySuperFile();
+        if (sf)
+        {
+            Owned<IDistributedFileIterator> iter = sf->getSubFileIterator(true); // true = recurse into supersubs
+            ForEach(*iter)
+            {
+                IDistributedFile &subFile = iter->query();
+                DFSAuditContext subCtx = auditCtx;
+                subCtx.setValue("lfn", subFile.queryLogicalName());
+                addAuditSizeFields(subCtx, subFile);
+                subCtx.logFileAccess(verb);
+            }
+        }
+    }
     return distributedFile.getClear();
 }
 
@@ -9089,7 +9191,7 @@ bool CDistributedFileDirectory::isSuperFile(    const char *logicalname,
                                                 INode *foreigndali,
                                                 unsigned timeout)
 {
-    Owned<IPropertyTree> tree = getFileTree(logicalname, user, AccessMode::readMeta, foreigndali,timeout, GetFileTreeOpts::appendForeign);
+    Owned<IPropertyTree> tree = getFileTree(logicalname, user, AccessMode::readLogicalMeta, foreigndali,timeout, GetFileTreeOpts::appendForeign);
     return tree.get()&&(strcmp(tree->queryName(),queryDfsXmlBranchName(DXB_SuperFile))==0);
 }
 
@@ -9108,7 +9210,7 @@ bool CDistributedFileDirectory::exists(const char *_logicalname,IUserDescriptor 
     if (foreign) {
         // Restricted access is currently designed to stop users viewing sensitive information. Assuming privileged user rights to allow
         // exists() operation to succeed regardless of user rights
-        Owned<IDistributedFile> file = lookup(_logicalname, user, AccessMode::tbdRead, false, false, NULL, defaultPrivilegedUser, defaultTimeout);
+        Owned<IDistributedFile> file = lookup(_logicalname, user, AccessMode::readLogicalMeta, false, false, NULL, defaultPrivilegedUser, defaultTimeout);
         if (file.get()==NULL)
             return false;
         if (file->querySuperFile()) {
@@ -9145,7 +9247,7 @@ bool CDistributedFileDirectory::existsPhysical(const char *_logicalname, IUserDe
 {
     // Restricted access is currently designed to stop users viewing sensitive information. Assuming privileged user rights to allow
     // existsPhysical() operation to succeed regardless of user rights
-    Owned<IDistributedFile> file = lookup(_logicalname, user, AccessMode::tbdRead, false, false, NULL, defaultPrivilegedUser, defaultTimeout);
+    Owned<IDistributedFile> file = lookup(_logicalname, user, AccessMode::meta | AccessMode::readPhysicalMeta, false, false, NULL, defaultPrivilegedUser, defaultTimeout);
     if (!file)
         return false;
     return file->existsPhysicalPartFiles(0);
@@ -9229,7 +9331,7 @@ public:
     {
         if (!super)
         {
-            Owned<IDistributedSuperFile> _super = transaction->lookupSuperFile(logicalname.get(), AccessMode::tbdWrite, SDS_SUB_LOCK_TIMEOUT);
+            Owned<IDistributedSuperFile> _super = transaction->lookupSuperFile(logicalname.get(), AccessMode::writeLogicalMeta, SDS_SUB_LOCK_TIMEOUT);
             if (_super)
                 super.setown(_super.getClear());
             else
@@ -9241,7 +9343,7 @@ public:
                  */
                 Owned<IPropertyTree> root = createPTree();
                 root->setPropInt("@interleaved",interleaved?2:0); // this is ill placed
-                super.setown(new CDistributedSuperFile(parent, root, logicalname, AccessMode::writeMeta, user));
+                super.setown(new CDistributedSuperFile(parent, root, logicalname, AccessMode::writeLogicalMeta, user));
                 created = true;
                 super->setModified();
                 transaction->addFile(super);
@@ -9344,9 +9446,9 @@ class CRemoveSuperFileAction: public CDFAction
         {
             return transaction->isSubFile(super, subFile, sub);
         }
-        virtual bool addDelayedDelete(CDfsLogicalFileName &lfn,unsigned timeoutms=INFINITE)
+        virtual bool addDelayedDelete(CDfsLogicalFileName &lfn,unsigned timeoutms=INFINITE, const DFSAuditContext &auditCtx = DFSAuditContext{})
         {
-            return transaction->addDelayedDelete(lfn, timeoutms);
+            return transaction->addDelayedDelete(lfn, timeoutms, auditCtx);
         }
     };
 
@@ -9362,7 +9464,7 @@ public:
     virtual bool prepare()
     {
         // We *have* to make sure the file exists here
-        super.setown(transaction->lookupSuperFile(logicalname.get(), AccessMode::tbdWrite, SDS_SUB_LOCK_TIMEOUT));
+        super.setown(transaction->lookupSuperFile(logicalname.get(), AccessMode::writeLogicalMeta, SDS_SUB_LOCK_TIMEOUT));
         if (!super)
             ThrowStringException(-1, "Super File %s doesn't exist in the file system", logicalname.get());
         addFileLock(super);
@@ -9418,6 +9520,7 @@ class CRenameFileAction: public CDFAction
     CDistributedFileDirectory *parent;
     Linked<IDistributedFile> file;
     IUserDescriptor *user;
+    DFSAuditContext auditCtx;
     bool renamed;
     enum RenameAction { ra_regular, ra_splitfrom, ra_mergeinto } ra;
 
@@ -9425,8 +9528,9 @@ public:
     CRenameFileAction(CDistributedFileDirectory *_parent,
                       IUserDescriptor *_user,
                       const char *_flname,
-                      const char *_newname)
-        : parent(_parent), user(_user)
+                      const char *_newname,
+                      const DFSAuditContext &_auditCtx)
+        : parent(_parent), user(_user), auditCtx(_auditCtx)
     {
         tracing.appendf("RenameFile: name: %s, newname: %s", _flname, _newname);
         fromName.set(_flname);
@@ -9446,7 +9550,7 @@ public:
     virtual bool prepare()
     {
         // We *have* to make sure the source file exists and can be renamed
-        file.setown(transaction->lookupFile(fromName.get(), AccessMode::tbdWrite, SDS_SUB_LOCK_TIMEOUT));
+        file.setown(transaction->lookupFile(fromName.get(), AccessMode::erase, SDS_SUB_LOCK_TIMEOUT));
         if (!file)
             ThrowStringException(-1, "rename: file %s doesn't exist in the file system", fromName.get());
         if (file->querySuperFile())
@@ -9462,7 +9566,7 @@ public:
             fromName.getCluster(oldcluster);
             toName.getCluster(newcluster);
 
-            Owned<IDistributedFile> newFile = transaction->lookupFile(toName.get(), AccessMode::tbdWrite, SDS_SUB_LOCK_TIMEOUT);
+            Owned<IDistributedFile> newFile = transaction->lookupFile(toName.get(), AccessMode::erase, SDS_SUB_LOCK_TIMEOUT);
             if (newFile)
             {
                 if (newcluster.length())
@@ -9504,6 +9608,14 @@ public:
     virtual void run()
     {
         doRename(fromName, toName, ra);
+
+        if (!auditCtx.isNested())
+        {
+            DFSAuditContext ctx = auditCtx;
+            ctx.setValue("lfn", toName.get());
+            ctx.setValue("lfn2", fromName.get());
+            ctx.logFileAccess("RENAME");
+        }
         renamed = true;
     }
     virtual void retry()
@@ -9569,18 +9681,18 @@ private:
             {
                 unlock();
                 oldfile->removeCluster(oldcluster.str());
-                file->attach(to.get(), user);
+                file->attach(to.get(), user, auditCtx.nested());
                 lock();
                 break;
             }
             case ra_mergeinto:
             {
-                Owned<IDistributedFile> newFile = transaction->lookupFile(to.get(), AccessMode::tbdWrite, SDS_SUB_LOCK_TIMEOUT);
+                Owned<IDistributedFile> newFile = transaction->lookupFile(to.get(), AccessMode::erase, SDS_SUB_LOCK_TIMEOUT);
                 ClusterPartDiskMapSpec mspec = file->queryPartDiskMapping(0);
                 // Unlock the old file
                 unlock();
                 CDistributedFile *_file = dynamic_cast<CDistributedFile *>(file.get());
-                _file->detachLogical(INFINITE); // don't delete physicals, now used by newFile
+                _file->detachLogical(INFINITE, auditCtx.nested()); // don't delete physicals, now used by newFile
                 transaction->clearFile(file); // no long used in transaction
                 newFile->addCluster(newcluster.str(),mspec);
                 parent->fixDates(newFile);
@@ -9588,7 +9700,7 @@ private:
                 // TBD: Allow 'addCluster' 'fixDates' etc. to be delayed/work inside transaction
                 transaction->clearFile(newFile);
                 newFile.clear();
-                file.setown(transaction->lookupFile(to.get(), AccessMode::tbdWrite, SDS_SUB_LOCK_TIMEOUT));
+                file.setown(transaction->lookupFile(to.get(), AccessMode::erase, SDS_SUB_LOCK_TIMEOUT));
                 addFileLock(file);
                 lock();
                 break;
@@ -9601,7 +9713,7 @@ private:
                  * TBD: Allow IDistributedFile::rename to work properly within transaction.
                  */
                 DistributedFilePropertyLockFree unlock(file);
-                file->rename(to.get(), user);
+                file->rename(to.get(), user, auditCtx.nested());
                 break;
             }
             default:
@@ -9630,7 +9742,7 @@ IDistributedSuperFile *CDistributedFileDirectory::createSuperFile(const char *_l
     else
         localtrans.setown(new CDistributedFileTransaction(user));
 
-    Owned<IDistributedSuperFile> sfile = localtrans->lookupSuperFile(logicalname.get(), AccessMode::tbdWrite);
+    Owned<IDistributedSuperFile> sfile = localtrans->lookupSuperFile(logicalname.get(), AccessMode::writeLogicalMeta);
     if (sfile)
     {
         if (ifdoesnotexist)
@@ -9648,7 +9760,7 @@ IDistributedSuperFile *CDistributedFileDirectory::createSuperFile(const char *_l
 // MORE: This should be implemented in DFSAccess later on
 IDistributedSuperFile *CDistributedFileDirectory::createNewSuperFile(IPropertyTree *tree, const char *optionalName, IArrayOf<IDistributedFile> *subFiles)
 {
-    return new CDistributedSuperFile(this, tree, AccessMode::writeMeta, optionalName, subFiles);
+    return new CDistributedSuperFile(this, tree, AccessMode::writeLogicalMeta, optionalName, subFiles);
 }
 
 // MORE: This should be implemented in DFSAccess later on
@@ -9672,7 +9784,7 @@ void CDistributedFileDirectory::removeSuperFile(const char *_logicalname, bool d
     localtrans->autoCommit();
 }
 
-bool CDistributedFileDirectory::removeEntry(const char *name, IUserDescriptor *user, IDistributedFileTransaction *transaction, unsigned timeoutms, bool throwException)
+bool CDistributedFileDirectory::removeEntry(const char *name, IUserDescriptor *user, IDistributedFileTransaction *transaction, unsigned timeoutms, bool throwException, const DFSAuditContext &auditCtx)
 {
     CDfsLogicalFileName logicalname;
     logicalname.set(name);
@@ -9689,7 +9801,7 @@ bool CDistributedFileDirectory::removeEntry(const char *name, IUserDescriptor *u
         localtrans.setown(new CDistributedFileTransaction(user));
 
     // Action will be executed at the end of the transaction (commit)
-    localtrans->addDelayedDelete(logicalname, timeoutms);
+    localtrans->addDelayedDelete(logicalname, timeoutms, auditCtx);
 
     try
     {
@@ -9721,7 +9833,7 @@ void CDistributedFileDirectory::removeEmptyScope(const char *scope)
     }
 }
 
-void CDistributedFileDirectory::renamePhysical(const char *oldname,const char *newname,IUserDescriptor *user,IDistributedFileTransaction *transaction)
+void CDistributedFileDirectory::renamePhysical(const char *oldname, const char *newname, IUserDescriptor *user, IDistributedFileTransaction *transaction, const DFSAuditContext &auditCtx)
 {
     logNullUser(user);//stack trace if NULL user
     if (!user)
@@ -9741,7 +9853,7 @@ void CDistributedFileDirectory::renamePhysical(const char *oldname,const char *n
     else
         localtrans.setown(new CDistributedFileTransaction(user));
 
-    CRenameFileAction *action = new CRenameFileAction(this, user, oldname, newname);
+    CRenameFileAction *action = new CRenameFileAction(this, user, oldname, newname, auditCtx);
     localtrans->addAction(action); // takes ownership
     localtrans->autoCommit();
 }
@@ -9842,9 +9954,9 @@ void CDistributedFileDirectory::addEntry(CDfsLogicalFileName &dlfn,IPropertyTree
     }
 }
 
-IDistributedFileIterator *CDistributedFileDirectory::getIterator(const char *wildname, bool includesuper, IUserDescriptor *user,bool isPrivilegedUser)
+IDistributedFileIterator *CDistributedFileDirectory::getIterator(const char *wildname, bool includesuper, IUserDescriptor *user,bool isPrivilegedUser, AccessMode accessMode)
 {
-    return new CDistributedFileIterator(this,wildname,includesuper,user,isPrivilegedUser);
+    return new CDistributedFileIterator(this,wildname,includesuper,user,isPrivilegedUser,accessMode);
 }
 
 GetFileClusterNamesType CDistributedFileDirectory::getFileClusterNames(const char *_logicalname,StringArray &out)
@@ -9886,7 +9998,10 @@ IDistributedFileDirectory &queryDistributedFileDirectory()
     {
         CriticalBlock block(dfdirCrit);
         if (!DFdir.load())
+        {
+            initDFSAudit();
             DFdir.store(new CDistributedFileDirectory());
+        }
     }
     return *DFdir.load();
 }
@@ -9899,6 +10014,7 @@ void closedownDFS() // called by dacoven
     CriticalBlock bDFdir(dfdirCrit);
     try
     {
+        closeDFSAudit();
         delete DFdir.load();
     }
     catch (IMP_Exception *e)
@@ -12565,28 +12681,25 @@ public:
                 // Audit foreign read with client context info
                 AccessMode accessMode;
                 mb.read((unsigned &)accessMode);
-                if (AccessMode::none == (accessMode & AccessMode::meta)) // only audit non meta access file lookups
+                if (isPhysicalAccessMode(accessMode))
                 {
                     size32_t clientInfoLength;
                     mb.read(clientInfoLength);
-                    const char *clientInfo = nullptr;
-                    if (clientInfoLength > 0)
-                        clientInfo = (const char *)mb.readDirect(clientInfoLength);
 
-                    LogfmtKVList context;
-                    parseLogfmtToKVList(clientInfo, context);
+                    DFSAuditContext context;
+                    if (clientInfoLength)
+                    {
+                        const char *clientInfo = (const char *)mb.readDirect(clientInfoLength);
+                        context = DFSAuditContext::fromLogfmt(clientInfo);
+                    }
                     if (hasUser)
                     {
                         StringBuffer userName;
-                        setLogfmtValue(context, "user", udesc->getUserName(userName).str());
+                        context.setValue("user", udesc->getUserName(userName).str());
                     }
-
-                    StringBuffer logEntry;
-                    const char *component = queryLogfmtValue(context, "component", "Foreign");
-                    logEntry.appendf(",FileAccess,%s,READ,%s,", component, lname.str());
-                    logfmtKVListToString(context, logEntry, "component");
-
-                    LOG(MCauditInfo, "%s", logEntry.str());
+                    context.setValue("lfn", lname.str());
+                    context.setValue("component", "Foreign");
+                    context.logFileAccess("READ");
                 }
             }
         }
@@ -13148,17 +13261,20 @@ IPropertyTree *CDistributedFileDirectory::getFileTree(const char *lname, IUserDe
         if (clientInfoAndAccessModeSupport)
         {
             mb.append((unsigned)accessMode);
-            if (foreigndali && (AccessMode::none == (accessMode & AccessMode::meta))) // suppress building/sending client info if meta lookup (server ignores at the moment anyway [doesn't audit])
+            if (foreigndali && isPhysicalAccessMode(accessMode)) // suppress building/sending client info if meta lookup (server ignores at the moment anyway [doesn't audit])
             {
-                LogfmtKVList clientInfoItems;
+                DFSAuditContext clientInfoItems;
                 buildClientInfoLogfmt(clientInfoItems);
-                setLogfmtValue(clientInfoItems, "mode", "foreign");
+                DFSAuditContext selfCtx = queryDefaultDFSAuditContext();
+                clientInfoItems.setValue("clientComponent", selfCtx.queryValue("component"));
+                clientInfoItems.setValue("clientInstance", selfCtx.queryValue("instance"));
+                clientInfoItems.setValue("mode", "foreign");
                 StringBuffer clientInfo;
-                logfmtKVListToString(clientInfoItems, clientInfo);
+                clientInfoItems.toLogfmt(clientInfo);
                 size32_t len = clientInfo.length();
                 mb.append(len);
                 if (len)
-                    mb.append(len, clientInfo.str());
+                    mb.append(len+1, clientInfo.str()); // include null terminator
             }
             else
                 mb.append((size32_t)0); // no client info
@@ -13251,27 +13367,6 @@ IPropertyTree *CDistributedFileDirectory::getFileTree(const char *lname, IUserDe
     if (foreigndali && appendForeign)
         resolveForeignFiles(ret,foreigndali);
     return ret.getClear();
-}
-
-IFileDescriptor *CDistributedFileDirectory::getFileDescriptor(const char *lname, AccessMode accessMode, IUserDescriptor *user, const INode *foreigndali, unsigned foreigndalitimeout)
-{
-    Owned<IPropertyTree> tree = getFileTree(lname, user, accessMode, foreigndali, foreigndalitimeout, GetFileTreeOpts::appendForeign);
-    if (!tree)
-        return NULL;
-    if (strcmp(tree->queryName(),queryDfsXmlBranchName(DXB_SuperFile))==0) {
-        CDfsLogicalFileName dlfn;
-        dlfn.set(lname);
-        Owned<CDistributedSuperFile> sfile = new CDistributedSuperFile(this, tree, dlfn, accessMode, user);
-        return sfile->getFileDescriptor(NULL);
-    }
-    if (strcmp(tree->queryName(),queryDfsXmlBranchName(DXB_File))!=0)
-        return NULL; // what is it?
-
-
-    IFileDescriptor * fdesc = deserializeFileDescriptorTree(tree,&queryNamedGroupStore(),0);
-    fdesc->queryProperties().setPropInt("@accessMode", static_cast<int>(accessMode));
-    fdesc->setTraceName(lname);
-    return fdesc;
 }
 
 IDistributedFile *CDistributedFileDirectory::getFile(const char *lname, AccessMode accessMode, IUserDescriptor *user, const INode *foreigndali, unsigned foreigndalitimeout)
@@ -13619,13 +13714,19 @@ DistributedFileCompareResult compareDistributedFiles(IDistributedFile *file1, ID
 
 DistributedFileCompareResult CDistributedFileDirectory::fileCompare(const char *lfn1,const char *lfn2,DistributedFileCompareMode mode,StringBuffer &errstr,IUserDescriptor *user)
 {
-    Owned<IDistributedFile> file1 = lookup(lfn1, user, AccessMode::tbdRead, false, false, NULL, defaultPrivilegedUser, defaultTimeout);
+    AccessMode accessMode = AccessMode::readLogicalMeta;
+    if (mode == DFS_COMPARE_FILES_PHYSICAL_CRCS)
+        accessMode = AccessMode::readSequential;
+    else if (mode == DFS_COMPARE_FILES_PHYSICAL)
+        accessMode = AccessMode::meta | AccessMode::readPhysicalMeta;
+
+    Owned<IDistributedFile> file1 = lookup(lfn1, user, accessMode, false, false, NULL, defaultPrivilegedUser, defaultTimeout);
     if (!file1)
     {
         errstr.appendf("File %s not found",lfn1);
         return DFS_COMPARE_RESULT_FAILURE;
     }
-    Owned<IDistributedFile> file2 = lookup(lfn2, user, AccessMode::tbdRead, false, false, NULL, defaultPrivilegedUser, defaultTimeout);
+    Owned<IDistributedFile> file2 = lookup(lfn2, user, accessMode, false, false, NULL, defaultPrivilegedUser, defaultTimeout);
     if (!file2)
     {
         errstr.appendf("File %s not found",lfn2);
@@ -13637,7 +13738,7 @@ DistributedFileCompareResult CDistributedFileDirectory::fileCompare(const char *
 bool CDistributedFileDirectory::filePhysicalVerify(const char *lfn, IUserDescriptor *user, bool includecrc, StringBuffer &errstr)
 {
     bool differs = false;
-    Owned<IDistributedFile> file = lookup(lfn, user, AccessMode::tbdRead, false, false, NULL, defaultPrivilegedUser, defaultTimeout);
+    Owned<IDistributedFile> file = lookup(lfn, user, AccessMode::meta|AccessMode::readPhysicalMeta, false, false, NULL, defaultPrivilegedUser, defaultTimeout);
     if (!file)
     {
         errstr.appendf("Could not find file: %s",lfn);
@@ -14113,7 +14214,7 @@ void CDistributedFileDirectory::promoteSuperFiles(unsigned numsf,const char **sf
     bool created = false;
     unsigned files = numsf;
     for (unsigned i=0; i<numsf; i++) {
-        Owned<IDistributedSuperFile> super = transaction->lookupSuperFile(sfnames[i], AccessMode::tbdWrite);
+        Owned<IDistributedSuperFile> super = transaction->lookupSuperFile(sfnames[i], AccessMode::writeLogicalMeta);
         if (!super.get()) {
             if (created && createonlyonesuperfile) {
                 files = i;
@@ -14125,7 +14226,7 @@ void CDistributedFileDirectory::promoteSuperFiles(unsigned numsf,const char **sf
     }
 
     // If last file had sub-files, clean and fill outlinked
-    Owned<IDistributedSuperFile> last = transaction->lookupSuperFile(sfnames[files-1], AccessMode::tbdWrite);
+    Owned<IDistributedSuperFile> last = transaction->lookupSuperFile(sfnames[files-1], AccessMode::writeLogicalMeta);
     assertex(last.get());
     unsigned lastSubs = last->numSubFiles();
     if (files == numsf && lastSubs > 0) {
@@ -14138,8 +14239,8 @@ void CDistributedFileDirectory::promoteSuperFiles(unsigned numsf,const char **sf
 
     // Move up, starting from last
     for (unsigned i=files-1; i; i--) {
-        Owned<IDistributedSuperFile> orig = transaction->lookupSuperFile(sfnames[i-1], AccessMode::tbdWrite);
-        Owned<IDistributedSuperFile> dest = transaction->lookupSuperFile(sfnames[i], AccessMode::tbdWrite);
+        Owned<IDistributedSuperFile> orig = transaction->lookupSuperFile(sfnames[i-1], AccessMode::writeLogicalMeta);
+        Owned<IDistributedSuperFile> dest = transaction->lookupSuperFile(sfnames[i], AccessMode::writeLogicalMeta);
         assertex(orig.get());
         assertex(dest.get());
         int common = hasCommonSubChildren(orig, dest);
@@ -14151,7 +14252,7 @@ void CDistributedFileDirectory::promoteSuperFiles(unsigned numsf,const char **sf
     }
 
     // Move new subs to first super, if any
-    Owned<IDistributedSuperFile> first = transaction->lookupSuperFile(sfnames[0], AccessMode::tbdWrite);
+    Owned<IDistributedSuperFile> first = transaction->lookupSuperFile(sfnames[0], AccessMode::writeLogicalMeta);
     assertex(first.get());
     StringArray toadd;
     toadd.appendListUniq(addsubnames, ",");
@@ -15238,7 +15339,7 @@ bool doesPhysicalMatchMeta(IDistributedFilePart &part, IFile &iFile, offset_t &e
  */
 extern da_decl void removeLogical(const char *fname, IUserDescriptor *user) {
     if (queryDistributedFileDirectory().exists(fname, user)) {
-        Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup(fname, user, AccessMode::tbdWrite, false, false, nullptr, defaultPrivilegedUser);
+        Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup(fname, user, AccessMode::writeLogicalMeta, false, false, nullptr, defaultPrivilegedUser);
         CDistributedFile *f = QUERYINTERFACE(file.get(),CDistributedFile);
         assert(f);
         f->detachLogical();

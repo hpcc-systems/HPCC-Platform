@@ -2829,7 +2829,7 @@ bool CFileSprayEx::onCopy(IEspContext &context, IEspCopy &req, IEspCopyResponse 
             logicalName.setForeign(ep,false);
         }
 
-        Owned<IDistributedFile> file = wsdfs::lookup(logicalName, udesc, AccessMode::tbdRead, false, false, nullptr, defaultPrivilegedUser, INFINITE);
+        Owned<IDistributedFile> file = wsdfs::lookup(logicalName, udesc, AccessMode::readLogicalMeta, false, false, nullptr, defaultPrivilegedUser, INFINITE);
         if (!file)
             throw MakeStringException(ECLWATCH_FILE_NOT_EXIST, "Failed to find file: %s", logicalName.get());
 

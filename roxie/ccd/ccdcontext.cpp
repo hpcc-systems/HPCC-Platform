@@ -451,7 +451,7 @@ private:
 
     inline bool fileExists(const char *lfn)
     {
-        Owned<IDistributedFile> f = wsdfs::lookup(lfn, queryUserDescriptor(), AccessMode::readMeta, false, false, nullptr, defaultPrivilegedUser, INFINITE);
+        Owned<IDistributedFile> f = wsdfs::lookup(lfn, queryUserDescriptor(), AccessMode::readLogicalMeta, false, false, nullptr, defaultPrivilegedUser, INFINITE);
         if (f)
             return true;
         return false;
@@ -3898,7 +3898,7 @@ public:
     {
         StringBuffer fullname;
         expandLogicalFilename(fullname, logicalName, workUnit, false, false);
-        Owned<IDistributedFile> file = wsdfs::lookup(fullname.str(),queryUserDescriptor(),AccessMode::readMeta,false,false,nullptr,defaultPrivilegedUser,INFINITE);
+        Owned<IDistributedFile> file = wsdfs::lookup(fullname.str(),queryUserDescriptor(),AccessMode::readLogicalMeta,false,false,nullptr,defaultPrivilegedUser,INFINITE);
         if (file)
         {
             WorkunitUpdate wu = updateWorkUnit();

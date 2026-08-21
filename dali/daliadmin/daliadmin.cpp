@@ -918,7 +918,7 @@ static void remoteTest(const char *logicalName, bool withDali)
     Owned<IDistributedFile> legacyDfsFile;
     if (dlfn.isRemote())
     {
-        Owned<wsdfs::IDFSFile> dfsFile = wsdfs::lookupDFSFile(logicalName, AccessMode::readSequential, timeoutSecs, keepAliveExpiryFrequency, userDesc);
+        Owned<wsdfs::IDFSFile> dfsFile = wsdfs::lookupDFSFile(logicalName, AccessMode::readMeta, timeoutSecs, keepAliveExpiryFrequency, userDesc);
 
         if (dfsFile)
             legacyDfsFile.setown(createLegacyDFSFile(dfsFile));
@@ -928,7 +928,7 @@ static void remoteTest(const char *logicalName, bool withDali)
         if (!withDali)
             throw makeStringExceptionV(0, "remotetest for non-remote files needs Dali.");
 
-        legacyDfsFile.setown(queryDistributedFileDirectory().lookup(dlfn, userDesc, AccessMode::tbdRead, false, false, nullptr, false));
+        legacyDfsFile.setown(queryDistributedFileDirectory().lookup(dlfn, userDesc, AccessMode::readMeta, false, false, nullptr, false));
     }
 
     if (!legacyDfsFile)

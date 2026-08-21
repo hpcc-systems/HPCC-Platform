@@ -521,7 +521,8 @@ public:
         deserializer.set(queryRowDeserializer());
         serializer.set(queryRowSerializer());
         helper->setCallback(&callback);
-        reInit = 0 != (helper->getFlags() & (TIRvarfilename|TIRdynamicfilename));
+        unsigned flags = helper->getFlags();
+        reInit = (0 != (flags & (TIRvarfilename|TIRdynamicfilename))) && (0 == (flags & TIRinvariantfilename));
     }
     rowcount_t getLocalCount(const rowcount_t keyedLimit, bool hard)
     {

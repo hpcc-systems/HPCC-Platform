@@ -212,7 +212,7 @@ bool CWsDfuXRefEx::onDFUXRefArrayAction(IEspContext &context, IEspDFUXRefArrayAc
 
 bool CWsDfuXRefEx::canRemoveLogicalFile(const char *logicalFile, IUserDescriptor *userDesc, bool removeFromSuperfiles, StringBuffer &errStr)
 {
-    Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(logicalFile, userDesc, AccessMode::tbdWrite, false, false, nullptr, defaultPrivilegedUser);
+    Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(logicalFile, userDesc, AccessMode::readLogicalMeta, false, false, nullptr, defaultPrivilegedUser);
     if (!df)
     {
         errStr.appendf("Logical file %s not found", logicalFile);
@@ -281,7 +281,7 @@ void CWsDfuXRefEx::readLostFileQueryResult(IEspContext &context, StringBuffer &b
 
         try
         {
-            Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(fileName, userDesc, AccessMode::tbdRead, false, false, NULL, defaultPrivilegedUser, 0);
+            Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(fileName, userDesc, AccessMode::readMeta, false, false, NULL, defaultPrivilegedUser, 0);
             if (df)
                 item.addPropInt64("Size", df->getFileSize(true, false));
         }

@@ -395,7 +395,7 @@ public:
         if (0 == (TIWvarfilename & helper->getFlags()))
         {
             OwnedRoxieString fname(helper->getFileName());
-            Owned<IDistributedFile> file = queryThorFileManager().lookup(container.queryJob(), fname, AccessMode::readMeta, false, true, false, container.activityIsCodeSigned());
+            Owned<IDistributedFile> file = queryThorFileManager().lookup(container.queryJob(), fname, AccessMode::readLogicalMeta, false, true, false, container.activityIsCodeSigned());
             if (file)
             {
                 if (0 == (TIWoverwrite & helper->getFlags()))

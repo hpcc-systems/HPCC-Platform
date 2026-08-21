@@ -219,7 +219,7 @@ void checkFiles(const char *fn)
     if (fn) {
         checker.title(1,fn);
         try {
-            Owned<IDistributedFile> file=queryDistributedFileDirectory().lookup(fn,user,AccessMode::tbdRead,false,false,nullptr,defaultNonPrivilegedUser);
+            Owned<IDistributedFile> file=queryDistributedFileDirectory().lookup(fn,user,AccessMode::readLogicalMeta,false,false,nullptr,defaultNonPrivilegedUser);
             if (!file)
                 printf("file '%s' not found\n",fn);
             else
@@ -619,7 +619,7 @@ public:
         for (i=0;i<100;i++) {
             s.clear().append("daregress::test").append(t);
             ASSERT(dir.exists(s.str(),user) && "Could not find sub-file");
-            Owned<IDistributedFile> dfile = dir.lookup(s.str(), user, AccessMode::tbdRead, false, false, nullptr, false);
+            Owned<IDistributedFile> dfile = dir.lookup(s.str(), user, AccessMode::readLogicalMeta, false, false, nullptr, false);
             ASSERT(dfile && "Could not find sub-file");
             offset_t totsz = 0;
             n = 11;
@@ -681,7 +681,7 @@ public:
             sfile->addSubFile(s.str());
         }
         sfile.clear();
-        sfile.setown(dir.lookupSuperFile("daregress::superfile1", user, AccessMode::readMeta));
+        sfile.setown(dir.lookupSuperFile("daregress::superfile1", user, AccessMode::writeLogicalMeta));
         ASSERT(sfile && "Could not find added superfile");
         __int64 savcrc = crctot;
         crctot = 0;
@@ -708,7 +708,7 @@ public:
         ASSERT(totrows==tr && "Superfile size does not match part sum");
         sfile->detach();
         sfile.clear();
-        sfile.setown(dir.lookupSuperFile("daregress::superfile1", user, AccessMode::writeMeta));
+        sfile.setown(dir.lookupSuperFile("daregress::superfile1", user, AccessMode::writeLogicalMeta));
         ASSERT(!sfile && "Superfile deletion failed");
         t = 37;
         for (i=0;i<100;i++) {
@@ -720,7 +720,7 @@ public:
         t = 39;
         for (i=0;i<100;i++) {
             ASSERT(!dir.exists(s.str(),user) && "Found dir after deletion");
-            Owned<IDistributedFile> dfile = dir.lookup(s.str(), user, AccessMode::tbdRead, false, false, nullptr, false);
+            Owned<IDistributedFile> dfile = dir.lookup(s.str(), user, AccessMode::readLogicalMeta, false, false, nullptr, false);
             ASSERT(!dfile && "Found file after deletion");
             t = (t+39)%100;
         }
@@ -1913,7 +1913,7 @@ public:
         sfile1->addSubFile("regress::trans::sub1", false, NULL, false, transaction);
         sfile1->addSubFile("regress::trans::sub2", false, NULL, false, transaction);
         sfile1.clear();
-        sfile1.setown(dir.lookupSuperFile("regress::trans::super1", user, AccessMode::readMeta, transaction));
+        sfile1.setown(dir.lookupSuperFile("regress::trans::super1", user, AccessMode::readLogicalMeta, transaction));
         ASSERT(sfile1.get() && "non-transactional add super1 failed");
         ASSERT(sfile1->numSubFiles() == 2 && "auto-commit add sub failed, not all subs were added");
         ASSERT(strcmp(sfile1->querySubFile(0).queryLogicalName(), "regress::trans::sub1") == 0 && "auto-commit add sub failed, wrong name for sub1");
@@ -1929,7 +1929,7 @@ public:
         transaction->rollback();
         ASSERT(sfile2->numSubFiles() == 0 && "transactional rollback failed, some subs were added");
         sfile2.clear();
-        sfile2.setown(dir.lookupSuperFile("regress::trans::super2", user, AccessMode::readMeta, transaction));
+        sfile2.setown(dir.lookupSuperFile("regress::trans::super2", user, AccessMode::readLogicalMeta, transaction));
         ASSERT(!sfile2.get() && "transactional rollback super2 failed, it exists!");
 
         // Commit
@@ -1940,7 +1940,7 @@ public:
         sfile3->addSubFile("regress::trans::sub4", false, NULL, false, transaction);
         transaction->commit();
         sfile3.clear();
-        sfile3.setown(dir.lookupSuperFile("regress::trans::super3", user, AccessMode::readMeta, transaction));
+        sfile3.setown(dir.lookupSuperFile("regress::trans::super3", user, AccessMode::readLogicalMeta, transaction));
         ASSERT(sfile3.get() && "transactional add super3 failed");
         ASSERT(sfile3->numSubFiles() == 2 && "transactional add sub failed, not all subs were added");
         ASSERT(strcmp(sfile3->querySubFile(0).queryLogicalName(), "regress::trans::sub3") == 0 && "transactional add sub failed, wrong name for sub3");
@@ -1958,7 +1958,7 @@ public:
          * the super files, this should _not_ cause an issue, as no single super file will contain
          * mismatched subfiles.
         */
-        Owned<IDistributedFile> sub1 = dir.lookup("regress::trans::sub1", user, AccessMode::tbdRead, false, false, NULL, false, timeout);
+        Owned<IDistributedFile> sub1 = dir.lookup("regress::trans::sub1", user, AccessMode::readLogicalMeta, false, false, NULL, false, timeout);
         assertex(sub1);
         sub1->lockProperties();
         sub1->queryAttributes().setPropBool("@local", true);
@@ -1980,11 +1980,11 @@ public:
         logctx.CTXLOG("Promote (1, -, -) - first iteration");
         dir.promoteSuperFiles(3, sfnames, "regress::trans::sub1", delsub, createonlyone, user, timeout, outlinked);
         {
-            Owned<IDistributedSuperFile> sfile1 = dir.lookupSuperFile("regress::trans::super1", user, AccessMode::readMeta, NULL, timeout);
+            Owned<IDistributedSuperFile> sfile1 = dir.lookupSuperFile("regress::trans::super1", user, AccessMode::readLogicalMeta, NULL, timeout);
             ASSERT(sfile1.get() && "promote failed, super1 doesn't exist");
             ASSERT(sfile1->numSubFiles() == 1 && "promote failed, super1 should have one subfile");
             ASSERT(strcmp(sfile1->querySubFile(0).queryLogicalName(), "regress::trans::sub1") == 0 && "promote failed, wrong name for sub1");
-            Owned<IDistributedSuperFile> sfile2 = dir.lookupSuperFile("regress::trans::super2", user, AccessMode::readMeta, NULL, timeout);
+            Owned<IDistributedSuperFile> sfile2 = dir.lookupSuperFile("regress::trans::super2", user, AccessMode::readLogicalMeta, NULL, timeout);
             ASSERT(!sfile2.get() && "promote failed, super2 does exist");
             ASSERT(outlinked.length() == 0 && "promote failed, outlinked expected empty");
         }
@@ -1992,15 +1992,15 @@ public:
         logctx.CTXLOG("Promote (2, 1, -) - second iteration");
         dir.promoteSuperFiles(3, sfnames, "regress::trans::sub2", delsub, createonlyone, user, timeout, outlinked);
         {
-            Owned<IDistributedSuperFile> sfile1 = dir.lookupSuperFile("regress::trans::super1", user, AccessMode::readMeta, NULL, timeout);
+            Owned<IDistributedSuperFile> sfile1 = dir.lookupSuperFile("regress::trans::super1", user, AccessMode::readLogicalMeta, NULL, timeout);
             ASSERT(sfile1.get() && "promote failed, super1 doesn't exist");
             ASSERT(sfile1->numSubFiles() == 1 && "promote failed, super1 should have one subfile");
             ASSERT(strcmp(sfile1->querySubFile(0).queryLogicalName(), "regress::trans::sub2") == 0 && "promote failed, wrong name for sub2");
-            Owned<IDistributedSuperFile> sfile2 = dir.lookupSuperFile("regress::trans::super2", user, AccessMode::readMeta, NULL, timeout);
+            Owned<IDistributedSuperFile> sfile2 = dir.lookupSuperFile("regress::trans::super2", user, AccessMode::readLogicalMeta, NULL, timeout);
             ASSERT(sfile2.get() && "promote failed, super2 doesn't exist");
             ASSERT(sfile2->numSubFiles() == 1 && "promote failed, super2 should have one subfile");
             ASSERT(strcmp(sfile2->querySubFile(0).queryLogicalName(), "regress::trans::sub1") == 0 && "promote failed, wrong name for sub1");
-            Owned<IDistributedSuperFile> sfile3 = dir.lookupSuperFile("regress::trans::super3", user, AccessMode::readMeta, NULL, timeout);
+            Owned<IDistributedSuperFile> sfile3 = dir.lookupSuperFile("regress::trans::super3", user, AccessMode::readLogicalMeta, NULL, timeout);
             ASSERT(!sfile3.get() && "promote failed, super3 does exist");
             ASSERT(outlinked.length() == 0 && "promote failed, outlinked expected empty");
         }
@@ -2008,15 +2008,15 @@ public:
         logctx.CTXLOG("Promote (3, 2, 1) - third iteration");
         dir.promoteSuperFiles(3, sfnames, "regress::trans::sub3", delsub, createonlyone, user, timeout, outlinked);
         {
-            Owned<IDistributedSuperFile> sfile1 = dir.lookupSuperFile("regress::trans::super1", user, AccessMode::readMeta, NULL, timeout);
+            Owned<IDistributedSuperFile> sfile1 = dir.lookupSuperFile("regress::trans::super1", user, AccessMode::readLogicalMeta, NULL, timeout);
             ASSERT(sfile1.get() &&* "promote failed, super1 doesn't exist");
             ASSERT(sfile1->numSubFiles() == 1 && "promote failed, super1 should have one subfile");
             ASSERT(strcmp(sfile1->querySubFile(0).queryLogicalName(), "regress::trans::sub3") == 0 && "promote failed, wrong name for sub3");
-            Owned<IDistributedSuperFile> sfile2 = dir.lookupSuperFile("regress::trans::super2", user, AccessMode::readMeta, NULL, timeout);
+            Owned<IDistributedSuperFile> sfile2 = dir.lookupSuperFile("regress::trans::super2", user, AccessMode::readLogicalMeta, NULL, timeout);
             ASSERT(sfile2.get() && "promote failed, super2 doesn't exist");
             ASSERT(sfile2->numSubFiles() == 1 && "promote failed, super2 should have one subfile");
             ASSERT(strcmp(sfile2->querySubFile(0).queryLogicalName(), "regress::trans::sub2") == 0 && "promote failed, wrong name for sub2");
-            Owned<IDistributedSuperFile> sfile3 = dir.lookupSuperFile("regress::trans::super3", user, AccessMode::readMeta, NULL, timeout);
+            Owned<IDistributedSuperFile> sfile3 = dir.lookupSuperFile("regress::trans::super3", user, AccessMode::readLogicalMeta, NULL, timeout);
             ASSERT(sfile3.get() && "promote failed, super3 doesn't exist");
             ASSERT(sfile3->numSubFiles() == 1 && "promote failed, super3 should have one subfile");
             ASSERT(strcmp(sfile3->querySubFile(0).queryLogicalName(), "regress::trans::sub1") == 0 && "promote failed, wrong name for sub1");
@@ -2026,45 +2026,45 @@ public:
         logctx.CTXLOG("Promote (4, 3, 2) - fourth iteration, expect outlinked");
         dir.promoteSuperFiles(3, sfnames, "regress::trans::sub4", delsub, createonlyone, user, timeout, outlinked);
         {
-            Owned<IDistributedSuperFile> sfile1 = dir.lookupSuperFile("regress::trans::super1", user, AccessMode::readMeta, NULL, timeout);
+            Owned<IDistributedSuperFile> sfile1 = dir.lookupSuperFile("regress::trans::super1", user, AccessMode::readLogicalMeta, NULL, timeout);
             ASSERT(sfile1.get() && "promote failed, super1 doesn't exist");
             ASSERT(sfile1->numSubFiles() == 1 && "promote failed, super1 should have one subfile");
             ASSERT(strcmp(sfile1->querySubFile(0).queryLogicalName(), "regress::trans::sub4") == 0 && "promote failed, wrong name for sub4");
-            Owned<IDistributedSuperFile> sfile2 = dir.lookupSuperFile("regress::trans::super2", user, AccessMode::readMeta, NULL, timeout);
+            Owned<IDistributedSuperFile> sfile2 = dir.lookupSuperFile("regress::trans::super2", user, AccessMode::readLogicalMeta, NULL, timeout);
             ASSERT(sfile2.get() && "promote failed, super2 doesn't exist");
             ASSERT(sfile2->numSubFiles() == 1 && "promote failed, super2 should have one subfile");
             ASSERT(strcmp(sfile2->querySubFile(0).queryLogicalName(), "regress::trans::sub3") == 0 && "promote failed, wrong name for sub3");
-            Owned<IDistributedSuperFile> sfile3 = dir.lookupSuperFile("regress::trans::super3", user, AccessMode::readMeta, NULL, timeout);
+            Owned<IDistributedSuperFile> sfile3 = dir.lookupSuperFile("regress::trans::super3", user, AccessMode::readLogicalMeta, NULL, timeout);
             ASSERT(sfile3.get() && "promote failed, super3 doesn't exist");
             ASSERT(sfile3->numSubFiles() == 1 && "promote failed, super3 should have one subfile");
             ASSERT(strcmp(sfile3->querySubFile(0).queryLogicalName(), "regress::trans::sub2") == 0 && "promote failed, wrong name for sub2");
             ASSERT(outlinked.length() == 1 && "promote failed, outlinked expected only one item");
             ASSERT(strcmp(outlinked.popGet(), "regress::trans::sub1") == 0 && "promote failed, outlinked expected to be sub1");
-            Owned<IDistributedFile> sub1 = dir.lookup("regress::trans::sub1", user, AccessMode::tbdRead, false, false, NULL, false, timeout);
+            Owned<IDistributedFile> sub1 = dir.lookup("regress::trans::sub1", user, AccessMode::readLogicalMeta, false, false, NULL, false, timeout);
             ASSERT(sub1.get() && "promote failed, sub1 was physically deleted");
         }
 
         logctx.CTXLOG("Promote ([2,3], 4, 3) - fifth iteration, two in-files");
         dir.promoteSuperFiles(3, sfnames, "regress::trans::sub2,regress::trans::sub3", delsub, createonlyone, user, timeout, outlinked);
         {
-            Owned<IDistributedSuperFile> sfile1 = dir.lookupSuperFile("regress::trans::super1", user, AccessMode::readMeta, NULL, timeout);
+            Owned<IDistributedSuperFile> sfile1 = dir.lookupSuperFile("regress::trans::super1", user, AccessMode::readLogicalMeta, NULL, timeout);
             ASSERT(sfile1.get() && "promote failed, super1 doesn't exist");
             ASSERT(sfile1->numSubFiles() == 2 && "promote failed, super1 should have two subfiles");
             ASSERT(strcmp(sfile1->querySubFile(0).queryLogicalName(), "regress::trans::sub2") == 0 && "promote failed, wrong name for sub1");
             ASSERT(strcmp(sfile1->querySubFile(1).queryLogicalName(), "regress::trans::sub3") == 0 && "promote failed, wrong name for sub2");
-            Owned<IDistributedSuperFile> sfile2 = dir.lookupSuperFile("regress::trans::super2", user, AccessMode::readMeta, NULL, timeout);
+            Owned<IDistributedSuperFile> sfile2 = dir.lookupSuperFile("regress::trans::super2", user, AccessMode::readLogicalMeta, NULL, timeout);
             ASSERT(sfile2.get() && "promote failed, super2 doesn't exist");
             ASSERT(sfile2->numSubFiles() == 1 && "promote failed, super2 should have one subfile");
             ASSERT(strcmp(sfile2->querySubFile(0).queryLogicalName(), "regress::trans::sub4") == 0 && "promote failed, wrong name for sub4");
-            Owned<IDistributedSuperFile> sfile3 = dir.lookupSuperFile("regress::trans::super3", user, AccessMode::readMeta, NULL, timeout);
+            Owned<IDistributedSuperFile> sfile3 = dir.lookupSuperFile("regress::trans::super3", user, AccessMode::readLogicalMeta, NULL, timeout);
             ASSERT(sfile3.get() && "promote failed, super3 doesn't exist");
             ASSERT(sfile3->numSubFiles() == 1 && "promote failed, super3 should have one subfile");
             ASSERT(strcmp(sfile3->querySubFile(0).queryLogicalName(), "regress::trans::sub3") == 0 && "promote failed, wrong name for sub3");
             ASSERT(outlinked.length() == 1 && "promote failed, outlinked expected only one item");
             ASSERT(strcmp(outlinked.popGet(), "regress::trans::sub2") == 0 && "promote failed, outlinked expected to be sub2");
-            Owned<IDistributedFile> sub1 = dir.lookup("regress::trans::sub1", user, AccessMode::tbdRead, false, false, NULL, false, timeout);
+            Owned<IDistributedFile> sub1 = dir.lookup("regress::trans::sub1", user, AccessMode::readLogicalMeta, false, false, NULL, false, timeout);
             ASSERT(sub1.get() && "promote failed, sub1 was physically deleted");
-            Owned<IDistributedFile> sub2 = dir.lookup("regress::trans::sub2", user, AccessMode::tbdRead, false, false, NULL, false, timeout);
+            Owned<IDistributedFile> sub2 = dir.lookup("regress::trans::sub2", user, AccessMode::readLogicalMeta, false, false, NULL, false, timeout);
             ASSERT(sub2.get() && "promote failed, sub2 was physically deleted");
         }
     }
@@ -2093,16 +2093,16 @@ public:
         for (i=0;i<file->numClusters();i++)
             PROGLOG("cluster[%d] = %s",i,file->getClusterName(i,name.clear()).str());
         file.clear();
-        file.setown(queryDistributedFileDirectory().lookup("test::testfile1",user,AccessMode::tbdRead,false,false,nullptr,defaultNonPrivilegedUser));
+        file.setown(queryDistributedFileDirectory().lookup("test::testfile1",user,AccessMode::readLogicalMeta,false,false,nullptr,defaultNonPrivilegedUser));
         for (i=0;i<file->numClusters();i++)
             PROGLOG("cluster[%d] = %s",i,file->getClusterName(i,name.clear()).str());
         file.clear();
-        file.setown(queryDistributedFileDirectory().lookup("test::testfile1@testgrp1",user,AccessMode::tbdRead,false,false,nullptr,defaultNonPrivilegedUser));
+        file.setown(queryDistributedFileDirectory().lookup("test::testfile1@testgrp1",user,AccessMode::readLogicalMeta,false,false,nullptr,defaultNonPrivilegedUser));
         for (i=0;i<file->numClusters();i++)
             PROGLOG("cluster[%d] = %s",i,file->getClusterName(i,name.clear()).str());
         file.clear();
         removeLogical("test::testfile1@testgrp2", user);
-        file.setown(queryDistributedFileDirectory().lookup("test::testfile1",user,AccessMode::tbdRead,false,false,nullptr,defaultNonPrivilegedUser));
+        file.setown(queryDistributedFileDirectory().lookup("test::testfile1",user,AccessMode::readLogicalMeta,false,false,nullptr,defaultNonPrivilegedUser));
         for (i=0;i<file->numClusters();i++)
             PROGLOG("cluster[%d] = %s",i,file->getClusterName(i,name.clear()).str());
     }
@@ -2190,14 +2190,14 @@ public:
 
 
         logctx.CTXLOG("Removing regress::del::sub1 from super1, no del");
-        sfile.setown(transaction->lookupSuperFile("regress::del::super1", AccessMode::tbdWrite));
+        sfile.setown(transaction->lookupSuperFile("regress::del::super1", AccessMode::writeLogicalMeta));
         sfile->removeSubFile("regress::del::sub1", false, false, transaction);
         ASSERT(sfile->numSubFiles() == 1 && "File sub1 was not removed from super1");
         sfile.clear();
         ASSERT(dir.exists("regress::del::sub1", user) && "File sub1 was removed from the file system");
 
         logctx.CTXLOG("Removing regress::del::sub4 from super1, del");
-        sfile.setown(transaction->lookupSuperFile("regress::del::super1", AccessMode::tbdWrite));
+        sfile.setown(transaction->lookupSuperFile("regress::del::super1", AccessMode::writeLogicalMeta));
         sfile->removeSubFile("regress::del::sub4", true, false, transaction);
         ASSERT(!sfile->numSubFiles() && "File sub4 was not removed from super1");
         sfile.clear();
@@ -2308,12 +2308,12 @@ public:
         transaction->start();
 
         logctx.CTXLOG("Removing sub1 from super1, within transaction");
-        sfile.setown(transaction->lookupSuperFile("regress::clearadd::super1", AccessMode::tbdWrite));
+        sfile.setown(transaction->lookupSuperFile("regress::clearadd::super1", AccessMode::writeLogicalMeta));
         sfile->removeSubFile("regress::clearadd::sub1", false, false, transaction);
         sfile.clear();
 
         logctx.CTXLOG("Adding sub1 back into to super1, within transaction");
-        sfile.setown(transaction->lookupSuperFile("regress::clearadd::super1", AccessMode::tbdWrite));
+        sfile.setown(transaction->lookupSuperFile("regress::clearadd::super1", AccessMode::writeLogicalMeta));
         sfile->addSubFile("regress::clearadd::sub1", false, NULL, false, transaction);
         sfile.clear();
         try
@@ -2327,7 +2327,7 @@ public:
             CPPUNIT_ASSERT_MESSAGE(eStr.str(), 0);
             e->Release();
         }
-        sfile.setown(dir.lookupSuperFile("regress::clearadd::super1", user, AccessMode::readMeta));
+        sfile.setown(dir.lookupSuperFile("regress::clearadd::super1", user, AccessMode::readLogicalMeta));
         ASSERT(NULL != sfile->querySubFileNamed("regress::clearadd::sub1") && "regress::clearadd::sub1, should be a subfile of super1");
 
         // same but remove all (clear)
@@ -2335,17 +2335,17 @@ public:
         transaction->start();
 
         logctx.CTXLOG("Adding sub2 into to super1, within transaction");
-        sfile.setown(transaction->lookupSuperFile("regress::clearadd::super1", AccessMode::tbdWrite));
+        sfile.setown(transaction->lookupSuperFile("regress::clearadd::super1", AccessMode::writeLogicalMeta));
         sfile->addSubFile("regress::clearadd::sub2", false, NULL, false, transaction);
         sfile.clear();
 
         logctx.CTXLOG("Removing all sub files from super1, within transaction");
-        sfile.setown(transaction->lookupSuperFile("regress::clearadd::super1", AccessMode::tbdWrite));
+        sfile.setown(transaction->lookupSuperFile("regress::clearadd::super1", AccessMode::writeLogicalMeta));
         sfile->removeSubFile(NULL, false, false, transaction);
         sfile.clear();
 
         logctx.CTXLOG("Adding sub2 back into to super1, within transaction");
-        sfile.setown(transaction->lookupSuperFile("regress::clearadd::super1", AccessMode::tbdWrite));
+        sfile.setown(transaction->lookupSuperFile("regress::clearadd::super1", AccessMode::writeLogicalMeta));
         sfile->addSubFile("regress::clearadd::sub2", false, NULL, false, transaction);
         sfile.clear();
         try
@@ -2359,7 +2359,7 @@ public:
             CPPUNIT_ASSERT_MESSAGE(eStr.str(), 0);
             e->Release();
         }
-        sfile.setown(dir.lookupSuperFile("regress::clearadd::super1", user, AccessMode::readMeta));
+        sfile.setown(dir.lookupSuperFile("regress::clearadd::super1", user, AccessMode::readLogicalMeta));
         ASSERT(NULL != sfile->querySubFileNamed("regress::clearadd::sub2") && "regress::clearadd::sub2, should be a subfile of super1");
         ASSERT(NULL == sfile->querySubFileNamed("regress::clearadd::sub1") && "regress::clearadd::sub1, should NOT be a subfile of super1");
         ASSERT(NULL == sfile->querySubFileNamed("regress::clearadd::sub4") && "regress::clearadd::sub4, should NOT be a subfile of super1");
@@ -2398,17 +2398,17 @@ public:
         dir.renamePhysical("regress::rename2::sub2", "regress::rename2::renamedsub2", user, transaction);
 
         logctx.CTXLOG("Removing regress::rename2::sub1 from regress::rename2::super1");
-        sfile.setown(transaction->lookupSuperFile("regress::rename2::super1", AccessMode::tbdWrite));
+        sfile.setown(transaction->lookupSuperFile("regress::rename2::super1", AccessMode::writeLogicalMeta));
         sfile->removeSubFile("regress::rename2::sub1", false, false, transaction);
         sfile.clear();
 
         logctx.CTXLOG("Adding renamedsub2 to super1");
-        sfile.setown(transaction->lookupSuperFile("regress::rename2::super1", AccessMode::tbdWrite));
+        sfile.setown(transaction->lookupSuperFile("regress::rename2::super1", AccessMode::writeLogicalMeta));
         sfile->addSubFile("regress::rename2::renamedsub2", false, NULL, false, transaction);
         sfile.clear();
 
         logctx.CTXLOG("Adding back sub1 to super1");
-        sfile.setown(transaction->lookupSuperFile("regress::rename2::super1", AccessMode::tbdWrite));
+        sfile.setown(transaction->lookupSuperFile("regress::rename2::super1", AccessMode::writeLogicalMeta));
         sfile->addSubFile("regress::rename2::sub1", false, NULL, false, transaction);
         sfile.clear();
 
@@ -2428,7 +2428,7 @@ public:
 
         // validate..
         ASSERT(dir.exists("regress::rename2::renamedsub2", user, true, false) && "regress::rename2::renamedsub2 should exist now transaction committed");
-        sfile.setown(dir.lookupSuperFile("regress::rename2::super1", user, AccessMode::readMeta));
+        sfile.setown(dir.lookupSuperFile("regress::rename2::super1", user, AccessMode::readLogicalMeta));
 
         ASSERT(NULL != sfile->querySubFileNamed("regress::rename2::renamedsub2") && "regress::rename2::renamedsub2, should be a subfile of super1");
         ASSERT(NULL != sfile->querySubFileNamed("regress::rename2::sub1") && "regress::rename2::sub1, should be a subfile of super1");
@@ -2899,7 +2899,7 @@ public:
         }
         virtual void threadmain() override
         {
-            Owned<IDistributedFile> file=queryDistributedFileDirectory().lookup(fileName,nullptr,AccessMode::tbdRead,false,false,nullptr,defaultNonPrivilegedUser);
+            Owned<IDistributedFile> file=queryDistributedFileDirectory().lookup(fileName,nullptr,AccessMode::readLogicalMeta,false,false,nullptr,defaultNonPrivilegedUser);
 
             if (!file)
             {
@@ -2940,9 +2940,9 @@ public:
         transaction->start();
 
         logctx.CTXLOG("Adding contents of regress::addreadd::super1 to regress::addreadd::super2, within transaction");
-        sfile.setown(transaction->lookupSuperFile("regress::addreadd::super2", AccessMode::tbdWrite));
+        sfile.setown(transaction->lookupSuperFile("regress::addreadd::super2", AccessMode::writeLogicalMeta));
         sfile->addSubFile("regress::addreadd::super1", false, NULL, true, transaction); // add contents of super1 to super2
-        sfile.setown(transaction->lookupSuperFile("regress::addreadd::super1", AccessMode::tbdWrite));
+        sfile.setown(transaction->lookupSuperFile("regress::addreadd::super1", AccessMode::writeLogicalMeta));
         sfile->removeSubFile(NULL, false, false, transaction); // clears super1
         sfile.clear();
 
@@ -2958,12 +2958,12 @@ public:
             e->Release();
         }
         transaction.clear();
-        sfile.setown(dir.lookupSuperFile("regress::addreadd::super2", user, AccessMode::readMeta));
+        sfile.setown(dir.lookupSuperFile("regress::addreadd::super2", user, AccessMode::readLogicalMeta));
         ASSERT(3 == sfile->numSubFiles() && "regress::addreadd::super2 should contain 3 subfiles");
         ASSERT(NULL != sfile->querySubFileNamed("regress::addreadd::sub1") && "regress::addreadd::sub1, should be a subfile of super2");
         ASSERT(NULL != sfile->querySubFileNamed("regress::addreadd::sub2") && "regress::addreadd::sub2, should be a subfile of super2");
         ASSERT(NULL != sfile->querySubFileNamed("regress::addreadd::sub3") && "regress::addreadd::sub3, should be a subfile of super2");
-        sfile.setown(dir.lookupSuperFile("regress::addreadd::super1", user, AccessMode::readMeta));
+        sfile.setown(dir.lookupSuperFile("regress::addreadd::super1", user, AccessMode::readLogicalMeta));
         ASSERT(0 == sfile->numSubFiles() && "regress::addreadd::super1 should contain 0 subfiles");
     }
     void testDFSRetrySuperLock()
@@ -2980,7 +2980,7 @@ public:
         CShortLock sL("regress::retrysuperlock::super1", 15);
         sL.start();
 
-        sfile.setown(dir.lookupSuperFile("regress::retrysuperlock::super1", user, AccessMode::tbdWrite));
+        sfile.setown(dir.lookupSuperFile("regress::retrysuperlock::super1", user, AccessMode::writeLogicalMeta));
         if (sfile)
         {
             logctx.CTXLOG("Removing subfiles from regress::retrysuperlock::super1");
@@ -2996,7 +2996,7 @@ public:
         logctx.CTXLOG("Starting transaction");
         transaction->start();
 
-        sfile.setown(transaction->lookupSuperFile("regress::retrysuperlock::super1", AccessMode::tbdWrite));
+        sfile.setown(transaction->lookupSuperFile("regress::retrysuperlock::super1", AccessMode::writeLogicalMeta));
         if (sfile)
         {
             logctx.CTXLOG("Removing subfiles from regress::retrysuperlock::super1 with transaction");
@@ -3618,12 +3618,12 @@ class DaliFileReadPropertiesUpdaterTester : public CppUnit::TestFixture
         supersuperfile.clear();
 
         // Some quick integrity checks
-        supersuperfile.setown(dir.lookupSuperFile(superFileNames[1].c_str(), user, AccessMode::readMeta));
+        supersuperfile.setown(dir.lookupSuperFile(superFileNames[1].c_str(), user, AccessMode::readLogicalMeta));
         ASSERT(supersuperfile && "Failed to find created supersuperfile");
         unsigned numSubFiles = supersuperfile->numSubFiles();
         ASSERT(numSubFiles == 1 && "Supersuperfile does not contain expected number of subfiles");
 
-        superfile.setown(dir.lookupSuperFile(superFileNames[0].c_str(), user, AccessMode::readMeta));
+        superfile.setown(dir.lookupSuperFile(superFileNames[0].c_str(), user, AccessMode::readLogicalMeta));
         ASSERT(superfile && "Could not find created superfile");
         numSubFiles = superfile->numSubFiles();
         ASSERT(numSubFiles == subFileNames.size() && "Superfile does not contain expected number of subfiles");
@@ -3655,7 +3655,7 @@ public:
             Owned<IFileReadPropertiesUpdater> fileReadPropertiesUpdater = createFileReadPropertiesUpdater(user);
             for (size_t idx = 0; idx < subFileNames.size(); idx++)
             {
-                Owned<IDistributedFile> subfile = dir.lookup(subFileNames[idx].c_str(), user, AccessMode::write, false, false, nullptr, true);
+                Owned<IDistributedFile> subfile = dir.lookup(subFileNames[idx].c_str(), user, AccessMode::writeLogicalMeta, false, false, nullptr, true);
                 unsigned numReads = 10 + idx + 1; // create unique number of reads for each subfile
                 unsigned readCost = 1000 + idx + 1; // create unique read cost for each subfile
                 expectedSuperNumReads += numReads;
@@ -3667,7 +3667,7 @@ public:
         // Each owning superfiles should have the same number of reads and read cost as calculated above
         for(auto &superFileName : superFileNames)
         {
-            Owned<IDistributedSuperFile> superfile = dir.lookupSuperFile(superFileName.c_str(), user, AccessMode::readMeta);
+            Owned<IDistributedSuperFile> superfile = dir.lookupSuperFile(superFileName.c_str(), user, AccessMode::readLogicalMeta);
             ASSERT(superfile && "Failed to find superfile");
             unsigned superNumReads = superfile->queryAttributes().getPropInt("@numDiskReads", -1);
             unsigned superReadCost = superfile->queryAttributes().getPropInt("@readCost", -1);
