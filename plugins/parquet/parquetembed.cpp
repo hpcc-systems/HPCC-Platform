@@ -1189,7 +1189,7 @@ arrow::Status ParquetWriter::openWriteFile()
         std::shared_ptr<parquet::ArrowWriterProperties> arrowProps = parquet::ArrowWriterProperties::Builder().store_schema()->build();
 
         // Create a writer
-        ARROW_ASSIGN_OR_RAISE(writer, parquet::arrow::FileWriter::Open(*schema.get(), pool, outfile, std::move(props), std::move(arrowProps)));
+        ARROW_ASSIGN_OR_RAISE(writer, parquet::arrow::FileWriter::Open(*schema.get(), pool, std::move(outfile), std::move(props), std::move(arrowProps)));
     }
     return arrow::Status::OK();
 }
