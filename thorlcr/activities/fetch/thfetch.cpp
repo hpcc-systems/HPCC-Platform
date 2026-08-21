@@ -44,7 +44,8 @@ public:
         if (!container.queryLocalOrGrouped())
             mpTag = container.queryJob().allocateMPTag();
         helper = (IHThorFetchArg *)queryHelper();
-        reInit = 0 != (helper->getFetchFlags() & (FFvarfilename|FFdynamicfilename));
+        unsigned flags = helper->getFetchFlags();
+        reInit = (flags & (FFvarfilename|FFdynamicfilename)) && !(flags & FFinvariantfilename);
     }
     ~CFetchActivityMaster()
     {
