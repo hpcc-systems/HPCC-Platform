@@ -1060,16 +1060,16 @@ static ISpan *createPseudoScopeFromPacket(const byte * traceInfo)
 static ISpan *createPseudoScopeFromPacket(ISerializedRoxieQueryPacket * packet)
 {
     if (!packet)
-        return nullptr;
+        return getNullSpan();
 
     const byte *traceInfo = packet->queryTraceInfo();
     if (!traceInfo)
-        return nullptr;
+        return getNullSpan();
 
     const byte * endTraceInfo = traceInfo + packet->getTraceLength();
     unsigned char loggingFlags = *traceInfo++;
     if (!(loggingFlags & LOGGING_TRACEID))
-        return nullptr;
+        return getNullSpan();
 
     if (loggingFlags & LOGGING_TRACELEVELSET)
         traceInfo++;
