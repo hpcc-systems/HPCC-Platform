@@ -275,6 +275,7 @@ interface ITraceManager : extends IInterface
     virtual ISpan * createServerSpan(const char * name, StringArray & httpHeaders, SpanFlags flags = SpanFlags::None) const = 0;
     virtual ISpan * createServerSpan(const char * name, const IProperties * httpHeaders, SpanFlags flags = SpanFlags::None) const = 0;
     virtual bool isTracingEnabled() const = 0;
+    virtual void logInitMessages() = 0;
  };
 
  //Create an internal span that has now completed, but which started in the past.
