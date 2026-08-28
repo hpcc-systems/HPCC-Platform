@@ -15,6 +15,7 @@
     limitations under the License.
 ############################################################################## */
 
+#include "jlog.hpp"
 #define AXA_API DECL_EXPORT
 
 #include "ldapsecurity.ipp"
@@ -27,6 +28,22 @@
 using namespace cryptohelper;
 
 #include "workunit.hpp"
+#include <ctime>
+
+/**********************************************************
+ *     Failed Authentication Cache (Load Reduction)      *
+ **********************************************************/
+// This cache tracks repeated authentication failures to reduce LDAP/AD traffic
+// by avoiding redundant queries when a user has failed authentication multiple times
+// within a short window. Active Directory's account lockout policy remains authoritative;
+// this cache is purely a load-reduction layer.
+
+#include "failedAuthCache.hpp"
+
+// Static, class-scoped failed-auth cache instance. It will be initialized once
+// (on first manager init) with values from configuration.
+FailedAuthCache CLdapSecManager::s_failedAuthCache;
+CriticalSection CLdapSecManager::s_failedAuthCacheInitLock;
 
 /**********************************************************
  *     CLdapSecUser                                       *
@@ -557,6 +574,9 @@ ISecProperty* CLdapSecResourceList::findProperty(const char* name)
 }
 
 
+// The failed-auth helper functions are now provided by FailedAuthCache.
+
+
 /**********************************************************
  *     CLdapSecManager                                    *
  **********************************************************/
@@ -616,7 +636,18 @@ void CLdapSecManager::init(const char *serviceName, IPropertyTree* cfg)
 
     m_passwordExpirationWarningDays = cfg->getPropInt(".//@passwordExpirationWarningDays", 10); //Default to 10 days
     m_checkViewPermissions = cfg->getPropBool(".//@checkViewPermissions", false);
+    unsigned maxFailedAuthAttempts = cfg->getPropInt(".//@maxFailedAuthAttempts", FailedAuthCache::defaultMaxFailedAttempts);
+    unsigned failedAuthCacheTimeout = cfg->getPropInt(".//@failedAuthCacheTimeoutSeconds", FailedAuthCache::defaultCacheTimeoutSeconds);
+    unsigned maxAllowedFailedAuthEntries = cfg->getPropInt(".//@maxAllowedFailedAuthEntries", FailedAuthCache::defaultMaxAllowedEntries);
     m_hpccInternalScope.set(queryDfsXmlBranchName(DXB_Internal)).append("::");//HpccInternal::
+
+    // Initialize/update the shared failed-auth cache with configured values
+    {
+        CriticalBlock block(CLdapSecManager::s_failedAuthCacheInitLock);
+        CLdapSecManager::s_failedAuthCache.setMaxFailedAttempts(maxFailedAuthAttempts);
+        CLdapSecManager::s_failedAuthCache.setCacheTimeoutSeconds(failedAuthCacheTimeout);
+        CLdapSecManager::s_failedAuthCache.setMaxAllowedEntries(maxAllowedFailedAuthEntries);
+    }
 };
 
 
@@ -675,6 +706,35 @@ bool CLdapSecManager::authenticate(ISecUser* user)
     if(!user)
         return false;
 
+    const char* username = user->getName();
+    if (isEmptyString(username))
+    {
+        DBGLOG("CLdapSecManager::authenticate username cannot be empty");
+        return false;
+    }
+    
+    // Check failed-auth cache before proceeding to reduce LDAP queries on repeated failures
+    // (load reduction mechanism; Active Directory's own lockout policy is authoritative)
+    if (CLdapSecManager::s_failedAuthCache.isUserLockedOut(username))
+    {
+        user->setAuthenticateStatus(AS_INVALID_CREDENTIALS);
+        m_permissionsCache->removePermissions(*user);
+        m_permissionsCache->removeFromUserCache(*user);
+        return false;
+    }
+
+    bool rc = doUserAuthenticate(user);
+    if (rc)
+        CLdapSecManager::s_failedAuthCache.removeUser(username);
+    else    
+        CLdapSecManager::s_failedAuthCache.updateUserLockoutStatus(username);
+    
+    return rc;
+}
+
+bool CLdapSecManager::doUserAuthenticate(ISecUser* user)
+{
+    const char* username = user->getName();
     bool isCaching = m_permissionsCache->isCacheEnabled() && !m_usercache_off;//caching enabled?
     bool isUserCached = false;
     Owned<ISecUser> cachedUser = new CLdapSecUser(user->getName(), "");
@@ -735,12 +795,9 @@ bool CLdapSecManager::authenticate(ISecUser* user)
     }
 
     if (isUserCached && cachedUser->getAuthenticateStatus() == AS_AUTHENTICATED)//only authenticated users will be cached
-    {
         return true;
-    }
 
     //User not in cache. Look for session token, or call LDAP to authenticate
-
     if (0 != user->credentials().getSessionToken())//check for token existence
     {
         user->setAuthenticateStatus(AS_AUTHENTICATED);
@@ -759,10 +816,10 @@ bool CLdapSecManager::authenticate(ISecUser* user)
                 pDSM = queryDigitalSignatureManagerInstanceFromEnv();
             if (pDSM && pDSM->isDigiSignerConfigured())
             {
-               //Set user digital signature
-               StringBuffer b64Signature;
-               pDSM->digiSign(b64Signature, user->getName());
-               user->credentials().setSignature(b64Signature);
+                //Set user digital signature
+                StringBuffer b64Signature;
+                pDSM->digiSign(b64Signature, user->getName());
+                user->credentials().setSignature(b64Signature);
             }
         }
     }
