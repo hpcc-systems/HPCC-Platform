@@ -52,6 +52,9 @@ static constexpr unsigned __int64 defaultParallelThreshold = 16 * 1024 * 1024;  
 static constexpr unsigned defaultParallelConcurrency = 16;                            // 16 concurrent connections
 static constexpr unsigned __int64 defaultParallelChunkSize = 4 * 1024 * 1024;         // 4MB in bytes
 static constexpr unsigned __int64 defaultParallelInitialChunkSize = 4 * 1024 * 1024;  // 4MB in bytes
+static constexpr unsigned defaultMaxRetries = 5;
+static constexpr unsigned defaultRetryDelayMs = 1000;
+static constexpr unsigned defaultMaxRetryDelayMs = 30000;
 
 
 static struct AzureAPIConfig
@@ -61,6 +64,9 @@ static struct AzureAPIConfig
     unsigned parallelConcurrency = defaultParallelConcurrency;
     unsigned __int64 parallelChunkSize = defaultParallelChunkSize;
     unsigned __int64 parallelInitialChunkSize = defaultParallelInitialChunkSize;
+    unsigned maxRetries = defaultMaxRetries;
+    unsigned retryDelayMs = defaultRetryDelayMs;
+    unsigned maxRetryDelayMs = defaultMaxRetryDelayMs;
 } globalAzureAPIConfig;
 
 
@@ -663,6 +669,18 @@ static std::string getBlobUrl(const char *account, const char * container, const
     return url.append("/").append(blob);
 }
 
+static Azure::Storage::Blobs::BlobClientOptions getBlobClientOptions(const AzureAPIConfig &config)
+{
+    Azure::Storage::Blobs::BlobClientOptions clientOptions;
+    Azure::Core::Http::Policies::RetryOptions retryOptions;
+    retryOptions.MaxRetries = config.maxRetries;
+    retryOptions.RetryDelay = std::chrono::milliseconds(config.retryDelayMs);
+    retryOptions.MaxRetryDelay = std::chrono::milliseconds(config.maxRetryDelayMs);
+    clientOptions.Retry = retryOptions;
+    clientOptions.Transport.Transport = getHttpTransport();
+    return clientOptions;
+}
+
 AzureBlob::AzureBlob(const char *_azureFileName, AzureAPIConfig &&_config) : fullName(_azureFileName), config(std::move(_config))
 {
     if (startsWith(fullName, azureBlobPrefix))
@@ -764,19 +782,7 @@ std::string AzureBlob::getBlobUrl() const
 std::shared_ptr<BlobContainerClient> AzureBlob::getBlobContainerClient() const
 {
     std::string blobContainerUrl = getContainerUrl(accountName, containerName);
-
-    // Create optimized client options for better performance
-    Azure::Storage::Blobs::BlobClientOptions clientOptions;
-
-    // Configure HTTP transport policy for connection reuse and performance
-    Azure::Core::Http::Policies::RetryOptions retryOptions;
-    retryOptions.MaxRetries = 3;  // Reduce retries for faster failure detection
-    retryOptions.RetryDelay = std::chrono::milliseconds(100);  // Faster retry intervals
-    retryOptions.MaxRetryDelay = std::chrono::milliseconds(1000);
-    clientOptions.Retry = retryOptions;
-
-    // Use shared transport instance for connection pooling across all blob operations
-    clientOptions.Transport.Transport = getHttpTransport();
+    Azure::Storage::Blobs::BlobClientOptions clientOptions = getBlobClientOptions(config);
 
     if (useManagedIdentity)
     {
@@ -795,18 +801,7 @@ SharedBlobClient AzureBlob::getBlobClient() const
     if (cachedBlobClient)
         return cachedBlobClient;
 
-    // Create optimized client options for better performance
-    Azure::Storage::Blobs::BlobClientOptions clientOptions;
-
-    // Configure HTTP transport policy for connection reuse and performance
-    Azure::Core::Http::Policies::RetryOptions retryOptions;
-    retryOptions.MaxRetries = 3;  // Reduce retries for faster failure detection
-    retryOptions.RetryDelay = std::chrono::milliseconds(100);  // Faster retry intervals
-    retryOptions.MaxRetryDelay = std::chrono::milliseconds(1000);
-    clientOptions.Retry = retryOptions;
-
-    // Use shared transport instance for connection pooling across all blob operations
-    clientOptions.Transport.Transport = getHttpTransport();
+    Azure::Storage::Blobs::BlobClientOptions clientOptions = getBlobClientOptions(config);
 
     // Create account-specific credentials with caching
     if (useManagedIdentity)
@@ -994,6 +989,10 @@ static void updateFunc(const IPropertyTree *oldComponentConfiguration, const IPr
 
         // Load trace flag
         globalAzureAPIConfig.traceEnabled = azureConfig->getPropBool("@trace", defaultTraceEnabled);
+
+        globalAzureAPIConfig.maxRetries = (unsigned)azureConfig->getPropInt("@maxRetries", defaultMaxRetries);
+        globalAzureAPIConfig.retryDelayMs = (unsigned)azureConfig->getPropInt("@retryDelayMs", defaultRetryDelayMs);
+        globalAzureAPIConfig.maxRetryDelayMs = (unsigned)azureConfig->getPropInt("@maxRetryDelayMs", defaultMaxRetryDelayMs);
 
         DBGLOG("Azure API configuration loaded: parallelThresholdK=%u KB, parallelConcurrency=%u, parallelChunkSizeK=%u KB, parallelInitialChunkSizeK=%u KB, trace=%s",
             thresholdK, globalAzureAPIConfig.parallelConcurrency, chunkSizeK, initialChunkSizeK, globalAzureAPIConfig.traceEnabled ? "true" : "false");
