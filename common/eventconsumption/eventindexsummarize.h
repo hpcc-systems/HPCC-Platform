@@ -58,8 +58,8 @@ public:
 
             strippedAttrs.emplace_back(canonicalName);
         }
-        groupAttributes.push_back(strippedAttrs);
-        groupAttributeIds.push_back(ids);
+        groupAttributes.push_back(std::move(strippedAttrs));
+        groupAttributeIds.push_back(std::move(ids));
         setSummarization(IndexSummarization::byGroup);
     }
 protected:
