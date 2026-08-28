@@ -2660,14 +2660,54 @@ This means pods only auto-restart if the non-excluded parts change.
 Pass in root, me, configMapHelper, component, excludeSectionRegexList and excludeKeyList
 excludeSectionRegexList is a list of regexp's that filter out top-level sections, e.g. [".*spec.yaml$" ]
 excludeKeyList is a list of key values with optional regex support (denoted by leading '~') to exclude from
-each section, each component of the key must be seperated by "::" due to the regex support.
-e.g. [ "global", "esp::services", "esp::queues", "~.*::logging"]
+each section, each component of the key must be separated by "::" due to the regex support.
+The helper walks the path recursively, so any number of '::'-separated components is supported:
+  1 component  - exclude the entire top-level key,       e.g. "global"
+  2+ components - exclude a nested key at any depth,     e.g. "esp::queues", "esp::tls_config::verify"
+Wildcard segments still use a leading '~' and are treated as regular expressions,
+for example "~.*::logging" or "esp::~tls_.*::verify".
+e.g. [ "global", "esp::services", "esp::queues", "~.*::logging", "esp::tls_config::verify"]
 
 The configMap data section is reconstructed based on filtering out matches.
 
 Used to exclude parts of the config which are always allowed to change without causing a pod restart.
 e.g. a cache of secrets, with an auto reload/refresh mechanism, or 'replicas'.
 */}}
+{{- define "hpcc.filterConfigUnsetPath" -}}
+{{- $node := .node -}}
+{{- $parts := .parts -}}
+{{- $idx := .idx | default 0 -}}
+{{- if and (kindIs "map" $node) (lt $idx (len $parts)) -}}
+ {{- $rawKey := index $parts $idx -}}
+ {{- $isWild := hasPrefix "~" $rawKey -}}
+ {{- $key := trimPrefix "~" $rawKey -}}
+ {{- $lastKey := eq (add $idx 1) (len $parts) -}}
+ {{- if $isWild -}}
+  {{- $matchedKeys := list -}}
+  {{- range $curKey, $_ := $node -}}
+   {{- if regexMatch $key $curKey -}}
+    {{- $matchedKeys = append $matchedKeys $curKey -}}
+   {{- end -}}
+  {{- end -}}
+  {{- range $matchedKey := $matchedKeys -}}
+   {{- if $lastKey -}}
+    {{- $_ := unset $node $matchedKey -}}
+   {{- else -}}
+    {{- $child := get $node $matchedKey -}}
+    {{- include "hpcc.filterConfigUnsetPath" (dict "node" $child "parts" $parts "idx" (add $idx 1)) -}}
+   {{- end -}}
+  {{- end -}}
+ {{- else if hasKey $node $key -}}
+  {{- if $lastKey -}}
+     {{- $_ := unset $node $key -}}
+  {{- else -}}
+   {{- $child := get $node $key -}}
+   {{- include "hpcc.filterConfigUnsetPath" (dict "node" $child "parts" $parts "idx" (add $idx 1)) -}}
+  {{- end -}}
+ {{- end -}}
+{{- end -}}
+{{- end -}}
+
 {{- define "hpcc.filterConfig" }}
 {{- $config := fromYaml (include .configMapHelper .) -}}
 {{- $configCtx := dict -}}
@@ -2684,38 +2724,7 @@ e.g. a cache of secrets, with an auto reload/refresh mechanism, or 'replicas'.
   {{- $configDictCtx := dict -}}
   {{- range $key := $excludeKeyList -}}
    {{- $keyParts := splitList "::" $key -}}
-   {{- $outerRaw := index $keyParts 0 -}}
-   {{- $outerIsWild := hasPrefix "~" $outerRaw -}}
-   {{- $outerKey := trimPrefix "~" $outerRaw -}}
-   {{- $hasSubKey := eq (len $keyParts) 2 -}}
-   {{- $innerKey := "" -}}
-   {{- $innerIsWild := false -}}
-   {{- if $hasSubKey -}}
-    {{- $innerRaw := index $keyParts 1 -}}
-    {{- $innerIsWild = hasPrefix "~" $innerRaw -}}
-    {{- $innerKey = trimPrefix "~" $innerRaw -}}
-   {{- end -}}
-   {{- range $topKey, $topVal := $configElementDict -}}
-    {{- if or (and (not $outerIsWild) (eq $outerKey $topKey)) (and $outerIsWild (regexMatch $outerKey $topKey)) -}}
-     {{- if not $hasSubKey -}}
-      {{- $configElementDict = unset $configElementDict $topKey -}}
-     {{- else -}}
-      {{- $innerDict := get $configElementDict $topKey | default dict -}}
-      {{- if (kindIs "map" $innerDict) -}}
-       {{- if $innerIsWild -}}
-        {{- range $k, $_ := $innerDict -}}
-         {{- if regexMatch $innerKey $k -}}
-          {{- $innerDict = unset $innerDict $k -}}
-         {{- end -}}
-        {{- end -}}
-       {{- else -}}
-        {{- $innerDict = unset $innerDict $innerKey -}}
-       {{- end -}}
-      {{- end -}}
-      {{- $_ := set $configElementDict $topKey $innerDict -}}
-     {{- end -}}
-    {{- end -}}
-   {{- end -}}
+  {{- include "hpcc.filterConfigUnsetPath" (dict "node" $configElementDict "parts" $keyParts "idx" 0) -}}
   {{- end -}}
  {{- else -}}
   {{- $configData := (unset $config.data $configElementName) -}}
@@ -2743,7 +2752,7 @@ A template to generate an SHA from a component config, to be used to annotate a 
 such that it will auto restart if the SHA changes.
 Uses filterConfig helper to select pertinent parts of the config to be part of the SHA.
 Pass in root, me, configMapHelper, component and excludeKeys.
-excludeKeys is a comma separated list of key values to exclude from each section, e.g. "global,esp::services,esp::queues,~.*::replicas"
+excludeKeys is a comma separated list of key values to exclude from each section, e.g. "global,esp::services,esp::queues,~.*::replicas,esp::tls_config::verify"
 
 globalExcludeSectionRegexList below is hard-coded list of section regexp's to exclude.
 globalExcludeList below is a hard-coded list of global keys to exclude.
