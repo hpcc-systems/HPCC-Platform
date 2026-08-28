@@ -95,6 +95,9 @@ unsigned queryDelayQueriesSubmitted = 0;
 unsigned nextExpectedQueryDeltaMS = 0;
 bool havePreviousSubmitTick = false;
 unsigned previousSubmitTick = 0;
+unsigned queryProgressIntervalMS = 0;
+unsigned lastQueryProgressMS = 0;
+__int64 queryProgressStarttime = 0;
 unsigned totalQueryCnt = 0;
 double totalQueryMS = 0.0;
 bool doRetries = false;
@@ -103,6 +106,30 @@ unsigned numExceptions = 0;
 
 Owned<ISpan> serverSpan;
 //---------------------------------------------------------------------------
+
+static void writeQuerySummary(FILE *out, __int64 starttime, __int64 endtime, bool includeSeparator)
+{
+    CDateTime now;
+    now.setNow();
+    StringBuffer timestamp;
+    now.getTimeString(timestamp, true);
+    fprintf(out, "%s Total Time taken = %.3f msecs\n", timestamp.str(), (double)(cycle_to_nanosec(endtime - starttime))/1000000);
+    if (totalQueryCnt)
+    {
+        double timePerQueryMS = totalQueryMS / totalQueryCnt;
+        fprintf(out, "%s Total Queries: %u (exceptions: %u) Avg t/q = %.3f msecs", timestamp.str(), totalQueryCnt, numExceptions, timePerQueryMS);
+        if (doRetries)
+        {
+            timePerQueryMS = (totalQueryMS + totalRetryMS) / totalQueryCnt;
+            fprintf(out, ", Avg t/q including retries = %.3f msec\n", timePerQueryMS);
+        }
+        else
+            fprintf(out, "\n");
+    }
+    if (includeSeparator)
+        fputs("----------------------------------------------------------------------------\n", out);
+    fflush(out);
+}
 
 static bool parseTimeFileValue(const char *text, unsigned &timeMS)
 {
@@ -629,9 +656,13 @@ int readResults(ISocket * socket, bool readBlocked, bool useHTTP, StringBuffer &
 
             if (strncmp(t, "<Exception>", 11) == 0)
             {
-                numExceptions++;
                 // exception response: 1419 Too many active queries ...
-                if (doRetries && strstr(t, "<Code>1419</Code>"))
+                bool tooManyActiveQueries = doRetries && strstr(t, "<Code>1419</Code>");
+                {
+                    CriticalBlock b(traceCrit);
+                    numExceptions++;
+                }
+                if (tooManyActiveQueries)
                     return 1419;
             }
 
@@ -976,6 +1007,15 @@ retry:
                 totalQueryMS += queryTimeMS;
                 totalRetryMS += retryTimeMS;
                 totalQueryCnt++;
+                if (queryProgressStarttime && queryProgressIntervalMS && rawOnly == false)
+                {
+                    unsigned nowMS = msTick();
+                    if (nowMS - lastQueryProgressMS >= queryProgressIntervalMS)
+                    {
+                        lastQueryProgressMS = nowMS;
+                        writeQuerySummary(trace, queryProgressStarttime, endtime, false);
+                    }
+                }
                 if (showTiming && rawOnly == false)
                 {
                     fprintf(trace, "Time taken = %.3f msecs", queryTimeMS);
@@ -1105,6 +1145,7 @@ void usage(int exitCode)
     printf("  -ff       take multiple queries from file, one per line\n");
     printf("  -fx <file> take thread submit times from file, one timestamp per line (requires -ff; forces -u0 behavior; first line is baseline; no delay for first query; subsequent delays are adjacent-line deltas)\n");
     printf("  -fxd <file> same as -fx, plus debug submit timing (prints planned delta ms and actual elapsed ms since previous submit)\n");
+    printf("  -fxi <n>  output -fx progress summary every n seconds (default 0; 0 disables)\n");
     printf("  -tff      take multiple queries from file, one per line, preceded by the time at which it should be submitted (relative to time on first line)\n");
     printf("  -k        don't save the results to result.txt\n");
     printf("  -m        only save results to result.txt\n");
@@ -1263,6 +1304,17 @@ int main(int argc, char **argv)
             queryDelayDebug = true;
             queryDelayFileName.set(argv[arg+1]);
             arg += 2;
+        }
+        else if (stricmp(argv[arg], "-fxi") == 0)
+        {
+            ++arg;
+            if (arg>=argc)
+                usage(1);
+            int progressIntervalSeconds = atoi(argv[arg]);
+            if (progressIntervalSeconds < 0 || (unsigned) progressIntervalSeconds > (UINT_MAX / 1000))
+                usage(1);
+            queryProgressIntervalMS = (unsigned) progressIntervalSeconds * 1000;
+            ++arg;
         }
         else if (stricmp(argv[arg], "-tff") == 0)
         {
@@ -1531,6 +1583,18 @@ int main(int argc, char **argv)
 
     __int64 starttime,endtime;
     starttime = get_cycles_now();
+    if (queryDelayFromFile && queryProgressIntervalMS && !justResults && rawOnly == false && trace != NULL)
+    {
+        CDateTime now;
+        now.setNow();
+        StringBuffer timestamp;
+        now.getTimeString(timestamp, true);
+        fprintf(trace, "%s starting\n", timestamp.str());
+        fflush(trace);
+        queryProgressStarttime = starttime;
+        lastQueryProgressMS = msTick();
+    }
+
     if (arg < argc || fromStdIn || (fromMultiFile && multiInputFileName.length()))
     {
         echoResults = echoSingle;
@@ -1677,20 +1741,8 @@ int main(int argc, char **argv)
         {
             if (trace != NULL)
             {
-                fprintf(trace, "Total Time taken = %.3f msecs\n", (double)(cycle_to_nanosec(endtime - starttime))/1000000);
-                if (totalQueryCnt)
-                {
-                    double timePerQueryMS = totalQueryMS / totalQueryCnt;
-                    fprintf(trace, "Total Queries: %u (exceptions: %u) Avg t/q = %.3f msecs", totalQueryCnt, numExceptions, timePerQueryMS);
-                    if (doRetries)
-                    {
-                        timePerQueryMS = (totalQueryMS + totalRetryMS) / totalQueryCnt;
-                        fprintf(trace, ", Avg t/q including retries = %.3f msec\n", timePerQueryMS);
-                    }
-                    else
-                        fprintf(trace, "\n");
-                }
-                fputs("----------------------------------------------------------------------------\n", trace);
+                CriticalBlock b(traceCrit);
+                writeQuerySummary(trace, starttime, endtime, true);
             }
         }
     }
