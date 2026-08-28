@@ -216,13 +216,12 @@ public:
                     }
                     else
                     {
-                        do
+                        for (uint8_t i=0; i<=laIndex; ++i)
                         {
-                            la = peekDataFrame(laIndex);
+                            la = peekDataFrame(i);
                             if (la)
                                 la->state = DataFrame::FrameIgnored;
                         }
-                        while (laIndex-- != 0);
                         pushFragment(injector.m_frame.getLink());
                     }
                 }
