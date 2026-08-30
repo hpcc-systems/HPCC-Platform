@@ -26,9 +26,20 @@
 
 #include "anacommon.hpp"
 
-WUANALYSIS_API cost_type analyseWorkunit(IConstWorkUnit &workunit, unsigned wfid, const char *graph, IPropertyTree *options, double costPerHour);
-WUANALYSIS_API void analyseAndPrintIssues(IConstWorkUnit * wu, const char *optGraph, double costPerHour, bool updatewu);
-WUANALYSIS_API void runWorkunitAnalyser(IConstWorkUnit &workunit, IPropertyTree *cfg, unsigned wfid, const char * graph, bool inEclAgent, double costPerHour);
+void WUANALYSIS_API analyseWorkunit(IConstWorkUnit &workunit, const char *optGraph, IPropertyTree *options, double costPerHour, const IPropertyTree *environinfoPT);
+void WUANALYSIS_API analyseAndPrintIssues(IConstWorkUnit * wu, const char *optGraph, double costPerHour, bool updatewu);
+// runWorkunitAnalyser arguments:
+//    workunit                = the workunit to be analysed
+//    cfg                     = the analyzer configuration options from system configuration files
+//    optGraph(optional)      = the graph to analyse.  When omitted, analyse entire workunit
+//    inEclAgent              = inEclAgent must be set to true when called from eclagent/hThor.  This is required as config/option specifies where
+//                              the analyzer executes.  So if inEclAgent==true, then it will execute the analysis only if the config option specifies
+//                              that analysis should take place in ECLAgent. And if inEclAgent==false, then analysis will only be executed if the config
+//                              option specifies that analysis should be executed in thor.
+//    costPerHour             = the approximate cost per hour for the entire cluster.
+//    environInfoPT(optional) = this contains various environmental information (such as memory settings).  At present, only Thor memory settings are
+//                              supported and for this reason, only Thor is required to provide environInfoPT.
+void WUANALYSIS_API runWorkunitAnalyser(IConstWorkUnit &workunit, IPropertyTree *cfg, const char * optGraph, bool inEclAgent, double costPerHour, const IPropertyTree *environInfoPT);
 //---------------------------------------------------------------------------------------------------------------------
 
 class WuScope;
