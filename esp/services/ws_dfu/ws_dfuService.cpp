@@ -6608,6 +6608,7 @@ bool CWsDfuEx::onDFUFileCreateV2(IEspContext &context, IEspDFUFileCreateV2Reques
                 break;
             case CDFUFileType_Index:
                 fileType = "key";
+                break;
             default:
                 throw makeStringExceptionV(ECLWATCH_MISSING_FILETYPE, "DFUFileCreateV2: File type not provided");
         }
@@ -6656,7 +6657,15 @@ bool CWsDfuEx::onDFUFileCreateV2(IEspContext &context, IEspDFUFileCreateV2Reques
         Owned<IGroup> group = queryNamedGroupStore().lookup(groupName.str());
         if (!group)
             throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "DFUFileCreateV2: Failed to get Group %s.", groupName.str());
+
         fileDesc.setown(createFileDescriptor(tempFileName, clusterTypeString(clusterType, false), groupName, group));
+        if (kind == CDFUFileType_Index)
+        {
+            uint tlkPartIndex = fileDesc->numParts();
+            fileDesc->setNumParts(fileDesc->numParts() + 1);
+            fileDesc->queryPart(tlkPartIndex)->queryProperties().setProp("@kind", "topLevelKey");
+        }
+
         // NB: if file has copies on >1 cluster, they must share the same key
         std::vector<std::string> groups;
         groups.push_back(groupName.str());
