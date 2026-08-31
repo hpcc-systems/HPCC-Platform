@@ -1031,7 +1031,7 @@ CPTValue::CPTValue(size32_t size, const void *data, bool binary, CompressionMeth
                 compressor->close();
                 memcpy(newData, &size, sizeof(size32_t));
                 newSize = sizeof(size32_t) + compressor->buflen();
-                compressType = compressMethod;
+                compressType = handler->queryPersistMethod();
                 set(newSize, newData);
             }
             free(newData);
