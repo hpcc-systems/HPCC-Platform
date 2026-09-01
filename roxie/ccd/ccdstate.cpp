@@ -3025,6 +3025,11 @@ private:
                 bool success = protraceClearRecording(clearMetadata);
                 reply.appendf("<Protrace success='%s'/>", boolToStr(success));
             }
+            else if (stricmp(queryName, "control:protraceRecord")==0)
+            {
+                bool success = protraceClearRecording(false) && protraceResumeRecording();
+                reply.appendf("<Protrace success='%s'/>", boolToStr(success));
+            }
             else if (stricmp(queryName, "control:protraceResume")==0)
             {
                 bool success = protraceResumeRecording();
@@ -3054,6 +3059,13 @@ private:
                     encodeXML(outputFilename.str(), encoded);
                     reply.appendf("<Protrace success='true' filename='%s'/>", encoded.str());
                 }
+            }
+            else if (stricmp(queryName, "control:protraceStatus")==0)
+            {
+                StringBuffer status;
+                StringBuffer encoded;
+                encodeXML(protraceStatus(status).str(), encoded);
+                reply.appendf("<Protrace status='%s'/>", encoded.str());
             }
             else if (stricmp(queryName, "control:protraceSuspend")==0)
             {

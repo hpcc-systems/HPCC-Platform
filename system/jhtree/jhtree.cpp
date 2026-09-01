@@ -1214,7 +1214,13 @@ IKeyIndex *CKeyStore::doload(const char *fileName, unsigned crc, IReplicatedFile
     //Check the index has been loaded - thread safe, only one thread will load if multiple threads get here at the same time.
     keyIndex->ensureReady();
     cycle_t elapsedCycles = loadTimer.elapsedCycles();
+
+#ifdef PROTRACE_DETAILED
+    protraceRecordAt(EventIndexOpen, loadTimer.startCycles(), getProtraceTicks(elapsedCycles), keyIndex->queryId());
+#else
     protraceRecordAt(EventIndexOpen, loadTimer.startCycles(), getProtraceTicks(elapsedCycles));
+#endif
+
     if (recording)
         queryRecorder().recordIndexOpen(keyIndex->queryId(), cycle_to_nanosec(elapsedCycles));
     return keyIndex;
@@ -3434,7 +3440,11 @@ const CJHTreeNode *CNodeCache::getCachedNode(const INodeLoader & nodeLoader, uns
         cycle_t endLoadCycles = get_cycles_now();
         cycle_t loadCycles = endLoadCycles - startLoadCycles;
 
+#ifdef PROTRACE_DETAILED
+        protraceRecordAt(EventIndexLoad, startLoadCycles, getProtraceTicks(loadCycles), iD, pos);
+#else
         protraceRecordAt(EventIndexLoad, startLoadCycles, getProtraceTicks(loadCycles));
+#endif
 
         if (unlikely(recordingEvents()))
         {
@@ -3494,7 +3504,14 @@ const CJHTreeNode *CNodeCache::getCachedNode(const INodeLoader & nodeLoader, uns
                 block.ensureLeave();
 
                 //Update ctx stats outside of the critical section.
-                protraceRecord(EventIndexCacheHit);
+                if (protraceIndexCacheEvents)
+                {
+#ifdef PROTRACE_DETAILED
+                    protraceRecord(EventIndexCacheHit, iD, pos);
+#else
+                    protraceRecord(EventIndexCacheHit);
+#endif
+                }
                 if (unlikely(recordingEvents()))
                     queryRecorder().recordIndexCacheHit(iD, pos, type, fastPathMatch->getMemSize(), fastPathMatch->getLoadExpandTime());
                 if (ctx)
@@ -3516,7 +3533,15 @@ const CJHTreeNode *CNodeCache::getCachedNode(const INodeLoader & nodeLoader, uns
         ownedCacheEntry.setown(cacheEntry);
     }
 
-    protraceRecord(EventIndexCacheMiss);
+    if (protraceIndexCacheEvents)
+    {
+#ifdef PROTRACE_DETAILED
+        protraceRecord(EventIndexCacheMiss, iD, pos);
+#else
+        protraceRecord(EventIndexCacheMiss);
+#endif
+    }
+
     if (unlikely(recordingEvents()))
         queryRecorder().recordIndexCacheMiss(iD, pos, type);
 
@@ -3576,7 +3601,12 @@ const CJHTreeNode *CNodeCache::getCachedNode(const INodeLoader & nodeLoader, uns
         cycle_t endLoadCycles = get_cycles_now();
         cycle_t actualLoadCycles = endLoadCycles - startLoadCycles;
 
+#ifdef PROTRACE_DETAILED
+        protraceRecordAt(EventIndexLoad, startLoadCycles, getProtraceTicks(actualLoadCycles), iD, pos);
+#else
         protraceRecordAt(EventIndexLoad, startLoadCycles, getProtraceTicks(actualLoadCycles));
+#endif
+
 
         if (unlikely(recordingEvents()))
         {

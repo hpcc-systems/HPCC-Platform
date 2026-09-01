@@ -26,6 +26,8 @@
 #include <protrace.h>
 #endif
 
+bool protraceIndexCacheEvents = false;          // Default off, but useful for detailed investigations
+
 #ifdef _USE_PROTRACE
 static StringBuffer exitTraceFilename;
 static StringBuffer protraceComponent;
@@ -89,6 +91,11 @@ void protraceInitialize(const char * component, IPropertyTree * componentConfig)
         return;
     }
 
+    if (protraceConfig)
+    {
+        protraceIndexCacheEvents = protraceConfig->getPropBool("@traceIndexCache", protraceIndexCacheEvents);
+    }
+
     if (startRecording)
         protrace::resume();
 
@@ -118,8 +125,7 @@ void protraceOnTerminate()
 bool protraceResumeRecording()
 {
 #ifdef _USE_PROTRACE
-    protrace::resume();
-    return true;
+    return protrace::resume();
 #else
     return false;
 #endif
@@ -128,8 +134,7 @@ bool protraceResumeRecording()
 bool protraceSuspendRecording()
 {
 #ifdef _USE_PROTRACE
-    protrace::suspend();
-    return true;
+    return protrace::suspend();
 #else
     return false;
 #endif
@@ -138,10 +143,18 @@ bool protraceSuspendRecording()
 bool protraceClearRecording(bool clearMetadata)
 {
 #ifdef _USE_PROTRACE
-    protrace::clear_events(clearMetadata);
-    return true;
+    return protrace::clear_events(clearMetadata);
 #else
     return false;
+#endif
+}
+
+StringBuffer & protraceStatus(StringBuffer & status)
+{
+#ifdef _USE_PROTRACE
+    return status.append(protrace::status());
+#else
+    return status.append("supported=false");
 #endif
 }
 

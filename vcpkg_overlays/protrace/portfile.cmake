@@ -2,7 +2,7 @@
 vcpkg_from_git(
     OUT_SOURCE_PATH SOURCE_PATH
     URL "https://github.com/risk-hsy/protrace.git"
-    REF 4d652d642e968c91cf585a33bb471c65a65fd70f
+    REF 67719945bceacec4fe2efdfb15d27c0e6d0133a0
     HEAD_REF master
 )
 

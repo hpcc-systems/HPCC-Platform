@@ -124,6 +124,17 @@ inline void protraceRecordAt([[maybe_unused]] unsigned op, [[maybe_unused]] cycl
 #endif
 }
 
+inline void protraceRecordAt([[maybe_unused]] unsigned op, [[maybe_unused]] cycle_t cycles, [[maybe_unused]] uint64_t v1, [[maybe_unused]] uint64_t v2, [[maybe_unused]] uint64_t v3)
+{
+#ifdef _USE_PROTRACE
+    protrace::emit(
+        protrace::create_event(static_cast<protrace::opcode_t>(op), static_cast<protrace::tick_t>(getProtraceTicks(cycles))),
+        protrace::create_payload(v1),
+        protrace::create_payload(v2),
+        protrace::create_payload(v3));
+#endif
+}
+
 inline void protraceRecordMpRequestSend([[maybe_unused]] uint64_t requestId, [[maybe_unused]] uint64_t dataSize)
 {
 #ifdef _USE_PROTRACE
@@ -253,11 +264,17 @@ extern jlib_decl bool protraceSuspendRecording();
 extern jlib_decl bool protraceClearRecording(bool clearMetadata);
 extern jlib_decl void protraceInitialize(const char * component, IPropertyTree * componentConfig);
 
+class StringBuffer;
+
+// Returns a space-separated "key=value" summary of the tracer state, or "supported=false" if protrace is not built in
+extern jlib_decl StringBuffer & protraceStatus(StringBuffer & status);
+
 // Dump the current protrace recording to disk.
 // If filename is relative (or omitted), a file will be created in a temporary directory.
 // On success, outputFilename contains the generated/used filename.
-class StringBuffer;
 extern jlib_decl void protraceSaveRecording(StringBuffer & outputFilename, const char * filename);
 extern jlib_decl void protraceOnTerminate();
+
+extern jlib_decl bool protraceIndexCacheEvents;
 
 #endif
