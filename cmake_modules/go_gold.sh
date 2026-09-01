@@ -40,7 +40,7 @@ fi
 
 for f in ${HPCC_PROJECT}; do
   set_tag $f
-  if [ $(git rev-parse HEAD) != $(git rev-parse $HPCC_LONG_TAG) ] ; then 
+  if [ $(git rev-parse HEAD) != $(git rev-parse $HPCC_LONG_TAG^{commit}) ] ; then
     if [ -z "$IGNORE" ] ; then
       git diff $HPCC_LONG_TAG
       echo "There are changes on this branch since $HPCC_LONG_TAG. Use --ignore if you still want to tag Gold"
