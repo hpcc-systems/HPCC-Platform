@@ -87,7 +87,7 @@ Use kubectl to check the status of the deployed pods.  Wait until all pods are r
 kubectl get pods
 ```
 
-Check and see if the cerficate issuers have been successfully created.
+Check and see if the certificate issuers have been successfully created.
 
 ```bash
 kubectl get issuers -o wide
