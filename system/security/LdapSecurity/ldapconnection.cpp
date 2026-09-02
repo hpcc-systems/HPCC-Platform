@@ -1889,6 +1889,54 @@ public:
         return true;
     }
 
+    // Returns true if AD's "userAccountControl" attribute value has the UF_DONT_EXPIRE_PASSWD
+    // (0x10000) bit set - this can be true at the account level, even if domain policy requires
+    // password expiration.
+    bool isAccountPwdNeverExpires(LDAP *ld, LDAPMessage *entry, const char *attribute)
+    {
+        CLDAPGetValuesLenWrapper valsLen(ld, entry, attribute);
+        if (!valsLen.hasValues())
+            return false;
+        const struct berval *val = valsLen.queryBValues()[0];
+        StringBuffer tmp;
+        tmp.append((unsigned)val->bv_len, val->bv_val);
+        unsigned long uac = strtoul(tmp.str(), nullptr, 10);
+        return (uac & 0x10000) != 0;
+    }
+
+    // Parses AD's "pwdLastSet" or 389ds's "passwordExpirationTime" attribute (whichever
+    // 'attribute' names) into 'expiry'. Returns false if the caller should not call
+    // setPasswordExpiration() at all (e.g. attribute/directory-type mismatch, no value present,
+    // or a parse failure was already logged). If the domain or account is configured to never
+    // expire passwords, 'expiry' is cleared and true is returned so callers uniformly set a
+    // "no expiration" value.
+    bool getPasswordExpiration(LDAP *ld, LDAPMessage *entry, const char *attribute, const char *username,
+                                bool accountPwdNeverExpires, CDateTime &expiry)
+    {
+        if (stricmp(attribute, "pwdLastSet") == 0)
+        {
+            if (m_domainPwdsNeverExpire || accountPwdNeverExpires)
+            {
+                expiry.clear();
+                return true;
+            }
+            CLDAPGetValuesLenWrapper valsLen(ld, entry, attribute);
+            if (!valsLen.hasValues())
+                return false;
+            struct berval *val = valsLen.queryBValues()[0];
+            calcPWExpiry(expiry, (unsigned)val->bv_len, val->bv_val);
+            return true;
+        }
+        else if (stricmp(attribute, "passwordExpirationTime") == 0)
+        {
+            //389ds pre-computes expiration; absence means the password never expires.
+            if (m_ldapconfig->getServerType() != LDAP_389DS)
+                return false;
+            return getLdap389PasswordExpiration(ld, entry, attribute, username, expiry);
+        }
+        return false;
+    }
+
     virtual bool authenticate(ISecUser& user)
     {
         {
@@ -1992,46 +2040,23 @@ public:
                 }
                 else if((stricmp(attribute, "userAccountControl") == 0))
                 {
-                    //UF_DONT_EXPIRE_PASSWD 0x10000
-                    CLDAPGetValuesLenWrapper vals(sys_ld, entry, attribute);
-                    if (vals.hasValues())
-                        if (atoi((char*)vals.queryCharValue(0)) & 0x10000)//this can be true at the account level, even if domain policy requires password
-                            accountPwdNeverExpires = true;
+                    if (isAccountPwdNeverExpires(sys_ld, entry, attribute))
+                        accountPwdNeverExpires = true;
                 }
-                else if((stricmp(attribute, "pwdLastSet") == 0))
+                else if(stricmp(attribute, "pwdLastSet") == 0 || stricmp(attribute, "passwordExpirationTime") == 0)
                 {
                     /*pwdLastSet is the date and time that the password for this account was last changed. This
                     value is stored as a large integer that represents the number of 100 nanosecond intervals
                     since January 1, 1601 (UTC), also known as a FILETIME value. If this value is set
                     to 0 and the User-Account-Control attribute does not contain the UF_DONT_EXPIRE_PASSWD
                     flag, then the user must set the password at the next logon.
+
+                    passwordExpirationTime (389ds) pre-computes expiration; absence means the password
+                    never expires.
                     */
-                    CLDAPGetValuesLenWrapper valsLen(sys_ld, entry, attribute);
-                    if (valsLen.hasValues())
-                    {
-                        CDateTime expiry;
-                        if (!m_domainPwdsNeverExpire && !accountPwdNeverExpires)
-                        {
-                            char * val = (char*)valsLen.queryCharValue(0);
-                            calcPWExpiry(expiry, (unsigned)strlen(val), val);
-                        }
-                        else
-                        {
-                            expiry.clear();
-                            DBGLOG("LDAP: Password never expires for user %s", username);
-                        }
+                    CDateTime expiry;
+                    if (getPasswordExpiration(sys_ld, entry, attribute, username, accountPwdNeverExpires, expiry))
                         user.setPasswordExpiration(expiry);
-                    }
-                }
-                else if(stricmp(attribute, "passwordExpirationTime") == 0)
-                {
-                    //389ds pre-computes expiration; absence means the password never expires.
-                    if (m_ldapconfig->getServerType() == LDAP_389DS)
-                    {
-                        CDateTime expiry;
-                        if (getLdap389PasswordExpiration(sys_ld, entry, attribute, username, expiry))
-                            user.setPasswordExpiration(expiry); // null expiry means "never expires"
-                    }
                 }
                 else if(stricmp(attribute, "employeeId") == 0)
                 {
@@ -2477,32 +2502,14 @@ public:
                             ((CLdapSecUser*)&user)->setDistinguishedName(vals.queryCharValue(0));
                         else if((stricmp(attribute, "userAccountControl") == 0))
                         {
-                            //UF_DONT_EXPIRE_PASSWD 0x10000
-                            CLDAPGetValuesLenWrapper vals(ld, message, attribute);
-                            if (vals.hasValues())
-                                if (atoi((char*)vals.queryCharValue(0)) & 0x10000)//this can be true at the account level, even if domain policy requires password
-                                    accountPwdNeverExpires = true;
+                            if (isAccountPwdNeverExpires(ld, message, attribute))
+                                accountPwdNeverExpires = true;
                         }
-                        else if(stricmp(attribute, "pwdLastSet") == 0)
+                        else if(stricmp(attribute, "pwdLastSet") == 0 || stricmp(attribute, "passwordExpirationTime") == 0)
                         {
-                            CLDAPGetValuesLenWrapper valsLen(ld, message, attribute);
-                            if (!m_domainPwdsNeverExpire && !accountPwdNeverExpires && valsLen.hasValues())
-                            {
-                                CDateTime expiry;
-                                char * val = (char*)valsLen.queryCharValue(0);
-                                calcPWExpiry(expiry, (unsigned)strlen(val), val);
+                            CDateTime expiry;
+                            if (getPasswordExpiration(ld, message, attribute, username, accountPwdNeverExpires, expiry))
                                 ((CLdapSecUser*)&user)->setPasswordExpiration(expiry);
-                            }
-                        }
-                        else if(stricmp(attribute, "passwordExpirationTime") == 0)
-                        {
-                            //Attribute only present when the account's password is subject to expiry.
-                            if (m_ldapconfig->getServerType() == LDAP_389DS)
-                            {
-                                CDateTime expiry;
-                                if (getLdap389PasswordExpiration(ld, message, attribute, username, expiry))
-                                    ((CLdapSecUser*)&user)->setPasswordExpiration(expiry);
-                            }
                         }
                         else if(stricmp(attribute, "objectClass") == 0)
                         {
@@ -2957,37 +2964,14 @@ public:
                 }
                 else if (stricmp(attribute, "userAccountControl") == 0)
                 {
-                    //UF_DONT_EXPIRE_PASSWD 0x10000
-                    CLDAPGetValuesLenWrapper vals(ld, message, attribute);
-                    if (vals.hasValues())
-                        if (atoi((char*)vals.queryCharValue(0)) & 0x10000)//this can be true at the account level, even if domain policy requires password
-                            accountPwdNeverExpires = true;
+                    if (isAccountPwdNeverExpires(ld, message, attribute))
+                        accountPwdNeverExpires = true;
                 }
-                else if(stricmp(attribute, "pwdLastSet") == 0)
+                else if(stricmp(attribute, "pwdLastSet") == 0 || stricmp(attribute, "passwordExpirationTime") == 0)
                 {
                     CDateTime expiry;
-                    if (!m_domainPwdsNeverExpire && !accountPwdNeverExpires)
-                    {
-                        CLDAPGetValuesLenWrapper valsLen(ld, message, attribute);
-                        if (valsLen.hasValues())
-                        {
-                            struct berval* val = valsLen.queryBValues()[0];
-                            calcPWExpiry(expiry, (unsigned)val->bv_len, val->bv_val);
-                        }
-                    }
-                    else
-                        expiry.clear();
-                    user->setPasswordExpiration(expiry);
-                }
-                else if(stricmp(attribute, "passwordExpirationTime") == 0)
-                {
-                    //Attribute only present when the account's password is subject to expiry.
-                    if (m_ldapconfig->getServerType() == LDAP_389DS)
-                    {
-                        CDateTime expiry;
-                        if (getLdap389PasswordExpiration(ld, message, attribute, user->getName(), expiry))
-                            user->setPasswordExpiration(expiry);
-                    }
+                    if (getPasswordExpiration(ld, message, attribute, user->getName(), accountPwdNeverExpires, expiry))
+                        user->setPasswordExpiration(expiry);
                 }
                 else if(stricmp(attribute, act_fieldname) == 0)
                 {
