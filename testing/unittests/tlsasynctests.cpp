@@ -1060,7 +1060,10 @@ public:
 
                     int status = secureSocket->secure_connect(SSLogMin);
                     if (status != 0)
+                    {
+                        secureSocket->close();
                         return false;
+                    }
 
                     // secure_connect() may succeed before the server later rejects the peer.
                     // Require an echo round-trip so denied peers are counted as failures.
