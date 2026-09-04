@@ -58,6 +58,7 @@ install ( TARGETS ws_access RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION 
 add_dependencies (ws_access espscm)
 target_link_libraries ( ws_access
          jlib
+         dalibase
          xmllib
          esphttp
          LdapSecurity

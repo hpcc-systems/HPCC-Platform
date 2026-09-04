@@ -40,6 +40,19 @@ set (    SRCS
          ldaputils.cpp
     )
 
+# Unit tests for this component are compiled directly into LdapSecurity
+# itself (rather than a separate test library) so that CppUnit fixtures
+# can white-box test private/internal classes not exposed via any header
+# (e.g. CLdapClient, CAci). Test-only source files are kept in the
+# unittests/ subdirectory for separation from production code, but built
+# into this same library, following the jhtree/thorhelper/eclrtl pattern.
+# Only added when USE_CPPUNIT is on (CppUnit_LIBRARIES is empty otherwise).
+IF (USE_CPPUNIT)
+    set ( SRCS ${SRCS}
+         unittests/ldapsecuritytests.cpp
+    )
+ENDIF (USE_CPPUNIT)
+
 include_directories ( 
          ./../../include 
          ./../shared 
@@ -49,21 +62,27 @@ include_directories (
 	     ./../../../dali/base
 	     ./../../../system/mp
 	     ./../../../common/workunit
+	     ./../../../testing/unittests
+	     ./ 
     )
 
 ADD_DEFINITIONS( -DLDAPSECURITY_EXPORTS -D_USRDLL )
 
 HPCC_ADD_LIBRARY( LdapSecurity SHARED ${SRCS} )
 install ( TARGETS LdapSecurity RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} CALC_DEPS)
-target_link_libraries ( LdapSecurity
+target_link_libraries ( LdapSecurity PRIVATE
          jlib
          dalibase
          workunit
          PkgConfig::OPENLDAP
     )
 
+IF (USE_CPPUNIT)
+    target_link_libraries ( LdapSecurity PRIVATE ${CppUnit_LIBRARIES} )
+ENDIF (USE_CPPUNIT)
+
 IF (USE_OPENSSL)
-    target_link_libraries ( LdapSecurity ${OPENSSL_LIBRARIES} )
+    target_link_libraries ( LdapSecurity PRIVATE ${OPENSSL_LIBRARIES} )
 ENDIF (USE_OPENSSL)
 
 

@@ -44,10 +44,7 @@ set (    SRCS
          cryptotests.cpp
          hqltests.cpp
          esdltests.cpp
-         ${HPCC_SOURCE_DIR}/system/security/LdapSecurity/ldapsanitization.cpp
-         ${HPCC_SOURCE_DIR}/system/security/LdapSecurity/ldaptimeutils.cpp
          loggingtests.cpp
-         ldaptests.cpp
          testauthsecuritytests.cpp
          txSummarytests.cpp
          accessmaptests.cpp
