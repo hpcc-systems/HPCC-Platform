@@ -3,6 +3,7 @@ build
 ci
 config
 dali
+dafilesrv
 dfuserver
 documentation
 eclccserver
@@ -15,6 +16,6 @@ sasha
 security
 stdlib
 testing
-tracing
 thor
+tracing
 xref
