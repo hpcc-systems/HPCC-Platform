@@ -96,12 +96,6 @@ static void readBio(BIO* bio, StringBuffer& buf)
 }
 
 
-interface ISecureSocketContextCallback : implements IInterface
-{
-    virtual unsigned getVersion() = 0; // Check the version of the context to see if the SSL context needs to be recreated
-    virtual SSL * createActiveSSL() = 0; // Must be called after getVersion()
-};
-
 //Use a namespace to prevent clashes with a class of the same name in jhtree
 namespace securesocket
 {
@@ -578,8 +572,6 @@ class CSecureSocket : implements ISecureSocket, public CInterface
 private:
     SSL*        m_ssl;
     BIO*        network_bio = nullptr;  // Network BIO for async I/O (other end of BIO pair)
-    StringBuffer epStr;
-    Linked<ISecureSocketContextCallback> contextCallback;
     Owned<ISocket> m_socket;
     bool        nonBlocking;
     bool        m_verify;
@@ -591,7 +583,6 @@ private:
     size32_t    nextblocksize = 0;
     unsigned    blockflags = BF_ASYNC_TRANSFER;
     unsigned    blocktimeoutms = WAIT_FOREVER;
-    unsigned    contextVersion;
 #ifdef USERECVSEM
     static Semaphore receiveblocksem;
     bool             receiveblocksemowned; // owned by this socket
@@ -613,7 +604,7 @@ private:
 public:
     IMPLEMENT_IINTERFACE;
 
-    CSecureSocket(ISocket* sock, ISecureSocketContextCallback * callback, bool verify = false, bool addres_match = false, CStringSet* m_peers = NULL, int loglevel=SSLogNormal, const char *fqdn = nullptr);
+    CSecureSocket(ISocket* sock, SSL* ssl, bool verify = false, bool address_match = false, CStringSet* m_peers = NULL, int loglevel=SSLogNormal, const char *fqdn = nullptr);
     ~CSecureSocket();
 
     virtual int secure_accept(int logLevel);
@@ -629,23 +620,6 @@ public:
     virtual void readtms(void* buf, size32_t min_size, size32_t max_size, size32_t &size_read, unsigned timeoutms, bool suppresGCIfMinSize=true);
     virtual size32_t write(void const* buf, size32_t size);
     virtual size32_t writetms(void const* buf, size32_t minSize, size32_t size, unsigned timeoutms=WAIT_FOREVER);
-
-    void checkForUpdatedContext()
-    {
-        //Check if a new ssl context should be created.
-        //No need for a critical section because the socket functions are never accessed by multiple threads at the same time
-        //It is possible that createActiveSSL() may be for a later version - but that will only mean that the same context
-        //is recreated when the version number is seen to have changed.
-        unsigned activeVersion = contextCallback->getVersion();
-        if (activeVersion != contextVersion)
-        {
-            DBGLOG("CSecureSocket: Updating secure socket context from version %u to %u", contextVersion, activeVersion);
-            contextVersion = activeVersion;
-            SSL_free(m_ssl);
-            m_ssl = contextCallback->createActiveSSL();
-        }
-    }
-
 
     virtual StringBuffer& get_ssl_version(StringBuffer& ver)
     {
@@ -1051,20 +1025,15 @@ Semaphore CSecureSocket::receiveblocksem({SYNC_LOCATION}, 2);
 /**************************************************************************
  *  CSecureSocket -- secure socket layer implementation using openssl     *
  **************************************************************************/
-CSecureSocket::CSecureSocket(ISocket* sock, ISecureSocketContextCallback * callback, bool verify, bool address_match, CStringSet* peers, int loglevel, const char *fqdn)
-    : contextCallback(callback)
+CSecureSocket::CSecureSocket(ISocket* sock, SSL* ssl, bool verify, bool address_match, CStringSet* peers, int loglevel, const char *fqdn)
 {
+    m_ssl = ssl;
     m_socket.setown(sock);
     int sockfd = sock->OShandle();
-    SocketEndpoint ep;
-    sock->getPeerEndpoint(ep);
-    ep.getEndpointHostText(epStr);
-    contextVersion = callback->getVersion();
-    m_ssl = callback->createActiveSSL();
 
     m_verify = verify;
     m_address_match = address_match;
-    m_peers.set(peers);
+    m_peers.setown(peers);
     m_loglevel = loglevel;
     m_isSecure = false;
 
@@ -1088,11 +1057,6 @@ CSecureSocket::CSecureSocket(ISocket* sock, ISecureSocketContextCallback * callb
             nonBlocking = true;
     }
 #endif
-    if(m_ssl == NULL)
-    {
-        throw MakeStringException(-1, "Can't create ssl");
-    }
-
     // there is no MSG_NOSIGNAL or SO_NOSIGPIPE for SSL_write() ...
 #ifndef _WIN32
     signal(SIGPIPE, SIG_IGN);
@@ -1236,7 +1200,6 @@ bool CSecureSocket::verify_cert(X509* cert)
 
 int CSecureSocket::secure_accept(int logLevel)
 {
-    checkForUpdatedContext();
     int err;
     while (true)
     {
@@ -1348,8 +1311,6 @@ void CSecureSocket::startAsyncAccept(IAsyncProcessor * processor, IAsyncCallback
     
     try
     {
-        checkForUpdatedContext();
-
         // Create and start the async accept handler.
         // Handler starts with refcount=1 and will Release() after completion.
         CAsyncTLSAcceptHandler *handler = new CAsyncTLSAcceptHandler(this, m_ssl, processor, m_socket, callback, logLevel);
@@ -1388,8 +1349,6 @@ void CSecureSocket::startAsyncConnect(IAsyncProcessor * processor, IAsyncCallbac
     
     try
     {
-        checkForUpdatedContext();
-
         // Create and start the async connect handler.
         // Handler starts with refcount=1 and will Release() after completion.
         CAsyncTLSConnectHandler *handler = new CAsyncTLSConnectHandler(this, m_ssl, processor, m_socket, callback, logLevel);
@@ -1856,8 +1815,6 @@ void CSecureSocket::startAsyncRead(IAsyncProcessor * processor, void * buf, size
     
     try
     {
-        checkForUpdatedContext();
-
         // Create and start the async read handler.
         // Handler starts with refcount=1 and will Release() after completion.
         CAsyncTLSReadHandler *handler = new CAsyncTLSReadHandler(this, m_ssl, processor, m_socket, buf, minSize, maxSize, callback);
@@ -1896,8 +1853,6 @@ void CSecureSocket::startAsyncWrite(IAsyncProcessor * processor, const void * bu
     
     try
     {
-        checkForUpdatedContext();
-
         // Create and start the async write handler.
         // Handler starts with refcount=1 and will Release() after completion.
         CAsyncTLSWriteHandler *handler = new CAsyncTLSWriteHandler(this, m_ssl, processor, m_socket, buf, size, callback);
@@ -2653,7 +2608,7 @@ static bool setVerifyCertsPEMBuffer(SSL_CTX *ctx, const char *caCertBuf, int caC
     return true;
 }
 
-class CSecureSocketContext : implements ISecureSocketContext, implements ISecureSocketContextCallback, public CInterface
+class CSecureSocketContext : public CInterfaceOf<ISecureSocketContext>
 {
 private:
     SecureSocketType sockettype;
@@ -2668,7 +2623,7 @@ private:
     bool m_address_match = false;
     Owned<CStringSet> m_peers;
     StringAttr password;
-    CriticalSection cs{SYNC_LOCATION};
+    CriticalSection cs{SYNC_LOCATION}; // NB: only used if context is from a syncedConfig
     Linked<const ISyncedPropertyTree> syncedConfig;
     unsigned configVersion = 0;
 
@@ -2826,26 +2781,50 @@ private:
         SSL_CTX_set_mode(m_ctx, SSL_CTX_get_mode(m_ctx) | SSL_MODE_AUTO_RETRY);
     }
 
-    void checkForUpdatedContext()
+    ISecureSocket* createSecureSocketImpl(ISocket* sock, int loglevel, const char *fqdn)
     {
-        //Check if a new context should be created - it must be called within a critical section
-        //NOTE: The openssl ctx is reference counted internally, so any existing sockets will still be valid.
         if (syncedConfig)
         {
-            unsigned activeVersion = syncedConfig->getVersion();
-            if (activeVersion != configVersion)
+            //Check if a new context should be created - it must be called within a critical section
+            //NOTE: The openssl ctx is reference counted internally, so any existing sockets will still be valid.
+            //
+            //Once a CSecureSocket is created, it will be bound to the SSL_CTX that was used to create it.
+            //If the SSL_CTX is updated, existing CSecureSockets will continue to use the old SSL_CTX, and new CSecureSockets will use the new SSL_CTX.
+
+            SSL* ssl;
+            bool verify;
+            bool address_match;
+            Linked<CStringSet> peers;
             {
-                DBGLOG("CSecureSocketContext: Updating secure socket context from version %u to %u", configVersion, activeVersion);
-                configVersion = activeVersion;
-                Owned<const IPropertyTree> config = syncedConfig->getTree();
-                createNewContext(config);
+                CriticalBlock block(cs);
+                unsigned activeVersion = syncedConfig->getVersion();
+                if (activeVersion != configVersion)
+                {
+                    DBGLOG("CSecureSocketContext: Updating secure socket context from version %u to %u", configVersion, activeVersion);
+                    configVersion = activeVersion;
+                    Owned<const IPropertyTree> config = syncedConfig->getTree();
+                    createNewContext(config);
+                }
+                ssl = SSL_new(m_ctx);
+                if (ssl == nullptr)
+                    throw makeStringException(-1, "Can't create ssl");
+
+                verify = m_verify;
+                address_match = m_address_match;
+                peers.set(m_peers);
             }
+            return new CSecureSocket(sock, ssl, verify, address_match, peers.getClear(), loglevel, fqdn);
+        }
+        else
+        {
+            SSL *ssl = SSL_new(m_ctx);
+            if (ssl == nullptr)
+                throw makeStringException(-1, "Can't create ssl");
+            return new CSecureSocket(sock, ssl, m_verify, m_address_match, m_peers.getLink(), loglevel, fqdn);
         }
     }
 
 public:
-    IMPLEMENT_IINTERFACE
-
     CSecureSocketContext(const IPropertyTree* config, SecureSocketType _sockettype) : sockettype(_sockettype)
     {
         createNewContext(config);
@@ -2865,29 +2844,14 @@ public:
 //interface ISecureSocketContext
     ISecureSocket* createSecureSocket(ISocket* sock, int loglevel, const char *fqdn)
     {
-        return new CSecureSocket(sock, this, m_verify, m_address_match, m_peers, loglevel, fqdn);
+        return createSecureSocketImpl(sock, loglevel, fqdn);
     }
 
     ISecureSocket* createSecureSocket(int sockfd, int loglevel, const char *fqdn)
     {
         Owned<ISocket> sock = ISocket::attach(sockfd);
-        return new CSecureSocket(sock.getClear(), this, m_verify, m_address_match, m_peers, loglevel, fqdn);
+        return createSecureSocketImpl(sock.getClear(), loglevel, fqdn);
     }
-
-//interface ISecureSocketContextCallback
-    virtual unsigned getVersion()
-    {
-        CriticalBlock block(cs);
-        checkForUpdatedContext();
-        return configVersion;
-    }
-    virtual SSL * createActiveSSL()
-    {
-        //If this function is called it is either a new socket or getVersion() has been called to check it is up to date
-        CriticalBlock block(cs);
-        return SSL_new(m_ctx);
-    }
-
 };
 
 class CRsaCertificate : implements ICertificate, public CInterface
