@@ -3642,6 +3642,64 @@ bool FileSprayer::isSameSizeHeaderFooter()
     return retVal;
 }
 
+static bool copyFilePropertyFromSource(const char * aname, bool copyCompressed, bool copyKey)
+{
+    if ((stricmp(aname,"@job")==0)||
+        (stricmp(aname,"@workunit")==0)||
+        (stricmp(aname,"@description")==0)||
+        (stricmp(aname,"@eclCRC")==0)||
+        (stricmp(aname,"@formatCrc")==0)||
+        (stricmp(aname,"@keyedSize")==0)||
+        (stricmp(aname,"@nodeSize")==0)||
+        (stricmp(aname,"@owner")==0)||
+        (stricmp(aname,"@local")==0)||
+        (stricmp(aname,"@recordCount")==0) ||
+        (stricmp(aname,"@lfnHash")==0) ||
+        (stricmp(aname,"@numLeafNodes")==0)||
+        (stricmp(aname,"@numBlobNodes")==0)||
+        (stricmp(aname,"@numBranchNodes")==0)||
+        (stricmp(aname,"@branchMemorySize")==0)||
+        (stricmp(aname,"@leafMemorySize")==0)||
+        (stricmp(aname,"@uncompressedSize")==0)||
+        (stricmp(aname,"@originalBlobSize")==0)
+        )
+        return true;
+
+    if (((stricmp(aname,"@blockCompressed")==0)&&copyCompressed) ||
+        ((stricmp(aname,"@rowCompressed")==0)&&copyCompressed)||
+        ((stricmp(aname,"@compressionType")==0)&&(copyCompressed||copyKey))
+        )
+        return true;
+
+    return false;
+}
+
+static bool copyPartPropertyFromSource(const char * aname, bool sameSizeHeaderFooter, unsigned numSources, unsigned numTargets)
+{
+    // Exclude these attributes - they are set separately or should not be copied
+    if ((strieq(aname,"@fileCrc"))||
+        (strieq(aname,"@modified"))||
+        (strieq(aname,"@node"))||
+        (strieq(aname,"@num"))||
+        (strieq(aname,"@size"))||
+        (strieq(aname,"@compressedSize"))||
+        (strieq(aname,"@name"))
+        )
+        return false;
+
+    // Only copy header/footer length when sizes are the same - set elsewhere if they differ
+    if (strieq(aname, FPheaderLength) || strieq(aname, FPfooterLength))
+        return sameSizeHeaderFooter;
+
+    // Only copy recordCount if sources and targets have same ordinality
+    if (strieq(aname,"@recordCount"))
+        return numSources == numTargets;
+
+    // Copy all other properties (including index metadata: @offsetBranches, @offsetRoot, @maxLeafMemorySize, etc.)
+    return true;
+}
+
+
 cost_type FileSprayer::updateTargetProperties()
 {
     TimeSection timer("FileSprayer::updateTargetProperties() time");
@@ -3759,16 +3817,7 @@ cost_type FileSprayer::updateTargetProperties()
                         ForEach(*aiter)
                         {
                             const char *aname = aiter->queryName();
-                            if ( !( strieq(aname,"@fileCrc") ||
-                                    strieq(aname,"@modified") ||
-                                    strieq(aname,"@node") ||
-                                    strieq(aname,"@num")  ||
-                                    strieq(aname,"@size") ||
-                                    strieq(aname,"@compressedSize") ||
-                                    strieq(aname,"@name") ) ||
-                                    (!sameSizeHeaderFooter && (strieq(aname, FPheaderLength) || strieq(aname, FPfooterLength))) ||
-                                    ( strieq(aname,"@recordCount") && (sources.ordinality() == targets.ordinality()) )
-                               )
+                            if (copyPartPropertyFromSource(aname, sameSizeHeaderFooter, sources.ordinality(), targets.ordinality()))
                                 curProps.setProp(aname,aiter->queryValue());
                         }
                     }
@@ -3832,11 +3881,8 @@ cost_type FileSprayer::updateTargetProperties()
             curProps.setPropInt64(FAcompressedSize, totalCompressedSize);
 
         unsigned rs = curProps.getPropInt(FArecordSize); // set by user
-        bool gotrc = false;
-        if (rs && (totalLength%rs == 0)) {
+        if (rs && (totalLength%rs == 0))
             curProps.setPropInt64(FArecordCount,totalLength/(offset_t)rs);
-            gotrc = true;
-        }
 
         if (sameSizeHeaderFooter && ((srcFormat.markup == FMTjson ) || (srcFormat.markup == FMTxml)))
         {
@@ -3851,30 +3897,13 @@ cost_type FileSprayer::updateTargetProperties()
             StringBuffer s;
             // copy some attributes (do as iterator in case we want to change to *exclude* some
             Owned<IAttributeIterator> aiter = srcAttr->getAttributes();
-            ForEach(*aiter) {
+            ForEach(*aiter)
+            {
                 const char *aname = aiter->queryName();
                 if (!curProps.hasProp(aname))
                 {
-                    //The following is a list of attributes that should be copied
-                    if ((stricmp(aname,"@job")==0)||
-                        (stricmp(aname,"@workunit")==0)||
-                        (stricmp(aname,"@description")==0)||
-                        (stricmp(aname,"@eclCRC")==0)||
-                        (stricmp(aname,"@formatCrc")==0)||
-                        (stricmp(aname,"@keyedSize")==0)||
-                        (stricmp(aname,"@nodeSize")==0)||
-                        (stricmp(aname,"@owner")==0)||
-                        ((stricmp(aname,FArecordCount)==0)&&!gotrc) ||
-                        ((stricmp(aname,"@blockCompressed")==0)&&copyCompressed) ||
-                        ((stricmp(aname,"@rowCompressed")==0)&&copyCompressed)||
-                        ((stricmp(aname,"@compressionType")==0)&&(copyCompressed||copyKey))||
-                        (stricmp(aname,"@local")==0)||
-                        (stricmp(aname,"@recordCount")==0) ||
-                        (stricmp(aname,"@lfnHash")==0)
-                        )
-                    {
+                    if (copyFilePropertyFromSource(aname, copyCompressed, copyKey))
                         curProps.setProp(aname,aiter->queryValue());
-                    }
                 }
             }
 
