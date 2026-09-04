@@ -33,16 +33,29 @@ static StringBuffer exitTraceFilename;
 static StringBuffer protraceComponent;
 static bool writeTraceAtExit = false;
 
-MODULE_INIT(INIT_PRIORITY_STANDARD)
+#define INIT_PRIORITY_DESTROY_FIRST 1
+MODULE_INIT(INIT_PRIORITY_DESTROY_FIRST)
 {
     protrace::note_thread(protrace::get_tid(), "main thread");
     return true;
 }
 MODULE_EXIT()
 {
-    protraceOnTerminate();
+    //We must stop tracing before exiting, otherwise the process is likely to crash
+    protrace::suspend();
 }
+
+// Ensure protrace is stopped when the program exits - if ExitModuleObjects is not called
+static class StopRecordingOnExit
+{
+public:
+    ~StopRecordingOnExit()
+    {
+        protrace::suspend();
+    }
+} stopRecordingOnExitInstance;
 #endif
+
 
 void protraceInitialize(const char * component, IPropertyTree * componentConfig)
 {
@@ -112,7 +125,7 @@ void protraceOnTerminate()
         writeTraceAtExit = false;
         try
         {
-            protrace::save_events(exitTraceFilename.str());
+            protrace::save_events(exitTraceFilename.str(), false);
         }
         catch (const std::exception & e)
         {
@@ -158,7 +171,7 @@ StringBuffer & protraceStatus(StringBuffer & status)
 #endif
 }
 
-void protraceSaveRecording(StringBuffer & outputFilename, const char * filename)
+void protraceSaveRecording(StringBuffer & outputFilename, const char * filename, bool continueRecording)
 {
     outputFilename.clear();
 
@@ -184,7 +197,7 @@ void protraceSaveRecording(StringBuffer & outputFilename, const char * filename)
     recursiveCreateDirectoryForFile(outputFilename.str());
     try
     {
-        protrace::save_events(outputFilename.str());
+        protrace::save_events(outputFilename.str(), continueRecording);
     }
     catch (const std::exception & e)
     {

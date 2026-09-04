@@ -3041,7 +3041,8 @@ private:
                 bool success = false;
                 try
                 {
-                    protraceSaveRecording(outputFilename, control->queryProp("@filename"));
+                    bool continueRecording = control->getPropBool("@continue", false);
+                    protraceSaveRecording(outputFilename, control->queryProp("@filename"), continueRecording);
                     success = true;
                 }
                 catch (const IException * e)

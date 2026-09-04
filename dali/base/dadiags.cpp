@@ -220,7 +220,7 @@ public:
                     StringBuffer outputFilename;
                     try
                     {
-                        protraceSaveRecording(outputFilename, requestedFilename.get());
+                        protraceSaveRecording(outputFilename, requestedFilename.get(), true);
                         serializeException(NULL, mb);  // writes 0x01 to indicate success
                         mb.append(outputFilename);
                     }

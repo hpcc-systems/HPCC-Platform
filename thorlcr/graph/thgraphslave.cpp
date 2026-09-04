@@ -1981,7 +1981,7 @@ void CJobSlave::debugRequest(MemoryBuffer &msg, const char *request) const
             StringBuffer outputFilename;
             StringBuffer host;
             protraceSuspendRecording();
-            protraceSaveRecording(outputFilename, nullptr);
+            protraceSaveRecording(outputFilename, nullptr, false);
             queryMyNode()->endpoint().getEndpointHostText(host);
             msg.append(true);
             msg.append(host.str());

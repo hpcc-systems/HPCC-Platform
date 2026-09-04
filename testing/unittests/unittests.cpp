@@ -331,7 +331,7 @@ int main(int argc, const char *argv[])
 
 #ifdef _USE_PROTRACE
     if (protraceEnabled)
-        protrace::save_events("unittest.kstrc");
+        protrace::save_events("unittest.kstrc", false);
 #endif
 
     releaseAtoms();

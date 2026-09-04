@@ -301,7 +301,7 @@ class CJobManager : public CSimpleInterface, implements IJobManager, implements 
 
                 StringBuffer masterFilename;
                 protraceSuspendRecording();
-                protraceSaveRecording(masterFilename, nullptr);
+                protraceSaveRecording(masterFilename, nullptr, false);
                 response.appendf("<file node='master' host='localhost' path='%s'/>", masterFilename.str());
 
                 auto responseFunc = [&response](unsigned worker, MemoryBuffer &mb)

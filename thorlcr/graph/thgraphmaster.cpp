@@ -2941,7 +2941,7 @@ void CMasterGraph::collectProtrace()
     {
         protraceSuspendRecording();
         StringBuffer masterFilename;
-        protraceSaveRecording(masterFilename, nullptr);
+        protraceSaveRecording(masterFilename, nullptr, false);
 
         std::vector<CSlaveProtraceFile> slaveFiles;
         slaveFiles.reserve(queryJob().queryNodes());

@@ -272,7 +272,7 @@ extern jlib_decl StringBuffer & protraceStatus(StringBuffer & status);
 // Dump the current protrace recording to disk.
 // If filename is relative (or omitted), a file will be created in a temporary directory.
 // On success, outputFilename contains the generated/used filename.
-extern jlib_decl void protraceSaveRecording(StringBuffer & outputFilename, const char * filename);
+extern jlib_decl void protraceSaveRecording(StringBuffer & outputFilename, const char * filename, bool continueRecording);
 extern jlib_decl void protraceOnTerminate();
 
 extern jlib_decl bool protraceIndexCacheEvents;

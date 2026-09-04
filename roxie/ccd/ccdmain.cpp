@@ -1899,6 +1899,7 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         }
         shuttingDown = true;
         DBGLOG("Roxie closing down");
+        protraceSuspendRecording();
         logCacheState();
         stopTopoThread();
         setSEHtoExceptionHandler(NULL);

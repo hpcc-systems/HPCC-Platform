@@ -357,7 +357,7 @@ bool CWSESPControlEx::onProtraceSave(IEspContext& context, IEspProtraceSaveReque
         }
 
         StringBuffer outputFilename;
-        protraceSaveRecording(outputFilename, req.getFilename());
+        protraceSaveRecording(outputFilename, req.getFilename(), req.getContinueRecording());
         resp.setStatus(0);
         resp.setFilename(outputFilename.str());
         resp.setMessage("Protrace recording saved.");
