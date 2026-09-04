@@ -25934,7 +25934,7 @@ interface IJoinProcessor
 {
     virtual void processEOG() = 0;
     virtual CJoinGroup *createJoinGroup(const void *row) = 0;
-    virtual void noteEndReceived(CJoinGroup *jg, unsigned candidateCount) = 0;
+    virtual void notePullerEndReceived(CJoinGroup *jg, unsigned candidateCount) = 0;
     virtual bool fireException(IException *E) = 0;
     virtual void processCompletedGroups() = 0;
 };
@@ -25947,14 +25947,11 @@ interface IJoinProcessor
 // per-query limits etc (Note that the pointer array block is not though).
 // Because of that, the exact size is significant - especially whether fit just under or just over a chunking threshold...
 //
-// There are two phases to the life of a JoinGroup - it is created by the puller thread that is also firing off agent requests
-// notePending will be called once for every agent request. Puller thread calls noteEndReceived(0) once when done - this corresponds to the
-// initial count when created.
-// Agent replies and are noted by the consumer thread calling addRightMatch() and noteEndReceived(n).
-// Once endMarkersPending reaches 0, JoinGroup is complete. Last thread to call noteEndReceived will process the rows and destroy the group.
-// There is no need for a critsec because although multiple threads will access at different times, only the consumer thread will
-// access any modifiable member variables while endMarkersPending != 0 (i.e. complete() is false). Once complete returns true there is a single
-// remaining reference and the JoinGroup will be processed and destroyed.
+// There are two phases to the life of a JoinGroup.  The puller thread creates it, sends requests, and calls notePullerEndReceived(0) once
+// it has finished adding requests.  The consumer thread adds RHS matches and notes worker end markers.  Either thread can decrement
+// endMarkersPending to zero, but only the consumer thread dequeues completed groups, transforms rows, and destroys the group.
+// There is no need for a critsec because although both threads access the group, only the consumer thread modifies non-atomic state while
+// endMarkersPending != 0.  Once complete returns true, the consumer thread owns the remaining processing.
 //   
 //------------------------------------------------------------------------------------------------------
 
@@ -26132,7 +26129,9 @@ public:
 class KeyedJoinRemoteAdaptor : public CRemoteResultAdaptor // MORE - not sure it should be derived from this - makes processed all wrong, for example
 {
 private:
-    SafeQueueOf<const void, true> ready;
+    //The following is used if the number of candidates is known on the puller thread and all results have been received (0 matches is only likely cause)
+    static constexpr unsigned short pullerGroupCompletedMarker = (unsigned short)-2;
+    QueueOf<const void, true> outputRows; // Only ever accessed from the consumer thread, so no need to for a SafeQueueOf
 
 public:
     IHThorKeyedJoinArg &helper;
@@ -26175,16 +26174,16 @@ public:
     {
         eof = false;
         allPulled = false;
-        assertex(ready.ordinality()==0);
+        assertex(outputRows.ordinality()==0);
         CRemoteResultAdaptor::start(parentExtractSize, parentExtract, paused);
     }
 
     virtual void reset()
     {
         CRemoteResultAdaptor::reset();
-        while (ready.ordinality())
+        while (outputRows.ordinality())
         {
-            const void *goer = ready.dequeue();
+            const void *goer = outputRows.dequeue();
             if (goer)
                 ReleaseRoxieRow(goer);
         }
@@ -26198,9 +26197,25 @@ public:
             ccdRecordAllocator->emptyCache();
     }
 
-    inline void addResult(const void *row)
+    inline void addOutputRow(const void *row)
     {
-        ready.enqueue(row);
+        outputRows.enqueue(row);
+    }
+
+    void notifyGroupCompleted()
+    {
+        // Called by the puller thread to wake the consumer after a group was seen as completed - so the consumer thread may
+        // not have processed it because it was not marked as completed when the message was received.
+        if (isSimple)
+            return;
+
+        Owned<CRowArrayMessageResult> result = new CRowArrayMessageResult();
+        KeyedJoinHeader *marker = (KeyedJoinHeader *) ctx->queryRowManager().allocate(KEYEDJOIN_RECORD_SIZE(0), activityId);
+        marker->fpos = 0;
+        marker->thisGroup = NULL;
+        marker->partNo = pullerGroupCompletedMarker;
+        result->append(marker);
+        injectResult(result.getClear());
     }
 
     virtual unsigned __int64 queryTotalCycles() const
@@ -26216,9 +26231,9 @@ public:
             if (unlikely(eof))
                 return NULL;
             processAgentResults();
-            if (ready.ordinality())
+            if (outputRows.ordinality())
             {
-                const void *result = ready.dequeue();
+                const void *result = outputRows.dequeue();
                 if (result)
                     joinProcessed++;
                 return result;
@@ -26239,7 +26254,8 @@ public:
 private:
     void processAgentResults()
     {
-        while (!ready.ordinality())
+        // Called only by the consumer thread.  It is solely responsible for transforming completed groups.
+        while (!outputRows.ordinality())
         {
             KeyedJoinHeader *fetchedData;
             if (isSimple)
@@ -26256,8 +26272,15 @@ private:
             }
             else
                 fetchedData = (KeyedJoinHeader *) CRemoteResultAdaptor::nextRow();
+
             if (fetchedData)
             {
+                if (unlikely(fetchedData->partNo == pullerGroupCompletedMarker))
+                {
+                    ReleaseRoxieRow(fetchedData);
+                    processor.processCompletedGroups();
+                    continue;
+                }
                 CJoinGroup *thisGroup = fetchedData->thisGroup;
                 if (fetchedData->partNo == (unsigned short) -1)
                 {
@@ -26266,7 +26289,8 @@ private:
 #endif
                     unsigned candidateCount = (unsigned) fetchedData->fpos;
                     ReleaseRoxieRow(fetchedData);
-                    processor.noteEndReceived(thisGroup, candidateCount); // note - this can throw exception. So release fetchdata before calling
+                    if (thisGroup->noteEndReceived(candidateCount))
+                        processor.processCompletedGroups(); // note - this can throw exception. So release fetchdata before calling
                 }
                 else
                 {
@@ -26279,7 +26303,8 @@ private:
 #ifdef TRACE_JOINGROUPS
                         CTXLOG("Calling noteEndReceived for record returned from FETCH of full keyed join");
 #endif
-                        processor.noteEndReceived(thisGroup, 0); // note - this can throw exception. So release fetchdata before calling
+                        if (thisGroup->noteEndReceived(0))
+                            processor.processCompletedGroups(); // note - this can throw exception. So release fetchdata before calling
                     }
                 }
             }
@@ -26582,11 +26607,11 @@ public:
                     }
                 }
             }
-            joinHandler->noteEndReceived(jg, 0);
+            joinHandler->notePullerEndReceived(jg, 0);
         }
         else
         {
-            joinHandler->noteEndReceived(joinHandler->createJoinGroup(row), 0);
+            joinHandler->notePullerEndReceived(joinHandler->createJoinGroup(row), 0);
         }
     }
 
@@ -26817,6 +26842,7 @@ public:
         }
         if (defaultRightAllocator)
             defaultRightAllocator->emptyCache();
+        groupStart = NULL;
     }
 
     virtual unsigned getTotalRowsProcessed() const override
@@ -26849,16 +26875,20 @@ public:
     {
         CriticalBlock c(groupsCrit);
         if (groupStart)
-            noteEndReceived(groupStart, 0);
+            notePullerEndReceived(groupStart, 0);
         groupStart = NULL;
     }
 
-    virtual void noteEndReceived(CJoinGroup *jg, unsigned candidateCount)
+    // Called only by the puller thread.  Completed groups are always processed by the consumer thread.
+    // This will either be called when there are no matches, or for a full keyed join when the results are
+    // back from the index, so it knows how many matches there will be.
+    virtual void notePullerEndReceived(CJoinGroup *jg, unsigned candidateCount)
     {
         if (jg->noteEndReceived(candidateCount))
-            processCompletedGroups();
+            remote.notifyGroupCompleted();
     }
 
+    // Called only by KeyedJoinRemoteAdaptor on the consumer thread.
     void processCompletedGroups()
     {
         CriticalBlock c(groupsCrit);
@@ -26878,7 +26908,7 @@ public:
                     joinGroupSize += doJoinGroup(finger);
                 }
                 if (joinGroupSize)
-                    remote.addResult(NULL);
+                    remote.addOutputRow(NULL);
             }
             else
                 doJoinGroup(head);
@@ -26903,10 +26933,10 @@ public:
         if (cloneLeft && !except)
         {
             LinkRoxieRow(left);
-            remote.addResult((void *) left);
+            remote.addOutputRow((void *) left);
             return 1;
         }
-        
+
         RtlDynamicRowBuilder rowBuilder(rowAllocator);
         unsigned outSize;
         try
@@ -26922,7 +26952,7 @@ public:
         if (likely(outSize))
         {
             const void *shrunk = rowBuilder.finalizeRowClear(outSize);
-            remote.addResult(shrunk);
+            remote.addOutputRow(shrunk);
             return 1;
         }
         else
@@ -26971,7 +27001,7 @@ public:
                     break;
                 case TAKkeyeddenormalize:
                     LinkRoxieRow(left);
-                    remote.addResult((void *) left);
+                    remote.addOutputRow((void *) left);
                     added++;
                     break;
                 }
@@ -27023,7 +27053,7 @@ public:
                     }
                     if (rowSize)
                     {
-                        remote.addResult(newLeft.getClear());
+                        remote.addOutputRow(newLeft.getClear());
                         added++;
                     }
                 }
@@ -27190,7 +27220,7 @@ public:
             unsigned candidateCount = (unsigned) rhs->fpos;
 //          CTXLOG("Full keyed join - all results back from index");
             ReleaseRoxieRow(rhs);
-            noteEndReceived(jg, candidateCount); // may throw exception - so release row before calling
+            notePullerEndReceived(jg, candidateCount); // may throw exception - so release row before calling
         }
     }
 
@@ -27464,11 +27494,11 @@ public:
                     }
                 }
             }
-            noteEndReceived(jg, 0);
+            notePullerEndReceived(jg, 0);
         }
         else
         {
-            noteEndReceived(createJoinGroup(row), 0);
+            notePullerEndReceived(createJoinGroup(row), 0);
         }
     }
 
