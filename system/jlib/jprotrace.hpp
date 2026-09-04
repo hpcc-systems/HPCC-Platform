@@ -24,18 +24,10 @@
 inline constexpr bool hasProtrace() { return true; }
 
 // If we record information about every critical section and lock it can quickly swamp all the other information
-// So PROTRACE_LOCKS and PROTRACE_SEMAPHORES allow semaphores and locks to be conditionally tracked.
-// Do we track information about unnamed locks?
-// These are usually singletons, or other rarely used locks, avoiding tracking them can reduce noise in the trace.
-#define TRACK_UNNAMED_LOCKS
+// PROTRACE_LOCKS and PROTRACE_SEMAPHORES allow semaphores and locks to be conditionally tracked. (Both default off.)
+
 #else
 inline constexpr bool hasProtrace() { return false; }
-#endif
-
-#ifdef TRACK_UNNAMED_LOCKS
-constexpr bool trackUnnamedLocks = true;
-#else
-constexpr bool trackUnnamedLocks = false;
 #endif
 
 #include <stdint.h>

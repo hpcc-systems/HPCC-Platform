@@ -9357,7 +9357,7 @@ public:
 
     QueueOf<const void, true> buffer;
     CriticalSection crit{SYNC_LOCATION};
-    CriticalSection crit2{SYNC_LOCATION};
+    CriticalSection readAheadCrit{SYNC_UNTRACED}; // Do not track this critical section - it only corresponds to concurrent read-ahead operations
     unsigned tailIdx;
     unsigned headIdx;
     Owned<IException> readError;
@@ -9565,9 +9565,9 @@ public:
     {
         //False positives are fine, false negatives are not.. so headIdx must only be updated when a row will be available.
         const unsigned curIdx = idx;
-        if (curIdx == headIdx) // test once without getting the crit2 sec
+        if (curIdx == headIdx) // test once without getting the readAheadCrit sec
         {
-            CriticalBlock b2(crit2);  // but only one puller gets to read the head
+            CriticalBlock b2(readAheadCrit);  // but only one puller gets to read the head
             if (curIdx == headIdx) // test again now that we have it
             {
                 ActivityTimer t(activityStats, timeActivities); // NOTE - time spent waiting for crit not included here. But it will have been included on the totalTime of the person holding the crit, so that is right

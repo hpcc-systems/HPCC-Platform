@@ -35,7 +35,7 @@ LegacyMutex::LegacyMutex([[maybe_unused]] const char *syncName)
     owner = 0;
     lockcount = 0;
 #ifdef PROTRACE_LOCKS
-    if (trackUnnamedLocks || syncName)
+    if (syncName)
         syncid = protrace::note_lock(syncName);
 #endif
 }
@@ -215,7 +215,7 @@ static StringBuffer lockPrefix;
 NamedMutex::NamedMutex([[maybe_unused]] const char *syncName, const char *name)
 {
 #ifdef PROTRACE_LOCKS
-    if (trackUnnamedLocks || syncName)
+    if (syncName)
         syncid = protrace::note_lock(syncName);
 #endif
     {

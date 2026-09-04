@@ -705,7 +705,7 @@ public:
     CKeyIdAndPos fp;
     CNodeCacheEntry et;
 
-    CriticalSection cs{SYNC_LOCATION};
+    CriticalSection cs{SYNC_UNTRACED}; // Do not track this critical section - it is only used to protect two threads loading concurrently
 
 //The following pointers are used to maintain the position in the LRU cache
     CNodeMapping * prev = nullptr;

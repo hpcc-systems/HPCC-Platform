@@ -47,7 +47,7 @@ void getEndTime(timespec & abs, unsigned timeout)
 Semaphore::Semaphore([[maybe_unused]] const char *syncName, unsigned initialCount)
 {
 #ifdef PROTRACE_SEMAPHORES
-    if (trackUnnamedLocks || syncName)
+    if (syncName)
         syncid = protrace::note_semaphore(syncName);
 #endif
     sem_init(&sem, 0, initialCount);
@@ -140,7 +140,7 @@ void Semaphore::signal(unsigned n)
 Semaphore::Semaphore([[maybe_unused]] const char *syncName, unsigned initialCount)
 {
 #ifdef PROTRACE_SEMAPHORES
-    if (trackUnnamedLocks || syncName)
+    if (syncName)
         syncid = protrace::note_semaphore(syncName);
 #endif
     init();

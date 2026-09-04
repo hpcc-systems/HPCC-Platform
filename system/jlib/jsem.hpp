@@ -39,8 +39,11 @@ constexpr const char * extractTail(const char * text)
 #define SYNC_STRINGIZE2(x)   #x
 #define SYNC_STRINGIZE(x)    SYNC_STRINGIZE2(x)
 #define SYNC_LOCATION        (extractTail(__FILE__ ":" SYNC_STRINGIZE(__LINE__)))
-//Use SYNC_UNNAMED for Semaphores or Mutexes that are uninteresting - e.g. singletons, or other rarely used locks.
-#define SYNC_UNNAMED         nullptr
+#define SYNC_UNTRACED        nullptr
+
+// Use SYNC_UNTRACED for Semaphores or Mutexes that are uninteresting - e.g. singletons, or other rarely used locks.
+// This will exclude them from protrace.
+// If you temporarily want to track them, then change the SYNC_UNTRACED macro above to something other than nullptr.
 
 #ifdef _WIN32
 
@@ -50,7 +53,7 @@ protected:
     inline void noteEvent(EventType event)
     {
 #ifdef PROTRACE_SEMAPHORES
-        if (trackUnnamedLocks || likely(syncid))
+        if (likely(syncid))
             protraceRecord(static_cast<unsigned>(event), syncid);
 #endif
     }
@@ -58,7 +61,7 @@ protected:
     {
         hSem = CreateSemaphore(NULL, 0, 0x7fffffff, name);
 #ifdef PROTRACE_SEMAPHORES
-        if (trackUnnamedLocks || syncName)
+        if (syncName)
             syncid = protrace::note_semaphore(syncName);
 #endif
     }
@@ -67,7 +70,7 @@ public:
     {
         hSem = CreateSemaphore(NULL, initialCount, 0x7fffffff, NULL);
 #ifdef PROTRACE_SEMAPHORES
-        if (trackUnnamedLocks || syncName)
+        if (syncName)
             syncid = protrace::note_semaphore(syncName);
 #endif
     }
@@ -150,7 +153,7 @@ public:
     inline void noteEvent(EventType event)
     {
 #ifdef PROTRACE_SEMAPHORES
-    if (trackUnnamedLocks || likely(syncid))
+    if (likely(syncid))
         protraceRecord(static_cast<unsigned>(event), syncid);
 #endif
     }

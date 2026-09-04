@@ -57,7 +57,7 @@ protected:
     inline void noteEvent(EventType event)
     {
 #ifdef PROTRACE_LOCKS
-        if (trackUnnamedLocks || likely(syncid))
+        if (likely(syncid))
             protraceRecord(static_cast<unsigned>(event), syncid);
 #endif
     }
@@ -68,7 +68,7 @@ protected:
         lockcount = 0;
         owner = 0;
 #ifdef PROTRACE_LOCKS
-        if (trackUnnamedLocks || syncName)
+        if (syncName)
             syncid = protrace::note_lock(syncName);
 #endif
     }
@@ -79,7 +79,7 @@ public:
         lockcount = 0;
         owner = 0;
 #ifdef PROTRACE_LOCKS
-        if (trackUnnamedLocks || syncName)
+        if (syncName)
             syncid = protrace::note_lock(syncName);
 #endif
     }
@@ -174,7 +174,7 @@ private:
     inline void noteEvent(EventType event)
     {
 #ifdef PROTRACE_LOCKS
-        if (trackUnnamedLocks || likely(syncid))
+        if (likely(syncid))
             protraceRecord(static_cast<unsigned>(event), syncid);
 #endif
     }
@@ -192,7 +192,7 @@ public:
     SimpleMutex([[maybe_unused]] const char *syncName)
     {
 #ifdef PROTRACE_LOCKS
-        if (trackUnnamedLocks || syncName)
+        if (syncName)
             syncid = protrace::note_lock(syncName);
 #endif
     }
@@ -211,7 +211,7 @@ private:
     inline void noteEvent(EventType event)
     {
 #ifdef PROTRACE_LOCKS
-        if (trackUnnamedLocks || likely(syncid))
+        if (likely(syncid))
             protraceRecord(static_cast<unsigned>(event), syncid);
 #endif
     }
@@ -227,7 +227,7 @@ public:
     Mutex([[maybe_unused]] const char *syncName)
     {
 #ifdef PROTRACE_LOCKS
-        if (trackUnnamedLocks || syncName)
+        if (syncName)
             syncid = protrace::note_lock(syncName);
 #endif
     }
@@ -246,7 +246,7 @@ private:
     inline void noteEvent(EventType event)
     {
 #ifdef PROTRACE_LOCKS
-        if (trackUnnamedLocks || likely(syncid))
+        if (likely(syncid))
             protraceRecord(static_cast<unsigned>(event), syncid);
 #endif
     }
@@ -262,7 +262,7 @@ public:
     TimedMutex([[maybe_unused]] const char *syncName)
     {
 #ifdef PROTRACE_LOCKS
-        if (trackUnnamedLocks || syncName)
+        if (syncName)
             syncid = protrace::note_lock(syncName);
 #endif
     }
@@ -282,7 +282,7 @@ private:
     inline void noteEvent(EventType event)
     {
 #ifdef PROTRACE_LOCKS
-        if (trackUnnamedLocks || likely(syncid))
+        if (likely(syncid))
             protraceRecord(static_cast<unsigned>(event), syncid);
 #endif
     }
@@ -304,7 +304,7 @@ private:
     inline void noteEvent(EventType event)
     {
 #ifdef PROTRACE_LOCKS
-        if (trackUnnamedLocks || likely(syncid))
+        if (likely(syncid))
             protraceRecord(static_cast<unsigned>(event), syncid);
 #endif
     }
@@ -366,7 +366,7 @@ public:
     {
         InitializeCriticalSection(&flags);
 #ifdef PROTRACE_LOCKS
-        if (trackUnnamedLocks || syncName) {
+        if (syncName) {
             syncid = protrace::note_lock(syncName);
         }
 #endif
@@ -441,7 +441,7 @@ private:
     inline void noteEvent(EventType event)
     {
 #ifdef PROTRACE_LOCKS
-        if (trackUnnamedLocks || likely(syncid))
+        if (likely(syncid))
             protraceRecord(static_cast<unsigned>(event), syncid);
 #endif
     }
@@ -469,7 +469,7 @@ public:
         pthread_mutexattr_t attr;
         pthread_mutexattr_init(&attr);
 #ifdef PROTRACE_LOCKS
-        if (trackUnnamedLocks || syncName)
+        if (syncName)
             syncid = protrace::note_lock(syncName);
 #endif
 #ifdef _DEBUG
@@ -552,7 +552,7 @@ private:
     inline void noteEvent(EventType event)
     {
 #ifdef PROTRACE_LOCKS
-        if (trackUnnamedLocks || likely(syncid))
+        if (likely(syncid))
             protraceRecord(static_cast<unsigned>(event), syncid);
 #endif
     }
@@ -635,7 +635,7 @@ class  SpinLock
     inline void noteEvent(EventType event)
     {
 #ifdef PROTRACE_LOCKS
-        if (trackUnnamedLocks || likely(syncid))
+        if (likely(syncid))
             protraceRecord(static_cast<unsigned>(event), syncid);
 #endif
     }
@@ -647,7 +647,7 @@ public:
     inline SpinLock([[maybe_unused]] const char *syncName)
     {
 #ifdef PROTRACE_LOCKS
-        if (trackUnnamedLocks || syncName)
+        if (syncName)
             syncid = protrace::note_spinlock(syncName);
 #endif
     }
@@ -671,7 +671,7 @@ class jlib_decl  SpinLock
     inline void noteEvent(EventType event)
     {
 #ifdef PROTRACE_LOCKS
-        if (trackUnnamedLocks || likely(syncid))
+        if (likely(syncid))
             protraceRecord(static_cast<unsigned>(event), syncid);
 #endif
     }
@@ -686,7 +686,7 @@ public:
     inline SpinLock([[maybe_unused]] const char *syncName)
     {
 #ifdef PROTRACE_LOCKS
-        if (trackUnnamedLocks || syncName)
+        if (syncName)
             syncid = protrace::note_spinlock(syncName);
 #endif
     }
@@ -775,7 +775,7 @@ class jlib_decl NonReentrantSpinLock
     inline void noteEvent(EventType event)
     {
 #ifdef PROTRACE_LOCKS
-        if (trackUnnamedLocks || likely(syncid))
+        if (likely(syncid))
             protraceRecord(static_cast<unsigned>(event), syncid);
 #endif
     }
@@ -789,7 +789,7 @@ public:
     inline NonReentrantSpinLock([[maybe_unused]] const char *syncName) : value(false), owner(0)
     {
 #ifdef PROTRACE_LOCKS
-        if (trackUnnamedLocks || syncName)
+        if (syncName)
             syncid = protrace::note_spinlock(syncName);
 #endif
     }
@@ -819,7 +819,7 @@ class jlib_decl  NonReentrantSpinLock
     inline void noteEvent(EventType event)
     {
 #ifdef PROTRACE_LOCKS
-        if (trackUnnamedLocks || likely(syncid))
+        if (likely(syncid))
             protraceRecord(static_cast<unsigned>(event), syncid);
 #endif
     }
@@ -832,7 +832,7 @@ public:
     inline NonReentrantSpinLock([[maybe_unused]] const char *syncName) : value(false)
     {
 #ifdef PROTRACE_LOCKS
-        if (trackUnnamedLocks || syncName)
+        if (syncName)
             syncid = protrace::note_spinlock(syncName);
 #endif
     }
@@ -909,7 +909,7 @@ public:
     StdReadWriteLock(const char * syncName)
     {
 #ifdef PROTRACE_LOCKS
-        if (trackUnnamedLocks || syncName)
+        if (syncName)
             syncid = protrace::note_rwlock(syncName);
 #endif
     }
@@ -995,7 +995,7 @@ public:
     StdTimedReadWriteLock(const char * syncName)
     {
 #ifdef PROTRACE_LOCKS
-        if (trackUnnamedLocks || syncName)
+        if (syncName)
             syncid = protrace::note_rwlock(syncName);
 #endif
     }
@@ -1287,7 +1287,7 @@ void jlib_decl checkedWriteLockEnter(TimedReadWriteLock &l, unsigned timeout, co
 class CSingletonLock        // a lock that will generally only be locked once (for locking singleton objects - see below for examples
 {
     std::atomic<bool> needlock;
-    CriticalSection  sect{SYNC_UNNAMED}; // Singleton locks are generally uninteresting
+    CriticalSection  sect{SYNC_UNTRACED}; // Singleton locks are generally uninteresting
 public:
     inline CSingletonLock()
     {
@@ -1333,7 +1333,7 @@ public:
  * A template function for implementing a singleton object.  Using the same example as above would require:
 
     static std::atomic<void *> sobj;
-    static CriticalSection slock{SYNC_UNNAMED};
+    static CriticalSection slock{SYNC_UNTRACED};
     void *get()
     {
         return querySingleton(sobj, slock, []{ return createSObj; });
