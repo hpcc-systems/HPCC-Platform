@@ -34,6 +34,7 @@
 #endif
 
 #include "jlzw.ipp"
+#include "jstream.hpp"
 
 #define COMMITTED ((size32_t)-1)
 
@@ -2058,11 +2059,11 @@ public:
         return nullptr;
     }
 
-    virtual ISerialOutputStream * queryOutputStream() override
+    virtual ISerialOutputStream * queryWriteStream() override
     {
         return nullptr;
     }
-    virtual ISerialInputStream * queryInputStream() override
+    virtual IBufferedSerialInputStream * createParallelReadStream(unsigned numThreads, size32_t chunkSize) override
     {
         return nullptr;
     }
@@ -2075,8 +2076,12 @@ protected:
     unsigned numBlocksToBuffer = 1; // default to buffering 1 block
 };
 
+//---------------------------------------------------------------------------------------------------------------------
+
 class CCompressedFileReader final : public CCompressedFileBase
 {
+    friend class CCompressedBlockExpandingStream;
+
     Linked<IMemoryMappedFile> mmfile;
     MemoryBuffer expandedBuffer;    // buffer that contains the expanded input
     MemoryBuffer iobuffer;          // buffer used for reading
@@ -2096,7 +2101,20 @@ class CCompressedFileReader final : public CCompressedFileBase
     offset_t lastIOOffset = 0;      // Last offset in the current IO block
 
     unsigned indexNum() { return indexbuf.length()/sizeof(offset_t); }
+    unsigned numBlocks() const { return indexbuf.length()/sizeof(offset_t); }
+    offset_t queryIndexPos() const { return trailer.indexPos; }
+    offset_t blockFileOffset(unsigned n) const { return (offset_t)n * trailer.blockSize; }
 
+    //The final block is not padded out to a whole blockSize
+    size32_t blockCompressedLength(unsigned n) const
+    {
+        offset_t offset = blockFileOffset(n);
+        assertex(offset <= trailer.indexPos);
+        offset_t remaining = trailer.indexPos - offset;
+        return (remaining < (offset_t)trailer.blockSize) ? (size32_t)remaining : trailer.blockSize;
+    }
+
+    //Returns the block containing an expanded position, and that block's expanded start position and size
     unsigned lookupIndex(offset_t pos,offset_t &curpos,size32_t &expsize)
     {
         // NB index starts at block 1 (and has size as last entry)
@@ -2184,11 +2202,8 @@ class CCompressedFileReader final : public CCompressedFileBase
         }
 
         unsigned curblocknum = lookupIndex(pos, startBlockExpandedPos, fullBlockSize);
-        size32_t toread = trailer.blockSize;
-        offset_t nextIOOffset = (offset_t)curblocknum*toread;
-        assertex(nextIOOffset <= trailer.indexPos);
-        if (trailer.indexPos-nextIOOffset < (offset_t)toread)
-            toread = (size32_t)(trailer.indexPos - nextIOOffset);
+        offset_t nextIOOffset = blockFileOffset(curblocknum);
+        size32_t toread = blockCompressedLength(curblocknum);
         if (!toread)
             return;
 
@@ -2372,7 +2387,192 @@ public:
     {
         return trailer.datacrc;
     }
+
+    virtual IBufferedSerialInputStream * createParallelReadStream(unsigned numThreads, size32_t chunkSize) override;
 };
+
+//---------------------------------------------------------------------------------------------------------------------
+
+// Sequential ISerialInputStream over a compressed file's raw blocks.
+// Each read() decompresses one compressed block directly into the caller's buffer via init()+expand(),
+// eliminating the intermediate expandedBuffer copy.
+// Only valid for block-compressed files (recordSize==0); row-diff files are not supported.
+//
+// Overall flow and buffering layers (see CCompressedFileReader::createParallelReadStream()):
+//
+//   [compressed file] --read-ahead--> CParallelReadAheadInputStream --peek/skip--> CCompressedBlockExpandingStream
+//       (rawStream member)                (inner: compressed bytes)                 (this class: decompresses)
+//                                                                                          |
+//                                                                                     read() (ISerialInputStream)
+//                                                                                          v
+//                                                                    createBufferedInputStream(rawStream, blockSize)
+//                                                                        (outer: CBlockedSerialInputStream,
+//                                                                         decompressed bytes, supports peek())
+//
+// There are two independent buffering/chunking layers, each sized for a different purpose:
+//  1. Inner layer (rawStream, a CParallelReadAheadInputStream): reads the *compressed* file in
+//     `effectiveChunkSize`-sized units (a multiple of the caller-supplied storage-efficient chunkSize,
+//     rounded up so it is always >= blockSize() - see the ctor).  Its peek(compressedLen) is only ever
+//     called internally by this class's read(), never by callers of this class, and compressedLen is
+//     always <= owner->blockSize() <= effectiveChunkSize, which guarantees the peek can always be
+//     satisfied contiguously from the ring buffer without needing ParallelReadAheadArbitraryPeek.
+//  2. Outer layer: CCompressedFileReader::createParallelReadStream() wraps this class in
+//     createBufferedInputStream(..., trailer.blockSize) i.e. a CBlockedSerialInputStream whose blockReadSize equals
+//     the *decompressed* block size, and returns only that wrapper.  This class's read() is intentionally
+//     block-oriented: one successful read() consumes one compressed block and returns that block's decompressed
+//     bytes, or returns BufferTooSmall if the supplied buffer is too small.  It does not implement arbitrary
+//     exact-length reads, so it is never exposed to callers - the wrapper is what provides partial reads, get(),
+//     peek(), and eos() to downstream consumers (e.g. row/CSV splitters).
+//
+// skip()/reset() only adjust bookkeeping (skipPending, currentBlockNum, endExpandedOffset) - the actual
+// compressed data is not re-read until the next read() call, at which point pending skips are folded into
+// the block that is decompressed (partially or wholly discarded, see skipPending handling in read()).
+// reset(_offset, _flen) uses owner->lookupIndex() to translate an expanded (decompressed) offset into the
+// owning compressed block and a byte offset within it, and repositions rawStream to start reading raw bytes
+// from that block's file offset; endExpandedOffset enforces the requested decompressed length limit.
+class CCompressedBlockExpandingStream final : public CInterfaceOf<ISerialInputStream>
+{
+    Linked<CCompressedFileReader> owner;
+    Linked<IExpander> expander;
+    Owned<IBufferedSerialInputStream> rawStream;
+    unsigned currentBlockNum = 0;
+    offset_t nextOffset = 0;
+    size32_t skipPending = 0;
+    bool endOfStream = false;
+    offset_t endExpandedOffset = (offset_t)-1;  // (offset_t)-1 = unlimited
+
+public:
+    CCompressedBlockExpandingStream(CCompressedFileReader *_owner, IFileIO *_rawFileio, IExpander *_expander, unsigned numThreads, size32_t chunkSize)
+        : owner(_owner), expander(_expander)
+    {
+        // peek(compressedLen) below requires compressedLen (<= owner->blockSize()) to never exceed chunkSize,
+        // otherwise the ring buffer's overflow region cannot guarantee a contiguous peek.
+        // Round chunkSize up to a multiple of itself (rather than clamping to blockSize) so that each
+        // underlying read stays aligned to the storage-efficient read size it was configured with.
+        size32_t blockSize = owner->blockSize();
+        size32_t effectiveChunkSize = chunkSize;
+        if (effectiveChunkSize < blockSize)
+        {
+            unsigned numChunksPerBlock = (blockSize + chunkSize - 1) / chunkSize;
+            effectiveChunkSize = chunkSize * numChunksPerBlock;
+        }
+        // read() only peeks one compressed block at a time, and effectiveChunkSize is
+        // at least that block size, so one chunk of overflow is enough for ring-wrap peeks.
+        rawStream.setown(createParallelReadAheadInputStream(_rawFileio, numThreads, effectiveChunkSize, effectiveChunkSize));
+        rawStream->reset(0, owner->queryIndexPos());
+    }
+
+    virtual size32_t read(size32_t len, void * ptr) override
+    {
+        for (;;)
+        {
+            if (endOfStream || currentBlockNum >= owner->numBlocks() ||
+                (endExpandedOffset != (offset_t)-1 && nextOffset >= endExpandedOffset))
+            {
+                endOfStream = true;
+                return 0;
+            }
+
+            size32_t compressedLen = owner->blockCompressedLength(currentBlockNum);
+            size32_t available;
+            const void *compressedData = rawStream->peek(compressedLen, available);
+            if (!compressedData || available < compressedLen)
+            {
+                endOfStream = true;
+                return 0;
+            }
+
+            size32_t expandedSize = expander->init(compressedData);
+
+            if (unlikely(skipPending >= expandedSize))
+            {
+                // Whole block falls within the pending skip; discard it.
+                rawStream->skip(compressedLen);
+                nextOffset += expandedSize;
+                skipPending -= expandedSize;
+                currentBlockNum++;
+                continue;
+            }
+
+            if (len < expandedSize)
+                return BufferTooSmall;
+
+            expander->expand(ptr);
+            rawStream->skip(compressedLen);
+            nextOffset += expandedSize;
+            currentBlockNum++;
+
+            if (skipPending > 0)
+            {
+                // Partial skip within this block: shift expanded data down.
+                memmove(ptr, (byte *)ptr + skipPending, expandedSize - skipPending);
+                expandedSize -= skipPending;
+                skipPending = 0;
+            }
+
+            if (endExpandedOffset != (offset_t)-1 && nextOffset > endExpandedOffset)
+            {
+                expandedSize -= (size32_t)(nextOffset - endExpandedOffset);
+                nextOffset = endExpandedOffset;  // keep tell() consistent with bytes returned
+                endOfStream = true;
+            }
+
+            return expandedSize;
+        }
+    }
+
+    virtual void get(size32_t len, void * ptr) override
+    {
+        // ISerialInputStream::get() promises exactly len bytes or an exception, but this adapter cannot know
+        // how to satisfy an arbitrary exact-length request without buffering across decompressed blocks.  Callers
+        // must use the outer CBlockedSerialInputStream, which implements get() on top of this class's block reads.
+        throwUnexpected();
+    }
+
+    virtual void skip(size32_t sz) override
+    {
+        skipPending += sz;
+    }
+
+    virtual offset_t tell() const override
+    {
+        return nextOffset + skipPending;
+    }
+
+    virtual void reset(offset_t _offset, offset_t _flen) override
+    {
+        offset_t blockExpandedStart;
+        size32_t blockExpandedSize;
+        currentBlockNum = owner->lookupIndex(_offset, blockExpandedStart, blockExpandedSize);
+
+        offset_t rawOffset = owner->blockFileOffset(currentBlockNum);
+        rawStream->reset(rawOffset, owner->queryIndexPos() - rawOffset);
+
+        skipPending = (size32_t)(_offset - blockExpandedStart);
+        nextOffset = blockExpandedStart;
+        endOfStream = false;
+        endExpandedOffset = (_flen == (offset_t)-1) ? (offset_t)-1 : _offset + _flen;
+    }
+
+    virtual unsigned __int64 getStatistic(StatisticKind kind) override { return rawStream->getStatistic(kind); }
+};
+
+// The returned stream is the sole consumer of this reader: do not concurrently use the reader's IFileIO API
+// or create another parallel read stream. Both paths use the reader's mutable expander state.
+// Typical callers create the reader solely to create this stream; the stream retains the reader for its lifetime.
+IBufferedSerialInputStream * CCompressedFileReader::createParallelReadStream(unsigned numThreads, size32_t chunkSize)
+{
+    if (numThreads == 0)
+        numThreads = getAffinityCpus();
+    // Only supported for block-compressed sequential reads (not memory-mapped, not row-diff).
+    if (mmfile || trailer.recordSize != 0 || numThreads < 2)
+        return nullptr;
+    if (chunkSize == 0)
+        chunkSize = sizeIoBuffer;
+    Owned<ISerialInputStream> expandingStream = new CCompressedBlockExpandingStream(this, fileio, expander, numThreads, chunkSize);
+    // The block read size must match the decompressed block size that the expanding stream returns per read().
+    return createBufferedInputStream(expandingStream, trailer.blockSize);
+}
 
 //---------------------------------------------------------------------------------------------------------------------
 
@@ -2612,7 +2812,7 @@ public:
         return trailer.expandedSize;
     }
 
-    virtual ISerialOutputStream * queryOutputStream()
+    virtual ISerialOutputStream * queryWriteStream()
     {
         return this;
     }

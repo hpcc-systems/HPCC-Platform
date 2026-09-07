@@ -1,0 +1,30 @@
+<Dataset name='Result 1'>
+</Dataset>
+<Dataset name='Result 2'>
+</Dataset>
+<Dataset name='Result 3'>
+</Dataset>
+<Dataset name='Result 4'>
+</Dataset>
+<Dataset name='Result 5'>
+</Dataset>
+<Dataset name='Result 6'>
+</Dataset>
+<Dataset name='flat'>
+ <Row><cnt_diff>0</cnt_diff><bad_rows>0</bad_rows></Row>
+</Dataset>
+<Dataset name='comp'>
+ <Row><cnt_diff>0</cnt_diff><bad_rows>0</bad_rows></Row>
+</Dataset>
+<Dataset name='csv'>
+ <Row><cnt_diff>0</cnt_diff><bad_rows>0</bad_rows></Row>
+</Dataset>
+<Dataset name='csv_comp'>
+ <Row><cnt_diff>0</cnt_diff><bad_rows>0</bad_rows></Row>
+</Dataset>
+<Dataset name='xml'>
+ <Row><cnt_diff>0</cnt_diff><bad_rows>0</bad_rows></Row>
+</Dataset>
+<Dataset name='xml_comp'>
+ <Row><cnt_diff>0</cnt_diff><bad_rows>0</bad_rows></Row>
+</Dataset>

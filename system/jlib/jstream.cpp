@@ -34,9 +34,12 @@
 #include <vector>
 #include <memory>
 #include "jerror.hpp"
+#include "jstats.h"
 
 constexpr size32_t minBlockReadSize = 0x4000;       //16K - used when fetching a single row from a file (e.g. FETCH/KEYED JOIN)
 constexpr size32_t defaultBlockReadSize = 0x100000; //1MB
+
+const StatisticsMapping parallelReadAheadStatistics({StNumParallelReadAheadThreads, StSizeParallelReadAheadChunk, StTimeParallelReadAheadConsumerWait, StCycleParallelReadAheadConsumerWaitCycles});
 
 #ifdef _DEBUG
 constexpr bool fillInvalidMemory = true;
@@ -345,6 +348,8 @@ private:
     }
 
 
+    virtual unsigned __int64 getStatistic(StatisticKind kind) override { return input->getStatistic(kind); }
+
 protected:
     Linked<ISerialInputStream> input;
     MemoryAttr buffer;
@@ -399,12 +404,17 @@ class CParallelReadAheadInputStream final : public CInterfaceOf<IBufferedSerialI
         // on an already-Ready chunk (e.g. the overflow peek and extend paths).
         size32_t waitForData() // called by peek/doPeek
         {
+            cycle_t waitStart = 0;
+            if (!ready)
+                waitStart = get_cycles_now();
             while (!ready)
             {
                 if (owner.stopped())
                     return 0;
                 consumerSem.wait();
             }
+            if (waitStart)
+                owner.consumerWaitCycles.fetch_add(get_cycles_now() - waitStart, std::memory_order_relaxed);
             if (exception)
                 throw exception.getClear();
             return dataSize;
@@ -486,6 +496,7 @@ class CParallelReadAheadInputStream final : public CInterfaceOf<IBufferedSerialI
     std::vector<std::unique_ptr<Chunk>> chunks;
     std::vector<std::thread> threads;
     std::atomic<bool> stopRequested{false}; // Set to true via stop() or internally by markInputEOF() when no more data is required
+    RelaxedAtomic<cycle_t> consumerWaitCycles{0};
     offset_t readPos = 0;
     offset_t endOffset = 0;
     bool consumerEOF = false;
@@ -502,6 +513,10 @@ class CParallelReadAheadInputStream final : public CInterfaceOf<IBufferedSerialI
     {
         stopRequested = false;
 
+        buffer.allocate(ringBufferSize + overflowMaxSize);
+        for (unsigned i = 0; i < numThreads; i++)
+            chunks.emplace_back(std::make_unique<Chunk>(*this, i));
+
         for (unsigned i = 0; i < numThreads; i++)
         {
             // Pre-assign deterministic offsets so chunk 0 always gets the first
@@ -510,7 +525,12 @@ class CParallelReadAheadInputStream final : public CInterfaceOf<IBufferedSerialI
             chunks[i]->fileOffset = fileOffset;
             // No point launching a thread whose first read is already beyond EOF
             if (fileOffset >= endOffset)
-                break;
+            {
+                // Mark as immediately ready with no data so waitForData() cannot block.
+                chunks[i]->dataSize = 0;
+                chunks[i]->markReadyAndSignal();
+                continue;
+            }
 
             auto f = [this, i]()
             {
@@ -539,6 +559,8 @@ class CParallelReadAheadInputStream final : public CInterfaceOf<IBufferedSerialI
         }
 
         threads.clear();
+        chunks.clear();
+        buffer.clear();
         started = false;
     }
 
@@ -556,7 +578,7 @@ public:
         : input(_input), numThreads(_numThreads), chunkSize(_chunkSize), overflowMaxSize(_overflowMaxSize)
     {
         if (numThreads < 2)
-            throw makeStringException(-1, "Parallel read-ahead input stream requires at least 2 threads");
+            throw makeStringException(JLIBERR_SystemParallelReadAheadFailure, "Parallel read-ahead input stream requires at least 2 threads");
 
         // To be able to extend across all other chunks in the ring buffer if needed, the overflow region must be at least this big.
         // If not specified, set it to exactly this size so that the total buffer size is a nice multiple of chunkSize.
@@ -564,13 +586,9 @@ public:
         if (0 == overflowMaxSize)
             overflowMaxSize = maxOverflowSize;
         else if (overflowMaxSize > maxOverflowSize)
-            throw makeStringExceptionV(-1, "Parallel read-ahead buffer size [CParallelReadAheadInputStream(numThreads=%u, chunkSize=%u, overflowMaxSize=%u)] cannot be larger than %u", numThreads, chunkSize, overflowMaxSize, maxOverflowSize); 
+            throw makeStringExceptionV(JLIBERR_SystemParallelReadAheadFailure, "Parallel read-ahead buffer size [CParallelReadAheadInputStream(numThreads=%u, chunkSize=%u, overflowMaxSize=%u)] cannot be larger than %u", numThreads, chunkSize, overflowMaxSize, maxOverflowSize);
 
         ringBufferSize = numThreads * chunkSize;
-        buffer.allocate(ringBufferSize + overflowMaxSize);
-        for (unsigned i = 0; i < numThreads; i++)
-            chunks.emplace_back(std::make_unique<Chunk>(*this, i));
-
         endOffset = input->size();
     }
 
@@ -619,7 +637,12 @@ public:
     size32_t readChunk(unsigned chunkIdx, offset_t fileOffset)
     {
         byte * chunkData = static_cast<byte *>(buffer.bufferBase()) + (chunkIdx * chunkSize);
-        return input->read(fileOffset, chunkSize, chunkData);
+        if (fileOffset >= endOffset)
+            return 0;
+        offset_t remaining = endOffset - fileOffset;
+
+        size32_t toRead = (remaining < chunkSize) ? (size32_t)remaining : chunkSize;
+        return input->read(fileOffset, toRead, chunkData);
     }
 
     // Common implementation for read() and skip().  If ptr is nullptr, data is discarded (skip mode).
@@ -632,7 +655,10 @@ public:
             size32_t got;
             const byte *chunkPtr = static_cast<const byte *>(doPeek(len - totalConsumed, got));
             if (!chunkPtr)
+            {
+                stop();
                 break;
+            }
 
             size32_t toConsume = std::min(len - totalConsumed, got);
 
@@ -662,7 +688,7 @@ public:
     {
         size32_t got = read(len, ptr);
         if (got != len)
-            throw makeStringExceptionV(-1, "End of input stream for read of %u bytes at offset %llu", len, tell());
+            throw makeStringExceptionV(JLIBERR_SystemParallelReadAheadFailure, "End of input stream for read of %u bytes at offset %llu", len, tell());
     }
 
     virtual void reset(offset_t _offset, offset_t _flen) override
@@ -770,9 +796,9 @@ public:
         // e.g. with chunks 0-3, if currentChunkIdx=2, we wrapped at chunk 3, so we can use chunks 0 and 1 (max=2).
         unsigned maxAvailableChunks = currentChunkIdx;
         if (shortfall > overflowMaxSize)
-            throw makeStringExceptionV(-1, "Parallel read ahead peek shortfall (%u) exceeds configured overflow buffer size (%u)", shortfall, overflowMaxSize);
+            throw makeStringExceptionV(JLIBERR_SystemParallelReadAheadFailure, "Parallel read ahead peek shortfall (%u) exceeds configured overflow buffer size (%u)", shortfall, overflowMaxSize);
         if (shortfall > maxAvailableChunks * chunkSize)
-            throw makeStringExceptionV(-1, "Parallel read ahead peek shortfall (%u) exceeds available free space from the contiguous buffer (%u)", shortfall, maxAvailableChunks * chunkSize);
+            throw makeStringExceptionV(JLIBERR_SystemParallelReadAheadFailure, "Parallel read ahead peek shortfall (%u) exceeds available free space from the contiguous buffer (%u)", shortfall, maxAvailableChunks * chunkSize);
 
         byte * overflowDest = static_cast<byte *>(buffer.bufferBase()) + ringBufferSize;
         size32_t copied = 0;
@@ -808,11 +834,260 @@ public:
         got = (contiguousRingEndOffset - readOffset) + copied;
         return ret;
     }
+
+    virtual unsigned __int64 getStatistic(StatisticKind kind) override
+    {
+        switch (kind)
+        {
+        case StNumParallelReadAheadThreads:
+            return numThreads;
+        case StSizeParallelReadAheadChunk:
+            return chunkSize;
+        case StTimeParallelReadAheadConsumerWait:
+            return cycle_to_nanosec(consumerWaitCycles.load(std::memory_order_relaxed));
+        case StCycleParallelReadAheadConsumerWaitCycles:
+            return consumerWaitCycles.load(std::memory_order_relaxed);
+        default:
+            return input->getStatistic(kind);
+        }
+    }
 };
+
+class COnDemandBufferedInputStream final : public CInterfaceOf<IBufferedSerialInputStream>
+{
+    Linked<IBufferedSerialInputStream> input;
+    // pending stores bytes copied from input for oversized contiguous peeks.
+    // pendingOffset is the caller's logical position in that buffer; inputOffsetInPending
+    // tracks how far the wrapped input has been advanced through those same bytes.
+    MemoryBuffer pending;
+    size32_t pendingOffset = 0;
+    size32_t inputOffsetInPending = 0;
+    const size32_t directPeekSize;
+    offset_t readPos = 0;
+
+    inline size32_t available() const { return pending.length() - pendingOffset; }
+    inline const byte * pendingData() const { return reinterpret_cast<const byte *>(pending.toByteArray()) + pendingOffset; }
+
+    void clearPending()
+    {
+        pending.clear();
+        pendingOffset = 0;
+        inputOffsetInPending = 0;
+    }
+
+    // Consume buffered lookahead. When the caller reaches the wrapped input's
+    // mirrored position, discard pending and resume directly from input.
+    size32_t consumePending(size32_t len, void * ptr)
+    {
+        size32_t copied = std::min(len, available());
+        if (copied)
+        {
+            if (ptr)
+                memcpy(ptr, pendingData(), copied);
+            pendingOffset += copied;
+            readPos += copied;
+
+            // Once the consumer catches up with mirrored skips, pending data is redundant.
+            if (pendingOffset >= inputOffsetInPending)
+            {
+                size32_t toSkip = pendingOffset - inputOffsetInPending;
+                if (toSkip)
+                    input->skip(toSkip);
+                clearPending();
+            }
+        }
+        return copied;
+    }
+
+    // Copy input until wanted bytes are contiguous in pending, or input is exhausted.
+    void fillPending(size32_t wanted)
+    {
+        if (pendingOffset)
+        {
+            size32_t remaining = available();
+            if (remaining)
+                memmove(pending.bufferBase(), pendingData(), remaining);
+            pending.setLength(remaining);
+            inputOffsetInPending -= pendingOffset;    // consumePending guarantees pendingOffset < inputOffsetInPending
+            pendingOffset = 0;
+        }
+        pending.ensureCapacity(wanted - pending.length());
+
+        while (pending.length() < wanted)
+        {
+            if (inputOffsetInPending < pending.length())
+            {
+                input->skip(pending.length() - inputOffsetInPending);
+                inputOffsetInPending = pending.length();
+            }
+
+            size32_t needed = wanted - pending.length();
+            size32_t got;
+            const void * data = input->peek(std::min(needed, directPeekSize), got);
+            if (!got)
+                break;
+            pending.append(std::min(got, needed), data);
+        }
+        dbgassertex(inputOffsetInPending <= pending.length());
+    }
+
+public:
+    IMPLEMENT_IINTERFACE_USING(CInterfaceOf<IBufferedSerialInputStream>);
+
+    COnDemandBufferedInputStream(IBufferedSerialInputStream * _input, size32_t _directPeekSize)
+        : input(_input), directPeekSize(_directPeekSize), readPos(_input->tell())
+    {
+    }
+
+    virtual size32_t read(size32_t len, void * ptr) override
+    {
+        size32_t done = consumePending(len, ptr);
+        if (done < len)
+        {
+            size32_t got = input->read(len - done, static_cast<byte *>(ptr) + done);
+            readPos += got;
+            done += got;
+        }
+        return done;
+    }
+
+    virtual void skip(size32_t sz) override
+    {
+        size32_t done = consumePending(sz, nullptr);
+        if (done < sz)
+        {
+            input->skip(sz - done);
+            readPos += sz - done;
+        }
+    }
+
+    virtual void get(size32_t len, void * ptr) override
+    {
+        size32_t got = read(len, ptr);
+        if (got != len)
+            throw makeStringExceptionV(JLIBERR_SystemParallelReadAheadFailure, "End of input stream for read of %u bytes at offset %llu", len, readPos - got);
+    }
+
+    virtual void reset(offset_t _offset, offset_t _flen) override
+    {
+        input->reset(_offset, _flen);
+        readPos = _offset;
+        clearPending();
+    }
+
+    virtual offset_t tell() const override
+    {
+        return readPos;
+    }
+
+    virtual bool eos() override
+    {
+        return (0 == available()) && input->eos();
+    }
+
+    virtual const void * peek(size32_t wanted, size32_t & got) override
+    {
+        if (0 == available())
+        {
+            if (wanted <= directPeekSize)
+                return input->peek(wanted, got);
+        }
+        else if (wanted <= available())
+        {
+            got = available();
+            return pendingData();
+        }
+
+        fillPending(wanted);
+        got = available();
+        return got ? pendingData() : nullptr;
+    }
+
+    virtual unsigned __int64 getStatistic(StatisticKind kind) override
+    {
+        return input->getStatistic(kind);
+    }
+};
+
+IBufferedSerialInputStream * createParallelReadAheadInputStream(IFileIO * input, unsigned numThreads, size32_t chunkSize, size32_t overflowMaxSize, offset_t startOffset, offset_t length)
+{
+    IFile * file = input ? input->queryFile() : nullptr;
+    const char * filename = file ? file->queryFilename() : "<unknown>";
+    offset_t requestedLength;
+    if (length != UnknownOffset)
+        requestedLength = length;
+    else
+    {
+        offset_t inputSize = input->size();
+        if (startOffset > inputSize)
+            throw makeStringExceptionV(JLIBERR_SystemParallelReadAheadFailure, "createParallelReadAheadInputStream: startOffset (%" I64F "u) exceeds file size (%" I64F "u)", startOffset, inputSize);
+        requestedLength = inputSize - startOffset;
+    }
+
+    size32_t effectiveChunkSize = chunkSize ? chunkSize : defaultBlockReadSize;
+    unsigned adjustedNumThreads = numThreads;
+
+    if (adjustedNumThreads > 1)
+    {
+        if (requestedLength <= effectiveChunkSize)
+            adjustedNumThreads = 1;
+        else
+        {
+            offset_t parallelSpan = static_cast<offset_t>(effectiveChunkSize) * adjustedNumThreads;
+            if (requestedLength <= parallelSpan)
+            {
+                offset_t chunkCount = (requestedLength + effectiveChunkSize - 1) / effectiveChunkSize;
+                adjustedNumThreads = static_cast<unsigned>(chunkCount);
+            }
+        }
+    }
+
+    if (adjustedNumThreads < 2)
+    {
+        size32_t bufferedBlockSize = effectiveChunkSize;
+        if (doTrace(traceStreams))
+        {
+            // Use warning-level logging so this remains visible with the default Thor worker detail.
+            IWARNLOG("createParallelReadAheadInputStream: file='%s', strategy=serial, threads=%u, chunkSize=%u, length=%llu", filename, adjustedNumThreads, effectiveChunkSize, requestedLength);
+        }
+        Owned<ISerialInputStream> serialStream = createSerialInputStream(input, startOffset, requestedLength);
+        return createBufferedInputStream(serialStream, bufferedBlockSize);
+    }
+
+    Owned<IBufferedSerialInputStream> stream;
+    const char * strategy;
+    size32_t directPeekSize = 0;
+    if (overflowMaxSize == ParallelReadAheadArbitraryPeek)
+    {
+        // Limit the wrapped stream's overflow to one chunk: enough for normal chunk-sized peeks
+        // that cross the ring wrap, while larger peeks are assembled by COnDemandBufferedInputStream.
+        Owned<IBufferedSerialInputStream> parallelStream = new CParallelReadAheadInputStream(input, adjustedNumThreads, effectiveChunkSize, effectiveChunkSize);
+        // directPeekSize is the largest peek that can be forwarded without copying.
+        // The wrapped stream only needs enough overflow to satisfy normal chunk-sized
+        // peeks across the ring wrap; larger peeks are copied into the on-demand buffer.
+        directPeekSize = effectiveChunkSize;
+        stream.setown(new COnDemandBufferedInputStream(parallelStream, directPeekSize));
+        strategy = "on-demand";
+    }
+    else
+    {
+        stream.setown(new CParallelReadAheadInputStream(input, adjustedNumThreads, effectiveChunkSize, overflowMaxSize));
+        strategy = "direct";
+    }
+    if ((startOffset != 0) || (length != UnknownOffset))
+        stream->reset(startOffset, requestedLength);
+
+    if (doTrace(traceStreams))
+    {
+        // Use warning-level logging so this remains visible with the default Thor worker detail.
+        IWARNLOG("createParallelReadAheadInputStream: file='%s', strategy=%s, threads=%u, chunkSize=%u, length=%llu, overflowMaxSize=%u, directPeekSize=%u", filename, strategy, adjustedNumThreads, effectiveChunkSize, requestedLength, overflowMaxSize, directPeekSize);
+    }
+    return stream.getClear();
+}
 
 IBufferedSerialInputStream * createParallelReadAheadInputStream(IFileIO * input, unsigned numThreads, size32_t chunkSize, size32_t overflowMaxSize)
 {
-    return new CParallelReadAheadInputStream(input, numThreads, chunkSize, overflowMaxSize);
+    return createParallelReadAheadInputStream(input, numThreads, chunkSize, overflowMaxSize, 0, UnknownOffset);
 }
 
 //---------------------------------------------------------------------------
@@ -900,6 +1175,8 @@ public:
         skipPending = 0;
         input->reset(_offset, _flen);
     }
+
+    virtual unsigned __int64 getStatistic(StatisticKind kind) override { return input->getStatistic(kind); }
 
 protected:
     Linked<IBufferedSerialInputStream> input;
@@ -1094,6 +1371,8 @@ public:
         assertex(nextOffset <= lastOffset);
     }
 
+    virtual unsigned __int64 getStatistic(StatisticKind kind) override { return input->getStatistic(kind); }
+
 protected:
     Linked<IFileIO> input;
     offset_t nextOffset = 0;
@@ -1167,6 +1446,8 @@ public:
         crc.reset();
         input->reset(_offset, _flen);
     }
+
+    virtual unsigned __int64 getStatistic(StatisticKind kind) override { return input->getStatistic(kind); }
 };
 
 ICrcSerialInputStream *createCrcInputStream(ISerialInputStream *input)
@@ -1984,6 +2265,7 @@ ISerialInputStream *createProgressStream(ISerialInputStream *stream, offset_t of
         {
             return stream->tell();
         }
+        virtual unsigned __int64 getStatistic(StatisticKind kind) override { return stream->getStatistic(kind); }
     };
     return new CProgressStream(stream, offset, len, msg, periodSecs);
 }

@@ -335,7 +335,10 @@ void CDiskRecordPartHandler::open()
                     }
                     continue; // try next copy and ultimately failover to local when no more copies
                 }
-                partStream.setown(createRowStreamEx(iRemoteFileIO, activity.queryProjectedDiskRowInterfaces(), 0, (offset_t)-1, (unsigned __int64)-1, rwFlags, nullptr, this));
+                RowStreamOptions options;
+                options.rwFlags = rwFlags;
+                options.fieldCallback = this;
+                partStream.setown(createRowStream(iRemoteFileIO, activity.queryProjectedDiskRowInterfaces(), options));
                 ActPrintLog(&activity, "%s[part=%d]: reading remote dafilesrv file '%s' (logical file = %s)", kindStr, which, filename.get(), activity.logicalFilename.get());
                 break;
             }
@@ -356,10 +359,17 @@ void CDiskRecordPartHandler::open()
 
         rwFlags |= DEFAULT_RWFLAGS;
 
+        FileRowStreamOptions options;
+        options.translatorContainer = translator;
+        options.fieldCallback = this;
+        getPlaneReadAheadSizing(activity, iFile->queryFilename(), options.numThreads, options.chunkSize);
+
         if (compressed)
         {
             rwFlags |= rw_compress;
-            partStream.setown(createRowStream(iFile, activity.queryProjectedDiskRowInterfaces(), rwFlags, activity.eexp, translator, this));
+            options.rwFlags = rwFlags;
+            options.eexp = activity.eexp;
+            partStream.setown(createRowStream(iFile, activity.queryProjectedDiskRowInterfaces(), options));
             if (!partStream.get())
             {
                 if (!blockCompressed)
@@ -369,7 +379,10 @@ void CDiskRecordPartHandler::open()
             }
         }
         else
-            partStream.setown(createRowStream(iFile, activity.queryProjectedDiskRowInterfaces(), rwFlags, nullptr, translator, this));
+        {
+            options.rwFlags = rwFlags;
+            partStream.setown(createRowStream(iFile, activity.queryProjectedDiskRowInterfaces(), options));
+        }
 
         if (!partStream)
             throw MakeActivityException(&activity, 0, "Failed to open file '%s'", filename.get());

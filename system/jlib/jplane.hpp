@@ -46,6 +46,7 @@ enum PlaneAttributeType // remember to update planeAttributeInfo in jplane.cpp
     ConcurrentWriteSupport,
     WriteSyncMarginMs,
     RenameSupported,
+    ReadAheadThreads,
     PlaneAttributeCount
 };
 

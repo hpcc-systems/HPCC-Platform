@@ -385,7 +385,11 @@ public:
         if (pos>=end)
             return 0;
         // Suboptimal: each chunk request recreates the row stream and, for normal file reads, reopens tmpfile.
-        Owned<IExtRowStream> rs = createRowStreamEx(tmpfile, queryRowInterfaces(this), pos, end-pos, (unsigned __int64)-1, rwFlags);
+        FileRowStreamOptions options;
+        options.offset = pos;
+        options.len = end - pos;
+        options.rwFlags = rwFlags;
+        Owned<IExtRowStream> rs = createRowStream(tmpfile, queryRowInterfaces(this), options);
         offset_t so = rs->getOffset();
         size32_t len = 0;
         size32_t chunksize = chunkmaxsize;

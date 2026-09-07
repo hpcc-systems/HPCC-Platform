@@ -44,6 +44,8 @@
 
 #include "thorread.hpp"
 #include "thorwrite.hpp"
+#include "thorcommon.hpp"   // createRowStream, IExtRowStream, IRowInterfaces
+#include "eclhelper.hpp"    // IOutputMetaData, ISourceRowPrefetcher, ARowBuilder, etc.
 
 #include "opentelemetry/sdk/common/attribute_utils.h"
 #include "opentelemetry/sdk/resource/resource.h"
@@ -1113,5 +1115,587 @@ private:
 
 CPPUNIT_TEST_SUITE_REGISTRATION(JlibParallelReadAheadTimingTest);
 CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(JlibParallelReadAheadTimingTest, "JlibParallelReadAheadTimingTest");
+
+//===========================================================================
+// RowStreamTest
+// Tests createRowStream() for both uncompressed files and
+// the compressed parallel read-ahead path (CCompressedBlockExpandingStream).
+//
+// Uses prefetchRow() throughout to avoid the roxiemem allocator dependency.
+// sz from prefetchRow() is 0 without a translator — correct, expected behaviour.
+//
+// The row type, meta/serializer/deserializer/prefetcher stubs, and row
+// read/write/assert helpers below are only used by this fixture, so they are
+// nested inside it rather than exposed at file scope.
+//===========================================================================
+
+class RowStreamTest : public CppUnit::TestFixture
+{
+    CPPUNIT_TEST_SUITE(RowStreamTest);
+        CPPUNIT_TEST(testUncompressed);
+        CPPUNIT_TEST(testCompressedLZ4);
+        CPPUNIT_TEST(testCompressedViaFileIO);
+        CPPUNIT_TEST(testParallelReadAheadResetAfterEOF);
+        CPPUNIT_TEST(testParallelReadAheadPeekBuffers);
+        CPPUNIT_TEST(testOffset);
+        CPPUNIT_TEST(testEdgeCases);
+        CPPUNIT_TEST(cleanup);
+    CPPUNIT_TEST_SUITE_END();
+
+    static constexpr unsigned numRows = 200000; // 6.4 MB uncompressed, reliably spans multiple 1MB compressed blocks
+
+    struct ReadAheadConfig
+    {
+        unsigned numThreads; // 0 = leave unset (plane-based default)
+        size32_t chunkSize;  // 0 = leave unset (plane-based default)
+    };
+
+    static constexpr ReadAheadConfig fullReadAheadConfigs[] =
+    {
+        { 0, 0 },          // unset - plane-based default (no plane on these temp files, so single-threaded)
+        { 4, 0 },          // explicit thread count, default chunk size (default readhead blocksize < compressed blocksize => single threaded)
+        { 4, 0x40000 },    // explicit thread count + small chunk size, to force genuinely chunked parallel reads on this small test file
+        { 32, 0x2000 },    // higher thread count + very small chunk size, to stress many chunks/threads
+    };
+
+    // Used where the parallel read-ahead matrix has already been exercised elsewhere (e.g. offset/edge-case
+    // correctness): just check the plane-based default and one genuinely-parallel configuration.
+    static constexpr ReadAheadConfig quickReadAheadConfigs[] =
+    {
+        { 0, 0 },
+        { 32, 0x2000 },
+    };
+
+#pragma pack(push, 1)
+    struct TestRow
+    {
+        uint32_t index;
+        uint32_t crc;
+        byte     data[24];
+    };
+#pragma pack(pop)
+    static_assert(sizeof(TestRow) == 32, "TestRow size mismatch");
+
+    static TestRow makeTestRow(unsigned i)
+    {
+        TestRow row;
+        row.index = i;
+        row.crc = crc32((const char *)&i, sizeof(i), 0);
+        for (unsigned j = 0; j < sizeof(row.data); j++)
+            row.data[j] = (byte)(i * 7u + j * 13u);
+        return row;
+    }
+
+    static void assertTestRow(const TestRow & row, unsigned expectedIndex)
+    {
+        CPPUNIT_ASSERT_EQUAL(expectedIndex, row.index);
+        unsigned expectedCrc = crc32((const char *)&expectedIndex, sizeof(expectedIndex), 0);
+        CPPUNIT_ASSERT_EQUAL(expectedCrc, row.crc);
+        for (unsigned j = 0; j < sizeof(row.data); j++)
+        {
+            byte expected = (byte)(expectedIndex * 7u + j * 13u);
+            if (expected != row.data[j])
+            {
+                CPPUNIT_FAIL(VStringBuffer("Row %u data[%u]: expected %u got %u",
+                    expectedIndex, j, expected, row.data[j]).str());
+            }
+        }
+    }
+
+    // Advances readOffset by fixedSize inside a CThorContiguousRowBuffer.
+    class CTestFixedRowPrefetcher final : public CInterfaceOf<ISourceRowPrefetcher>
+    {
+        size32_t fixedSize;
+    public:
+        explicit CTestFixedRowPrefetcher(size32_t _fixedSize) : fixedSize(_fixedSize) {}
+        virtual void readAhead(IRowPrefetcherSource & in) override { in.skip(fixedSize); }
+    };
+
+    class CTestFixedRowSerializer final : public CInterfaceOf<IOutputRowSerializer>
+    {
+        size32_t fixedSize;
+    public:
+        explicit CTestFixedRowSerializer(size32_t _fixedSize) : fixedSize(_fixedSize) {}
+        virtual void serialize(IRowSerializerTarget & out, const byte * self) override
+        { out.put(fixedSize, self); }
+    };
+
+    class CTestFixedRowDeserializer final : public CInterfaceOf<IOutputRowDeserializer>
+    {
+        size32_t fixedSize;
+    public:
+        explicit CTestFixedRowDeserializer(size32_t _fixedSize) : fixedSize(_fixedSize) {}
+        virtual size32_t deserialize(ARowBuilder & rowBuilder, IRowDeserializerSource & in) override
+        {
+            byte * target = rowBuilder.ensureCapacity(fixedSize, nullptr);
+            in.read(fixedSize, target);
+            return fixedSize;
+        }
+    };
+
+    class CTestFixedRowMeta final : public CInterfaceOf<IOutputMetaData>
+    {
+        size32_t fixedSize;
+    public:
+        explicit CTestFixedRowMeta(size32_t _fixedSize) : fixedSize(_fixedSize) {}
+
+        virtual size32_t getRecordSize(const void *) override        { return fixedSize; }
+        virtual size32_t getMinRecordSize() const override           { return fixedSize; }
+        virtual size32_t getFixedSize() const override               { return fixedSize; }
+        virtual void toXML(const byte *, IXmlWriter &) override      {}
+        virtual unsigned getVersion() const override                 { return OUTPUTMETADATA_VERSION; }
+        virtual unsigned getMetaFlags() override                     { return 0; }
+        virtual const RtlTypeInfo * queryTypeInfo() const override   { return nullptr; }
+        virtual void destruct(byte *) override                       {}
+        virtual IOutputRowSerializer * createDiskSerializer(ICodeContext *, unsigned) override
+        { return new CTestFixedRowSerializer(fixedSize); }
+        virtual IOutputRowDeserializer * createDiskDeserializer(ICodeContext *, unsigned) override
+        { return new CTestFixedRowDeserializer(fixedSize); }
+        // Must be non-null: CRowStreamReader only connects the prefetch buffer when this returns non-null.
+        virtual ISourceRowPrefetcher * createDiskPrefetcher() override
+        { return new CTestFixedRowPrefetcher(fixedSize); }
+        virtual IOutputMetaData * querySerializedDiskMeta() override  { return this; }
+        virtual IOutputRowSerializer * createInternalSerializer(ICodeContext *, unsigned) override
+        { return new CTestFixedRowSerializer(fixedSize); }
+        virtual IOutputRowDeserializer * createInternalDeserializer(ICodeContext *, unsigned) override
+        { return new CTestFixedRowDeserializer(fixedSize); }
+        virtual void process(const byte *, IFieldProcessor &, unsigned, unsigned) override {}
+        virtual void walkIndirectMembers(const byte *, IIndirectMemberVisitor &) override  {}
+        virtual IOutputMetaData * queryChildMeta(unsigned) override   { return nullptr; }
+        virtual const RtlRecord & queryRecordAccessor(bool) const override { throwUnexpected(); }
+    };
+
+    // Uses Linked<> for meta: caller retains its own Owned<> reference.
+    class CTestRowInterfaces final : public CInterfaceOf<IRowInterfaces>
+    {
+        Linked<IOutputMetaData>        meta;
+        Owned<IOutputRowSerializer>    serializer;
+        Owned<IOutputRowDeserializer>  deserializer;
+    public:
+        explicit CTestRowInterfaces(IOutputMetaData * _meta) : meta(_meta)
+        {
+            serializer.setown(meta->createDiskSerializer(nullptr, 0));
+            deserializer.setown(meta->createDiskDeserializer(nullptr, 0));
+        }
+        virtual IEngineRowAllocator * queryRowAllocator() override  { return nullptr; }
+        virtual IOutputRowSerializer * queryRowSerializer() override { return serializer; }
+        virtual IOutputRowDeserializer * queryRowDeserializer() override { return deserializer; }
+        virtual IOutputMetaData * queryRowMetaData() override       { return meta; }
+        virtual unsigned queryActivityId() const override           { return 0; }
+        virtual ICodeContext * queryCodeContext() override           { return nullptr; }
+    };
+
+    static void writeTestRows(IFileIO * io, unsigned numRows)
+    {
+        offset_t pos = 0;
+        for (unsigned i = 0; i < numRows; i++)
+        {
+            TestRow row = makeTestRow(i);
+            size32_t written = io->write(pos, sizeof(row), &row);
+            CPPUNIT_ASSERT_EQUAL((size32_t)sizeof(row), written);
+            pos += sizeof(row);
+        }
+    }
+
+    static void assertRows(IExtRowStream * stream, unsigned numRows)
+    {
+        for (unsigned i = 0; i < numRows; i++)
+        {
+            size32_t sz = 0;
+            const TestRow * row = (const TestRow *)stream->prefetchRow(sz);
+            if (!row)
+            {
+                CPPUNIT_FAIL(VStringBuffer("Unexpected EOF at row %u (expected %u rows)", i, numRows).str());
+                return;
+            }
+            assertTestRow(*row, i);
+            stream->prefetchDone();
+        }
+        size32_t sz = 0;
+        CPPUNIT_ASSERT_MESSAGE("Expected EOF after last row", stream->prefetchRow(sz) == nullptr);
+        stream->stop();
+    }
+
+    static void assertRowsFrom(IExtRowStream * stream, unsigned firstRow, unsigned count)
+    {
+        for (unsigned i = 0; i < count; i++)
+        {
+            size32_t sz = 0;
+            const TestRow * row = (const TestRow *)stream->prefetchRow(sz);
+            if (!row)
+            {
+                CPPUNIT_FAIL(VStringBuffer("Unexpected EOF at row %u of %u (firstRow=%u)", i, count, firstRow).str());
+                return;
+            }
+            assertTestRow(*row, firstRow + i);
+            stream->prefetchDone();
+        }
+    }
+
+    static void assertRawStreamRows(IBufferedSerialInputStream * stream, unsigned numRows)
+    {
+        for (unsigned i = 0; i < numRows; i++)
+        {
+            TestRow row;
+            size32_t got = stream->read(sizeof(row), &row);
+            CPPUNIT_ASSERT_EQUAL((size32_t)sizeof(row), got);
+            assertTestRow(row, i);
+        }
+
+        TestRow row;
+        CPPUNIT_ASSERT_EQUAL((size32_t)0, stream->read(sizeof(row), &row));
+    }
+
+    static void assertStreamBytes(const byte * actual, offset_t offset, size32_t len)
+    {
+        for (size32_t i = 0; i < len; i++)
+        {
+            offset_t byteOffset = offset + i;
+            TestRow row = makeTestRow(byteOffset / sizeof(TestRow));
+            const byte * expected = reinterpret_cast<const byte *>(&row);
+            CPPUNIT_ASSERT_EQUAL(expected[byteOffset % sizeof(TestRow)], actual[i]);
+        }
+    }
+
+public:
+    Owned<IOutputMetaData> meta;
+    Owned<IRowInterfaces>  rowIf;
+
+    virtual void setUp() override
+    {
+        meta.setown(new CTestFixedRowMeta(sizeof(TestRow)));
+        rowIf.setown(new CTestRowInterfaces(meta));
+    }
+
+    virtual void tearDown() override
+    {
+        rowIf.clear();
+        meta.clear();
+    }
+
+    void runUncompressedTest(const char * filename, const ReadAheadConfig & config)
+    {
+        Owned<IFile>         file   = createIFile(filename);
+        FileRowStreamOptions options;
+        if (config.numThreads)
+            options.numThreads = config.numThreads;
+        if (config.chunkSize)
+            options.chunkSize = config.chunkSize;
+        Owned<IExtRowStream> stream = createRowStream(file, rowIf, options);
+        CPPUNIT_ASSERT_MESSAGE("createRowStream returned null (uncompressed)", stream != nullptr);
+        assertRows(stream, numRows);
+    }
+
+    void testUncompressed()
+    {
+        const char * filename = "rowstream_test_uncompressed.tmp";
+        {
+            Owned<IFile>   file = createIFile(filename);
+            Owned<IFileIO> io   = file->open(IFOcreate);
+            writeTestRows(io, numRows);
+        }
+        for (const ReadAheadConfig & config : fullReadAheadConfigs)
+            runUncompressedTest(filename, config);
+    }
+
+    void runCompressedTest(const char * filename, const ReadAheadConfig & config)
+    {
+        Owned<IFile>         file   = createIFile(filename);
+        FileRowStreamOptions options;
+        options.rwFlags = DEFAULT_RWFLAGS | rw_compress;
+        if (config.numThreads)
+            options.numThreads = config.numThreads;
+        if (config.chunkSize)
+            options.chunkSize = config.chunkSize;
+        Owned<IExtRowStream> stream = createRowStream(file, rowIf, options);
+        CPPUNIT_ASSERT_MESSAGE("createRowStream returned null (compressed)", stream != nullptr);
+        assertRows(stream, numRows);
+    }
+
+    void createCompressedTestFile(const char * filename, CompressionMethod compMethod, unsigned rowsToWrite = numRows)
+    {
+        Owned<IFile>   file = createIFile(filename);
+        Owned<IFileIO> io   = createCompressedFileWriter(file, false, false, nullptr,
+                                   compMethod, 0, useDefaultIoBufferSize, IFEnone);
+        CPPUNIT_ASSERT_MESSAGE("createCompressedFileWriter failed", io != nullptr);
+        writeTestRows(io, rowsToWrite);
+        io->close();
+    }
+
+    // Exercises the full numThreads/chunkSize matrix via LZ4. The parallel read-ahead logic operates on the
+    // decompressed byte stream and is codec-agnostic, and codec-specific decompression correctness is already
+    // covered by JlibFileTest/JlibFileStressTest, so no other codecs are tested here.
+    void testCompressedLZ4()
+    {
+        const char * filename = "rowstream_test_lz4.tmp";
+        createCompressedTestFile(filename, COMPRESS_METHOD_LZ4);
+        for (const ReadAheadConfig & config : fullReadAheadConfigs)
+            runCompressedTest(filename, config);
+    }
+
+    // Verifies that createRowStream(IFileIO*) works correctly when given a compressed IFileIO,
+    // testing the overload that accepts a pre-opened file IO rather than an IFile. This overload
+    // also honours numThreads/chunkSize (via a dynamic_cast to ICompressedFileIO), so it's swept
+    // the same way as the IFile* overload.
+    void testCompressedViaFileIO()
+    {
+        const char * filename = "rowstream_test_fileio.tmp";
+        {
+            Owned<IFile>   file = createIFile(filename);
+            Owned<IFileIO> io   = createCompressedFileWriter(file, false, false, nullptr,
+                                       COMPRESS_METHOD_LZ4, 0, useDefaultIoBufferSize, IFEnone);
+            writeTestRows(io, numRows);
+            io->close();
+        }
+        for (const ReadAheadConfig & config : quickReadAheadConfigs)
+        {
+            Owned<IFile>   file   = createIFile(filename);
+            Owned<IFileIO> fileio = createCompressedFileReader(file, nullptr, useDefaultIoBufferSize, false, IFEnone);
+            CPPUNIT_ASSERT_MESSAGE("createCompressedFileReader failed", fileio != nullptr);
+
+            RowStreamOptions options;
+            if (config.numThreads)
+                options.numThreads = config.numThreads;
+            if (config.chunkSize)
+                options.chunkSize = config.chunkSize;
+            Owned<IExtRowStream> stream = createRowStream(fileio, rowIf, options);
+            CPPUNIT_ASSERT_MESSAGE("createRowStream(IFileIO) returned null", stream != nullptr);
+            assertRows(stream, numRows);
+        }
+    }
+
+    void testParallelReadAheadResetAfterEOF()
+    {
+        static constexpr const char * filename = "rowstream_test_lz4.tmp";
+        static constexpr unsigned numThreads = 32;
+        static constexpr size32_t chunkSize = 0x2000;
+
+        Owned<IFile> file = createIFile(filename);
+        if (!file->exists())
+            createCompressedTestFile(filename, COMPRESS_METHOD_LZ4);
+
+        Owned<IFileIO> io = createCompressedFileReader(file, nullptr, useDefaultIoBufferSize, false, IFEnone);
+        offset_t fileSize = io->size();
+        Owned<IBufferedSerialInputStream> stream = createParallelReadAheadInputStream(io, numThreads, chunkSize, ParallelReadAheadArbitraryPeek, 0, fileSize);
+        CPPUNIT_ASSERT_EQUAL((unsigned __int64)numThreads, stream->getStatistic(StNumParallelReadAheadThreads));
+
+        assertRawStreamRows(stream, numRows);
+        stream->reset(0, fileSize);
+        assertRawStreamRows(stream, numRows);
+    }
+
+    void testParallelReadAheadPeekBuffers()
+    {
+        static constexpr const char * filename = "rowstream_test_lz4.tmp";
+        static constexpr unsigned numThreads = 4;
+        static constexpr size32_t chunkSize = 0x200;
+
+        Owned<IFile> file = createIFile(filename);
+        if (!file->exists())
+            createCompressedTestFile(filename, COMPRESS_METHOD_LZ4);
+
+        Owned<IFileIO> io = createCompressedFileReader(file, nullptr, useDefaultIoBufferSize, false, IFEnone);
+        offset_t fileSize = io->size();
+        Owned<IBufferedSerialInputStream> stream = createParallelReadAheadInputStream(io, numThreads, chunkSize, ParallelReadAheadArbitraryPeek, 0, fileSize);
+        CPPUNIT_ASSERT_EQUAL((unsigned __int64)chunkSize, stream->getStatistic(StSizeParallelReadAheadChunk));
+
+        size32_t got = 0;
+        const byte * data = static_cast<const byte *>(stream->peek(chunkSize / 2, got));
+        CPPUNIT_ASSERT(data != nullptr);
+        CPPUNIT_ASSERT(got >= chunkSize / 2);
+        assertStreamBytes(data, 0, chunkSize / 2);
+
+        stream->skip(chunkSize / 2);
+        offset_t pos = chunkSize / 2;
+        offset_t wrapPos = (numThreads - 1) * chunkSize + 17;
+        stream->skip(wrapPos - pos);
+        pos = wrapPos;
+
+        data = static_cast<const byte *>(stream->peek(chunkSize, got));
+        CPPUNIT_ASSERT(data != nullptr);
+        CPPUNIT_ASSERT(got >= chunkSize);
+        assertStreamBytes(data, pos, chunkSize);
+
+        size32_t oversizedPeek = chunkSize + 73;
+        data = static_cast<const byte *>(stream->peek(oversizedPeek, got));
+        CPPUNIT_ASSERT(data != nullptr);
+        CPPUNIT_ASSERT(got >= oversizedPeek);
+        assertStreamBytes(data, pos, oversizedPeek);
+
+        data = static_cast<const byte *>(stream->peek(64, got));
+        CPPUNIT_ASSERT(data != nullptr);
+        CPPUNIT_ASSERT(got >= 64);
+        assertStreamBytes(data, pos, 64);
+
+        stream->skip(100);
+        pos += 100;
+        data = static_cast<const byte *>(stream->peek(80, got));
+        CPPUNIT_ASSERT(data != nullptr);
+        CPPUNIT_ASSERT(got >= 80);
+        assertStreamBytes(data, pos, 80);
+    }
+
+    void runOffsetUncompressedTest(unsigned firstRow, unsigned numOffsetRows, offset_t byteOffset, offset_t byteLen, const ReadAheadConfig & config)
+    {
+        const char * f = "rowstream_test_offset_unc.tmp";
+        Owned<IFile>         file   = createIFile(f);
+        FileRowStreamOptions options;
+        options.offset = byteOffset;
+        options.len = byteLen;
+        options.maxRows = numOffsetRows;
+        if (config.numThreads)
+            options.numThreads = config.numThreads;
+        if (config.chunkSize)
+            options.chunkSize = config.chunkSize;
+        Owned<IExtRowStream> stream = createRowStream(file, rowIf, options);
+        CPPUNIT_ASSERT_MESSAGE("createRowStream returned null (uncompressed, offset)", stream != nullptr);
+        assertRowsFrom(stream, firstRow, numOffsetRows);
+        // len is enforced by createFileSerialStream, so the stream must be at EOF
+        size32_t sz = 0;
+        CPPUNIT_ASSERT_MESSAGE("Expected EOF after len-limited uncompressed read", stream->prefetchRow(sz) == nullptr);
+        stream->stop();
+    }
+
+    void runOffsetCompressedTest(unsigned firstRow, unsigned numOffsetRows, offset_t byteOffset, offset_t byteLen, const ReadAheadConfig & config)
+    {
+        const char * f = "rowstream_test_offset_lz4.tmp";
+        Owned<IFile>         file   = createIFile(f);
+        FileRowStreamOptions options;
+        options.offset = byteOffset;
+        options.len = byteLen;
+        options.maxRows = numOffsetRows;
+        options.rwFlags = DEFAULT_RWFLAGS | rw_compress;
+        if (config.numThreads)
+            options.numThreads = config.numThreads;
+        if (config.chunkSize)
+            options.chunkSize = config.chunkSize;
+        Owned<IExtRowStream> stream = createRowStream(file, rowIf, options);
+        CPPUNIT_ASSERT_MESSAGE("createRowStream returned null (compressed, offset)", stream != nullptr);
+        assertRowsFrom(stream, firstRow, numOffsetRows);
+        // len is now enforced by CCompressedBlockExpandingStream; stream must be at EOF
+        size32_t sz2 = 0;
+        CPPUNIT_ASSERT_MESSAGE("Expected EOF after len-limited compressed read", stream->prefetchRow(sz2) == nullptr);
+        stream->stop();
+    }
+
+    void testOffset()
+    {
+        static constexpr unsigned firstRow = 1000;
+        static constexpr unsigned numOffsetRows = 200;
+        static constexpr offset_t byteOffset = (offset_t)firstRow * sizeof(TestRow);
+        static constexpr offset_t byteLen    = (offset_t)numOffsetRows * sizeof(TestRow);
+
+        {
+            Owned<IFile>   file = createIFile("rowstream_test_offset_unc.tmp");
+            Owned<IFileIO> io   = file->open(IFOcreate);
+            writeTestRows(io, numRows);
+        }
+        for (const ReadAheadConfig & config : quickReadAheadConfigs)
+            runOffsetUncompressedTest(firstRow, numOffsetRows, byteOffset, byteLen, config);
+
+        createCompressedTestFile("rowstream_test_offset_lz4.tmp", COMPRESS_METHOD_LZ4);
+        for (const ReadAheadConfig & config : quickReadAheadConfigs)
+            runOffsetCompressedTest(firstRow, numOffsetRows, byteOffset, byteLen, config);
+    }
+
+    void runEdgeEmptyTest(const ReadAheadConfig & config)
+    {
+        const char * f = "rowstream_edge_empty.tmp";
+        Owned<IFile>         file   = createIFile(f);
+        FileRowStreamOptions options;
+        if (config.numThreads)
+            options.numThreads = config.numThreads;
+        if (config.chunkSize)
+            options.chunkSize = config.chunkSize;
+        Owned<IExtRowStream> stream = createRowStream(file, rowIf, options);
+        CPPUNIT_ASSERT_MESSAGE("createRowStream returned null (empty file)", stream != nullptr);
+        assertRows(stream, 0);
+    }
+
+    void runEdgeOneUncompressedTest(const ReadAheadConfig & config)
+    {
+        const char * f = "rowstream_edge_one_unc.tmp";
+        Owned<IFile>         file   = createIFile(f);
+        FileRowStreamOptions options;
+        if (config.numThreads)
+            options.numThreads = config.numThreads;
+        if (config.chunkSize)
+            options.chunkSize = config.chunkSize;
+        Owned<IExtRowStream> stream = createRowStream(file, rowIf, options);
+        assertRows(stream, 1);
+    }
+
+    void runEdgeOneLZ4Test(const ReadAheadConfig & config)
+    {
+        const char * f = "rowstream_edge_one_lz4.tmp";
+        Owned<IFile>         file   = createIFile(f);
+        FileRowStreamOptions options;
+        options.rwFlags = DEFAULT_RWFLAGS | rw_compress;
+        if (config.numThreads)
+            options.numThreads = config.numThreads;
+        if (config.chunkSize)
+            options.chunkSize = config.chunkSize;
+        Owned<IExtRowStream> stream = createRowStream(file, rowIf, options);
+        assertRows(stream, 1);
+    }
+
+    void runEdgeOneBlockTest(unsigned blockRows, const ReadAheadConfig & config)
+    {
+        const char * f = "rowstream_edge_oneblock.tmp";
+        Owned<IFile>         file   = createIFile(f);
+        FileRowStreamOptions options;
+        options.rwFlags = DEFAULT_RWFLAGS | rw_compress;
+        if (config.numThreads)
+            options.numThreads = config.numThreads;
+        if (config.chunkSize)
+            options.chunkSize = config.chunkSize;
+        Owned<IExtRowStream> stream = createRowStream(file, rowIf, options);
+        assertRows(stream, blockRows);
+    }
+
+    void testEdgeCases()
+    {
+        { Owned<IFile> file = createIFile("rowstream_edge_empty.tmp"); file->open(IFOcreate); }
+        for (const ReadAheadConfig & config : quickReadAheadConfigs)
+            runEdgeEmptyTest(config);
+
+        {
+            Owned<IFile>   file = createIFile("rowstream_edge_one_unc.tmp");
+            Owned<IFileIO> io   = file->open(IFOcreate);
+            writeTestRows(io, 1);
+        }
+        for (const ReadAheadConfig & config : quickReadAheadConfigs)
+            runEdgeOneUncompressedTest(config);
+
+        createCompressedTestFile("rowstream_edge_one_lz4.tmp", COMPRESS_METHOD_LZ4, 1);
+        for (const ReadAheadConfig & config : quickReadAheadConfigs)
+            runEdgeOneLZ4Test(config);
+
+        const unsigned blockRows = 0x100000 / sizeof(TestRow);
+        createCompressedTestFile("rowstream_edge_oneblock.tmp", COMPRESS_METHOD_LZ4, blockRows);
+        for (const ReadAheadConfig & config : quickReadAheadConfigs)
+            runEdgeOneBlockTest(blockRows, config);
+    }
+
+    void cleanup()
+    {
+        static const char * const files[] = {
+            "rowstream_test_uncompressed.tmp", "rowstream_test_lz4.tmp",
+            "rowstream_test_fileio.tmp",
+            "rowstream_test_offset_unc.tmp",   "rowstream_test_offset_lz4.tmp",
+            "rowstream_edge_empty.tmp",        "rowstream_edge_one_unc.tmp",
+            "rowstream_edge_one_lz4.tmp",      "rowstream_edge_oneblock.tmp",
+        };
+        for (const char * f : files)
+        {
+            Owned<IFile> file = createIFile(f);
+            if (file->exists())
+                file->remove();
+        }
+    }
+};
+
+CPPUNIT_TEST_SUITE_REGISTRATION(RowStreamTest);
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(RowStreamTest, "RowStreamTest");
 
 #endif

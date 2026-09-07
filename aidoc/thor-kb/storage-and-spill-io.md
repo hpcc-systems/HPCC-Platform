@@ -64,7 +64,7 @@ This is why many small spill files can become expensive even after writing is co
 ## 5. Single-Reader and Shared-Reader Readback
 Single-reader readback happens through `CSpillableStream` at [../../thorlcr/thorutil/thmem.cpp#L416](../../thorlcr/thorutil/thmem.cpp#L416). It starts with a small in-memory buffer and later switches to a spill-backed `createRowStream()` when needed.
 
-Shared-reader readback happens through `CSharedSpillableRowSet` at [../../thorlcr/thorutil/thmem.cpp#L303](../../thorlcr/thorutil/thmem.cpp#L303). When a spill occurs, readers reopen the spill file at a saved offset using `createRowStreamEx()` at [../../thorlcr/thorutil/thmem.cpp#L348](../../thorlcr/thorutil/thmem.cpp#L348).
+Shared-reader readback happens through `CSharedSpillableRowSet` at [../../thorlcr/thorutil/thmem.cpp#L303](../../thorlcr/thorutil/thmem.cpp#L303). When a spill occurs, readers reopen the spill file at a saved offset using `createRowStream()` at [../../thorlcr/thorutil/thmem.cpp#L348](../../thorlcr/thorutil/thmem.cpp#L348).
 
 This shared-reader case is more expensive on the write side because `save()` must flush at callback boundaries and publish exact file positions for reader continuity.
 

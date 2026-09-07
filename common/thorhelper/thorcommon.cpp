@@ -30,6 +30,7 @@
 #include "rtlcommon.hpp"
 #include "rtldynfield.hpp"
 #include "eclhelper_dyn.hpp"
+#include "jplane.hpp"
 #include "hqlexpr.hpp"
 #include "hqlutil.hpp"
 #include <algorithm>
@@ -987,11 +988,9 @@ static NullVirtualFieldCallback nullVirtualFieldCallback;
 class CRowStreamReader : public CSimpleInterfaceOf<IExtRowStream>
 {
 protected:
-    Linked<IFileIO> fileio;
-    Linked<IMemoryMappedFile> mmfile;
+    Linked<IBufferedSerialInputStream> strm;
     Linked<IOutputRowDeserializer> deserializer;
     Linked<IEngineRowAllocator> allocator;
-    Owned<IBufferedSerialInputStream> strm;
     Owned<ISourceRowPrefetcher> prefetcher;
     CThorContiguousRowBuffer prefetchBuffer;
     unsigned __int64 progress = 0;
@@ -1121,17 +1120,13 @@ protected:
         return nullptr;
     }
 public:
-    CRowStreamReader(IFileIO *_fileio, IMemoryMappedFile *_mmfile, IRowInterfaces *rowif, offset_t _ofs, offset_t _len, EmptyRowSemantics _emptyRowSemantics, ITranslator *_translatorContainer, IVirtualFieldCallback * _fieldCallback)
-        : fileio(_fileio), mmfile(_mmfile), allocator(rowif->queryRowAllocator()), prefetchBuffer(nullptr), translatorContainer(_translatorContainer), fieldCallback(_fieldCallback), emptyRowSemantics(_emptyRowSemantics)
+    CRowStreamReader(IBufferedSerialInputStream *_strm, IRowInterfaces *rowif, EmptyRowSemantics _emptyRowSemantics, ITranslator *_translatorContainer, IVirtualFieldCallback * _fieldCallback)
+        : strm(_strm), allocator(rowif->queryRowAllocator()), prefetchBuffer(nullptr), translatorContainer(_translatorContainer), fieldCallback(_fieldCallback), emptyRowSemantics(_emptyRowSemantics)
     {
 #ifdef TRACE_CREATE
         PROGLOG("CRowStreamReader %d = %p",++rdnum,this);
 #endif
-        if (fileio)
-            strm.setown(createFileSerialStream(fileio,_ofs,_len,(size32_t)-1));
-        else
-            strm.setown(createFileSerialStream(mmfile,_ofs,_len));
-        currentRowOffset = _ofs;
+        currentRowOffset = strm ? strm->tell() : 0;
         if (translatorContainer)
         {
             actualFormat = &translatorContainer->queryActualFormat();
@@ -1240,7 +1235,6 @@ public:
     void clear()
     {
         strm.clear();
-        fileio.clear();
     }
 
     virtual CRC32 queryCRC() const override
@@ -1266,9 +1260,7 @@ public:
         case StNumRowsRead:
             return progress;
         }
-        if (fileio)
-            return fileio->getStatistic(kind);
-        return 0;
+        return strm ? strm->getStatistic(kind) : 0;
     }
     virtual void setFilters(IConstArrayOf<IFieldFilter> &filters)
     {
@@ -1299,8 +1291,8 @@ class CLimitedRowStreamReader : public CRowStreamReader
     unsigned __int64 rownum;
 
 public:
-    CLimitedRowStreamReader(IFileIO *_fileio, IMemoryMappedFile *_mmfile, IRowInterfaces *rowif, offset_t _ofs, offset_t _len, unsigned __int64 _maxrows, EmptyRowSemantics _emptyRowSemantics, ITranslator *translatorContainer, IVirtualFieldCallback * _fieldCallback)
-        : CRowStreamReader(_fileio, _mmfile, rowif, _ofs, _len, _emptyRowSemantics, translatorContainer, _fieldCallback)
+    CLimitedRowStreamReader(IBufferedSerialInputStream *_strm, IRowInterfaces *rowif, unsigned __int64 _maxrows, EmptyRowSemantics _emptyRowSemantics, ITranslator *translatorContainer, IVirtualFieldCallback * _fieldCallback)
+        : CRowStreamReader(_strm, rowif, _emptyRowSemantics, translatorContainer, _fieldCallback)
     {
         maxrows = _maxrows;
         rownum = 0;
@@ -1320,56 +1312,134 @@ public:
 unsigned CRowStreamReader::rdnum;
 #endif
 
-IExtRowStream *createRowStreamEx(IFileIO *fileIO, IRowInterfaces *rowIf, offset_t offset, offset_t len, unsigned __int64 maxrows, unsigned rwFlags, ITranslator *translatorContainer, IVirtualFieldCallback * fieldCallback)
+static IExtRowStream * makeRowStreamReader(IBufferedSerialInputStream *strm, IRowInterfaces *rowIf, unsigned __int64 maxrows, EmptyRowSemantics emptyRowSemantics, ITranslator *translatorContainer, IVirtualFieldCallback *fieldCallback)
 {
-    EmptyRowSemantics emptyRowSemantics = extractESRFromRWFlags(rwFlags);
     if (maxrows == (unsigned __int64)-1)
-        return new CRowStreamReader(fileIO, NULL, rowIf, offset, len, emptyRowSemantics, translatorContainer, fieldCallback);
+        return new CRowStreamReader(strm, rowIf, emptyRowSemantics, translatorContainer, fieldCallback);
     else
-        return new CLimitedRowStreamReader(fileIO, NULL, rowIf, offset, len, maxrows, emptyRowSemantics, translatorContainer, fieldCallback);
+        return new CLimitedRowStreamReader(strm, rowIf, maxrows, emptyRowSemantics, translatorContainer, fieldCallback);
 }
 
-bool UseMemoryMappedRead = false;
+static constexpr unsigned defaultRowStreamReadAheadThreads = 32;
+static constexpr size32_t defaultRowStreamChunkSize = 0x100000; // 1MB
 
-IExtRowStream *createRowStreamEx(IFile *file, IRowInterfaces *rowIf, offset_t offset, offset_t len, unsigned __int64 maxrows, unsigned rwFlags, IExpander *eexp, ITranslator *translatorContainer, IVirtualFieldCallback * fieldCallback)
+void getPlaneReadAheadSizing(const IStoragePlane *plane, unsigned &numThreads, size32_t &chunkSize)
 {
-    bool compressed = TestRwFlag(rwFlags, rw_compress);
-    EmptyRowSemantics emptyRowSemantics = extractESRFromRWFlags(rwFlags);
+    if (numThreads && chunkSize) // already set, no need to look up plane
+        return;
+    size32_t planeBlockSize = 0; // retain for kludge check that forces readAheadThreads if looks like a blob plane
+    if (!chunkSize)
+    {
+        chunkSize = defaultRowStreamChunkSize; // default if plane doesn't override
+        if (plane)
+        {
+            planeBlockSize = (size32_t) plane->getAttribute(BlockedSequentialIO, 0);
+            if (planeBlockSize)
+                chunkSize = planeBlockSize;
+        }
+    }
+    if (!numThreads)
+    {
+        numThreads = 1; // default if plane doesn't override
+        if (plane)
+        {
+            unsigned numThreadsPlaneValue = (unsigned) plane->getAttribute(ReadAheadThreads, 0);
+            if (0 != numThreadsPlaneValue)
+                numThreads = numThreadsPlaneValue;
+            else // unset
+            {
+                // 2026-08-28: temp kludge to enabled parallel reading without waiting on TF propagation of plane configuration (removed this code when settled in and configured properly)
+                // we assume this is set because it's an azure blob based plane
+                if (planeBlockSize >= 1024 * 4096)
+                    numThreads = defaultRowStreamReadAheadThreads;
+            }
+        }
+    }
+}
+
+void getPlaneReadAheadSizing(const char *filename, unsigned &numThreads, size32_t &chunkSize)
+{
+    if (isEmptyString(filename))
+        return;
+    if (numThreads && chunkSize) // already set, no need to look up plane
+        return;
+    Owned<const IStoragePlane> plane = getStoragePlaneFromPath(filename, false);
+    return getPlaneReadAheadSizing(plane, numThreads, chunkSize);
+}
+
+IBufferedSerialInputStream * createParallelRowInputStream(IFileIO *fileio, unsigned numThreads, size32_t chunkSize, size32_t overflowMaxSize, offset_t offset, offset_t len)
+{
+    // Caller is responsible for looking up plane-derived sizing (see getPlaneReadAheadSizing());
+    assertex(numThreads);
+    assertex(chunkSize);
+    return createParallelReadAheadInputStream(fileio, numThreads, chunkSize, overflowMaxSize, offset, len);
+}
+
+IBufferedSerialInputStream * createParallelRowInputStream(IFileIO *fileio, unsigned numThreads, size32_t chunkSize, size32_t overflowMaxSize)
+{
+    return createParallelRowInputStream(fileio, numThreads, chunkSize, overflowMaxSize, 0, (offset_t)-1);
+}
+
+
+IExtRowStream *createRowStream(IFileIO *fileIO, IRowInterfaces *rowIf, const RowStreamOptions &options)
+{
+    unsigned numThreads = options.numThreads;
+    size32_t chunkSize = options.chunkSize;
+    IFile *iFile = fileIO->queryFile();
+    const char *filename = iFile ? iFile->queryFilename() : nullptr;
+    getPlaneReadAheadSizing(filename, numThreads, chunkSize); // if numThreads/chunkSize are unset, this will determine appropriate values based on plane configuration
+    Owned<IBufferedSerialInputStream> strm;
+    if (numThreads>1)
+    {
+        ICompressedFileIO *compIO = dynamic_cast<ICompressedFileIO *>(fileIO);
+        if (compIO)
+            strm.setown(compIO->createParallelReadStream(numThreads, chunkSize));
+        else
+        {
+            // NB: createParallelRowInputStream falls back to createBufferedInputStream if parallel read is not supported
+            strm.setown(createParallelRowInputStream(fileIO, numThreads, chunkSize, ParallelReadAheadArbitraryPeek, options.offset, options.len));
+        }
+    }
+    if (!strm)
+        strm.setown(createFileSerialStream(fileIO, options.offset, options.len, (size32_t)-1));
+    if (options.offset != 0 || options.len != (offset_t)-1)
+        strm->reset(options.offset, options.len);
+    EmptyRowSemantics emptyRowSemantics = extractESRFromRWFlags(options.rwFlags);
+    return makeRowStreamReader(strm, rowIf, options.maxRows, emptyRowSemantics, options.translatorContainer, options.fieldCallback);
+}
+
+static bool UseMemoryMappedRead = false;
+
+IExtRowStream *createRowStream(IFile *file, IRowInterfaces *rowIf, const FileRowStreamOptions &options)
+{
+    bool compressed = TestRwFlag(options.rwFlags, rw_compress);
+    EmptyRowSemantics emptyRowSemantics = extractESRFromRWFlags(options.rwFlags);
     if (UseMemoryMappedRead && !compressed)
     {
         PROGLOG("Memory Mapped read of %s",file->queryFilename());
         Owned<IMemoryMappedFile> mmfile = file->openMemoryMapped();
         if (!mmfile)
             return NULL;
-        if (maxrows == (unsigned __int64)-1)
-            return new CRowStreamReader(NULL, mmfile, rowIf, offset, len, emptyRowSemantics, translatorContainer, fieldCallback);
-        else
-            return new CLimitedRowStreamReader(NULL, mmfile, rowIf, offset, len, maxrows, emptyRowSemantics, translatorContainer, fieldCallback);
+        Owned<IBufferedSerialInputStream> strm = createFileSerialStream(mmfile, options.offset, options.len);
+        return makeRowStreamReader(strm, rowIf, options.maxRows, emptyRowSemantics, options.translatorContainer, options.fieldCallback);
     }
     else
     {
-        Owned<IFileIO> fileio;
+        Owned<IFileIO> iFileIO;
         if (compressed)
         {
             // JCSMORE should pass in a flag for rw_compressblkcrc I think, doesn't look like it (or anywhere else)
             // checks the block crc's at the moment.
-            fileio.setown(createCompressedFileReader(file, eexp, useDefaultIoBufferSize, UseMemoryMappedRead, IFEnone));
+            iFileIO.setown(createCompressedFileReader(file, options.eexp, useDefaultIoBufferSize, UseMemoryMappedRead, IFEnone));
         }
         else
-            fileio.setown(file->open(IFOread));
-        if (!fileio)
-            return NULL;
-        if (maxrows == (unsigned __int64)-1)
-            return new CRowStreamReader(fileio, NULL, rowIf, offset, len, emptyRowSemantics, translatorContainer, fieldCallback);
-        else
-            return new CLimitedRowStreamReader(fileio, NULL, rowIf, offset, len, maxrows, emptyRowSemantics, translatorContainer, fieldCallback);
+            iFileIO.setown(file->open(IFOread));
+        if (!iFileIO)
+            return nullptr;
+        return createRowStream(iFileIO, rowIf, options);
     }
 }
 
-IExtRowStream *createRowStream(IFile *file, IRowInterfaces *rowIf, unsigned rwFlags, IExpander *eexp, ITranslator *translatorContainer, IVirtualFieldCallback * fieldCallback)
-{
-    return createRowStreamEx(file, rowIf, 0, (offset_t)-1, (unsigned __int64)-1, rwFlags, eexp, translatorContainer, fieldCallback);
-}
 
 // Memory map sizes can be big, restrict to 64-bit platforms.
 void useMemoryMappedRead(bool on)

@@ -744,6 +744,10 @@
               "type": "integer",
               "default": 0
             },
+            "readAheadThreads": {
+              "description": "Number of threads to use for read-ahead operations. Implementations will use if they can",
+              "type": "integer"
+            },
             "compressLogicalFiles" : {
               "description": "Compress all logical file outputs on this plane.",
               "type": "boolean",

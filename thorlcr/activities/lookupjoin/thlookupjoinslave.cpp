@@ -2103,7 +2103,9 @@ protected:
                         rwFlags |= rw_compress;
                         rwFlags |= spillCompInfo;
                     }
-                    gatheredRHSNodeStreams.append(* createRowStream(&file->queryIFile(), queryRowInterfaces(rightITDL), rwFlags));
+                    FileRowStreamOptions options;
+                    options.rwFlags = rwFlags;
+                    gatheredRHSNodeStreams.append(* createRowStream(&file->queryIFile(), queryRowInterfaces(rightITDL), options));
                     return true;
                 }
             }
@@ -2196,7 +2198,9 @@ protected:
                     rwFlags |= spillCompInfo;
                 }
                 ActPrintLog("Reading overflow RHS broadcast rows : %" RCPF "d", overflowWriteCount);
-                Owned<IRowStream> overflowStream = createRowStream(&overflowWriteFile->queryIFile(), queryRowInterfaces(rightITDL), rwFlags);
+                FileRowStreamOptions options;
+                options.rwFlags = rwFlags;
+                Owned<IRowStream> overflowStream = createRowStream(&overflowWriteFile->queryIFile(), queryRowInterfaces(rightITDL), options);
                 gatheredRHSNodeStreams.append(* overflowStream.getClear());
             }
             if (gatheredRHSNodeStreams.ordinality())

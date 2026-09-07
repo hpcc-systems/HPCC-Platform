@@ -144,15 +144,16 @@ extern jlib_decl IRandRowExpander *createRandRDiffExpander(); // NB only support
 extern jlib_decl void compressToBuffer(MemoryBuffer & out, size32_t len, const void * src, CompressionMethod method=COMPRESS_METHOD_ZSTD3, const char *options=nullptr);
 extern jlib_decl void decompressToBuffer(MemoryBuffer & out, MemoryBuffer & in, const char *options=nullptr);
 
-
+interface ISerialOutputStream;
+interface IBufferedSerialInputStream;
 interface ICompressedFileIO: extends IFileIO
 {
     virtual unsigned dataCRC()=0;                   // CRC for data area (note total file CRC equals COMPRESSEDFILECRC)
     virtual size32_t recordSize()=0;                // 0 for lzw/fastlz, otherwise record length for row difference compression
     virtual size32_t blockSize()=0;                 // block size used
     virtual unsigned method()=0;
-    virtual ISerialOutputStream * queryOutputStream() = 0;
-    virtual ISerialInputStream * queryInputStream() = 0;
+    virtual ISerialOutputStream * queryWriteStream() = 0; // stream for writing compressed data
+    virtual IBufferedSerialInputStream * createParallelReadStream(unsigned numThreads, size32_t chunkSize) = 0; // stream for reading decompressed data; 0 means let the implementation choose
 };
 
 constexpr size32_t useDefaultIoBufferSize = (size32_t)-1;

@@ -431,6 +431,7 @@ constexpr TraceFlags traceJava = TraceFlags::flag8;
 constexpr TraceFlags traceOptimizations = TraceFlags::flag9;        // code generator, but IHqlExpressions also used by esp/engines
 constexpr TraceFlags traceDaFsClient = TraceFlags::flag10;          // dafilesrv client tracing
 constexpr TraceFlags traceThreadStartup = TraceFlags::flag11;       // thread startup tracing
+constexpr TraceFlags traceStreams = TraceFlags::flag12;             // stream related tracing
 
 // Specific to Roxie
 constexpr TraceFlags traceRoxieLock = TraceFlags::flag16;
@@ -476,7 +477,8 @@ struct TraceOption { const char * name; TraceFlags value; };
     TRACEOPT(traceMax), \
     TRACEOPT(traceDetail), \
     TRACEOPT(traceAll), /* place before the other options so you can enable all and selectively disable */ \
-    TRACEOPT(traceThreadStartup)
+    TRACEOPT(traceThreadStartup), \
+    TRACEOPT(traceStreams)
 
 constexpr std::initializer_list<TraceOption> roxieTraceOptions
 { 

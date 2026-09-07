@@ -159,14 +159,17 @@ class CWriteIntercept : public CSimpleInterface
         IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
         CFileOwningStream(CWriteIntercept *_parent, offset_t _startOffset, rowcount_t _max) : parent(_parent), startOffset(_startOffset), max(_max)
         {
+            FileRowStreamOptions options;
+            options.offset = startOffset;
+            options.maxRows = max;
             if (parent->compressedOverflowFile)
             {
                 Owned<IFileIO> iFileIO = createCompressedFileReader(&(parent->dataFile->queryIFile()), nullptr, useDefaultIoBufferSize, false, IFEnone);
                 assertex(iFileIO);
-                stream.setown(createRowStreamEx(iFileIO, parent->rowIf, startOffset, (offset_t)-1, max));
+                stream.setown(createRowStream(iFileIO, parent->rowIf, options));
             }
             else
-                stream.setown(createRowStreamEx(&(parent->dataFile->queryIFile()), parent->rowIf, startOffset, (offset_t)-1, max));
+                stream.setown(createRowStream(&(parent->dataFile->queryIFile()), parent->rowIf, options));
         }
         virtual const void *nextRow() { return stream->nextRow(); }
         virtual void stop() { stream->stop(); }

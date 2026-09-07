@@ -209,9 +209,33 @@ interface ITranslator : extends IInterface
     virtual const IKeyTranslator *queryKeyedTranslator() const = 0;
 };
 interface IExpander;
-extern THORHELPER_API IExtRowStream *createRowStreamEx(IFileIO *fileIO, IRowInterfaces *rowIf, offset_t offset, offset_t len=(offset_t)-1, unsigned __int64 maxrows=(unsigned __int64)-1, unsigned rwFlags=DEFAULT_RWFLAGS, ITranslator *translatorContainer=nullptr, IVirtualFieldCallback * _fieldCallback=nullptr);
-extern THORHELPER_API IExtRowStream *createRowStream(IFile *file, IRowInterfaces *rowif, unsigned flags=DEFAULT_RWFLAGS, IExpander *eexp=nullptr, ITranslator *translatorContainer=nullptr, IVirtualFieldCallback * _fieldCallback=nullptr);
-extern THORHELPER_API IExtRowStream *createRowStreamEx(IFile *file, IRowInterfaces *rowif, offset_t offset=0, offset_t len=(offset_t)-1, unsigned __int64 maxrows=(unsigned __int64)-1, unsigned flags=DEFAULT_RWFLAGS, IExpander *eexp=nullptr, ITranslator *translatorContainer=nullptr, IVirtualFieldCallback * _fieldCallback = nullptr);
+interface IStoragePlane;
+// Looks up the ReadAheadThreads/BlockedSequentialIO plane attributes for the given filename's plane. Leaves either value as 0 if unset/no plane.
+extern THORHELPER_API void getPlaneReadAheadSizing(const char *filename, unsigned &numThreads, size32_t &chunkSize);
+extern THORHELPER_API void getPlaneReadAheadSizing(const IStoragePlane *plane, unsigned &numThreads, size32_t &chunkSize);
+extern THORHELPER_API IBufferedSerialInputStream *createParallelRowInputStream(IFileIO *fileio, unsigned numThreads, size32_t chunkSize, size32_t overflowMaxSize);
+extern THORHELPER_API IBufferedSerialInputStream *createParallelRowInputStream(IFileIO *fileio, unsigned numThreads, size32_t chunkSize, size32_t overflowMaxSize, offset_t offset, offset_t len);
+
+struct RowStreamOptions
+{
+    offset_t offset = 0;
+    offset_t len = (offset_t)-1;
+    unsigned __int64 maxRows = (unsigned __int64)-1;
+    unsigned rwFlags = DEFAULT_RWFLAGS;
+    ITranslator *translatorContainer = nullptr;
+    IVirtualFieldCallback *fieldCallback = nullptr;
+    unsigned numThreads = 0; // if left as 0, plane will determine appropriate value based on its configuration
+    size32_t chunkSize = 0;  // if left as 0, plane will determine appropriate value based on its configuration
+};
+extern THORHELPER_API IExtRowStream *createRowStream(IFileIO *fileIO, IRowInterfaces *rowIf, const RowStreamOptions &options = RowStreamOptions());
+
+// As RowStreamOptions, plus the IExpander only applicable when reading via IFile (for decompression).
+struct FileRowStreamOptions : public RowStreamOptions
+{
+    IExpander *eexp = nullptr;
+};
+extern THORHELPER_API IExtRowStream *createRowStream(IFile *file, IRowInterfaces *rowif, const FileRowStreamOptions &options = FileRowStreamOptions());
+
 interface ICompressor;
 extern THORHELPER_API ILogicalRowWriter *createRowWriter(IFile *file, IRowInterfaces *rowIf, unsigned flags=DEFAULT_RWFLAGS, ICompressor *compressor=NULL, size32_t compressorBlkSz=0);
 extern THORHELPER_API ILogicalRowWriter *createRowWriter(IFileIO *iFileIO, IRowInterfaces *rowIf, unsigned flags=DEFAULT_RWFLAGS, ICompressor *compressor=nullptr, size32_t compressorBlkSz=0);

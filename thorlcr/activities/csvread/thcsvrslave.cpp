@@ -18,8 +18,8 @@
 #include "platform.h"
 
 #include "jio.hpp"
-#include "jio.hpp"
 #include "jlzw.hpp"
+#include "jstream.hpp"
 #include "jtime.hpp"
 #include "jsort.hpp"
 
@@ -32,6 +32,7 @@
 #include "thactivityutil.ipp"
 #include "csvsplitter.hpp"
 #include "thdiskbaseslave.ipp"
+#include "thorcommon.hpp"
 
 class CCsvReadSlaveActivity : public CDiskReadSlaveActivityBase
 {
@@ -116,9 +117,11 @@ class CCsvReadSlaveActivity : public CDiskReadSlaveActivityBase
             readFinished = false;
 
             OwnedIFileIO partFileIO;
+            ICompressedFileIO *compressedIO = nullptr;
             if (compressed)
             {
-                partFileIO.setown(createCompressedFileReader(iFile, activity.eexp, useDefaultIoBufferSize, false, IFEnone));
+                compressedIO = createCompressedFileReader(iFile, activity.eexp, useDefaultIoBufferSize, false, IFEnone);
+                partFileIO.setown(compressedIO);
                 if (!partFileIO)
                     throw MakeActivityException(&activity, 0, "Failed to open block compressed file '%s'", filename.get());
             }
@@ -130,7 +133,24 @@ class CCsvReadSlaveActivity : public CDiskReadSlaveActivityBase
                 iFileIO.setown(partFileIO.getClear());
             }
 
-            inputStream.setown(createFileSerialStream(iFileIO));
+            unsigned numThreads;
+            size32_t chunkSize;
+            getPlaneReadAheadSizing(activity, iFile->queryFilename(), numThreads, chunkSize);
+            Owned<IBufferedSerialInputStream> csvStream;
+            if (compressedIO && numThreads>1)
+                csvStream.setown(compressedIO->createParallelReadStream(numThreads, chunkSize));
+            if (!csvStream)
+            {
+                if (compressed)
+                    csvStream.setown(createFileSerialStream(iFileIO));  // row-diff compressed: sequential decompression
+                else
+                {
+                    // NB: createParallelRowInputStream falls back to createBufferedInputStream if numThreads is 1
+                    // CSV rows can exceed one read-ahead chunk, so CSVSplitter needs arbitrary-size contiguous peeks.
+                    csvStream.setown(createParallelRowInputStream(iFileIO, numThreads, chunkSize, ParallelReadAheadArbitraryPeek));
+                }
+            }
+            inputStream.setown(csvStream.getClear());
             if (activity.headerLines)
                 processHeaderLines = true;
             progress = 0;

@@ -132,4 +132,7 @@ public:
     }
 };
 
+void getPlaneReadAheadSizing(CActivityBase &activity, const char *filename, unsigned &numThreads, size32_t &chunkSize);
+
+
 #endif

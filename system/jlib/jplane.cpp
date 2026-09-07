@@ -54,6 +54,7 @@ static const std::array<PlaneAttributeInfo, PlaneAttributeCount> planeAttributeI
     { PlaneAttrType::boolean, 0, true, "concurrentWriteSupport" },// enum PlaneAttributeType::ConcurrentWriteSupport {3}
     { PlaneAttrType::integer, 1, false, "writeSyncMarginMs" },    // enum PlaneAttributeType::WriteSyncMarginMs      {4}
     { PlaneAttrType::boolean, 0, true, "renameSupported" },       // enum PlaneAttributeType::RenameSupported        {5}
+    { PlaneAttrType::integer, 1, false, "readAheadThreads" },     // enum PlaneAttributeType::ReadAheadThreads       {6}
 }};
 
 static constexpr unsigned __int64 unsetPlaneAttrValue = 0xFFFFFFFF00000000;

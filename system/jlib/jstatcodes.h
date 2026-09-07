@@ -370,6 +370,10 @@ enum StatisticKind
     StCycleFilePrepareCycles,
     StTimeSmartJoinDelay,               // Time spent delaying smart join broadcasts because of congestion
     StCycleSmartJoinDelayCycles,        // Cpu cycles spent delaying smart join broadcasts because of congestion
+    StNumParallelReadAheadThreads,
+    StSizeParallelReadAheadChunk,
+    StTimeParallelReadAheadConsumerWait,
+    StCycleParallelReadAheadConsumerWaitCycles,
     StMax,
 
     //For any quantity there is potentially the following variants.

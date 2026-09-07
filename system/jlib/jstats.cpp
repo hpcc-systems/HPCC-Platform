@@ -1034,6 +1034,10 @@ static const constexpr StatisticMeta statsMetaData[] = {
     { CYCLESTAT(FilePrepare) },
     { TIMESTAT(SmartJoinDelay), "Time spent delaying smart-join broadcasts because of congestion" },
     { CYCLESTAT(SmartJoinDelay) },
+    { NUMSTAT(ParallelReadAheadThreads), "The number of parallel read-ahead threads" },
+    { SIZESTAT(ParallelReadAheadChunk), "The size of each parallel read-ahead chunk" },
+    { TIMESTAT(ParallelReadAheadConsumerWait), "The time the consumer waited for parallel read-ahead data" },
+    { CYCLESTAT(ParallelReadAheadConsumerWait) },
 };
 
 static MapStringTo<StatisticKind, StatisticKind> statisticNameMap(true);

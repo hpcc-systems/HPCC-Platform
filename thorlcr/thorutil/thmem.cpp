@@ -345,7 +345,10 @@ class CSharedSpillableRowSet : public CSpillableStreamBase
                             rwFlags |= rw_compress;
                             rwFlags |= owner->spillCompInfo;
                         }
-                        spillStream.setown(::createRowStreamEx(&(owner->spillFile->queryIFile()), owner->rowIf, outputOffset, (offset_t)-1, (unsigned __int64)-1, rwFlags));
+                        FileRowStreamOptions options;
+                        options.offset = outputOffset;
+                        options.rwFlags = rwFlags;
+                        spillStream.setown(::createRowStream(&(owner->spillFile->queryIFile()), owner->rowIf, options));
                         owner->rows.unregisterWriteCallback(*this); // no longer needed
                         ret = spillStream->nextRow();
                     }
@@ -402,7 +405,9 @@ public:
                 rwFlags |= rw_compress;
                 rwFlags |= spillCompInfo;
             }
-            return ::createRowStream(&spillFile->queryIFile(), rowIf, rwFlags);
+            FileRowStreamOptions options;
+            options.rwFlags = rwFlags;
+            return ::createRowStream(&spillFile->queryIFile(), rowIf, options);
         }
         rowidx_t toRead = rows.numCommitted();
         if (toRead)
@@ -466,7 +471,9 @@ public:
                     rwFlags |= spillCompInfo;
                 }
                 rwFlags |= mapESRToRWFlags(emptyRowSemantics);
-                spillStream.setown(createRowStream(&spillFile->queryIFile(), rowIf, rwFlags));
+                FileRowStreamOptions options;
+                options.rwFlags = rwFlags;
+                spillStream.setown(createRowStream(&spillFile->queryIFile(), rowIf, options));
                 ReleaseThorRow(readRows);
                 readRows = nullptr;
                 return spillStream->nextRow();
@@ -1898,11 +1905,13 @@ protected:
             rwFlags |= spillCompInfo;
         }
         rwFlags |= mapESRToRWFlags(emptyRowSemantics);
+        FileRowStreamOptions options;
+        options.rwFlags = rwFlags;
         IArrayOf<IRowStream> instrms;
         ForEachItemIn(f, spillFiles)
         {
             CFileOwner *fileOwner = spillFiles.item(f);
-            Owned<IExtRowStream> strm = createRowStream(&fileOwner->queryIFile(), rowIf, rwFlags);
+            Owned<IExtRowStream> strm = createRowStream(&fileOwner->queryIFile(), rowIf, options);
             instrms.append(* new CStreamFileOwner(fileOwner, strm));
         }
 
