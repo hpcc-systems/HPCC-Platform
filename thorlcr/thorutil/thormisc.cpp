@@ -92,7 +92,7 @@ const StatisticsMapping hashJoinActivityStatistics({StNumLeftRows, StNumRightRow
 const StatisticsMapping allJoinActivityStatistics({}, commonJoinActivityStatistics);
 const StatisticsMapping lookupJoinActivityStatistics({StNumSmartJoinSlavesDegradedToStd, StNumSmartJoinDegradedToLocal, StTimeSmartJoinDelay}, commonJoinActivityStatistics);
 const StatisticsMapping joinActivityStatistics({StNumLeftRows, StNumRightRows}, commonJoinActivityStatistics);
-const StatisticsMapping diskReadActivityStatistics({StNumDiskRowsRead, }, basicActivityStatistics, diskReadRemoteStatistics);
+const StatisticsMapping diskReadActivityStatistics({StNumDiskRowsRead, }, basicActivityStatistics, diskReadRemoteStatistics, parallelReadAheadStatistics);
 const StatisticsMapping diskWriteActivityStatistics({StPerReplicated}, basicActivityStatistics, diskWriteRemoteStatistics);
 const StatisticsMapping sortActivityStatistics({}, basicActivityStatistics);
 const StatisticsMapping diskReadPartStatistics({StNumDiskRowsRead}, diskReadRemoteStatistics);

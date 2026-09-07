@@ -342,6 +342,8 @@
 #define JLIBERR_UtilProcessForkFailed                   6356
 #define JLIBERR_AuditLogQueryNotRegistered              6357
 
+#define JLIBERR_SystemParallelReadAheadFailure          6358
+
 //---- Text for all errors (make it easy to internationalise) ---------------------------
 
 #define JLIBERR_BadlyFormedDateTime_Text        "Badly formatted date/time '%s'"

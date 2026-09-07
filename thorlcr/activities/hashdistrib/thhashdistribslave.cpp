@@ -2388,7 +2388,9 @@ public:
                 sz = out->getPosition();
                 activity->stopInput(0);
             }
-            ret.setown(createRowStream(tempfile, activity, rwFlags));
+            FileRowStreamOptions options;
+            options.rwFlags = rwFlags;
+            ret.setown(createRowStream(tempfile, activity, options));
         }
         CMessageBuffer mb;
         mb.append(sz);
@@ -2801,7 +2803,9 @@ public:
                 *_count = 0;
             return NULL;
         }
-        Owned<IExtRowStream> strm = createRowStream(&fileOwner->queryIFile(), rowIf, rwFlags);
+        FileRowStreamOptions options;
+        options.rwFlags = rwFlags;
+        Owned<IExtRowStream> strm = createRowStream(&fileOwner->queryIFile(), rowIf, options);
         Owned<CStreamFileOwner> fileStream = new CStreamFileOwner(fileOwner, strm);
         if (_count)
             *_count = count;

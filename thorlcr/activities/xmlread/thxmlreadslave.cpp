@@ -19,6 +19,7 @@
 #include <limits.h>
 #include "jio.hpp"
 #include "jlzw.hpp"
+#include "jstream.hpp"
 #include "jsort.hpp"
 #include "eclhelper.hpp"
 #include "slave.ipp"
@@ -30,6 +31,7 @@
 #include "thbufdef.hpp"
 #include "thsortu.hpp"
 #include "thorxmlread.hpp"
+#include "thorcommon.hpp"
 #include "thdiskbaseslave.ipp"
 
 class CXmlReadSlaveActivity : public CDiskReadSlaveActivityBase
@@ -49,7 +51,7 @@ class CXmlReadSlaveActivity : public CDiskReadSlaveActivityBase
         Owned<IXMLParse> xmlParser;
         CRC32 inputCRC;
         OwnedIFileIO iFileIO;
-        Owned<IIOStream> inputIOstream;
+        Owned<ISimpleReadStream> inputIOstream;
         offset_t localOffset;  // not sure what this is for 
         unsigned __int64 progress = 0;
         Linked<IEngineRowAllocator> allocator;
@@ -69,9 +71,11 @@ class CXmlReadSlaveActivity : public CDiskReadSlaveActivityBase
             CDiskPartHandlerBase::open();
 
             OwnedIFileIO partFileIO;
+            ICompressedFileIO *compressedIO = nullptr;
             if (compressed)
             {
-                partFileIO.setown(createCompressedFileReader(iFile, activity.eexp, useDefaultIoBufferSize, false, IFEnone));
+                compressedIO = createCompressedFileReader(iFile, activity.eexp, useDefaultIoBufferSize, false, IFEnone);
+                partFileIO.setown(compressedIO);
                 if (!partFileIO)
                     throw MakeActivityException(&activity, 0, "Failed to open block compressed file '%s'", filename.get());
             }
@@ -83,8 +87,28 @@ class CXmlReadSlaveActivity : public CDiskReadSlaveActivityBase
                 iFileIO.setown(partFileIO.getClear());
             }
 
-            Owned<IIOStream> stream = createIOStream(iFileIO);
-            inputIOstream.setown(createBufferedIOStream(stream));
+            unsigned numThreads;
+            size32_t chunkSize;
+            getPlaneReadAheadSizing(activity, iFile->queryFilename(), numThreads, chunkSize);
+            Owned<ISimpleReadStream> xmlStream;
+            if (compressedIO && numThreads>1)
+                xmlStream.setown(compressedIO->createParallelReadStream(numThreads, chunkSize));
+            if (!xmlStream)
+            {
+                if (compressed)
+                {
+                    // Row-diff compressed: no parallel expanding stream; fall back to sequential decompression.
+                    Owned<IIOStream> stream = createIOStream(iFileIO);
+                    xmlStream.setown(createBufferedIOStream(stream));
+                }
+                else
+                {
+                    // NB: createParallelRowInputStream falls back to createBufferedInputStream if numThreads is 1
+                    // XML/JSON parsing consumes the stream with bounded reads, so arbitrary-size peek buffering is unnecessary.
+                    xmlStream.setown(createParallelRowInputStream(iFileIO, numThreads, chunkSize, chunkSize));
+                }
+            }
+            inputIOstream.setown(xmlStream.getClear());
             OwnedRoxieString xmlIterator(activity.helper->getXmlIteratorPath());
             if (activity.queryContainer().getKind()==TAKjsonread)
                 xmlParser.setown(createJSONParse(*inputIOstream.get(), xmlIterator, *this, (0 != (TDRxmlnoroot & activity.helper->getFlags()))?ptr_noRoot:ptr_none, 0 != (TDRusexmlcontents & activity.helper->getFlags())));

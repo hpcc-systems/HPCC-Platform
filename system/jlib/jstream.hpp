@@ -21,10 +21,15 @@
 #define JSTREAM_HPP
 
 #include "jiface.hpp"
+#include "jio.hpp"
+#include "jstatcodes.h"
 #include <utility>
 #include <vector>
 
 class StringBuffer;
+class StatisticsMapping;
+
+extern jlib_decl const StatisticsMapping parallelReadAheadStatistics;
 
 interface jlib_decl IByteOutputStream : public IInterface
 {
@@ -39,7 +44,8 @@ extern jlib_decl IByteOutputStream *createOutputStream(int handle);
 
 static constexpr size32_t BufferTooSmall = (size32_t)-1;
 static constexpr offset_t UnknownOffset = (offset_t)-1;
-interface ISerialInputStream : extends IInterface
+static constexpr size32_t ParallelReadAheadArbitraryPeek = (size32_t)-1;
+interface ISerialInputStream : extends ISimpleReadStream
 {
     virtual size32_t read(size32_t len, void * ptr) = 0;            // returns size read, result < len does NOT imply end of file
     virtual void skip(size32_t sz) = 0;
@@ -47,6 +53,7 @@ interface ISerialInputStream : extends IInterface
     virtual void reset(offset_t _offset, offset_t _flen) = 0;       // start streaming from a difference section of the input (which may have changed)
                                                                     // throws an error if the input is not seekable (e.g. socket)
     virtual offset_t tell() const = 0;                              // used to implement beginNested
+    virtual unsigned __int64 getStatistic(StatisticKind kind) { return 0; }
 };
 
 interface ICrcSerialInputStream : extends ISerialInputStream // Implemented here to prevent circular reference with jcrc.hpp
@@ -104,7 +111,10 @@ class MemoryBuffer;
 
 extern jlib_decl ICrcSerialInputStream * createCrcInputStream(ISerialInputStream * input);
 extern jlib_decl IBufferedSerialInputStream * createBufferedInputStream(ISerialInputStream * input, size32_t blockReadSize);
-extern jlib_decl IBufferedSerialInputStream * createParallelReadAheadInputStream(IFileIO * input, unsigned numThreads, size32_t chunkSize, size32_t overflowMaxSize=0);
+// overflowMaxSize controls how much wrap-overflow is available for contiguous peeks.
+// Special value ParallelReadAheadArbitraryPeek delegates strategy selection to the factory.
+extern jlib_decl IBufferedSerialInputStream * createParallelReadAheadInputStream(IFileIO * input, unsigned numThreads, size32_t chunkSize, size32_t overflowMaxSize);
+extern jlib_decl IBufferedSerialInputStream * createParallelReadAheadInputStream(IFileIO * input, unsigned numThreads, size32_t chunkSize, size32_t overflowMaxSize, offset_t startOffset, offset_t length);
 extern jlib_decl ISerialInputStream * createDecompressingInputStream(IBufferedSerialInputStream * input, IExpander * decompressor);
 extern jlib_decl ISerialInputStream * createSerialInputStream(IFileIO * input);
 extern jlib_decl ISerialInputStream * createSerialInputStream(IFileIO * input, offset_t startOffset, offset_t length);

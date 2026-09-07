@@ -20,6 +20,7 @@
 
 #include "jfile.hpp"
 #include "jlzw.hpp"
+#include "jplane.hpp"
 #include "jset.hpp"
 
 #include "commonext.hpp"
@@ -968,3 +969,23 @@ CSeqPartHandler *createSequentialPartHandler(CPartHandler *partHandler, IArrayOf
     return new CSeqPartHandler(partHandler, partDescs, grouped);
 }
 
+/////
+
+void getPlaneReadAheadSizing(CActivityBase &activity, const char *filename, unsigned &numThreads, size32_t &chunkSize)
+{
+    numThreads = 0;
+    chunkSize = 0;
+
+    Owned<const IStoragePlane> plane = getStoragePlaneFromPath(filename, false);
+    if (plane)
+    {
+        const char *planeName = plane->queryName();
+        VStringBuffer optName("%s.%s", planeName, THOROPT_PLANE_READAHEAD_THREADS);
+        numThreads = activity.getOptInt(optName);
+        optName.clear().appendf("%s.%s", planeName, THOROPT_PLANE_READAHEAD_CHUNK_SIZE);
+        chunkSize = activity.getOptInt(optName) * 1024;
+    }
+
+    // if numThreads/chunkSize are unset, this will determine appropriate values based on plane configuration
+    getPlaneReadAheadSizing(plane, numThreads, chunkSize);
+}

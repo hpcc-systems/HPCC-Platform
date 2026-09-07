@@ -86,7 +86,7 @@ IBufferedSerialOutputStream * createBufferedOutputStream(IFileIO * io, const IPr
 
             //If we are reading from a compressed file, then only buffer the block size, not the io size (which may be 4MB)
             streamBufferSize = compressedIO->blockSize();
-            fileStream.set(compressedIO->queryOutputStream());
+            fileStream.set(compressedIO->queryWriteStream());
         }
         else
         {
