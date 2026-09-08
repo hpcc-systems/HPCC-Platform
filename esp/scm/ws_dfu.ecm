@@ -1037,8 +1037,8 @@ ESPresponse [version("1.68"), exceptions_inline, nil_remove] DFUFileRenameRespon
 //  ===========================================================================
 ESPservice [
     auth_feature("DEFERRED"),
-    version("1.68"),
-    default_client_version("1.68"),
+    version("1.69"),
+    default_client_version("1.69"),
     noforms,
     exceptions_inline("./smc_xslt/exceptions.xslt")] WsDfu
 {
