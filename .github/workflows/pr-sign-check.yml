@@ -33,6 +33,8 @@ jobs:
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
         run: |
           echo "Getting first commit in PR..."
 
@@ -58,29 +60,58 @@ jobs:
             DCO_OK=true
           fi
 
-          # ---- 2. GPG check ----
-          GPG_OK=false
-          if git log --format=%G? -n 1 "$FIRST_COMMIT" | grep -q "^G"; then
-            echo "✓ GPG signature verified"
-            GPG_OK=true
+          # ---- 2. Signature check (GPG/SSH/S-MIME, verified via GitHub API) ----
+          # git log --format=%G? only reports "G" when the signer's public key is present
+          # in the runner's own (always empty) GPG keyring, so it fails for any contributor's
+          # personal key regardless of validity, and it only understands GPG. Ask GitHub's
+          # API instead: it already knows about keys/certs registered to the committer's
+          # account (including EMU-issued signing keys) and performs the same check -- across
+          # GPG, SSH, and S/MIME -- shown as the "Verified" badge in the UI.
+          SIG_OK=false
+          API_ERR="$RUNNER_TEMP/gh_api_verification.err"
+          API_STATUS=0
+          VERIFIED=""
+          if VERIFIED=$(gh api "repos/${REPO}/commits/${FIRST_COMMIT}" --jq '.commit.verification.verified' 2>"$API_ERR"); then
+            if [ "$VERIFIED" = "true" ]; then
+              echo "✓ Commit signature verified (GitHub API)"
+              SIG_OK=true
+            else
+              echo "Commit signature not verified by GitHub (verification.verified=${VERIFIED})"
+            fi
+          else
+            API_STATUS=$?
+            echo "⚠ Could not query GitHub's signature-verification API for ${FIRST_COMMIT} (exit ${API_STATUS}):"
+            cat "$API_ERR"
+            echo "  Signature could not be confirmed this run; cryptographic-signature verification is required."
           fi
 
-          # ---- Require at least ONE ----
-          if [ "$DCO_OK" = "true" ] || [ "$GPG_OK" = "true" ]; then
-            echo "First commit is signed (DCO or GPG)"
+          # ---- Require BOTH ----
+          if [ "$DCO_OK" = "true" ] && [ "$SIG_OK" = "true" ]; then
+            echo "First commit is compliant (DCO sign-off and verified signature)"
           else
-            echo "✗ First commit is not signed"
+            echo "✗ First commit does not meet signature requirements"
             echo ""
-            echo "You must sign the first commit **either** with:"
-            echo "  • DCO: add a 'Signed-off-by:' line  →  git commit -s"
-            echo "  • GPG: sign with your key          →  git commit -S"
+            if [ "$API_STATUS" -ne 0 ]; then
+              echo "Note: GitHub's signature-verification API could not be reached, so a"
+              echo "genuinely signed commit may have been misreported here. Re-run this check"
+              echo "once the API is reachable."
+              echo ""
+            fi
+            if [ "$DCO_OK" != "true" ]; then
+              echo "Missing DCO sign-off ('Signed-off-by:' line in commit message)."
+            fi
+            if [ "$SIG_OK" != "true" ]; then
+              echo "Missing verified cryptographic signature (GPG/SSH/S-MIME)."
+            fi
+            echo ""
+            echo "You must include BOTH on the first commit:"
+            echo "  • DCO sign-off: add a 'Signed-off-by:' line  →  git commit -s"
+            echo "  • A cryptographic signature verified by GitHub  →  git commit -S"
             echo ""
             echo "To fix an existing commit:"
             echo "  git rebase -i ${BASE_SHA}^"
             echo "  Change 'pick' → 'edit' on the first commit, then:"
-            echo "    git commit --amend -s   # for DCO"
-            echo "    # or"
-            echo "    git commit --amend -S --no-edit   # for GPG"
+            echo "    git commit --amend -s -S --no-edit   # add DCO + signature"
             echo "  git rebase --continue"
             exit 1
           fi
