@@ -159,9 +159,11 @@ public:
         Owned<ILocalWorkUnit> wu = createLocalWorkUnit();
         StringBuffer targetArchitecture;
         CPPUNIT_ASSERT_EQUAL_STR(defaultTargetArchitecture, getWorkUnitTargetArchitecture(targetArchitecture, wu).str());
+        CPPUNIT_ASSERT_EQUAL_STR(targetArchitectureX86_64Linux, getWorkUnitTargetArchitecture(targetArchitecture, wu, targetArchitectureX86_64Linux).str());
 
         setWorkUnitTargetArchitecture(wu, "aarch64");
         CPPUNIT_ASSERT_EQUAL_STR(targetArchitectureArm64Linux, getWorkUnitTargetArchitecture(targetArchitecture, wu).str());
+        CPPUNIT_ASSERT_EQUAL_STR(targetArchitectureArm64Linux, getWorkUnitTargetArchitecture(targetArchitecture, wu, targetArchitectureX86_64Linux).str());
 
         SCMStringBuffer rawValue;
         wu->getDebugValue(targetArchitectureDebugValue, rawValue);

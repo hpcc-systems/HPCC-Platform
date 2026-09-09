@@ -7147,12 +7147,17 @@ bool targetArchitecturesMatch(const char * left, const char * right)
     return strsame(normalizedLeft, normalizedRight);
 }
 
-StringBuffer & getWorkUnitTargetArchitecture(StringBuffer & targetArchitecture, const IConstWorkUnit * wu)
+StringBuffer & getWorkUnitTargetArchitecture(StringBuffer & targetArchitecture, const IConstWorkUnit * wu, const char * defaultArchitecture)
 {
     SCMStringBuffer architecture;
     if (wu)
         wu->getDebugValue(targetArchitectureDebugValue, architecture);
-    return normalizeTargetArchitecture(targetArchitecture, architecture.str());
+    return normalizeTargetArchitecture(targetArchitecture, architecture.length() ? architecture.str() : defaultArchitecture);
+}
+
+StringBuffer & getWorkUnitTargetArchitecture(StringBuffer & targetArchitecture, const IConstWorkUnit * wu)
+{
+    return getWorkUnitTargetArchitecture(targetArchitecture, wu, defaultTargetArchitecture);
 }
 
 void setWorkUnitTargetArchitecture(IWorkUnit * wu, const char * architecture)
