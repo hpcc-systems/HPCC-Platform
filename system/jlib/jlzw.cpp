@@ -3367,6 +3367,7 @@ MODULE_INIT(INIT_PRIORITY_STANDARD)
             return queryPersistMethod();
         }
     };
+    // An alias handler is registered against its own method value, but records the base method when persisting
     class CCompressHandlerWithOptions : public CCompressHandlerBase
     {
     public:
@@ -3654,8 +3655,6 @@ CompressionMethod translateToCompMethod(const char *compStr, CompressionMethod d
             compMethod = COMPRESS_METHOD_ZSTDS6;
         else if (strieq("ZSTDS9", compStr))
             compMethod = COMPRESS_METHOD_ZSTDS9;
-
-        //else // default is LZ4
     }
     return compMethod;
 }

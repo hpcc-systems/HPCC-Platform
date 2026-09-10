@@ -71,7 +71,7 @@ void SwapBigEndian(KeyHdr &hdr)
     _WINREV(hdr.xflmod);
     _WINREV(hdr.defrel);
     _WINREV(hdr.hghtrn);
-    _WINREV(hdr.hdrseq);
+    _WINREV(hdr.branchDepth);
     _WINREV(hdr.tstamp);
     _WINREV(hdr.rs3[0]);
     _WINREV(hdr.rs3[1]);
@@ -85,6 +85,14 @@ void SwapBigEndian(KeyHdr &hdr)
     _WINREV(hdr.bloomHead);
     _WINREV(hdr.partitionFieldMask);
     _WINREV(hdr.firstLeaf);
+    _WINREV(hdr.firstBranch[0]);
+    _WINREV(hdr.firstBranch[1]);
+    _WINREV(hdr.firstBranch[2]);
+    _WINREV(hdr.firstBranch[3]);
+    _WINREV(hdr.maxBranch);
+    _WINREV(hdr.leafCount);
+    _WINREV(hdr.blobCount);
+    _WINREV(hdr.minRowsPerLeafExceptLast);
 }
 
 inline void SwapBigEndian(NodeHdr &hdr)

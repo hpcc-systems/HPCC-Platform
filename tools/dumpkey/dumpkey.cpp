@@ -49,6 +49,22 @@ bool optOverwrite = false;
 bool optNoSeek = false;
 StringArray files;
 
+static void printHeaderOffset(const char *name, offset_t value, unsigned nodeSize)
+{
+    if (value == (offset_t)-1)
+        printf("%s=-1\n", name);
+    else
+        printf("%s=%" I64F "d[%" I64F "d]\n", name, value, value/nodeSize);
+}
+
+static void printHeaderUnsignedShort(const char *name, unsigned short value)
+{
+    if (value == 0xffff)
+        printf("%s=-1\n", name);
+    else
+        printf("%s=%u\n", name, value);
+}
+
 void usage()
 {
     fprintf(stderr, "Usage: dumpkey [options] dataset [dataset...]\n"
@@ -193,6 +209,7 @@ private:
 int main(int argc, const char **argv)
 {
     InitModuleObjects();
+    initNullConfiguration();
 #ifdef _WIN32
     _setmode( _fileno( stdout ), _O_BINARY );
     _setmode( _fileno( stdin ), _O_BINARY );
@@ -260,6 +277,18 @@ int main(int argc, const char **argv)
                 printf("Key '%s'\nkeySize=%d keyedSize = %d NumParts=%x, Top=%d\n", keyName, key_size, keyedSize, index->numParts(), index->isTopLevelKey());
                 printf("File size = %" I64F "d, nodes = %" I64F "d\n", in->size(), in->size() / nodeSize - 1);
                 printf("rootoffset=%" I64F "d[%" I64F "d]\n", header->getRootFPos(), header->getRootFPos()/nodeSize);
+                printf("branchDepth=%" I64F "d\n", header->getHdrStruct()->branchDepth);
+                printHeaderOffset("firstleafoffset", header->getFirstLeafPos(), nodeSize);
+                for (unsigned i=0; i < _elements_in(header->getHdrStruct()->firstBranch); i++)
+                {
+                    StringBuffer name;
+                    name.appendf("firstbranchoffset[%u]", i);
+                    printHeaderOffset(name.str(), header->getFirstBranchPos(i), nodeSize);
+                }
+                printHeaderOffset("maxbranchoffset", header->queryMaxBranch(), nodeSize);
+                printf("leafCount=%" I64F "d\n", header->getLeafCount());
+                printf("blobCount=%" I64F "d\n", header->getBlobCount());
+                printHeaderUnsignedShort("minRowsPerLeafExceptLast", header->getMinRowsPerLeafExceptLast());
                 printf("bloomoffset=%" I64F "d[%" I64F "d]\n", header->queryBloomHead(), header->queryBloomHead()/nodeSize);
                 Owned<IPropertyTree> metadata = index->getMetadata();
                 if (metadata)

@@ -341,9 +341,10 @@ bool CBlockCompressedWriteNode::add(offset_t pos, const void *indata, size32_t i
         keyPtr += sizeof(rsequence);
         hdr.keyBytes += sizeof(rsequence);
 
-        memcpy(keyPtr, &context.compressionMethod, sizeof(context.compressionMethod));
-        keyPtr += sizeof(context.compressionMethod);
-        hdr.keyBytes += sizeof(context.compressionMethod);
+        CompressionMethod compressionMethod = context.compressionHandler->queryPersistMethod();
+        memcpy(keyPtr, &compressionMethod, sizeof(compressionMethod));
+        keyPtr += sizeof(compressionMethod);
+        hdr.keyBytes += sizeof(compressionMethod);
         
         *(bool*)keyPtr = context.zeroFilePos;
         keyPtr += sizeof(bool);

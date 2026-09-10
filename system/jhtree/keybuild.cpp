@@ -168,6 +168,7 @@ private:
     RelaxedAtomic<__uint64> numLeaves{0};
     RelaxedAtomic<__uint64> numBranches{0};
     RelaxedAtomic<__uint64> numBlobs{0};
+    unsigned minRowsPerLeafExceptLast = 0;
     unsigned __int64 maxNodeMemorySize = 0;
     __uint64 partitionFieldMask = 0;
     CWriteNode *activeNode = nullptr;
@@ -252,7 +253,7 @@ public:
         hdr->maxmrk = hdr->nodeSize/4; // always this in ctree.
         hdr->namlen = 255;
         hdr->defrel = 8;
-        hdr->hdrseq = 0;
+        hdr->branchDepth = 0;
         hdr->fposOffset = 0;
         hdr->fileSize = 0;
         hdr->nodeKeyLength = options.keyFieldSize;
@@ -260,6 +261,12 @@ public:
         hdr->blobHead = 0;
         hdr->metadataHead = 0;
         hdr->firstLeaf = 0;
+        for (unsigned i=0; i < _elements_in(hdr->firstBranch); i++)
+            hdr->firstBranch[i] = 0;
+        hdr->maxBranch = 0;
+        hdr->leafCount = 0;
+        hdr->blobCount = 0;
+        hdr->minRowsPerLeafExceptLast = 0;
 
         doCrc = true;
         duplicateCount = 0;
@@ -320,6 +327,8 @@ public:
         assertex(levels > 0);
 
         unsigned int nodeIndex = 0;
+        if (levels <= _elements_in(keyHdr->getHdrStruct()->firstBranch))
+            keyHdr->getHdrStruct()->firstBranch[levels-1] = nextPos;
         CWriteNode *node = (CWriteNode *)indexCompressor->createNode(nextPos, keyHdr, NodeBranch);
         nextPos += keyHdr->getNodeSize();
         numBranches++;
@@ -468,6 +477,12 @@ protected:
                 prevLeafNode->setRightSib(node->getFpos());
                 node->setLeftSib(prevLeafNode->getFpos());
             }
+            if (node && prevLeafNode->isLeaf())
+            {
+                unsigned numKeys = prevLeafNode->numKeys();
+                if (!minRowsPerLeafExceptLast || numKeys < minRowsPerLeafExceptLast)
+                    minRowsPerLeafExceptLast = numKeys;
+            }
             nodeInfo.append(* new CNodeInfo(prevLeafNode->getFpos(), prevLeafNode->getLastKeyValue(), keyedSize, lastSequence));
             if ((keyHdr->getKeyType() & TRAILING_HEADER_ONLY) != 0 && activeBlobNode && activeBlobNode->getFpos() < prevLeafNode->getFpos())
             {
@@ -507,7 +522,11 @@ protected:
             hdr->maxmrk = hdr->nodeSize/4; // always this in ctree.
             hdr->namlen = 255;
             hdr->defrel = 8;
-            hdr->hdrseq = levels;
+            hdr->branchDepth = levels;
+            hdr->maxBranch = levels ? nextPos : 0;
+            hdr->leafCount = numLeaves;
+            hdr->blobCount = numBlobs;
+            hdr->minRowsPerLeafExceptLast = minRowsPerLeafExceptLast;
         }
     }
 
