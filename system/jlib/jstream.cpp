@@ -477,9 +477,11 @@ class CParallelReadAheadInputStream final : public CInterfaceOf<IBufferedSerialI
                 // Because chunks are consumed strictly sequentially in a ring buffer,
                 // each chunk leaps exactly (numThreads * chunkSize) ahead for its next read.
                 fileOffset += owner.numThreads * owner.chunkSize;
-                // Nothing left to read — avoid a wasted wait/read cycle
-                if (fileOffset >= owner.endOffset)
-                    break;
+                // NB: deliberately no early exit when fileOffset has passed the end of the input.
+                // The consumer only recognises the end of the stream from a short or empty chunk,
+                // so when the input ends exactly on a chunk boundary the thread has to go round
+                // once more and signal the empty chunk that readChunk() returns; otherwise the
+                // consumer waits for ever for a chunk that nothing will ever fill.
                 markReadyAndSignal();
             }
             markReadyAndSignal();
