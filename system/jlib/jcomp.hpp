@@ -44,6 +44,8 @@ extern jlib_decl void setCompilerPath(const char * path, const char *ipath, cons
 extern jlib_decl void setCompilerPath(const char * path, const char *ipath, const char *lpath, const char * tmpdir, CompilerType compiler, bool verbose);
 extern jlib_decl bool fileIsOlder(const char *dest, const char *src);
 extern jlib_decl void extractErrorsFromCppLog(IArrayOf<IError> & errors, const char * cur, bool linkFailed);
+extern jlib_decl unsigned queryMaxCompileThreads(unsigned configured, unsigned numCppFiles, unsigned numCpus);
+extern jlib_decl unsigned queryMaxCompileThreads(unsigned configured, unsigned numCppFiles);
 
 interface ICppCompiler : public IInterface
 {

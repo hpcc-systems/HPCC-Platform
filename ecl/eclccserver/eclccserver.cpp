@@ -23,6 +23,7 @@
 #include "jencrypt.hpp"
 #include "jregexp.hpp"
 #include "jcomp.hpp"
+#include "jutil.hpp"
 #include "mpbase.hpp"
 #include "daclient.hpp"
 #include "dasess.hpp"
@@ -36,6 +37,8 @@
 #ifndef _CONTAINERIZED
 #include "dalienv.hpp"
 #endif
+#include <cmath>
+#include <limits>
 #include <unordered_map>
 #include <string>
 #include "codesigner.hpp"
@@ -431,7 +434,7 @@ class EclccCompiler : implements IErrorReporter
     StringArray filesSeen;
     StringBuffer repoRootPath;
     unsigned instanceNumber;
-    unsigned defaultMaxCompileThreads = 1;
+    unsigned defaultMaxCompileThreads = 0;
     bool saveTemps = false;
 
 //interface IErrorReporter:
@@ -545,7 +548,13 @@ class EclccCompiler : implements IErrorReporter
         else
         {
             if (strieq(option, "maxCompileThreads"))
-                defaultMaxCompileThreads = atoi(value);
+            {
+                if (!isLocal)
+                {
+                    int requestedMaxThreads = atoi(value);
+                    defaultMaxCompileThreads = requestedMaxThreads > 0 ? requestedMaxThreads : 1;
+                }
+            }
             else if (strieq(option, "saveEclTempFiles"))
                 saveTemps = strToBool(value);
             eclccCmd.appendf(" -f%s=%s", option, value);
@@ -651,8 +660,6 @@ class EclccCompiler : implements IErrorReporter
     unsigned doCompileCpp(AbortWaiter &abortWaiter, const char *wuid, unsigned maxThreads)
     {
         RelaxedAtomic<unsigned> numFailed = { 0 };
-        if (!maxThreads)
-            maxThreads = 1;
         VStringBuffer ccfileName("%s.cc", wuid);
         VStringBuffer cclogfileName("%s.cc.log", wuid);
         char dir[_MAX_PATH];
@@ -677,9 +684,29 @@ class EclccCompiler : implements IErrorReporter
             unsigned firstCompile = lineIdx;
             while (lines.isItem(lineIdx) && lines.item(lineIdx)[0] != '#')
                 lineIdx++;
+            unsigned numCppFiles = lineIdx - firstCompile;
+            unsigned numCpus = getAffinityCpus();
+            try
+            {
+                double resourcedCpus = getResourcedCpus("resources");
+                if (resourcedCpus > 0 && std::isfinite(resourcedCpus) && resourcedCpus <= std::numeric_limits<unsigned>::max())
+                    numCpus = static_cast<unsigned>(std::ceil(resourcedCpus));
+                else if (resourcedCpus != 0)
+                    OWARNLOG("Ignoring invalid resources CPU value %g; using affinity CPU count %u", resourcedCpus, numCpus);
+            }
+            catch (IException *e)
+            {
+                EXCLOG(e, "Invalid resources CPU value; using affinity CPU count");
+                e->Release();
+            }
+            catch (const std::exception &e)
+            {
+                OWARNLOG("Invalid resources CPU value; using affinity CPU count %u: %s", numCpus, e.what());
+            }
+            maxThreads = queryMaxCompileThreads(maxThreads, numCppFiles, numCpus);
             CriticalSection crit{SYNC_LOCATION};
-            DBGLOG("Compiling %u files, %u at once", lineIdx-firstCompile, maxThreads);
-            asyncFor(SYNC_LOCATION, lineIdx-firstCompile, maxThreads, [this, firstCompile, &lines, &numFailed, &crit, &output, &abortWaiter](unsigned i)
+            DBGLOG("Compiling %u files, %u at once", numCppFiles, maxThreads);
+            asyncFor(SYNC_LOCATION, numCppFiles, maxThreads, [this, firstCompile, &lines, &numFailed, &crit, &output, &abortWaiter](unsigned i)
             {
                 try
                 {
@@ -919,7 +946,13 @@ class EclccCompiler : implements IErrorReporter
             {
                 cycle_t startCompileCpp = get_cycles_now();
                 workunit->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSToperation, ">compile:>compile c++", StWhenStarted, NULL, getTimeStampNowValue(), 1, 0, StatsMergeAppend);
-                retcode = doCompileCpp(abortWaiter, wuid, workunit->getDebugValueInt("maxCompileThreads", defaultMaxCompileThreads));
+                unsigned maxCompileThreads = defaultMaxCompileThreads;
+                if (workunit->hasDebugValue("maxCompileThreads"))
+                {
+                    int requestedMaxThreads = workunit->getDebugValueInt("maxCompileThreads", 1);
+                    maxCompileThreads = requestedMaxThreads > 0 ? requestedMaxThreads : 1;
+                }
+                retcode = doCompileCpp(abortWaiter, wuid, maxCompileThreads);
                 unsigned __int64 elapsed_compilecpp = cycle_to_nanosec(get_cycles_now() - startCompileCpp);
                 workunit->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSToperation, ">compile:>compile c++", StTimeElapsed, NULL, elapsed_compilecpp, 1, 0, StatsMergeReplace);
             }
@@ -968,7 +1001,7 @@ class EclccCompiler : implements IErrorReporter
                     {
                         StringBuffer wuXML; // Not sure this is a good idea.... better to always get it from the dll resource
                         Owned<IWUQuery> query = workunit->updateQuery();
-                        if (getArchiveXMLFromFile(realdllfilename, wuXML.clear()))  // MORE - if what was submitted was an archive, this is probably pointless?
+                        if (getArchiveXMLFromFile(realdllfilename, wuXML.clear()))
                             query->setQueryText(wuXML.str());
                         else
                             query->setQueryText(eclQuery.s.str());

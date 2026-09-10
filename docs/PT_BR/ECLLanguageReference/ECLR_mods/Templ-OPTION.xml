@@ -1495,10 +1495,12 @@
             <row>
               <entry><emphasis>maxCompileThreads</emphasis></entry>
 
-              <entry>Padrão: 4 para eclccserver e 1 para eclcc</entry>
+              <entry>Padrão por compilação: o menor valor entre (número de arquivos
+              C++ gerados) e (núcleos de CPU disponíveis + 1)</entry>
 
-              <entry>Número de instâncias de compilador para compilar o
-              c++</entry>
+              <entry>Número máximo de instâncias do compilador usadas para compilar
+              os arquivos C++ gerados. Valores menores que 1 usam 1, e valores acima
+              do número de arquivos gerados usam essa quantidade de arquivos.</entry>
             </row>
 
             <row>

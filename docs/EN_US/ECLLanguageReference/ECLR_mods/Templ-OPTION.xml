@@ -1480,9 +1480,12 @@
             <row>
               <entry><emphasis>maxCompileThreads</emphasis></entry>
 
-              <entry>Default 4 for eclccserver and 1 for eclcc</entry>
+              <entry>Default per compilation: minimum of (number of generated
+              C++ files) and (available CPU cores + 1)</entry>
 
-              <entry>Number of compiler instances to compile the C++</entry>
+              <entry>Maximum number of compiler instances used to compile the
+              generated C++ files. Values below 1 use 1, and values above the
+              number of generated files use that file count.</entry>
             </row>
 
             <row>

@@ -16,8 +16,11 @@
 ############################################################################## */
 
 #ifdef _USE_CPPUNIT
+#include <limits>
+
 #include "unittests.hpp"
 #include "workunit.hpp"
+#include "jcomp.hpp"
 
 class wuTests : public CppUnit::TestFixture
 {
@@ -32,6 +35,7 @@ class wuTests : public CppUnit::TestFixture
         CPPUNIT_TEST(testCopyWorkUnitForRecompileCompileContext);
         CPPUNIT_TEST(testCopyWorkUnitPreservesScheduledWorkflowCount);
         CPPUNIT_TEST(testCopyWorkUnitForRecompileDoesNotCopyScheduledWorkflowCount);
+        CPPUNIT_TEST(testMaxCompileThreadsSelection);
     CPPUNIT_TEST_SUITE_END();
 
 public:
@@ -229,6 +233,18 @@ public:
         copyWorkUnitForRecompile(target, source);
 
         CPPUNIT_ASSERT_EQUAL(0U, target->queryEventScheduledCount());
+    }
+
+    void testMaxCompileThreadsSelection()
+    {
+        CPPUNIT_ASSERT_EQUAL(1U, queryMaxCompileThreads(0, 0, 8));
+        CPPUNIT_ASSERT_EQUAL(3U, queryMaxCompileThreads(0, 3, 8));
+        CPPUNIT_ASSERT_EQUAL(4U, queryMaxCompileThreads(0, 4, 8));
+        CPPUNIT_ASSERT_EQUAL(9U, queryMaxCompileThreads(0, 100, 8));
+        CPPUNIT_ASSERT_EQUAL(2U, queryMaxCompileThreads(8, 2, 8));
+        CPPUNIT_ASSERT_EQUAL(2U, queryMaxCompileThreads(0, 100, 0));
+        CPPUNIT_ASSERT_EQUAL(100U, queryMaxCompileThreads(0, 100, std::numeric_limits<unsigned>::max()));
+        CPPUNIT_ASSERT_EQUAL(4U, queryMaxCompileThreads(1000, 4, 8));
     }
 };
 

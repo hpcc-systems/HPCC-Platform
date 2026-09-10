@@ -169,7 +169,7 @@ public:
         if (!ctxCallback)
             ctxCallback.setown(new NullContextCallback(_wu));
         noOutput = true;
-        defaultMaxCompileThreads = 1;
+        defaultMaxCompileThreads = 0;
         generateTarget = EclGenerateNone;
         code.setown(createCppInstance(wu, wuname, compilerType));
         totalGeneratedSize = 0;
@@ -684,7 +684,13 @@ bool HqlDllGenerator::doCompile(ICppCompiler * compiler)
     ForEachItemIn(i, sourceFiles)
         compiler->addSourceFile(sourceFiles.item(i), sourceFlags.item(i));
 
-    unsigned maxThreads = wu->getDebugValueInt("maxCompileThreads", defaultMaxCompileThreads);
+    unsigned configuredMaxThreads = defaultMaxCompileThreads;
+    if (wu->hasDebugValue("maxCompileThreads"))
+    {
+        int requestedMaxThreads = wu->getDebugValueInt("maxCompileThreads", 1);
+        configuredMaxThreads = requestedMaxThreads > 0 ? requestedMaxThreads : 1;
+    }
+    unsigned maxThreads = queryMaxCompileThreads(configuredMaxThreads, sourceFiles.ordinality());
     compiler->setMaxCompileThreads(maxThreads);
 
     bool debug = wu->getDebugValueBool("debugQuery", false);

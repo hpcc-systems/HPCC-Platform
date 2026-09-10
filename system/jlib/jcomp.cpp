@@ -36,6 +36,8 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
+#include <algorithm>
+#include <limits>
 #include <stdio.h>
 
 #include "jfile.hpp"
@@ -75,6 +77,19 @@ static const char * PCH_FILE_EXT[] = { "", "gch", "gch" };
 static const char * LIBFLAG_DEBUG[] = { "/MDd", "", "" };
 static const char * LIBFLAG_RELEASE[] = { "/MD", "", "" };
 static const char * COMPILE_ONLY[] = { "/c", "-c", "-c" };
+
+unsigned queryMaxCompileThreads(unsigned configured, unsigned numCppFiles, unsigned numCpus)
+{
+    unsigned effectiveCpus = numCpus ? numCpus : 1;
+    unsigned cpuLimit = effectiveCpus + (effectiveCpus != std::numeric_limits<unsigned>::max());
+    unsigned selected = configured ? configured : cpuLimit;
+    return numCppFiles ? std::min(selected, numCppFiles) : 1;
+}
+
+unsigned queryMaxCompileThreads(unsigned configured, unsigned numCppFiles)
+{
+    return queryMaxCompileThreads(configured, numCppFiles, getAffinityCpus());
+}
 
 #ifdef _DEBUG
 //Clang warns about unused parameters (e.g., -std=c++11) when compiling resource files, therefore suppress that warning.
