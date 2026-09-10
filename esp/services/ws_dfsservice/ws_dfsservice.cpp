@@ -59,7 +59,8 @@ static void populateLFNMeta(IUserDescriptor *userDesc, const char *logicalName, 
 
     assertex(!lfn.isMulti()); // not supported, don't think needs to be/will be.
 
-    Owned<IPropertyTree> tree = queryDistributedFileDirectory().getFileTree(logicalName, userDesc, AccessMode::readMeta);
+    // the caller reads the physical parts itself (potentially via dafilesrv, potentially a non-HPCC client)
+    Owned<IPropertyTree> tree = queryDistributedFileDirectory().getFileTree(logicalName, userDesc, AccessMode::readMeta | AccessMode::external);
     if (!tree)
         return;
     if (hasMask(opts, LfnMOptRemap))

@@ -1481,8 +1481,9 @@ public:
                                 foreignuserdesc.set(userdesc);
                         }
                     }
-                    srcFile.setown(wsdfs::lookup(tmp.str(),userdesc,
-                            (cmd==DFUcmd_move)||(cmd==DFUcmd_rename)||((cmd==DFUcmd_copy)&&multiclusterinsert) ? AccessMode::tbdWrite : AccessMode::tbdRead,
+                    AccessMode srcAccessMode = (cmd==DFUcmd_move)||(cmd==DFUcmd_rename)||((cmd==DFUcmd_copy)&&multiclusterinsert) ? AccessMode::tbdWrite : AccessMode::tbdRead;
+                    srcAccessMode |= AccessMode::external; // because the physical files are read by different processes (i.e. dafilesrv/ftslave)
+                    srcFile.setown(wsdfs::lookup(tmp.str(),userdesc,srcAccessMode,
                             false,false,nullptr,true, INFINITE));
 
                     if (!srcFile)
