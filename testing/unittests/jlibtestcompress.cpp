@@ -145,7 +145,7 @@ public:
             }
             case CompressToBuffer:
             {
-                compressToBuffer(compressed, srcLen, ptr, handler.queryMethod(), options);
+                compressToBuffer(compressed, srcLen, ptr, handler.queryAliasMethod(), options);
                 break;
             }
             case FixedBlockCompress:
@@ -453,7 +453,7 @@ public:
 
                 //zstds needs to support partial writes to be able to support LargeBlockCompress/MBBlockCompress
                 //(That would be good for compressing network packets so worth revisiting)
-                if (strieq(type, "zstds"))
+                if (startsWithIgnoreCase(type, "zstds"))
                     continue;
 
                 testCompressor(handler, options, rowSz, src.length(), src.bytes(), LargeBlockCompress);
@@ -536,7 +536,7 @@ public:
 
                 //The stream compressors only currently support fixed size outputs
                 //They also do not support partial writes - so largeBlockCompress will fail.
-                if (strieq(type, "lz4s") || strieq(type, "lz4shc") || strieq(type, "zstds"))
+                if (strieq(type, "lz4s") || strieq(type, "lz4shc") || startsWithIgnoreCase(type, "zstds"))
                     continue;
 
                 testCompressor(handler, options, rowSz, src.length(), src.bytes(), CompressToBuffer);
@@ -628,7 +628,7 @@ public:
                     testCompressor(handler, "hclevel=8", rowSz, src.length(), src.bytes(), RowCompress);
                     testCompressor(handler, "hclevel=10", rowSz, src.length(), src.bytes(), RowCompress);
                 }
-                if (strieq(type, "lz4s") || strieq(type, "lz4shc") || strieq(type, "zstds"))
+                if (strieq(type, "lz4s") || strieq(type, "lz4shc") || startsWithIgnoreCase(type, "zstds"))
                 {
                     testCompressor(handler, options, rowSz, src.length(), src.bytes(), FixedBlockCompress);
                     continue;
