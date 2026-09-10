@@ -174,7 +174,7 @@ public:
     virtual const CJHTreeNode *loadNode(cycle_t * fetchCycles, offset_t offset, CLoadNodeCacheState & readState) const = 0;  // Must be implemented in derived classes
 
     const byte *loadBlob(const INodeLoader &nodeLoader, unsigned __int64 blobid, size32_t &blobsize, IContextLogger *ctx);
-    unsigned getBranchDepth() const { return keyHdr->getHdrStruct()->hdrseq; }
+    unsigned getBranchDepth() const { return keyHdr->getHdrStruct()->branchDepth; }
     bool bloomFilterReject(const IIndexFilterList &segs, IContextLogger *ctx) const;
 
     const CJHSearchNode *locateFirstLeafNode(INodeLoader & nodeLoader, IContextLogger *ctx) const;

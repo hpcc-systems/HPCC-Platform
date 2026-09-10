@@ -38,7 +38,7 @@ enum CompressionMethod : byte
     COMPRESS_METHOD_LZW_LITTLE_ENDIAN,
     COMPRESS_METHOD_LZ4S,
     COMPRESS_METHOD_LZ4SHC,
-    COMPRESS_METHOD_LZ4HC3,
+    COMPRESS_METHOD_LZ4HC3,         // Actually an alias
     COMPRESS_METHOD_ZSTDS,
     COMPRESS_METHOD_ZSTD,
     COMPRESS_METHOD_LAST_PERSISTED,
@@ -50,6 +50,11 @@ enum CompressionMethod : byte
     COMPRESS_METHOD_ZSTDS3,
     COMPRESS_METHOD_ZSTDS6,
     COMPRESS_METHOD_ZSTDS9,
+
+    // WARNING if a new real compression method is added it should be added after COMPRESS_METHOD_ZSTDS9.
+    // Some versions of 10.0.x incorrectly persisted the alias values so the values above should never change
+    // otherwise some files created with the incorrect values will fail to be read.
+    //  New methods need to be appended.  Cleanest would be to create new aliases and keep these as old placeholders.
     COMPRESS_METHOD_LAST_ALIAS,
 
 

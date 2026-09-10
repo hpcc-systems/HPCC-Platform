@@ -458,14 +458,22 @@ bool EventRecorder::startRecording(const char * optionsText, const char * filena
     Owned<ISerialOutputStream> diskStream = createSerialOutputStream(output);
     Owned<IBufferedSerialOutputStream> bufferedDiskStream = createBufferedOutputStream(diskStream, 0x100000);
 
+    ICompressHandler * compressHandler = nullptr;
+    byte persistCompressionType = COMPRESS_METHOD_NONE;
+    if (compressionType != COMPRESS_METHOD_NONE)
+    {
+        compressHandler = queryCompressHandler((CompressionMethod)compressionType);
+        assertex(compressHandler);
+        persistCompressionType = compressHandler->queryPersistMethod();
+    }
+
     //Write the uncompressed header:
     bufferedDiskStream->put(sizeof(magicHeader), magicHeader);
     bufferedDiskStream->put(sizeof(currentVersion), &currentVersion);
-    bufferedDiskStream->put(sizeof(compressionType), &compressionType);
+    bufferedDiskStream->put(sizeof(persistCompressionType), &persistCompressionType);
 
     if (compressionType != COMPRESS_METHOD_NONE)
     {
-        ICompressHandler * compressHandler = queryCompressHandler((CompressionMethod)compressionType);
         const char *compressOptions = nullptr; // at least for now!
         Owned<ICompressor> compressor = compressHandler->getCompressor(compressOptions);
         Owned<ISerialOutputStream> compressedStream = createCompressingOutputStream(bufferedDiskStream, compressor);
