@@ -1,5 +1,4 @@
 import * as React from "react";
-import { topic } from "src-dojo/index";
 import { FluentProvider } from "@fluentui/react-components";
 import { select as d3Select } from "@hpcc-js/common";
 import { scopedLogger } from "@hpcc-js/util";
@@ -10,12 +9,11 @@ import { DevTitle } from "./Title";
 import { MainNavigation, SubNavigation } from "./Menu";
 import { CookieConsent } from "./forms/CookieConsent";
 import { userKeyValStore } from "src/KeyValStore";
-import { fireIdle, initSession, lock, unlock } from "src/Session";
 import { PortalRenderer } from "src/react/portalStore";
+import { useSession } from "../hooks/session";
 import { useGlobalStore } from "../hooks/store";
 import { useNavWide, useUserTheme } from "../hooks/theme";
 import { useGlobalWorkunitNotes } from "../hooks/workunit";
-import { useUserSession } from "../hooks/user";
 
 const logger = scopedLogger("../components/Frame.tsx");
 const envLogger = scopedLogger("environment");
@@ -32,7 +30,6 @@ interface FrameProps {
 
 export const Frame: React.FunctionComponent<FrameProps> = () => {
     const [showCookieConsent, setShowCookieConsent] = React.useState(false);
-    const { userSession, setUserSession } = useUserSession();
     const [locationPathname, setLocationPathname] = React.useState<string>(window.location.hash.split("#").join(""));
     const [body, setBody] = React.useState(<h1>...loading...</h1>);
     const { themeV9, isDark } = useUserTheme();
@@ -60,23 +57,7 @@ export const Frame: React.FunctionComponent<FrameProps> = () => {
         });
     }, [globalWUNotes]);
 
-    React.useEffect(() => {
-        initSession();
-
-        topic.subscribe("hpcc/session_management_status", function (publishedMessage) {
-            if (publishedMessage.status === "Unlocked") {
-                unlock();
-            } else if (publishedMessage.status === "Locked") {
-                lock();
-            } else if (publishedMessage.status === "DoIdle") {
-                fireIdle();
-            } else if (publishedMessage.status === "Idle") {
-                window.localStorage.setItem("pageOnLock", window.location.hash.substring(1));
-                setUserSession({ ...userSession });
-                window.location.reload();
-            }
-        });
-    }, [setUserSession, userSession]);
+    useSession();
 
     React.useEffect(() => {
 

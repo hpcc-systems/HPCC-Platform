@@ -9,7 +9,7 @@ import * as Utility from "src/Utility";
 
 import { useBanner } from "../hooks/banner";
 import { useConfirm } from "../hooks/confirm";
-import { replaceUrl } from "../util/history";
+import { lockSession, redirectToLogin } from "../hooks/session";
 import { useECLWatchLogger } from "../hooks/logging";
 import { useBuildInfo, useModernMode, useCheckFeatures } from "../hooks/platform";
 import { cmake_build_type } from "src/BuildInfo";
@@ -67,7 +67,7 @@ export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
 }) => {
 
     const [, { opsCategory }] = useBuildInfo();
-    const { userSession, setUserSession, deleteUserSession } = useUserSession();
+    const { deleteUserSession } = useUserSession();
     const [logIconColor, setLogIconColor] = React.useState<CounterBadgeProps["color"]>();
 
     const [showAbout, setShowAbout] = React.useState(false);
@@ -168,24 +168,25 @@ export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
     }, [log, logLastUpdated]);
 
     const onLockClick = React.useCallback(() => {
-        fetch("/esp/lock", { method: "post" }).then(() => {
-            setUserSession({ ...userSession });
-            replaceUrl("/login", true);
+        // ensure session lock/redirect happens even if the request fails
+        fetch("/esp/lock", { method: "post" }).finally(() => {
+            lockSession();
+            redirectToLogin();
         });
-    }, [setUserSession, userSession]);
+    }, []);
 
     const onLogoutClick = React.useCallback(() => {
-        fetch("/esp/logout", { method: "post" }).then(data => {
-            if (data) {
-                deleteUserSession().then(() => {
-                    Utility.deleteCookie("ECLWatchUser");
-                    Utility.deleteCookie("ESPSessionID");
-                    Utility.deleteCookie("Status");
-                    Utility.deleteCookie("User");
-                    Utility.deleteCookie("ESPSessionState");
-                    window.location.reload();
-                });
-            }
+        // ensure session cleanup/redirect happens even if the request fails
+        fetch("/esp/logout", { method: "post" }).finally(() => {
+            deleteUserSession().then(() => {
+                Utility.deleteCookie("ECLWatchUser");
+                Utility.deleteCookie("ESPSessionID");
+                Utility.deleteCookie("Status");
+                Utility.deleteCookie("User");
+                Utility.deleteCookie("ESPSessionState");
+                lockSession();
+                redirectToLogin(false);
+            });
         });
     }, [deleteUserSession]);
 

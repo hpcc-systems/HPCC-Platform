@@ -107,7 +107,9 @@
     <script type="module">
         import nlsHPCC from "src-dojo/index";
 
+        // localStorage is shared across tabs (used by Dojo UI); sessionStorage keeps each tab's return route its own.
         window.localStorage.setItem("redirectAfterLogin", window.location.hash);
+        window.sessionStorage.setItem("redirectAfterLogin", window.location.hash);
 
         var loginStr = document.getElementById("loginStr");
         var error = document.getElementById("hidden_msg");
@@ -165,6 +167,25 @@
             var element = document.getElementById('hidden_msg');
             element.textContent = loginMessage;
             element.style.display = "inline-block";
+        }
+
+        // If the session is revived in another tab, leave this stale login page for the saved route.
+        function checkSessionRevived() {
+            if (getCookie("ESPAuthenticated") === "true") {
+                window.clearInterval(sessionMonitor);
+                window.location.href = "/" + window.location.hash;
+            }
+        }
+        var sessionMonitor = window.setInterval(checkSessionRevived, 2000);
+
+        // Fast-path: another tab broadcasts when it re-authenticates; the poll is the fallback.
+        if (typeof BroadcastChannel !== "undefined") {
+            var sessionChannel = new BroadcastChannel("eclwatch_session");
+            sessionChannel.onmessage = function (ev) {
+                if (ev.data && ev.data.type === "authenticated") {
+                    checkSessionRevived();
+                }
+            };
         }
     </script>
 </body>

@@ -6,6 +6,7 @@ import { Dispatch, Level, logger as utilLogger, scopedLogger, Writer, CallbackFu
 import nlsHPCC from "src/nlsHPCC";
 import * as Utility from "src/Utility";
 import { CustomToaster } from "../components/controls/CustomToaster";
+import { notifySessionExpired } from "./session";
 
 const logger = scopedLogger("../util/logging.ts");
 
@@ -86,6 +87,9 @@ export class ECLWatchLogger implements Writer {
     rawWrite(dateTime: string, level: Level, id: string, _msg: string | object): void {
         if (isExceptions(_msg)) {
             _msg.Exception?.forEach(ex => {
+                if (Number(ex.Code) === 401) {
+                    notifySessionExpired();
+                }
                 const msg = Utility.decodeHTML(ex.Message);
                 this.doWrite(dateTime, level, id, `${ex.Code}: ${msg}`);
             });
