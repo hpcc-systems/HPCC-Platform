@@ -16,7 +16,9 @@
 
     <para><emphasis role="bold">Note:</emphasis> When you install Docker
     Desktop, it installs Kubernetes and the kubectl command line interface.
-    You merely need to enable it in Docker Desktop settings.</para>
+    You need to enable Kubernetes in Docker Desktop settings and select
+    single-node <emphasis role="bold">Kubeadm</emphasis> as the cluster type
+    under <emphasis role="bold">Cluster settings</emphasis>.</para>
   </sect1>
 
   <sect1 id="addrepo" role="nobrk">
@@ -191,6 +193,20 @@ dfs                   LoadBalancer 10.100.52.9     localhost    8520:30184/TCP  
 
     <para>Locate the ECL Watch service and identify the EXTERNAL-IP and
     PORT(S) for eclwatch. In this case, it is localhost:8010.</para>
+
+    <para><variablelist>
+        <varlistentry>
+          <term>Note:</term>
+
+          <listitem>
+            <para>If the EXTERNAL-IP shows as &lt;Pending&gt; for a long time,
+            you may need to use port-forwarding. Open a terminal and issue
+            this command:</para>
+
+            <programlisting>kubectl -n default port-forward svc/eclwatch 8010:8010</programlisting>
+          </listitem>
+        </varlistentry>
+      </variablelist></para>
 
     <para>Open a browser and access ECLWatch, press the ECL button, and select
     the Playground tab.</para>
