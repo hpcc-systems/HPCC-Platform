@@ -1798,6 +1798,9 @@ offset_t CKeyIndex::queryFirstBranchOffset()
     unsigned branchDepth = getBranchDepth();
     if (branchDepth == 0) // Only a single leaf - return 0
         return 0;
+    offset_t firstBranch = keyHdr->getFirstBranchPos(0);
+    if (firstBranch != (offset_t)-1)
+        return firstBranch;
     if (branchDepth == 1) // a single branch node - return the offset of the node
         return keyHdr->getRootFPos();
 
