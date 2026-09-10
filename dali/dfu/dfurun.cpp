@@ -1535,6 +1535,7 @@ public:
                         default:
                             throwUnexpected();
                     }
+                    srcAccess |= AccessMode::external; // because the physical files are read by different processes (i.e. dafilesrv/ftslave)
                     srcFile.setown(wsdfs::lookup(tmp.str(),userdesc, srcAccess, false, false, nullptr, true, INFINITE));
 
                     if (!srcFile)

@@ -104,6 +104,7 @@ enum class AccessMode : unsigned
     physicalMeta    = 0x00000020,           // physical meta data access (e.g. stat/exists)
     physical        = 0x00000040,           // physical file access (use if reading/writing to a physical file)
     extend          = 0x00000080,           // physically extend a file
+    external        = 0x00000100,           // the logical file is looked up here, but its physical parts may be accessed directly by an external client (e.g. hpcc4j) rather than through this process
     noMount         = 0x01000000,           // corresponds to "api" reason in alias reasons
 
     readLogicalMeta   = read | meta,          // read access - may not actually read the contents
@@ -119,14 +120,17 @@ enum class AccessMode : unsigned
     readRandom      = readLogicalMeta | readPhysicalMeta | physical | random,
     readSequential  = readLogicalMeta | readPhysicalMeta | physical | sequential,
     readNoMount     = readLogicalMeta | readPhysicalMeta | physical | noMount,
+    readExternal    = readLogicalMeta | readPhysicalMeta | physical | external,
+
     // physical write patterns
     writeRandom     = writeLogicalMeta | writePhysicalMeta | physical | random,
     writeSequential = writeLogicalMeta | writePhysicalMeta | physical | sequential,
+    writeExternal   = writeLogicalMeta | writePhysicalMeta | physical | external,
 };
 BITMASK_ENUM(AccessMode);
 inline bool isWrite(AccessMode mode) { return (mode & AccessMode::write) != AccessMode::none; }
 inline bool isPhysicalAccessMode(AccessMode accessMode) { return (accessMode & AccessMode::physical) != AccessMode::none; } // physically reading data
-
+inline bool isExternalAccess(AccessMode mode) { return (mode & AccessMode::external) != AccessMode::none; }
 
 extern jlib_decl AccessMode getAccessModeFromString(const char *access); // single access mode
 

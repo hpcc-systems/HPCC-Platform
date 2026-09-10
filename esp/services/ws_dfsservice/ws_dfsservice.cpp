@@ -59,7 +59,7 @@ static void populateLFNMeta(IUserDescriptor *userDesc, const char *logicalName, 
 
     assertex(!lfn.isMulti()); // not supported, don't think needs to be/will be.
 
-    Owned<IPropertyTree> tree = queryDistributedFileDirectory().getFileTree(logicalName, userDesc, AccessMode::readLogicalMeta);
+    Owned<IPropertyTree> tree = queryDistributedFileDirectory().getFileTree(logicalName, userDesc, AccessMode::readLogicalMeta | AccessMode::external);
     if (!tree)
         return;
     if (hasMask(opts, LfnMOptRemap))
