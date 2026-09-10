@@ -167,6 +167,20 @@ bool SegMonitorList::canMatch() const
     return true;
 }
 
+bool SegMonitorList::isSingleValue() const
+{
+    if (isUnfiltered())
+        return false;
+    unsigned last = lastRealSeg();
+    for (unsigned idx = 0; idx <= last; idx++)
+    {
+        IKeySegmentMonitor &seg = segMonitors.item(idx);
+        if (!seg.isSingleValue())
+            return false;
+    }
+    return true;
+}
+
 IIndexFilter *SegMonitorList::item(unsigned idx) const
 {
     return &segMonitors.item(idx);
@@ -767,7 +781,11 @@ protected:
     void noteEviction(unsigned keyId, CJHTreeNode * node)
     {
         offset_t pos = node->getFpos();
+#ifdef PROTRACE_DETAILED
+        protraceRecord(EventIndexEviction, keyId, pos);
+#else
         protraceRecord(EventIndexEviction);
+#endif
         queryRecorder().recordIndexEviction(keyId, pos, node->getNodeType(), node->getMemSize());
     }
 
@@ -1014,7 +1032,7 @@ public:
         setBlobCacheMem(maxBlobMem);
         // note that each index caches the last blob it unpacked so that sequential blobfetches are still ok
     }
-    const CJHTreeNode *getCachedNode(const INodeLoader & nodeLoader,unsigned keyID, offset_t pos, NodeType type, IContextLogger *ctx, bool isTLK);
+    const CJHTreeNode *getCachedNode(const INodeLoader & nodeLoader,unsigned keyID, offset_t pos, NodeTypeWithFlags typeWithFlags, IContextLogger *ctx);
     void getCacheInfo(ICacheInfoRecorder &cacheInfo);
 
     inline size_t setNodeCacheMem(size_t newSize)
@@ -1414,7 +1432,7 @@ const CJHSearchNode *CKeyIndex::getRootNode(const INodeLoader & nodeLoader) cons
     // The root node may be a branch or a leaf (on TLK nodes)
     NodeType type = getBranchDepth() != 0 ? NodeBranch : NodeLeaf;
 
-    Owned<const CJHSearchNode> root = (const CJHSearchNode *) nodeCache->getCachedNode(nodeLoader, iD, rootPos, type, NULL, isTopLevelKey());
+    Owned<const CJHSearchNode> root = (const CJHSearchNode *) nodeCache->getCachedNode(nodeLoader, iD, rootPos, type | nodeIndexFlags, NULL);
 
     // It's not uncommon for a TLK to have a "root node" that has a single entry in it pointing to a leaf node
     // with all the info in. In such cases we can avoid a lot of cache lookups by pointing the "root" in the
@@ -1426,7 +1444,7 @@ const CJHSearchNode *CKeyIndex::getRootNode(const INodeLoader & nodeLoader) cons
     {
         Owned<const CJHSearchNode> oldRoot = root;
         rootPos = root->getFPosAt(0);
-        root.setown((const CJHSearchNode *) nodeCache->getCachedNode(nodeLoader, iD, rootPos, NodeLeaf, NULL, true));
+        root.setown((const CJHSearchNode *) nodeCache->getCachedNode(nodeLoader, iD, rootPos, NodeLeaf | nodeIndexFlags, NULL));
     }
     return root.getClear();
 }
@@ -1441,6 +1459,7 @@ void CKeyIndex::init(KeyHdr &hdr, const INodeLoader & nodeLoader)
     try
     {
         keyHdr->load(hdr);
+        nodeIndexFlags = isTLK() ? NodeInTLK : NodeNoFlags;
         ensureBloomFiltersLoaded(nodeLoader);
         rootNode = getRootNode(nodeLoader);
     }
@@ -1722,11 +1741,10 @@ IKeyCursor *CKeyIndex::getCursor(const IIndexFilterList *filter, bool logExcessi
 }
 
 
-const CJHSearchNode *CKeyIndex::getIndexNodeUsingLoader(const INodeLoader &nodeLoader, offset_t offset, NodeType type, IContextLogger *ctx) const
+const CJHSearchNode *CKeyIndex::getIndexNodeUsingLoader(const INodeLoader &nodeLoader, offset_t offset, NodeTypeWithFlags typeWithFlags, IContextLogger *ctx) const
 {
     latestGetNodeOffset = offset;
-    //Call isTLK() rather than isTopLevelKey() so the test is inlined (rather than a virtual)
-    return (CJHSearchNode *)cache->getCachedNode(nodeLoader, iD, offset, type, ctx, isTLK());
+    return (CJHSearchNode *)cache->getCachedNode(nodeLoader, iD, offset, typeWithFlags | nodeIndexFlags, ctx);
 }
 
 void CKeyIndex::dumpNode(FILE *out, offset_t pos, unsigned count, bool isRaw)
@@ -1782,7 +1800,7 @@ const CJHBlobNode *CKeyIndex::getBlobNode(const INodeLoader &nodeLoader, offset_
     // There is a possibility that two threads will each concurrently be loading the same blob node
     // but on balance it is better to load twice than have parallel blob loads block each other
     // If the LRU blob cache is enabled then concurrent loads will be deduped.
-    const CJHTreeNode * loaded = getIndexNodeUsingLoader(nodeLoader, nodepos, NodeBlob, ctx);
+    const CJHTreeNode * loaded = getIndexNodeUsingLoader(nodeLoader, nodepos, nodeIndexFlags | NodeBlob, ctx);
     match.setown(static_cast<const CJHBlobNode *>(loaded));
     assertex(match->isBlob());
 
@@ -1843,7 +1861,7 @@ offset_t CKeyIndex::queryFirstBranchOffset()
         if (nextBranch == branchDepth)
             return branchOffset;
         IContextLogger * ctx = nullptr;
-        cur.setown(getIndexNodeUsingLoader(loader, branchOffset, NodeBranch, ctx));
+        cur.setown(getIndexNodeUsingLoader(loader, branchOffset, nodeIndexFlags | NodeBranch, ctx));
     }
 }
 
@@ -1980,7 +1998,7 @@ bool CKeyIndex::prewarmPage(INodeLoader & nodeLoader, offset_t offset, NodeType 
 {
     try
     {
-        Owned<const CJHTreeNode> page = getIndexNodeUsingLoader(nodeLoader, offset, type, nullptr);
+        Owned<const CJHTreeNode> page = getIndexNodeUsingLoader(nodeLoader, offset, nodeIndexFlags | type, nullptr);
         return page != nullptr;
     }
     catch(IException *E)
@@ -1999,7 +2017,7 @@ const CJHSearchNode *CKeyIndex::locateFirstLeafNode(INodeLoader & nodeLoader, IC
     {
         if (leafOffset == 0)
             return nullptr;
-        return getIndexNodeUsingLoader(nodeLoader, leafOffset, NodeLeaf, ctx);
+        return getIndexNodeUsingLoader(nodeLoader, leafOffset, nodeIndexFlags | NodeLeaf, ctx);
     }
 
     //Unusual - an index with no elements
@@ -2013,7 +2031,7 @@ const CJHSearchNode *CKeyIndex::locateFirstLeafNode(INodeLoader & nodeLoader, IC
         const CJHTreeNode * prev = cur;
         depth++;
         NodeType type = (depth < getBranchDepth()) ? NodeBranch : NodeLeaf;
-        cur = getIndexNodeUsingLoader(nodeLoader, cur->getFPosAt(0), type, ctx);
+        cur = getIndexNodeUsingLoader(nodeLoader, cur->getFPosAt(0), nodeIndexFlags | type, ctx);
         assertex(cur);
         prev->Release();
     }
@@ -2037,7 +2055,7 @@ const CJHSearchNode *CKeyIndex::locateLastLeafNode(INodeLoader & nodeLoader, ICo
         const CJHSearchNode * prev = cur;
         depth++;
         NodeType type = (depth < getBranchDepth()) ? NodeBranch : NodeLeaf;
-        cur = getIndexNodeUsingLoader(nodeLoader, cur->nextNodeFpos(), type, ctx);
+        cur = getIndexNodeUsingLoader(nodeLoader, cur->nextNodeFpos(), nodeIndexFlags | type, ctx);
         assertex(cur);
         prev->Release();
     }
@@ -2046,7 +2064,7 @@ const CJHSearchNode *CKeyIndex::locateLastLeafNode(INodeLoader & nodeLoader, ICo
     for (;;)
     {
         const CJHSearchNode * last = cur;
-        cur = getIndexNodeUsingLoader(nodeLoader, cur->nextNodeFpos(), NodeLeaf, ctx);
+        cur = getIndexNodeUsingLoader(nodeLoader, cur->nextNodeFpos(), nodeIndexFlags | NodeLeaf, ctx);
         if (!cur)
             return last;
         ::Release(last);
@@ -2267,6 +2285,7 @@ CKeyCursor::CKeyCursor(const CKeyCursor &from)
 {
     nodeKey = from.nodeKey;
     node.set(from.node);
+    nodeFilterFlags = from.nodeFilterFlags;
     for (unsigned i = 0; i < maxParentNodes; i++)
     {
         parents[i].set(from.parents[i]);
@@ -2295,6 +2314,22 @@ void CKeyCursor::reset(IContextLogger *ctx)
     eof = key.bloomFilterReject(*filter, ctx) || !filter->canMatch();
     if (!eof)
         setLow(0);
+
+    nodeFilterFlags = NodeNoFlags;
+    if (!eof)
+    {
+        if (filter->isUnfiltered())
+        {
+            nodeFilterFlags |= NodeSearchUnfiltered;
+        }
+        else
+        {
+            if (filter->lastFullSeg()+1 == filter->numFilterFields())
+                nodeFilterFlags |= NodeSearchAllKeyed;
+            if (filter->isSingleValue())
+                nodeFilterFlags |= NodeSearchSingleValue;
+        }
+    }
 }
 
 bool CKeyCursor::next(IContextLogger *ctx)
@@ -3188,6 +3223,20 @@ bool IndexRowFilter::canMatch() const
     return true;
 }
 
+bool IndexRowFilter::isSingleValue() const
+{
+    if (isUnfiltered())
+        return false;
+    unsigned last = lastRealSeg();
+    for (unsigned idx = 0; idx <= last; idx++)
+    {
+        const IFieldFilter &cur = queryFilter(idx);
+        if (!cur.isSingleValue())
+            return false;
+    }
+    return true;
+}
+
 //-------------------------------------------------------
 
 class CLazyKeyIndex final : implements IKeyIndex, public CInterface
@@ -3413,19 +3462,43 @@ private:
     cycle_t startCycles = 0;
 };
 
-const CJHTreeNode *CNodeCache::getCachedNode(const INodeLoader & nodeLoader, unsigned iD, offset_t pos, NodeType type, IContextLogger *ctx, bool isTLK)
+const CJHTreeNode *CNodeCache::getCachedNode(const INodeLoader & nodeLoader, unsigned iD, offset_t pos, NodeTypeWithFlags typeWithFlags, IContextLogger *ctx)
 {
     // MORE - could probably be improved - I think having the cache template separate is not helping us here
     // Also one cache per key would surely be faster, and could still use a global total
     if (!pos)
         return NULL;
 
+    NodeType type = (NodeType)(typeWithFlags & NodeTypeMask);
+    bool isTLK = (typeWithFlags & NodeInTLK) != 0;
+
     //Time how long it takes to resolve an item in the node cache, and record it as the blocked time.
     NodeCacheLookupTimer lookupTimer(ctx);
 
     // No benefit in caching the following, especially since they will evict useful pages
     if ((type == NodeMeta) || (type == NodeBloom))
-        return nodeLoader.loadNode(nullptr, pos);
+    {
+        cycle_t fetchCycles = 0;
+        cycle_t startLoadCycles = get_cycles_now();
+        const CJHTreeNode *node = nodeLoader.loadNode(&fetchCycles, pos);
+        cycle_t endLoadCycles = get_cycles_now();
+        cycle_t loadCycles = endLoadCycles - startLoadCycles;
+
+#ifdef PROTRACE_DETAILED
+        //Include the typeWithFlags in the bottom bits of the offset
+        protraceRecordAt(EventIndexLoad, startLoadCycles, getProtraceTicks(loadCycles), iD, pos|typeWithFlags);
+#else
+        protraceRecordAt(EventIndexLoad, startLoadCycles, getProtraceTicks(loadCycles));
+#endif
+
+        if (unlikely(recordingEvents()))
+        {
+            stat_type fetchTimeNs = cycle_to_nanosec(fetchCycles);
+            queryRecorder().recordIndexLoad(iD, pos, type, node->getMemSize(), cycle_to_nanosec(loadCycles) - fetchTimeNs, fetchTimeNs);
+        }
+
+        return node;
+    }
 
     //NOTE: TLK leaf nodes are currently cached along with branches, not with leaves.  It might be better if this was a separate cache.
     CacheType cacheType = isTLK ? CacheBranch : (CacheType)type;
@@ -3441,7 +3514,8 @@ const CJHTreeNode *CNodeCache::getCachedNode(const INodeLoader & nodeLoader, uns
         cycle_t loadCycles = endLoadCycles - startLoadCycles;
 
 #ifdef PROTRACE_DETAILED
-        protraceRecordAt(EventIndexLoad, startLoadCycles, getProtraceTicks(loadCycles), iD, pos);
+        //Include the typeWithFlags in the bottom bits of the offset
+        protraceRecordAt(EventIndexLoad, startLoadCycles, getProtraceTicks(loadCycles), iD, pos|typeWithFlags);
 #else
         protraceRecordAt(EventIndexLoad, startLoadCycles, getProtraceTicks(loadCycles));
 #endif
@@ -3507,7 +3581,7 @@ const CJHTreeNode *CNodeCache::getCachedNode(const INodeLoader & nodeLoader, uns
                 if (protraceIndexCacheEvents)
                 {
 #ifdef PROTRACE_DETAILED
-                    protraceRecord(EventIndexCacheHit, iD, pos);
+                    protraceRecord(EventIndexCacheHit, iD, pos|typeWithFlags);
 #else
                     protraceRecord(EventIndexCacheHit);
 #endif
@@ -3536,7 +3610,7 @@ const CJHTreeNode *CNodeCache::getCachedNode(const INodeLoader & nodeLoader, uns
     if (protraceIndexCacheEvents)
     {
 #ifdef PROTRACE_DETAILED
-        protraceRecord(EventIndexCacheMiss, iD, pos);
+        protraceRecord(EventIndexCacheMiss, iD, pos|typeWithFlags);
 #else
         protraceRecord(EventIndexCacheMiss);
 #endif
@@ -3602,7 +3676,7 @@ const CJHTreeNode *CNodeCache::getCachedNode(const INodeLoader & nodeLoader, uns
         cycle_t actualLoadCycles = endLoadCycles - startLoadCycles;
 
 #ifdef PROTRACE_DETAILED
-        protraceRecordAt(EventIndexLoad, startLoadCycles, getProtraceTicks(actualLoadCycles), iD, pos);
+        protraceRecordAt(EventIndexLoad, startLoadCycles, getProtraceTicks(actualLoadCycles), iD, pos|typeWithFlags);
 #else
         protraceRecordAt(EventIndexLoad, startLoadCycles, getProtraceTicks(actualLoadCycles));
 #endif

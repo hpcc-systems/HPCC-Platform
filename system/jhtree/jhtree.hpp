@@ -233,6 +233,7 @@ public:
     virtual unsigned getFieldOffset(unsigned idx) const override { return recInfo.getFixedOffset(idx); }
     virtual bool canMatch() const override;
     virtual void updateIndexFormat(const RtlRecord & actualRecInfo) override;
+    virtual bool isSingleValue() const override;
 };
 
 interface IIndexLookup : extends IInterface // similar to a small subset of IKeyManager

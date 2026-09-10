@@ -47,6 +47,7 @@ interface IIndexFilterList : public IInterface, public IIndexReadContext
     virtual bool canMatch() const = 0;
     virtual bool isUnfiltered() const = 0;
     virtual void updateIndexFormat(const RtlRecord & actualRecInfo) = 0;
+    virtual bool isSingleValue() const = 0;    // Does the filter narrow the supplied keyed fields to a single value (trailing fields may be wild)?
 };
 
 BITMASK_ENUM(TransitionMask);

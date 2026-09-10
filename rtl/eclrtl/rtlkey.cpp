@@ -47,6 +47,7 @@ public:
     virtual unsigned getSize() const override { return size; }
     virtual bool isWild() const override { return false; }
     virtual bool isEmpty() const override { return false; }
+    virtual bool isSingleValue() const override { return false; }
     virtual bool isSigned() const override { return false; }
     virtual bool isLittleEndian() const override { return false; }
     virtual unsigned numFieldsRequired() const override { return 0; }  // Should rename to queryFieldIdx or similar
@@ -103,6 +104,7 @@ public:
     virtual bool matchesBuffer(const void *keyval) const override;
     virtual void endRange(void *keyval) const override;
     virtual bool isEmpty() const override { return set->isEmptySet(); }
+    virtual bool isSingleValue() const override { return set->isSingleValue(); }
     virtual bool isWellKeyed() const override;
     virtual bool isOptional() const override { return optional; }
     virtual bool isSimple() const override { return true; }
@@ -292,6 +294,7 @@ public:
     virtual bool isWellKeyed() const override { return true; }
     virtual bool isOptional() const override { return optional; }
     virtual bool isSimple() const override { return true; }
+    virtual bool isSingleValue() const override { return val != nullptr; }
     virtual StringBuffer &describe(StringBuffer &out, const RtlTypeInfo &type) const override
     {
         size32_t size;

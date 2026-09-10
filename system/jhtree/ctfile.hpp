@@ -29,6 +29,11 @@
 #include "jio.hpp"
 #include "jfile.hpp"
 
+#include "jhconst.hpp"
+BITMASK_ENUM(NodeTypeWithFlags);
+inline constexpr NodeTypeWithFlags operator | (NodeTypeWithFlags l, NodeType r) { return (NodeTypeWithFlags)((unsigned)l | (unsigned)r); }
+inline constexpr NodeTypeWithFlags operator | (NodeType l, NodeTypeWithFlags r) { return (NodeTypeWithFlags)((unsigned)l | (unsigned)r); }
+
 #define NODESIZE 8192
 
 #define TRAILING_HEADER_ONLY  0x01 // Leading header not updated - use trailing one
@@ -104,28 +109,6 @@ struct __declspec(novtable) jhtree_decl KeyHdr
     __int64 bloomHead; /* fpos of bloom table data, if present 100x */
     __uint64 partitionFieldMask; /* Bitmap indicating partition keyed fields 108x */
     __int64 firstLeaf; /* fpos of first leaf node 110x */
-};
-
-enum NodeType : byte
-{
-    NodeBranch = 0,
-    NodeLeaf = 1,
-    NodeBlob = 2,
-    NodeMeta = 3,
-    NodeBloom = 4,
-//The following is never stored and only used in code as a value that does not match any of the above.
-    NodeNone = 127,
-};
-
-enum CompressionType : byte
-{
-    LegacyCompression = 0,    // Keys built prior to 8.12.x will always have 0 here
-    // Additional compression formats can be added here...
-    SplitPayload = 1,               // A proof-of-concept using separate compression blocks for keyed fields vs payload
-    InplaceCompression = 2,         // Inplace compression - used for hybrid branches and inplace leaves and branches.
-    ExperimentalCompression = 3,    // Placeholder for testing new compression methods
-    NewBlobCompression = 4,         // Blobs encoded with non-lzw compression
-    BlockCompression = 5,           // Used for leaves in hybrid indexes
 };
 
 //#pragma pack(1)

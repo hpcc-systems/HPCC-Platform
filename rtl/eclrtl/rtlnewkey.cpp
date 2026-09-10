@@ -1425,6 +1425,11 @@ public:
         return false;
     }
 
+    virtual bool isSingleValue() const override
+    {
+        return false;
+    }
+
     virtual unsigned queryScore() const override
     {
         // MORE - the score should probably depend on the number and nature of ranges too.
@@ -1452,6 +1457,7 @@ public:
     virtual bool matches(const RtlRow & row) const override;
     virtual bool isEmpty() const override;
     virtual bool isWild() const override;
+    virtual bool isSingleValue() const override { return values->querySingleValue() != nullptr; }
 
 //More complex index matching
     virtual unsigned numRanges() const override;
@@ -1560,6 +1566,7 @@ public:
     virtual bool matches(const RtlRow & row) const override;
     virtual bool isEmpty() const override { return false; }
     virtual bool isWild() const override { return false; }
+    virtual bool isSingleValue() const override { return true; }
 
 //More complex index matching
     virtual unsigned numRanges() const override { return 1; };
@@ -1750,6 +1757,9 @@ public:
 
     virtual StringBuffer & serialize(StringBuffer & out) const override;
     virtual MemoryBuffer & serialize(MemoryBuffer & out) const override;
+
+    // A substring match never guarantees the full field is a single value
+    virtual bool isSingleValue() const override { return false; }
 
 protected:
     Linked<SharedRtlTypeInfo> subType;

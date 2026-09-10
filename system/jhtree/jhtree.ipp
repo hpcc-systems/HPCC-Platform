@@ -98,13 +98,14 @@ protected:
     CKeyHdr *keyHdr;
     CNodeCache *cache;
     const CJHSearchNode *rootNode;
+    NodeTypeWithFlags nodeIndexFlags = NodeNoFlags;
     mutable RelaxedAtomic<unsigned> keySeeks;
     mutable RelaxedAtomic<unsigned> keyScans;
     mutable offset_t latestGetNodeOffset;  // NOT SAFE but only used by keydiff
 
     CJHTreeNode *loadNodeFromMemory(const void *nodeData, offset_t pos, bool needsCopy) const;
     CJHTreeNode *_createNode(const NodeHdr &hdr) const;
-    const CJHSearchNode *getIndexNodeUsingLoader(const INodeLoader &nodeLoader, offset_t offset, NodeType type, IContextLogger *ctx) const;
+    const CJHSearchNode *getIndexNodeUsingLoader(const INodeLoader &nodeLoader, offset_t offset, NodeTypeWithFlags typeWithFlags, IContextLogger *ctx) const;
     const CJHBlobNode *getBlobNode(const INodeLoader &nodeLoader, offset_t nodepos, IContextLogger *ctx);
 
     CKeyIndex(unsigned _iD, const char *_name, bool _forceTLK);
@@ -244,6 +245,7 @@ protected:
     unsigned int parentNodeKeys[maxParentNodes] = {0};
     unsigned int nodeKey;
     mutable PayloadReference activePayload;
+    NodeTypeWithFlags nodeFilterFlags = NodeNoFlags;   // Set by reset() from the filter; narrowing calls (nextRange/incrementKey/fixSortSegs) do not recalculate it
     
     mutable bool fullBufferValid = false;
     bool eof=false;
@@ -294,7 +296,7 @@ public:
 
     const CJHSearchNode *getCursorNode(offset_t offset, NodeType type, IContextLogger *ctx) const
     {
-        return key.getIndexNodeUsingLoader(*this, offset, type, ctx);
+        return key.getIndexNodeUsingLoader(*this, offset, type | nodeFilterFlags, ctx);
     }
 
 protected:
@@ -373,6 +375,7 @@ public:
     virtual bool canMatch() const override;
     virtual bool isUnfiltered() const override;
     virtual void updateIndexFormat(const RtlRecord & actualRecInfo) override;
+    virtual bool isSingleValue() const override;
 
 protected:
     IndexRowFilter(const IndexRowFilter &_from, const char *fixedVals, unsigned sortFieldOffset);
