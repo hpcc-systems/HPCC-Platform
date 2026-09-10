@@ -6261,7 +6261,7 @@ void CWsDfuEx::dFUFileAccessCommon(IEspContext &context, const CDfsLogicalFileNa
     readCtx.setValue("jobid", requestId ? requestId : "");
     readCtx.setValue("expirySecs", StringBuffer().append(expirySecs).str());
 
-    Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(fileName, userDesc, AccessMode::readSequential, false, true, nullptr, defaultPrivilegedUser, lockTimeoutMs, readCtx); // lock super-owners
+    Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(fileName, userDesc, AccessMode::readSequential | AccessMode::external, false, true, nullptr, defaultPrivilegedUser, lockTimeoutMs, readCtx); // lock super-owners
     if (!df)
         throw MakeStringException(ECLWATCH_FILE_NOT_EXIST,"Cannot find file '%s'.", fileName.str());
 

@@ -3356,6 +3356,55 @@ bool hasTLK(IDistributedFile *f)
     return isPartTLK(&f->queryPart(np-1));
 }
 
+//Ensure that enough time has passed from when the file was last modified for reads to be consistent
+//Important for blob storage or remote, geographically synchronized storage
+//Only used for lookups flagged AccessMode::external, where the parts are read outside this process
+//(and so are not covered by the per-part write-sync checks in jfile)
+//NB: operates on the raw file tree, so that it can be used both by CDistributedFile and by the
+//getFileTree client path (which never constructs a CDistributedFile)
+static void checkFileWriteSync(const IPropertyTree *fileTree, const char *logicalName)
+{
+    time_t modifiedTime = 0;
+    time_t now = 0;
+
+    Owned<IPropertyTreeIterator> iter = fileTree->getElements("Cluster");
+    ForEach(*iter)
+    {
+        const char * name = iter->query().queryProp("@name");
+        unsigned marginMs = getWriteSyncMarginMs(name);
+        if (marginMs)
+        {
+            if (0 == modifiedTime)
+            {
+                StringBuffer modifiedStr;
+                if (!fileTree->getProp("@modified", modifiedStr))
+                    return;
+                CDateTime modified;
+                modified.setString(modifiedStr);
+                modifiedTime = modified.getSimple();
+                if (0 == modifiedTime)
+                    return;
+            }
+
+            if (0 == now)
+                now = time(&now);
+
+            //Round the elapsed time down - so that a change on the last ms of one time period does not count as a whole second of elapsed time
+            //This could be avoided if the modified time was more granular
+            unsigned __int64 elapsedMs = now > modifiedTime ? (now - modifiedTime) * 1000 : 0; // guard against clock < @modified
+            if (elapsedMs >= 1000)
+                elapsedMs -= 999;
+
+            if (unlikely(elapsedMs < marginMs))
+            {
+                LOG(MCuserProgress, "Delaying external access to %s on %s for %ums to ensure write sync", logicalName, name, (unsigned)(marginMs - elapsedMs));
+                MilliSleep(marginMs - elapsedMs);
+                now = 0; // re-evaluate now - unlikely to actually happen
+            }
+        }
+    }
+}
+
 
 /**
  * A template class which implements the common methods of an IDistributedFile interface.
@@ -9083,6 +9132,8 @@ IDistributedFile *CDistributedFileDirectory::dolookup(CDfsLogicalFileName &_logi
                     }
                     CDistributedFile *ret = new CDistributedFile(this,fcl.detach(),*logicalname,accessMode,user);  // found
                     ret->setSuperOwnerLock(superOwnerLock.detach());
+                    if (isExternalAccess(accessMode))
+                        checkFileWriteSync(ret->queryRoot(), ret->queryLogicalName());
                     return ret;
                 }
                 // now super file
@@ -13364,6 +13415,8 @@ IPropertyTree *CDistributedFileDirectory::getFileTree(const char *lname, IUserDe
     }
     if (foreigndali && appendForeign)
         resolveForeignFiles(ret,foreigndali);
+    if (isExternalAccess(accessMode))
+        checkFileWriteSync(ret, lname);
     return ret.getClear();
 }
 
