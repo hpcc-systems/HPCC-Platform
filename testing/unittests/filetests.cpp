@@ -1137,6 +1137,7 @@ class RowStreamTest : public CppUnit::TestFixture
         CPPUNIT_TEST(testCompressedViaFileIO);
         CPPUNIT_TEST(testParallelReadAheadResetAfterEOF);
         CPPUNIT_TEST(testParallelReadAheadPeekBuffers);
+        CPPUNIT_TEST(testParallelReadAheadExactChunkMultiple);
         CPPUNIT_TEST(testOffset);
         CPPUNIT_TEST(testEdgeCases);
         CPPUNIT_TEST(cleanup);
@@ -1533,6 +1534,43 @@ public:
         CPPUNIT_ASSERT(data != nullptr);
         CPPUNIT_ASSERT(got >= 80);
         assertStreamBytes(data, pos, 80);
+    }
+
+    // An input whose length is an exact multiple of the chunk size never produces a short read,
+    // which is the only way the consumer recognises the end of the stream.  Reading one to
+    // completion checks that the final empty chunk is still published.
+    void testParallelReadAheadExactChunkMultiple()
+    {
+        static constexpr const char * filename = "rowstream_test_uncompressed.tmp";
+        static constexpr size32_t chunkSize = 0x2000;
+        static constexpr unsigned numThreads = 8;
+
+        Owned<IFile> file = createIFile(filename);
+        if (!file->exists())
+        {
+            Owned<IFileIO> out = file->open(IFOcreate);
+            writeTestRows(out, numRows);
+        }
+        Owned<IFileIO> io = file->open(IFOread);
+        offset_t alignedSize = (io->size() / chunkSize) * chunkSize;
+        CPPUNIT_ASSERT(alignedSize > (offset_t)numThreads * chunkSize); // must span more than one lap of the ring
+
+        Owned<IBufferedSerialInputStream> stream = createParallelReadAheadInputStream(io, numThreads, chunkSize, ParallelReadAheadArbitraryPeek, 0, alignedSize);
+
+        MemoryAttr buf(chunkSize);
+        byte * data = static_cast<byte *>(buf.mem());
+        offset_t pos = 0;
+        while (pos < alignedSize)
+        {
+            size32_t want = chunkSize;
+            if (want > alignedSize - pos)
+                want = (size32_t)(alignedSize - pos);
+            CPPUNIT_ASSERT_EQUAL(want, stream->read(want, data));
+            assertStreamBytes(data, pos, want);
+            pos += want;
+        }
+        byte b;
+        CPPUNIT_ASSERT_EQUAL((size32_t)0, stream->read(1, &b));
     }
 
     void runOffsetUncompressedTest(unsigned firstRow, unsigned numOffsetRows, offset_t byteOffset, offset_t byteLen, const ReadAheadConfig & config)

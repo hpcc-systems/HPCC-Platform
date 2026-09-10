@@ -96,7 +96,7 @@ struct __declspec(novtable) jhtree_decl KeyHdr
     unsigned short  xflmod; /* extended file mode info      9ex */
     __int64 defrel; /* file def release mask        a0x */
     __int64 hghtrn; /* tran# high water mark for idx    a8x */
-    __int64 hdrseq; /* wrthdr sequence #            b0x */
+    __int64 branchDepth; /* depth of branch nodes            b0x */
     __int64 tstamp; /* update time stamp            b8x */
     __int64 rs3[3]; /* future use               c0x */
     __int64 fposOffset; /* amount by which file positions are biased        d8x */
@@ -109,7 +109,13 @@ struct __declspec(novtable) jhtree_decl KeyHdr
     __int64 bloomHead; /* fpos of bloom table data, if present 100x */
     __uint64 partitionFieldMask; /* Bitmap indicating partition keyed fields 108x */
     __int64 firstLeaf; /* fpos of first leaf node 110x */
+    __int64 firstBranch[4]; /* fpos of first branch node at each level; [0] is closest to leaves */
+    __int64 maxBranch; /* offset after the last branch node */
+    __int64 leafCount; /* number of leaf nodes */
+    __int64 blobCount; /* number of blob nodes */
+    unsigned short minRowsPerLeafExceptLast; /* minimum rows in a leaf node, excluding the last leaf */
 };
+static_assert(sizeof(KeyHdr) <= 0x200, "KeyHdr must fit within the minimum supported key node header space");
 
 //#pragma pack(1)
 #pragma pack(push,1)
@@ -183,6 +189,11 @@ public:
     inline __int64 getNumRecords() const { return hdr.nument; }
     inline unsigned getNodeSize() const { return hdr.nodeSize; }
     inline offset_t getFirstLeafPos() const { return (offset_t)hdr.firstLeaf; }
+    inline offset_t getFirstBranchPos(unsigned level) const { return level < _elements_in(hdr.firstBranch) ? (offset_t)hdr.firstBranch[level] : 0; }
+    inline offset_t queryMaxBranch() const { return hdr.maxBranch; }
+    inline __int64 getLeafCount() const { return hdr.leafCount; }
+    inline __int64 getBlobCount() const { return hdr.blobCount; }
+    inline unsigned short getMinRowsPerLeafExceptLast() const { return hdr.minRowsPerLeafExceptLast; }
     inline bool hasSpecialFileposition() const { return true; }
     inline bool isRowCompressed() const { return (hdr.ktype & (HTREE_QUICK_COMPRESSED_KEY|HTREE_VARSIZE)) == HTREE_QUICK_COMPRESSED_KEY; }
     inline offset_t queryBloomHead() const { return hdr.bloomHead; }
@@ -442,6 +453,7 @@ public:
     ~CWriteNodeBase();
 
     virtual void write(IFileIOStream *, CRC32 *crc) override;
+    unsigned numKeys() const { return hdr.numKeys; }
     void setLeftSib(offset_t leftSib) { hdr.leftSib = leftSib; }
     void setRightSib(offset_t rightSib) { hdr.rightSib = rightSib; }
 };
