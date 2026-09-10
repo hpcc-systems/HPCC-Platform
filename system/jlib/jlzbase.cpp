@@ -820,8 +820,8 @@ void CStreamExpander::expand(void *buf)
             next = *src++;
     }
 
-    //MORE: The size is not known at this point.  Only calculate if interested in details.
-    ProTraceTaskScopeTracker scope(EventTask::Decompressing);
+    //The compressed size is not known until all the blocks have been walked, so report it on completion.
+    ProTraceTaskScopeDelayedTracker scope(EventTask::Decompressing);
 
     char * out = (char *)buf;
     const byte * sizes = in;
@@ -840,7 +840,10 @@ void CStreamExpander::expand(void *buf)
     }
 
     //finally fill with any uncompressed data
-    memcpy(out+expandedOffset, src, outlen - expandedOffset);
+    size32_t trailingSize = outlen - expandedOffset;
+    memcpy(out+expandedOffset, src, trailingSize);
+
+    scope.noteComplete(((__uint64)(size32_t)(src + trailingSize - in) << 32) | outlen);
 }
 
 size32_t CStreamExpander::init(const void *blk)

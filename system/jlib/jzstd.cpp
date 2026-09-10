@@ -64,12 +64,13 @@ public:
 
     virtual size32_t expandDirect(size32_t destSize, void * dest, size32_t srcSize, const void * src) override
     {
-        ProTraceTaskScopeTracker scope(EventTask::Decompressing, srcSize);
+        ProTraceTaskScopeDelayedTracker scope(EventTask::Decompressing);
 
         assertex(destSize != 0);
         size_t result = ZSTD_decompress(dest, destSize, src, srcSize);
         if (ZSTD_isError(result))
             throw makeStringExceptionV(JLIBERR_CompressZstdDecompressionErrorS, "ZStd decompression error: %s", ZSTD_getErrorName(result));
+        scope.noteComplete(((__uint64)srcSize << 32) | (size32_t)result);
         return (size32_t)result;
     }
 
@@ -110,7 +111,7 @@ public:
 
     virtual size32_t expandDirect(size32_t destSize, void * dest, size32_t srcSize, const void * src) override
     {
-        ProTraceTaskScopeTracker scope(EventTask::Decompressing, srcSize);
+        ProTraceTaskScopeDelayedTracker scope(EventTask::Decompressing);
 
         assertex(destSize != 0);
         size_t result = ZSTD_decompress(dest, destSize, src, srcSize);
@@ -121,6 +122,7 @@ public:
             //If the buffer is too small, return 0, and the caller can try again
             return 0;
         }
+        scope.noteComplete(((__uint64)srcSize << 32) | (size32_t)result);
         return (size32_t)result;
     }
 
@@ -283,13 +285,14 @@ public:
 
     virtual size32_t expandDirect(size32_t destSize, void * dest, size32_t srcSize, const void * src) override
     {
-        ProTraceTaskScopeTracker scope(EventTask::Decompressing, srcSize);
+        ProTraceTaskScopeDelayedTracker scope(EventTask::Decompressing);
 
         assertex(destSize != 0);
         size_t result = ZSTD_decompress(dest, destSize, src, srcSize);
         if (ZSTD_isError(result))
             throw makeStringExceptionV(JLIBERR_CompressZstdDecompressionErrorS_1, "ZStd decompression error: %s", ZSTD_getErrorName(result));
 
+        scope.noteComplete(((__uint64)srcSize << 32) | (size32_t)result);
         return (size32_t)result;
     }
 

@@ -690,6 +690,9 @@ public:
     {
         if (!outlen)
             return;
+
+        //The compressed size is only known once all the chunks have been walked
+        ProTraceTaskScopeDelayedTracker scope(EventTask::Decompressing);
         if (buf) {
             if (bufalloc)
                 free(outbuf);
@@ -705,12 +708,12 @@ public:
                 throw MakeStringException(MSGAUD_operator,0, "Out of memory in FastLZExpander::expand, requesting %d bytes", bufalloc);
         }
         size32_t done = 0;
+        size32_t srcSize = 0;
         for (;;) {
             const size32_t szchunk = *in;
             in++;
+            srcSize += sizeof(size32_t) + szchunk;
             if (szchunk+done<outlen) {
-                ProTraceTaskScopeTracker scope(EventTask::Decompressing, szchunk);
-
                 size32_t written = fastlz_decompress(in,szchunk,(byte *)buf+done,outlen-done);
                 done += written;
                 if (!written||(done>outlen))
@@ -724,6 +727,8 @@ public:
             }
             in = (const size32_t *)(((const byte *)in)+szchunk);
         }
+
+        scope.noteComplete(((__uint64)srcSize << 32) | outlen);
     }
 
 };

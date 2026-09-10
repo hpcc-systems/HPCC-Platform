@@ -2611,18 +2611,21 @@ protected:
     unsigned sourceIdx = 0;
     IEngineRowStream *inputStream;
     IRecordPullerCallback *helper;
+    const unsigned activityId;
     bool groupAtOnce, eog;
     std::atomic<bool> eof;
 
 public:
-    RecordPullerThread(bool _groupAtOnce) 
-        : RestartableThread("RecordPullerThread"), groupAtOnce(_groupAtOnce)
+    RecordPullerThread(unsigned _activityId, bool _groupAtOnce)
+        : RestartableThread("RecordPullerThread"), activityId(_activityId), groupAtOnce(_groupAtOnce)
     {
         input = NULL;
         inputStream = NULL;
         helper = NULL;
         eof = eog = FALSE;
     }
+
+    inline unsigned queryActivityId() const { return activityId; }
 
     inline unsigned __int64 queryTotalCycles() const
     {
@@ -2687,14 +2690,14 @@ public:
         }
         catch (...)
         {
-            helper->fireException(MakeStringException(ROXIE_INTERNAL_ERROR, "Unexpected exception caught in RecordPullerThread::start"));
+            helper->fireException(MakeStringException(ROXIE_INTERNAL_ERROR, "Unexpected exception caught in RecordPullerThread::start (activity %u)", activityId));
         }
     }
 
     void stop()
     {
         if (traceStartStop)
-            DBGLOG("RecordPullerThread::stop");
+            DBGLOG("RecordPullerThread::stop (activity %u)", activityId);
 
         //Force the reading thread to terminate
         eof = true;
@@ -2713,7 +2716,7 @@ public:
 
     virtual int run()
     {
-        TaskScopeTracker task(EventTask::Readahead);
+        TaskScopeTracker task(EventTask::Readahead, (__uint64)activityId);
 
         try
         {
@@ -2729,7 +2732,7 @@ public:
         }
         catch (...)
         {
-            helper->fireException(MakeStringException(ROXIE_INTERNAL_ERROR, "Unexpected exception caught in RecordPullerThread::run"));
+            helper->fireException(MakeStringException(ROXIE_INTERNAL_ERROR, "Unexpected exception caught in RecordPullerThread::run (activity %u)", activityId));
         }
 
         return 0;
@@ -2830,7 +2833,7 @@ class CRoxieServerReadAheadInput : implements IEngineRowStream, implements IFina
 
 public:
     IMPLEMENT_IINTERFACE;
-    CRoxieServerReadAheadInput(IRoxieAgentContext *_ctx, unsigned _preload) : ctx(_ctx), puller(true), preload(_preload)
+    CRoxieServerReadAheadInput(IRoxieAgentContext *_ctx, unsigned _activityId, unsigned _preload) : ctx(_ctx), puller(_activityId, true), preload(_preload)
     {
         eof = false;
         disabled = (ctx->queryDebugContext() != NULL);
@@ -3394,6 +3397,9 @@ public:
             throw exception.getLink();
         if (!executed)
         {
+            const bool shouldRecordTask = (parentExtractSize == 0);
+            TaskScopeTracker task(EventTask::Sink, (__uint64)activityId, shouldRecordTask);
+
             try
             {
                 start(parentExtractSize, parentExtract, false);
@@ -10022,7 +10028,7 @@ class CRoxieServerPipeThroughActivity : public CRoxieServerActivity, implements 
 public:
 
     CRoxieServerPipeThroughActivity(IRoxieAgentContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
-        : CRoxieServerActivity(_ctx, _factory, _probeManager), helper((IHThorPipeThroughArg &)basehelper), puller(false)
+        : CRoxieServerActivity(_ctx, _factory, _probeManager), helper((IHThorPipeThroughArg &)basehelper), puller(activityId, false)
     {
         recreate = helper.recreateEachRow();
         groupSignalled = true;
@@ -10875,6 +10881,9 @@ public:
             throw(exception.getLink());
         if (!executed)
         {
+            const bool shouldRecordTask = (parentExtractSize == 0);
+            TaskScopeTracker task(EventTask::Sink, (__uint64)activityId, shouldRecordTask);
+
             try
             {
                 executed = true;
@@ -13327,7 +13336,7 @@ public:
     {
         if (!idx && (helper.getJoinFlags() & JFparallel) != 0)
         {
-            puller.setown(new CRoxieServerReadAheadInput(ctx, ctx->queryOptions().parallelJoinPreload));
+            puller.setown(new CRoxieServerReadAheadInput(ctx, activityId, ctx->queryOptions().parallelJoinPreload));
             puller->setInput(0, _sourceIdx, _in);
             _in = puller;
             _sourceIdx = 0;
@@ -13896,8 +13905,8 @@ class CRoxieThreadedConcatReader : implements IRecordPullerCallback, public CInt
 {
 public:
     IMPLEMENT_IINTERFACE;
-    CRoxieThreadedConcatReader(InterruptableSemaphore &_ready, bool _grouped)
-    : puller(false), ready(_ready), atEog(true), eof(false), grouped(_grouped)
+    CRoxieThreadedConcatReader(InterruptableSemaphore &_ready, unsigned _activityId, bool _grouped)
+    : puller(_activityId, false), ready(_ready), atEog(true), eof(false), grouped(_grouped)
     {
     }
 
@@ -14035,7 +14044,7 @@ public:
         nextPuller = 0;
         readyPending = 0;
         for (unsigned i = 0; i < numInputs; i++)
-            pullers.append(*new CRoxieThreadedConcatReader(ready, _grouped));
+            pullers.append(*new CRoxieThreadedConcatReader(ready, activityId, _grouped));
 
     }
 
@@ -14468,6 +14477,9 @@ public:
 
     virtual void execute(unsigned parentExtractSize, const byte * parentExtract)
     {
+        const bool shouldRecordTask = (parentExtractSize == 0);
+        TaskScopeTracker task(EventTask::Sink, (__uint64)activityId, shouldRecordTask);
+
         try
         {
             start(parentExtractSize, parentExtract, false);
@@ -15469,7 +15481,7 @@ public:
     CRoxieServerPrefetchProjectActivity(IRoxieAgentContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
         : CRoxieServerActivity(_ctx, _factory, _probeManager),
         helper((IHThorPrefetchProjectArg &) basehelper),
-        puller(false)
+        puller(activityId, false)
     {
         isThreaded = (helper.getFlags() & PPFsequential) == 0;
         if (helper.getFlags() & PPFnulltransform)
@@ -19680,7 +19692,7 @@ public:
     {
         if (!idx && (helper.getJoinFlags() & JFparallel) != 0)
         {
-            puller.setown(new CRoxieServerReadAheadInput(ctx, ctx->queryOptions().parallelJoinPreload));
+            puller.setown(new CRoxieServerReadAheadInput(ctx, activityId, ctx->queryOptions().parallelJoinPreload));
             puller->setInput(0, _sourceIdx, _in);
             _in = puller;
             _sourceIdx = 0;
@@ -20176,7 +20188,7 @@ public:
     {
         if (!idx && (helper.getJoinFlags() & JFparallel) != 0)
         {
-            puller.setown(new CRoxieServerReadAheadInput(ctx, ctx->queryOptions().parallelJoinPreload));
+            puller.setown(new CRoxieServerReadAheadInput(ctx, activityId, ctx->queryOptions().parallelJoinPreload));
             puller->setInput(0, _sourceIdx, _in);
             _in = puller;
             _sourceIdx = 0;
@@ -21556,6 +21568,9 @@ public:
             throw(exception.getLink());
         if (!executed)
         {
+            const bool shouldRecordTask = (parentExtractSize == 0);
+            TaskScopeTracker task(EventTask::Sink, (__uint64)activityId, shouldRecordTask);
+
             try
             {
                 executed = true;
@@ -25613,7 +25628,7 @@ class CRoxieServerFetchActivity : public CRoxieServerActivity, implements IRecor
 
 public:
     CRoxieServerFetchActivity(IRoxieAgentContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, const RemoteActivityId &_remoteId, IFilePartMap *_map)
-        : CRoxieServerActivity(_ctx, _factory, _probeManager), helper((IHThorFetchBaseArg &)basehelper), map(_map), remote(_ctx, this, _remoteId, meta.queryOriginal(), helper, *this, true, true, false), puller(false)
+        : CRoxieServerActivity(_ctx, _factory, _probeManager), helper((IHThorFetchBaseArg &)basehelper), map(_map), remote(_ctx, this, _remoteId, meta.queryOriginal(), helper, *this, true, true, false), puller(activityId, false)
     {
         needsRHS = helper.transformNeedsRhs();
         if (needsRHS)
@@ -26340,7 +26355,7 @@ public:
           keySet(_keySet),
           translators(_translators),
           remote(_ctx, this, _remoteId, 0, helper, *this, true, true, false),
-          puller(false),
+          puller(activityId, false),
           indexReadMeta(_indexReadMeta),
           joinHandler(_joinHandler),
           isLocal(_isLocal)
@@ -26715,7 +26730,7 @@ public:
         : CRoxieServerActivity(_ctx, _factory, _probeManager),
           helper((IHThorKeyedJoinArg &)basehelper), 
           remote(_ctx, this, _remoteId, helper, *this, isFull, _isSimple, puller, *this),
-          puller(false),
+          puller(activityId, false),
           joinFlags(_joinFlags), 
           atMost(0),
           abortLimit(0),
@@ -27754,6 +27769,9 @@ public:
             throw(exception.getLink());
         if (!executed)
         {
+            const bool shouldRecordTask = (parentExtractSize == 0);
+            TaskScopeTracker task(EventTask::Sink, (__uint64)activityId, shouldRecordTask);
+
             try
             {
                 executed = true;
@@ -28330,9 +28348,6 @@ protected:
         {}
         virtual void threadmain() override
         {
-            const bool shouldRecordTask = (parentExtractSize == 0);
-            TaskScopeTracker task(EventTask::Sink, shouldRecordTask);
-
             try
             {
                 sink.execute(parentExtractSize, parentExtract);
@@ -28369,9 +28384,6 @@ protected:
         {}
         virtual void threadmain() override
         {
-            const bool shouldRecordTask = (parentExtractSize == 0);
-            TaskScopeTracker task(EventTask::Sink, shouldRecordTask);
-
             try
             {
                 sink.execute(parentExtractSize, parentExtract);
@@ -28627,11 +28639,6 @@ public:
 
     void doExecute(unsigned parentExtractSize, const byte * parentExtract)
     {
-        const bool shouldRecordTask = (parentExtractSize == 0);
-
-        //One sink will be executed on this thread - other threads should instantiate this before executing the sinks.
-        TaskScopeTracker task(EventTask::Sink, shouldRecordTask);
-
         if (sinks.ordinality()==1)
             sinks.item(0).execute(parentExtractSize, parentExtract);
 #ifdef PARALLEL_EXECUTE
@@ -28684,10 +28691,6 @@ public:
                         parent(_parent), parentExtractSize(_parentExtractSize), parentExtract(_parentExtract), sinks(_sinks) { }
                     void Do(unsigned i)
                     {
-                        bool onMainThread = (i == sinks.ordinality() - 1);
-                        const bool shouldRecordTask = (parentExtractSize == 0) && !onMainThread;
-                        TaskScopeTracker task(EventTask::Sink, shouldRecordTask);
-
                         try
                         {
                             sinks.item(i).execute(parentExtractSize, parentExtract);

@@ -257,10 +257,12 @@ public:
 
     virtual size32_t expandDirect(size32_t destSize, void * dest, size32_t srcSize, const void * src) override
     {
-        ProTraceTaskScopeTracker scope(EventTask::Decompressing, srcSize);
+        ProTraceTaskScopeDelayedTracker scope(EventTask::Decompressing);
 
         assertex(destSize != 0);
-        return LZ4_decompress_safe((const char *)src, (char *)dest, srcSize, destSize);
+        size32_t expandedSize = LZ4_decompress_safe((const char *)src, (char *)dest, srcSize, destSize);
+        scope.noteComplete(((__uint64)srcSize << 32) | expandedSize);
+        return expandedSize;
     }
 
 public:
@@ -289,10 +291,12 @@ class CLZ4Expander final : public CBlockExpander
 public:
     virtual size32_t expandDirect(size32_t destSize, void * dest, size32_t srcSize, const void * src) override
     {
-        ProTraceTaskScopeTracker scope(EventTask::Decompressing, srcSize);
+        ProTraceTaskScopeDelayedTracker scope(EventTask::Decompressing);
 
         assertex(destSize != 0);
-        return LZ4_decompress_safe((const char *)src, (char *)dest, srcSize, destSize);
+        size32_t expandedSize = LZ4_decompress_safe((const char *)src, (char *)dest, srcSize, destSize);
+        scope.noteComplete(((__uint64)srcSize << 32) | expandedSize);
+        return expandedSize;
     }
 
     virtual bool supportsBlockDecompression() const override
@@ -428,10 +432,12 @@ public:
 
     virtual size32_t expandDirect(size32_t destSize, void * dest, size32_t srcSize, const void * src) override
     {
-        ProTraceTaskScopeTracker scope(EventTask::Decompressing, srcSize);
+        ProTraceTaskScopeDelayedTracker scope(EventTask::Decompressing);
 
         assertex(destSize != 0);
-        return LZ4_decompress_safe((const char *)src, (char *)dest, srcSize, destSize);
+        size32_t expandedSize = LZ4_decompress_safe((const char *)src, (char *)dest, srcSize, destSize);
+        scope.noteComplete(((__uint64)srcSize << 32) | expandedSize);
+        return expandedSize;
     }
 
 protected:

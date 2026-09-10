@@ -507,8 +507,9 @@ void CLZWExpander::expand(void *buf)
     if (!outlen)
         return;
 
-    //The input size is not known at this point - so use the output size for the trace.
-    ProTraceTaskScopeTracker scope(EventTask::Decompressing, outlen);
+    //The input size is not known until the code stream has been walked, so report it on completion.
+    ProTraceTaskScopeDelayedTracker scope(EventTask::Decompressing);
+    const unsigned char * srcStart = inbytes;
     if (buf) {
         if (bufalloc)
             free(outbuf);
@@ -574,6 +575,9 @@ void CLZWExpander::expand(void *buf)
             *(out++)=(unsigned char)*(sp++);
         }
     }
+
+    //innext is the end of the last group of codes read, so this may slightly overestimate the input size.
+    scope.noteComplete(((__uint64)(size32_t)(innext - srcStart) << 32) | outlen);
 }
 
 
@@ -1526,8 +1530,8 @@ public:
         if (!outlen)
             return;
 
-        //outlen is not the compressed size, but this is not used enough to be worth fixing
-        ProTraceTaskScopeTracker scope(EventTask::Decompressing, outlen);
+        //The compressed size is only known once all the rows have been expanded
+        ProTraceTaskScopeDelayedTracker scope(EventTask::Decompressing);
         if (buf) {
             if (bufalloc)
                 free(outbuf);
@@ -1542,6 +1546,7 @@ public:
         }
         if (outlen<recsize)
             throw MakeStringException(JLIBERR_CompressCrdiffexpanderInvalidBufferFormat,"CRDiffExpander: invalid buffer format");
+        const unsigned char *srcStart = in;
         unsigned char *out=outbuf;
         memcpy(out,in,recsize);
         const unsigned char *prev = out;
@@ -1557,6 +1562,8 @@ public:
             out += recsize;
             remaining -= recsize;
         }
+
+        scope.noteComplete(((__uint64)(size32_t)(in - srcStart) << 32) | outlen);
     }
 
 

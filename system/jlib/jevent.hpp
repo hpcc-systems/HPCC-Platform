@@ -782,6 +782,7 @@ extern jlib_decl bool startComponentRecording(const char * component, const char
 class ProTraceTaskScopeTracker
 {
 public:
+#ifdef _USE_PROTRACE
     ProTraceTaskScopeTracker(EventTask _task, bool _enabled = true)
         : task(_task), enabled(_enabled)
     {
@@ -789,17 +790,23 @@ public:
             protraceRecordTaskStart(task);
     }
 
-    // Constructor that allows an optional size to be provided
-    ProTraceTaskScopeTracker(EventTask _task, [[maybe_unused]] size32_t size, bool _enabled = true)
+    // Constructor that allows an optional payload to be provided
+    ProTraceTaskScopeTracker(EventTask _task, [[maybe_unused]] __uint64 extra, bool _enabled = true)
         : task(_task), enabled(_enabled)
     {
         if (enabled)
 #ifdef PROTRACE_TASK_SIZES
-            protraceRecordTaskStart(task, size);
+            protraceRecordTaskStart(task, extra);
 #else
             protraceRecordTaskStart(task);
 #endif
     }
+
+    ProTraceTaskScopeTracker(EventTask _task, [[maybe_unused]] size32_t extra, bool _enabled = true)
+    : ProTraceTaskScopeTracker(_task, static_cast<__uint64>(extra), _enabled)
+    {
+    }
+
 
     ~ProTraceTaskScopeTracker()
     {
@@ -809,6 +816,55 @@ public:
 private:
     const EventTask task;
     const bool enabled;
+#else
+    constexpr ProTraceTaskScopeTracker(EventTask, bool = true) {}
+    constexpr ProTraceTaskScopeTracker(EventTask, __uint64, bool = true) {}
+    constexpr ProTraceTaskScopeTracker(EventTask, size32_t, bool = true) {}
+#endif
+};
+
+// A variation of ProTraceTaskScopeTracker where the start event is not emitted until the payload for
+// it is known - allowing a value that is only calculated by the task to be associated with its start.
+class ProTraceTaskScopeDelayedTracker
+{
+public:
+#ifdef _USE_PROTRACE
+    ProTraceTaskScopeDelayedTracker(EventTask _task, bool _enabled = true)
+        : task(_task), enabled(_enabled)
+    {
+        if (enabled)
+            startCycles = get_cycles_now();
+    }
+
+    // Emit the pending start event, back-dated to when this object was created, with extra as its payload.
+    void noteComplete([[maybe_unused]] __uint64 extra)
+    {
+        if (startCycles)
+        {
+#ifdef PROTRACE_TASK_SIZES
+            protraceRecordAt(getTaskStartOp(task), startCycles, extra);
+#else
+            protraceRecordAt(getTaskStartOp(task), startCycles);
+#endif
+            startCycles = 0;
+        }
+    }
+
+    ~ProTraceTaskScopeDelayedTracker()
+    {
+        if (startCycles)
+            protraceRecordAt(getTaskStartOp(task), startCycles);
+        if (enabled)
+            protraceRecordTaskStop(task);
+    }
+private:
+    const EventTask task;
+    const bool enabled;
+    cycle_t startCycles = 0;
+#else
+    constexpr ProTraceTaskScopeDelayedTracker(EventTask, bool = true) {}
+    constexpr void noteComplete(__uint64) {}
+#endif
 };
 
 // Similar to ProTraceTaskScopeTracker, but also records events if recording is enabled.
@@ -824,6 +880,27 @@ public:
             if (recording)
                 queryRecorder().recordTaskStart(task);
         }
+    }
+
+    // Constructor that allows an optional payload to be provided
+    TaskScopeTracker(EventTask _task, [[maybe_unused]] __uint64 extra, bool _enabled = true)
+        : task(_task), enabled(_enabled), recording(enabled && recordingEvents())
+    {
+        if (enabled)
+        {
+#ifdef PROTRACE_TASK_SIZES
+            protraceRecordTaskStart(task, extra);
+#else
+            protraceRecordTaskStart(task);
+#endif
+            if (recording)
+                queryRecorder().recordTaskStart(task);
+        }
+    }
+
+    TaskScopeTracker(EventTask _task, [[maybe_unused]] size32_t extra, bool _enabled = true)
+    : TaskScopeTracker(_task, static_cast<__uint64>(extra), _enabled)
+    {
     }
 
     ~TaskScopeTracker()
