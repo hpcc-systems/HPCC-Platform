@@ -2703,7 +2703,7 @@ CJobBase::CJobBase(ILoadedDllEntry *_querySo, const char *_graphName) : querySo(
         throwUnexpected();
 }
 
-void CJobBase::applyMemorySettings(const char *context)
+IPropertyTree * CJobBase::getMemorySettings(const char *context) const
 {
     // NB: 'total' memory has been calculated in advance from either resource settings or from system memory.
     VStringBuffer memoryContext("%sMemory", context);
@@ -2711,33 +2711,32 @@ void CJobBase::applyMemorySettings(const char *context)
     dbgassertex(totalMemoryMB);
 
     auto getWorkUnitValueFunc = [this](const char *prop, StringBuffer &result) { getWorkUnitValue(prop, result); return result.length()>0;};
-    std::unordered_map<std::string, __uint64> memorySpecifications;
-    getMemorySpecifications(memorySpecifications, globals, memoryContext, totalMemoryMB, getWorkUnitValueFunc);
-    queryMemoryMB = (unsigned)(memorySpecifications["query"] / 0x100000);
-    if (0 == queryMemoryMB)
+    auto getWorkUnitValueBoolFunc = [this](const char *prop, bool defVal) { return getWorkUnitValueBool(prop, defVal); };
+
+    Owned<IPropertyTree> memSettings = getMemorySpecifications(globals, memoryContext, totalMemoryMB, getWorkUnitValueFunc, getWorkUnitValueBoolFunc);
+    unsigned queryMemSize = (unsigned )memSettings->getPropInt64("@query");
+    if (0 == queryMemSize)
     {
-        unsigned totalRequirementsMB = (unsigned)(memorySpecifications["total"] / 0x100000);
-        unsigned recommendedMaxMB = (unsigned)(memorySpecifications["recommendedMaxMemory"] / 0x100000);
-        queryMemoryMB = recommendedMaxMB - totalRequirementsMB;
+        unsigned totalRequirements = (unsigned) memSettings->getPropInt64("@total");
+        unsigned recommendedMax = (unsigned) memSettings->getPropInt64("@recommendedMaxMemory");
+        memSettings->setPropInt64("@query", recommendedMax - totalRequirements);
     }
 
-    // a simple helper used below, to fetch bool from workunit, or the memory settings (either managerMemory or workerMemory) or legacy location
-    auto getBoolSetting = [&](const char *setting, bool defaultValue)
-    {
-        VStringBuffer attrSetting("@%s", setting);
-        return getWorkUnitValueBool(setting,
-            globals->getPropBool(VStringBuffer("%s/%s", memoryContext.str(), attrSetting.str()),
-            globals->getPropBool(attrSetting,
-            defaultValue
-                                 )));
-    };
-    bool gmemAllowHugePages = getBoolSetting("heapUseHugePages", false);
-    gmemAllowHugePages = getBoolSetting("heapMasterUseHugePages", gmemAllowHugePages);
-    bool gmemAllowTransparentHugePages = getBoolSetting("heapUseTransparentHugePages", true);
-    bool gmemRetainMemory = getBoolSetting("heapRetainMemory", false);
-    bool gmemLockMemory = getBoolSetting("heapLockMemory", false);
-    roxiemem::setTotalMemoryLimit(gmemAllowHugePages, gmemAllowTransparentHugePages, gmemRetainMemory, gmemLockMemory, ((memsize_t)queryMemoryMB) * 0x100000, 0, thorAllocSizes, NULL);
+    return memSettings.getClear();
+}
 
+void CJobBase::applyMemorySettings(const char *context)
+{
+    Owned<IPropertyTree> memSettings = getMemorySettings(context);
+    queryMemoryMB = memSettings->getPropInt64("@query") / 0x100000;
+    bool gmemAllowHugePages = memSettings->getPropBool("@heapUseHugePages");
+    bool gmemAllowTransparentHugePages = memSettings->getPropBool("@heapUseTransparentHugePages");
+    bool gmemRetainMemory = memSettings->getPropBool("@heapRetainMemory");
+    bool gmemLockMemory = memSettings->getPropBool("@heapLockMemory");
+    
+    unsigned totalMemoryMB = (unsigned)(memSettings->getPropInt64("@totalMemory") / 0x100000);
+    roxiemem::setTotalMemoryLimit(gmemAllowHugePages, gmemAllowTransparentHugePages, gmemRetainMemory, gmemLockMemory, ((memsize_t)queryMemoryMB) * 0x100000, 0, thorAllocSizes, NULL);
+ 
     PROGLOG("Total memory = %u MB, query memory = %u MB, memory spill at = %u", totalMemoryMB, queryMemoryMB, memorySpillAtPercentage);
 }
 
