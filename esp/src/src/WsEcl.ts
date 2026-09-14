@@ -23,7 +23,7 @@ export function _flattenResults(results) {
 export function Call(target, method, query) {
     const deferred = new Deferred();
     const context = this;
-    let request = null;
+    let request;
     if (dojoConfig.urlInfo.baseHost) {
         request = script.get(dojoConfig.urlInfo.baseHost + "/WsEcl/submit/query/" + target + "/" + method + "/json", {
             query,

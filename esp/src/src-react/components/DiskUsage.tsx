@@ -204,7 +204,7 @@ export const ClusterUsage: React.FunctionComponent<ClusterUsageProps> = ({
         return {
             PercentUsed: {
                 label: nlsHPCC.PercentUsed, width: 50, formatter: (percent) => {
-                    let className = "";
+                    let className;
 
                     if (percent <= 70) { className = "bgFilled bgGreen"; }
                     else if (percent > 70 && percent < 80) { className = "bgFilled bgOrange"; }

@@ -326,9 +326,8 @@ export abstract class WUScopeControllerBase<ISubgraph, IVertex, IEdge, IGraphDat
             return _text;
         }
 
-        let label = "";
+        let label = scope.Id;
         const rows: string[] = [];
-        label = scope.Id;
         rows.push(`<tr><td class="key">ID:</td><td class="value">${highlightText("ID", scope.Id)}</td></tr>`);
         if (parentScope) {
             rows.push(`<tr><td class="key">Parent ID:</td><td class="value">${highlightText("Parent ID", parentScope.Id)}</td></tr>`);

@@ -98,14 +98,13 @@ class RequestHelper {
         }
         // var method = params.method ? params.method : "get";
 
-        let retVal = null;
+        let transport;
         if (this.isCrossSite()) {
-            const transport = new hpccComms.Connection({ baseUrl: this.getBaseURL(service), timeoutSecs: params.request.timeOutSeconds || this.timeOutSeconds, type: "jsonp" });
-            retVal = transport.send(action + postfix, params.request, handleAs === "text" ? "text" : "json");
+            transport = new hpccComms.Connection({ baseUrl: this.getBaseURL(service), timeoutSecs: params.request.timeOutSeconds || this.timeOutSeconds, type: "jsonp" });
         } else {
-            const transport = new hpccComms.Connection({ baseUrl: this.getBaseURL(service), timeoutSecs: params.request.timeOutSeconds || this.timeOutSeconds });
-            retVal = transport.send(action + postfix, params.request, handleAs === "text" ? "text" : "json");
+            transport = new hpccComms.Connection({ baseUrl: this.getBaseURL(service), timeoutSecs: params.request.timeOutSeconds || this.timeOutSeconds });
         }
+        const retVal = transport.send(action + postfix, params.request, handleAs === "text" ? "text" : "json");
 
         return retVal.then(function (response) {
             if (lang.exists("Exceptions.Exception", response)) {

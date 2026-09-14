@@ -8,7 +8,7 @@ import { DPWorkunit } from "./DataPatterns/DPWorkunit";
 import { Report } from "./DataPatterns/Report";
 import { getStateIconClass } from "./ESPWorkunit";
 
-import * as _TabContainerWidget from "hpcc/_TabContainerWidget";
+import _TabContainerWidget from "hpcc/_TabContainerWidget";
 import * as DelayLoadWidget from "hpcc/DelayLoadWidget";
 
 // @ts-expect-error

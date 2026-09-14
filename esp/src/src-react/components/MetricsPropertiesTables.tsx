@@ -1,7 +1,7 @@
 import * as React from "react";
 import { useConst } from "@fluentui/react-hooks";
 import { tokens } from "@fluentui/react-components";
-import { d3Event, Palette } from "@hpcc-js/common";
+import { Palette } from "@hpcc-js/common";
 import { ColumnFormat, ColumnSetTable } from "@hpcc-js/dgrid";
 import { encodeHTML, formatDecimal } from "src/Utility";
 import { formatTwoDigits } from "src/Session";
@@ -34,8 +34,7 @@ class TableEx extends ColumnSetTable {
 
     enter(domNode, element) {
         super.enter(domNode, element);
-        this._dgridDiv.on("dgrid-sort", () => {
-            const evt = d3Event();
+        this._dgridDiv.on("dgrid-sort", (evt) => {
             if (evt.sort.length === 0) {
                 const data = this.data();
                 data.sort((l, r) => {

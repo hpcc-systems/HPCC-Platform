@@ -403,7 +403,7 @@ export class UndefinedMemory extends Memory {
 }
 
 export function Grid(pagination?, selection?, overrides?: object, compoundColumns?, gridName?) {
-    let baseClass = [];
+    let baseClass;
     const params = overrides || {};
     const rows = Number(localStorage.getItem(gridName + "_GridRowsPerPage"));
 

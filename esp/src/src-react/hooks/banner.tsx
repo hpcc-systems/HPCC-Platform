@@ -1,11 +1,11 @@
 import * as React from "react";
-import { tinycolor } from "@ctrl/tinycolor";
 import { Button, Checkbox, ColorArea, ColorPicker, ColorSlider, Field, Input, Label, MessageBar, MessageBarActions, MessageBarBody, Textarea } from "@fluentui/react-components";
 import { DismissRegular } from "@fluentui/react-icons";
 import { useForm, Controller } from "react-hook-form";
 import nlsHPCC from "src/nlsHPCC";
 import { useActivity } from "./activity";
 import { MessageBox } from "../layouts/MessageBox";
+import { cssColorToHSV, hsvToHex, HSVColor } from "../util/color";
 
 interface BannerConfigValues {
     BannerAction: number;
@@ -38,8 +38,8 @@ export function useBanner({ showForm, setShowForm }: useBannerProps): [React.Fun
     const [showBanner, setShowBanner] = React.useState(activity?.ShowBanner == 1 || false);
 
     const { handleSubmit, control, reset } = useForm<BannerConfigValues>({ defaultValues });
-    const [color, setColor] = React.useState<{ h: number; s: number; v: number; a?: number }>(tinycolor("#ffffff").toHsv());
-    const updateColor = React.useCallback((_: unknown, data: { color: { h: number; s: number; v: number; a?: number } }) => setColor(data.color), []);
+    const [color, setColor] = React.useState<HSVColor>(cssColorToHSV("#ffffff"));
+    const updateColor = React.useCallback((_: unknown, data: { color: HSVColor }) => setColor(data.color), []);
 
     const closeForm = React.useCallback(() => {
         setShowForm(false);
@@ -49,7 +49,7 @@ export function useBanner({ showForm, setShowForm }: useBannerProps): [React.Fun
         handleSubmit(
             (data, evt) => {
                 const request: any = data;
-                request.BannerColor = tinycolor(color).toHexString();
+                request.BannerColor = hsvToHex(color);
                 request.BannerAction = request.BannerAction === true ? "1" : "0";
                 setBannerColor(request.BannerColor);
                 setBannerMessage(request.BannerContent);
@@ -63,7 +63,7 @@ export function useBanner({ showForm, setShowForm }: useBannerProps): [React.Fun
 
     React.useEffect(() => {
         if (!activity?.BannerColor) return;
-        setColor(tinycolor(activity?.BannerColor).toHsv());
+        setColor(cssColorToHSV(activity?.BannerColor));
         const values = {
             BannerAction: activity?.ShowBanner || 0,
             BannerContent: activity?.BannerContent || "",

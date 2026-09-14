@@ -20,9 +20,9 @@
     "brace-expansion": "5.0.9"
   },
   "devDependencies": {
-    "@hpcc-js/common": "3.8.3",
-    "@hpcc-js/codemirror": "3.8.3",
-    "esbuild": "0.28.1",
+    "@hpcc-js/common": "3.11.0",
+    "@hpcc-js/codemirror": "3.10.0",
+    "esbuild": "0.28.2",
     "rimraf": "6.1.3"
   }
 }

@@ -126,7 +126,7 @@ define([
                 wuPromise.then(function (wu) {
                     return context.gridDPHook && context.gridDPHook.render(wu);
                 }).then(function () {
-                    context.grid.resize();
+                    context.grid?.resize();
                 });
             }
         },

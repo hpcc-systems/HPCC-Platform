@@ -5,7 +5,7 @@ import { useConst } from "@fluentui/react-hooks";
 import { ESPSearch } from "src/ESPSearch";
 import nlsHPCC from "src/nlsHPCC";
 import { HolyGrail } from "../layouts/HolyGrail";
-import { FluentGrid, useCopyButtons, useFluentStoreState, FluentColumns } from "./controls/Grid";
+import { AutoSizeFluentGrid, useCopyButtons, useFluentStoreState, FluentColumns } from "./controls/Grid";
 import { Workunits } from "./Workunits";
 import { Files } from "./Files";
 import { Queries } from "./Queries";
@@ -155,7 +155,7 @@ export const Search: React.FunctionComponent<SearchProps> = ({
                 <CommandBar items={buttons} farItems={copyButtons} />
                 {searchCount > 0 && <ProgressBar value={progress.value / searchCount} />}
             </>}
-            main={<FluentGrid
+            main={<AutoSizeFluentGrid
                 data={data}
                 primaryID={"__hpcc_id"}
                 sort={{ attribute: "__hpcc_id", descending: false }}
@@ -163,7 +163,7 @@ export const Search: React.FunctionComponent<SearchProps> = ({
                 setSelection={setSelection}
                 setTotal={setTotal}
                 refresh={refreshTable}
-            ></FluentGrid>}
+            ></AutoSizeFluentGrid>}
         /> : selectedKey === "ecl" ?
             <Workunits store={search.eclStore} /> : selectedKey === "dfu" ?
                 <DFUWorkunits store={search.dfuStore} /> : selectedKey === "file" ?

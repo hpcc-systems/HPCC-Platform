@@ -8,7 +8,9 @@ import { ConfigEnv, defineConfig, Plugin, UserConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import fs from "fs";
 import path from "path";
-import { pathToFileURL } from "url";
+import { fileURLToPath, pathToFileURL } from "url";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const distPublicPath = (process.env.ECLWATCH_DIST_URL || "/esp/files/dist/").replace(/\/?$/, "/");
 const distUrl = distPublicPath.replace(/\/$/, "");
@@ -36,8 +38,8 @@ async function loadDojoFactory(): Promise<DojoFactory> {
     throw new Error(`Unable to resolve dojo plugin from ${nodeModulesVitePluginsEntry} or ${siblingVitePluginsEntry}`);
 }
 
-// Redirect @hpcc-js/* imports to a sibling monorepo checkout only when that
-// checkout has an actual built dist/index.js; otherwise resolve from node_modules.
+// Redirect @hpcc-js/* imports to a sibling monorepo checkout only when normal
+// resolution cannot find the package and the sibling has a built entry point.
 function hpccJsSiblingFallback(): Plugin {
     const wasmPackages: Record<string, string> = {
         "@hpcc-js/wasm-duckdb": wasmDuckdbPath,
@@ -48,7 +50,12 @@ function hpccJsSiblingFallback(): Plugin {
     return {
         name: "hpcc-js-sibling-fallback",
         enforce: "pre",
-        resolveId(source) {
+        async resolveId(source, importer) {
+            if (!wasmPackages[source] && !source.startsWith("@hpcc-js/")) return null;
+
+            const normalResolution = await this.resolve(source, importer, { skipSelf: true });
+            if (normalResolution) return null;
+
             const builtEntry = (dir: string) => {
                 const candidates = [
                     path.join(dir, "dist", "browser", "index.js"),

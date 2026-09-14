@@ -76,7 +76,6 @@ export class Report extends Grid {
         }
         if (this._showPopularPatternsColumn) {
             this.setContent(y, cPos, getPopularPatternsWidget(row), undefined, config.rowHeight, cStep * config.colRatios.popularPatterns);
-            cPos += cStep * config.colRatios.popularPatterns;
             ++c;
         }
         return c;
