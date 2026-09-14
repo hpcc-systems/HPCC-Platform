@@ -51,6 +51,8 @@ Tips for writing effective prompts for GitHub Copilot.
 
 For tips on using Copilot for ECL development, see [The `@ecl` Participant in Copilot](./userdoc/copilot/eclParticipantinCopilot.md) and [Why `@workspace` matters in Copilot Chat](./userdoc/copilot/UsingWorkspace.md).
 
+[Rubber Duck](./userdoc/copilot/rubberDuck.md) — Use the `/rubber-duck` command to get an independent agent's perspective on your designs, implementations, and decisions to uncover hidden assumptions and surface risks before they become problems.
+
 ## Containerized Deployment
 
 ### Docker

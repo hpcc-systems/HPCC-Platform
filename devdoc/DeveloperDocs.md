@@ -107,6 +107,8 @@ Details about using Copilot for work on the HPCC Systems platform.
 [Prompt Tips](./userdoc/copilot/CopilotPromptTips.md)
 Tips for writing effective prompts for GitHub Copilot.
 
+[Rubber Duck](./userdoc/copilot/rubberDuck.md) — Use the `/rubber-duck` command to get an independent agent's perspective on your designs, implementations, and decisions to uncover hidden assumptions and surface risks before they become problems.
+
 ## Containerized Deployment
 
 ### Docker
