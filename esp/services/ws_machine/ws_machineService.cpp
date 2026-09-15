@@ -1176,7 +1176,7 @@ void Cws_machineEx::buildPreflightCommand(IEspContext& context, CMachineInfoThre
 {
     preflightCommand.clear().appendf("/%s/sbin/%s -p=%s", environmentConfData.m_executionPath.str(),
         m_machineInfoFile.str(), environmentConfData.m_pidPath.str());
-    if (preflightCommand.charAt(preflightCommand.length() - 1) == pParam->m_machineData.getPathSep())
+    if (preflightCommand.length() && preflightCommand.charAt(preflightCommand.length() - 1) == pParam->m_machineData.getPathSep())
         preflightCommand.remove(preflightCommand.length()-1, 1);
 
     bool checkDependency = false;
