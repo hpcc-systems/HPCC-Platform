@@ -1,0 +1,25 @@
+<Dataset name='SearchResults'>
+ <Row><id>1</id><value>foo</value></Row>
+ <Row><id>3</id><value>foobar</value></Row>
+ <Row><id>4</id><value>barfoo</value></Row>
+ <Row><id>5</id><value>foobaz</value></Row>
+ <Row><id>8</id><value>footprint</value></Row>
+ <Row><id>10</id><value>food</value></Row>
+</Dataset>
+<Dataset name='PositionResults'>
+ <Row><id>1</id><value>foo</value></Row>
+ <Row><id>3</id><value>foobar</value></Row>
+ <Row><id>4</id><value>barfoo</value></Row>
+ <Row><id>5</id><value>foobaz</value></Row>
+ <Row><id>8</id><value>footprint</value></Row>
+ <Row><id>10</id><value>food</value></Row>
+</Dataset>
+<Dataset name='FooCount'>
+ <Row><Result_1>6</Result_1></Row>
+</Dataset>
+<Dataset name='PositionCount'>
+ <Row><Result_1>6</Result_1></Row>
+</Dataset>
+<Dataset name='SameResultCount'>
+ <Row><Result_1>true</Result_1></Row>
+</Dataset>
