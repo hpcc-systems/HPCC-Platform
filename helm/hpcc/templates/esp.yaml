@@ -91,7 +91,7 @@ data:
  {{- end }}
 {{- end }}
     global:
-{{ include "hpcc.generateGlobalConfigMap" .root | indent 6 }}
+{{ include "hpcc.generateGlobalConfigMap" (dict "root" .root) | indent 6 }}
 {{- end -}}
 
 {{ range $.Values.esp -}}

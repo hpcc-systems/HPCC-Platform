@@ -1,0 +1,27 @@
+# Test inheritance from global.cost to subcomponents without explicit override
+
+global:
+  cost:
+    currencyCode: USD
+    perCpu: 0.50
+
+thor:
+- name: thor
+  worker:
+    cost:
+      perCpu: 2.40
+  # error should be reported as cost defined for worker but it is not for manager and eclagent
+  prefix: thor
+  numWorkers: 2
+  maxJobs: 2
+  maxGraphs: 2
+  numWorkersPerPod: 1
+  managerResources:
+    cpu: "1"
+    memory: "1G"
+  workerResources:
+    cpu: "1"
+    memory: "1G"
+  eclAgentResources:
+    cpu: "1"
+    memory: "1G"
