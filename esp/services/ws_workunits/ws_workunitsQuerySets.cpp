@@ -32,6 +32,8 @@
 #include "httpclient.hpp"
 #include "portlist.h" //ROXIE_SERVER_PORT
 #include "TpWrapper.hpp"
+#include "thorplugin.hpp"
+#include "wuwebview.hpp"
 
 #define DALI_FILE_LOOKUP_TIMEOUT (1000*15*1)  // 15 seconds
 
@@ -92,6 +94,59 @@ static IClientWsWorkunits *ensureWsWorkunitsClient(IClientWsWorkunits *ws, IEspC
     return cws.getClear();
 }
 
+class CDllManifestResourceReader : public IManifestResourceReader
+{
+public:
+    CDllManifestResourceReader(const MemoryBuffer &_dll) : dll(_dll)
+    {
+    }
+
+    virtual bool getResourceByPath(const char *path, MemoryBuffer &content) override
+    {
+        if (!manifest)
+            return false;
+        Owned<IPropertyTreeIterator> resources = manifest->getElements("Resource");
+        ForEach(*resources)
+        {
+            IPropertyTree &resource = resources->query();
+            const char *resourcePath = resource.queryProp("@resourcePath");
+            const char *filename = resource.queryProp("@filename");
+            if ((!isEmptyString(resourcePath) && streq(resourcePath, path)) || (isEmptyString(resourcePath) && !isEmptyString(filename) && streq(filename, path)))
+            {
+                const char *type = resource.queryProp("@type");
+                if (isEmptyString(type) || !resource.hasProp("@id") || (!resource.hasProp("@header") && !resource.hasProp("@compressed")))
+                    return false;
+                MemoryBuffer embedded;
+                if (!getResourceFromBuffer(dll.toByteArray(), dll.length(), embedded, type, resource.getPropInt("@id")))
+                    return false;
+                return decompressResource(embedded.length(), embedded.toByteArray(), content);
+            }
+        }
+        return false;
+    }
+
+    virtual StringBuffer &getManifest(StringBuffer &manifestXml) override
+    {
+        MemoryBuffer embedded;
+        if (!getResourceFromBuffer(dll.toByteArray(), dll.length(), embedded, "MANIFEST", 1000) || !decompressResource(embedded.length(), embedded.toByteArray(), manifestXml))
+            return manifestXml;
+        try
+        {
+            manifest.setown(createPTreeFromXMLString(manifestXml.str()));
+        }
+        catch (IException *e)
+        {
+            e->Release();
+            manifestXml.clear();
+        }
+        return manifestXml;
+    }
+
+private:
+    const MemoryBuffer &dll;
+    Owned<IPropertyTree> manifest;
+};
+
 IClientWUQuerySetDetailsResponse *fetchQueryDetails(IClientWsWorkunits *_ws, IEspContext *ctx, const char *netAddress, const char *target, const char *queryid, bool useSSL)
 {
     Owned<IClientWsWorkunits> ws = ensureWsWorkunitsClient(_ws, ctx, netAddress, useSSL);
@@ -137,7 +192,63 @@ void fetchRemoteWorkunit(IClientWsWorkunits *_ws, IEspContext *ctx, const char *
         ep.getEndpointHostText(daliServer);
 }
 
-void fetchRemoteWorkunitArchive(IClientWsWorkunits *_ws, IEspContext *ctx, const char *netAddress, const char *wuid, StringBuffer &archiveText, bool useSSL)
+static bool getBinaryTargetArchitecture(StringBuffer &targetArchitecture, const MemoryBuffer &binary)
+{
+    targetArchitecture.clear();
+    constexpr unsigned elfMachineOffset = 18;
+    constexpr unsigned elfDataOffset = 5;
+    constexpr unsigned elfLittleEndian = 1;
+    constexpr unsigned elfBigEndian = 2;
+    constexpr unsigned elfMachineX86_64 = 62;
+    constexpr unsigned elfMachineAarch64 = 183;
+    constexpr unsigned machCpuTypeOffset = 4;
+    constexpr unsigned machCpuTypeArm64 = 0x0100000c;
+
+    const byte *bytes = binary.bytes();
+    size32_t length = binary.length();
+    if (length >= elfMachineOffset + 2 && bytes[0] == 0x7f && bytes[1] == 'E' && bytes[2] == 'L' && bytes[3] == 'F')
+    {
+        unsigned machine;
+        if (bytes[elfDataOffset] == elfLittleEndian)
+            machine = bytes[elfMachineOffset] | (bytes[elfMachineOffset + 1] << 8);
+        else if (bytes[elfDataOffset] == elfBigEndian)
+            machine = (bytes[elfMachineOffset] << 8) | bytes[elfMachineOffset + 1];
+        else
+            return false;
+
+        if (machine == elfMachineX86_64)
+            targetArchitecture.append(targetArchitectureX86_64Linux);
+        else if (machine == elfMachineAarch64)
+            targetArchitecture.append(targetArchitectureArm64Linux);
+        else
+            return false;
+        return true;
+    }
+
+    if (length >= machCpuTypeOffset + 4 && bytes[0] == 0xcf && bytes[1] == 0xfa && bytes[2] == 0xed && bytes[3] == 0xfe)
+    {
+        unsigned cpuType = static_cast<unsigned>(bytes[machCpuTypeOffset]) | (static_cast<unsigned>(bytes[machCpuTypeOffset + 1]) << 8) | (static_cast<unsigned>(bytes[machCpuTypeOffset + 2]) << 16) | (static_cast<unsigned>(bytes[machCpuTypeOffset + 3]) << 24);
+        if (cpuType == machCpuTypeArm64)
+        {
+            targetArchitecture.append(targetArchitectureArm64MacOS);
+            return true;
+        }
+    }
+    return false;
+}
+
+static StringBuffer &getRemoteWorkUnitTargetArchitecture(StringBuffer &targetArchitecture, const IConstWorkUnit *wu, const MemoryBuffer &dll)
+{
+    if (getBinaryTargetArchitecture(targetArchitecture, dll))
+        return targetArchitecture;
+
+    SCMStringBuffer configuredArchitecture;
+    if (wu)
+        wu->getDebugValue(targetArchitectureDebugValue, configuredArchitecture);
+    return normalizeTargetArchitecture(targetArchitecture, configuredArchitecture.str());
+}
+
+void fetchRemoteWorkunitArchive(IClientWsWorkunits *_ws, IEspContext *ctx, const char *netAddress, const char *wuid, const MemoryBuffer &dll, StringBuffer &archiveText, bool useSSL)
 {
     Owned<IClientWsWorkunits> ws = ensureWsWorkunitsClient(_ws, ctx, netAddress, useSSL);
     Owned<IClientWULogFileRequest> req = ws->createWUFileRequest();
@@ -156,6 +267,26 @@ void fetchRemoteWorkunitArchive(IClientWsWorkunits *_ws, IEspContext *ctx, const
         throw makeStringExceptionV(ECLWATCH_RESOURCE_NOT_FOUND, "Cannot retrieve remote workunit archive for workunit %s from %s: archive is empty", wuid, endpoint);
     }
     archiveText.append(resp->getThefile().length(), resp->getThefile().toByteArray());
+
+    try
+    {
+        Owned<IPropertyTree> archive = createPTreeFromXMLString(archiveText.str(), ipt_caseInsensitive|ipt_lowmem);
+        CDllManifestResourceReader resourceReader(dll);
+        addManifestResourcesToArchive(resourceReader, *archive);
+        StringBuffer restoredArchive;
+        toXML(archive, restoredArchive);
+        archiveText.set(restoredArchive);
+    }
+    catch (IException *e)
+    {
+        StringBuffer msg;
+        WARNLOG("Failed to restore remote archive resources for workunit %s: %s", wuid, e->errorMessage(msg).str());
+        e->Release();
+    }
+    catch (...)
+    {
+        WARNLOG("Unexpected failure restoring remote archive resources for workunit %s", wuid);
+    }
 }
 
 void fetchRemoteWorkunitAndQueryDetails(IClientWsWorkunits *_ws, IEspContext *ctx, const char *netAddress, const char *queryset, const char *query, const char *wuid, StringBuffer &name, StringBuffer &xml, StringBuffer &dllname, MemoryBuffer &dll, StringBuffer &daliServer, Owned<IClientWUQuerySetDetailsResponse> &respQueryInfo, bool useSSL)
@@ -3244,12 +3375,12 @@ public:
         wuid.set(recompiledWuid);
     }
 
-    bool recompileRemoteQueryIfNeeded(StringBuffer &wuid, const char *queryName, const char *xml)
+    bool recompileRemoteQueryIfNeeded(StringBuffer &wuid, const char *queryName, const char *xml, const MemoryBuffer &dll)
     {
         Owned<ILocalWorkUnit> sourceWu = createLocalWorkUnitFromXml(xml);
         StringBuffer sourceArchitecture;
         StringBuffer destinationArchitecture;
-        getWorkUnitTargetArchitecture(sourceArchitecture, sourceWu);
+        getRemoteWorkUnitTargetArchitecture(sourceArchitecture, sourceWu, dll);
         getTargetClusterTargetArchitecture(destinationArchitecture, target);
         if (targetArchitecturesMatch(sourceArchitecture.str(), destinationArchitecture.str()))
             return false;
@@ -3257,7 +3388,7 @@ public:
         StringBuffer archiveText;
         try
         {
-            fetchRemoteWorkunitArchive(nullptr, context, srcAddress.str(), wuid.str(), archiveText, useSSL);
+            fetchRemoteWorkunitArchive(nullptr, context, srcAddress.str(), wuid.str(), dll, archiveText, useSSL);
         }
         catch (IException *e)
         {
@@ -3325,7 +3456,7 @@ public:
         StringBuffer fetchedName;
         StringBuffer remoteDfs;
         fetchRemoteWorkunit(NULL, context, srcAddress.str(), NULL, NULL, wuid, fetchedName, xml, dllname, dll, remoteDfs, useSSL);
-        if (!recompileRemoteQueryIfNeeded(wuid, queryName, xml.str()))
+        if (!recompileRemoteQueryIfNeeded(wuid, queryName, xml.str(), dll))
             deploySharedObject(*context, wuid, target, queryName, dll, queryDirectory, xml.str(), false, srcAddress.str(), dllname);
 
         SCMStringBuffer existingQueryId;
@@ -3662,7 +3793,7 @@ bool CWsWorkunitsEx::onWUQuerysetCopyQuery(IEspContext &context, IEspWUQuerySetC
             targetQueryName.set(queryName);
 
         Owned<ILocalWorkUnit> sourceWu = createLocalWorkUnitFromXml(xml.str());
-        getWorkUnitTargetArchitecture(sourceArchitecture, sourceWu);
+        getRemoteWorkUnitTargetArchitecture(sourceArchitecture, sourceWu, dll);
         if (targetArchitecturesMatch(sourceArchitecture.str(), destinationArchitecture.str()))
             deploySharedObject(context, wuid, target, targetQueryName.get(), dll, queryDirectory.str(), xml.str(), false, srcAddress.str(), dllname.str());
         else
@@ -3670,7 +3801,7 @@ bool CWsWorkunitsEx::onWUQuerysetCopyQuery(IEspContext &context, IEspWUQuerySetC
             StringBuffer archiveText;
             try
             {
-                fetchRemoteWorkunitArchive(nullptr, &context, srcAddress.str(), wuid.str(), archiveText, req.getSourceSSL());
+                fetchRemoteWorkunitArchive(nullptr, &context, srcAddress.str(), wuid.str(), dll, archiveText, req.getSourceSSL());
             }
             catch (IException *e)
             {

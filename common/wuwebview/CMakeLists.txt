@@ -34,6 +34,7 @@ include_directories (
          ./../../common/workunit
          ./../../common/fileview2
          ./../../system/include
+         ${HPCC_SOURCE_DIR}/system/codesigner
          ./../../common/dllserver
          ./../../system/jlib
          ./../../system/xmllib

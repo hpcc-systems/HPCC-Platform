@@ -28,13 +28,11 @@
 #include "eclrtl.hpp"
 #include <ctype.h>
 #if defined(__APPLE__)
-#include <mach-o/getsect.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
 #elif !defined(_WIN32)
 #include <sys/mman.h>
 #include <sys/stat.h>
-#include <elf.h>
 #endif
 
 #include "thorplugin.hpp"
@@ -72,115 +70,294 @@ const char * SimplePluginCtx::ctxQueryProp(const char *propName) const
 
 //-------------------------------------------------------------------------------------------------------------------
 
-static bool getResourceFromMappedFile(const char * filename, const byte * start_addr, size32_t & lenData, const void * & data, const char * type, unsigned id)
+static constexpr uint32_t mach64SegmentCommand = 0x19;
+
+struct Elf64Header
 {
-#if defined(_WIN32)
-    throwUnexpected();
-#elif defined(__APPLE__)
-    VStringBuffer sectname("%s_%u", type, id);
-    // The first bytes are the Mach-O header
-    const struct mach_header_64 *mh = (const struct mach_header_64 *) start_addr;
-    if (mh->magic != MH_MAGIC_64)
-    {
-        DBGLOG("Failed to extract resource %s: Does not appear to be a Mach-O 64-bit binary", filename);
-        return false;
-    }
+    byte ident[16];
+    uint16_t type;
+    uint16_t machine;
+    uint32_t version;
+    uint64_t entry;
+    uint64_t programHeaderOffset;
+    uint64_t sectionHeaderOffset;
+    uint32_t flags;
+    uint16_t headerSize;
+    uint16_t programHeaderEntrySize;
+    uint16_t programHeaderCount;
+    uint16_t sectionHeaderEntrySize;
+    uint16_t sectionHeaderCount;
+    uint16_t sectionNameIndex;
+};
 
-    unsigned long len = 0;
-    data = getsectiondata(mh, "__TEXT", sectname.str(), &len);
-    lenData = (size32_t)len;
-    return true;
-#elif defined (__64BIT__)
-    // The first bytes are the ELF header
-    const Elf64_Ehdr * hdr = (const Elf64_Ehdr *) start_addr;
-    if (memcmp(hdr->e_ident, ELFMAG, SELFMAG) != 0)
-    {
-        DBGLOG("Failed to extract resource %s: Does not appear to be a ELF binary", filename);
-        return false;
-    }
-    if (hdr->e_ident[EI_CLASS] != ELFCLASS64)
-    {
-        DBGLOG("Failed to extract resource %s: Does not appear to be a ELF 64-bit binary", filename);
-        return false;
-    }
+struct Elf64SectionHeader
+{
+    uint32_t name;
+    uint32_t type;
+    uint64_t flags;
+    uint64_t address;
+    uint64_t offset;
+    uint64_t size;
+    uint32_t link;
+    uint32_t info;
+    uint64_t addressAlign;
+    uint64_t entrySize;
+};
 
-    //Check that there is a symbol table for the sections.
-    if (hdr->e_shstrndx == SHN_UNDEF)
-    {
-        DBGLOG("Failed to extract resource %s: Does not include a section symbol table", filename);
-        return false;
-    }
+struct Elf32Header
+{
+    byte ident[16];
+    uint16_t type;
+    uint16_t machine;
+    uint32_t version;
+    uint32_t entry;
+    uint32_t programHeaderOffset;
+    uint32_t sectionHeaderOffset;
+    uint32_t flags;
+    uint16_t headerSize;
+    uint16_t programHeaderEntrySize;
+    uint16_t programHeaderCount;
+    uint16_t sectionHeaderEntrySize;
+    uint16_t sectionHeaderCount;
+    uint16_t sectionNameIndex;
+};
 
-    //Now walk the sections comparing the section names
-    Elf64_Half numSections = hdr->e_shnum;
-    const Elf64_Shdr * sectionHeaders = reinterpret_cast<const Elf64_Shdr *>(start_addr + hdr->e_shoff);
-    const Elf64_Shdr & symbolTableSection = sectionHeaders[hdr->e_shstrndx];
-    const char * symbolTable = (const char *)start_addr + symbolTableSection.sh_offset;
-    VStringBuffer sectname("%s_%u", type, id);
-    for (unsigned iSect= 0; iSect < numSections; iSect++)
-    {
-        const Elf64_Shdr & section = sectionHeaders[iSect];
-        const char * sectionName = symbolTable + section.sh_name;
-        if (streq(sectionName, sectname))
-        {
-            lenData = (size32_t)section.sh_size;
-            data = start_addr + section.sh_offset;
-            return true;
-        }
-    }
+struct Elf32SectionHeader
+{
+    uint32_t name;
+    uint32_t type;
+    uint32_t flags;
+    uint32_t address;
+    uint32_t offset;
+    uint32_t size;
+    uint32_t link;
+    uint32_t info;
+    uint32_t addressAlign;
+    uint32_t entrySize;
+};
 
-    return false;
-#else
-    // The first bytes are the ELF header
-    const Elf32_Ehdr * hdr = (const Elf32_Ehdr *) start_addr;
-    if (memcmp(hdr->e_ident, ELFMAG, SELFMAG) != 0)
-    {
-        DBGLOG("Failed to extract resource %s: Does not appear to be a ELF binary", filename);
-        return false;
-    }
-    if (hdr->e_ident[EI_CLASS] != ELFCLASS32)
-    {
-        DBGLOG("Failed to extract resource %s: Does not appear to be a ELF 32-bit binary", filename);
-        return false;
-    }
+struct Mach64Header
+{
+    uint32_t magic;
+    uint32_t cpuType;
+    uint32_t cpuSubtype;
+    uint32_t fileType;
+    uint32_t commandCount;
+    uint32_t commandSize;
+    uint32_t flags;
+    uint32_t reserved;
+};
 
-    //Check that there is a symbol table for the sections.
-    if (hdr->e_shstrndx == SHN_UNDEF)
-    {
-        DBGLOG("Failed to extract resource %s: Does not include a section symbol table", filename);
-        return false;
-    }
+struct MachLoadCommand
+{
+    uint32_t command;
+    uint32_t size;
+};
 
-    //Now walk the sections comparing the section names
-    Elf32_Half numSections = hdr->e_shnum;
-    const Elf32_Shdr * sectionHeaders = reinterpret_cast<const Elf32_Shdr *>(start_addr + hdr->e_shoff);
-    const Elf32_Shdr & symbolTableSection = sectionHeaders[hdr->e_shstrndx];
-    const char * symbolTable = (const char *)start_addr + symbolTableSection.sh_offset;
-    VStringBuffer sectname("%s_%u", type, id);
-    for (unsigned iSect= 0; iSect < numSections; iSect++)
-    {
-        const Elf32_Shdr & section = sectionHeaders[iSect];
-        const char * sectionName = symbolTable + section.sh_name;
-        if (streq(sectionName, sectname))
-        {
-            lenData = (size32_t)section.sh_size;
-            data = start_addr + section.sh_offset;
-            return true;
-        }
-    }
+struct Mach64SegmentCommand
+{
+    uint32_t command;
+    uint32_t size;
+    char segmentName[16];
+    uint64_t virtualAddress;
+    uint64_t virtualSize;
+    uint64_t fileOffset;
+    uint64_t fileSize;
+    uint32_t maximumProtection;
+    uint32_t initialProtection;
+    uint32_t sectionCount;
+    uint32_t flags;
+};
 
-    return false;
-#endif
+struct Mach64Section
+{
+    char sectionName[16];
+    char segmentName[16];
+    uint64_t address;
+    uint64_t size;
+    uint32_t offset;
+    uint32_t align;
+    uint32_t relocationOffset;
+    uint32_t relocationCount;
+    uint32_t flags;
+    uint32_t reserved1;
+    uint32_t reserved2;
+    uint32_t reserved3;
+};
+
+static bool rangeIsValid(size_t offset, size_t length, size_t bufferLength)
+{
+    return offset <= bufferLength && length <= bufferLength - offset;
 }
 
-static bool getResourceFromMappedFile(const char * filename, const byte * start_addr, MemoryBuffer & result, const char * type, unsigned id)
+template <class STRUCT>
+static bool readStruct(const byte *startAddress, size_t bufferLength, size_t offset, STRUCT &value)
+{
+    if (!rangeIsValid(offset, sizeof(value), bufferLength))
+        return false;
+    memcpy(&value, startAddress + offset, sizeof(value));
+    return true;
+}
+
+static bool calculateArraySize(size_t elementSize, size_t count, size_t &totalSize)
+{
+    if (count && elementSize > SIZE_MAX / count)
+        return false;
+    totalSize = elementSize * count;
+    return true;
+}
+
+static bool fixedStringMatches(const char *fixed, size_t fixedLength, const char *value)
+{
+    size_t valueLength = strlen(value);
+    return valueLength <= fixedLength && memcmp(fixed, value, valueLength) == 0 && (valueLength == fixedLength || fixed[valueLength] == 0);
+}
+
+static bool getElf64Resource(const byte *startAddress, size_t bufferLength, size32_t &length, const void *&data, const char *sectionName)
+{
+    Elf64Header header;
+    if (!readStruct(startAddress, bufferLength, 0, header))
+        return false;
+    if (memcmp(header.ident, "\x7f" "ELF", 4) != 0 || header.ident[4] != 2 || header.ident[5] != 1)
+        return false;
+    if (header.sectionHeaderEntrySize < sizeof(Elf64SectionHeader) || header.sectionNameIndex >= header.sectionHeaderCount)
+        return false;
+    size_t sectionTableSize;
+    if (!calculateArraySize(header.sectionHeaderEntrySize, header.sectionHeaderCount, sectionTableSize) || !rangeIsValid(header.sectionHeaderOffset, sectionTableSize, bufferLength))
+        return false;
+
+    Elf64SectionHeader nameSection;
+    if (!readStruct(startAddress, bufferLength, header.sectionHeaderOffset + static_cast<size_t>(header.sectionNameIndex) * header.sectionHeaderEntrySize, nameSection))
+        return false;
+    if (!rangeIsValid(nameSection.offset, nameSection.size, bufferLength))
+        return false;
+    const char *names = reinterpret_cast<const char *>(startAddress + nameSection.offset);
+    for (unsigned index = 0; index < header.sectionHeaderCount; index++)
+    {
+        Elf64SectionHeader section;
+        if (!readStruct(startAddress, bufferLength, header.sectionHeaderOffset + static_cast<size_t>(index) * header.sectionHeaderEntrySize, section))
+            return false;
+        if (section.name >= nameSection.size || !memchr(names + section.name, 0, nameSection.size - section.name))
+            continue;
+        if (streq(names + section.name, sectionName) && rangeIsValid(section.offset, section.size, bufferLength) && section.size <= UINT_MAX)
+        {
+            length = static_cast<size32_t>(section.size);
+            data = startAddress + section.offset;
+            return true;
+        }
+    }
+    return false;
+}
+
+static bool getElf32Resource(const byte *startAddress, size_t bufferLength, size32_t &length, const void *&data, const char *sectionName)
+{
+    Elf32Header header;
+    if (!readStruct(startAddress, bufferLength, 0, header))
+        return false;
+    if (memcmp(header.ident, "\x7f" "ELF", 4) != 0 || header.ident[4] != 1 || header.ident[5] != 1)
+        return false;
+    if (header.sectionHeaderEntrySize < sizeof(Elf32SectionHeader) || header.sectionNameIndex >= header.sectionHeaderCount)
+        return false;
+    size_t sectionTableSize;
+    if (!calculateArraySize(header.sectionHeaderEntrySize, header.sectionHeaderCount, sectionTableSize) || !rangeIsValid(header.sectionHeaderOffset, sectionTableSize, bufferLength))
+        return false;
+
+    Elf32SectionHeader nameSection;
+    if (!readStruct(startAddress, bufferLength, header.sectionHeaderOffset + static_cast<size_t>(header.sectionNameIndex) * header.sectionHeaderEntrySize, nameSection) || !rangeIsValid(nameSection.offset, nameSection.size, bufferLength))
+        return false;
+    const char *names = reinterpret_cast<const char *>(startAddress + nameSection.offset);
+    for (unsigned index = 0; index < header.sectionHeaderCount; index++)
+    {
+        Elf32SectionHeader section;
+        if (!readStruct(startAddress, bufferLength, header.sectionHeaderOffset + static_cast<size_t>(index) * header.sectionHeaderEntrySize, section))
+            return false;
+        if (section.name >= nameSection.size || !memchr(names + section.name, 0, nameSection.size - section.name))
+            continue;
+        if (streq(names + section.name, sectionName) && rangeIsValid(section.offset, section.size, bufferLength))
+        {
+            length = section.size;
+            data = startAddress + section.offset;
+            return true;
+        }
+    }
+    return false;
+}
+
+static bool getMach64Resource(const byte *startAddress, size_t bufferLength, size32_t &length, const void *&data, const char *sectionName)
+{
+    Mach64Header header;
+    if (!readStruct(startAddress, bufferLength, 0, header))
+        return false;
+    if (memcmp(startAddress, "\xcf\xfa\xed\xfe", 4) != 0 || !rangeIsValid(sizeof(header), header.commandSize, bufferLength))
+        return false;
+
+    size_t commandOffset = sizeof(header);
+    size_t commandEnd = commandOffset + header.commandSize;
+    for (unsigned index = 0; index < header.commandCount; index++)
+    {
+        MachLoadCommand command;
+        if (!rangeIsValid(commandOffset, sizeof(command), commandEnd) || !readStruct(startAddress, bufferLength, commandOffset, command))
+            return false;
+        if (command.size < sizeof(command) || !rangeIsValid(commandOffset, command.size, commandEnd))
+            return false;
+        if (command.command == mach64SegmentCommand && command.size >= sizeof(Mach64SegmentCommand))
+        {
+            Mach64SegmentCommand segment;
+            if (!readStruct(startAddress, bufferLength, commandOffset, segment))
+                return false;
+            size_t sectionsSize;
+            if (!calculateArraySize(sizeof(Mach64Section), segment.sectionCount, sectionsSize) || sectionsSize > command.size - sizeof(segment))
+                return false;
+            for (unsigned sectionIndex = 0; sectionIndex < segment.sectionCount; sectionIndex++)
+            {
+                Mach64Section section;
+                if (!readStruct(startAddress, bufferLength, commandOffset + sizeof(segment) + static_cast<size_t>(sectionIndex) * sizeof(section), section))
+                    return false;
+                if (fixedStringMatches(section.segmentName, sizeof(section.segmentName), "__TEXT") && fixedStringMatches(section.sectionName, sizeof(section.sectionName), sectionName) && rangeIsValid(section.offset, section.size, bufferLength) && section.size <= UINT_MAX)
+                {
+                    length = static_cast<size32_t>(section.size);
+                    data = startAddress + section.offset;
+                    return true;
+                }
+            }
+        }
+        commandOffset += command.size;
+    }
+    return false;
+}
+
+static bool getResourceFromMappedFile(const char *filename, const byte *startAddress, size_t bufferLength, size32_t &length, const void *&data, const char *type, unsigned id)
+{
+    VStringBuffer sectionName("%s_%u", type, id);
+    if (bufferLength >= 16)
+    {
+        if (memcmp(startAddress, "\x7f" "ELF", 4) == 0)
+        {
+            if (startAddress[4] == 2)
+                return getElf64Resource(startAddress, bufferLength, length, data, sectionName.str());
+            if (startAddress[4] == 1)
+                return getElf32Resource(startAddress, bufferLength, length, data, sectionName.str());
+        }
+        if (memcmp(startAddress, "\xcf\xfa\xed\xfe", 4) == 0)
+            return getMach64Resource(startAddress, bufferLength, length, data, sectionName.str());
+    }
+    DBGLOG("Failed to extract resource %s: unrecognized or unsupported executable format", filename);
+    return false;
+}
+
+static bool getResourceFromMappedFile(const char *filename, const byte *startAddress, size_t bufferLength, MemoryBuffer &result, const char *type, unsigned id)
 {
     size32_t len = 0;
     const void * data = nullptr;
-    bool ok = getResourceFromMappedFile(filename, start_addr, len, data, type, id);
+    bool ok = getResourceFromMappedFile(filename, startAddress, bufferLength, len, data, type, id);
     if (ok)
         result.append(len, data);
     return ok;
+}
+
+extern DLLSERVER_API bool getResourceFromBuffer(const void *buffer, size32_t bufferLength, MemoryBuffer &data, const char *type, unsigned id)
+{
+    return getResourceFromMappedFile("memory buffer", static_cast<const byte *>(buffer), bufferLength, data, type, id);
 }
 
 extern bool getResourceFromFile(const char *filename, MemoryBuffer &data, const char * type, unsigned id)
@@ -223,7 +400,7 @@ extern bool getResourceFromFile(const char *filename, MemoryBuffer &data, const 
         }
         else
         {
-            ok = getResourceFromMappedFile(filename, start_addr, data, type, id);
+            ok = getResourceFromMappedFile(filename, start_addr, size, data, type, id);
             munmap((void *)start_addr, size);
         }
     }
@@ -488,7 +665,7 @@ bool HelperDll::getResource(size32_t & len, const void * & data, const char * ty
 #endif
         if (!mappedDll)
             return false;
-        return getResourceFromMappedFile(name, mappedDll->base(), len, data, type, id);
+        return getResourceFromMappedFile(name, mappedDll->base(), mappedDll->length(), len, data, type, id);
     }
 }
 

@@ -3869,7 +3869,7 @@ public:
     {
         START_TEST
 
-        Owned<IPropertyTree> original{createPTree(nullptr)};
+        Owned<IPropertyTree> original{createPTree(nullptr, flags)};
         original->setProp("@kind", "unnamed-root");
         original->setProp("child", "value");
 
@@ -3886,6 +3886,7 @@ public:
     {
         testRoundTripForUnnamedRootPTree(ipt_none);
         testRoundTripForUnnamedRootPTree(ipt_lowmem);
+        testRoundTripForUnnamedRootPTree(static_cast<ipt_flags>(ipt_lowmem|ipt_caseInsensitive));
         testRoundTripForUnnamedRootPTree(ipt_ordered);
     }
 

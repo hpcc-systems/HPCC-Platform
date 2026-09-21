@@ -35,6 +35,14 @@
 #define WWV_INCL_NAMESPACES             0x0100
 #define WWV_INCL_GENERATED_NAMESPACES   0x0200
 
+// Synchronous non-owning adapter; implementations may be stack allocated.
+interface IManifestResourceReader
+{
+    virtual ~IManifestResourceReader() = default;
+    virtual bool getResourceByPath(const char *path, MemoryBuffer &mb)=0;
+    virtual StringBuffer &getManifest(StringBuffer &mf)=0;
+};
+
 interface IWuWebView : extends IInterface
 {
     virtual void getResultViewNames(StringArray &names)=0;
@@ -57,6 +65,9 @@ interface IWuWebView : extends IInterface
     virtual bool getEmbeddedArchive(StringBuffer &ret)=0;
 
 };
+
+extern WUWEBVIEW_API void addManifestResourcesToArchive(IManifestResourceReader &resourceReader, IPropertyTree &archive);
+extern WUWEBVIEW_API void addManifestResourcesToArchive(IWuWebView &webView, IPropertyTree &archive);
 
 extern WUWEBVIEW_API IWuWebView *createWuWebView(IConstWorkUnit &wu, const char *target, const char *queryname, const char*dir, bool mapEspDir, IPropertyTree *xsltcfg);
 extern WUWEBVIEW_API IWuWebView *createWuWebView(const char *wuid, const char *target, const char *queryname, const char*dir, bool mapEspDir, IPropertyTree *xsltcfg);

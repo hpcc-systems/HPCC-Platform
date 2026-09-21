@@ -3299,12 +3299,13 @@ void PTree::deserializeSelf(IBufferedSerialInputStream &src, PTreeDeserializeCon
     const char *name = queryZeroTerminatedString(src, skipLen);
     if (unlikely(!name))
         throwUnexpectedX("PTree deserialization error: end of stream, expected name");
-    if (skipLen == 0)
-        name = nullptr;
-    setName(name);
+    StringBuffer serializedName;
+    if (skipLen)
+        serializedName.append(skipLen, name);
     src.skip(skipLen + 1); // Skip over name and null terminator
 
     read(src, flags);
+    setName(skipLen ? serializedName.str() : nullptr);
 
     // Peek the attribute name/value string list (paired entries) and record offsets until the terminator
     ctx.matchOffsets.clear();

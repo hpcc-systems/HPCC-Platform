@@ -2831,16 +2831,41 @@ void WsWuInfo::getWorkunitArchiveQuery(StringBuffer& str)
 
     StringBufferAdaptor istr(str);
     query->getQueryText(istr);
+    Owned<IWuWebView> wv;
     if ((str.length() < 1) || !isArchiveQuery(str.str()))
     {
         if (!query->hasArchive())
             throw MakeStringException(ECLWATCH_CANNOT_GET_WORKUNIT, "Archive query not found for workunit %s.", wuid.str());
 
-        Owned<IWuWebView> wv = createWuWebView(*cw, NULL, NULL, NULL, false, nullptr);
+        wv.setown(createWuWebView(*cw, NULL, NULL, NULL, false, nullptr));
         if (!wv)
             throw MakeStringException(ECLWATCH_CANNOT_GET_WORKUNIT, "Cannot create webview for workunit %s.", wuid.str());
         if (!wv->getEmbeddedArchive(str) || (str.length() < 1) || !isArchiveQuery(str.str()))
             throw MakeStringException(ECLWATCH_CANNOT_GET_WORKUNIT, "Archive query not found for workunit %s.", wuid.str());
+    }
+
+    if (!wv)
+        wv.setown(createWuWebView(*cw, NULL, NULL, NULL, false, nullptr));
+    if (wv)
+    {
+        try
+        {
+            Owned<IPropertyTree> archive = createPTreeFromXMLString(str.str(), ipt_caseInsensitive|ipt_lowmem);
+            addManifestResourcesToArchive(*wv, *archive);
+            StringBuffer restoredArchive;
+            toXML(archive, restoredArchive);
+            str.set(restoredArchive);
+        }
+        catch (IException *e)
+        {
+            StringBuffer msg;
+            WARNLOG("Failed to restore archive resources for workunit %s: %s", wuid.str(), e->errorMessage(msg).str());
+            e->Release();
+        }
+        catch (...)
+        {
+            WARNLOG("Unexpected failure restoring archive resources for workunit %s", wuid.str());
+        }
     }
 }
 

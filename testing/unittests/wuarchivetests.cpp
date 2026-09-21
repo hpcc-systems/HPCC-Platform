@@ -45,6 +45,7 @@ class wuArchiveTests : public CppUnit::TestFixture
         CPPUNIT_TEST(testNonArchiveQueryStoredAsPlainText);
         CPPUNIT_TEST(testCompressedQueryArchiveReadsAsXmlText);
         CPPUNIT_TEST(testCompressedQueryArchiveSurvivesXmlExportImport);
+        CPPUNIT_TEST(testCompressedQueryArchivePreservesManifestResources);
         CPPUNIT_TEST(testMissingQueryTextClearsOutput);
         CPPUNIT_TEST(testCorruptCompressedQueryArchiveClearsOutput);
     CPPUNIT_TEST_SUITE_END();
@@ -133,6 +134,34 @@ public:
         getWuQueryText(*importedQuery, text);
         CPPUNIT_ASSERT(strstr(text.get(), "<Archive") != nullptr);
         CPPUNIT_ASSERT(strstr(text.get(), "<Query>OUTPUT(&apos;archive text&apos;);</Query>") != nullptr);
+    }
+
+    void testCompressedQueryArchivePreservesManifestResources()
+    {
+        const byte jarContents[] = { 'P', 'K', 3, 4, 0, 0xff };
+        Owned<IPropertyTree> archive = createPTreeFromXMLString(testQueryArchive, ipt_caseInsensitive|ipt_lowmem);
+        IPropertyTree *additionalFiles = archive->addPropTree("AdditionalFiles", createPTree("AdditionalFiles"));
+        additionalFiles->setProp("@xmlns:xsi", "http://www.w3.org/2001/XMLSchema-instance");
+        IPropertyTree *manifest = additionalFiles->addPropTree("Manifest", createPTree("Manifest", ipt_none));
+        manifest->setProp(nullptr, "<Manifest><Resource type='jar' filename='query.jar' originalFilename='/tmp/query.jar'/></Manifest>");
+        IPropertyTree *resource = additionalFiles->addPropTree("Resource", createPTree("Resource"));
+        resource->setProp("@originalFilename", "/tmp/query.jar");
+        resource->setPropBin(nullptr, sizeof(jarContents), jarContents);
+
+        StringBuffer archiveText;
+        toXML(archive, archiveText);
+        Owned<ILocalWorkUnit> wu = createLocalWorkUnit();
+        Owned<IWUQuery> query = wu->updateQuery();
+        query->setQueryText(archiveText);
+
+        StringAttr restoredText;
+        getWuQueryText(*query, restoredText);
+        Owned<IPropertyTree> restoredArchive = createPTreeFromXMLString(restoredText.get(), ipt_caseInsensitive|ipt_lowmem);
+        MemoryBuffer restoredContents;
+        CPPUNIT_ASSERT(restoredArchive->getPropBin("AdditionalFiles/Resource[@originalFilename='/tmp/query.jar']", restoredContents));
+        CPPUNIT_ASSERT_EQUAL(static_cast<size32_t>(sizeof(jarContents)), restoredContents.length());
+        CPPUNIT_ASSERT(memcmp(jarContents, restoredContents.toByteArray(), sizeof(jarContents)) == 0);
+        CPPUNIT_ASSERT(strstr(restoredArchive->queryProp("AdditionalFiles/Manifest"), "type='jar'") != nullptr);
     }
 
     void testMissingQueryTextClearsOutput()

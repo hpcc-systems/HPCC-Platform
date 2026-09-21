@@ -47,6 +47,7 @@ extern DLLSERVER_API IPropertyTree *getEmbeddedArchivePTree(ILoadedDllEntry *dll
 extern DLLSERVER_API IPropertyTree *getEmbeddedManifestPTree(const ILoadedDllEntry *dll);
 
 extern DLLSERVER_API bool containsEmbeddedWorkUnit(ILoadedDllEntry *dll);
+extern DLLSERVER_API bool getResourceFromBuffer(const void *buffer, size32_t bufferLength, MemoryBuffer &data, const char *type, unsigned id);
 extern DLLSERVER_API bool getResourceFromFile(const char *filename, MemoryBuffer &data, const char * type, unsigned id);
 extern DLLSERVER_API bool getResourceXMLFromFile(const char *filename, const char *type, unsigned id, StringBuffer &xml);
 extern DLLSERVER_API bool getWorkunitXMLFromFile(const char *filename, StringBuffer &xml);

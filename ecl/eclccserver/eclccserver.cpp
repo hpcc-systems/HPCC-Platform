@@ -1001,7 +1001,9 @@ class EclccCompiler : implements IErrorReporter
                     {
                         StringBuffer wuXML; // Not sure this is a good idea.... better to always get it from the dll resource
                         Owned<IWUQuery> query = workunit->updateQuery();
-                        if (getArchiveXMLFromFile(realdllfilename, wuXML.clear()))
+                        if (isArchiveQuery(eclQuery.s.str()))
+                            query->setQueryText(eclQuery.s.str());
+                        else if (getArchiveXMLFromFile(realdllfilename, wuXML.clear()))
                             query->setQueryText(wuXML.str());
                         else
                             query->setQueryText(eclQuery.s.str());
