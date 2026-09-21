@@ -448,11 +448,11 @@ size32_t RtlTypeInfoBase::readAheadSize(IRowPrefetcherSource & in) const
     case 1:
     case UNKNOWN_LENGTH1:
         in.read(1, temp);
-        return rtlReadInt1(temp);
+        return rtlReadUInt1(temp);
     case 2:
     case UNKNOWN_LENGTH2:
         in.read(2, temp);
-        return rtlReadInt2(temp);
+        return rtlReadUInt2(temp);
     default:
         return in.readSize();
     }
@@ -464,12 +464,12 @@ size32_t RtlTypeInfoBase::readSize(const void * src) const
     {
     case 1:
     case UNKNOWN_LENGTH1:
-        return rtlReadInt1(src);
+        return rtlReadUInt1(src);
     case 2:
     case UNKNOWN_LENGTH2:
-        return rtlReadInt2(src);
+        return rtlReadUInt2(src);
     default:
-        return rtlReadInt4(src);
+        return rtlReadUInt4(src);
     }
 }
 
@@ -1262,10 +1262,10 @@ size32_t RtlStringTypeInfo::size(const byte * self, const byte * selfrow) const
     {
     case 1:
     case UNKNOWN_LENGTH1:
-        return 1 + rtlReadInt1(self);
+        return 1 + rtlReadUInt1(self);
     case 2:
     case UNKNOWN_LENGTH2:
-        return 2 + rtlReadInt2(self);
+        return 2 + rtlReadUInt2(self);
     default:
         return 4 + rtlReadSize32t(self);
     }
@@ -1484,6 +1484,27 @@ void RtlStringTypeInfo::getString(size32_t & resultLen, char * & result, const v
     }
 }
 
+bool RtlStringTypeInfo::queryDirectAccess(size32_t & resultLen, const char * & result, const void * ptr) const
+{
+    if (isEbcdic())
+        return false;
+
+    if (isFixedSize())
+    {
+        resultLen = length;
+        result = (const char *)ptr;
+    }
+    else
+    {
+        unsigned lengthSize = getLengthSizeBytes();
+        size32_t len = readSize(ptr);
+        resultLen = len;
+        result = (const char *)ptr + lengthSize;
+    }
+
+    return true;
+}
+
 void RtlStringTypeInfo::getUtf8(size32_t & resultLen, char * & result, const void * ptr) const
 {
     if (isEbcdic())
@@ -1644,6 +1665,24 @@ size32_t RtlDataTypeInfo::buildString(ARowBuilder &builder, size32_t offset, con
         offset += length;
     }
     return offset;
+}
+
+bool RtlDataTypeInfo::queryDirectAccess(size32_t & resultLen, const char * & result, const void * ptr) const
+{
+    if (isFixedSize())
+    {
+        resultLen = length;
+        result = (const char *)ptr;
+    }
+    else
+    {
+        unsigned lengthSize = getLengthSizeBytes();
+        size32_t len = readSize(ptr);
+        resultLen = len;
+        result = (const char *)ptr + lengthSize;
+    }
+
+    return true;
 }
 
 size32_t RtlDataTypeInfo::buildUtf8(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, size32_t codepoints, const char *value) const
@@ -4860,17 +4899,31 @@ size32_t translateScalar(ARowBuilder &builder, size32_t offset, const RtlFieldIn
         break;
     case type_data:
     case type_string:
-        //Special case if source and destination types are identical to avoid cloning strings
+       //Special case if source and destination types are identical to avoid cloning strings
         if ((destType.fieldType & sameTypeMask) == (sourceType.fieldType & sameTypeMask))
         {
-            size32_t length = sourceType.length;
-            if (!sourceType.isFixedSize())
+            size32_t directLength;
+            const char *  directSource;
+
+            // This would be much better done with a virtual function, but I don't want to break ABI
+            // compatibility for existing query workunits, so this is the safest approach
+            bool optimize;
+            if (destType.getType() == type_data)
             {
-                length = rtlReadSize32t(source);
-                source += sizeof(size32_t);
+                const RtlDataTypeInfo & castSourceType = static_cast<const RtlDataTypeInfo &>(sourceType);
+                optimize = castSourceType.queryDirectAccess(directLength, directSource, source);
             }
-            offset = destType.buildString(builder, offset, field, length, (const char *)source);
-            break;
+            else
+            {
+                const RtlStringTypeInfo & castSourceType = static_cast<const RtlStringTypeInfo &>(sourceType);
+                optimize = castSourceType.queryDirectAccess(directLength, directSource, source);
+            }
+
+            if (optimize)
+            {
+                offset = destType.buildString(builder, offset, field, directLength, directSource);
+                break;
+            }
         }
         //fallthrough
     case type_decimal:  // Go via string - not common enough to special-case
