@@ -1,15 +1,12 @@
 import * as React from "react";
 import { CommandBar, ContextualMenuItemType, ICommandBarItemProps } from "./CommandBarV9";
 import { Link } from "@fluentui/react-components";
-import { scopedLogger } from "@hpcc-js/util";
-import * as ESPQuery from "src/ESPQuery";
 import nlsHPCC from "src/nlsHPCC";
 import { QuerySortItem } from "src/store/Store";
+import { useQuery } from "../hooks/query";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { pushUrl } from "../util/history";
 import { AutoSizeFluentGrid, useCopyButtons, useFluentStoreState, FluentColumns } from "./controls/Grid";
-
-const logger = scopedLogger("../components/QueryLogicalFiles.tsx");
 
 const defaultUIState = {
     hasSelection: false
@@ -29,9 +26,7 @@ export const QueryLogicalFiles: React.FunctionComponent<QueryLogicalFilesProps> 
     sort = defaultSort
 }) => {
 
-    const query = React.useMemo(() => {
-        return ESPQuery.Get(querySet, queryId);
-    }, [querySet, queryId]);
+    const [query, , refreshQuery] = useQuery(querySet, queryId);
     const [uiState, setUIState] = React.useState({ ...defaultUIState });
     const [data, setData] = React.useState<any[]>([]);
     const {
@@ -44,7 +39,7 @@ export const QueryLogicalFiles: React.FunctionComponent<QueryLogicalFilesProps> 
         return {
             col1: { selectorType: "checkbox", width: 25 },
             File: {
-                label: nlsHPCC.File,
+                label: nlsHPCC.File, width: 600,
                 formatter: (item, row) => {
                     return <Link href={`#/files/${item}`}>{item}</Link>;
                 }
@@ -53,25 +48,18 @@ export const QueryLogicalFiles: React.FunctionComponent<QueryLogicalFilesProps> 
     }, []);
 
     const refreshData = React.useCallback(() => {
-        query?.getDetails()
-            .then(({ WUQueryDetailsResponse }) => {
-                const logicalFiles = query?.LogicalFiles?.Item;
-                if (logicalFiles) {
-                    setData(logicalFiles.map((item, idx) => {
-                        return {
-                            __hpcc_id: idx,
-                            File: item
-                        };
-                    }));
-                }
-            })
-            .catch(err => logger.error(err))
-            ;
-    }, [query]);
+        refreshQuery();
+    }, [refreshQuery]);
 
     React.useEffect(() => {
-        refreshData();
-    }, [refreshData]);
+        const logicalFiles = query?.LogicalFiles?.Item ?? [];
+        setData(logicalFiles?.map((item, idx) => {
+            return {
+                __hpcc_id: idx,
+                File: item
+            };
+        }));
+    }, [query, query?.LogicalFiles]);
 
     //  Command Bar  ---
     const buttons = React.useMemo((): ICommandBarItemProps[] => [

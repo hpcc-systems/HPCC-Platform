@@ -1,13 +1,10 @@
 import * as React from "react";
 import { CommandBar, ICommandBarItemProps } from "./CommandBarV9";
-import { scopedLogger } from "@hpcc-js/util";
-import * as ESPQuery from "src/ESPQuery";
 import nlsHPCC from "src/nlsHPCC";
 import { QuerySortItem } from "src/store/Store";
+import { useQuery } from "../hooks/query";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { AutoSizeFluentGrid, useCopyButtons, useFluentStoreState, FluentColumns } from "./controls/Grid";
-
-const logger = scopedLogger("../components/QueryErrors.tsx");
 
 interface QueryErrorsProps {
     querySet?: string;
@@ -23,9 +20,7 @@ export const QueryErrors: React.FunctionComponent<QueryErrorsProps> = ({
     sort = defaultSort
 }) => {
 
-    const query = React.useMemo(() => {
-        return ESPQuery.Get(querySet, queryId);
-    }, [querySet, queryId]);
+    const [query, , refreshQuery] = useQuery(querySet, queryId);
     const [data, setData] = React.useState<any[]>([]);
     const {
         selection, setSelection,
@@ -42,27 +37,20 @@ export const QueryErrors: React.FunctionComponent<QueryErrorsProps> = ({
     }, []);
 
     const refreshData = React.useCallback(() => {
-        query?.getDetails()
-            .then(({ WUQueryDetailsResponse }) => {
-                const clusterStates = query?.Clusters?.ClusterQueryState;
-                if (clusterStates) {
-                    setData(clusterStates.map((item, idx) => {
-                        return {
-                            __hpcc_id: idx,
-                            Cluster: item.Cluster,
-                            Errors: item.Errors,
-                            State: item.State
-                        };
-                    }));
-                }
-            })
-            .catch(err => logger.error(err))
-            ;
-    }, [query]);
+        refreshQuery();
+    }, [refreshQuery]);
 
     React.useEffect(() => {
-        refreshData();
-    }, [refreshData]);
+        const clusterStates = query?.Clusters?.ClusterQueryState ?? [];
+        setData(clusterStates?.map((item, idx) => {
+            return {
+                __hpcc_id: idx,
+                Cluster: item.Cluster,
+                Errors: item.Errors,
+                State: item.State
+            };
+        }));
+    }, [query, query?.Clusters]);
 
     //  Command Bar  ---
     const buttons = React.useMemo((): ICommandBarItemProps[] => [

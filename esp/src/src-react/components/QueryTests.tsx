@@ -2,8 +2,8 @@ import * as React from "react";
 import { SelectTabData, SelectTabEvent, Tab, TabList, makeStyles } from "@fluentui/react-components";
 import { join, scopedLogger } from "@hpcc-js/util";
 import nlsHPCC from "src/nlsHPCC";
-import * as ESPQuery from "src/ESPQuery";
 import * as WsTopology from "src/WsTopology";
+import { useQuery } from "../hooks/query";
 import { useWorkunitResults } from "../hooks/workunit";
 import { IFrame } from "./IFrame";
 import { pushUrl } from "../util/history";
@@ -38,7 +38,7 @@ export const QueryTests: React.FunctionComponent<QueryTestsProps> = ({
     tab = "form"
 }) => {
 
-    const [query, setQuery] = React.useState<any>();
+    const [query] = useQuery(querySet, queryId);
 
     const [wuid, setWuid] = React.useState("");
     const [wuResults] = useWorkunitResults(wuid);
@@ -56,8 +56,6 @@ export const QueryTests: React.FunctionComponent<QueryTestsProps> = ({
     const [linksUrl, setLinksUrl] = React.useState("");
 
     React.useEffect(() => {
-        setQuery(ESPQuery.Get(querySet, queryId));
-
         WsTopology.GetWsEclIFrameURL("forms/soap").then(url => setSoapUrl(buildFrameUrl(url, `${querySet}/${queryId}`)));
 
         WsTopology.GetWsEclIFrameURL("forms/ecl").then(url => setFormUrl(buildFrameUrl(url, `${querySet}/${queryId}`)));
@@ -88,15 +86,11 @@ export const QueryTests: React.FunctionComponent<QueryTestsProps> = ({
         WsTopology.GetWsEclIFrameURL("example/request").then(url => setExampleRequestUrl(buildFrameUrl(url, `${querySet}/${queryId}?display`)));
 
         WsTopology.GetWsEclIFrameURL("example/response").then(url => setExampleResponseUrl(buildFrameUrl(url, `${querySet}/${queryId}?display`)));
-    }, [setQuery, queryId, querySet, resultNames]);
+    }, [queryId, querySet, resultNames]);
 
     React.useEffect(() => {
-        query?.getDetails()
-            .then(({ WUQueryDetailsResponse }) => {
-                setWuid(WUQueryDetailsResponse.Wuid);
-            })
-            .catch(err => logger.error(err));
-    }, [query]);
+        setWuid(query?.Wuid ?? "");
+    }, [query, query?.Wuid]);
 
     React.useEffect(() => {
         const names = [];

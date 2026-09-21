@@ -1,13 +1,10 @@
 import * as React from "react";
 import { CommandBar, ICommandBarItemProps } from "./CommandBarV9";
-import { scopedLogger } from "@hpcc-js/util";
-import * as ESPQuery from "src/ESPQuery";
 import nlsHPCC from "src/nlsHPCC";
 import { QuerySortItem } from "src/store/Store";
+import { useQuery } from "../hooks/query";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { AutoSizeFluentGrid, useCopyButtons, useFluentStoreState, FluentColumns } from "./controls/Grid";
-
-const logger = scopedLogger("src-react/components/QueryLibrariesUsed.tsx");
 
 interface QueryLibrariesUsedProps {
     querySet?: string;
@@ -23,9 +20,7 @@ export const QueryLibrariesUsed: React.FunctionComponent<QueryLibrariesUsedProps
     sort = defaultSort
 }) => {
 
-    const query = React.useMemo(() => {
-        return ESPQuery.Get(querySet, queryId);
-    }, [querySet, queryId]);
+    const [query, , refreshQuery] = useQuery(querySet, queryId);
     const [data, setData] = React.useState<any[]>([]);
     const {
         selection, setSelection,
@@ -35,30 +30,23 @@ export const QueryLibrariesUsed: React.FunctionComponent<QueryLibrariesUsedProps
     //  Grid ---
     const columns = React.useMemo((): FluentColumns => {
         return {
-            Name: { label: nlsHPCC.LibrariesUsed }
+            Name: { label: nlsHPCC.LibrariesUsed, width: 600 }
         };
     }, []);
 
     const refreshData = React.useCallback(() => {
-        query?.getDetails()
-            .then(({ WUQueryDetailsResponse }) => {
-                const librariesUsed = query?.LibrariesUsed?.Item;
-                if (librariesUsed) {
-                    setData(librariesUsed.map((item, idx) => {
-                        return {
-                            __hpcc_id: idx,
-                            Name: item
-                        };
-                    }));
-                }
-            })
-            .catch(err => logger.error(err))
-            ;
-    }, [query]);
+        refreshQuery();
+    }, [refreshQuery]);
 
     React.useEffect(() => {
-        refreshData();
-    }, [refreshData]);
+        const librariesUsed = query?.LibrariesUsed?.Item ?? [];
+        setData(librariesUsed?.map((item, idx) => {
+            return {
+                __hpcc_id: idx,
+                Name: item
+            };
+        }));
+    }, [query, query?.LibrariesUsed]);
 
     //  Command Bar  ---
     const buttons = React.useMemo((): ICommandBarItemProps[] => [

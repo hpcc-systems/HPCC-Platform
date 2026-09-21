@@ -18,11 +18,16 @@ export function useQuery(querySet: string, queryId: string): UseQueryResponse {
             return;
         }
         const query = Query.attach({ baseUrl: "" }, querySet, queryId);
-        const refresh = singletonDebounce(query, "refresh");
+        const doRefresh = singletonDebounce(query, "refresh");
+        const refresh = () => doRefresh().catch(err => {
+            logger.error(err);
+            return undefined;
+        });
+        setRetVal([undefined, Date.now(), refresh]);
 
         let active = true;
         let handle;
-        refresh().then(() => {
+        doRefresh().then(() => {
             if (active) {
                 handle = query.watch(() => {
                     setRetVal([query, Date.now(), refresh]);

@@ -1,15 +1,12 @@
 import * as React from "react";
 import { CommandBar, ContextualMenuItemType, ICommandBarItemProps } from "./CommandBarV9";
 import { Link } from "@fluentui/react-components";
-import { scopedLogger } from "@hpcc-js/util";
-import * as ESPQuery from "src/ESPQuery";
 import nlsHPCC from "src/nlsHPCC";
 import { QuerySortItem } from "src/store/Store";
+import { useQuery } from "../hooks/query";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { pushUrl } from "../util/history";
 import { AutoSizeFluentGrid, useCopyButtons, useFluentStoreState, FluentColumns } from "./controls/Grid";
-
-const logger = scopedLogger("src-react/components/QuerySuperFiles.tsx");
 
 const defaultUIState = {
     hasSelection: false
@@ -29,9 +26,7 @@ export const QuerySuperFiles: React.FunctionComponent<QuerySuperFilesProps> = ({
     sort = defaultSort
 }) => {
 
-    const query = React.useMemo(() => {
-        return ESPQuery.Get(querySet, queryId);
-    }, [querySet, queryId]);
+    const [query, , refreshQuery] = useQuery(querySet, queryId);
     const [uiState, setUIState] = React.useState({ ...defaultUIState });
     const [data, setData] = React.useState<any[]>([]);
     const {
@@ -44,7 +39,7 @@ export const QuerySuperFiles: React.FunctionComponent<QuerySuperFilesProps> = ({
         return {
             col1: { selectorType: "checkbox", width: 25 },
             File: {
-                label: nlsHPCC.File,
+                label: nlsHPCC.File, width: 600,
                 formatter: (item, row) => {
                     return <Link href={`#/files/${item}`}>{item}</Link>;
                 }
@@ -53,24 +48,18 @@ export const QuerySuperFiles: React.FunctionComponent<QuerySuperFilesProps> = ({
     }, []);
 
     const refreshData = React.useCallback(() => {
-        query?.getDetails()
-            .then(({ WUQueryDetailsResponse }) => {
-                const superFiles = query?.SuperFiles?.SuperFile;
-                if (superFiles) {
-                    setData(superFiles.map((item, idx) => {
-                        return {
-                            __hpcc_id: idx,
-                            File: item.Name
-                        };
-                    }));
-                }
-            })
-            .catch(err => logger.error(err));
-    }, [query]);
+        refreshQuery();
+    }, [refreshQuery]);
 
     React.useEffect(() => {
-        refreshData();
-    }, [refreshData]);
+        const superFiles = query?.SuperFiles?.SuperFile ?? [];
+        setData(superFiles?.map((item, idx) => {
+            return {
+                __hpcc_id: idx,
+                File: item.Name
+            };
+        }));
+    }, [query, query?.SuperFiles]);
 
     //  Command Bar  ---
     const buttons = React.useMemo((): ICommandBarItemProps[] => [

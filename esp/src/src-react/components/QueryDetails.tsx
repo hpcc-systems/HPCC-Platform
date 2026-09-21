@@ -1,7 +1,7 @@
 import * as React from "react";
 import { SizeMe } from "../layouts/SizeMe";
 import nlsHPCC from "src/nlsHPCC";
-import * as ESPQuery from "src/ESPQuery";
+import { useQuery } from "../hooks/query";
 import { pushUrl, updateFullscreen } from "../util/history";
 import { FullscreenFrame, FullscreenStack } from "../layouts/Fullscreen";
 import { QueryErrors } from "./QueryErrors";
@@ -34,7 +34,7 @@ export const QueryDetails: React.FunctionComponent<QueryDetailsProps> = ({
 }) => {
     const effectiveState = React.useMemo(() => ({ ...state, testTab: state.testTab ?? "form" }), [state]);
 
-    const [query, setQuery] = React.useState<any>();
+    const [query] = useQuery(querySet, queryId);
     const [wuid, setWuid] = React.useState<string>("");
     const [logicalFileCount, setLogicalFileCount] = React.useState<number>(0);
     const [superFileCount, setSuperFileCount] = React.useState<number>(0);
@@ -43,19 +43,14 @@ export const QueryDetails: React.FunctionComponent<QueryDetailsProps> = ({
     const [activated, setActivated] = React.useState(false);
 
     React.useEffect(() => {
-        setQuery(ESPQuery.Get(querySet, queryId));
-    }, [setQuery, queryId, querySet]);
-
-    React.useEffect(() => {
-        query?.getDetails().then(() => {
-            setWuid(query.Wuid);
-            setLogicalFileCount(query.LogicalFiles?.Item?.length);
-            setSuperFileCount(query.SuperFiles?.SuperFile?.length);
-            setLibsUsedCount(query.LibrariesUsed?.Item?.length);
-            setActivated(query.Activated);
-            setSuspended(query.Suspended);
-        });
-    }, [query]);
+        if (!query) return;
+        setWuid(query.Wuid);
+        setLogicalFileCount(query.LogicalFiles?.Item?.length ?? 0);
+        setSuperFileCount(query.SuperFiles?.SuperFile?.length ?? 0);
+        setLibsUsedCount(query.LibrariesUsed?.Item?.length ?? 0);
+        setActivated(!!query.Activated);
+        setSuspended(!!query.Suspended);
+    }, [query, query?.Activated, query?.LibrariesUsed, query?.LogicalFiles, query?.SuperFiles, query?.Suspended, query?.Wuid]);
 
     const onTabSelect = React.useCallback((tab: TabInfo) => {
         switch (tab.id) {
