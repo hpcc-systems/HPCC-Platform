@@ -1286,12 +1286,24 @@ protected:
     compatIFSHmode compatmode;
     IFEflags extraFlags = IFEnone;
     bool disconnectonexit;
+    bool fileIOCounted = false;
+
+    void noteClosed()
+    {
+        if (fileIOCounted)
+        {
+            parent->noteFileIOClose(disconnectonexit);
+            fileIOCounted = false;
+        }
+    }
 public:
     CRemoteFileIO(CRemoteFile *_parent)
         : parent(_parent), ioReadCycles(0), ioWriteCycles(0), ioReadBytes(0), ioWriteBytes(0), ioReads(0), ioWrites(0), ioRetries(0)
     {
         handle = 0;
         disconnectonexit = false;
+        parent->noteFileIOOpen();
+        fileIOCounted = true;
     }
 
     ~CRemoteFileIO()
@@ -1307,8 +1319,7 @@ public:
                 e->Release();
             }
         }
-        if (disconnectonexit)
-            parent->disconnect();
+        noteClosed();
     }
 
     void close()
@@ -1329,6 +1340,7 @@ public:
                 e->Release();
             }
             handle = 0;
+            noteClosed();
         }
     }
     RemoteFileIOHandle getHandle() const { return handle; }

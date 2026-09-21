@@ -1036,12 +1036,42 @@ CRemoteBase::CRemoteBase(const SocketEndpoint &_ep, const char *_storageSecret, 
 void CRemoteBase::disconnect()
 {
     CriticalBlock block(crit);
+    if (activeFileIOs)
+    {
+        disconnectOnLastFileIO = true;
+        return;
+    }
+    disconnectLocked();
+}
+
+void CRemoteBase::disconnectLocked()
+{
     Owned<ISocket> s = socket.getClear();
     if (s)
     {
         SocketEndpoint tep(ep);
         setDafsEndpointPort(tep);
         removeConnectionTableSocket(tep, s);
+    }
+}
+
+void CRemoteBase::noteFileIOOpen()
+{
+    CriticalBlock block(crit);
+    activeFileIOs++;
+}
+
+void CRemoteBase::noteFileIOClose(bool disconnectonexit)
+{
+    CriticalBlock block(crit);
+    assertex(activeFileIOs);
+    activeFileIOs--;
+    if (disconnectonexit)
+        disconnectOnLastFileIO = true;
+    if (!activeFileIOs && disconnectOnLastFileIO)
+    {
+        disconnectOnLastFileIO = false;
+        disconnectLocked();
     }
 }
 
