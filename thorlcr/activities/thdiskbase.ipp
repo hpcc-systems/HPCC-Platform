@@ -50,10 +50,10 @@ class CWriteMasterBase : public CMasterActivity
     __int64 recordsProcessed;
     bool published;
     StringAttr fileName;
-    CDfsLogicalFileName dlfn;
     CompressionMethod compMethod = COMPRESS_METHOD_NONE;
 
 protected:
+    CDfsLogicalFileName dlfn;
     StringArray clusters;
     Owned<IFileDescriptor> fileDesc;
     IHThorDiskWriteArg *diskHelperBase;

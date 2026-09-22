@@ -25,6 +25,8 @@
    hthorMemoryLimit
  */
 
+#include <vector>
+
 #include "jliball.hpp"
 #include "hthor.hpp"
 #include "dadfs.hpp"
@@ -2452,6 +2454,9 @@ protected:
     CSVSplitter         csvSplitter;    
     unsigned __int64 limit;
     size32_t maxRowSize;
+    // Tracks, per subfile (index 0 if not a superfile), whether the part owning the CSV header has been found yet.
+    // Parts are processed strictly in order, so the first part encountered with non-zero size owns the header.
+    std::vector<bool> subfileHeaderConsumed;
 };
 
 class CHThorXmlReadActivity : public CHThorDiskReadBaseActivity, implements IXMLSelect
