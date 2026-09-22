@@ -9953,6 +9953,12 @@ public:
                 iEvent->endNode(tagname, event.data.scalar.length, (const void *)event.data.scalar.value, false, parser.offset);
                 break;
             case YAML_ALIAS_EVENT: //reference to an anchor, ignore for now
+                // ***SECURITY NOTE: if alias resolution is ever implemented here, it MUST enforce limits on
+                // recursion depth / total expanded node count / output size. Naively substituting the
+                // referenced anchor's content on each alias reference (as some YAML libraries/parsers do)
+                // can be abused for a "billion laughs"-style exponential expansion denial-of-service attack
+                // (CWE-776 / CWE-400) if the YAML document originates from an untrusted or externally-supplied
+                // source. The current behaviour of ignoring aliases avoids this risk entirely.
                 iEvent->beginNode(tagname, true, parser.offset);
                 iEvent->endNode(tagname, 0, nullptr, false, parser.offset);
                 break;
@@ -10041,6 +10047,9 @@ public:
                 break;
             }
             case YAML_ALIAS_EVENT: //reference to an anchor, ignore for now
+                // ***SECURITY NOTE: see matching comment in loadSequence() above - any future implementation
+                // of alias resolution here must bound recursion depth/expanded size to avoid a "billion
+                // laughs"-style denial-of-service (CWE-776/CWE-400) against untrusted YAML input.
                 iEvent->beginNode(elname, false, parser.offset);
                 iEvent->endNode(elname, 0, nullptr, false, parser.offset);
                 break;
@@ -10106,7 +10115,8 @@ public:
             case YAML_DOCUMENT_END_EVENT:
                 break;
             case YAML_NO_EVENT:
-            case YAML_ALIAS_EVENT: //root alias?
+            case YAML_ALIAS_EVENT:  // root alias? - if handled in future, see security note on alias handling
+                                    // in loadMap()/loadSequence() above regarding "billion laughs" DoS risk
             case YAML_MAPPING_END_EVENT:
             case YAML_SCALAR_EVENT: //root unmapped (unnamed) scalars?
             case YAML_SEQUENCE_END_EVENT:
