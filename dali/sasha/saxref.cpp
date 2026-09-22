@@ -741,8 +741,11 @@ public:
             // NB: still perform setpresent() below, so that later 'orphan' and 'found' scanning can spot the part as orphaned or part of a found file.
         }
 
-        if (file->setpresent(drv,partNum))
-            OERRLOG(LOGPFX "Duplicate file with mismatched tail (%d) %s",partNum,filePath);
+        // If it is not an HPCC file, the partNum represents the node it was found on because there was no suffix to indicate the part number.
+        // External files are treated as single-part files, so index 0 is their only valid bitmap index.
+        unsigned bitmapIndex = file->isHPCCFile() ? partNum : 0;
+        if (file->setpresent(drv, bitmapIndex))
+            OERRLOG(LOGPFX "Duplicate file with mismatched tail (%d) %s", partNum, filePath);
     }
 
     bool markFile(unsigned drv,const char *name, unsigned node, const SocketEndpoint &ep, IGroup &grp, unsigned numnodes)

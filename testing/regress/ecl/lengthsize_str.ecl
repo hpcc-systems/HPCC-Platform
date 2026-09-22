@@ -31,6 +31,14 @@ testRecord := RECORD
     UNSIGNED1 sentinel;
 END;
 
+expandedTestRecord := RECORD
+    STRING name;
+    STRING50 name1;
+    STRING50 name2;
+    STRING50 name4;
+    UNSIGNED1 sentinel;
+END;
+
 //Create strings with different length sizes
 ds1 := NOFOLD(DATASET(100, TRANSFORM(testRecord,
             SELF.name  := (STRING)counter,
@@ -56,12 +64,20 @@ p2 := NOFOLD(PROJECT(ds1, TRANSFORM(testRecord,
 
 
 i2 := INDEX(p2, { STRING10 search := p2.name }, { p2 }, prefix + 'lengthsize::strindex');
+iExpanded := INDEX({ STRING10 search  }, expandedTestRecord, prefix + 'lengthsize::strindex');
 ds2 := DATASET(prefix + 'lengthsize::strfile', testRecord, THOR);
 
 build(i2,OVERWRITE);
 output(p2,, prefix + 'lengthsize::strfile',overwrite);
 output(count(nofold(ds2)(sentinel = 42)));
 output(count(nofold(i2)(sentinel = 42)));
+
+// Test reading an index with fixed size strings and check the strings are expanded correctly
+output(
+    count(
+        nofold(iExpanded)(sentinel = 42 AND name2 = TRIM(name)+'x1x')
+        )
+    );
 
 
 // Now check that strings that are too long are truncated
