@@ -50,6 +50,7 @@ set (    SRCS
 IF (USE_CPPUNIT)
     set ( SRCS ${SRCS}
          unittests/ldapsecuritytests.cpp
+         unittests/permissionsmappingtests.cpp
     )
 ENDIF (USE_CPPUNIT)
 
