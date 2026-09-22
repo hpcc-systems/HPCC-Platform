@@ -1176,6 +1176,16 @@ void ReferencedFileList::resolveSubFiles(StringArray &subfiles, const StringArra
 void ReferencedFileList::resolveFiles(const StringArray &locations, const char *remoteLocation, const char *_remotePrefix, const char *_srcCluster, bool checkLocalFirst, bool expandSuperFiles, bool trackSubFiles, bool resolveLFNForeign, bool useRemoteStorage)
 {
     StringArray subfiles;
+    StringArray unresolved;
+    // Avoid flooding the log with a line per file (and per resolveFiles call, which can be for
+    // thousands of files each time a packagemap is added). Only the first few unresolved names are
+    // kept for the summary line below; the rest are just counted.
+    constexpr unsigned maxNamedFiles = 3;
+    unsigned numResolved = 0;
+    unsigned numUnresolved = 0;
+    unsigned numRemoteStorage = 0;
+    unsigned numRemoteDali = 0;
+    unsigned numLocal = 0;
     srcCluster.set(_srcCluster);
     remotePrefix.set(_remotePrefix);
 
@@ -1196,25 +1206,56 @@ void ReferencedFileList::resolveFiles(const StringArray &locations, const char *
             if (file.remoteStorage.isEmpty()) // Can be set at multiple levels in a packagemap
                 file.remoteStorage.set(remoteLocation); // Top-level remoteLocation has lowest precedence, used if nothing set in packagemap
 
-            DBGLOG("ReferencedFileList resolving remote storage file at %s", nullText(file.remoteStorage));
             file.resolveLocalOrRemote(locations, srcCluster, user, file.remoteStorage, remotePrefix, checkLocalFirst, expandSuperFiles ? &subfiles : NULL, trackSubFiles, resolveLFNForeign);
         }
         else
         {
             // The remoteLocation is a daliip when useRemoteStorage is false
             const char *passedDaliip = !useRemoteStorage ? remoteLocation : nullptr;
-            if (!isEmptyString(passedDaliip) || !file.daliip.isEmpty())
-                DBGLOG("ReferencedFileList resolving remote dali file at %s", isEmptyString(passedDaliip) ? nullText(file.daliip) : passedDaliip);
-            else
-                DBGLOG("ReferencedFileList resolving local file (no daliip or remote storage)");
             // Otherwise, passing nullptr for remote allows resolveLocalOrForeign to use ReferencedFile.daliip with
             // the matching ReferencedFile.remotePrefix instead of the ReferencedFileList.remotePrefix passed in here.
             remote.setown(!isEmptyString(passedDaliip) ? createINode(passedDaliip, 7070) : nullptr);
             file.resolveLocalOrForeign(locations, srcCluster, user, remote, remotePrefix, checkLocalFirst, expandSuperFiles ? &subfiles : NULL, trackSubFiles, resolveLFNForeign);
         }
 
+        unsigned fileFlags = file.getFlags();
+        if (fileFlags & RefFileNotFound)
+        {
+            numUnresolved++;
+            if (unresolved.ordinality() < maxNamedFiles)
+                unresolved.append(file.getLogicalName());
+        }
+        else
+        {
+            numResolved++;
+            if (fileFlags & RefFileResolvedRemote)
+                numRemoteStorage++;
+            else if (fileFlags & RefFileResolvedForeign)
+                numRemoteDali++;
+            else
+                numLocal++;
+        }
+
         if (expandSuperFiles)
             resolveSubFiles(subfiles, locations, checkLocalFirst, trackSubFiles, resolveLFNForeign);
+    }
+
+    // If there were any files, report a single summary line instead of one per file, naming a
+    // manageable number of the unresolved files and counts of the rest.
+    if (numUnresolved + numResolved > 0)
+    {
+        StringBuffer msg;
+        msg.appendf("ReferencedFileList%s%s: resolved %u file(s) (%u remote storage, %u remote dali, %u local)",
+            jobName.isEmpty() ? "" : " for ", jobName.isEmpty() ? "" : jobName.get(), numResolved, numRemoteStorage, numRemoteDali, numLocal);
+        if (numUnresolved)
+        {
+            msg.appendf(", failed to resolve %u", numUnresolved);
+            for (unsigned i = 0; i < unresolved.length(); i++)
+                msg.appendf("%s%s", i ? ", " : ": ", unresolved.item(i));
+            if (numUnresolved > unresolved.length())
+                msg.appendf(" and %u more", numUnresolved - unresolved.length());
+        }
+        DBGLOG("%s", msg.str());
     }
 }
 
