@@ -20,6 +20,7 @@
 
 import $.setup;
 import Std.File;
+import Std.Str;
 
 prefix := setup.Files(false, false).QueryFilePrefix;
 
@@ -28,6 +29,14 @@ testRecord := RECORD
     DATA name1{LENGTHSIZE(1)};
     DATA name2{LENGTHSIZE(2)};
     DATA name4{LENGTHSIZE(4)};
+    UNSIGNED1 sentinel;
+END;
+
+expandedTestRecord := RECORD
+    DATA name;
+    DATA50 name1;
+    DATA50 name2;
+    DATA50 name4;
     UNSIGNED1 sentinel;
 END;
 
@@ -56,12 +65,31 @@ p2 := NOFOLD(PROJECT(ds1, TRANSFORM(testRecord,
 
 
 i2 := INDEX(p2, { DATA10 search := p2.name }, { p2 }, prefix + 'lengthsize::strindex');
+iExpanded := INDEX({ DATA10 search  }, expandedTestRecord, prefix + 'lengthsize::strindex');
 ds2 := DATASET(prefix + 'lengthsize::strfile', testRecord, THOR);
 
 build(i2,OVERWRITE);
 output(p2,, prefix + 'lengthsize::strfile',overwrite);
 output(count(nofold(ds2)(sentinel = 42)));
 output(count(nofold(i2)(sentinel = 42)));
+
+// Test reading an index with fixed size strings and check the strings are expanded correctly
+
+boolean matches(DATA name1, DATA name2) := FUNCTION
+    s1 := (STRING)name1;
+    s2 := (STRING)name2;
+    x := Str.Find(s2, 'x');
+
+    sub1 := s1[1..x-1];
+    sub2 := s2[1..x-1];
+    return (x != 0) AND (sub1 = sub2);
+END;
+
+output(
+    count(
+        nofold(iExpanded)(sentinel = 42 AND matches(name, name2))
+        )
+    );
 
 
 // Now check that strings that are too long are truncated

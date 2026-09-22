@@ -48,6 +48,12 @@
 
 static const unsigned oneMinute = 60000; // msec
 
+#ifdef SYNC_LOCATION
+# define JLIBTEST_SYNC_LOCATION nullptr
+#else
+# define JLIBTEST_SYNC_LOCATION 0U
+#endif
+
 class JlibTraceTest : public CppUnit::TestFixture
 {
 public:
@@ -1695,10 +1701,253 @@ protected:
     }
 };
 
+class JlibRemoteFileIOHandleStress : public CppUnit::TestFixture
+{
+protected:
+    CPPUNIT_TEST_SUITE( JlibRemoteFileIOHandleStress );
+        CPPUNIT_TEST(testDisconnectOnExitDoesNotInvalidateSiblingIO);
+        CPPUNIT_TEST(testDisconnectRemoteFileDoesNotInvalidateSiblingIO);
+    CPPUNIT_TEST_SUITE_END();
+
+    enum class DisconnectMode
+    {
+        OnExit,
+        RemoteFile
+    };
+
+    static void checkRead(IFileIO &reader, offset_t offset, const char *expected, size32_t expectedSize)
+    {
+        std::vector<char> buffer(expectedSize);
+        size32_t bytesRead = reader.read(offset, expectedSize, buffer.data());
+        if (bytesRead != expectedSize)
+            throw makeStringExceptionV(-1, "Expected %u bytes from remote file, read %u", expectedSize, bytesRead);
+        if (memcmp(expected, buffer.data(), expectedSize) != 0)
+            throw makeStringException(-1, "Unexpected data read from remote file");
+    }
+
+    static void failIfThreadFailed(const char *name, IException *error)
+    {
+        if (error)
+        {
+            StringBuffer msg;
+            msg.append(name).append(" failed: ");
+            error->errorMessage(msg);
+            CPPUNIT_FAIL(msg.str());
+        }
+    }
+
+    class SurvivingReader : public Thread
+    {
+    public:
+        SurvivingReader(IFile *_file, const char *_payload, size32_t _payloadSize, Semaphore &_startSem, Semaphore &_readerReadySem, Semaphore &_disconnectCompleteSem, std::atomic<bool> &_readerReady)
+            : Thread("SurvivingReader"), file(_file), payload(_payload), payloadSize(_payloadSize), startSem(_startSem), readerReadySem(_readerReadySem), disconnectCompleteSem(_disconnectCompleteSem), readerReady(_readerReady)
+        {
+        }
+
+        virtual int run() override
+        {
+            try
+            {
+                if (!startSem.wait(oneMinute))
+                    throw makeStringException(-1, "Timed out waiting to start surviving reader");
+
+                reader.setown(file->open(IFOread));
+                if (!reader)
+                    throw makeStringException(-1, "Failed to open surviving remote reader");
+
+                checkRead(*reader, 0, payload, payloadSize);
+                readerReady.store(true);
+                readerReadySem.signal();
+
+                if (!disconnectCompleteSem.wait(oneMinute))
+                    throw makeStringException(-1, "Timed out waiting for disconnecting reader to close");
+
+                checkRead(*reader, 0, payload, payloadSize);
+            }
+            catch (IException *e)
+            {
+                error.setown(e);
+                if (!readerReady.load())
+                    readerReadySem.signal();
+            }
+            catch (...)
+            {
+                error.setown(makeStringException(-1, "Unknown exception in surviving reader"));
+                if (!readerReady.load())
+                    readerReadySem.signal();
+            }
+            return 0;
+        }
+
+        Owned<IException> error;
+
+    private:
+        IFile *file;
+        const char *payload;
+        size32_t payloadSize;
+        Semaphore &startSem;
+        Semaphore &readerReadySem;
+        Semaphore &disconnectCompleteSem;
+        std::atomic<bool> &readerReady;
+        Owned<IFileIO> reader;
+    };
+
+    class DisconnectingReader : public Thread
+    {
+    public:
+        DisconnectingReader(IFile *_file, const char *_payload, size32_t _payloadSize, Semaphore &_readerReadySem, Semaphore &_disconnectCompleteSem, std::atomic<bool> &_readerReady, DisconnectMode _mode)
+            : Thread("DisconnectingReader"),
+              file(_file),
+              payload(_payload),
+              payloadSize(_payloadSize),
+              readerReadySem(_readerReadySem),
+              disconnectCompleteSem(_disconnectCompleteSem),
+              readerReady(_readerReady),
+              mode(_mode)
+        {
+        }
+
+        virtual int run() override
+        {
+            try
+            {
+                if (!readerReadySem.wait(oneMinute))
+                    throw makeStringException(-1, "Timed out waiting for surviving reader to open");
+                if (readerReady.load())
+                {
+                    Owned<IFileIO> reader = file->open(IFOread);
+                    if (!reader)
+                        throw makeStringException(-1, "Failed to open disconnecting remote reader");
+                    if (mode == DisconnectMode::OnExit)
+                        disconnectRemoteIoOnExit(reader);
+                    checkRead(*reader, 0, payload, payloadSize);
+                    if (mode == DisconnectMode::RemoteFile)
+                        disconnectRemoteFile(file);
+                    reader.clear();
+                }
+            }
+            catch (IException *e)
+            {
+                error.setown(e);
+            }
+            catch (...)
+            {
+                error.setown(makeStringException(-1, "Unknown exception in disconnecting reader"));
+            }
+            disconnectCompleteSem.signal();
+            return 0;
+        }
+
+        Owned<IException> error;
+
+    private:
+        IFile *file;
+        const char *payload;
+        size32_t payloadSize;
+        Semaphore &readerReadySem;
+        Semaphore &disconnectCompleteSem;
+        std::atomic<bool> &readerReady;
+        DisconnectMode mode;
+    };
+
+    void testDisconnectOnExitDoesNotInvalidateSiblingIO()
+    {
+        testDeferredDisconnectDoesNotInvalidateSiblingIO(DisconnectMode::OnExit);
+    }
+
+    void testDisconnectRemoteFileDoesNotInvalidateSiblingIO()
+    {
+        testDeferredDisconnectDoesNotInvalidateSiblingIO(DisconnectMode::RemoteFile);
+    }
+
+    void testDeferredDisconnectDoesNotInvalidateSiblingIO(DisconnectMode mode)
+    {
+        constexpr const char defaultPayload[] = "remote file handle lifetime regression";
+        constexpr size32_t defaultPayloadSize = sizeof(defaultPayload) - 1;
+        constexpr size32_t existingFileSampleSize = 1024;
+
+        const char *host = getenv("HPCC_UNITTEST_HOST");
+        if (!host || !*host)
+            host = "localhost";
+        const char *remoteFileName = getenv("HPCC_UNITTEST_FILE");
+        bool generatedFile = !remoteFileName || !*remoteFileName;
+
+        SocketEndpoint ep;
+        ep.set(host, 7100);
+        StringBuffer uuid;
+        StringBuffer generatedFileName;
+        if (generatedFile)
+        {
+            generatedFileName.append("/tmp/JlibRemoteFileIOHandleStress_").append(genUUID(uuid, true)).append(".txt");
+            remoteFileName = generatedFileName.str();
+        }
+        Owned<IFile> file = createRemoteFile(ep, remoteFileName);
+        struct RemoteFileCleanup
+        {
+            IFile &file;
+            bool generatedFile;
+            ~RemoteFileCleanup()
+            {
+                if (generatedFile)
+                {
+                    try
+                    {
+                        file.remove();
+                    }
+                    catch (IException *e)
+                    {
+                        e->Release();
+                    }
+                }
+            }
+        } cleanup { *file, generatedFile };
+
+        std::vector<char> payload;
+        size32_t payloadSize = 0;
+        if (generatedFile)
+        {
+            file->remove();
+            Owned<IFileIO> writer = file->open(IFOcreate);
+            CPPUNIT_ASSERT(writer != nullptr);
+            CPPUNIT_ASSERT_EQUAL(defaultPayloadSize, writer->write(0, defaultPayloadSize, defaultPayload));
+            payload.assign(defaultPayload, defaultPayload + defaultPayloadSize);
+            payloadSize = defaultPayloadSize;
+        }
+        else
+        {
+            payload.resize(existingFileSampleSize);
+            Owned<IFileIO> reader = file->open(IFOread);
+            CPPUNIT_ASSERT(reader != nullptr);
+            payloadSize = reader->read(0, existingFileSampleSize, payload.data());
+            if (!payloadSize)
+                CPPUNIT_FAIL("HPCC_UNITTEST_FILE must identify a non-empty remote file");
+            payload.resize(payloadSize);
+        }
+
+        Semaphore startSem{JLIBTEST_SYNC_LOCATION};
+        Semaphore readerReadySem{JLIBTEST_SYNC_LOCATION};
+        Semaphore disconnectCompleteSem{JLIBTEST_SYNC_LOCATION};
+        std::atomic<bool> readerReady{false};
+
+        SurvivingReader survivingReader(file.get(), payload.data(), payloadSize, startSem, readerReadySem, disconnectCompleteSem, readerReady);
+        DisconnectingReader disconnectingReader(file.get(), payload.data(), payloadSize, readerReadySem, disconnectCompleteSem, readerReady, mode);
+        survivingReader.start(false);
+        disconnectingReader.start(false);
+        startSem.signal();
+        survivingReader.join();
+        disconnectingReader.join();
+
+        failIfThreadFailed("Surviving reader", survivingReader.error);
+        failIfThreadFailed("Disconnecting reader", disconnectingReader.error);
+    }
+};
+
 CPPUNIT_TEST_SUITE_REGISTRATION( JlibFileIOTestTiming );
 CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( JlibFileIOTestTiming, "JlibFileIOTestTiming" );
 CPPUNIT_TEST_SUITE_REGISTRATION( JlibFileIOTestStress );
-CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( JlibFileIOTestTiming, "JlibFileIOTestStress" );
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( JlibFileIOTestStress, "JlibFileIOTestStress" );
+CPPUNIT_TEST_SUITE_REGISTRATION( JlibRemoteFileIOHandleStress );
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( JlibRemoteFileIOHandleStress, "JlibRemoteFileIOHandleStress" );
 
 /* =========================================================== */
 class JlibContainsRelPathsTest : public CppUnit::TestFixture

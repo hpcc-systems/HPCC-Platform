@@ -69,6 +69,7 @@ struct ECLRTL_API RtlTypeInfoBase : public RtlTypeInfo
     virtual int compareRange(size32_t lenLeft, const byte * left, size32_t lenRight, const byte * right) const override;
     virtual void setLowBound(void * buffer, const byte * value, size32_t subLength, bool inclusive) const override;
     virtual void setHighBound(void * buffer, const byte * value, size32_t subLength, bool inclusive) const override;
+
 protected:
     virtual void setBound(void * buffer, const byte * value, size32_t subLength, byte fill, bool inclusive) const;
     size32_t buildUtf8ViaString(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, size32_t len, const char *value) const;
@@ -285,6 +286,8 @@ struct ECLRTL_API RtlStringTypeInfo final : public RtlTypeInfoBase
     virtual bool canMemCmp() const override;
     virtual unsigned hash(const byte * self, unsigned inhash) const override;
     virtual int compareRange(size32_t lenLeft, const byte * left, size32_t lenRight, const byte * right) const override;
+
+    bool queryDirectAccess(size32_t & resultLen, const char * & result, const void * ptr) const;
 };
 
 struct ECLRTL_API RtlDataTypeInfo final : public RtlTypeInfoBase
@@ -310,6 +313,8 @@ struct ECLRTL_API RtlDataTypeInfo final : public RtlTypeInfoBase
     virtual bool canMemCmp() const override;
     virtual unsigned hash(const byte *self, unsigned inhash) const override;
     virtual int compareRange(size32_t lenLeft, const byte * left, size32_t lenRight, const byte * right) const override;
+
+    bool queryDirectAccess(size32_t & resultLen, const char * & result, const void * ptr) const;
 };
 
 struct ECLRTL_API RtlVarStringTypeInfo final : public RtlTypeInfoBase

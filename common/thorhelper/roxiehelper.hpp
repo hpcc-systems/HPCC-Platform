@@ -70,9 +70,11 @@ public:
     inline bool allowKeepAlive()
     {
         const char *connection = queryRequestHeader("Connection");
-        if (!connection)
-            return !streq(version, "1.0");
-        return strieq(connection, "Keep-Alive");
+        if (connection)
+            return strieq(connection, "Keep-Alive");
+        if (version.isEmpty())
+            return false;
+        return !streq(version, "1.0");
     }
     inline bool isControlUrl()
     {
@@ -158,18 +160,29 @@ public:
     };
     inline void parseHTTPRequestLine(const char *v)
     {
+        const char *lineEnd = strstr(v, "\r\n");
         const char *end = strstr(v, " HTTP");
-        if (end)
+        if (end && (!lineEnd || end < lineEnd))
         {
             url.set(v, end - v);
             parseURL();
             v=end+5;
             if (*v=='/')
             {
-                end=strstr(++v, "\r\n");
-                if (end)
-                    version.set(v, end-v);
+                v++;
+                if (lineEnd)
+                    version.set(v, lineEnd-v);
+                else if (*v)
+                    version.set(v);
             }
+        }
+        else
+        {
+            if (lineEnd)
+                url.set(v, lineEnd-v);
+            else
+                url.set(v);
+            parseURL();
         }
     }
     void parseRequestHeaders(const char *headers);
