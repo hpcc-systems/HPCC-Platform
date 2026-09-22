@@ -65,18 +65,6 @@ http://www.openldap.org/faq/data/cache/634.html
 http://www.ietf.org/proceedings/02mar/I-D/draft-ietf-ldapext-acl-model-08.txt
 *****************************************************************/
 
-interface IAci : implements IInterface
-{
-    virtual StringBuffer& target() = 0;
-    virtual StringArray& userdns() = 0;
-    virtual StringArray& groupdns() = 0;
-    virtual bool isDeny() = 0;
-    virtual int permission() = 0;
-
-    virtual StringBuffer& serialize(StringBuffer& acibuf) = 0;
-    virtual void debugPrintout() = 0;
-};
-
 /****************************************************************
  *    Class CAci
  ****************************************************************/
@@ -380,6 +368,18 @@ public:
         }
     }
 };
+
+#ifdef _USE_CPPUNIT
+IAci* createAciForTest(const char* acistr)
+{
+    return new CAci(acistr);
+}
+
+IAci* createAciForTest(bool isDeny, int perm, ACT_TYPE actType, const char* dn)
+{
+    return new CAci(isDeny, perm, actType, dn);
+}
+#endif
 
 /****************************************************************
  *    Class COpenLdapAci

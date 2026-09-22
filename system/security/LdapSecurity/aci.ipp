@@ -21,6 +21,28 @@
 #include "permissions.hpp"
 #include "ldaputils.hpp"
 
+interface IAci : extends IInterface
+{
+    virtual StringBuffer& target() = 0;
+    virtual StringArray& userdns() = 0;
+    virtual StringArray& groupdns() = 0;
+    virtual bool isDeny() = 0;
+    virtual int permission() = 0;
+
+    virtual StringBuffer& serialize(StringBuffer& acibuf) = 0;
+    virtual void debugPrintout() = 0;
+};
+
+#ifdef _USE_CPPUNIT
+// Test-only factory functions exposing the otherwise internal CAci class
+// (defined entirely within aci.cpp, with no header declaration of its own)
+// so that white-box unit tests can exercise its ACI-string parser and
+// permission-flag constructor without changing the production visibility
+// of CAci itself. Implemented in aci.cpp, guarded by the same macro.
+IAci* createAciForTest(const char* acistr);
+IAci* createAciForTest(bool isDeny, int perm, ACT_TYPE actType, const char* dn);
+#endif
+
 class AciProcessor : implements IPermissionProcessor, public CInterface
 {
 protected:
