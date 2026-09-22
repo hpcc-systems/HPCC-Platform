@@ -152,6 +152,7 @@ public:
     virtual bool needsRowBuffer() const;
     virtual bool prewarmPage(INodeLoader & nodeLoader, offset_t page, NodeType type);
     virtual offset_t queryFirstBranchOffset() override;
+    virtual void getFirstBranchOffsets(std::vector<offset_t> & firstBranches) override;
     virtual const BloomFilter * queryBloom(unsigned i) const override;
     virtual void mergeStats(CRuntimeStatisticCollection & stats) const override {}
     virtual IKeyIndexPrewarmer * createPrewarmer() override;
