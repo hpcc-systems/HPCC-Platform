@@ -2240,18 +2240,19 @@ public:
                     DBGLOG("No IBYTI received in time for delayed packet %s - enqueuing", header.toString(s).str());
                 }
                 unsigned __int64 IBYTIdelay = nsTick()-packet->queryEnqueuedTimeStamp();
+                // enqueue() transfers ownership and may release the packet immediately, so inspect the header first
+                for (unsigned subChannel = 0; subChannel < MAX_SUBCHANNEL; subChannel++)
+                {
+                    if (header.subChannels[subChannel].isMe() || header.subChannels[subChannel].isNull())
+                        break;
+                    noteNodeSick(header.subChannels[subChannel]);
+                }
                 switch (header.activityId & ROXIE_PRIORITY_MASK)
                 {
                     case ROXIE_SLA_PRIORITY: slaQueue.enqueue(packet, IBYTIdelay); break;
                     case ROXIE_HIGH_PRIORITY: hiQueue.enqueue(packet, IBYTIdelay); break;
                     case ROXIE_LOW_PRIORITY: loQueue.enqueue(packet, IBYTIdelay); break;
                     default: bgQueue.enqueue(packet, IBYTIdelay); break;
-                }
-                for (unsigned subChannel = 0; subChannel < MAX_SUBCHANNEL; subChannel++)
-                {
-                    if (header.subChannels[subChannel].isMe() || header.subChannels[subChannel].isNull())
-                        break;
-                    noteNodeSick(header.subChannels[subChannel]);
                 }
 
                 DelayedPacketEntry *goer = finger;
