@@ -48,6 +48,13 @@ class CCsvReadSlaveActivity : public CDiskReadSlaveActivityBase
     Owned<IBitSet> gotHeaderLines, sentHeaderLines;
     ISuperFileDescriptor *superFDesc;
     unsigned subFiles;
+    /* Per subfile (index 0 if not a superfile): the local part index that owns the header.
+     * Determined once by the master (which has full visibility of all part sizes) and conveyed
+     * here, since a worker only ever sees the parts assigned to it and cannot reliably determine
+     * this itself - different parts of the same subfile can be processed by different workers,
+     * in any order.
+     */
+    OwnedMalloc<unsigned> headerOwnerPart;
 
     class CCsvPartHandler : public CDiskPartHandlerBase
     {
@@ -78,8 +85,9 @@ class CCsvReadSlaveActivity : public CDiskReadSlaveActivityBase
                     pnum = lnum;
                 }
                 unsigned &headerLinesRemaining = activity.getHeaderLines(subFile);
-                // Only the first part of each subfile owns the CSV header.
-                if (headerLinesRemaining && (0 == pnum))
+                // The master determined which local part owns the header (see CCsvReadActivityMaster::calcFirstNonEmptyPart).
+                bool partOwnsHeader = (pnum == activity.headerOwnerPart[subFile]);
+                if (headerLinesRemaining && partOwnsHeader)
                 {
                     do
                     {
@@ -390,6 +398,9 @@ public:
         {
             mpTag = container.queryJobChannel().deserializeMPTag(data);
             data.read(subFiles);
+            headerOwnerPart.allocateN(subFiles);
+            for (unsigned s=0; s<subFiles; s++)
+                data.read(headerOwnerPart[s]);
             superFDesc = partDescs.ordinality() ? partDescs.item(0).queryOwner().querySuperFileDescriptor() : NULL;
             localLastPart.allocateN(subFiles);
             for (unsigned llp=0; llp<subFiles; llp++)

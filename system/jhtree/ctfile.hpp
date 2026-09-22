@@ -169,6 +169,7 @@ public:
     CKeyHdr(unsigned _keyId);
 
     void load(KeyHdr &_hdr);
+    void save(KeyHdr &_hdr) const;
 
     unsigned int getMaxKeyLength() const;  // MORE - is this correctly named? Is it the max record length?
     void setMaxKeyLength(uint32_t max) { hdr.length = max; };

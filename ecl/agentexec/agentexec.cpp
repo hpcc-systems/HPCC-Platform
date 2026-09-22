@@ -17,6 +17,7 @@
 
 #include "jfile.hpp"
 #include "jcontainerized.hpp"
+#include "jerror.hpp"
 #include "daclient.hpp"
 #include "wujobq.hpp"
 #include "jmisc.hpp"
@@ -36,6 +37,8 @@ public:
     CEclAgentExecutionServer(IPropertyTree *config);
     ~CEclAgentExecutionServer();
 
+    bool hasItemBeenHandled(IJobQueueItem *item) const;
+    bool abortDeadlockedThorJob(IJobQueueItem *item, const char *wuid, const IException *exception) const;
     int run();
     virtual IPooledThread *createNew() override;
     virtual bool onAbort() override;
@@ -46,7 +49,7 @@ private:
     const char *agentName;
     const char *daliServers;
     const char *apptype;
-    Owned<IJobQueue> queue;
+    Owned<IJobQueue> queue, internalThorQueue;
     Linked<IPropertyTree> config;
     Owned<IThreadPool> pool; // for containerized only
     std::atomic<bool> running = { false };
@@ -122,6 +125,9 @@ int CEclAgentExecutionServer::run()
         if (isThorAgent)
         {
             getClusterThorQueueName(queueNames, agentName);
+            StringBuffer internalQueueName;
+            getClusterThorInternalQueueName(internalQueueName, agentName);
+            internalThorQueue.setown(createJobQueue(internalQueueName));
         }
         else
         {
@@ -181,13 +187,10 @@ int CEclAgentExecutionServer::run()
                 PROGLOG("AgentExec: Dequeued workunit request '%s'", item->queryWUID());
                 if (isThorAgent && isContainerized())
                 {
-                    StringBuffer internalQueueName;
-                    getClusterThorInternalQueueName(internalQueueName, agentName);
-                    Owned<IJobQueue> internalQueue = createJobQueue(internalQueueName);
                     Owned<IJobQueueItem> internalItem = createJobQueueItem(item->queryWUID());
                     internalItem->setOwner(item->queryOwner());
                     internalItem->setPriority(item->getPriority());
-                    internalQueue->enqueue(internalItem.getClear());
+                    internalThorQueue->enqueue(internalItem.getClear());
                 }
                 try
                 {
@@ -251,8 +254,8 @@ static std::atomic<unsigned> nextInstanceNumber{0};
 class WaitThread : public CInterfaceOf<IPooledThread>
 {
 public:
-    WaitThread(const char *_dali, const char *_apptype, const char *_queue, IAbortRequestCallback *_abortCheck)
-        : dali(_dali), apptype(_apptype), queue(_queue), abortCheck(_abortCheck)
+    WaitThread(const CEclAgentExecutionServer &_owner, const char *_dali, const char *_apptype, const char *_queue, IAbortRequestCallback *_abortCheck)
+        : owner(_owner), dali(_dali), apptype(_apptype), queue(_queue), abortCheck(_abortCheck)
     {
         isThorAgent = streq("thor", apptype);
         // nextInstanceNumber always increases
@@ -343,7 +346,41 @@ public:
                     workunit->setContainerizedProcessInfo("AgentExec", compConfig->queryProp("@name"), k8s::queryMyPodName(), k8s::queryMyContainerName(), graphName, nullptr);
                     addTimeStamp(workunit, wfid, graphName, StWhenK8sLaunched);
                 }
-                k8s::runJob(jobSpecName, isThorAgent ? nullptr : wuid.str(), jobName, params, abortCheck, wasScheduled);
+
+                constexpr unsigned defaultK8sJobStartRetries = 3;
+                unsigned retries = (unsigned)compConfig->getPropInt("expert/@k8sJobStartRetries", defaultK8sJobStartRetries);
+                Owned<IException> exception;
+                while (true)
+                {
+                    try
+                    {
+                        k8s::runJob(jobSpecName, isThorAgent ? nullptr : wuid.str(), jobName, params, abortCheck, wasScheduled);
+                        break; // done
+                    }
+                    catch (IException *e)
+                    {
+                        if (e->errorCode() != JLIBERR_UtilKubernetesJobFailed)
+                            throw;
+
+                        Owned<IException> eOwner = e;
+                        EXCLOG(e);
+
+                        if (owner.hasItemBeenHandled(item)) // a running instance has already claimed it
+                            break;
+
+                        if (0 == retries)
+                        {
+                            VStringBuffer errMsg("Kubernetes job '%s' failed to start: ", jobName.str());
+                            e->errorMessage(errMsg);
+                            exception.setown(makeStringException(JLIBERR_UtilKubernetesJobFailed, errMsg));
+                            break;
+                        }
+                        --retries;
+                        PROGLOG("Job '%s' still in queue '%s', retrying (%u retries left)...", jobName.str(), queue.get(), retries);
+                    }
+                }
+                if (exception)
+                    owner.abortDeadlockedThorJob(item, wuid, exception);
             }
             else
             {
@@ -423,6 +460,7 @@ public:
         }
     }
 private:
+    const CEclAgentExecutionServer &owner;
     unsigned wfid = 0;
     StringAttr wuid;
     StringAttr graphName;
@@ -436,11 +474,48 @@ private:
     unsigned myInstanceNumber{0};
 };
 
+
+bool CEclAgentExecutionServer::hasItemBeenHandled(IJobQueueItem *item) const
+{
+    if (!internalThorQueue) // not an agent dealing with an internal Thor queue
+        return false;
+    Owned<IJobQueueItem> foundItem = internalThorQueue->find(item->queryWUID()); // NB: queryWUID() is the queue key (can be a compound key, e.g. wfid/wuid/graph)
+    return !foundItem;
+}
+
+bool CEclAgentExecutionServer::abortDeadlockedThorJob(IJobQueueItem *item, const char *wuid, const IException *exception) const
+{
+    // NB: item->queryWUID() is the compound queue item (wfid/wuid/graphName)
+    if (hasItemBeenHandled(item)) // a running Thor instance has already claimed it
+        return false;
+
+    const char *itemKey = item->queryWUID();
+    if (internalThorQueue) // check and take from queue
+    {
+        Owned<IJobQueueItem> abandoned = internalThorQueue->take(itemKey);
+        if (!abandoned)
+            return false; // a Thor instance has already claimed (dequeued it)
+    }
+
+    Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
+    Owned<IWorkUnit> wu = factory->updateWorkUnit(wuid);
+    if (wu)
+    {
+        // Item was still deadlocked on the internal queue with no retries left
+        WARNLOG("Job '%s': kubernetes job failed to start after retry attempts; workunit still on internal queue; aborting workunit: %s", itemKey, wuid);
+        wu->setState(WUStateFailed);
+        StringBuffer eStr;
+        addExceptionToWorkunit(wu, SeverityError, "agentexec", exception->errorCode(), exception->errorMessage(eStr).str(), nullptr, 0, 0, 0);
+        wu->commit();
+    }
+    return true;
+}
+
 IPooledThread *CEclAgentExecutionServer::createNew()
 {
     if (nullptr == pool)
         throwUnexpected();
-    return new WaitThread(daliServers, apptype, agentName, this);
+    return new WaitThread(*this, daliServers, apptype, agentName, this);
 }
 
 bool CEclAgentExecutionServer::onAbort()

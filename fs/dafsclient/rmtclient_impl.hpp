@@ -150,6 +150,8 @@ extern DAFSCLIENT_API byte traceFlags;
 class CRemoteBase : public CSimpleInterfaceOf<IDaFsConnection>
 {
     Owned<ISocket>          socket;
+    unsigned                activeFileIOs = 0;
+    bool                    disconnectOnLastFileIO = false;
     static SocketEndpoint   lastfailep;
     static unsigned         lastfailtime;
     static CriticalSection  lastFailEpCrit;
@@ -157,6 +159,7 @@ class CRemoteBase : public CSimpleInterfaceOf<IDaFsConnection>
 
     void connectSocket(SocketEndpoint &ep, unsigned connectTimeoutMs=0, unsigned connectRetries=INFINITE, bool secure=false);
     void killSocket(SocketEndpoint &tep);
+    void disconnectLocked();
 
 protected: friend class CRemoteFileIO;
 
@@ -167,6 +170,8 @@ protected: friend class CRemoteFileIO;
 
     void sendRemoteCommand(MemoryBuffer & src, MemoryBuffer & reply, bool retry=true, bool lengthy=false, bool handleErrCode=true);
     void sendRemoteCommand(MemoryBuffer & src, bool retry);
+    void noteFileIOOpen();
+    void noteFileIOClose(bool disconnectonexit);
 public:
     CRemoteBase(const SocketEndpoint &_ep, const char * _filename);
     CRemoteBase(const SocketEndpoint &_ep, DAFSConnectCfg _connectMethod, const char * _filename);

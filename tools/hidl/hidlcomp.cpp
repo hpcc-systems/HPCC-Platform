@@ -4394,8 +4394,8 @@ void EspServInfo::write_esp_binding(const char *packagename)
     outs("\tMemoryBuffer content;\n\n");
     outs("\tStringBuffer filepath;\n");
     outs("\tgetBaseFilePath(filepath);\n");
-    outs("\tif (strchr(\"\\\\/\", filepath.charAt(filepath.length()-1))==NULL)\n");
-    outs("\t\tfilepath.append(\"/\");\n");
+    outs("\tif (!filepath.isEmpty())\n");
+    outs("\t\taddPathSepChar(filepath);\n");
     outs("\tfilepath.append(pathex);\n");
     outs("\tresponse->httpContentFromFile(filepath.str());\n");
     outs("\tresponse->send();\n");

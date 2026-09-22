@@ -203,8 +203,7 @@ void makePackageActive(IPropertyTree *pkgSet, IPropertyTree *psEntryNew, const c
                 entry.setPropBool("@active", false);
         }
     }
-    if (psEntryNew->getPropBool("@active") != activate)
-        psEntryNew->setPropBool("@active", activate);
+    psEntryNew->setPropBool("@active", activate);
 }
 
 void fixPackageMapFileIds(IPropertyTreeIterator *iter, bool preloadAll)

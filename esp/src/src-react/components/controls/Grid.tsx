@@ -164,10 +164,15 @@ const useGridStyles = makeStyles({
         backgroundColor: tokens.colorNeutralBackground1,
     },
     headerCell: {
-        overflow: "hidden",
-        textOverflow: "ellipsis",
-        whiteSpace: "nowrap",
         borderRight: "1px solid var(--colorNeutralBackground5)",
+        "& .fui-TableHeaderCell__button": {
+            overflow: "hidden",
+            resize: "none",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
+        },
+        "& .fui-TableResizeHandle": { opacity: "0 !important", transform: "translateX(1px)" },
+        "& .fui-TableResizeHandle::after": { display: "none !important" },
     },
 });
 
@@ -466,7 +471,7 @@ const FluentStoreGrid: React.FunctionComponent<FluentStoreGridProps> = ({
             compare: col.data?.sortable === false ? () => 0 : (_a: any, _b: any) => 0,
             renderHeaderCell: () => col.isIconOnly
                 ? <Tooltip content={col.data?.headerTooltip ?? col.name} relationship="label"><span aria-label={col.name} style={{ display: "flex", alignItems: "center" }}>{col.data?.headerIconElement ?? <span>&#x2002;</span>}</span></Tooltip>
-                : <>{col.name}</>,
+                : <span style={{ display: "block", flex: "1 1 auto", minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{col.name}</span>,
             renderCell: (item: any) => col.onRender ? col.onRender(item, -1, col) : <>{String(item[col.fieldName ?? col.key] ?? "")}</>
         })
     ), [fluentColumns]);

@@ -2091,7 +2091,8 @@ void FileSprayer::gatherFileSizes(bool errorIfMissing)
     ForEachItemIn(idx, sources)
     {
         FilePartInfo & cur = sources.item(idx);
-        if (cur.size == UNKNOWN_PART_SIZE)
+        // if errorIfMissing=true, force gathering the file size() to check existence
+        if (errorIfMissing || (cur.size == UNKNOWN_PART_SIZE || cur.psize == UNKNOWN_PART_SIZE))
             fileSizeQueue.append(OLINK(cur));
     }
 
@@ -3073,9 +3074,8 @@ void FileSprayer::setSource(IDistributedFile * source)
         next.extractExtra(*curPart);
         if (curPart->numCopies()>1)
             next.mirrorFilename.set(curPart->getFilename(rfn,1));
-        // don't set the following here - force to check disk
-        //next.size = curPart->getFileSize(true,false);
-        //next.psize = curPart->getDiskSize(true,false);
+        next.size = curPart->getFileSize(false, false);
+        next.psize = curPart->getDiskSize(false, false);
         sources.append(next);
     }
 
@@ -3085,10 +3085,7 @@ void FileSprayer::setSource(IDistributedFile * source)
 
 void FileSprayer::setSource(IFileDescriptor * source)
 {
-    setSource(source, 0, 1);
-
-    //Now get the size of the files directly (to check they exist).  If they don't exist then switch to the backup instead.
-    gatherFileSizes(false);
+    setSource(source, 0, 1); // NB: calls gatherFileSizes(false)
 }
 
 
@@ -3135,6 +3132,8 @@ void FileSprayer::setSource(IFileDescriptor * source, unsigned copy, unsigned mi
             FilePartInfo & next = * new FilePartInfo(filename,idx);
             Owned<IPartDescriptor> part = source->getPart(idx);
             next.extractExtra(*part);
+            next.size = part->getFileSize(false, false);
+            next.psize = part->getDiskSize(false, false);
             if (mirrorCopy != (unsigned)-1)
                 source->getFilename(idx, mirrorCopy, next.mirrorFilename);
 

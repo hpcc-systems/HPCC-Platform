@@ -1170,8 +1170,11 @@ private:
     size32_t doTranslateOpaqueType(ARowBuilder &builder, IVirtualFieldCallback & callback, size32_t offset, const void *sourceRow) const
     {
         dbgassertex(canTranslate());
-        byte * destConditions = (byte *)alloca(destRecInfo.getNumIfBlocks() * sizeof(byte));
-        memset(destConditions, 2, destRecInfo.getNumIfBlocks() * sizeof(byte));
+        size_t ifAllocSize = destRecInfo.getNumIfBlocks() * sizeof(byte);
+        byte * destConditions = (byte *)alloca(ifAllocSize);
+        if (unlikely(ifAllocSize))
+            memset(destConditions, 2, ifAllocSize);
+
         size32_t estimate = destRecInfo.getFixedSize();
         bool hasBlobs = false;
         if (!estimate)

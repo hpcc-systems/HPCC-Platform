@@ -24,6 +24,8 @@
 #define jhtree_decl DECL_IMPORT
 #endif
 
+#include <vector>
+
 #include "jiface.hpp"
 #include "jfile.hpp"
 #include "jlog.hpp"
@@ -107,6 +109,7 @@ interface jhtree_decl IKeyIndex : public IKeyIndexBase
     virtual bool needsRowBuffer() const = 0;
     virtual void mergeStats(CRuntimeStatisticCollection & stats) const = 0;
     virtual offset_t queryFirstBranchOffset() = 0;
+    virtual void getFirstBranchOffsets(std::vector<offset_t> & firstBranches) = 0;
     virtual const BloomFilter * queryBloom(unsigned i) const = 0;
     virtual IKeyIndexPrewarmer * createPrewarmer() = 0;
     virtual void ensureReady() = 0; // Ensure the index is loaded and rady for

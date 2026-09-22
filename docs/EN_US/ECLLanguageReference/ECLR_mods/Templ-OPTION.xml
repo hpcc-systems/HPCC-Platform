@@ -523,6 +523,17 @@
             </row>
 
             <row>
+              <entry><emphasis>memoryLimit</emphasis></entry>
+
+              <entry>Default: none</entry>
+
+              <entry>For Roxie queries, sets the per-query memory limit. If
+              not specified, Roxie uses its configured default memory limit.
+              Specify the value as a byte count integer (or an ECL numeric
+              expression that evaluates to a byte count).</entry>
+            </row>
+
+            <row>
               <entry><emphasis>maxCsvRowSizeMb</emphasis></entry>
 
               <entry>Default 10 [MB]</entry>

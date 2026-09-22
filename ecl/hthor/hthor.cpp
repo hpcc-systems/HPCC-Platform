@@ -9734,6 +9734,9 @@ void CHThorCsvReadActivity::gatherInfo(IFileDescriptor * fd)
         limit = (unsigned __int64) -1;
     stopAfter = helper.getChooseNLimit();
 
+    ISuperFileDescriptor * superDesc = fd ? fd->querySuperFileDescriptor() : nullptr;
+    subfileHeaderConsumed.assign(superDesc ? superDesc->querySubFiles() : 1, false);
+
     const char * quotes = NULL;
     const char * separators = NULL;
     const char * terminators = NULL;
@@ -9805,15 +9808,47 @@ bool CHThorCsvReadActivity::openNext()
         unsigned skipLines = 0;
         if (headerLines)
         {
-            unsigned currentPartNum = partNum - 1;
+            unsigned globalPartNum = partNum - 1;
+            unsigned subfileNum = 0;
+            unsigned currentPartNum = globalPartNum;
             if (superfile)
             {
-                unsigned subfile;
-                verifyex(superfile->mapSubPart(currentPartNum, subfile, currentPartNum));
+                verifyex(superfile->mapSubPart(globalPartNum, subfileNum, currentPartNum));
             }
-            // Skip headers only on the first part of the file (or first part of each subfile in a superfile).
-            if (currentPartNum == 0)
-                skipLines = headerLines;
+            if (subfileNum < subfileHeaderConsumed.size() && !subfileHeaderConsumed[subfileNum])
+            {
+                /* The header occupies the front of the first NON-EMPTY part of the file/subfile, not necessarily
+                 * local part 0 (e.g. after a flattening Copy a subfile can have leading empty parts). Use the
+                 * part's own (already available) size rather than assuming local part 0 always has data.
+                 * If the size can't be determined, fall back to the previous local-part-0 assumption.
+                 */
+                // A positive size means this is a non-empty part. -1 means that
+                // the part size could not be determined, so the legacy part-0
+                // assumption below is used as a fallback.
+                offset_t partSize = (offset_t)-1;
+                if (ldFile)
+                {
+                    try
+                    {
+                        partSize = ldFile->getPartFileSize(globalPartNum);
+                    }
+                    catch (IException *e)
+                    {
+                        if (e->errorCode() != DFSERR_CannotFindPartFileSize)
+                            throw;
+                        e->Release();
+                        partSize = (offset_t)-1;
+                    }
+                }
+                // The header belongs to the first non-empty part of each
+                // subfile. If size lookup failed, preserve the old part-0 rule.
+                bool partOwnsHeader = (partSize > 0) || (((offset_t)-1 == partSize) && (0 == currentPartNum));
+                if (partOwnsHeader)
+                {
+                    skipLines = headerLines;
+                    subfileHeaderConsumed[subfileNum] = true;
+                }
+            }
         }
         while (skipLines && !inputstream->eos())
         {

@@ -45,6 +45,8 @@ bool optHex = false;
 bool optRaw = false;
 bool optFullHeader = false;
 bool optHeader = false;
+bool optFetchBranch = false;
+bool optPatch = false;
 bool optOverwrite = false;
 bool optNoSeek = false;
 StringArray files;
@@ -77,12 +79,14 @@ void usage()
         "  filter=[filter]     - filter rows\n"
         "  -H                  - hex display\n"
         "  -R                  - raw output\n"
-        "  -fullheader         - output full header info for each file\n"
-        "  -header             - output minimal header info for each file\n"
+        "  --fullheader        - output full header info for each file\n"
+        "  --fetchbranch       - calculate missing first branch offsets\n"
+        "  --patch             - patch calculated first branch offsets into the key header\n"
+        "  --header            - output minimal header info for each file\n"
         "\n"
         "Options when recode specified:\n"
-        "  -noseek\n"
-        "  -overwrite\n"
+        "  --noseek\n"
+        "  --overwrite\n"
         "  outfile=filename\n"
                     );
     fflush(stderr);
@@ -97,13 +101,17 @@ void doOption(const char *opt)
         optHex = true;
     else if (streq(opt, "-R"))
         optRaw = true;
-    else if (streq(opt, "-header"))
+    else if (streq(opt, "-header") || streq(opt, "--header"))
         optHeader = true;
-    else if (streq(opt, "-fullheader"))
+    else if (streq(opt, "-fullheader") || streq(opt, "--fullheader"))
         optFullHeader = true;
-    else if (streq(opt, "-overwrite"))
+    else if (streq(opt, "--fetchbranch"))
+        optFetchBranch = true;
+    else if (streq(opt, "--patch"))
+        optPatch = true;
+    else if (streq(opt, "-overwrite") || streq(opt, "--overwrite"))
         optOverwrite = true;
-    else if (streq(opt, "-noseek"))
+    else if (streq(opt, "-noseek") || streq(opt, "--noseek"))
         optNoSeek = true;
     else
         usage();
@@ -250,7 +258,19 @@ int main(int argc, const char **argv)
                 continue;
             }
             Owned<IFile> in = createIFile(keyName);
-            Owned<IFileIO> io = in->open(IFOread);
+            bool canPatch = false;
+            Owned<IFileIO> io;
+            if (optPatch)
+            {
+                io.setown(in->open(IFOreadwrite));
+                if (io)
+                    canPatch = true;
+                else
+                    fprintf(stderr, "WARNING: Could not open file %s in read/write mode; opening read only\n", keyName);
+            }
+
+            if (!io)
+                io.setown(in->open(IFOread));
             if (!io)
                 throw MakeStringException(999, "Failed to open file %s", keyName);
 
@@ -274,12 +294,45 @@ int main(int argc, const char **argv)
                     header->load(*(KeyHdr*)block.get());
                 }
 
+                KeyHdr * headerStruct = header->getHdrStruct();
+
                 printf("Key '%s'\nkeySize=%d keyedSize = %d NumParts=%x, Top=%d\n", keyName, key_size, keyedSize, index->numParts(), index->isTopLevelKey());
-                printf("File size = %" I64F "d, nodes = %" I64F "d\n", in->size(), in->size() / nodeSize - 1);
-                printf("rootoffset=%" I64F "d[%" I64F "d]\n", header->getRootFPos(), header->getRootFPos()/nodeSize);
-                printf("branchDepth=%" I64F "d\n", header->getHdrStruct()->branchDepth);
+                printHeaderOffset("File size", in->size(), nodeSize);
+                printHeaderOffset("rootoffset", header->getRootFPos(), nodeSize);
+                printf("branchDepth=%" I64F "d\n", headerStruct->branchDepth);
                 printHeaderOffset("firstleafoffset", header->getFirstLeafPos(), nodeSize);
-                for (unsigned i=0; i < _elements_in(header->getHdrStruct()->firstBranch); i++)
+                std::vector<offset_t> fetchedFirstBranches;
+                bool useFetchedFirstBranches = false;
+                if (optFetchBranch)
+                {
+                    offset_t firstBranch = header->getFirstBranchPos(0);
+                    if (firstBranch == 0 && headerStruct->branchDepth > 0)
+                    {
+                        printf("WARNING: firstbranchoffset[0] is 0, but branchDepth is %" I64F "d; recalculating branch offsets\n", headerStruct->branchDepth);
+                        index->getFirstBranchOffsets(fetchedFirstBranches);
+                        useFetchedFirstBranches = true;
+                    }
+                    else if (firstBranch == (offset_t)-1)
+                    {
+                        index->getFirstBranchOffsets(fetchedFirstBranches);
+                        useFetchedFirstBranches = true;
+                    }
+                    if (useFetchedFirstBranches)
+                    {
+                        for (unsigned i=0; i < fetchedFirstBranches.size(); i++)
+                            headerStruct->firstBranch[i] = fetchedFirstBranches[i];
+                        if (canPatch)
+                        {
+                            KeyHdr patchedHeader;
+                            header->save(patchedHeader);
+                            if (!(header->getKeyType() & TRAILING_HEADER_ONLY) && io->write(0, sizeof(patchedHeader), &patchedHeader) != sizeof(patchedHeader))
+                                throw MakeStringException(4, "Invalid key %s: failed to write leading key header", keyName);
+                            if ((header->getKeyType() & USE_TRAILING_HEADER) && io->write(in->size() - header->getNodeSize(), sizeof(patchedHeader), &patchedHeader) != sizeof(patchedHeader))
+                                throw MakeStringException(4, "Invalid key %s: failed to write trailing key header", keyName);
+                        }
+                    }
+                }
+                for (unsigned i=0; i < _elements_in(headerStruct->firstBranch); i++)
                 {
                     StringBuffer name;
                     name.appendf("firstbranchoffset[%u]", i);
@@ -289,7 +342,8 @@ int main(int argc, const char **argv)
                 printf("leafCount=%" I64F "d\n", header->getLeafCount());
                 printf("blobCount=%" I64F "d\n", header->getBlobCount());
                 printHeaderUnsignedShort("minRowsPerLeafExceptLast", header->getMinRowsPerLeafExceptLast());
-                printf("bloomoffset=%" I64F "d[%" I64F "d]\n", header->queryBloomHead(), header->queryBloomHead()/nodeSize);
+                printHeaderOffset("bloomoffset", header->queryBloomHead(), nodeSize);
+                printHeaderOffset("metadataoffset", headerStruct->metadataHead, nodeSize);
                 Owned<IPropertyTree> metadata = index->getMetadata();
                 if (metadata)
                 {

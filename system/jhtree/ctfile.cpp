@@ -209,6 +209,12 @@ void CKeyHdr::load(KeyHdr &_hdr)
         throw MakeKeyException(KeyExcpt_IncompatVersion, "This build is compatible with key versions <= %u. Key is version %u", KEYBUILD_VERSION, (unsigned) hdr.version);
 }
 
+void CKeyHdr::save(KeyHdr &_hdr) const
+{
+    memcpy(&_hdr, &hdr, sizeof(_hdr));
+    SwapBigEndian(_hdr);
+}
+
 unsigned int CKeyHdr::getMaxKeyLength() const
 {
     return hdr.length; 

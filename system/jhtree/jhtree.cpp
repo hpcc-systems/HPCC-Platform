@@ -1868,6 +1868,39 @@ offset_t CKeyIndex::queryFirstBranchOffset()
     }
 }
 
+void CKeyIndex::getFirstBranchOffsets(std::vector<offset_t> & firstBranches)
+{
+    unsigned branchDepth = getBranchDepth();
+    unsigned numOffsets = std::min<unsigned>(branchDepth, _elements_in(keyHdr->getHdrStruct()->firstBranch));
+    firstBranches.clear();
+    if (!numOffsets)
+        return;
+
+    firstBranches.resize(numOffsets, 0);
+    if (branchDepth == 1)
+    {
+        firstBranches[0] = keyHdr->getRootFPos();
+        return;
+    }
+
+    DefaultNodeLoader loader(*this);
+    IContextLogger * ctx = nullptr;
+    Linked<const CJHSearchNode> cur = rootNode;
+    unsigned level = branchDepth - 1;
+    while (level > 1)
+    {
+        if (level < numOffsets)
+            firstBranches[level] = cur->getFpos();
+        offset_t branchOffset = cur->getFPosAt(0);
+        level--;
+        cur.setown(getIndexNodeUsingLoader(loader, branchOffset, NodeBranch, ctx));
+        if (!cur)
+            throw makeStringExceptionV(0, "Unable to calculate first branch offsets for key %s", name.get());
+    }
+    firstBranches[1] = cur->getFpos();
+    firstBranches[0] = cur->getFPosAt(0);
+}
+
 const BloomFilter * CKeyIndex::queryBloom(unsigned i) const
 {
     if (!bloomFiltersLoaded)
@@ -3319,6 +3352,7 @@ public:
         realKey->mergeStats(stats);
     }
     virtual offset_t queryFirstBranchOffset() override { return checkOpen().queryFirstBranchOffset(); }
+    virtual void getFirstBranchOffsets(std::vector<offset_t> & firstBranches) override { checkOpen().getFirstBranchOffsets(firstBranches); }
     virtual const BloomFilter * queryBloom(unsigned i) const { return checkOpen().queryBloom(i); }
     virtual IKeyIndexPrewarmer * createPrewarmer() { return checkOpen().createPrewarmer(); }
     virtual void ensureReady() override { checkOpen().ensureReady(); }

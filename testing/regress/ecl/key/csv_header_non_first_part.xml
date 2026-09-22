@@ -1,0 +1,13 @@
+<Dataset name='Result 1'>
+</Dataset>
+<Dataset name='Result 2'>
+</Dataset>
+<Dataset name='SuperRowCount'>
+ <Row><SuperRowCount>1000</SuperRowCount></Row>
+</Dataset>
+<Dataset name='SingleRowCount'>
+ <Row><SingleRowCount>1000</SingleRowCount></Row>
+</Dataset>
+<Dataset name='SingleHeaderLeaked'>
+ <Row><SingleHeaderLeaked>false</SingleHeaderLeaked></Row>
+</Dataset>
