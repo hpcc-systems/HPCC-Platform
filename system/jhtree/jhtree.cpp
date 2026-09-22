@@ -1893,7 +1893,7 @@ void CKeyIndex::getFirstBranchOffsets(std::vector<offset_t> & firstBranches)
             firstBranches[level] = cur->getFpos();
         offset_t branchOffset = cur->getFPosAt(0);
         level--;
-        cur.setown(getIndexNodeUsingLoader(loader, branchOffset, NodeBranch, ctx));
+        cur.setown(getIndexNodeUsingLoader(loader, branchOffset, NodeBranch | NodeNoFlags, ctx));
         if (!cur)
             throw makeStringExceptionV(0, "Unable to calculate first branch offsets for key %s", name.get());
     }
