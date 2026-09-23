@@ -45,6 +45,47 @@ function shape(v: IScopeEx) {
 }
 
 const CHARS = new Set("0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ");
+const GLOBAL_STORE_EDGE_LAYOUT_WEIGHT = 0.001;
+
+enum ActivityKind {
+    DiskWrite = "2",
+    Sort = "3",
+    Filter = "5",
+    Split = "6",
+    Project = "7",
+    LocalIterate = "9",
+    FirstN = "12",
+    LightweightJoin = "15",
+    OutputInternal = "16",
+    LookupJoin = "17",
+    HashDistribute = "19",
+    Normalize = "21",
+    PipeOutput = "22",
+    Funnel = "23",
+    InlineDataset25 = "25",
+    Distribute = "26",
+    StoreInternalResult = "29",
+    CSVWrite = "35",
+    If = "36",
+    IndexWrite = "37",
+    WriteCSV = "44",
+    Write = "47",
+    WorkunitRead = "54",
+    Spill = "56",
+    Merge = "59",
+    WriteXML = "61",
+    DiskReadSpill = "71",
+    ProjectedDiskReadSpill82 = "82",
+    ProjectedDiskReadSpill88 = "88",
+    LimitedIndexRead92 = "92",
+    LimitedIndexRead93 = "93",
+    CSVRead99 = "99",
+    CSVRead105 = "105",
+    InlineDataset133 = "133",
+    InlineDataset148 = "148",
+    LocalDenormalize = "168"
+}
+
 function encodeID(id: string): string {
     let retVal = "";
     for (let i = 0; i < id.length; ++i) {
@@ -411,12 +452,11 @@ export class MetricGraph extends Graph2<IScopeEx, IScopeEdge, IScopeEx> {
 
         const sourceVertexName = this._activityIndex[e.IdSource];
         const targetVertexName = this._activityIndex[e.IdTarget];
+        const isGlobalStoreOutEdge = !!sourceVertexName && this.vertex(sourceVertexName).Kind === ActivityKind.PipeOutput;
+        const isOutputInternalOutEdge = !!sourceVertexName && this.vertex(sourceVertexName).Kind === ActivityKind.OutputInternal;
 
-        if (options.ignoreGlobalStoreOutEdges && sourceVertexName) {
-            const sourceVertex = this.vertex(sourceVertexName);
-            if (sourceVertex.Kind === "22") {
-                return;
-            }
+        if (options.ignoreGlobalStoreOutEdges && isGlobalStoreOutEdge || options.ignoreOutputInternalOutEdges && isOutputInternalOutEdge) {
+            return;
         }
 
         let edgeStyle = "solid";
@@ -436,7 +476,8 @@ export class MetricGraph extends Graph2<IScopeEx, IScopeEdge, IScopeEx> {
             id: encodedName,
             label: encodeLabel(format(options.edgeTpl, formatData)),
             style: edgeStyle,
-            class: this.edgeStatus(e)
+            class: this.edgeStatus(e),
+            ...(isGlobalStoreOutEdge ? { weight: GLOBAL_STORE_EDGE_LAYOUT_WEIGHT } : {})
         });
 
         const sourceName = `${this._sourceFunc(e)}`;
@@ -524,6 +565,9 @@ export class MetricGraph extends Graph2<IScopeEx, IScopeEdge, IScopeEx> {
         const g = this._graphviz.createGraph("G", "directed");
         try {
             g.setGraphAttr("compound", true);
+            if (options.concentrateEdges) {
+                g.setGraphAttr("concentrate", true);
+            }
             g.setGraphAttr("ordering", "in");
             g.setDefaultGraphAttr("fontname", "arial");
             g.setDefaultGraphAttr("style", "filled");
@@ -569,7 +613,8 @@ export class MetricGraph extends Graph2<IScopeEx, IScopeEdge, IScopeEx> {
 
                 for (const edge of this.allEdges()) {
                     const sourceVertexName = this._activityIndex[edge.IdSource];
-                    if (options.ignoreGlobalStoreOutEdges && sourceVertexName && this.vertex(sourceVertexName).Kind === "22") {
+                    const sourceKind = sourceVertexName && this.vertex(sourceVertexName).Kind;
+                    if ((options.ignoreGlobalStoreOutEdges && sourceKind === ActivityKind.PipeOutput) || (options.ignoreOutputInternalOutEdges && sourceKind === ActivityKind.OutputInternal)) {
                         continue;
                     }
                     const sourceIsRendered = renderedVertexIds.has(edge.IdSource);

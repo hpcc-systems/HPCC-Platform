@@ -18,6 +18,7 @@ const logger = scopedLogger("src-react/hooks/metrics.ts");
 const METRIC_OPTIONS_2 = "MetricOptions-2";
 const METRIC_OPTIONS_3 = "MetricOptions-3";
 const METRIC_OPTIONS_4 = "MetricOptions-4";
+const METRIC_OPTIONS_5 = "MetricOptions-5";
 export const GLOBAL_FAKE_ID = "<global>";
 
 export const METRICS_GRAPH_TRACK_SELECTION = "metrics_graph_trackSelection";
@@ -30,6 +31,7 @@ export function resetMetricsViews() {
         store?.delete(METRIC_OPTIONS_2),
         store?.delete(METRIC_OPTIONS_3),
         store?.delete(METRIC_OPTIONS_4),
+        store?.delete(METRIC_OPTIONS_5),
         store?.delete(METRICS_GRAPH_TRACK_SELECTION),
         store?.delete(METRICS_GRAPH_SHOW_TOOLTIP),
         store?.delete(METRICS_UNIFORM_TIME_UNITS)
@@ -39,7 +41,9 @@ export function resetMetricsViews() {
 export interface MetricsView {
     scopeTypes: string[];
     properties: string[];
+    concentrateEdges: boolean;
     ignoreGlobalStoreOutEdges: boolean;
+    ignoreOutputInternalOutEdges: boolean;
     subgraphTpl;
     activityTpl;
     edgeTpl;
@@ -53,12 +57,14 @@ interface UserMetricsView {
     views: StringMetricsViewMap;
 }
 
-// When changing the default view - update the store ID (METRIC_OPTIONS_4) to a new version...
+// When changing the default view - update the store ID (METRIC_OPTIONS_5) to a new version...
 const DefaultMetricsViews: StringMetricsViewMap = {
     Default: {
         scopeTypes: ["workflow", "graph", "subgraph", "activity"],
         properties: ["CostExecute", "TimeElapsed"],
+        concentrateEdges: false,
         ignoreGlobalStoreOutEdges: true,
+        ignoreOutputInternalOutEdges: false,
         subgraphTpl: "%id% - %TimeElapsed%",
         activityTpl: "%Label%",
         edgeTpl: "%Label%\n%NumRowsProcessed%\n%SkewMinRowsProcessed% / %SkewMaxRowsProcessed%",
@@ -70,7 +76,9 @@ SELECT type, name, CostExecute, TimeElapsed, id
     Graphs: {
         scopeTypes: ["graph", "subgraph"],
         properties: ["CostExecute", "TimeElapsed"],
+        concentrateEdges: false,
         ignoreGlobalStoreOutEdges: true,
+        ignoreOutputInternalOutEdges: false,
         subgraphTpl: "%id% - %TimeElapsed%",
         activityTpl: "%Label%",
         edgeTpl: "%Label%\n%NumRowsProcessed%\n%SkewMinRowsProcessed% / %SkewMaxRowsProcessed%",
@@ -83,7 +91,9 @@ SELECT type, name, CostExecute, TimeElapsed, id
     Activities: {
         scopeTypes: ["activity"],
         properties: ["TimeLocalExecute", "SizeDiskRead", "NumDiskRead"],
+        concentrateEdges: false,
         ignoreGlobalStoreOutEdges: true,
+        ignoreOutputInternalOutEdges: false,
         subgraphTpl: "%id% - %TimeElapsed%",
         activityTpl: "%Label%",
         edgeTpl: "%Label%\n%NumRowsProcessed%\n%SkewMinRowsProcessed% / %SkewMaxRowsProcessed%",
@@ -96,7 +106,9 @@ SELECT type, name, TimeLocalExecute, SizeDiskRead, NumDiskRead, id
     Operations: {
         scopeTypes: ["operation"],
         properties: ["TimeElapsed"],
+        concentrateEdges: false,
         ignoreGlobalStoreOutEdges: true,
+        ignoreOutputInternalOutEdges: false,
         subgraphTpl: "%id%",
         activityTpl: "%Label%",
         edgeTpl: "%Label%",
@@ -109,7 +121,9 @@ SELECT type, name, TimeElapsed, id
     Peaks: {
         scopeTypes: ["subgraph"],
         properties: ["NodeMaxPeakMemory", "NodeMaxPeakRowMemory", "NodeMinPeakMemory", "NodeMinPeakRowMemory", "SizeAvgPeakMemory", "SizeAvgPeakRowMemory", "SizeDeltaPeakMemory", "SizeDeltaPeakRowMemory", "SizeMaxPeakMemory", "SizeMaxPeakRowMemory", "SizeMinPeakMemory", "SizeMinPeakRowMemory", "SizePeakMemory", "SizeStdDevPeakMemory", "SizeStdDevPeakRowMemory", "SkewMaxPeakMemory", "SkewMaxPeakRowMemory", "SkewMinPeakMemory", "SkewMinPeakRowMemory"],
+        concentrateEdges: false,
         ignoreGlobalStoreOutEdges: true,
+        ignoreOutputInternalOutEdges: false,
         subgraphTpl: "%id% - %TimeElapsed%",
         activityTpl: "%Label%",
         edgeTpl: "%Label%\n%NumRowsProcessed%\n%SkewMinRowsProcessed% / %SkewMaxRowsProcessed%",
@@ -163,7 +177,9 @@ const defaultUserMetricViews = JSON.stringify({ viewId: "Default", views: Defaul
 const logicalGraphView: MetricsView = {
     scopeTypes: ["workflow", "graph", "subgraph", "child", "activity", "operation"],
     properties: ["Kind", "Label", "Filename", "EclNameList", "EclText", "DefinitionList"],
+    concentrateEdges: false,
     ignoreGlobalStoreOutEdges: false,
+    ignoreOutputInternalOutEdges: false,
     subgraphTpl: "%id%",
     activityTpl: "%Label%",
     edgeTpl: "%Label%",
@@ -209,7 +225,7 @@ export function useMetricsViews(logicalGraph: boolean): useMetricsViewsResult {
         _viewId.set(id);
     }, []);
 
-    const [metricViewStr, setMetricViewStr, _resetMetricsViewStr] = useUserStore<string>(METRIC_OPTIONS_4, defaultUserMetricViews);
+    const [metricViewStr, setMetricViewStr, _resetMetricsViewStr] = useUserStore<string>(METRIC_OPTIONS_5, defaultUserMetricViews);
     React.useEffect(() => {
         if (metricViewStr && !loaded) {
             try {

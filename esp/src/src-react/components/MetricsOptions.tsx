@@ -1,8 +1,8 @@
 import * as React from "react";
 import { SelectionMode, Selection } from "./controls/Grid";
 import { useConst, useForceUpdate } from "@fluentui/react-hooks";
-import { Button, Checkbox, Dropdown, Field, Input, Option, SelectTabData, SelectTabEvent, Tab, TabList, Textarea, makeStyles } from "@fluentui/react-components";
-import { BookmarkAddRegular, DeleteRegular, RenameRegular } from "@fluentui/react-icons";
+import { Button, Checkbox, Dropdown, Field, Input, Option, SearchBox, SelectTabData, SelectTabEvent, Tab, TabList, Textarea, makeStyles } from "@fluentui/react-components";
+import { BookmarkAddRegular, DeleteRegular, FilterRegular, RenameRegular } from "@fluentui/react-icons";
 import nlsHPCC from "src/nlsHPCC";
 import { MetricsView, clone, useMetricMeta, useMetricsViews } from "../hooks/metrics";
 import { MessageBox } from "../layouts/MessageBox";
@@ -12,10 +12,24 @@ import { DockPanelLayout } from "../layouts/DockPanel";
 
 const width = 640;
 const innerHeight = 400;
+const filterHeight = 32;
+const filterGap = 4;
 
 const useStyles = makeStyles({
     metricsPanel: {
-        overflow: "auto"
+        overflow: "hidden"
+    },
+    gridOptions: {
+        display: "flex",
+        flexDirection: "column",
+        gap: "4px",
+        height: "100%",
+        minHeight: 0
+    },
+    gridOptionsGrid: {
+        flex: "1 1 0",
+        minHeight: 0,
+        position: "relative"
     },
     sqlPanel: {},
     graphPanel: {
@@ -30,21 +44,33 @@ interface GridOptionsProps {
     strArray: string[];
     strSelection: string[];
     setSelection: (_: string[]) => void;
+    showFilter?: boolean;
 }
 
 const GridOptions: React.FunctionComponent<GridOptionsProps> = ({
     label,
     strArray,
     strSelection,
-    setSelection
+    setSelection,
+    showFilter = true
 }) => {
-    const [data, setData] = React.useState<{ id: string }[]>([]);
+    const [filter, setFilter] = React.useState("");
     const { setTotal, refreshTable } = useFluentStoreState({});
+    const styles = useStyles();
+
+    const data = React.useMemo(() => {
+        const normalizedFilter = filter.trim().toLowerCase();
+        return strArray
+            .filter(str => !normalizedFilter || str.toLowerCase().includes(normalizedFilter))
+            .map(str => ({ id: str, key: str }));
+    }, [filter, strArray]);
 
     const setSelectionRef = React.useRef(setSelection);
     const strSelectionRef = React.useRef(strSelection);
 
     const isSyncingRef = React.useRef(false);
+    const visibleKeysRef = React.useRef(new Set<string>());
+    visibleKeysRef.current = new Set(data.map(item => item.key));
 
     React.useEffect(() => {
         setSelectionRef.current = setSelection;
@@ -68,17 +94,17 @@ const GridOptions: React.FunctionComponent<GridOptionsProps> = ({
         };
     }, [label]);
 
-    React.useEffect(() => {
-        setData(strArray.map(str => ({ id: str, key: str })));
-    }, [strArray]);
-
     const handlerRef = React.useRef<Selection | null>(null);
     const selectionHandler = useConst(() => {
         handlerRef.current = new Selection({
             getKey: (item: { id: string; key: string }) => item.key,
             onSelectionChanged: () => {
                 if (!isSyncingRef.current) {
-                    setSelectionRef.current(handlerRef.current!.getSelection().map((item: any) => item.id));
+                    const hiddenSelection = strSelectionRef.current.filter(id => !visibleKeysRef.current.has(id));
+                    const visibleSelection = handlerRef.current!.getSelection().map((item: { id: string }) => item.id);
+                    const nextSelection = [...hiddenSelection, ...visibleSelection];
+                    strSelectionRef.current = nextSelection;
+                    setSelectionRef.current(nextSelection);
                 }
             },
             onItemsChanged: () => {
@@ -104,17 +130,26 @@ const GridOptions: React.FunctionComponent<GridOptionsProps> = ({
         isSyncingRef.current = false;
     }, [selectionHandler, strSelection]);
 
-    return <div style={{ position: "relative", height: 400 }}>
-        <FluentGrid
-            data={data}
-            primaryID={"id"}
-            columns={columns}
-            selectionMode={SelectionMode.multiple}
-            setSelection={selectionHandler}
-            setTotal={setTotal}
-            refresh={refreshTable}
-            height={`${innerHeight}px`}
-        ></FluentGrid>
+    return <div className={styles.gridOptions}>
+        {showFilter ? <SearchBox
+            aria-label={`${nlsHPCC.Filter} ${label}`}
+            contentBefore={<FilterRegular />}
+            placeholder={nlsHPCC.Filter}
+            value={filter}
+            onChange={(_, data) => setFilter(data?.value ?? "")}
+        /> : <div style={{ height: filterHeight }} />}
+        <div className={styles.gridOptionsGrid}>
+            <FluentGrid
+                data={data}
+                primaryID={"id"}
+                columns={columns}
+                selectionMode={SelectionMode.multiple}
+                setSelection={selectionHandler}
+                setTotal={setTotal}
+                refresh={refreshTable}
+                height={`${innerHeight - filterHeight - filterGap}px`}
+            ></FluentGrid>
+        </div>
     </div>;
 };
 
@@ -267,12 +302,13 @@ export const MetricsOptions: React.FunctionComponent<MetricsOptionsProps> = ({
                 </TabList>
                 {selectedTab === "metrics" &&
                     <div className={styles.metricsPanel} style={{ height: innerHeight }}>
-                        <div style={{ display: "flex", flexDirection: "row" }}>
+                        <div style={{ display: "flex", flexDirection: "row", height: "100%" }}>
                             <div style={{ flexGrow: 1 }}>
                                 <GridOptions
                                     label={nlsHPCC.ScopeTypes}
                                     strArray={globalScopeTypes}
                                     strSelection={dirtyView.scopeTypes}
+                                    showFilter={false}
                                     setSelection={scopeTypes => {
                                         setDirtyView(prev => ({ ...prev, scopeTypes: [...scopeTypes] }));
                                     }}
@@ -302,6 +338,12 @@ export const MetricsOptions: React.FunctionComponent<MetricsOptionsProps> = ({
                     <div className={styles.graphPanel} style={{ height: innerHeight }}>
                         <Checkbox label={nlsHPCC.IgnoreGlobalStoreOutEdges} checked={dirtyView.ignoreGlobalStoreOutEdges} onChange={(_, data) => {
                             setDirtyView(prev => ({ ...prev, ignoreGlobalStoreOutEdges: !!data.checked }));
+                        }} />
+                        <Checkbox label={nlsHPCC.IgnoreOutputInternalOutEdges} checked={dirtyView.ignoreOutputInternalOutEdges} onChange={(_, data) => {
+                            setDirtyView(prev => ({ ...prev, ignoreOutputInternalOutEdges: !!data.checked }));
+                        }} />
+                        <Checkbox label={nlsHPCC.ConcentrateEdges} checked={dirtyView.concentrateEdges} onChange={(_, data) => {
+                            setDirtyView(prev => ({ ...prev, concentrateEdges: !!data.checked }));
                         }} />
                         <Field label={nlsHPCC.SubgraphLabel}>
                             <Textarea value={dirtyView.subgraphTpl} onChange={(_, data) => {
