@@ -204,6 +204,8 @@ WsWUExceptions::WsWUExceptions(IConstWorkUnit& wu): numerr(0), numwrn(0), numinf
         e->setFileName(cur.getExceptionFileName(file).str());
         e->setLineNo(cur.getExceptionLineNo());
         e->setColumn(cur.getExceptionColumn());
+        SCMStringBuffer timeStamp;
+        e->setTimeStamp(cur.getTimeStamp(timeStamp).str());
         if (cur.getActivityId())
             e->setActivity(cur.getActivityId());
         if (cur.getPriority())

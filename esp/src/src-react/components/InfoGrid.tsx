@@ -87,6 +87,7 @@ export const InfoGrid: React.FunctionComponent<InfoGridProps> = ({
     //  Grid ---
     const columns = React.useMemo((): FluentColumns => {
         return {
+            TimeStamp: { label: nlsHPCC.TimeStamp, width: 155 },
             Severity: {
                 label: nlsHPCC.Severity, width: 72, sortable: false,
                 className: (value, row) => {

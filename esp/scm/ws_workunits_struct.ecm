@@ -144,6 +144,7 @@ ESPStruct [nil_remove] ECLException
     [min_ver("1.69")] string Scope;
     [min_ver("1.69")] int Priority;
     [min_ver("1.70")] double Cost;
+    [min_ver("2.11")] string TimeStamp;
 };
 //  ===========================================================================
 ESPStruct [nil_remove] ECLSchemaItem
