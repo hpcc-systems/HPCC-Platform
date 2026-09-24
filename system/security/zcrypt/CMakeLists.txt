@@ -27,7 +27,7 @@ project( zcrypt )
 
 SET(CMAKE_UNITY_BUILD FALSE)
 
-find_package(unofficial-minizip CONFIG REQUIRED)
+find_package(minizip CONFIG REQUIRED)
 
 set ( SRCS
       aes.cpp
@@ -50,5 +50,5 @@ install ( TARGETS zcrypt RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${L
 target_link_libraries ( zcrypt PRIVATE
          jlib
          ${OPENSSL_LIBRARIES} 
-         unofficial::minizip::minizip
+         $<IF:$<TARGET_EXISTS:MINIZIP::minizip>,MINIZIP::minizip,MINIZIP::minizipstatic>
     )

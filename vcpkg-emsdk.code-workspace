@@ -7,6 +7,12 @@
 	],
 	"settings": {
 		"cmake.generator": "Ninja",
+		"cmake.configureSettings": {
+			"CMAKE_BUILD_TYPE": "${buildType}"
+		},
+		"cmake.configureEnvironment": {
+			"EMSDK": "${env:HOME}/emsdk"
+		},
 		"cmake.configureArgs": [
 			"-DEMSCRIPTEN=ON",
 			"-DCONTAINERIZED=OFF",
@@ -14,7 +20,8 @@
 			"-DUSE_CPPUNIT=ON",
 			"-DINCLUDE_PLUGINS=ON",
 			"-DSUPPRESS_V8EMBED=ON",
-			"-DSUPPRESS_REMBED=ON"
+			"-DSUPPRESS_REMBED=ON",
+			"-DVCPKG_AUTO_UPDATE_SUBMODULE=ON"
 		],
 		"editor.formatOnSave": false
 	},

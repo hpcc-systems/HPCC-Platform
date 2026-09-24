@@ -164,7 +164,7 @@ public:
                 std::string str(msg_ptr, msg_len);
                 DBGLOG("from wasm: %s", str.c_str());
             };
-            auto host_func = linker.func_wrap("$root", "dbglog", callback).unwrap();
+            auto host_func = linker.func_wrap("$root", "dbglog", std::move(callback)).unwrap();
 
             auto newInstance = linker.instantiate(store, module).unwrap();
             linker.define_instance(store, "linking2", newInstance).unwrap();

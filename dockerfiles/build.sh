@@ -150,7 +150,8 @@ function doBuild() {
         --mount source="$(realpath ~)/.cache/vcpkg",target=/root/.cache/vcpkg,type=bind,consistency=cached \
         --mount source="$HOME/.ccache",target=/root/.ccache,type=bind,consistency=cached \
         hpccsystems/platform-build-$1:$VCPKG_REF \
-        "rm -rf /hpcc-dev/HPCC-Platform/build/$1/CMakeCache.txt /hpcc-dev/HPCC-Platform/build/$1/CMakeFiles && \
+        "trap 'chown -R ${USER_ID}:${GROUP_ID} /root/.cache/vcpkg /root/.ccache' EXIT; \
+        rm -rf /hpcc-dev/HPCC-Platform/build/$1/CMakeCache.txt /hpcc-dev/HPCC-Platform/build/$1/CMakeFiles && \
         cmake -S /hpcc-dev/HPCC-Platform -B /hpcc-dev/HPCC-Platform/build/$1 -G Ninja -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} ${CMAKE_ALL_OPTIONS} ${CMAKE_OPTIONS_EXTRA} && \
         if cmake --build /hpcc-dev/HPCC-Platform/build/$1 --parallel; then \
             echo 'Done'; \

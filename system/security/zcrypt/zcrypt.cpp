@@ -26,11 +26,6 @@
 #include "jexcept.hpp"
 #include <math.h>
 
-#ifdef WIN32
-#define USEWIN32IOAPI
-#include "minizip/iowin32.h"
-#endif
-
 IZBuffer::~IZBuffer()
 {
 }
@@ -368,13 +363,7 @@ int RSAZCryptor::zipToFile(const char* zipFileName, bool cleanFileListAfterUsed)
     zipFile zf;
     int opt_overwrite=0; //?1
 
-#ifdef USEWIN32IOAPI
-    zlib_filefunc_def ffunc;
-    fill_win32_filefunc(&ffunc);
-    zf = zipOpen2(filename_try,(opt_overwrite==2) ? 2 : 0,NULL,&ffunc);
-#else
-    zf = zipOpen(filename_try,(opt_overwrite==2) ? 2 : 0);
-#endif
+    zf = zipOpen64(filename_try,(opt_overwrite==2) ? 2 : 0);
 
     int err=0;
     if (zf == NULL)
@@ -415,13 +404,13 @@ int RSAZCryptor::zipToFile(const char* zipFileName, bool cleanFileListAfterUsed)
         zi.internal_fa = 0;
         zi.external_fa = 0;
 
-        err = zipOpenNewFileInZip3(zf,fileName,&zi,
+        err = zipOpenNewFileInZip3_64(zf,fileName,&zi,
                                 NULL,0,NULL,0,NULL /* comment*/,
                                 Z_DEFLATED,
                                 Z_DEFAULT_COMPRESSION,0,
                                 /* -MAX_WBITS, DEF_MEM_LEVEL, Z_DEFAULT_STRATEGY, */
                                 -MAX_WBITS, DEF_MEM_LEVEL, Z_DEFAULT_STRATEGY,
-                                NULL, 0);
+                    NULL, 0, 1);
 
         if (err != ZIP_OK)
             printf("error in opening %s in zipfile\n",fileName);
@@ -487,13 +476,7 @@ int RSAZCryptor::zipToFile(unsigned contentLength, void const *content, const ch
     zipFile zf;
     int opt_overwrite=0; //?1
 
-#ifdef USEWIN32IOAPI
-    zlib_filefunc_def ffunc;
-    fill_win32_filefunc(&ffunc);
-    zf = zipOpen2(filename_try,(opt_overwrite==2) ? 2 : 0,NULL,&ffunc);
-#else
-    zf = zipOpen(filename_try,(opt_overwrite==2) ? 2 : 0);
-#endif
+    zf = zipOpen64(filename_try,(opt_overwrite==2) ? 2 : 0);
 
     int err=0;
     if (zf == NULL)
@@ -509,13 +492,13 @@ int RSAZCryptor::zipToFile(unsigned contentLength, void const *content, const ch
     zi.internal_fa = 0;
     zi.external_fa = 0;
 
-    err = zipOpenNewFileInZip3(zf,fileToBeZipped,&zi,
+    err = zipOpenNewFileInZip3_64(zf,fileToBeZipped,&zi,
                             NULL,0,NULL,0,NULL /* comment*/,
                             Z_DEFLATED,
                             Z_DEFAULT_COMPRESSION,0,
                             /* -MAX_WBITS, DEF_MEM_LEVEL, Z_DEFAULT_STRATEGY, */
                             -MAX_WBITS, DEF_MEM_LEVEL, Z_DEFAULT_STRATEGY,
-                            NULL, 0);
+                            NULL, 0, 1);
 
     if (err != ZIP_OK)
         printf("error in opening %s in zipfile\n",fileToBeZipped);

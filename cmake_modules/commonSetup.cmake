@@ -471,7 +471,14 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
   endmacro(HPCC_ADD_EXECUTABLE target)
 
   macro(HPCC_ADD_LIBRARY target)
-    add_library(${target} ${ARGN})
+    if (EMSCRIPTEN AND "${ARGV1}" STREQUAL "SHARED")
+      set(_hpcc_library_args ${ARGN})
+      list(REMOVE_AT _hpcc_library_args 0)
+      add_library(${target} STATIC ${_hpcc_library_args})
+      unset(_hpcc_library_args)
+    else()
+      add_library(${target} ${ARGN})
+    endif()
   endmacro(HPCC_ADD_LIBRARY target)
 
   # This Macro is provided as Public domain from
