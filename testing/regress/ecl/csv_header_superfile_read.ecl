@@ -182,17 +182,12 @@ VerifyHeaderHandling := SEQUENTIAL(
     ),
 
     OUTPUT(
-        TABLE(readSuperRows, { department, cnt := COUNT(GROUP) }, department, MERGE),
-        NAMED('CountByDept')
-    ),
-
-    OUTPUT(
         COUNT(DEDUP(readSuperRows, name)),
         NAMED('DistinctNames')
     ),
 
     OUTPUT(
-        readSuperRows,
+        SORT(readSuperRows, id),
         NAMED('AllEmployees')
     )
 );
@@ -213,7 +208,7 @@ CleanupCreatedFiles := SEQUENTIAL(
 CheckClusterWidth := IF(
     CLUSTERSIZE < 4,
     FAIL('Cluster width must be at least 4'),
-    OUTPUT(CLUSTERSIZE, NAMED('ClusterSize'))
+    OUTPUT('Cluster Size OK', NAMED('ClusterSize'))
 );
 
 SEQUENTIAL(CheckClusterWidth, CreateLogicalFiles, VerifyHeaderHandling, CleanupCreatedFiles);

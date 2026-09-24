@@ -299,7 +299,10 @@ size32_t CBlockCompressor::flushCompress(size32_t extra)
 
                 //The data was larger after compression - keep as much data as will fit uncompressed..
                 //Includes the case where outSize == 0
-                if (outSize >= numWritten)
+                //Also covers numWritten < inlen: compressors that support partial compression are not
+                //clamped to uncompressedMax, so they may fail to consume even the previously committed
+                //inlen bytes.  Falling through to commit the block would then underflow "numWritten - inlen" below.
+                if ((outSize >= numWritten) || (numWritten < inlen))
                 {
                     spaceLeft += sizeof(size32_t);  //Can squeeze in 4 more bytes because there is no compressed size
                     assertex(spaceLeft >= inlen);
@@ -342,6 +345,7 @@ size32_t CBlockCompressor::flushCompress(size32_t extra)
     //Any data that could not be compressed into the current block is
     totalWritten += numWritten;
     outlen += outSize+sizeof(size32_t);
+    assertex(numWritten >= inlen); // must never discard previously committed data - see check above
     size_t delta = numWritten - inlen;
     inlen = 0;
     return delta;

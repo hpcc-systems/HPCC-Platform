@@ -513,14 +513,15 @@ shakespeareStream := normalizeWordFormat(convertTextFileToInversion(4, Directory
 
 //Build on bible and encyclopedia for the moment.
 //have different characteristics.  Bible has ~74 "documents", encyclopedia has
-    inputStream := bibleStream + encyclopediaStream;
+    inputStream := (bibleStream + encyclopediaStream) : independent;
 
     boolean generateAllVariants := true; // Enable to test generating indexes with different compression formats
     doCreateSearchIndex() := FUNCTION
         hybridVarIndex := INDEX(inputStream, { kind, word, doc, segment, wpos, wip }, { flags, string original, dpos }, Files.NameSearchIndex+'_hybrid_var', compressed('hybrid'), TRIM);
         RETURN ORDERED(
             IF (generateAllVariants,
-                ORDERED(
+                //Need to build sequentially, otherwise roxie will run out of memory with the standard row configuration
+                SEQUENTIAL(
                     BUILD(inputStream, { kind, word, doc, segment, wpos, wip }, { flags, original, dpos }, Files.NameSearchIndex+'_default', compressed('legacy'), OVERWRITE),
                     BUILD(inputStream, { kind, word, doc, segment, wpos, wip }, { flags, original, dpos }, Files.NameSearchIndex+'_inplace', compressed('inplace'), OVERWRITE),
                     BUILD(inputStream, { kind, word, doc, segment, wpos, wip }, { flags, original, dpos }, Files.NameSearchIndex+'_inplace_row', compressed('inplace:randrow'), OVERWRITE),
@@ -532,6 +533,7 @@ shakespeareStream := normalizeWordFormat(convertTextFileToInversion(4, Directory
                     BUILD(hybridVarIndex, inputStream, OVERWRITE),  // Test the syntax that builds an index definition and creates the field mappings automatically, including the trim
                     BUILD(inputStream, { kind, word, doc, segment, wpos, wip }, { flags, dpos, original }, Files.NameSearchIndex+'_hybridz', compressed('hybrid'), OVERWRITE),
                     BUILD(inputStream, { kind, word, doc, segment, wpos, wip }, { flags, dpos, string original := TRIM(original)}, Files.NameSearchIndex+'_hybridz_var', compressed('hybrid'), OVERWRITE),
+                    BUILD(inputStream, { kind, word, doc, segment, wpos, wip }, { flags, dpos, original }, Files.NameSearchIndex+'_hybridpacked', compressed('hybrid'), PACKED, OVERWRITE),
                     BUILD(inputStream, { kind, word, doc, segment, wpos }, { wip, flags, original, dpos }, Files.NameSearchIndex+'_nowip', OVERWRITE),
                 )
             ),

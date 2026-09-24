@@ -218,9 +218,7 @@
                         </tr>
                     </xsl:if>
                 </table>
-                <xsl:text disable-output-escaping="yes"><![CDATA[
-                    <iframe id="GlobalFrame" name="GlobalFrame" style="display:none; visibility:hidden;"></iframe>
-                ]]></xsl:text>
+                <iframe id="GlobalFrame" name="GlobalFrame" style="display:none; visibility:hidden;"></iframe>
             </body>
         </html>
     </xsl:template>

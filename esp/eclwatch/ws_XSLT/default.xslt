@@ -18,9 +18,7 @@
 
 <xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:fo="http://www.w3.org/1999/XSL/Format">
     <xsl:template name="doForm">
-    <xsl:text disable-output-escaping="yes">&lt;form name="input" method="get" action="</xsl:text>
-    <xsl:value-of select="$url"/>
-    <xsl:text disable-output-escaping="yes">" &gt;</xsl:text>
+    <form name="input" method="get" action="{$url}">
     <table bordercolor="#0066CC" border="1" cellspacing="0">
      <tr>
        <td>
@@ -33,9 +31,7 @@
                    </td>
                    <td>
                     <font face="Verdana" size="2">
-                     <xsl:text disable-output-escaping="yes">&lt;input type="checkbox" name="</xsl:text>
-                     <xsl:value-of select="@name"/>
-                     <xsl:text disable-output-escaping="yes">" &gt;</xsl:text>
+                     <input type="checkbox" name="{@name}"/>
                      <xsl:call-template name='id2string'>
                         <xsl:with-param name='toconvert' select='@name' />
                      </xsl:call-template>
@@ -56,9 +52,7 @@
                    </td>
                    <td>
                     <font face="Verdana" size="2">
-                     <xsl:text disable-output-escaping="yes">&lt;input type="text" name="</xsl:text>
-                     <xsl:value-of select="@name"/>
-                     <xsl:text disable-output-escaping="yes">" &gt;</xsl:text>
+                     <input type="text" name="{@name}"/>
                      <xsl:if test="@required='1'">*</xsl:if>
                     </font>
                    </td>
@@ -73,6 +67,6 @@
     <br/>
     <br/>
     <input type="submit" value="Submit"/>
-    <xsl:text disable-output-escaping="yes">&lt;/form&gt;</xsl:text>
+    </form>
     </xsl:template>
 </xsl:stylesheet>
