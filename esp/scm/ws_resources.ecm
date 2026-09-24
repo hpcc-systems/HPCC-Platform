@@ -81,7 +81,7 @@ ESPStruct ConfiguredWebLink
     string Name;
     string Description;
     string URL;
-    [min_ver("1.04")] ResourceType ResourceType;
+    [min_ver("1.04")] ESPenum ResourceType ResourceType;
 };
 
 ESPrequest ServiceQueryRequest
