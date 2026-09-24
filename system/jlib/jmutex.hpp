@@ -31,6 +31,7 @@
 #include "jsem.hpp"
 
 extern jlib_decl void ThreadYield();
+extern jlib_decl void ThreadYieldNonRR();
 extern jlib_decl void spinUntilReady(std::atomic_uint &value);
 
 

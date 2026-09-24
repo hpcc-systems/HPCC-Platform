@@ -2723,6 +2723,12 @@
           "minimum": 0,
           "description": "Break up results from indexRead (and other remote activities) every N bytes"
         },
+        "indexYieldFrequency": {
+          "type": "integer",
+          "default": 1,
+          "minimum": 0,
+          "description": "Yield to scheduler in some tight index loops every N iterations. May help latency with few cpus."
+        },
         "initIbytiDelay": {
           "type": "integer",
           "default": 50,

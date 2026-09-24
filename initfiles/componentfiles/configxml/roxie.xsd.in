@@ -1420,6 +1420,13 @@
         </xs:appinfo>
       </xs:annotation>
     </xs:attribute>
+    <xs:attribute name="indexYieldFrequency" type="xs:nonNegativeInteger" use="optional" default="1">
+      <xs:annotation>
+        <xs:appinfo>
+          <tooltip>Yield to scheduler in some tight index loops every N iterations. May help latency with few CPUs</tooltip>
+        </xs:appinfo>
+      </xs:annotation>
+    </xs:attribute>
     <xs:attribute name="maxBlockSize" type="xs:nonNegativeInteger" use="optional" default="10000000">
       <xs:annotation>
         <xs:appinfo>

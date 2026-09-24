@@ -469,6 +469,17 @@ void ThreadYield()
 #endif
 }
 
+void ThreadYieldNonRR()
+{
+    // Does not work for SCHED_RR threads - see ThreadYield() above.
+    // Only call where that is guaranteed (e.g. application code, not within library)
+#ifdef _WIN32
+    Sleep(0);
+#else
+    sched_yield();
+#endif
+}
+
 void spinUntilReady(std::atomic_uint &value)
 {
     unsigned i = 0;

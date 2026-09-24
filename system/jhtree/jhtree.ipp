@@ -245,6 +245,8 @@ protected:
     Owned<const CJHSearchNode> parents[maxParentNodes];
     unsigned int parentNodeKeys[maxParentNodes] = {0};
     unsigned int nodeKey;
+    // yield count is initialised to -1 to suppress a yield before the first leaf fetch
+    unsigned int yieldCount = (unsigned)-1;
     mutable PayloadReference activePayload;
     NodeTypeWithFlags nodeFilterFlags = NodeNoFlags;   // Set by reset() from the filter; narrowing calls (nextRange/incrementKey/fixSortSegs) do not recalculate it
     
@@ -305,13 +307,14 @@ protected:
 
     // Internal searching functions - set current node/nodekey/matched values
     bool _last(IContextLogger *ctx);        // Updates node/nodekey
-    bool _gtEqual(IContextLogger *ctx);     // Reads recordBuffer, updates node/nodekey 
+    bool _gtEqual(IContextLogger *ctx);     // Reads recordBuffer, updates node/nodekey
     bool _ltEqual(IContextLogger *ctx);     // Reads recordBuffer, updates node/nodekey 
     bool _next(IContextLogger *ctx);        // Updates node/nodekey 
     // if _lookup returns true, recordBuffer will contain keyed portion of result
     bool _lookup(bool exact, unsigned lastSeg, bool unfiltered, IContextLogger *ctx);
 
     void clearParentNodes();
+    void maybeYield();
 
     void reportExcessiveSeeks(unsigned numSeeks, unsigned lastSeg, IContextLogger *ctx);
 

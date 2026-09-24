@@ -431,6 +431,9 @@
                     <xs:attribute name="jumboFrames" type="xs:boolean" hpcc:displayName="Jumbo Frames"
                                   hpcc:presetValue="false"
                                   hpcc:tooltip="Set to true if using jumbo frames (MTU=9000) on the network"/>
+                    <xs:attribute name="indexYieldFrequency" type="xs:nonNegativeInteger" hpcc:displayName="Index Yield Frequency"
+                                  hpcc:presetValue="1"
+                                  hpcc:tooltip="Yield to scheduler in some tight index loops every N iterations. May help latency with few CPUs"/>
                     <xs:attribute name="maxBlockSize" type="xs:nonNegativeInteger"
                                   hpcc:displayName="Maximum Block Size (bytes)" hpcc:presetValue="10000000"
                                   hpcc:tooltip="Max size of block read from client socket"/>

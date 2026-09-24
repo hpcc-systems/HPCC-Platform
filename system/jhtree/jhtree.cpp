@@ -82,6 +82,7 @@ static CriticalSection *initCrit = NULL;
 static cycle_t fetchThresholdCycles = 0;
 
 bool useMemoryMappedIndexes = false;
+unsigned indexYieldFrequency = 1;
 bool flushJHtreeCacheOnOOM = true;
 std::atomic<unsigned __int64> branchSearchCycles{0};
 std::atomic<unsigned __int64> leafSearchCycles{0};
@@ -2385,6 +2386,21 @@ bool CKeyCursor::next(IContextLogger *ctx)
     return _next(ctx) && node && node->getKeyAt(nodeKey, recordBuffer);
 }
 
+void CKeyCursor::maybeYield()
+{
+    // If a process is reading a large number of sequential leaf nodes, and those leaf nodes are in the linux
+    // page cache, it will continue to use its allocated timeslice until it is preempted.
+    // If there are few cpus, and there are other threads which are only searching for a single exact match
+    // they will not get a chance to run - potentially pushing latency very high for the corresponding query.
+    // Note: count is initialised to -1 to ensure the first call does not yield.
+    // This should have little impact on throughput.
+    if (indexYieldFrequency && (++yieldCount == indexYieldFrequency))
+    {
+        ThreadYieldNonRR();
+        yieldCount = 0;
+    }
+}
+
 bool CKeyCursor::_next(IContextLogger *ctx)
 {
     fullBufferValid = false;
@@ -2405,6 +2421,9 @@ bool CKeyCursor::_next(IContextLogger *ctx)
             node.clear();
             if (rsib != 0)
             {
+                // Before reading the next leaf node, optionally yield.
+                maybeYield();
+
                 node.setown(getCursorNode(rsib, type, ctx));
                 if (node != NULL)
                 {
@@ -2574,6 +2593,8 @@ bool CKeyCursor::_gtEqual(IContextLogger *ctx)
                 nodeKey = a;
             else
             {
+                maybeYield();
+
                 offset_t nextPos = node->nextNodeFpos();  // This can happen at eof because of key peculiarity where level above reports ffff as last
                 node.setown(getCursorNode(nextPos, NodeLeaf, ctx));
                 nodeKey = 0;
@@ -2596,6 +2617,10 @@ bool CKeyCursor::_gtEqual(IContextLogger *ctx)
                 lwm = 0;
                 depth++;
                 NodeType type = (depth < branchDepth) ? NodeBranch : NodeLeaf;
+
+                // If the seek is loading a new leaf node, then give other threads a chance
+                if (type == NodeLeaf)
+                    maybeYield();
                 node.setown(getCursorNode(npos, type, ctx));
             }
             else
@@ -2678,6 +2703,8 @@ bool CKeyCursor::_ltEqual(IContextLogger *ctx)
                 nodeKey = a-1;
             else
             {
+                maybeYield();
+
                 offset_t prevPos = node->prevNodeFpos();
                 node.setown(getCursorNode(prevPos, NodeLeaf, ctx));
                 if (node)
@@ -2704,6 +2731,8 @@ bool CKeyCursor::_ltEqual(IContextLogger *ctx)
             lwm = 0;
             depth++;
             NodeType type = (depth < branchDepth) ? NodeBranch : NodeLeaf;
+            if (type == NodeLeaf)
+                maybeYield();
             node.setown(getCursorNode(npos, type, ctx));
             if (!node)
                 throw MakeStringException(0, "Invalid key %s: child node pointer should never be NULL", key.name.get());
