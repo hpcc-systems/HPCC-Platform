@@ -1085,7 +1085,9 @@ public:
             ret = qd.root->addPropTree("Client");
             ret->setPropInt64("@session",sessionid);
             StringBuffer eps;
-            ret->setProp("@node",queryMyNode()->endpoint().getEndpointHostText(eps).str());
+            // Use the same representation as Item/@node (see CJobQueueItem::assignBranch): in containerized
+            // deployments a bare pod hostname is not resolvable from other pods, so use the IP instead.
+            ret->setProp("@node",getRemoteAccessibleHostText(eps,queryMyNode()->endpoint()).str());
         }
         return ret;
     }
