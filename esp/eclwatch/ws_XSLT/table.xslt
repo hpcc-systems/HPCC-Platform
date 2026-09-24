@@ -27,9 +27,9 @@
       </head>
       <body class="yui-skin-sam" onload="nof5();">
                 <xsl:for-each select="//Dataset">
+                    <table border="1" cellspacing="0">
                     <xsl:for-each select="Row">
                         <xsl:if test="position()=1">
-                            <xsl:text disable-output-escaping="yes">&lt;table border="1" cellspacing="0" &gt;</xsl:text>
                             <tr>
                                 <xsl:for-each select="*">
                                     <th>
@@ -46,9 +46,7 @@
                             </xsl:for-each>
                         </tr>
                     </xsl:for-each>
-                    <xsl:if test="position()=last()">
-                        <xsl:text disable-output-escaping="yes">&lt;/table&gt;</xsl:text>
-                    </xsl:if>
+                    </table>
                 </xsl:for-each>
             </body>
         </html>

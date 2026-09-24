@@ -45,7 +45,6 @@
         <link type="text/css" rel="StyleSheet" href="/esp/files_/css/sortabletable.css"/>
         <link type="text/css" rel="stylesheet" href="/esp/files_/default.css"/>
         <link type="text/css" rel="stylesheet" href="/esp/files_/css/espdefault.css"/>
-        <xsl:text disable-output-escaping="yes"><![CDATA[
         <script type="text/javascript" src="/esp/files/yui/build/yahoo-dom-event/yahoo-dom-event.js"></script>
         <script type="text/javascript" src="/esp/files/yui/build/yahoo/yahoo-min.js"></script>
         <script type="text/javascript" src="/esp/files/yui/build/event/event-min.js"></script>
@@ -54,7 +53,6 @@
         <script type="text/javascript" src="/esp/files/yui/build/button/button-min.js"></script>
         <script type="text/javascript" src="/esp/files/yui/build/container/container-min.js"></script>
         <script type="text/javascript" src="/esp/files/scripts/espdefault.js">&#160;</script>
-        ]]></xsl:text>
         <script type="text/javascript">
                 var autoRefreshVal=<xsl:value-of select="$autoRefresh"/>;
                 var isarchived=<xsl:value-of select="$isArchived"/>;
@@ -777,18 +775,14 @@
             </head>
       <body class="yui-skin-sam" onload="nof5();onLoad()" onunload="onUnload();">
         <input type="hidden" id="OpenSaveOp"/>
-        <xsl:text disable-output-escaping="yes"><![CDATA[
       <iframe name="historyFrame" id="historyFrame"  style="display:none; visibility:hidden;"></iframe>
-        ]]></xsl:text>
         
         <table id="wudetailheader" class="workunit0">
-          <xsl:text disable-output-escaping="yes"><![CDATA[
-                    <colgroup>
-                        <col width="30%"/>
-                        <col width="10%"/>
-                        <col width="60%"/>
-                    </colgroup>
-          ]]></xsl:text>
+          <colgroup>
+              <col width="30%"/>
+              <col width="10%"/>
+              <col width="60%"/>
+          </colgroup>
           
                     <tr>
             <td>
@@ -806,7 +800,6 @@
 
         <xsl:apply-templates select="Workunit" />
 
-        <xsl:text disable-output-escaping="yes"><![CDATA[
           <iframe id="GlobalFrame" name="GlobalFrame" style="display:none; visibility:hidden;"></iframe>
           <iframe id="ExceptionsFrame" name="ExceptionsFrame" style="display:none; visibility:hidden;"></iframe>
           <iframe id="SourceFilesFrame" name="SourceFilesFrame" style="display:none; visibility:hidden;"></iframe>
@@ -817,7 +810,6 @@
           <iframe id="TimersFrame" name="TimersFrame" style="display:none; visibility:hidden;"></iframe>
           <iframe id="GraphsFrame" name="GraphsFrame" style="display:none; visibility:hidden;"></iframe>
           <div id="encodeDiv" name="encodeDiv" style="display:none; visibility:hidden;"></div>
-        ]]></xsl:text>
 
         <div id="publishContainer" />
 
