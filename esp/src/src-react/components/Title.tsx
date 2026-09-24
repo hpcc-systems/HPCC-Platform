@@ -324,7 +324,7 @@ export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
                                             <MenuList>
                                                 <MenuItem onClick={() => window.open("https://hpcc-systems.github.io/HPCC-Platform/devdoc/red_book/HPCC-Systems-Red-Book.html", "_blank", "noopener")}>{nlsHPCC.RedBook}</MenuItem>
                                                 <MenuItem onClick={() => window.open("https://hpccsystems.com/bb/", "_blank", "noopener")}>{nlsHPCC.Forums}</MenuItem>
-                                                <MenuItem onClick={() => window.open("https://hpccsystems.atlassian.net/issues/", "_blank", "noopener")}>{nlsHPCC.IssueReporting}</MenuItem>
+                                                <MenuItem onClick={() => window.open("https://github.com/hpcc-systems/HPCC-Platform/issues", "_blank", "noopener")}>{nlsHPCC.IssueReporting}</MenuItem>
                                             </MenuList>
                                         </MenuPopover>
                                     </Menu>

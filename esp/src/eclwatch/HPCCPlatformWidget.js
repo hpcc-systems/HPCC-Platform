@@ -447,7 +447,7 @@ define([
         },
 
         _openNewTab: function (url) {
-            var win = window.open(url, "_blank");
+            var win = window.open(url, "_blank", "noopener");
             if (win && win.focus) {
                 win.focus();
             }
@@ -462,7 +462,7 @@ define([
         },
 
         _onOpenJira: function (evt) {
-            this._openNewTab("https://hpccsystems.atlassian.net/issues");
+            this._openNewTab("https://github.com/hpcc-systems/HPCC-Platform/issues");
         },
 
         _onOpenForums: function (evt) {
