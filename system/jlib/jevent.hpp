@@ -82,7 +82,8 @@
     DEFINE(Task,              u1,        none) \
     DEFINE(LockId,            u4,        none) \
     DEFINE(ElementId,         u8,        none) \
-    DEFINE(FunctionId,        u4,        none)
+    DEFINE(FunctionId,        u4,        none) \
+    DEFINE(SearchFlags,       u1,        none)
 
 // Tasks represent a logical step in processing.  They will always start and stop on the same thread.
 enum class EventTask : byte
@@ -481,10 +482,10 @@ public:
 
 //Functions for each of the events that can be recorded..
     void recordIndexOpen(unsigned fileid, __uint64 loadTime);
-    void recordIndexCacheHit(unsigned fileid, offset_t offset, byte nodeKind, size32_t size, __uint64 expandTime);
-    void recordIndexCacheMiss(unsigned fileid, offset_t offset, byte nodeKind);
-    void recordIndexLoad(unsigned fileid, offset_t offset, byte nodeKind, size32_t size, __uint64 expandTime, __uint64 readTime);
-    void recordIndexEviction(unsigned fileid, offset_t offset, byte nodeKind, size32_t size);
+    void recordIndexCacheHit(unsigned fileid, offset_t offset, byte nodeKind, byte searchFlags, size32_t size, __uint64 expandTime);
+    void recordIndexCacheMiss(unsigned fileid, offset_t offset, byte nodeKind, byte searchFlags);
+    void recordIndexLoad(unsigned fileid, offset_t offset, byte nodeKind, byte searchFlags, size32_t size, __uint64 expandTime, __uint64 readTime);
+    void recordIndexEviction(unsigned fileid, offset_t offset, byte nodeKind, byte searchFlags, size32_t size);
     void recordIndexPayload(unsigned fileid, offset_t offset, bool firstUse, __uint64 expandTime);
 
     void recordDaliChangeMode(__int64 id, stat_type elapsedNs, size32_t dataSize);

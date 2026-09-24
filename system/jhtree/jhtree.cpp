@@ -726,6 +726,14 @@ public:
     CNodeMapping * next = nullptr;
 };
 
+// EvAttrSearchFlags is a single byte; assert the flag bits above NodeTypeMask never grow wider than that.
+inline byte queryNodeSearchFlags(NodeTypeWithFlags typeWithFlags)
+{
+    unsigned flagBits = typeWithFlags & ~(unsigned)NodeTypeMask;
+    dbgassertex(flagBits <= 0xFF);
+    return (byte)flagBits;
+}
+
 class DelayedCacheEntryReleaser : public IRemovedMappingCallback
 {
     //This number should be high enough so that in all common cases it is not exceeded.
@@ -735,17 +743,20 @@ class DelayedCacheEntryReleaser : public IRemovedMappingCallback
     //have seen numbers as high as 30.
     static constexpr unsigned maxFixed = 40;
 public:
+    DelayedCacheEntryReleaser() = delete; // search flags must always be supplied by the caller
+    DelayedCacheEntryReleaser(NodeTypeWithFlags _typeWithFlags) : typeWithFlags(_typeWithFlags) {}
     ~DelayedCacheEntryReleaser()
     {
         if (unlikely(recordingEvents()))
         {
             try
             {
+                byte searchFlags = queryNodeSearchFlags(typeWithFlags);
                 for (unsigned i1 = 0; i1 < numFixed; i1++)
-                    noteEviction(fixedFileId[i1], fixedPending[i1]);
+                    noteEviction(fixedFileId[i1], fixedPending[i1], searchFlags);
 
                 ForEachItemIn(i2, pending)
-                    noteEviction(pendingFileIds.item(i2), &pending.item(i2));
+                    noteEviction(pendingFileIds.item(i2), &pending.item(i2), searchFlags);
             }
             catch (IException * e)
             {
@@ -778,18 +789,19 @@ public:
     }
 
 protected:
-    void noteEviction(unsigned keyId, CJHTreeNode * node)
+    void noteEviction(unsigned keyId, CJHTreeNode * node, byte searchFlags)
     {
         offset_t pos = node->getFpos();
 #ifdef PROTRACE_DETAILED
-        protraceRecord(EventIndexEviction, keyId, pos);
+        protraceRecord(EventIndexEviction, keyId, pos | searchFlags);
 #else
         protraceRecord(EventIndexEviction);
 #endif
-        queryRecorder().recordIndexEviction(keyId, pos, node->getNodeType(), node->getMemSize());
+        queryRecorder().recordIndexEviction(keyId, pos, node->getNodeType(), searchFlags, node->getMemSize());
     }
 
 protected:
+    NodeTypeWithFlags typeWithFlags;
     CIArrayOf<CJHTreeNode> pending;
     UnsignedArray pendingFileIds;
     //Use a fixed array for a small number of allocations to avoid a heap allocation inside the critsec
@@ -3531,7 +3543,7 @@ const CJHTreeNode *CNodeCache::getCachedNode(const INodeLoader & nodeLoader, uns
         if (unlikely(recordingEvents()))
         {
             stat_type fetchTimeNs = cycle_to_nanosec(fetchCycles);
-            queryRecorder().recordIndexLoad(iD, pos, type, node->getMemSize(), cycle_to_nanosec(loadCycles) - fetchTimeNs, fetchTimeNs);
+            queryRecorder().recordIndexLoad(iD, pos, type, queryNodeSearchFlags(typeWithFlags), node->getMemSize(), cycle_to_nanosec(loadCycles) - fetchTimeNs, fetchTimeNs);
         }
 
         return node;
@@ -3560,7 +3572,7 @@ const CJHTreeNode *CNodeCache::getCachedNode(const INodeLoader & nodeLoader, uns
         if (unlikely(recordingEvents()))
         {
             stat_type fetchTimeNs = cycle_to_nanosec(fetchCycles);
-            queryRecorder().recordIndexLoad(iD, pos, type, node->getMemSize(), cycle_to_nanosec(loadCycles) - fetchTimeNs, fetchTimeNs);
+            queryRecorder().recordIndexLoad(iD, pos, type, queryNodeSearchFlags(typeWithFlags), node->getMemSize(), cycle_to_nanosec(loadCycles) - fetchTimeNs, fetchTimeNs);
         }
 
         if (ctx)
@@ -3596,7 +3608,7 @@ const CJHTreeNode *CNodeCache::getCachedNode(const INodeLoader & nodeLoader, uns
     Owned<CNodeMapping> ownedCacheEntry; // ensure node gets cleaned up if it fails to load
     bool alreadyExists = true;
     {
-        DelayedCacheEntryReleaser delayedReleaser;
+        DelayedCacheEntryReleaser delayedReleaser(typeWithFlags);
         CNodeMapping * cacheEntry;
 
         CLeavableCriticalBlock block(cacheLock);
@@ -3624,7 +3636,7 @@ const CJHTreeNode *CNodeCache::getCachedNode(const INodeLoader & nodeLoader, uns
 #endif
                 }
                 if (unlikely(recordingEvents()))
-                    queryRecorder().recordIndexCacheHit(iD, pos, type, fastPathMatch->getMemSize(), fastPathMatch->getLoadExpandTime());
+                    queryRecorder().recordIndexCacheHit(iD, pos, type, queryNodeSearchFlags(typeWithFlags), fastPathMatch->getMemSize(), fastPathMatch->getLoadExpandTime());
                 if (ctx)
                      ctx->noteStatistic(hitStatId[cacheType], 1);
                 return fastPathMatch;
@@ -3654,7 +3666,7 @@ const CJHTreeNode *CNodeCache::getCachedNode(const INodeLoader & nodeLoader, uns
     }
 
     if (unlikely(recordingEvents()))
-        queryRecorder().recordIndexCacheMiss(iD, pos, type);
+        queryRecorder().recordIndexCacheMiss(iD, pos, type, queryNodeSearchFlags(typeWithFlags));
 
     //If an exception is thrown before the node is cleanly loaded we need to remove the partially constructed
     //node from the cache otherwise it may never get loaded, and can prevent items being removed from the cache
@@ -3722,7 +3734,7 @@ const CJHTreeNode *CNodeCache::getCachedNode(const INodeLoader & nodeLoader, uns
         if (unlikely(recordingEvents()))
         {
             stat_type fetchTimeNs = cycle_to_nanosec(fetchCycles);
-            queryRecorder().recordIndexLoad(iD, pos, type, ownedCacheEntry->queryNode()->getMemSize(), cycle_to_nanosec(actualLoadCycles) - fetchTimeNs, fetchTimeNs);
+            queryRecorder().recordIndexLoad(iD, pos, type, queryNodeSearchFlags(typeWithFlags), ownedCacheEntry->queryNode()->getMemSize(), cycle_to_nanosec(actualLoadCycles) - fetchTimeNs, fetchTimeNs);
         }
 
         if (actualLoadCycles > traceNodeLoadThreshold)

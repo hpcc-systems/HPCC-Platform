@@ -1128,7 +1128,7 @@ class EventDescribeTests : public CppUnit::TestFixture
         CPPUNIT_ASSERT(recorder.startRecording(options, filename, "describe-test", 1, 2, 3, false));
         CPPUNIT_ASSERT(recorder.isRecording());
         recorder.recordQueryStart("describe-test");
-        recorder.recordIndexLoad(100, 200, static_cast<byte>(1), 4096, 500, 300);
+        recorder.recordIndexLoad(100, 200, static_cast<byte>(1), 0, 4096, 500, 300);
         recorder.recordQueryStop();
         CPPUNIT_ASSERT(recorder.stopRecording(&summary, false));
         CPPUNIT_ASSERT_EQUAL_STR(filename, summary.filename.str());

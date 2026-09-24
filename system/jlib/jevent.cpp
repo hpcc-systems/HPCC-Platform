@@ -91,10 +91,10 @@ static const char * queryIndexNodeTypeText(unsigned type)
 #define JEVENT_SOURCE_ATTRS            EvAttrChannelId, EvAttrReplicaId, EvAttrInstanceId
 #define JEVENT_COMMON_ATTRS            JEVENT_ATTR_HEADER, JEVENT_SOURCE_ATTRS
 #define JEVENT_INDEX_HEADER            JEVENT_COMMON_ATTRS, EvAttrFileId, EvAttrFileOffset, EvAttrNodeKind
-#define JEVENT_INDEXCACHEHIT_ATTRS     JEVENT_INDEX_HEADER, EvAttrInMemorySize, EvAttrExpandTime
-#define JEVENT_INDEXCACHEMISS_ATTRS    JEVENT_INDEX_HEADER
-#define JEVENT_INDEXLOAD_ATTRS         JEVENT_INDEX_HEADER, EvAttrInMemorySize, EvAttrExpandTime, EvAttrReadTime
-#define JEVENT_INDEXEVICTION_ATTRS     JEVENT_INDEX_HEADER, EvAttrInMemorySize
+#define JEVENT_INDEXCACHEHIT_ATTRS     JEVENT_INDEX_HEADER, EvAttrSearchFlags, EvAttrInMemorySize, EvAttrExpandTime
+#define JEVENT_INDEXCACHEMISS_ATTRS    JEVENT_INDEX_HEADER, EvAttrSearchFlags
+#define JEVENT_INDEXLOAD_ATTRS         JEVENT_INDEX_HEADER, EvAttrSearchFlags, EvAttrInMemorySize, EvAttrExpandTime, EvAttrReadTime
+#define JEVENT_INDEXEVICTION_ATTRS     JEVENT_INDEX_HEADER, EvAttrSearchFlags, EvAttrInMemorySize
 #define JEVENT_DALI_ATTRS              JEVENT_COMMON_ATTRS, EvAttrPath, EvAttrConnectId, EvAttrElapsedTime, EvAttrDataSize
 #define JEVENT_FILEINFORMATION_ATTRS   JEVENT_COMMON_ATTRS, EvAttrFileId, EvAttrPath
 #define JEVENT_RECORDINGACTIVE_ATTRS   JEVENT_COMMON_ATTRS, EvAttrEnabled
@@ -837,7 +837,7 @@ void EventRecorder::recordIndexOpen(unsigned fileid, __uint64 openTime)
     writeEventFooter(pos, requiredSize, writeOffset);
 }
 
-void EventRecorder::recordIndexCacheHit(unsigned fileid, offset_t offset, byte nodeKind, size32_t size, __uint64 expandTime)
+void EventRecorder::recordIndexCacheHit(unsigned fileid, offset_t offset, byte nodeKind, byte searchFlags, size32_t size, __uint64 expandTime)
 {
     dbgassertex(size != 0);
 
@@ -845,45 +845,47 @@ void EventRecorder::recordIndexCacheHit(unsigned fileid, offset_t offset, byte n
         return;
 
     if (unlikely(outputToLog))
-        TRACEEVENT("{ \"name\": \"IndexCacheHit\", \"FileId\": %u, \"FileOffset\": %llu, \"NodeKind\": %d, \"InMemorySize\": %u, \"ExpandTime\": %llu }", fileid, offset, nodeKind, size, expandTime);
+        TRACEEVENT("{ \"name\": \"IndexCacheHit\", \"FileId\": %u, \"FileOffset\": %llu, \"NodeKind\": %d, \"SearchFlags\": %u, \"InMemorySize\": %u, \"ExpandTime\": %llu }", fileid, offset, nodeKind, unsigned(searchFlags), size, expandTime);
 
-    size32_t requiredSize = sizeMessageHeaderFooter + getSizeOfAttrs(fileid, offset, nodeKind, size, expandTime);
+    size32_t requiredSize = sizeMessageHeaderFooter + getSizeOfAttrs(fileid, offset, nodeKind, searchFlags, size, expandTime);
     offset_type writeOffset = reserveEvent(requiredSize);
     offset_type pos = writeOffset;
     writeEventHeader(EventIndexCacheHit, pos);
     write(pos, EvAttrFileId, fileid);
     write(pos, EvAttrFileOffset, offset);
     write(pos, EvAttrNodeKind, nodeKind);
+    write(pos, EvAttrSearchFlags, searchFlags);
     write(pos, EvAttrInMemorySize, size);
     write(pos, EvAttrExpandTime, expandTime);
     writeEventFooter(pos, requiredSize, writeOffset);
 }
 
-void EventRecorder::recordIndexCacheMiss(unsigned fileid, offset_t offset, byte nodeKind)
+void EventRecorder::recordIndexCacheMiss(unsigned fileid, offset_t offset, byte nodeKind, byte searchFlags)
 {
     if (!isRecording() || !isEventEnabled(EventCtxIndex))
         return;
 
     if (unlikely(outputToLog))
-        TRACEEVENT("{ \"name\": \"IndexCacheMiss\", \"FileId\": %u, \"FileOffset\": %llu, \"NodeKind\": %d }", fileid, offset, nodeKind);
+        TRACEEVENT("{ \"name\": \"IndexCacheMiss\", \"FileId\": %u, \"FileOffset\": %llu, \"NodeKind\": %d, \"SearchFlags\": %u }", fileid, offset, nodeKind, unsigned(searchFlags));
 
-    size32_t requiredSize = sizeMessageHeaderFooter + getSizeOfAttrs(fileid, offset, nodeKind);
+    size32_t requiredSize = sizeMessageHeaderFooter + getSizeOfAttrs(fileid, offset, nodeKind, searchFlags);
     offset_type writeOffset = reserveEvent(requiredSize);
     offset_type pos = writeOffset;
     writeEventHeader(EventIndexCacheMiss, pos);
     write(pos, EvAttrFileId, fileid);
     write(pos, EvAttrFileOffset, offset);
     write(pos, EvAttrNodeKind, nodeKind);
+    write(pos, EvAttrSearchFlags, searchFlags);
     writeEventFooter(pos, requiredSize, writeOffset);
 }
 
-void EventRecorder::recordIndexLoad(unsigned fileid, offset_t offset, byte nodeKind, size32_t size, __uint64 expandTime, __uint64 readTime)
+void EventRecorder::recordIndexLoad(unsigned fileid, offset_t offset, byte nodeKind, byte searchFlags, size32_t size, __uint64 expandTime, __uint64 readTime)
 {
     if (!isRecording() || !isEventEnabled(EventCtxIndex))
         return;
 
     if (unlikely(outputToLog))
-        TRACEEVENT("{ \"name\": \"IndexLoad\", \"FileId\": %u, \"FileOffset\": %llu, \"NodeKind\": %d, \"InMemorySize\": %u, \"ExpandTime\": %llu, \"ReadTime\": %llu }", fileid, offset, nodeKind, size, expandTime, readTime);
+        TRACEEVENT("{ \"name\": \"IndexLoad\", \"FileId\": %u, \"FileOffset\": %llu, \"NodeKind\": %d, \"SearchFlags\": %u, \"InMemorySize\": %u, \"ExpandTime\": %llu, \"ReadTime\": %llu }", fileid, offset, nodeKind, unsigned(searchFlags), size, expandTime, readTime);
 
     if (unlikely(createSpans))
     {
@@ -895,34 +897,36 @@ void EventRecorder::recordIndexLoad(unsigned fileid, offset_t offset, byte nodeK
         span->setSpanAttribute("readTimeNs", readTime);
     }
 
-    size32_t requiredSize = sizeMessageHeaderFooter + getSizeOfAttrs(fileid, offset, nodeKind, size, expandTime, readTime);
+    size32_t requiredSize = sizeMessageHeaderFooter + getSizeOfAttrs(fileid, offset, nodeKind, searchFlags, size, expandTime, readTime);
     offset_type writeOffset = reserveEvent(requiredSize);
     offset_type pos = writeOffset;
     writeEventHeader(EventIndexLoad, pos);
     write(pos, EvAttrFileId, fileid);
     write(pos, EvAttrFileOffset, offset);
     write(pos, EvAttrNodeKind, nodeKind);
+    write(pos, EvAttrSearchFlags, searchFlags);
     write(pos, EvAttrInMemorySize, size);
     write(pos, EvAttrExpandTime, expandTime);
     write(pos, EvAttrReadTime, readTime);
     writeEventFooter(pos, requiredSize, writeOffset);
 }
 
-void EventRecorder::recordIndexEviction(unsigned fileid, offset_t offset, byte nodeKind, size32_t size)
+void EventRecorder::recordIndexEviction(unsigned fileid, offset_t offset, byte nodeKind, byte searchFlags, size32_t size)
 {
     if (!isRecording() || !isEventEnabled(EventCtxIndex))
         return;
 
     if (unlikely(outputToLog))
-        TRACEEVENT("{ \"name\": \"IndexEviction\", \"FileId\": %u, \"FileOffset\": %llu, \"NodeKind\": %d, \"InMemorySize\": %u }", fileid, offset, nodeKind, size);
+        TRACEEVENT("{ \"name\": \"IndexEviction\", \"FileId\": %u, \"FileOffset\": %llu, \"NodeKind\": %d, \"SearchFlags\": %u, \"InMemorySize\": %u }", fileid, offset, nodeKind, unsigned(searchFlags), size);
 
-    size32_t requiredSize = sizeMessageHeaderFooter + getSizeOfAttrs(fileid, offset, nodeKind, size);
+    size32_t requiredSize = sizeMessageHeaderFooter + getSizeOfAttrs(fileid, offset, nodeKind, searchFlags, size);
     offset_type writeOffset = reserveEvent(requiredSize);
     offset_type pos = writeOffset;
     writeEventHeader(EventIndexEviction, pos);
     write(pos, EvAttrFileId, fileid);
     write(pos, EvAttrFileOffset, offset);
     write(pos, EvAttrNodeKind, nodeKind);
+    write(pos, EvAttrSearchFlags, searchFlags);
     write(pos, EvAttrInMemorySize, size);
     writeEventFooter(pos, requiredSize, writeOffset);
 }
@@ -1829,6 +1833,9 @@ bool CEvent::isComplete() const
             continue;
         // Source attributes are required for RecordingSource, optional for all other events
         if (isSourceAttribute(attr) && type != EventRecordingSource)
+            continue;
+        // SearchFlags may be unavailable depending on the recording source or file version; never required
+        if (EvAttrSearchFlags == attr)
             continue;
         if (attributes[attr].isDefined())
             return false;

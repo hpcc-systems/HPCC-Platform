@@ -99,6 +99,8 @@ public:
         CPPUNIT_TEST(testMultiThread);
         CPPUNIT_TEST(testBlocked);
         CPPUNIT_TEST(testReadEvents);
+        CPPUNIT_TEST(testSearchFlagsRoundTrip);
+        CPPUNIT_TEST(testSearchFlagsOptionalForResave);
         CPPUNIT_TEST(testIterateAllAttributes);
         CPPUNIT_TEST(testIterateEventAttributes);
         CPPUNIT_TEST(testRecordingSource);
@@ -136,10 +138,10 @@ public:
             CPPUNIT_ASSERT(!recorder.startRecording("traceid", "eventtrace.evtxxx", nullptr, 0, 0, 0, false));
 
             // Record some events
-            recorder.recordIndexCacheHit(1, branchOffset, NodeBranch, 9876, 400);
-            recorder.recordIndexCacheMiss(1, nodeSize, NodeLeaf);
-            recorder.recordIndexLoad(1, nodeSize, NodeLeaf, nodeSize*8, 500, 300);
-            recorder.recordIndexEviction(1, branchOffset, NodeBranch, nodeSize);
+            recorder.recordIndexCacheHit(1, branchOffset, NodeBranch, 0, 9876, 400);
+            recorder.recordIndexCacheMiss(1, nodeSize, NodeLeaf, 0);
+            recorder.recordIndexLoad(1, nodeSize, NodeLeaf, 0, nodeSize*8, 500, 300);
+            recorder.recordIndexEviction(1, branchOffset, NodeBranch, 0, nodeSize);
 
             // Stop recording
             CPPUNIT_ASSERT(recorder.stopRecording(&summary, false));
@@ -156,21 +158,21 @@ public:
             CPPUNIT_ASSERT(!recorder.isRecording());
 
             //These should be ignored - count checked later on
-            recorder.recordIndexCacheMiss(2, 400, NodeLeaf);
-            recorder.recordIndexCacheMiss(1, 800, NodeLeaf);
+            recorder.recordIndexCacheMiss(2, 400, NodeLeaf, 0);
+            recorder.recordIndexCacheMiss(1, 800, NodeLeaf, 0);
 
             recorder.pauseRecording(false, true);
             CPPUNIT_ASSERT(recorder.isRecording());
 
             // Record more events
-            recorder.recordIndexCacheMiss(2, 400, NodeLeaf);
-            recorder.recordIndexCacheMiss(1, 800, NodeLeaf);
-            recorder.recordIndexLoad(2, 500, NodeLeaf, 2048, 600, 400);
-            recorder.recordIndexLoad(1, 800, NodeLeaf, 2048, 600, 400);
-            recorder.recordIndexCacheHit(1, 800, NodeLeaf, 2048, 600);
-            recorder.recordIndexCacheMiss(1, 1200, NodeLeaf);
-            recorder.recordIndexEviction(2, 500, NodeLeaf, 2048);
-            recorder.recordIndexLoad(1, 1200, NodeLeaf, 2048, 600, 400);
+            recorder.recordIndexCacheMiss(2, 400, NodeLeaf, 0);
+            recorder.recordIndexCacheMiss(1, 800, NodeLeaf, 0);
+            recorder.recordIndexLoad(2, 500, NodeLeaf, 0, 2048, 600, 400);
+            recorder.recordIndexLoad(1, 800, NodeLeaf, 0, 2048, 600, 400);
+            recorder.recordIndexCacheHit(1, 800, NodeLeaf, 0, 2048, 600);
+            recorder.recordIndexCacheMiss(1, 1200, NodeLeaf, 0);
+            recorder.recordIndexEviction(2, 500, NodeLeaf, 0, 2048);
+            recorder.recordIndexLoad(1, 1200, NodeLeaf, 0, 2048, 600, 400);
 
             recorder.recordDaliConnect("/Workunits/Workunit/abc.wu", 987, 100, 67);
 
@@ -197,7 +199,7 @@ public:
 
             CPPUNIT_ASSERT(recorder.startRecording("dali=1", "context_baseline_include.evt", nullptr, 0, 0, 0, false));
             CPPUNIT_ASSERT(recorder.isRecording());
-            recorder.recordIndexCacheMiss(1, nodeSize, NodeLeaf);
+            recorder.recordIndexCacheMiss(1, nodeSize, NodeLeaf, 0);
             recorder.recordDaliGet(123, 100, 64);
             EventRecordingSummary summary;
             CPPUNIT_ASSERT(recorder.stopRecording(&summary, false));
@@ -209,7 +211,7 @@ public:
 
             CPPUNIT_ASSERT(recorder.startRecording("dali=0", "context_baseline_exclude.evt", nullptr, 0, 0, 0, false));
             CPPUNIT_ASSERT(recorder.isRecording());
-            recorder.recordIndexCacheMiss(1, nodeSize, NodeLeaf);
+            recorder.recordIndexCacheMiss(1, nodeSize, NodeLeaf, 0);
             recorder.recordDaliGet(123, 100, 64);
             CPPUNIT_ASSERT(recorder.stopRecording(&summary, false));
 
@@ -284,8 +286,8 @@ public:
             // Record some events
             for (unsigned i=0; i < 100'000; i++)
             {
-                recorder.recordIndexCacheMiss(1, i*nodeSize, NodeLeaf);
-                recorder.recordIndexLoad(1, i*nodeSize, NodeLeaf, nodeSize*8, 500, 300);
+                recorder.recordIndexCacheMiss(1, i*nodeSize, NodeLeaf, 0);
+                recorder.recordIndexLoad(1, i*nodeSize, NodeLeaf, 0, nodeSize*8, 500, 300);
             }
 
             // Stop recording
@@ -319,8 +321,8 @@ public:
             EventRecorder &recorder = queryRecorder();
             for (unsigned i=0; i < count; i++)
             {
-                recorder.recordIndexCacheMiss(id, i*nodeSize, NodeLeaf);
-                recorder.recordIndexLoad(id, i*nodeSize, NodeLeaf, nodeSize*8, 500, 300);
+                recorder.recordIndexCacheMiss(id, i*nodeSize, NodeLeaf, 0);
+                recorder.recordIndexLoad(id, i*nodeSize, NodeLeaf, 0, nodeSize*8, 500, 300);
             }
             return 0;
         }
@@ -419,6 +421,8 @@ public:
         {
             removeFile("eventtrace.evt");
             removeFile("testfile.bin");
+            removeFile("searchflags.evt");
+            removeFile("searchflags_optional.evt");
             removeFile("recordingsource.evt");
             removeFile("recordingsource_optional.evt");
             removeFile("recordingsource_notfirst.evt");
@@ -467,12 +471,13 @@ attribute: InstanceId = 57
 attribute: FileId = 12345
 attribute: FileOffset = 67890
 attribute: NodeKind = 0
+attribute: SearchFlags = 0
 attribute: InMemorySize = 4567
 )!!!";
             EventRecorder& recorder = queryRecorder();
             CPPUNIT_ASSERT(recorder.startRecording("all=true", "eventtrace.evt", "test", 1, 23, 57, false));
             CPPUNIT_ASSERT(recorder.isRecording());
-            recorder.recordIndexEviction(12345, 67890, NodeBranch, 4567);
+            recorder.recordIndexEviction(12345, 67890, NodeBranch, 0, 4567);
             CPPUNIT_ASSERT(recorder.stopRecording(&summary, false));
             StringBuffer out;
             Owned<IEventVisitor> visitor = createVisitor(out);
@@ -497,6 +502,7 @@ attribute: EventThreadId = 100
 attribute: FileId = 12345
 attribute: FileOffset = 67890
 attribute: NodeKind = 0
+attribute: SearchFlags = 0
 attribute: InMemorySize = 4567
 event: DaliConnect
 attribute: EventTimestamp = '2025-05-08T00:00:00.000001010'
@@ -510,7 +516,7 @@ attribute: DataSize = 73
             EventRecorder& recorder = queryRecorder();
             CPPUNIT_ASSERT(recorder.startRecording("all,compress(lz4hc)", "eventtrace.evt", nullptr, 0, 0, 0, false));
             CPPUNIT_ASSERT(recorder.isRecording());
-            recorder.recordIndexEviction(12345, 67890, NodeBranch, 4567);
+            recorder.recordIndexEviction(12345, 67890, NodeBranch, 0, 4567);
             recorder.recordDaliConnect("/Workunits/Workunit/abc.wu", 98765, 100, 73);
             CPPUNIT_ASSERT(recorder.stopRecording(&summary, false));
             StringBuffer out;
@@ -519,6 +525,96 @@ attribute: DataSize = 73
             CPPUNIT_ASSERT(readEvents("eventtrace.evt", *visitor));
             CPPUNIT_ASSERT_EQUAL_STR(expect, out.str());
             DBGLOG("Raw size = %llu, File size = %llu", summary.rawSize, summary.totalSize);
+        }
+        catch (IException * e)
+        {
+            StringBuffer msg;
+            e->errorMessage(msg);
+            e->Release();
+            CPPUNIT_FAIL(msg.str());
+        }
+    }
+
+    void testSearchFlagsRoundTrip()
+    {
+        try
+        {
+            EventRecorder &recorder = queryRecorder();
+            EventRecordingSummary summary;
+
+            CPPUNIT_ASSERT(recorder.startRecording("all", "searchflags.evt", nullptr, 0, 0, 0, false));
+            CPPUNIT_ASSERT(recorder.isRecording());
+
+            recorder.recordIndexCacheHit(1, 100, NodeBranch, 0x15, 1024, 500);
+            recorder.recordIndexCacheMiss(2, 200, NodeLeaf, 0x08);
+            recorder.recordIndexLoad(3, 300, NodeBranch, 0x20, 2048, 600, 400);
+            recorder.recordIndexEviction(4, 400, NodeLeaf, 0x10, 4096);
+
+            CPPUNIT_ASSERT(recorder.stopRecording(&summary, false));
+            CPPUNIT_ASSERT_EQUAL(4U, summary.numEvents);
+
+            Owned<IEventIterator> ei = createEventFileIterator("searchflags.evt");
+            CPPUNIT_ASSERT_MESSAGE("Should be able to create event iterator", ei.get());
+
+            CEvent event;
+            CPPUNIT_ASSERT(ei->nextEvent(event));
+            CPPUNIT_ASSERT_EQUAL((int)EventIndexCacheHit, (int)event.queryType());
+            CPPUNIT_ASSERT(event.hasAttribute(EvAttrSearchFlags));
+            CPPUNIT_ASSERT_EQUAL(0x15ULL, event.queryNumericValue(EvAttrSearchFlags));
+
+            CPPUNIT_ASSERT(ei->nextEvent(event));
+            CPPUNIT_ASSERT_EQUAL((int)EventIndexCacheMiss, (int)event.queryType());
+            CPPUNIT_ASSERT(event.hasAttribute(EvAttrSearchFlags));
+            CPPUNIT_ASSERT_EQUAL(0x08ULL, event.queryNumericValue(EvAttrSearchFlags));
+
+            CPPUNIT_ASSERT(ei->nextEvent(event));
+            CPPUNIT_ASSERT_EQUAL((int)EventIndexLoad, (int)event.queryType());
+            CPPUNIT_ASSERT(event.hasAttribute(EvAttrSearchFlags));
+            CPPUNIT_ASSERT_EQUAL(0x20ULL, event.queryNumericValue(EvAttrSearchFlags));
+
+            CPPUNIT_ASSERT(ei->nextEvent(event));
+            CPPUNIT_ASSERT_EQUAL((int)EventIndexEviction, (int)event.queryType());
+            CPPUNIT_ASSERT(event.hasAttribute(EvAttrSearchFlags));
+            CPPUNIT_ASSERT_EQUAL(0x10ULL, event.queryNumericValue(EvAttrSearchFlags));
+
+            CPPUNIT_ASSERT(!ei->nextEvent(event));
+        }
+        catch (IException * e)
+        {
+            StringBuffer msg;
+            e->errorMessage(msg);
+            e->Release();
+            CPPUNIT_FAIL(msg.str());
+        }
+    }
+
+    void testSearchFlagsOptionalForResave()
+    {
+        try
+        {
+            // Simulates an event loaded from a file recorded before SearchFlags existed:
+            // FileId/FileOffset/NodeKind are set but SearchFlags was never assigned.
+            CEvent event;
+            event.reset(EventIndexCacheMiss);
+            event.setValue(EvAttrFileId, 100U);
+            event.setValue(EvAttrFileOffset, 200ULL);
+            event.setValue(EvAttrNodeKind, (unsigned)NodeLeaf);
+            CPPUNIT_ASSERT_MESSAGE("Missing SearchFlags must not block completeness", event.isComplete());
+            CPPUNIT_ASSERT_MESSAGE("SearchFlags must not be assigned a default value", !event.hasAttribute(EvAttrSearchFlags));
+
+            EventRecorder &recorder = queryRecorder();
+            EventRecordingSummary summary;
+            CPPUNIT_ASSERT(recorder.startRecording("traceid", "searchflags_optional.evt", nullptr, 0, 0, 0, false));
+            CPPUNIT_ASSERT(recorder.isRecording());
+            recorder.recordEvent(event);
+            CPPUNIT_ASSERT(recorder.stopRecording(&summary, false));
+            CPPUNIT_ASSERT_EQUAL(1U, summary.numEvents);
+
+            Owned<IEventIterator> ei = createEventFileIterator("searchflags_optional.evt");
+            CPPUNIT_ASSERT_MESSAGE("Should be able to create event iterator", ei.get());
+            CEvent readBack;
+            CPPUNIT_ASSERT(ei->nextEvent(readBack));
+            CPPUNIT_ASSERT_MESSAGE("SearchFlags must remain absent, not defaulted, on readback", !readBack.hasAttribute(EvAttrSearchFlags));
         }
         catch (IException * e)
         {
@@ -643,8 +739,8 @@ attribute: DataSize = 73
             CPPUNIT_ASSERT(recorder.startRecording("traceid", "recordingsource.evt", "test", 1, 2, 3, false));
             CPPUNIT_ASSERT(recorder.isRecording());
 
-            // Record IndexCacheMiss with default recordIndexCacheMiss function (no ChannelId, ReplicaId, InstanceId)
-            recorder.recordIndexCacheMiss(100, 200, NodeLeaf);
+            // Record IndexCacheMiss with SearchFlags=0 (no ChannelId, ReplicaId, InstanceId)
+            recorder.recordIndexCacheMiss(100, 200, NodeLeaf, 0);
 
             // Create and record a CEvent with IndexCacheMiss that includes ChannelId, ReplicaId, InstanceId
             CEvent event;
@@ -759,8 +855,8 @@ attribute: DataSize = 73
             CPPUNIT_ASSERT_MESSAGE("Should be able to start recording without RecordingSource event", recorder.startRecording("traceid", "recordingsource_optional.evt", nullptr, 0, 0, 0, false));
             CPPUNIT_ASSERT_MESSAGE("Recording should be active", recorder.isRecording());
 
-            recorder.recordIndexCacheMiss(100, 200, NodeLeaf);
-            recorder.recordIndexCacheHit(100, 300, NodeBranch, 1024, 500);
+            recorder.recordIndexCacheMiss(100, 200, NodeLeaf, 0);
+            recorder.recordIndexCacheHit(100, 300, NodeBranch, 0, 1024, 500);
 
             CPPUNIT_ASSERT_MESSAGE("Should be able to stop recording", recorder.stopRecording(&summary, false));
             CPPUNIT_ASSERT_MESSAGE("Recording should be inactive after stop", !recorder.isRecording());
@@ -809,9 +905,9 @@ attribute: DataSize = 73
         CPPUNIT_ASSERT_MESSAGE("Should be able to start recording", recorder.startRecording("traceid", "recordingsource_notfirst.evt", nullptr, 0, 0, 0, false));
         CPPUNIT_ASSERT_MESSAGE("Recording should be active", recorder.isRecording());
 
-        recorder.recordIndexCacheMiss(100, 200, NodeLeaf);
+        recorder.recordIndexCacheMiss(100, 200, NodeLeaf, 0);
         recorder.recordRecordingSource("test", 1, 2, 3);
-        recorder.recordIndexCacheHit(100, 300, NodeBranch, 1024, 500);
+        recorder.recordIndexCacheHit(100, 300, NodeBranch, 0, 1024, 500);
 
         CPPUNIT_ASSERT_MESSAGE("Should be able to stop recording", recorder.stopRecording(&summary, false));
         CPPUNIT_ASSERT_MESSAGE("Recording should be inactive after stop", !recorder.isRecording());
@@ -837,9 +933,9 @@ attribute: DataSize = 73
         CPPUNIT_ASSERT_MESSAGE("Recording should be active", recorder.isRecording());
 
         recorder.recordRecordingSource("test1", 1, 2, 3);
-        recorder.recordIndexCacheMiss(100, 200, NodeLeaf);
+        recorder.recordIndexCacheMiss(100, 200, NodeLeaf, 0);
         recorder.recordRecordingSource("test2", 4, 5, 6);
-        recorder.recordIndexCacheHit(100, 300, NodeBranch, 1024, 500);
+        recorder.recordIndexCacheHit(100, 300, NodeBranch, 0, 1024, 500);
 
         CPPUNIT_ASSERT_MESSAGE("Should be able to stop recording", recorder.stopRecording(&summary, false));
         CPPUNIT_ASSERT_MESSAGE("Recording should be inactive after stop", !recorder.isRecording());
@@ -867,7 +963,7 @@ attribute: DataSize = 73
         recorder.recordRecordingSource("test1", 1, 2, 3);
         recorder.recordRecordingSource("test2", 4, 5, 6);
         recorder.recordRecordingSource("test3", 7, 8, 9);
-        recorder.recordIndexCacheMiss(100, 200, NodeLeaf);
+        recorder.recordIndexCacheMiss(100, 200, NodeLeaf, 0);
 
         CPPUNIT_ASSERT_MESSAGE("Should be able to stop recording", recorder.stopRecording(&summary, false));
         CPPUNIT_ASSERT_MESSAGE("Recording should be inactive after stop", !recorder.isRecording());
@@ -1071,9 +1167,9 @@ attribute: DataSize = 73
             CPPUNIT_ASSERT(recorder.isRecording());
 
             // Record different event types with various attributes
-            recorder.recordIndexCacheMiss(100, 200, NodeLeaf);
-            recorder.recordIndexCacheHit(100, 300, NodeBranch, 1024, 500);
-            recorder.recordIndexLoad(200, 400, NodeLeaf, 2048, 600, 400);
+            recorder.recordIndexCacheMiss(100, 200, NodeLeaf, 0);
+            recorder.recordIndexCacheHit(100, 300, NodeBranch, 0, 1024, 500);
+            recorder.recordIndexLoad(200, 400, NodeLeaf, 0, 2048, 600, 400);
             recorder.recordDaliConnect("/Test/Path", 12345, 100, 50);
 
             CPPUNIT_ASSERT(recorder.stopRecording(&summary, false));
@@ -1314,10 +1410,10 @@ attribute: DataSize = 73
         // Index-related events
         recorder.recordIndexOpen(100, 9933);
 
-        recorder.recordIndexCacheHit(1, 8192, NodeBranch, 1024, 100);
-        recorder.recordIndexCacheMiss(2, 16384, NodeLeaf);
-        recorder.recordIndexLoad(3, 24576, NodeBranch, 2048, 150, 200);
-        recorder.recordIndexEviction(4, 32768, NodeLeaf, 4096);
+        recorder.recordIndexCacheHit(1, 8192, NodeBranch, 0, 1024, 100);
+        recorder.recordIndexCacheMiss(2, 16384, NodeLeaf, 0);
+        recorder.recordIndexLoad(3, 24576, NodeBranch, 0, 2048, 150, 200);
+        recorder.recordIndexEviction(4, 32768, NodeLeaf, 0, 4096);
         recorder.recordIndexPayload(5, 40960, true, 250);
 
         // Add an EventRecordingActive event

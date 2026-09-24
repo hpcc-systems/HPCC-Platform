@@ -420,6 +420,7 @@ class IndexEventModelTests : public CppUnit::TestFixture
     CPPUNIT_TEST(testCacheMissNotInModeledCache);
     CPPUNIT_TEST(testCacheMissInModeledCache);
     CPPUNIT_TEST(testNodeCacheEvictions);
+    CPPUNIT_TEST(testSearchFlagsPropagationThroughEviction);
     CPPUNIT_TEST(testMaxCacheCapacity);
     CPPUNIT_TEST(testAcceptNodeKinds);
     CPPUNIT_TEST_SUITE_END();
@@ -1013,6 +1014,36 @@ expect:
                     <event type="IndexLoad" EventTimestamp="1" FileId="1" FileOffset="16384" NodeKind="0" InMemorySize="60000" ExpandTime="4000" ReadTime="500"/>
                     <event type="IndexEviction" EventTimestamp="2" FileId="1" FileOffset="0" NodeKind="0" InMemorySize="30000"/>
                     <event type="IndexEviction" EventTimestamp="3" FileId="1" FileOffset="8192" NodeKind="0" InMemorySize="30000"/>
+                </expect>
+            </test>
+        )!!!";
+        testEventVisitationLinks(testData);
+    }
+
+    void testSearchFlagsPropagationThroughEviction()
+    {
+        // A non-zero SearchFlags on the causing load must propagate unchanged to the
+        // resulting cache-miss/load event and to every eviction it forces.
+        constexpr const char *testData = R"!!!(
+            <test>
+                <link kind="index-events">
+                    <storage>
+                        <plane name="a" readTime="500"/>
+                    </storage>
+                    <memory>
+                        <node kind="0" cacheCapacity="60kb "/>
+                        <observed FileId="1" FileOffset="0" NodeKind="0" InMemorySize="30000" ExpandTime="2500"/>
+                        <observed FileId="1" FileOffset="8192" NodeKind="0" InMemorySize="30000" ExpandTime="2500"/>
+                    </memory>
+                </link>
+                <input>
+                    <event type="IndexCacheHit" SearchFlags="21" FileId="1" FileOffset="16384" NodeKind="0" InMemorySize="60000" ExpandTime="4000"/>
+                </input>
+                <expect>
+                    <event type="IndexCacheMiss" SearchFlags="21" FileId="1" FileOffset="16384" NodeKind="0"/>
+                    <event type="IndexLoad" SearchFlags="21" EventTimestamp="1" FileId="1" FileOffset="16384" NodeKind="0" InMemorySize="60000" ExpandTime="4000" ReadTime="500"/>
+                    <event type="IndexEviction" SearchFlags="21" EventTimestamp="2" FileId="1" FileOffset="0" NodeKind="0" InMemorySize="30000"/>
+                    <event type="IndexEviction" SearchFlags="21" EventTimestamp="3" FileId="1" FileOffset="8192" NodeKind="0" InMemorySize="30000"/>
                 </expect>
             </test>
         )!!!";
