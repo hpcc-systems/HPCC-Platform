@@ -1170,7 +1170,6 @@ IHqlExpression * HqlGram::processIndexBuild(const attribute &err, attribute & in
         record.setown(checkBuildIndexRecord(record.getClear(), *recordAttr));
         record.setown(checkIndexRecord(record, *recordAttr, flags));
         projectedDataset.setown(createDataset(no_selectfields, { LINK(dataset), LINK(record) }));
-        warnIfRecordPacked(projectedDataset, *recordAttr);
     }
     else
     {
@@ -1182,12 +1181,21 @@ IHqlExpression * HqlGram::processIndexBuild(const attribute &err, attribute & in
             numPayload = (unsigned)getIntValue(payloadAttr->queryChild(0));
             flags.setown(createComma(flags.getClear(), LINK(payloadAttr)));
         }
+
         checkIndexRecordType(dataset->queryRecord(), numPayload, false, indexAttr);
     }
 
+    //NOTE: PACKED on a record is different from PACKED on an index!
+    warnIfRecordPacked(projectedDataset, recordAttr ? *recordAttr : err);
+
+    IHqlExpression * record = projectedDataset->queryRecord();
+    OwnedHqlExpr packedRecord = checkPackIndexRecord(record, nullptr, flags);
+    if (packedRecord != record)
+        projectedDataset.setown(createDefaultProjectDataset(packedRecord, projectedDataset, err));
+
     // If the trim attribute is specified, then add a project to trim all the input strings
     // When generating code the optimizer will combine this with the previous usertable/selectfields
-    if (queryAttributeInList(trimAtom, flags))
+    if (queryAttributeInList(trimAtom, flags) || (packedRecord != record))
     {
         OwnedHqlExpr trimTransform = queryCreateTrimTransform(projectedDataset);
         if (trimTransform)
@@ -7395,7 +7403,9 @@ IHqlExpression * HqlGram::createBuildIndexFromIndex(attribute & indexAttr, attri
     index.set(queryRootIndex(index));
 
     HqlExprArray buildOptions;
-    flagsAttr.unwindCommaList(buildOptions);
+    OwnedHqlExpr buildFlags = flagsAttr.getExpr();
+    if (buildFlags)
+        buildFlags->unwindList(buildOptions, no_comma);
 
     LinkedHqlExpr filename;
     LinkedHqlExpr sourceDataset;
@@ -7487,9 +7497,13 @@ IHqlExpression * HqlGram::createBuildIndexFromIndex(attribute & indexAttr, attri
         select.setown(createDataset(no_selectfields, { LINK(dataset), newRecord }));
     }
 
+    OwnedHqlExpr packedRecord = checkPackIndexRecord(record, index, buildFlags);
+    if (packedRecord != record)
+        select.setown(createDefaultProjectDataset(packedRecord, select, errpos));
+
     // If the trim attribute is present on the index, then add a project to trim all the input strings
     // When generating code the optimizer will combine this with the previous usertable/selectfields
-    if (hasAttribute(trimAtom, buildOptions) || index->hasAttribute(trimAtom))
+    if (hasAttribute(trimAtom, buildOptions) || index->hasAttribute(trimAtom) || (packedRecord != record))
     {
         OwnedHqlExpr trimTransform = queryCreateTrimTransform(select);
         if (trimTransform)
@@ -7864,6 +7878,44 @@ IHqlExpression * HqlGram::checkIndexRecord(IHqlExpression * record, const attrib
     return LINK(record);
 }
 
+// The following is a developer-only setting for testing
+static constexpr bool packAllIndexes = false;
+
+IHqlExpression * HqlGram::checkPackIndexRecord(IHqlExpression * record, IHqlExpression * optIndex, IHqlExpression * optIndexAttrs)
+{
+    IHqlExpression * packedAttr = optIndex ? optIndex->queryAttribute(packedAtom) : nullptr;
+    IHqlExpression * compressedAttr = optIndex ? optIndex->queryAttribute(compressedAtom) : nullptr;
+    unsigned payloadFields = optIndex ? numPayloadFields(optIndex) : (optIndexAttrs ? numPayloadFieldsFromAttrList(optIndexAttrs) : 1);
+
+    if (optIndexAttrs)
+    {
+        IHqlExpression * buildPackedAttr = queryAttributeInList(packedAtom, optIndexAttrs);
+        IHqlExpression * buildCompressedAttr = queryAttributeInList(compressedAtom, optIndexAttrs);
+        IHqlExpression * buildPayloadAttr = queryAttributeInList(_payload_Atom, optIndexAttrs);
+        if (buildPackedAttr)
+            packedAttr = buildPackedAttr;
+        if (buildCompressedAttr)
+            compressedAttr = buildCompressedAttr;
+        if (buildPayloadAttr)
+            payloadFields = (unsigned)getIntValue(buildPayloadAttr->queryChild(0));
+        else if (!optIndex)
+            payloadFields = numPayloadFieldsFromAttrList(optIndexAttrs);
+    }
+
+    if (packAllIndexes || packedAttr)
+    {
+        bool rowCompressed = compressedAttr && compressedAttr->queryChild(0) && compressedAttr->queryChild(0)->queryName() == rowAtom;
+        //Row compressed indexes must be fixed size, so (implicit) PACKED cannot be applied
+        if (!rowCompressed)
+        {
+            const unsigned defaultPackMinLength = 5;
+            unsigned minFieldLength = packedAttr ? getIntValue(packedAttr->queryChild(0), defaultPackMinLength) : defaultPackMinLength;
+            unsigned firstPayload = firstPayloadField(record, payloadFields);
+            return createPackedStringRecord(record, firstPayload, minFieldLength);
+        }
+    }
+    return LINK(record);
+}
 
 void HqlGram::reportUnsupportedFieldType(ITypeInfo * type, const attribute & errpos)
 {
