@@ -1214,15 +1214,11 @@
             </form>
           </xsl:if>
         </div>
-        <xsl:text disable-output-escaping="yes">
-           <![CDATA[
-          <iframe id="ClusterFrame" name="ClusterFrame" style="display:none; visibility:hidden;"></iframe>
-          <iframe id="FilesFrame" name="FilesFrame" style="display:none; visibility:hidden;"></iframe>
-          <iframe id="KeysFrame" name="IndexFrame" style="display:none; visibility:hidden;"></iframe>
-          <iframe id="FileLookupFrame" style="display:none; visibility:hidden;"></iframe>
-          <iframe id="DataColumnsFrame" style="display:none; visibility:hidden;"></iframe>
-          ]]>
-        </xsl:text>
+        <iframe id="ClusterFrame" name="ClusterFrame" style="display:none; visibility:hidden;"></iframe>
+        <iframe id="FilesFrame" name="FilesFrame" style="display:none; visibility:hidden;"></iframe>
+        <iframe id="KeysFrame" name="IndexFrame" style="display:none; visibility:hidden;"></iframe>
+        <iframe id="FileLookupFrame" style="display:none; visibility:hidden;"></iframe>
+        <iframe id="DataColumnsFrame" style="display:none; visibility:hidden;"></iframe>
       </body>
         </html>
     </xsl:template>

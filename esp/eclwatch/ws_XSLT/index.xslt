@@ -35,12 +35,10 @@
                 <link rel="stylesheet" type="text/css" href="/esp/files/yui/build/button/assets/skins/sam/button.css" />
                 <link rel="stylesheet" type="text/css" href="/esp/files/css/espdefault.css" />
                 <link rel="stylesheet" type="text/css" href="/esp/files/css/eclwatch.css" />
-                <xsl:text disable-output-escaping="yes"><![CDATA[
-                    <script type="text/javascript" src="/esp/files/scripts/espdefault.js"></script>
-                    <script type="text/javascript" src="/esp/files/yui/build/yahoo-dom-event/yahoo-dom-event.js"></script>
-                    <script type="text/javascript" src="/esp/files/yui/build/container/container_core-min.js"></script>
-                    <script type="text/javascript" src="/esp/files/yui/build/menu/menu-min.js"></script>
-                ]]></xsl:text>
+                <script type="text/javascript" src="/esp/files/scripts/espdefault.js"></script>
+                <script type="text/javascript" src="/esp/files/yui/build/yahoo-dom-event/yahoo-dom-event.js"></script>
+                <script type="text/javascript" src="/esp/files/yui/build/container/container_core-min.js"></script>
+                <script type="text/javascript" src="/esp/files/yui/build/menu/menu-min.js"></script>
                 <title>EclWatch</title>
                 <script type="text/javascript">
                     var chatUrl='<xsl:value-of select="$chaturl0"/>';

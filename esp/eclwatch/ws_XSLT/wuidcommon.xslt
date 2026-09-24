@@ -1104,15 +1104,20 @@
       <td>
         <xsl:choose>
           <xsl:when test="string-length(Name)">
-            <xsl:if test="(Value = '[undefined]' or Value = '') and contains(Name, 'Result')">
-            <xsl:text disable-output-escaping="yes"><![CDATA[<span style="color:silver">]]></xsl:text>
-            </xsl:if>
-            <xsl:call-template name="id2string">
-              <xsl:with-param name="toconvert" select="Name"/>
-            </xsl:call-template>
-            <xsl:if test="(Value = '[undefined]' or Value = '') and contains(Name, 'Result')">
-            <xsl:text disable-output-escaping="yes"><![CDATA[</span>]]></xsl:text>
-            </xsl:if>
+            <xsl:choose>
+              <xsl:when test="(Value = '[undefined]' or Value = '') and contains(Name, 'Result')">
+                <span style="color:silver">
+                  <xsl:call-template name="id2string">
+                    <xsl:with-param name="toconvert" select="Name"/>
+                  </xsl:call-template>
+                </span>
+              </xsl:when>
+              <xsl:otherwise>
+                <xsl:call-template name="id2string">
+                  <xsl:with-param name="toconvert" select="Name"/>
+                </xsl:call-template>
+              </xsl:otherwise>
+            </xsl:choose>
           </xsl:when>
           <xsl:otherwise>
             <xsl:if test="Value = '[undefined]'">
@@ -1174,9 +1179,7 @@
        </xsl:when>
        <xsl:when test="Value = '[undefined]'">
          <td>
-            <xsl:text disable-output-escaping="yes"><![CDATA[ <span style="color:silver">]]></xsl:text>
-            <xsl:value-of select="Value"/>
-            <xsl:text disable-output-escaping="yes"><![CDATA[ </span>]]></xsl:text>
+          <span style="color:silver"><xsl:value-of select="Value"/></span>
          </td>
          <td/>
          <td/>

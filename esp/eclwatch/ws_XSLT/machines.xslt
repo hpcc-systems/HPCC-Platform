@@ -58,12 +58,10 @@
             <link rel="stylesheet" type="text/css" href="/esp/files/css/espdefault.css" />
             <link rel="stylesheet" type="text/css" href="/esp/files/css/eclwatch.css" />
             <link type="text/css" rel="StyleSheet" href="files_/css/sortabletable.css"/>
-            <xsl:text disable-output-escaping="yes"><![CDATA[
             <script type="text/javascript" src="/esp/files/scripts/espdefault.js"></script>
             <script type="text/javascript" src="/esp/files/yui/build/yahoo-dom-event/yahoo-dom-event.js"></script>
             <script type="text/javascript" src="/esp/files/yui/build/container/container_core-min.js"></script>
             <script type="text/javascript" src="/esp/files/yui/build/menu/menu-min.js"></script>
-            ]]></xsl:text>
           </head>
           <body class="yui-skin-sam" onload="nof5()">
                         <h3>No machines!</h3>
@@ -89,12 +87,10 @@
       <link rel="stylesheet" type="text/css" href="/esp/files/css/espdefault.css" />
       <link rel="stylesheet" type="text/css" href="/esp/files/css/eclwatch.css" />
       <link type="text/css" rel="StyleSheet" href="files_/css/sortabletable.css"/>
-      <xsl:text disable-output-escaping="yes"><![CDATA[
         <script type="text/javascript" src="/esp/files/scripts/espdefault.js"></script>
         <script type="text/javascript" src="/esp/files/yui/build/yahoo-dom-event/yahoo-dom-event.js"></script>
         <script type="text/javascript" src="/esp/files/yui/build/container/container_core-min.js"></script>
         <script type="text/javascript" src="/esp/files/yui/build/menu/menu-min.js"></script>
-        ]]></xsl:text>
 
             <script language="javascript" src="files_/scripts/multiselect.js">
                 <xsl:text disable-output-escaping="yes">&amp;nbsp;</xsl:text>

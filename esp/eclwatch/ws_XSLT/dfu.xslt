@@ -47,19 +47,17 @@
     <xsl:template match="/DFUQueryResponse">
         <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
             <head>
-        <xsl:text disable-output-escaping="yes"><![CDATA[
-          <link rel="stylesheet" type="text/css" href="/esp/files/yui/build/fonts/fonts-min.css" />
-          <link rel="stylesheet" type="text/css" href="/esp/files/yui/build/menu/assets/skins/sam/menu.css" />
-          <link rel="stylesheet" type="text/css" href="/esp/files/yui/build/button/assets/skins/sam/button.css" />
-          <link rel="stylesheet" type="text/css" href="/esp/files/css/espdefault.css" />
-          <link rel="stylesheet" type="text/css" href="/esp/files/css/eclwatch.css" />
-                    <link type="text/css" rel="styleSheet" href="/esp/files/css/sortabletable.css"/>
-           <script type="text/javascript" src="/esp/files/scripts/espdefault.js"></script>
-          <script type="text/javascript" src="/esp/files/yui/build/yahoo-dom-event/yahoo-dom-event.js"></script>
-          <script type="text/javascript" src="/esp/files/yui/build/container/container_core-min.js"></script>
-          <script type="text/javascript" src="/esp/files/yui/build/menu/menu-min.js"></script>
-          <script language="JavaScript1.2" src="/esp/files/scripts/multiselect.js"></script>
-        ]]></xsl:text>
+                                <link rel="stylesheet" type="text/css" href="/esp/files/yui/build/fonts/fonts-min.css" />
+                                <link rel="stylesheet" type="text/css" href="/esp/files/yui/build/menu/assets/skins/sam/menu.css" />
+                                <link rel="stylesheet" type="text/css" href="/esp/files/yui/build/button/assets/skins/sam/button.css" />
+                                <link rel="stylesheet" type="text/css" href="/esp/files/css/espdefault.css" />
+                                <link rel="stylesheet" type="text/css" href="/esp/files/css/eclwatch.css" />
+                                <link type="text/css" rel="styleSheet" href="/esp/files/css/sortabletable.css"/>
+                                <script type="text/javascript" src="/esp/files/scripts/espdefault.js"></script>
+                                <script type="text/javascript" src="/esp/files/yui/build/yahoo-dom-event/yahoo-dom-event.js"></script>
+                                <script type="text/javascript" src="/esp/files/yui/build/container/container_core-min.js"></script>
+                                <script type="text/javascript" src="/esp/files/yui/build/menu/menu-min.js"></script>
+                                <script language="JavaScript1.2" src="/esp/files/scripts/multiselect.js"></script>
 
           <script language="JavaScript1.2" id="menuhandlers">
                     var owner = '<xsl:value-of select="$owner"/>';;
