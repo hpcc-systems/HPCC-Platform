@@ -83,10 +83,9 @@ RUN mkdir /var/lock/HPCCSystems && chown hpcc:hpcc /var/lock/HPCCSystems
 RUN mkdir /var/run/HPCCSystems && chown hpcc:hpcc /var/run/HPCCSystems
 
 ARG PKG_FILE=hpccsystems-platform-community_9.2.4-1jammy_amd64_k8s.deb
-COPY ./${PKG_FILE} /tmp/${PKG_FILE}
-RUN dpkg -i /tmp/${PKG_FILE} && \
-    apt-get install -f && \
-    rm /tmp/${PKG_FILE}
+RUN --mount=type=bind,target=/tmp/build-context \
+    dpkg -i /tmp/build-context/${PKG_FILE} && \
+    apt-get install -f
 
 USER hpcc
 ENV PATH="/opt/HPCCSystems/bin:${PATH}"
