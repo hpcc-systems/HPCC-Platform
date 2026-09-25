@@ -235,12 +235,12 @@ storage:
   {{- if and (eq "data" $plane.category) (not $plane.defaultSprayParts) -}}
    {{- $_ := set $planeYaml "defaultSprayParts" (include "hpcc.getMaxNumWorkers" $ | int) -}}
   {{- end -}}
-  {{- /* Make sure there is enough containers provided if storageapi used*/ -}}
+  {{- /* Make sure there are enough containers/buckets provided if storageapi used*/ -}}
   {{- if $plane.storageapi -}}
    {{- $numDevices := int ( $plane.numDevices | default $plane.numDevices | default 1 ) }}
-   {{- $numContainers := len ($plane.storageapi.containers | default list) -}}
-   {{- if ne $numDevices $numContainers -}}
-    {{- $_ := fail (printf "Storage plane '%s' requires %d containers under storageapi" $plane.name $numDevices) -}}
+   {{- $numEntries := len ($plane.storageapi.containers | default ($plane.storageapi.buckets | default list)) -}}
+   {{- if ne $numDevices $numEntries -}}
+    {{- $_ := fail (printf "Storage plane '%s' requires %d containers/buckets under storageapi" $plane.name $numDevices) -}}
    {{- end -}}
   {{- end -}}
   {{- /* Remove pvc-related properties from the aliases*/ -}}

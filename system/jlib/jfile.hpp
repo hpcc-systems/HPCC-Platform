@@ -428,6 +428,7 @@ extern jlib_decl IFile * createIFile(const RemoteFilename & filename);
 interface IStorageApiInfo : implements IInterface
 {
     virtual const char * getStorageType() const = 0;
+    virtual const char * queryPlaneName() const = 0;
     virtual const char * queryStorageApiAccount(unsigned stripeNumber) const = 0;
     virtual const char * queryStorageContainerName(unsigned stripeNumber) const = 0;
     virtual StringBuffer & getSASToken(unsigned stripeNumber, StringBuffer & token) const = 0;
