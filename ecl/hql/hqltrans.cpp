@@ -5128,6 +5128,74 @@ unsigned getExpressionCount(IHqlExpression * expr, bool onlyActivities, bool pro
 
 //------------------------------------------------------------------------------------------------
 
+class StringPackingTransformer
+{
+public:
+    StringPackingTransformer(unsigned _minFieldLength) : minFieldLength(_minFieldLength)
+    {
+    }
+
+    IHqlExpression * transformField(IHqlExpression * expr)
+    {
+        if (expr->getOperator() == no_field)
+        {
+            ITypeInfo * type = expr->queryType();
+            if (canOverrideStringLength(type) && !isUnknownLength(type->getSize()))
+            {
+                unsigned length = type->getSize();
+                //Only convert fields to variable length if they are longer than the minimum length
+                if (length >= minFieldLength)
+                {
+                    __int64 unknownLengthBytes = 0;
+                    if (length <= 0xFF)
+                        unknownLengthBytes = 1;
+                    else if (length <= 0xFFFF)
+                        unknownLengthBytes = 2;
+
+                    HqlExprArray args;
+                    unwindChildren(args, expr);
+                    OwnedITypeInfo newType = getStretchedType(UNKNOWN_LENGTH, type);
+                    if (unknownLengthBytes)
+                        args.append(*createExprAttribute(lengthSizeAtom, createConstant(unknownLengthBytes)));
+                    return createField(expr->queryId(), newType.getClear(), args);
+                }
+            }
+        }
+
+        return LINK(expr);
+    }
+
+protected:
+    unsigned minFieldLength;
+};
+
+IHqlExpression * createPackedStringRecord(IHqlExpression * record, unsigned firstPayloadIndex, unsigned minFieldLength)
+{
+    StringPackingTransformer transformer(minFieldLength);
+    HqlExprArray fields;
+    bool same = true;
+    ForEachChild(idx, record)
+    {
+        IHqlExpression * cur = record->queryChild(idx);
+        OwnedHqlExpr mapped;
+        if (idx >= firstPayloadIndex)
+            mapped.setown(transformer.transformField(cur));
+        else
+            mapped.set(cur);
+
+        if (mapped != cur)
+            same = false;
+        fields.append(*mapped.getClear());
+    }
+
+    if (same)
+        return LINK(record);
+    return record->clone(fields);
+}
+
+
+//------------------------------------------------------------------------------------------------
+
 
 /*
 
