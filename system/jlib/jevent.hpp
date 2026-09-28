@@ -99,6 +99,9 @@ enum class EventTask : byte
     Compressing,   // Compressing data
     Decompressing, // Decompressing data
     Writing,       // Writing data
+    CacheReading,  // Reading from cache
+    CacheWriting,  // Writing to cache
+    DllLoading,    // Loading a dynamic link library
     Max
 };
 
