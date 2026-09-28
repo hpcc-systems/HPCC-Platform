@@ -19,6 +19,9 @@
 
 #include "jevent.hpp"
 
+constexpr byte defaultPageBits = 13; // 8K page size
+constexpr __uint64 indexPageSize = __uint64(1) << defaultPageBits;
+
 enum NodeKind : unsigned
 {
     BranchNode,

@@ -208,7 +208,9 @@ SizeType strToBytes(const char* str, StrToBytesFlags flags = StrToBytesFlags::De
         // Single 'B' or 'b' with optional trailing whitespace (no double B like other units)
         if (!ensureOnlyWhitespace(endPtr + 1))
             return errorValue;
-        // Fall through to shared bytes validation
+        if (value != floor(value))
+            handleErrorV("Decimal byte counts not allowed: %s", str);
+        break;
     case '\0':
         // No unit specified - assume bytes
         if (value != floor(value)) {
