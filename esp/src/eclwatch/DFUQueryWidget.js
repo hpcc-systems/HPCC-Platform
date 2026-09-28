@@ -386,6 +386,7 @@ define([
                 }
             } else if (retVal.Indexes) {
                 retVal.ContentType = "key";
+                retVal.FileType = "Logical Files Only";
             }
             delete retVal.LogicalFiles;
             delete retVal.SuperFiles;
