@@ -43,10 +43,16 @@ enum NodeTypeWithFlags : unsigned
     NodeSearchAllKeyed   = 0x08, // All keyed fields are provided when searching
     NodeSearchSingleValue= 0x10, // Only a single value is provided when searching
     NodeSearchUnfiltered = 0x20, // No filtering is applied - only postfiltering
+    NodeSearchCount      = 0x40, // An index count operation is in progress.
+
+// Which flags should be passed through to evt event traces?
+    NodeSearchFlagsMask   = (NodeSearchAllKeyed | NodeSearchSingleValue | NodeSearchUnfiltered | NodeSearchCount),
 
 // The following are specific to an index.  They are less useful for tracing, but may be useful in getCachedNode()
-    NodeInTLK            = 0x40, // The node is part of a top-level key (TLK) - used to optimize loading of TLK nodes
-    NodeInSinglePartFile = 0x80, // The node is part of a single-partition file
+    NodeInTLK            = 0x80, // The node is part of a top-level key (TLK) - used to optimize loading of TLK nodes
+    NodeInSinglePartFile = 0x100, // The node is part of a single-partition file
+
+// MORE: If any other values are required then it may cause problems oring into position since the minimum node size is 512
 };
 
 enum CompressionType : unsigned char

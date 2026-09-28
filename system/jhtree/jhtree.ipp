@@ -302,6 +302,23 @@ public:
         return key.getIndexNodeUsingLoader(*this, offset, type | nodeFilterFlags, ctx);
     }
 
+    // Temporarily ORs extra flags into nodeFilterFlags for the lifetime of the instance, restoring the previous value on destruction
+    class ScopedNodeFilterFlags
+    {
+    public:
+        inline ScopedNodeFilterFlags(CKeyCursor & _cursor, NodeTypeWithFlags flags) : cursor(_cursor), savedFlags(_cursor.nodeFilterFlags)
+        {
+            cursor.nodeFilterFlags |= flags;
+        }
+        inline ~ScopedNodeFilterFlags()
+        {
+            cursor.nodeFilterFlags = savedFlags;
+        }
+    private:
+        CKeyCursor & cursor;
+        NodeTypeWithFlags savedFlags;
+    };
+
 protected:
     CKeyCursor(const CKeyCursor &from);
 
