@@ -1,6 +1,6 @@
 /*##############################################################################
 
-    Copyright (C) 2025 HPCC Systems®.
+    Copyright (C) 2026 HPCC Systems®.
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -15,13 +15,12 @@
     limitations under the License.
 ############################################################################## */
 
-#pragma once
+#include "evtindex_load.hpp"
+#include "evtindex_load_sequence.hpp"
 
-#include "evtool.hpp"
-#include "jevent.hpp"
-#include "jstream.hpp"
-
-extern IEvToolCommand* createIndexSummaryCommand();
-extern IEvToolCommand* createIndexHotspotCommand();
-extern IEvToolCommand* createIndexPlotCommand();
-extern IEvToolCommand* createIndexLoadCommand();
+IEvToolCommand* createIndexLoadCommand()
+{
+    return new CEvtCommandGroup({
+        { "sequence", createIndexLoadSequenceCommand },
+    }, "Commands for analyzing index load patterns.", "index load analysis");
+}

@@ -99,6 +99,7 @@ public:
         CPPUNIT_TEST(testMultiThread);
         CPPUNIT_TEST(testBlocked);
         CPPUNIT_TEST(testReadEvents);
+        CPPUNIT_TEST(testTaskStartPayloadRoundTrip);
         CPPUNIT_TEST(testSearchFlagsRoundTrip);
         CPPUNIT_TEST(testSearchFlagsOptionalForResave);
         CPPUNIT_TEST(testIterateAllAttributes);
@@ -421,6 +422,7 @@ public:
         {
             removeFile("eventtrace.evt");
             removeFile("testfile.bin");
+            removeFile("taskstartpayload.evt");
             removeFile("searchflags.evt");
             removeFile("searchflags_optional.evt");
             removeFile("recordingsource.evt");
@@ -525,6 +527,93 @@ attribute: DataSize = 73
             CPPUNIT_ASSERT(readEvents("eventtrace.evt", *visitor));
             CPPUNIT_ASSERT_EQUAL_STR(expect, out.str());
             DBGLOG("Raw size = %llu, File size = %llu", summary.rawSize, summary.totalSize);
+        }
+        catch (IException * e)
+        {
+            StringBuffer msg;
+            e->errorMessage(msg);
+            e->Release();
+            CPPUNIT_FAIL(msg.str());
+        }
+    }
+
+    void testTaskStartPayloadRoundTrip()
+    {
+        try
+        {
+            EventRecorder &recorder = queryRecorder();
+            EventRecordingSummary summary;
+
+            CPPUNIT_ASSERT(recorder.startRecording("all", "taskstartpayload.evt", nullptr, 0, 0, 0, false));
+            recorder.recordTaskStart(EventTask::Reading, 1234);
+            recorder.recordTaskStart(EventTask::Processing, 2345);
+            recorder.recordTaskStart(EventTask::Writing, 3456);
+            recorder.recordTaskStart(EventTask::Sink, 42);
+            recorder.recordTaskStart(EventTask::Readahead, 84);
+            recorder.recordTaskStart(EventTask::Compressing, (__uint64(5678) << 32) | 1234);
+            recorder.recordTaskStart(EventTask::Graph, 99);
+            recorder.recordTaskStart(EventTask::SubGraph, 99);
+            recorder.recordTaskStart(EventTask::Decompressing, 99);
+            CPPUNIT_ASSERT(recorder.stopRecording(&summary, false));
+            CPPUNIT_ASSERT_EQUAL(9U, summary.numEvents);
+
+            Owned<IEventIterator> iterator = createEventFileIterator("taskstartpayload.evt");
+            CEvent event;
+            CPPUNIT_ASSERT(iterator->nextEvent(event));
+            CPPUNIT_ASSERT_EQUAL((int)EventTaskStart, (int)event.queryType());
+            CPPUNIT_ASSERT_EQUAL((unsigned)EventTask::Reading, (unsigned)event.queryNumericValue(EvAttrTask));
+            CPPUNIT_ASSERT(event.hasAttribute(EvAttrDataSize));
+            CPPUNIT_ASSERT_EQUAL(1234ULL, event.queryNumericValue(EvAttrDataSize));
+            CPPUNIT_ASSERT(!event.hasAttribute(EvAttrActivityId));
+
+            CPPUNIT_ASSERT(iterator->nextEvent(event));
+            CPPUNIT_ASSERT_EQUAL((unsigned)EventTask::Processing, (unsigned)event.queryNumericValue(EvAttrTask));
+            CPPUNIT_ASSERT(event.hasAttribute(EvAttrDataSize));
+            CPPUNIT_ASSERT_EQUAL(2345ULL, event.queryNumericValue(EvAttrDataSize));
+            CPPUNIT_ASSERT(!event.hasAttribute(EvAttrActivityId));
+
+            CPPUNIT_ASSERT(iterator->nextEvent(event));
+            CPPUNIT_ASSERT_EQUAL((unsigned)EventTask::Writing, (unsigned)event.queryNumericValue(EvAttrTask));
+            CPPUNIT_ASSERT(event.hasAttribute(EvAttrDataSize));
+            CPPUNIT_ASSERT_EQUAL(3456ULL, event.queryNumericValue(EvAttrDataSize));
+            CPPUNIT_ASSERT(!event.hasAttribute(EvAttrActivityId));
+
+            CPPUNIT_ASSERT(iterator->nextEvent(event));
+            CPPUNIT_ASSERT_EQUAL((unsigned)EventTask::Sink, (unsigned)event.queryNumericValue(EvAttrTask));
+            CPPUNIT_ASSERT(event.hasAttribute(EvAttrActivityId));
+            CPPUNIT_ASSERT_EQUAL(42ULL, event.queryNumericValue(EvAttrActivityId));
+            CPPUNIT_ASSERT(!event.hasAttribute(EvAttrDataSize));
+
+            CPPUNIT_ASSERT(iterator->nextEvent(event));
+            CPPUNIT_ASSERT_EQUAL((unsigned)EventTask::Readahead, (unsigned)event.queryNumericValue(EvAttrTask));
+            CPPUNIT_ASSERT(event.hasAttribute(EvAttrActivityId));
+            CPPUNIT_ASSERT_EQUAL(84ULL, event.queryNumericValue(EvAttrActivityId));
+            CPPUNIT_ASSERT(!event.hasAttribute(EvAttrDataSize));
+
+            CPPUNIT_ASSERT(iterator->nextEvent(event));
+            CPPUNIT_ASSERT_EQUAL((unsigned)EventTask::Compressing, (unsigned)event.queryNumericValue(EvAttrTask));
+            CPPUNIT_ASSERT(event.hasAttribute(EvAttrDataSize));
+            CPPUNIT_ASSERT_EQUAL(5678ULL, event.queryNumericValue(EvAttrDataSize));
+            CPPUNIT_ASSERT(event.hasAttribute(EvAttrInMemorySize));
+            CPPUNIT_ASSERT_EQUAL(1234ULL, event.queryNumericValue(EvAttrInMemorySize));
+            CPPUNIT_ASSERT(!event.hasAttribute(EvAttrActivityId));
+
+            CPPUNIT_ASSERT(iterator->nextEvent(event));
+            CPPUNIT_ASSERT_EQUAL((unsigned)EventTask::Graph, (unsigned)event.queryNumericValue(EvAttrTask));
+            CPPUNIT_ASSERT(!event.hasAttribute(EvAttrActivityId));
+            CPPUNIT_ASSERT(!event.hasAttribute(EvAttrDataSize));
+
+            CPPUNIT_ASSERT(iterator->nextEvent(event));
+            CPPUNIT_ASSERT_EQUAL((unsigned)EventTask::SubGraph, (unsigned)event.queryNumericValue(EvAttrTask));
+            CPPUNIT_ASSERT(!event.hasAttribute(EvAttrActivityId));
+            CPPUNIT_ASSERT(!event.hasAttribute(EvAttrDataSize));
+
+            CPPUNIT_ASSERT(iterator->nextEvent(event));
+            CPPUNIT_ASSERT_EQUAL((unsigned)EventTask::Decompressing, (unsigned)event.queryNumericValue(EvAttrTask));
+            CPPUNIT_ASSERT(!event.hasAttribute(EvAttrActivityId));
+            CPPUNIT_ASSERT(!event.hasAttribute(EvAttrDataSize));
+
+            CPPUNIT_ASSERT(!iterator->nextEvent(event));
         }
         catch (IException * e)
         {

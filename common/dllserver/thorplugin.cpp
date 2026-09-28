@@ -815,7 +815,7 @@ void PluginDll::logLoaded()
 
 extern DLLSERVER_API ILoadedDllEntry * createDllEntry(const char *path, bool isGlobal, const IFileIO *dllFile, bool resourcesOnly)
 {
-    ProTraceTaskScopeTracker tracker(EventTask::Reading);
+    ProTraceTaskScopeTracker tracker(EventTask::DllLoading);
 
     Owned<HelperDll> result = new HelperDll(path, dllFile);
     bool ok;

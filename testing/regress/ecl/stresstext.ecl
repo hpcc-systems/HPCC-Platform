@@ -43,7 +43,7 @@
 import ^ as root;
 multiPart := #IFDEFINED(root.multiPart, true);
 variant := #IFDEFINED(root.variant, '');
-numJoins := #IFDEFINED(root.numJoins, 40);
+numJoins := #IFDEFINED(root.numJoins, 2); // 2 is good for the regression suite, change to 40 for significant stress test
 
 //--- end of version configuration ---
 

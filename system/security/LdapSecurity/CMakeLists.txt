@@ -51,6 +51,7 @@ IF (USE_CPPUNIT)
     set ( SRCS ${SRCS}
          unittests/ldapsecuritytests.cpp
          unittests/permissionsmappingtests.cpp
+         unittests/passwordexpirytests.cpp
     )
 ENDIF (USE_CPPUNIT)
 

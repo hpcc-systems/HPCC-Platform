@@ -17,6 +17,7 @@
 
 #pragma warning (disable : 4786)
 #include "InfoCacheReader.hpp"
+#include "esptrace.h"
 
 bool CInfoCache::isCachedInfoValid(unsigned timeOutSeconds)
 {
@@ -40,6 +41,8 @@ void CInfoCacheReaderThread::threadmain()
         autoRebuildMillSeconds = INFINITE;
     }
     PROGLOG("%s", message.str());
+    StringBuffer spanName(name.get());
+    spanName.replaceString(" ", "").append("Rebuild");
 
     while (!stopping)
     {
@@ -47,8 +50,14 @@ void CInfoCacheReaderThread::threadmain()
         {
             try
             {
-                CCycleTimer timer;
-                Owned<CInfoCache> info = infoCacheReader->read();
+                Owned<CInfoCache> info;
+                if (doTrace(traceEspInfoCacheBuild))
+                {
+                    OwnedActiveSpanScope rebuildSpan(queryTraceManager().createServerSpan(spanName.str(), nullptr));
+                    info.setown(infoCacheReader->read());
+                }
+                else
+                    info.setown(infoCacheReader->read());
 
                 CriticalBlock b(crit);
                 infoCache.setown(info.getClear());
