@@ -110,7 +110,7 @@ static const char * queryIndexNodeTypeText(unsigned type)
 #define JEVENT_WORKERSTOP_ATTRS        JEVENT_COMMON_ATTRS, EvAttrRequestId, EvAttrRequestSeq
 #define JEVENT_WORKERSEND_ATTRS        JEVENT_COMMON_ATTRS, EvAttrRequestId, EvAttrRequestSeq, EvAttrResponseId, EvAttrResponseSeq
 #define JEVENT_WORKERRECEIVE_ATTRS     JEVENT_COMMON_ATTRS, EvAttrRequestId, EvAttrRequestSeq, EvAttrResponseId, EvAttrResponseSeq
-#define JEVENT_TASKSTART_ATTRS         JEVENT_COMMON_ATTRS, EvAttrTask
+#define JEVENT_TASKSTART_ATTRS         JEVENT_COMMON_ATTRS, EvAttrTask, EvAttrActivityId, EvAttrDataSize, EvAttrInMemorySize
 #define JEVENT_TASKSTOP_ATTRS          JEVENT_COMMON_ATTRS, EvAttrTask
 #define JEVENT_MUTEX_ATTRS             JEVENT_COMMON_ATTRS, EvAttrLockId
 #define JEVENT_MPREQUESTSEND_ATTRS     JEVENT_COMMON_ATTRS, EvAttrRequestId, EvAttrDataSize
@@ -804,6 +804,28 @@ static_assert(getSizeOfAttrs(1U, 3ULL) == 2 * sizeof(EventAttr) + 4 + 8);
 static_assert(getSizeOfAttrs("gavin") == sizeof(EventAttr) + 6);
 static_assert(getSizeOfAttrs(true, 32768U, 1ULL, "boris", "blob") == 5 * sizeof(EventAttr) + 1 + 4 + 8 + 6 + 5);
 
+// Appends a trace-log attribute value, promoting byte/char-sized values to unsigned so they
+// are logged as numbers rather than as characters.
+template <typename T>
+static StringBuffer & appendTraceValue(StringBuffer & out, T value)
+{
+    if constexpr (std::is_same_v<T, byte> || std::is_same_v<T, char> || std::is_same_v<T, signed char>)
+        return out.append(static_cast<unsigned>(value));
+    else
+        return out.append(value);
+}
+
+template <typename... T>
+void EventRecorder::writeEventAttrs(EventType type, EventAttrPair<T>... attrs)
+{
+    size32_t requiredSize = sizeMessageHeaderFooter + (getSizeOfAttr(attrs.value) + ...);
+    offset_type writeOffset = reserveEvent(requiredSize);
+    offset_type pos = writeOffset;
+    writeEventHeader(type, pos);
+    (write(pos, attrs.attr, attrs.value), ...);
+    writeEventFooter(pos, requiredSize, writeOffset);
+}
+
 void EventRecorder::recordRecordingActive(bool enabled)
 {
     if (!isRecording() || !isEventEnabled(EventCtxOther))
@@ -1078,25 +1100,52 @@ void EventRecorder::recordQueryStop()
     writeEventFooter(pos, requiredSize, writeOffset);
 }
 
-void EventRecorder::recordTaskEvent(EventType event, EventTask task)
+template <typename... T>
+void EventRecorder::recordTaskEvent(EventType event, EventTask task, EventAttrPair<T>... attrs)
 {
     if (!isRecording() || !isEventEnabled(EventCtxQuery))
         return;
 
     if (unlikely(outputToLog))
-        TRACEEVENT("{ \"name\": \"%s\", \"Task\": %u }", queryEventName(event), static_cast<unsigned>(task));
+    {
+        StringBuffer trace;
+        trace.append("{ \"name\": \"").append(queryEventName(event)).append("\", \"Task\": ").append(static_cast<unsigned>(task));
+        ((trace.append(", \"").append(queryEventAttributeName(attrs.attr)).append("\": "), appendTraceValue(trace, attrs.value)), ...);
+        trace.append(" }");
+        TRACEEVENT("%s", trace.str());
+    }
 
-    size32_t requiredSize = sizeMessageHeaderFooter + getSizeOfAttrs(task);
-    offset_type writeOffset = reserveEvent(requiredSize);
-    offset_type pos = writeOffset;
-    writeEventHeader(event, pos);
-    write(pos, EvAttrTask, static_cast<byte>(task));
-    writeEventFooter(pos, requiredSize, writeOffset);
+    writeEventAttrs(event, attrPair(EvAttrTask, static_cast<byte>(task)), attrs...);
 }
 
 void EventRecorder::recordTaskStart(EventTask task)
 {
     recordTaskEvent(EventTaskStart, task);
+}
+
+void EventRecorder::recordTaskStart(EventTask task, __uint64 payload)
+{
+    switch (task)
+    {
+    case EventTask::Sink:
+    case EventTask::Readahead:
+        assertex(payload <= UINT32_MAX);
+        recordTaskEvent(EventTaskStart, task, attrPair(EvAttrActivityId, static_cast<size32_t>(payload)));
+        return;
+    case EventTask::Reading:
+    case EventTask::Processing:
+    case EventTask::Writing:
+        assertex(payload <= UINT32_MAX);
+        recordTaskEvent(EventTaskStart, task, attrPair(EvAttrDataSize, static_cast<size32_t>(payload)));
+        return;
+    case EventTask::Compressing:
+        recordTaskEvent(EventTaskStart, task, attrPair(EvAttrDataSize, static_cast<size32_t>(payload >> 32)),
+                                              attrPair(EvAttrInMemorySize, static_cast<size32_t>(payload)));
+        return;
+    default:
+        recordTaskEvent(EventTaskStart, task);
+        return;
+    }
 }
 
 void EventRecorder::recordTaskStop(EventTask task)
@@ -1834,8 +1883,10 @@ bool CEvent::isComplete() const
         // Source attributes are required for RecordingSource, optional for all other events
         if (isSourceAttribute(attr) && type != EventRecordingSource)
             continue;
-        // SearchFlags may be unavailable depending on the recording source or file version; never required
+        // SearchFlags may be unavailable depending on the recording source or file version
         if (EvAttrSearchFlags == attr)
+            continue;
+        if (EventTaskStart == type && (EvAttrActivityId == attr || EvAttrDataSize == attr || EvAttrInMemorySize == attr))
             continue;
         if (attributes[attr].isDefined())
             return false;

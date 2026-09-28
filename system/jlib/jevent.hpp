@@ -83,7 +83,8 @@
     DEFINE(LockId,            u4,        none) \
     DEFINE(ElementId,         u8,        none) \
     DEFINE(FunctionId,        u4,        none) \
-    DEFINE(SearchFlags,       u1,        none)
+    DEFINE(SearchFlags,       u1,        none) \
+    DEFINE(ActivityId,        u4,        none)
 
 // Tasks represent a logical step in processing.  They will always start and stop on the same thread.
 enum class EventTask : byte
@@ -458,6 +459,13 @@ public:
 enum EventAttr : byte;
 interface IFileIO;
 
+// Pairing of an attribute id with its value, used by EventRecorder::writeEventAttrs.
+template <typename T>
+struct EventAttrPair { EventAttr attr; T value; };
+
+template <typename T>
+constexpr EventAttrPair<T> attrPair(EventAttr attr, T value) { return { attr, value }; }
+
 // The following class is used to record events that occur during execution.
 // More details are in the cpp file before the constructor.
 //
@@ -518,6 +526,7 @@ public:
     void recordDequeue(__uint64 elementId);
 
     void recordTaskStart(EventTask task);
+    void recordTaskStart(EventTask task, __uint64 payload);
     void recordTaskStop(EventTask task);
 
     void recordLockWait(unsigned lockId);
@@ -537,9 +546,11 @@ public:
 
     //-------------------------- End of the public interface --------------------------
 
+private:
+    template <typename... T>
+    void recordTaskEvent(EventType event, EventTask task, EventAttrPair<T>... attrs);
 protected:
     void recordRecordingActive(bool paused);
-    void recordTaskEvent(EventType event, EventTask task);
     void recordLockEvent(EventType event, unsigned lockId);
     void recordRequestIdEvent(EventType event, unsigned requestId, unsigned requestSeq);
     void recordResponseEvent(EventType event, unsigned requestId, unsigned requestSeq, unsigned responseId, unsigned responseSeq);
@@ -580,6 +591,11 @@ protected:
         writeData(offset, sizeof(attr), &attr);
         writeData(offset, strlen(value)+1, value);
     }
+
+    // Writes a complete event (header, attributes, footer). Callers are responsible for
+    // deciding whether the event should be recorded, and for any TRACEEVENT logging.
+    template <typename... T>
+    void writeEventAttrs(EventType type, EventAttrPair<T>... attrs);
 
     void writeByte(offset_type & offset, byte value);
     void writeData(offset_type & offset, size_t size, const void * data);
@@ -884,7 +900,7 @@ public:
     }
 
     // Constructor that allows an optional payload to be provided
-    TaskScopeTracker(EventTask _task, [[maybe_unused]] __uint64 extra, bool _enabled = true)
+    TaskScopeTracker(EventTask _task, __uint64 extra, bool _enabled = true)
         : task(_task), enabled(_enabled), recording(enabled && recordingEvents())
     {
         if (enabled)
@@ -895,7 +911,7 @@ public:
             protraceRecordTaskStart(task);
 #endif
             if (recording)
-                queryRecorder().recordTaskStart(task);
+                queryRecorder().recordTaskStart(task, extra);
         }
     }
 
