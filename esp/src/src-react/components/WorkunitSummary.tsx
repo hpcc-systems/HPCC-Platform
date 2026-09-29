@@ -7,10 +7,11 @@ import { scopedLogger } from "@hpcc-js/util";
 import nlsHPCC from "src/nlsHPCC";
 import { WUStatus } from "src/react/index";
 import { formatCost } from "src/Session";
-import { copyToClipboard, isNumeric } from "src/Utility";
+import { copyToClipboard, isNumeric, triggerFileDownload } from "src/Utility";
 import { useConfirm } from "../hooks/confirm";
 import { useWorkunit, useWorkunitExceptions } from "../hooks/workunit";
 import { useLocalStore } from "../hooks/store";
+import { getESPBaseURL } from "../util/espUrl";
 import { pushUrl, replaceUrl } from "../util/history";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { DockPanel, DockPanelItem, ResetableDockPanel } from "../layouts/DockPanel";
@@ -380,15 +381,23 @@ export const WorkunitSummary: React.FunctionComponent<WorkunitSummaryProps> = ({
         },
         { key: "divider_6", itemType: ContextualMenuItemType.Divider },
         {
-            key: "zap", text: nlsHPCC.ZAP, disabled: !canDelete,
+            key: "zap", text: nlsHPCC.ZAP, iconProps: { iconName: "Download" }, disabled: !canDelete,
             onClick: () => setShowZapForm(true)
         },
-        { key: "divider_7", itemType: ContextualMenuItemType.Divider },
         {
-            key: "slaveLogs", text: nlsHPCC.SlaveLogs, disabled: !workunit?.ThorLogList,
+            key: "slaveLogs", text: nlsHPCC.SlaveLogs, iconProps: { iconName: "Download" }, disabled: !workunit?.ThorLogList,
             onClick: () => setShowThorSlaveLogs(true)
         },
-    ], [wuProtected, canDelete, canDeschedule, canReschedule, canSave, description, jobname, refresh, refreshSavings, setShowDeleteConfirm, showMessageBar, workunit]);
+        {
+            key: "downloadArchive", text: nlsHPCC.WorkunitXML, iconProps: { iconName: "Download" },
+            onClick: () => {
+                triggerFileDownload(
+                    getESPBaseURL() + `/WUFile/ArchiveQuery?Wuid=${encodeURIComponent(wuid)}&Name=ArchiveQuery&Type=ArchiveQuery&Option=1`,
+                    `${wuid}-archive.xml`
+                );
+            }
+        },
+    ], [wuProtected, canDelete, canDeschedule, canReschedule, canSave, description, jobname, otTraceParent, refresh, refreshSavings, setShowDeleteConfirm, showMessageBar, workunit, wuid]);
 
     React.useEffect(() => {
         if (dockpanel && layout) {

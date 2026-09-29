@@ -1155,13 +1155,25 @@ export function toCSV(data, delim = ",") {
 
 function downloadText(content: string, fileName: string, type: "csv" | "plain" = "csv") {
     const textBlob = new Blob([content], { type: `text/${type}` });
+    const url = window.URL.createObjectURL(textBlob);
+    triggerFileDownload(url, fileName, { cleanup: () => window.URL.revokeObjectURL(url) });
+}
+
+export interface TriggerFileDownloadOptions {
+    cleanup?: () => void;
+}
+
+export function triggerFileDownload(url: string, fileName: string, options: TriggerFileDownloadOptions = {}) {
     const link = document.createElement("a");
-    link.setAttribute("download", fileName);
-    link.setAttribute("href", window.URL.createObjectURL(textBlob));
-    link.style.visibility = "hidden";
+    link.href = url;
+    link.download = fileName;
     document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    try {
+        link.click();
+    } finally {
+        document.body.removeChild(link);
+        options.cleanup?.();
+    }
 }
 
 export function downloadCSV(content: string, fileName: string) {
