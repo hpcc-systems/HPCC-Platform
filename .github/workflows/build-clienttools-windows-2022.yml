@@ -25,7 +25,7 @@ on:
         type: string
         description: 'CMake config options'
         required: false
-        default: '-T host=x64 -A x64 -DUSE_OPTIONAL=OFF -DCLIENTTOOLS_ONLY=ON -DUSE_AZURE=OFF -DUSE_CASSANDRA=OFF -DUSE_PARQUET=OFF -DUSE_JAVA=OFF -DUSE_OPENLDAP=OFF -DDIGICERT_KEYPAIR_ALIAS=RIS_Data_Services_HPCC_Systems'
+        default: '-T host=x64 -A x64 -DUSE_OPTIONAL=OFF -DCLIENTTOOLS_ONLY=ON -DUSE_AZURE=OFF -DUSE_CASSANDRA=OFF -DUSE_PARQUET=OFF -DUSE_JAVA=OFF -DUSE_OPENLDAP=OFF -DDIGICERT_KEYPAIR_ALIAS=Data_Services_HPCC_Systems_Public'
       cmake-build-options:
         type: string
         description: 'CMake build options'
@@ -73,7 +73,7 @@ jobs:
         uses: digicert/code-signing-software-trust-action@v1.2.1
         with:
           simple-signing-mode: true
-          keypair-alias: "RIS_Data_Services_HPCC_Systems"
+          keypair-alias: "Data_Services_HPCC_Systems_Public"
         env:
           SM_HOST: https://clientauth.one.digicert.com
           SM_API_KEY: ${{ secrets.DIGICERT_API_KEY }}
