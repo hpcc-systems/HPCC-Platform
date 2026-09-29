@@ -730,7 +730,7 @@ public:
 // EvAttrSearchFlags is a single byte; assert the flag bits above NodeTypeMask never grow wider than that.
 inline byte queryNodeSearchFlags(NodeTypeWithFlags typeWithFlags)
 {
-    unsigned flagBits = typeWithFlags & ~(unsigned)NodeTypeMask;
+    unsigned flagBits = typeWithFlags & NodeSearchFlagsMask;
     dbgassertex(flagBits <= 0xFF);
     return (byte)flagBits;
 }
@@ -2900,6 +2900,7 @@ bool CKeyCursor::lookupSkip(const void *seek, size32_t seekOffset, size32_t seek
 unsigned __int64 CKeyCursor::getCount(IContextLogger *ctx)
 {
     reset(ctx);
+    ScopedNodeFilterFlags insideCountScope(*this, NodeSearchCount);
     unsigned __int64 result = 0;
     unsigned lastRealSeg = filter->lastRealSeg();
     bool unfiltered = filter->isUnfiltered();
@@ -2923,6 +2924,8 @@ unsigned __int64 CKeyCursor::getCount(IContextLogger *ctx)
 unsigned __int64 CKeyCursor::checkCount(unsigned __int64 max, IContextLogger *ctx)
 {
     reset(ctx);
+
+    ScopedNodeFilterFlags insideCountScope(*this, NodeSearchCount);
     unsigned __int64 result = 0;
     unsigned lastFullSeg = filter->lastFullSeg();
     bool unfiltered = filter->isUnfiltered();
@@ -2955,6 +2958,7 @@ unsigned __int64 CKeyCursor::checkCount(unsigned __int64 max, IContextLogger *ct
 
 unsigned __int64 CKeyCursor::getCurrentRangeCount(unsigned groupSegCount, IContextLogger *ctx)
 {
+    ScopedNodeFilterFlags insideCountScope(*this, NodeSearchCount);
     unsigned __int64 locount = getSequence();
     endRange(groupSegCount);
     _ltEqual(ctx);

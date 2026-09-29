@@ -638,11 +638,13 @@ int init_main(int argc, const char* argv[])
             abortHandler.setServer(srv);
             setEspContainer(server.get());
 
+            // init before loadAll allows InfoCache threads to use trace flags
+            initializeTraceFlags(config);
+
             config->loadAll();
             config->bindServer(*server.get(), *server.get());
             config->checkESPCache(*server.get());
 
-            initializeTraceFlags(config);
             initializeMetrics(config);        
             initializeStoragePlanes(daliClientActive(), true);
             srv->initializeDataMaskingEngine(configMaskerConfig);

@@ -8246,11 +8246,11 @@ offset_t CDistributedFilePart::getDiskSize(bool allowphysical,bool forcephysical
     if (!::isCompressed(parent.queryAttributes()))
         return getFileSize(allowphysical, forcephysical);
 
-    if (forcephysical && allowphysical)
-        return getSize(false); // i.e. only if force, because all compressed should have @compressedSize attribute
-
     // NB: compressSize is disk size
-    return queryAttributes().getPropInt64("@compressedSize", -1);
+    offset_t ret = (offset_t)((forcephysical && allowphysical) ? -1 : queryAttributes().getPropInt64("@compressedSize", -1));
+    if (allowphysical && ret == -1)
+        ret = getSize(false);
+    return ret;
 }
 
 bool CDistributedFilePart::getModifiedTime(bool allowphysical,bool forcephysical, CDateTime &dt)

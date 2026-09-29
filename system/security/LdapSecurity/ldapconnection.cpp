@@ -1709,6 +1709,27 @@ static __int64 getMaxPwdAge(Owned<ILdapConnectionPool> _conns, const char * _bas
     return maxPwdAge;
 }
 
+// See declaration in ldapconnection.hpp for rationale (extracted so this
+// decision can be unit tested without a live LDAP connection).
+PasswordExpirationDispatch selectPasswordExpirationDispatch(const char *attribute, LdapServerType serverType,
+                                                              bool domainPwdsNeverExpire, bool accountPwdNeverExpires)
+{
+    if (stricmp(attribute, "pwdLastSet") == 0)
+    {
+        if (domainPwdsNeverExpire || accountPwdNeverExpires)
+            return PasswordExpirationDispatch::NeverExpires;
+        return PasswordExpirationDispatch::RetrieveAdPwdLastSet;
+    }
+    if (stricmp(attribute, "passwordExpirationTime") == 0)
+    {
+        //389ds pre-computes expiration; absence means the password never expires.
+        if (serverType != LDAP_389DS)
+            return PasswordExpirationDispatch::UnsupportedAttribute;
+        return PasswordExpirationDispatch::Retrieve389dsExpirationTime;
+    }
+    return PasswordExpirationDispatch::UnsupportedAttribute;
+}
+
 static CriticalSection  lcCrit{SYNC_LOCATION};
 class CLdapClient : implements ILdapClient, public CInterface
 {
@@ -1913,13 +1934,13 @@ public:
     bool getPasswordExpiration(LDAP *ld, LDAPMessage *entry, const char *attribute, const char *username,
                                 bool accountPwdNeverExpires, CDateTime &expiry)
     {
-        if (stricmp(attribute, "pwdLastSet") == 0)
+        switch (selectPasswordExpirationDispatch(attribute, m_ldapconfig->getServerType(), m_domainPwdsNeverExpire, accountPwdNeverExpires))
         {
-            if (m_domainPwdsNeverExpire || accountPwdNeverExpires)
-            {
-                expiry.clear();
-                return true;
-            }
+        case PasswordExpirationDispatch::NeverExpires:
+            expiry.clear();
+            return true;
+        case PasswordExpirationDispatch::RetrieveAdPwdLastSet:
+        {
             CLDAPGetValuesLenWrapper valsLen(ld, entry, attribute);
             if (!valsLen.hasValues())
                 return false;
@@ -1927,14 +1948,12 @@ public:
             calcPWExpiry(expiry, (unsigned)val->bv_len, val->bv_val);
             return true;
         }
-        else if (stricmp(attribute, "passwordExpirationTime") == 0)
-        {
-            //389ds pre-computes expiration; absence means the password never expires.
-            if (m_ldapconfig->getServerType() != LDAP_389DS)
-                return false;
+        case PasswordExpirationDispatch::Retrieve389dsExpirationTime:
             return getLdap389PasswordExpiration(ld, entry, attribute, username, expiry);
+        case PasswordExpirationDispatch::UnsupportedAttribute:
+        default:
+            return false;
         }
-        return false;
     }
 
     virtual bool authenticate(ISecUser& user)

@@ -24,6 +24,9 @@
 
 constexpr const char* propTraceFlags = "traceFlags";
 
+// ESP-specific feature flag for enabling background InfoCache rebuild spans.
+constexpr TraceFlags traceEspInfoCacheBuild = TraceFlags::flag16;
+
 // Trace option list fragment for jtrace-defined options used by ESPs
 #define PLATFORM_OPTIONS_FRAGMENT \
     COMMON_TRACE_OPTIONS, \
@@ -31,7 +34,8 @@ constexpr const char* propTraceFlags = "traceFlags";
 
 // Trace option list fragment for options used by most ESPs
 #define ESP_OPTIONS_FRAGMENT \
-    PLATFORM_OPTIONS_FRAGMENT
+    PLATFORM_OPTIONS_FRAGMENT \
+    TRACEOPT(traceEspInfoCacheBuild)
 
 // Trace option initializer list for ESPs that do not define their own options.
 constexpr std::initializer_list<TraceOption> espTraceOptions

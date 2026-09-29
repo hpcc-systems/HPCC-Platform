@@ -26,8 +26,6 @@
 constexpr static byte bucketArrayBits = 10; // 1K buckets per activity key
 constexpr static unsigned short bucketArrayMask = ((1 << bucketArrayBits) - 1);
 
-constexpr static byte defaultPageBits = 13; // 8K page size
-
 using page_type = offset_t;
 using bucket_type = offset_t;
 using stat_type = __uint64;

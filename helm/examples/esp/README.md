@@ -27,6 +27,10 @@ Set the default trace level in the process. Accepted case-insensitive values are
   - Debug builds default to `max`
 - `0`, `none`, *all other values*: no trace output
 
+#### traceEspInfoCacheBuild
+
+Enable spans for background InfoCache rebuild activity.
+
 ## Process Configuration
 
 ### Containerized
@@ -42,6 +46,7 @@ esp:
 - name: eclwatch
   traceFlags:
     traceDetail: 2
+    traceEspInfoCacheBuild: true
 ```
 
 ## Cluster Overrides
@@ -56,7 +61,7 @@ The previous YAML example may be reproduced in XML with the following:
 
 ```xml
 <EspProcess ...>
-  <traceFlags traceDetail="2" />
+  <traceFlags traceDetail="2" traceEspInfoCacheBuild="true" />
   ...
-<EspProcess>
+</EspProcess>
 ```

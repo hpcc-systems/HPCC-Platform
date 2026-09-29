@@ -90,6 +90,7 @@ function formatQuery(_filter): { [id: string]: any } {
         }
     } else if (filter.Indexes) {
         filter.ContentType = "key";
+        filter.FileType = "Logical Files Only";
     }
     delete filter.LogicalFiles;
     delete filter.SuperFiles;

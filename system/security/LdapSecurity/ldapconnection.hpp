@@ -100,6 +100,26 @@ enum LdapServerType
     LDAP_389DS = 4  // 389 Directory Server (Fedora DS / Red Hat DS) - iPlanet lineage
 };
 
+// The outcome of dispatching CLdapClient::getPasswordExpiration() on an
+// attribute name / server type / never-expires state, decoupled from the
+// actual LDAP attribute retrieval so it can be unit tested in isolation
+// (see selectPasswordExpirationDispatch() below).
+enum class PasswordExpirationDispatch
+{
+    NeverExpires,                   // pwdLastSet, and domain or account never expires: caller clears expiry, returns true
+    RetrieveAdPwdLastSet,           // pwdLastSet: caller must fetch the attribute value and call calcPWExpiry()
+    Retrieve389dsExpirationTime,    // passwordExpirationTime on a 389ds server: caller must fetch/parse it
+    UnsupportedAttribute            // any other attribute name, or passwordExpirationTime on a non-389ds server: caller returns false
+};
+
+// Pure decision logic extracted from CLdapClient::getPasswordExpiration()
+// (ldapconnection.cpp). Deliberately takes only plain values rather than an
+// LDAP*/LDAPMessage*/CLdapClient so it can be exercised by unit tests without
+// a live LDAP connection - unlike CLdapClient's actual attribute retrieval,
+// which requires one, this dispatch decision does not.
+LDAPSECURITY_API PasswordExpirationDispatch selectPasswordExpirationDispatch(const char *attribute, LdapServerType serverType,
+                                                                              bool domainPwdsNeverExpire, bool accountPwdNeverExpires);
+
 enum ACT_TYPE
 {
     USER_ACT = 0,
