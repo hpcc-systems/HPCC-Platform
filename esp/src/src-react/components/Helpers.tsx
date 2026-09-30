@@ -2,7 +2,7 @@ import * as React from "react";
 import { CommandBar, ContextualMenuItemType, ICommandBarItemProps } from "./CommandBarV9";
 import { TreeItemValue } from "@fluentui/react-components";
 import { scopedLogger } from "@hpcc-js/util";
-import { convertedSize } from "src/Utility";
+import { convertedSize, triggerFileDownload } from "src/Utility";
 import nlsHPCC from "src/nlsHPCC";
 import { HelperRow, useWorkunitHelpersTree } from "../hooks/workunit";
 import { HolyGrail } from "../layouts/HolyGrail";
@@ -194,15 +194,8 @@ export const Helpers: React.FunctionComponent<HelpersProps> = ({
                 filename = match[1].trim();
             }
 
-            const link = document.createElement("a");
             const urlBlob = window.URL.createObjectURL(blob);
-
-            link.href = urlBlob;
-            link.download = filename;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            window.URL.revokeObjectURL(urlBlob);
+            triggerFileDownload(urlBlob, filename, { cleanup: () => window.URL.revokeObjectURL(urlBlob) });
         }).catch(err => {
             logger.error(err);
         });

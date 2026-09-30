@@ -5,10 +5,12 @@ import { useForm, Controller } from "react-hook-form";
 import { LogType } from "@hpcc-js/comms";
 import { scopedLogger } from "@hpcc-js/util";
 import * as WsWorkunits from "src/WsWorkunits";
+import nlsHPCC from "src/nlsHPCC";
+import { triggerFileDownload } from "src/Utility";
 import { useBuildInfo, useLogAccessInfo } from "../../hooks/platform";
 import { MessageBox } from "../../layouts/MessageBox";
 import { CloudContainerNameField } from "../forms/Fields";
-import nlsHPCC from "src/nlsHPCC";
+
 
 const logger = scopedLogger("../components/forms/ZAPDialog.tsx");
 
@@ -282,12 +284,7 @@ export const ZAPDialog: React.FunctionComponent<ZAPDialogProps> = ({
                             }
                         }
                         const urlObj = window.URL.createObjectURL(file?.blob);
-
-                        const link = document.createElement("a");
-                        link.href = urlObj;
-                        link.download = filename;
-                        link.click();
-                        link.remove();
+                        triggerFileDownload(urlObj, filename, { cleanup: () => window.URL.revokeObjectURL(urlObj) });
 
                         setSubmitDisabled(false);
                         setSpinnerHidden(true);
