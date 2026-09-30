@@ -25,7 +25,7 @@ on:
         type: string
         description: 'CMake config options'
         required: false
-        default: '-T host=x64 -A x64 -DUSE_OPTIONAL=OFF -DCLIENTTOOLS_ONLY=ON -DUSE_AZURE=OFF -DUSE_CASSANDRA=OFF -DUSE_PARQUET=OFF -DUSE_JAVA=OFF -DUSE_OPENLDAP=OFF -DDIGICERT_KEYPAIR_ALIAS=Data_Services_HPCC_Systems_Public'
+        default: '-T host=x64 -A x64 -DUSE_OPTIONAL=OFF -DCLIENTTOOLS_ONLY=ON -DUSE_AZURE=OFF -DUSE_CASSANDRA=OFF -DUSE_PARQUET=OFF -DUSE_JAVA=OFF -DUSE_OPENLDAP=OFF'
       cmake-build-options:
         type: string
         description: 'CMake build options'
@@ -73,7 +73,7 @@ jobs:
         uses: digicert/code-signing-software-trust-action@v1.2.1
         with:
           simple-signing-mode: true
-          keypair-alias: "Data_Services_HPCC_Systems_Public"
+          keypair-alias: "${{ vars.DIGICERT_KEYPAIR_ALIAS }}"
         env:
           SM_HOST: https://clientauth.one.digicert.com
           SM_API_KEY: ${{ secrets.DIGICERT_API_KEY }}
@@ -108,7 +108,7 @@ jobs:
         shell: "bash"
         run: |
           mkdir -p ./build
-          cmake -S ${{ steps.setup_source.outputs.source_dir }} -B ./build ${{ inputs.cmake-config-options }}
+          cmake -S ${{ steps.setup_source.outputs.source_dir }} -B ./build ${{ inputs.cmake-config-options }} -DDIGICERT_KEYPAIR_ALIAS=${{ vars.DIGICERT_KEYPAIR_ALIAS }}
           if [ -d ./LN ]; then
             cmake --build ./build ${{ inputs.cmake-build-options }} --target LN_SIGN
           else
