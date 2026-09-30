@@ -182,7 +182,7 @@ jobs:
         uses: digicert/code-signing-software-trust-action@v1.2.1
         with:
           simple-signing-mode: true
-          keypair-alias: "Data_Services_HPCC_Systems_Public"
+          keypair-alias: "${{ vars.DIGICERT_KEYPAIR_ALIAS }}"
         env:
           SM_HOST: https://clientauth.one.digicert.com
           SM_API_KEY: ${{ secrets.DIGICERT_API_KEY }}
@@ -198,7 +198,7 @@ jobs:
         shell: "bash"
         run: |
           cd ECLIDE
-          cmake --preset ${{ inputs.configure-preset }} -DDIGICERT_KEYPAIR_ALIAS=Data_Services_HPCC_Systems_Public
+          cmake --preset ${{ inputs.configure-preset }} -DDIGICERT_KEYPAIR_ALIAS=${{ vars.DIGICERT_KEYPAIR_ALIAS }}
           cmake --build --preset ${{ inputs.build-preset }} --target SIGN
         env:
           SM_HOST: https://clientauth.one.digicert.com
