@@ -1248,6 +1248,7 @@ export = {
         WorkunitOptions: "Workunit Options",
         WorkunitSummarySplitter: "Workunit Summary Splitter",
         Workunits: "Workunits",
+        WorkunitXML: "Workunit XML",
         WorkUnitScopeDefaultPermissions: "Workunit Scope Default Permissions",
         Wrap: "Wrap",
         WSDL: "WSDL",
