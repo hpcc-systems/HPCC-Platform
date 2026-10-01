@@ -392,10 +392,14 @@ int main(int argc, const char* argv[])
     if (env)
     {
         IPropertyTree* globalTracing = env->getPropTree("Software/tracing");
-        if (globalTracing != nullptr)
+        IPropertyTree* globalStorage = env->getPropTree("Software/Globals/storage");
+        if (globalTracing || globalStorage)
         {
             extractedGlobalConfig.setown(createPTree("dafilesrv"));
-            extractedGlobalConfig->addPropTree("tracing", globalTracing);
+            if (globalTracing)
+                extractedGlobalConfig->addPropTree("tracing", globalTracing);
+            if (globalStorage)
+                extractedGlobalConfig->addPropTree("storage", globalStorage);
         }
     }
 #endif
