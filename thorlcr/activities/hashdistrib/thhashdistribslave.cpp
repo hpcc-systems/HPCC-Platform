@@ -4049,9 +4049,10 @@ public:
             {
                 case TAKhashjoin:
                     {
-                        bool hintunsortedoutput = getOptBool(THOROPT_UNSORTED_OUTPUT, (JFreorderable & joinargs->getJoinFlags()) != 0);
-                        bool hintparallelmatch = getOptBool(THOROPT_PARALLEL_MATCH, hintunsortedoutput); // i.e. unsorted, implies use parallel by default, otherwise no point
-                        joinhelper.setown(createJoinHelper(*this, joinargs, this, hintparallelmatch, hintunsortedoutput));
+                        // unsorted_output hint removed: the compiler tracks sort order and isn't aware of it, so reordering can only be driven by JFreorderable
+                        bool unsortedOutput = (JFreorderable & joinargs->getJoinFlags()) != 0;
+                        bool hintParallelMatch = getOptBool(THOROPT_PARALLEL_MATCH, unsortedOutput); // i.e. unsorted, implies use parallel by default, otherwise no point
+                        joinhelper.setown(createJoinHelper(*this, joinargs, this, hintParallelMatch, unsortedOutput));
                     }
                     break;
                 case TAKhashdenormalize:

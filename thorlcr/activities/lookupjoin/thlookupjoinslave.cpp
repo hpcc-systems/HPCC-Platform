@@ -2662,9 +2662,10 @@ protected:
             case TAKlookupjoin:
             case TAKsmartjoin:
             {
-                bool hintunsortedoutput = getOptBool(THOROPT_UNSORTED_OUTPUT, TAKsmartjoin == container.getKind());
-                bool hintparallelmatch = getOptBool(THOROPT_PARALLEL_MATCH, hintunsortedoutput); // i.e. unsorted, implies use parallel by default, otherwise no point
-                joinHelper.setown(createJoinHelper(*this, helper, this, hintparallelmatch, hintunsortedoutput));
+                // unsorted_output hint removed: the compiler tracks sort order and isn't aware of it, so reordering can only be driven by TAKsmartjoin's default
+                bool unsortedOutput = TAKsmartjoin == container.getKind();
+                bool hintParallelMatch = getOptBool(THOROPT_PARALLEL_MATCH, unsortedOutput); // i.e. unsorted, implies use parallel by default, otherwise no point
+                joinHelper.setown(createJoinHelper(*this, helper, this, hintParallelMatch, unsortedOutput));
                 break;
             }
             case TAKlookupdenormalize:
