@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="_HASH_DOLLAR">
+  <title>#$ <indexterm>
+      <primary>#$</primary>
+    </indexterm><indexterm>
+      <primary>HASH_DOLLAR</primary>
+    </indexterm></title>
+
+  <para><emphasis role="bold">IMPORT #$;</emphasis></para>
+
+  <para><emphasis role="bold">IMPORT </emphasis><emphasis>symbol-list
+  </emphasis><emphasis role="bold">FROM #$;</emphasis></para>
+
+  <para><emphasis role="bold">#$</emphasis><emphasis>.module
+  </emphasis></para>
+
+  <para>The <emphasis role="bold">#$</emphasis> module reference identifies
+  the module and package in which the current <link
+  linkend="MACRO_Structure">MACRO</link> or <link
+  linkend="FUNCTIONMACRO_Structure">FUNCTIONMACRO</link> was defined. It is
+  useful when a macro imports or references definitions that belong to its
+  defining module, regardless of the module from which the macro is called.
+  This prevents those references from being resolved relative to the call
+  site.</para>
+
+  <para>Within a macro, <emphasis role="bold">#$</emphasis> can be used as an
+  import source or as the beginning of a qualified module reference:</para>
+
+  <programlisting lang="ECL">EXPORT showValue() := MACRO
+    IMPORT #$;
+    OUTPUT(#$.value);
+ENDMACRO;
+
+EXPORT showChildValue() := MACRO
+    IMPORT childModule FROM #$;
+    OUTPUT(childModule.value);
+ENDMACRO;</programlisting>
+
+  <para>The <emphasis role="bold">#$</emphasis> reference also preserves the
+  package context of a macro. The caret can be used to navigate from that
+  context, for example:</para>
+
+  <programlisting lang="ECL">EXPORT formatValue(input) := FUNCTIONMACRO
+    IMPORT #$.^.format AS formatter;
+    RETURN formatter.formatValue(input);
+ENDMACRO;</programlisting>
+
+  <para>Use <emphasis role="bold">$</emphasis> for the current module or
+  folder, and append <emphasis role="bold">^</emphasis> to a module specifier
+  to navigate to its container. The <emphasis role="bold">#$</emphasis>
+  reference is specifically for retaining the macro's defining module and
+  package context during expansion.</para>
+</sect1>

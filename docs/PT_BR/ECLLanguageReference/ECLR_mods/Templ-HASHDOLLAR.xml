@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="_HASH_DOLLAR">
+  <title>#$ <indexterm>
+      <primary>#$</primary>
+    </indexterm><indexterm>
+      <primary>HASH_DOLLAR</primary>
+    </indexterm></title>
+
+  <para><emphasis role="bold">IMPORT #$;</emphasis></para>
+
+  <para><emphasis role="bold">IMPORT </emphasis><emphasis>symbol-list
+  </emphasis><emphasis role="bold">FROM #$;</emphasis></para>
+
+  <para><emphasis role="bold">#$</emphasis><emphasis>.module
+  </emphasis></para>
+
+  <para>A referência de módulo <emphasis role="bold">#$</emphasis> identifica
+  o módulo e o pacote em que a <link linkend="MACRO_Structure">MACRO</link>
+  ou <link linkend="FUNCTIONMACRO_Structure">FUNCTIONMACRO</link> atual foi
+  definida. É útil quando uma macro importa ou faz referência a definições que
+  pertencem ao seu módulo de definição, independentemente do módulo a partir
+  do qual a macro é chamada. Isso evita que essas referências sejam resolvidas
+  em relação ao local da chamada.</para>
+
+  <para>Dentro de uma macro, <emphasis role="bold">#$</emphasis> pode ser
+  usado como uma origem de importação ou como o início de uma referência de
+  módulo qualificada:</para>
+
+  <programlisting lang="ECL">EXPORT showValue() := MACRO
+    IMPORT #$;
+    OUTPUT(#$.value);
+ENDMACRO;
+
+EXPORT showChildValue() := MACRO
+    IMPORT childModule FROM #$;
+    OUTPUT(childModule.value);
+ENDMACRO;</programlisting>
+
+  <para>A referência <emphasis role="bold">#$</emphasis> também preserva o
+  contexto de pacote de uma macro. O acento circunflexo pode ser usado para
+  navegar a partir desse contexto, por exemplo:</para>
+
+  <programlisting lang="ECL">EXPORT formatValue(input) := FUNCTIONMACRO
+    IMPORT #$.^.format AS formatter;
+    RETURN formatter.formatValue(input);
+ENDMACRO;</programlisting>
+
+  <para>Use <emphasis role="bold">$</emphasis> para o módulo ou pasta atual, e
+  acrescente <emphasis role="bold">^</emphasis> a um especificador de módulo
+  para navegar até o seu contêiner. A referência <emphasis
+  role="bold">#$</emphasis> destina-se especificamente a preservar o módulo e
+  o contexto de pacote de definição da macro durante a expansão.</para>
+</sect1>
