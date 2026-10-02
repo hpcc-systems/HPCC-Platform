@@ -32,12 +32,12 @@ helm install vault hashicorp/vault  --set "injector.enabled=false" --set "server
 ```
 
 Check the pods:
+
 ```bash
 kubectl get pods -n vaultns
 ```
 
 Vault pods should now be running and ready.
-
 
 ## Setting up vault
 
@@ -66,11 +66,13 @@ vault login root
 ```
 
 ## Enable the PKI secrets engine at its default path.
+
 ```bash
 vault secrets enable pki
 ```
 
 Configure the max lease time-to-live (TTL) to 8760h.
+
 ```bash
 vault secrets tune -max-lease-ttl=87600h pki
 ```
@@ -123,9 +125,7 @@ Install cert-manager.
 helm install cert-manager jetstack/cert-manager --set installCRDs=true --namespace cert-manager --create-namespace
 ```
 
-
 ## Installing TWO HPCC environments that will be able to communicate in two separate namespaces
-
 
 ## For the first HPCC namespace "hpcc1"
 
@@ -160,8 +160,7 @@ Use kubectl to check the status of the deployed pods.  Wait until all pods are r
 kubectl get pods -n hpcc1
 ```
 
-Check and see if the cerficate issuers have been successfully created.
-
+Check and see if the certificate issuers have been successfully created.
 
 ## Repeat for the second HPCC namespace "hpcc2"
 
@@ -196,7 +195,7 @@ Use kubectl to check the status of the deployed pods.  Wait until all pods are r
 kubectl get pods -n hpcc2
 ```
 
-Check and see if the cerficate issuers have been successfully created.
+Check and see if the certificate issuers have been successfully created.
 
 ## ECL example demonstrating trust
 
@@ -206,6 +205,7 @@ roxie_echo.ecl which returns a dataset passed into it.
 remote_echo.ecl which calls roxie_echo.ecl.
 
 For this example we will:
+
 1. publish roxie_echo.ecl to the hpcc1 namespace.
 2. Publish remote_echo.ecl to the hpcc2 namespace.
 3. Use hpcc2::remote_echo.ecl to call hpcc1::roxie_echo.ecl.

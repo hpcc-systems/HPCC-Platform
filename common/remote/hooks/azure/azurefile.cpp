@@ -326,8 +326,8 @@ protected:
 
 protected:
     StringBuffer fullName;
-    StringAttr accountName;
-    StringAttr shareName;
+    StringBuffer accountName;
+    StringBuffer shareName;
     StringBuffer secretName;
     StringAttr fileName;
     offset_t fileSize = unknownFileSize;
@@ -339,6 +339,7 @@ protected:
     time_t createdOn = 0;
     std::string fileUrl;
     CriticalSection cs{SYNC_LOCATION};
+    StorageApiConfig config;
 };
 
 //---------------------------------------------------------------------------------------------------------------------
@@ -366,33 +367,34 @@ AzureFile::AzureFile(const char *_azureFileName) : fullName(_azureFileName)
 {
     if (startsWith(fullName, azureFilePrefix))
     {
-        //format is azurefiles:plane[/device]/sharename/path
+        //format is azurefile:plane[/device]/sharename/path
         const char * filename = fullName + strlen(azureFilePrefix);
         const char * slash = strchr(filename, '/');
         if (!slash)
-            throw makeStringException(99, "Missing / in azurefiles: file reference");
+            throw makeStringException(99, "Missing / in azurefile: file reference");
 
         StringBuffer planeName(slash-filename, filename);
-        Owned<const IPropertyTree> plane = getStoragePlaneConfig(planeName, true);
-        const IPropertyTree * storageapi = plane->queryPropTree("storageapi");
-        if (!storageapi)
+        Owned<const IStoragePlane> plane = getStoragePlaneByName(planeName, true);
+        Owned<IStorageApiInfo> apiInfo = plane->getStorageApiInfo();
+        if (!apiInfo)
             throw makeStringExceptionV(99, "No storage api defined for plane %s", planeName.str());
+        config = apiInfo->queryAPIConfig();
         filename = slash+1; // advance past slash
 
-        const char * api = storageapi->queryProp("@type");
+        const char * api = apiInfo->getStorageType();
         if (!api)
             throw makeStringExceptionV(99, "No storage api defined for plane %s", planeName.str());
 
         StringBuffer azureFileAPI(strlen(azureFilePrefix) - 1, azureFilePrefix);
         if (!strieq(api, azureFileAPI.str()))
-            throw makeStringExceptionV(99, "Storage api for plane %s is not azurefiles", planeName.str());
+            throw makeStringExceptionV(99, "Storage api for plane %s is not azurefile", planeName.str());
 
-        useManagedIdentity = storageapi->getPropBool("@managed", false);
+        useManagedIdentity = apiInfo->useManagedIdentity();
         //MORE: We could allow the managed identity/secret to be supplied in the configuration
         if (useManagedIdentity && !areManagedIdentitiesEnabled())
             throw makeStringException(99, "Managed identity is not enabled for this environment");
 
-        unsigned numDevices = plane->getPropInt("@numDevices", 1);
+        unsigned numDevices = plane->numDevices();
         unsigned device = 1;
         if (numDevices != 1)
         {
@@ -412,22 +414,7 @@ AzureFile::AzureFile(const char *_azureFileName) : fullName(_azureFileName)
             filename = (*endDevice == '/') ? endDevice+1 : endDevice;
         }
 
-        VStringBuffer childPath("containers[%u]", device);
-        const IPropertyTree * deviceInfo = storageapi->queryPropTree(childPath);
-        if (!deviceInfo)
-            throw makeStringExceptionV(99, "Missing container specification for device %u in plane %s", device, planeName.str());
-
-        shareName.set(deviceInfo->queryProp("@name"));
-        // Fallback to storageapi level if not specified in container
-        const char * account = deviceInfo->queryProp("@account");
-        if (isEmptyString(account))
-            account = storageapi->queryProp("@account");
-        accountName.set(account);
-
-        const char * secret = deviceInfo->queryProp("@secret");
-        if (isEmptyString(secret))
-            secret = storageapi->queryProp("@secret");
-        secretName.set(secret);
+        secretName.set(apiInfo->queryStorageApiSecret(device, accountName, shareName));
 
         if (isEmptyString(shareName))
             throw makeStringExceptionV(99, "Missing share name for plane %s", planeName.str());
@@ -454,21 +441,21 @@ IFile * AzureFileDirectoryIterator::createFile(const char *fullPath, const DirEn
 
 SharedFileClient AzureFile::getFileClient() const
 {
+    ShareClientOptions clientOptions;
+    setAzureRetryOptions(clientOptions.Retry, config);
+    clientOptions.Transport.Transport = getHttpTransport();
     if (useManagedIdentity)
     {
-        ShareClientOptions clientOptions;
         clientOptions.ShareTokenIntent = Models::ShareTokenIntent::Backup;
         return std::make_shared<ShareFileClient>(getFileUrl(), getAzureManagedIdentityCredential(), clientOptions);
     }
     else
-    {
-        return std::make_shared<ShareFileClient>(getFileUrl(), getSharedKeyCredentials());
-    }
+        return std::make_shared<ShareFileClient>(getFileUrl(), getSharedKeyCredentials(), clientOptions);
 }
 
 std::shared_ptr<StorageSharedKeyCredential> AzureFile::getSharedKeyCredentials() const
 {
-    return getAzureSharedKeyCredential(accountName.str(), secretName.str());
+    return getAzureSharedKeyCredential(accountName, secretName.str());
 }
 
 std::string AzureFile::getFileUrl() const
@@ -478,16 +465,16 @@ std::string AzureFile::getFileUrl() const
 
 std::shared_ptr<ShareClient> AzureFile::getShareClient() const
 {
+    ShareClientOptions clientOptions;
+    setAzureRetryOptions(clientOptions.Retry, config);
+    clientOptions.Transport.Transport = getHttpTransport();
     if (useManagedIdentity)
     {
-        ShareClientOptions clientOptions;
         clientOptions.ShareTokenIntent = Models::ShareTokenIntent::Backup;
         return std::make_shared<ShareClient>(getShareUrl(accountName, shareName), getAzureManagedIdentityCredential(), clientOptions);
     }
     else
-    {
-        return std::make_shared<ShareClient>(getShareUrl(accountName, shareName), getSharedKeyCredentials());
-    }
+        return std::make_shared<ShareClient>(getShareUrl(accountName, shareName), getSharedKeyCredentials(), clientOptions);
 }
 
 Azure::Storage::Files::Shares::ShareDirectoryClient AzureFile::getDirectoryClient() const
@@ -542,33 +529,25 @@ void AzureFile::ensureMetaData()
 void AzureFile::gatherMetaData()
 {
     auto fileClient = getFileClient();
-    constexpr unsigned maxRetries = 4;
-    unsigned attempt = 0;
-    for (;;)
+    try
     {
-        try
+        Azure::Response<Models::FileProperties> response = fileClient->GetProperties();
+        Models::FileProperties &props = response.Value;
+        setProperties(props.FileSize, props.SmbProperties.LastWrittenOn, props.SmbProperties.CreatedOn);
+    }
+    catch (const Azure::Core::RequestFailedException& e)
+    {
+        if (e.StatusCode == Azure::Core::Http::HttpStatusCode::NotFound)
         {
-            Azure::Response<Models::FileProperties> response = fileClient->GetProperties();
-            Models::FileProperties &props = response.Value;
-            setProperties(props.FileSize, props.SmbProperties.LastWrittenOn, props.SmbProperties.CreatedOn);
-            break;
+            fileExists = false;
+            fileSize = unknownFileSize;
+            return;
         }
-        catch (const Azure::Core::RequestFailedException& e)
-        {
-            if (e.StatusCode == Azure::Core::Http::HttpStatusCode::NotFound)
-            {
-                fileExists = false;
-                fileSize = unknownFileSize;
-                break;
-            }
-            attempt++;
-            handleRequestException(e, "AzureFile::gatherMetaData", attempt, maxRetries, queryFilename());
-        }
-        catch (const std::exception& e)
-        {
-            attempt++;
-            handleRequestException(e, "AzureFile::gatherMetaData", attempt, maxRetries, queryFilename());
-        }
+        throwRequestException(e, "AzureFile::gatherMetaData", queryFilename());
+    }
+    catch (const std::exception& e)
+    {
+        throwRequestException(e, "AzureFile::gatherMetaData", queryFilename());
     }
 }
 
@@ -734,32 +713,23 @@ size32_t AzureFileReadIO::read(offset_t pos, size32_t len, void * data)
     uint8_t* buffer = reinterpret_cast<uint8_t*>(data);
     long int sizeRead = 0;
 
-    constexpr unsigned maxRetries = 4;
-    unsigned attempt = 0;
-    for (;;)
+    try
     {
-        try
-        {
-            Azure::Response<Models::DownloadFileToResult> result = shareFileClient->DownloadTo(buffer, len, options);
-            // result.Value.FileSize is the size of the file share, not the size of the data returned, use ContentRange instead
-            Azure::Core::Http::HttpRange range = result.Value.ContentRange;
-            if (range.Length.HasValue())
-                sizeRead = range.Length.Value();
-            else
-                sizeRead = 0;
-            break;
-        }
-        catch (const Azure::Core::RequestFailedException& e)
-        {
-            //Future: update stats if the read fails... - use a local object with a destructor that updates the time
-            attempt++;
-            handleRequestException(e, "AzureFile::read", attempt, maxRetries, file->queryFilename(), pos, len);
-        }
-        catch (const std::exception& e)
-        {
-            attempt++;
-            handleRequestException(e, "AzureFile::read", attempt, maxRetries, file->queryFilename(), pos, len);
-        }
+        Azure::Response<Models::DownloadFileToResult> result = shareFileClient->DownloadTo(buffer, len, options);
+        // result.Value.FileSize is the size of the file share, not the size of the data returned, use ContentRange instead
+        Azure::Core::Http::HttpRange range = result.Value.ContentRange;
+        if (range.Length.HasValue())
+            sizeRead = range.Length.Value();
+        else
+            sizeRead = 0;
+    }
+    catch (const Azure::Core::RequestFailedException& e)
+    {
+        throwRequestException(e, "AzureFile::read", file->queryFilename(), pos, len);
+    }
+    catch (const std::exception& e)
+    {
+        throwRequestException(e, "AzureFile::read", file->queryFilename(), pos, len);
     }
 
     stats.ioReads.fastAdd(1);
@@ -806,32 +776,23 @@ void AzureFileShareWriteIO::close()
 
     file->invalidateMeta();
 
-    constexpr unsigned maxRetries = 4;
-    unsigned attempt = 0;
-
-    for (;;)
+    try
     {
-        try
-        {
-            // Resize the file to the actual content size using SetProperties
-            Azure::Storage::Files::Shares::Models::FileHttpHeaders httpHeaders;
-            Azure::Storage::Files::Shares::Models::FileSmbProperties smbProperties;
-            Azure::Storage::Files::Shares::SetFilePropertiesOptions options;
-            options.Size = offset;
+        // Resize the file to the actual content size using SetProperties
+        Azure::Storage::Files::Shares::Models::FileHttpHeaders httpHeaders;
+        Azure::Storage::Files::Shares::Models::FileSmbProperties smbProperties;
+        Azure::Storage::Files::Shares::SetFilePropertiesOptions options;
+        options.Size = offset;
 
-            shareFileClient->SetProperties(httpHeaders, smbProperties, options);
-            break;
-        }
-        catch (const Azure::Core::RequestFailedException& e)
-        {
-            attempt++;
-            handleRequestException(e, "AzureFile::close", attempt, maxRetries, file->queryFilename(), 0, offset);
-        }
-        catch (const std::exception& e)
-        {
-            attempt++;
-            handleRequestException(e, "AzureFile::close", attempt, maxRetries, file->queryFilename(), 0, offset);
-        }
+        shareFileClient->SetProperties(httpHeaders, smbProperties, options);
+    }
+    catch (const Azure::Core::RequestFailedException& e)
+    {
+        throwRequestException(e, "AzureFile::close", file->queryFilename(), 0, offset);
+    }
+    catch (const std::exception& e)
+    {
+        throwRequestException(e, "AzureFile::close", file->queryFilename(), 0, offset);
     }
 }
 
@@ -848,27 +809,19 @@ size32_t AzureFileShareWriteIO::write(offset_t pos, size32_t len, const void * d
 
     CCycleTimer timer;
 
-    constexpr unsigned maxRetries = 4;
-    unsigned attempt = 0;
-    for (;;)
+    try
     {
-        try
-        {
-            Azure::Core::IO::MemoryBodyStream stream(static_cast<const uint8_t*>(data), len);
-            shareFileClient->UploadRange(pos, stream);
-            offset += len;
-            break;
-        }
-        catch (const Azure::Core::RequestFailedException& e)
-        {
-            attempt++;
-            handleRequestException(e, "AzureFile::write", attempt, maxRetries, file->queryFilename(), pos, len);
-        }
-        catch (const std::exception& e)
-        {
-            attempt++;
-            handleRequestException(e, "AzureFile::write", attempt, maxRetries, file->queryFilename(), pos, len);
-        }
+        Azure::Core::IO::MemoryBodyStream stream(static_cast<const uint8_t*>(data), len);
+        shareFileClient->UploadRange(pos, stream);
+        offset += len;
+    }
+    catch (const Azure::Core::RequestFailedException& e)
+    {
+        throwRequestException(e, "AzureFile::write", file->queryFilename(), pos, len);
+    }
+    catch (const std::exception& e)
+    {
+        throwRequestException(e, "AzureFile::write", file->queryFilename(), pos, len);
     }
 
     stats.ioWrites.fastAdd(1);
@@ -883,27 +836,18 @@ void AzureFileShareWriteIO::createFileIfNeeded()
     if (fileCreated)
         return;
 
-    constexpr unsigned maxRetries = 4;
-    unsigned attempt = 0;
-
-    for (;;)
+    try
     {
-        try
-        {
-            // Create the file with maximum size
-            shareFileClient->Create(maxFileSize);
-            fileCreated = true;
-            break;
-        }
-        catch (const Azure::Core::RequestFailedException& e)
-        {
-            attempt++;
-            handleRequestException(e, "AzureFile::createFileIfNeeded", attempt, maxRetries, file->queryFilename(), 0, 0);
-        }
-        catch (const std::exception& e)
-        {
-            attempt++;
-            handleRequestException(e, "AzureFile::createFileIfNeeded", attempt, maxRetries, file->queryFilename(), 0, 0);
-        }
+        // Create the file with maximum size
+        shareFileClient->Create(maxFileSize);
+        fileCreated = true;
+    }
+    catch (const Azure::Core::RequestFailedException& e)
+    {
+        throwRequestException(e, "AzureFile::createFileIfNeeded", file->queryFilename(), 0, 0);
+    }
+    catch (const std::exception& e)
+    {
+        throwRequestException(e, "AzureFile::createFileIfNeeded", file->queryFilename(), 0, 0);
     }
 }

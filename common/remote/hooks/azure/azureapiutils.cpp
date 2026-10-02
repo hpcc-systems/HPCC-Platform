@@ -32,6 +32,13 @@ using namespace std::chrono;
 // Common utility functions shared by both blob and file implementations
 //---------------------------------------------------------------------------------------------------------------------
 
+void setAzureRetryOptions(Azure::Core::Http::Policies::RetryOptions & retryOptions, const StorageApiConfig & config)
+{
+    retryOptions.MaxRetries = config.maxRetries;
+    retryOptions.RetryDelay = std::chrono::milliseconds(config.retryDelayMs);
+    retryOptions.MaxRetryDelay = std::chrono::milliseconds(config.maxRetryDelayMs);
+}
+
 bool areManagedIdentitiesEnabled()
 {
     static bool hasIMDS = []() {
@@ -171,23 +178,27 @@ std::shared_ptr<Azure::Core::Credentials::TokenCredential> getAzureManagedIdenti
 
 //---------------------------------------------------------------------------------------------------------------------
 
-// Global transport instance for connection reuse across all Azure blob operations
-// This allows HTTP connection pooling to work effectively across different blobs/containers/accounts
+// Global transport instance for connection reuse across all Azure storage operations.
+// Existing clients retain their transport after a configuration reload; the next client receives
+// a replacement transport if the configured connection timeout changed.
 static std::shared_ptr<Azure::Core::Http::HttpTransport> globalAzureTransport;
+static unsigned globalAzureTransportConnectionTimeoutMs = 0;
 static CriticalSection globalTransportCS{SYNC_LOCATION};
 
 std::shared_ptr<Azure::Core::Http::HttpTransport> getHttpTransport()
 {
+    unsigned connectionTimeoutMs = getGlobalConnectionTimeoutMs();
     CriticalBlock block(globalTransportCS);
-    if (!globalAzureTransport)
+    if (!globalAzureTransport || globalAzureTransportConnectionTimeoutMs != connectionTimeoutMs)
     {
         // Create shared transport with optimized settings for all Azure operations
         Azure::Core::Http::CurlTransportOptions transportOptions;
-        transportOptions.ConnectionTimeout = std::chrono::milliseconds(10000);  // 10 second connection timeout
+        transportOptions.ConnectionTimeout = std::chrono::milliseconds(connectionTimeoutMs);
         transportOptions.NoSignal = true;  // Avoid signal interference
         // Note: libcurl automatically handles connection pooling and keep-alive
         // Sharing the transport instance ensures maximum connection reuse
         globalAzureTransport = std::make_shared<Azure::Core::Http::CurlTransport>(transportOptions);
+        globalAzureTransportConnectionTimeoutMs = connectionTimeoutMs;
     }
     return globalAzureTransport;
 }
@@ -199,46 +210,25 @@ bool isBase64Char(char c)
     return (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || (c == '+') || (c == '/') || (c == '=');
 }
 
-void handleRequestBackoff(const char * message, unsigned attempt, unsigned maxRetries)
+void throwRequestException(const Azure::Core::RequestFailedException& e, const char * op, const char * filename, offset_t pos, offset_t len)
 {
-    OWARNLOG("%s", message);
-
-    if (attempt >= maxRetries)
-        throw makeStringException(1234, message);
-
-    // Exponential backoff with jitter
-    unsigned backoffMs = (1U << attempt) * 100 + (rand() % 100);
-    Sleep(backoffMs);
+    throw makeStringExceptionV(1234, "%s failed for file %s at offset %llu, len %llu: %s (%d)",
+                              op, filename, pos, len, e.ReasonPhrase.c_str(), static_cast<int>(e.StatusCode));
 }
 
-void handleRequestException(const Azure::Core::RequestFailedException& e, const char * op, unsigned attempt, unsigned maxRetries, const char * filename, offset_t pos, offset_t len)
+void throwRequestException(const std::exception& e, const char * op, const char * filename, offset_t pos, offset_t len)
 {
-    VStringBuffer msg("%s failed (attempt %u/%u) for file %s at offset %llu, len %llu: %s (%d)",
-                      op, attempt, maxRetries, filename, pos, len, e.ReasonPhrase.c_str(), static_cast<int>(e.StatusCode));
-
-    handleRequestBackoff(msg, attempt, maxRetries);
+    throw makeStringExceptionV(1234, "%s failed for file %s at offset %llu, len %llu: %s",
+                              op, filename, pos, len, e.what());
 }
 
-void handleRequestException(const std::exception& e, const char * op, unsigned attempt, unsigned maxRetries, const char * filename, offset_t pos, offset_t len)
+void throwRequestException(const Azure::Core::RequestFailedException& e, const char * op, const char * filename)
 {
-    VStringBuffer msg("%s failed (attempt %u/%u) for file %s at offset %llu, len %llu: %s",
-                      op, attempt, maxRetries, filename, pos, len, e.what());
-
-    handleRequestBackoff(msg, attempt, maxRetries);
+    throw makeStringExceptionV(1234, "%s failed for file %s: %s (%d)",
+                              op, filename, e.ReasonPhrase.c_str(), static_cast<int>(e.StatusCode));
 }
 
-void handleRequestException(const Azure::Core::RequestFailedException& e, const char * op, unsigned attempt, unsigned maxRetries, const char * filename)
+void throwRequestException(const std::exception& e, const char * op, const char * filename)
 {
-    VStringBuffer msg("%s failed (attempt %u/%u) for file %s: %s (%d)",
-                      op, attempt, maxRetries, filename, e.ReasonPhrase.c_str(), static_cast<int>(e.StatusCode));
-
-    handleRequestBackoff(msg, attempt, maxRetries);
-}
-
-void handleRequestException(const std::exception& e, const char * op, unsigned attempt, unsigned maxRetries, const char * filename)
-{
-    VStringBuffer msg("%s failed (attempt %u/%u) for file %s: %s",
-                      op, attempt, maxRetries, filename, e.what());
-
-    handleRequestBackoff(msg, attempt, maxRetries);
+    throw makeStringExceptionV(1234, "%s failed for file %s: %s", op, filename, e.what());
 }

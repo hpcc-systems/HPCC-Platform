@@ -3,6 +3,7 @@ import { ScrollablePane, ScrollbarVisibility } from "./controls/ScrollablePane";
 import { CommandBar, ContextualMenuItemType, ICommandBarItemProps } from "./CommandBarV9";
 import { Button, Card, Link, makeStyles, MessageBar, MessageBarActions, MessageBarBody, MessageBarIntent, tokens } from "@fluentui/react-components";
 import { DismissRegular, PersonRegular } from "@fluentui/react-icons";
+import { WorkunitsService, WsWorkunits } from "@hpcc-js/comms";
 import { scopedLogger } from "@hpcc-js/util";
 import nlsHPCC from "src/nlsHPCC";
 import { WUStatus } from "src/react/index";
@@ -24,6 +25,7 @@ import { WorkunitPersona } from "./controls/StateIcon";
 import { localKeyValStore } from "src/KeyValStore";
 
 const logger = scopedLogger("../components/WorkunitSummary.tsx");
+const wuService = new WorkunitsService({ baseUrl: "" });
 
 const WU_SUMMARY_SPLITTER = "workunit_summary_splitter";
 
@@ -295,6 +297,20 @@ export const WorkunitSummary: React.FunctionComponent<WorkunitSummaryProps> = ({
     const canDeschedule = workunit && workunit?.EventSchedule === 2;
     const canReschedule = workunit && workunit?.EventSchedule === 1;
 
+    const [AbortConfirm, setShowAbortConfirm] = useConfirm({
+        title: nlsHPCC.Abort,
+        message: nlsHPCC.AbortSelectedWorkunits,
+        items: [wuid],
+        fields: [{ id: "AbortReason", label: nlsHPCC.AbortReason }],
+        onSubmit: React.useCallback((values) => {
+            wuService.WUAction({
+                Wuids: { Item: [wuid] },
+                WUActionType: WsWorkunits.ECLWUActions.Abort,
+                AbortReason: values?.AbortReason
+            }).catch(err => logger.error(err));
+        }, [wuid])
+    });
+
     const [DeleteConfirm, setShowDeleteConfirm] = useConfirm({
         title: nlsHPCC.Delete,
         message: nlsHPCC.YouAreAboutToDeleteThisWorkunit,
@@ -353,7 +369,7 @@ export const WorkunitSummary: React.FunctionComponent<WorkunitSummaryProps> = ({
         },
         {
             key: "abort", text: nlsHPCC.Abort, disabled: workunit?.Archived || workunit?.isComplete() || workunit?.isDeleted(),
-            onClick: () => workunit?.abort().catch(err => logger.error(err))
+            onClick: () => setShowAbortConfirm(true)
         },
         { key: "divider_4", itemType: ContextualMenuItemType.Divider },
         {
@@ -500,6 +516,7 @@ export const WorkunitSummary: React.FunctionComponent<WorkunitSummaryProps> = ({
                                         "protected": { label: nlsHPCC.Protected, type: "checkbox", value: wuProtected },
                                         "ServiceNamesCustom": { label: nlsHPCC.Services, type: "string", value: serviceNames, readonly: true, multiline: true },
                                         "abortedBy": { label: nlsHPCC.AbortedBy, type: "string", value: workunit?.AbortBy, readonly: true },
+                                        "abortedReason": { label: nlsHPCC.AbortReason, type: "string", value: workunit?.AbortReason, readonly: true },
                                         "abortedTime": { label: nlsHPCC.AbortedTime, type: "string", value: workunit?.AbortTime, readonly: true },
                                     }} onChange={(id, value) => {
                                         switch (id) {
@@ -540,6 +557,7 @@ export const WorkunitSummary: React.FunctionComponent<WorkunitSummaryProps> = ({
             <PublishQueryForm wuid={wuid} showForm={showPublishForm} setShowForm={setShowPublishForm} />
             <ZAPDialog wuid={wuid} showForm={showZapForm} setShowForm={setShowZapForm} />
             <SlaveLogs wuid={wuid} showForm={showThorSlaveLogs} setShowForm={setShowThorSlaveLogs} />
+            <AbortConfirm />
             <DeleteConfirm />
         </>}
     />;

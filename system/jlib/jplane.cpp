@@ -16,6 +16,7 @@
 ############################################################################## */
 
 #include "platform.h"
+#include <algorithm>
 #include <array>
 #include <limits>
 #include <string>
@@ -112,7 +113,7 @@ private:
 class CStorageApiInfo : public CInterfaceOf<IStorageApiInfo>
 {
 public:
-    CStorageApiInfo(const IPropertyTree * _xml) : xml(_xml)
+    CStorageApiInfo(const IPropertyTree * _xml, const StorageApiConfig & _apiConfig) : xml(_xml), apiConfig(_apiConfig)
     {
         if (!xml) // shouldn't happen
             throw makeStringException(MSGAUD_programmer, -1, "Invalid call: CStorageApiInfo(nullptr)");
@@ -123,24 +124,24 @@ public:
     }
     virtual const char * queryStorageApiAccount(unsigned stripeNumber) const override
     {
-        const char *account = queryContainer(stripeNumber)->queryProp("@account");
-        if (isEmptyString(account))
-            account = xml->queryProp("@account");
-        return account;
+        return queryStorageApiAccount(queryContainer(stripeNumber));
     }
     virtual const char * queryStorageContainerName(unsigned stripeNumber) const override
     {
         return queryContainer(stripeNumber)->queryProp("@name");
     }
-    virtual StringBuffer & getSASToken(unsigned stripeNumber, StringBuffer & token) const override
+    virtual const char * queryStorageApiSecret(unsigned stripeNumber, StringBuffer &account, StringBuffer &container) const override
     {
-        const char * secretName = queryContainer(stripeNumber)->queryProp("@secret");
+        const IPropertyTree *containerInfo = queryContainer(stripeNumber);
+        account.set(queryStorageApiAccount(containerInfo));
+        container.set(containerInfo->queryProp("@name"));
+        return queryStorageApiSecret(containerInfo);
+    }
+    virtual StringBuffer & getSASToken(unsigned stripeNumber, StringBuffer &account, StringBuffer &container, StringBuffer & token) const override
+    {
+        const char *secretName = queryStorageApiSecret(stripeNumber, account, container);
         if (isEmptyString(secretName))
-        {
-            secretName = xml->queryProp("@secret");
-            if (isEmptyString(secretName))
-                return token.clear();  // return empty string if no secret name is specified
-        }
+            return token.clear();  // return empty string if no secret name is specified
         getSecretValue(token, "storage", secretName, "token", false);
         return token.trimRight();
     }
@@ -148,9 +149,27 @@ public:
     {
         return xml->getPropBool("@managed", false);
     }
+    virtual const StorageApiConfig & queryAPIConfig() const override
+    {
+        return apiConfig;
+    }
 
 private:
-    IPropertyTree * queryContainer(unsigned stripeNumber) const
+    const char * queryStorageApiAccount(const IPropertyTree *container) const
+    {
+        const char *account = container->queryProp("@account");
+        if (isEmptyString(account))
+            account = xml->queryProp("@account");
+        return account;
+    }
+    const char * queryStorageApiSecret(const IPropertyTree *container) const
+    {
+        const char *secretName = container->queryProp("@secret");
+        if (isEmptyString(secretName))
+            secretName = xml->queryProp("@secret");
+        return secretName;
+    }
+    const IPropertyTree * queryContainer(unsigned stripeNumber) const
     {
         if (stripeNumber==0) // stripeNumber==0 when not striped -> use first item in 'containers' list
             stripeNumber++;
@@ -161,22 +180,58 @@ private:
         return container;
     }
     Owned<const IPropertyTree> xml;
+    StorageApiConfig apiConfig;
 };
 
 //------------------------------------------------------------------------------------------------------------
 
+static void applyUnsignedSetting(unsigned &setting, const IPropertyTree *settings, const char *property)
+{
+    int value = settings->getPropInt(property, -1);
+    if (value >= 0)
+        setting = (unsigned)value;
+}
+
+static void applyKBytesSetting(unsigned __int64 &setting, const IPropertyTree *settings, const char *property)
+{
+    __int64 settingK = settings->getPropInt64(property, -1);
+    if (settingK >= 0 && (unsigned __int64)settingK <= std::numeric_limits<unsigned __int64>::max() / 1024)
+        setting = (unsigned __int64)settingK * 1024;
+}
+
+static void applyAPIExpertSettings(StorageApiConfig & config, const IPropertyTree * expertSettings)
+{
+    if (!expertSettings)
+        return;
+
+    config.traceEnabled = expertSettings->getPropBool("@trace", config.traceEnabled);
+    applyKBytesSetting(config.parallelThresholdBytes, expertSettings, "@parallelThresholdK");
+    applyUnsignedSetting(config.parallelConcurrency, expertSettings, "@parallelConcurrency");
+    applyKBytesSetting(config.parallelChunkBytes, expertSettings, "@parallelChunkSizeK");
+    applyKBytesSetting(config.parallelInitialChunkBytes, expertSettings, "@parallelInitialChunkSizeK");
+    applyUnsignedSetting(config.maxRetries, expertSettings, "@maxRetries");
+    applyUnsignedSetting(config.retryDelayMs, expertSettings, "@retryDelayMs");
+    applyUnsignedSetting(config.maxRetryDelayMs, expertSettings, "@maxRetryDelayMs");
+}
+
 //Unlikely to be contended - so have a single shared static
 static CriticalSection isLocalCrit(SYNC_LOCATION);
+static StorageApiConfig globalAPIDefaults;
 class CStoragePlane final : public CInterfaceOf<IStoragePlane>
 {
 public:
-    CStoragePlane(const IPropertyTree & plane, const IPropertyTree & _defaults) : config(&plane), defaults(&_defaults)
+    CStoragePlane(const IPropertyTree & plane, const IPropertyTree & _defaults, const StorageApiConfig & apiDefaults) : config(&plane), defaults(&_defaults)
     {
         name = plane.queryProp("@name");
         prefix = plane.queryProp("@prefix", "");
         mirrorPrefix = plane.queryProp("@mirrorPrefix", nullptr);
         category = plane.queryProp("@category", "");
         devices = plane.getPropInt("@numDevices", 1);
+
+        apiConfig = apiDefaults;
+
+        const IPropertyTree * planeAPIExpertSettings = plane.queryPropTree("storageapi/expert");
+        applyAPIExpertSettings(apiConfig, planeAPIExpertSettings);
 
         for (unsigned propNum=0; propNum<PlaneAttributeType::PlaneAttributeCount; ++propNum)
         {
@@ -341,7 +396,7 @@ public:
     {
         IPropertyTree *apiInfo = config->getPropTree("storageapi");
         if (apiInfo)
-            return new CStorageApiInfo(apiInfo);
+            return new CStorageApiInfo(apiInfo, apiConfig);
         return nullptr;
     }
 
@@ -402,6 +457,7 @@ private:
     Linked<const IPropertyTree> defaults;
     std::vector<Owned<IStoragePlaneAlias>> aliases;
     std::vector<std::string> hosts;
+    StorageApiConfig apiConfig;
     mutable bool cachedLocalPlane{false};
     mutable bool isLocal{false};
     bool compressed{false};
@@ -410,27 +466,55 @@ private:
 // {prefix, {key1: value1, key2: value2, ...}}
 static std::unordered_map<std::string, Owned<CStoragePlane>> storagePlaneMap;
 static ReadWriteLock storagePlaneMapRWLock(SYNC_LOCATION);
+static std::atomic<unsigned> globalConnectionTimeoutMs{StorageApiConfig::defaultConnectionTimeoutMs};
+
+unsigned getGlobalConnectionTimeoutMs()
+{
+    return globalConnectionTimeoutMs.load(std::memory_order_relaxed);
+}
+
 MODULE_INIT(INIT_PRIORITY_STANDARD)
 {
     auto updateFunc = [&](const IPropertyTree *oldComponentConfiguration, const IPropertyTree *oldGlobalConfiguration)
     {
-        WriteLockBlock b(storagePlaneMapRWLock);
-        storagePlaneMap.clear();
+        // Universally pick up the write-sync margin delta from the expert config (component or global)
+        // NB: can be overridden by per-job #option
+        StringBuffer writeSyncMarginDeltaXPath;
+        getExpertOptPath("writeSyncMarginDeltaMs", writeSyncMarginDeltaXPath);
+        int writeSyncMarginDelta = getComponentConfigSP()->getPropInt(writeSyncMarginDeltaXPath, getGlobalConfigSP()->getPropInt("expert/@writeSyncMarginDeltaMs", noWriteSyncMarginDeltaMs));
+        setWriteSyncMarginDeltaMs(writeSyncMarginDelta);
+
+        std::unordered_map<std::string, Owned<CStoragePlane>> updatedStoragePlaneMap;
+
+        StorageApiConfig updatedGlobalAPIDefaults;
+        unsigned updatedGlobalConnectionTimeoutMs = StorageApiConfig::defaultConnectionTimeoutMs;
+        Owned<IPropertyTree> globalAPIExpertSettings = getGlobalConfigSP()->getPropTree("expert/storageapi");
+        applyAPIExpertSettings(updatedGlobalAPIDefaults, globalAPIExpertSettings);
+        if (globalAPIExpertSettings)
+            applyUnsignedSetting(updatedGlobalConnectionTimeoutMs, globalAPIExpertSettings, "@connectionTimeoutMs");
 
         Owned<IPropertyTree> storage = getGlobalConfigSP()->getPropTree("storage");
         // This may be null if running standalone (e.g. eclcc), or in a component that does not have access to the configuration.
-        if (!storage)
-            return;
-
-        Owned<IPropertyTree> defaults = storage->getPropTree("defaults");
-        if (!defaults)
-            defaults.setown(createPTree("defaults"));
-        Owned<IPropertyTreeIterator> planesIter = storage->getElements("planes");
-        ForEach(*planesIter)
+        if (storage)
         {
-            const IPropertyTree &plane = planesIter->query();
-            const char * name = plane.queryProp("@name");
-            storagePlaneMap[name].setown(new CStoragePlane(plane, *defaults));
+            Owned<IPropertyTree> defaults = storage->getPropTree("defaults");
+            if (!defaults)
+                defaults.setown(createPTree("defaults"));
+            Owned<IPropertyTreeIterator> planesIter = storage->getElements("planes");
+            ForEach(*planesIter)
+            {
+                const IPropertyTree &plane = planesIter->query();
+                const char * name = plane.queryProp("@name");
+                updatedStoragePlaneMap[name].setown(new CStoragePlane(plane, *defaults, updatedGlobalAPIDefaults));
+            }
+        }
+        {
+            // swap in the updated global storage API settings; only replace the plane map when storage config is present
+            WriteLockBlock b(storagePlaneMapRWLock);
+            globalAPIDefaults = updatedGlobalAPIDefaults;
+            globalConnectionTimeoutMs.store(updatedGlobalConnectionTimeoutMs, std::memory_order_relaxed);
+            if (storage)
+                storagePlaneMap.swap(updatedStoragePlaneMap);
         }
     };
 
@@ -765,12 +849,17 @@ size32_t getIndexBlockedIOSize(const char *planeName, bool isFiltered)
 // The set/get methods below provide a global tuning and debugging aide to adjust
 // the plane's write-sync margin, allowing operators to extend delays or force tracing
 // without changing the plane configuration.
-static constexpr int noWriteSyncMarginDeltaMs = std::numeric_limits<int>::min();
 static std::atomic<int> writeSyncMarginDeltaMs{noWriteSyncMarginDeltaMs};
+static std::atomic<int> jobWriteSyncMarginDeltaMs{noWriteSyncMarginDeltaMs};
 
 void setWriteSyncMarginDeltaMs(int deltaMs)
 {
     writeSyncMarginDeltaMs = deltaMs;
+}
+
+void setJobWriteSyncMarginDeltaMs(int deltaMs)
+{
+    jobWriteSyncMarginDeltaMs = deltaMs;
 }
 
 // Returns true if a write-sync margin delta has been explicitly configured,
@@ -778,7 +867,9 @@ void setWriteSyncMarginDeltaMs(int deltaMs)
 // of the margin delta value.
 bool getWriteSyncMarginDeltaMs(int &deltaMs)
 {
-    int value = writeSyncMarginDeltaMs;
+    int value = jobWriteSyncMarginDeltaMs;
+    if (noWriteSyncMarginDeltaMs == value)
+        value = writeSyncMarginDeltaMs;
     if (noWriteSyncMarginDeltaMs == value)
     {
         deltaMs = 0;
@@ -879,6 +970,7 @@ void resetWriteSyncStateForTest()
     writeSyncDeadlineMap.clear();
     publishWriteSyncSnapshot();
     writeSyncMarginDeltaMs = noWriteSyncMarginDeltaMs;
+    jobWriteSyncMarginDeltaMs = noWriteSyncMarginDeltaMs;
 }
 #endif
 
@@ -1247,7 +1339,12 @@ IStoragePlane * createStoragePlane(IPropertyTree *meta)
     Owned<IPropertyTree> defaults = getGlobalConfigSP()->getPropTree("storage/defaults");
     if (!defaults)
         defaults.setown(createPTree("defaults"));
-    return new CStoragePlane(*meta, *defaults);
+    StorageApiConfig apiDefaults;
+    {
+        ReadLockBlock b(storagePlaneMapRWLock);
+        apiDefaults = globalAPIDefaults;
+    }
+    return new CStoragePlane(*meta, *defaults, apiDefaults);
 }
 
 

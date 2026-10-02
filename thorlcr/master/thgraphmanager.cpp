@@ -63,6 +63,19 @@
 
 static const StatisticsMapping podStatistics({StNumPods});
 
+// Records the reason a workunit was aborted for cost/time guillotine cases, so it is easily retrievable
+static void recordAbortReasonIfGuillotined(IWorkUnit *wu, unsigned errorCode, const char *msg)
+{
+    switch (errorCode)
+    {
+        case TE_CostExceeded:
+        case TE_QueryTimeoutError:
+            wu->recordAbortDetails(msg, nullptr);
+            break;
+        default:
+            break;
+    }
+}
 
 void relayWuidException(IConstWorkUnit *workunit, const IException *exception)
 {
@@ -95,6 +108,8 @@ void relayWuidException(IConstWorkUnit *workunit, const IException *exception)
                     we->setExceptionCode(exception->errorCode());
                     WUState newState = (WUStateRunning == state) ? WUStateWait : WUStateFailed;
                     wu->setState(newState);
+                    // setState() above clears any previous AbortReason, so set it afterwards
+                    recordAbortReasonIfGuillotined(wu, exception->errorCode(), errStr);
                     break;
                 }
             }
@@ -130,7 +145,7 @@ class CJobManager : public CSimpleInterface, implements IJobManager, implements 
         CRuntimeSummaryStatisticCollection podStats;
         std::vector<std::string> nodeNames; // ordered list of the unique node names
         bool collectAttempted = false;
-        
+
     public:
         CPodInfo() : podStats(podStatistics)
         {
@@ -191,7 +206,7 @@ class CJobManager : public CSimpleInterface, implements IJobManager, implements 
             reportExceptionToWorkunit(*wu, e);
         }
     } podInfo;
-    
+
     Owned<IDeMonServer> demonServer;
     std::atomic<unsigned> activeTasks;
     StringAttr          currentWuid;
@@ -1043,9 +1058,16 @@ void CJobManager::reply(IConstWorkUnit *workunit, const char *wuid, IException *
         IThorException *te = QUERYINTERFACE(e, IThorException);
         if (te)
         {
+            StringBuffer errStr;
+            e->errorMessage(errStr);
+            {
+                Owned<IWorkUnit> wu = &workunit->lock();
+                recordAbortReasonIfGuillotined(wu, te->errorCode(), errStr);
+            }
             switch (te->errorCode())
             {
             case TE_CostExceeded:
+            case TE_QueryTimeoutError:
             case TE_WorkUnitAborting:
                 replyMb.append((unsigned)DAMP_THOR_REPLY_ABORT);
                 break;
@@ -1222,11 +1244,11 @@ bool CJobManager::executeGraph(IConstWorkUnit &workunit, const char *graphName, 
         exception.setown(ThorWrapException(e, "CJobManager::executeGraph"));
         e->Release();
     }
-    if (0 == graphTimeNs) // implies threw exception before getting to publishTimeElapsed after job->go() above. Ensure TimeElapsed is published if failed.  
+    if (0 == graphTimeNs) // implies threw exception before getting to publishTimeElapsed after job->go() above. Ensure TimeElapsed is published if failed.
     {
         Owned<IWorkUnit> wu = &workunit.lock();
         publishTimeElapsed(wu);
-    } 
+    }
     job->endJob();
     removeJob(*job);
     if (exception)

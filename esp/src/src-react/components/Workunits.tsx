@@ -4,10 +4,10 @@ import { CommandBar, ContextualMenuItemType, ICommandBarItemProps } from "./Comm
 import { LockClosedFilled } from "@fluentui/react-icons";
 import { Link, Tooltip } from "@fluentui/react-components";
 import { hsl as d3Hsl } from "@hpcc-js/common";
-import { Workunit } from "@hpcc-js/comms";
+import { SashaService, WsSasha, Workunit, WsWorkunits, WorkunitsService } from "@hpcc-js/comms";
+import { scopedLogger } from "@hpcc-js/util";
 import { SizeMe } from "../layouts/SizeMe";
 import { defaultSort, emptyFilter, getStateImage, formatQuery } from "src/ESPWorkunit";
-import * as WsWorkunits from "src/WsWorkunits";
 import { formatCost } from "src/Session";
 import { userKeyValStore } from "src/KeyValStore";
 import { QuerySortItem } from "src/store/Store";
@@ -23,11 +23,10 @@ import { FluentPagedGrid, FluentPagedFooter, useCopyButtons, useFluentStoreState
 import { Fields } from "./forms/Fields";
 import { Filter } from "./forms/Filter";
 import { ZAPImport } from "./forms/ZAPImport";
-import { SashaService, WsSasha } from "@hpcc-js/comms";
-import { scopedLogger } from "@hpcc-js/util";
 
 const logger = scopedLogger("src-react/components/Workunits.tsx");
 const sashaService = new SashaService({ baseUrl: "" });
+const wuService = new WorkunitsService({ baseUrl: "" });
 
 const FilterFields: Fields = {
     "Type": { type: "checkbox", label: nlsHPCC.ArchivedOnly },
@@ -182,12 +181,12 @@ export const Workunits: React.FunctionComponent<WorkunitsProps> = ({
 
     const copyButtons = useCopyButtons(columns, selection, "workunits");
 
-    const doActionWithWorkunits = React.useCallback(async (action: "Delete" | "Abort") => {
+    const doActionWithWorkunits = React.useCallback(async (action: "Delete" | "Abort", abortReason?: string) => {
         const unknownWUs = selection.filter(wu => wu.State === "unknown");
         if (action === "Delete" && unknownWUs.length) {
-            await WsWorkunits.WUAction(unknownWUs, "SetToFailed");
+            await wuService.WUAction({ Wuids: { Item: unknownWUs.map(item => item.Wuid) }, WUActionType: WsWorkunits.ECLWUActions.SetToFailed });
         }
-        await WsWorkunits.WUAction(selection, action);
+        await wuService.WUAction({ Wuids: { Item: selection.map(item => item.Wuid) }, WUActionType: WsWorkunits.ECLWUActions[action], AbortReason: abortReason });
         refreshTable.call(true);
     }, [refreshTable, selection]);
 
@@ -195,14 +194,15 @@ export const Workunits: React.FunctionComponent<WorkunitsProps> = ({
         title: nlsHPCC.Delete,
         message: nlsHPCC.DeleteSelectedWorkunits,
         items: selection.map(s => s?.Wuid).filter(wuid => wuid !== undefined),
-        onSubmit: () => doActionWithWorkunits("Delete")
+        onSubmit: () => doActionWithWorkunits("Delete").catch(err => logger.error(err))
     });
 
     const [AbortConfirm, setShowAbortConfirm] = useConfirm({
         title: nlsHPCC.Abort,
         message: nlsHPCC.AbortSelectedWorkunits,
         items: selection.map(s => s?.Wuid).filter(wuid => wuid !== undefined),
-        onSubmit: () => doActionWithWorkunits("Abort")
+        fields: [{ id: "AbortReason", label: nlsHPCC.AbortReason }],
+        onSubmit: (values) => doActionWithWorkunits("Abort", values?.AbortReason).catch(err => logger.error(err))
     });
 
     //  Filter  ---
@@ -260,7 +260,7 @@ export const Workunits: React.FunctionComponent<WorkunitsProps> = ({
         { key: "divider_2", itemType: ContextualMenuItemType.Divider },
         {
             key: "setFailed", text: nlsHPCC.SetToFailed, disabled: !uiState.hasNotProtected,
-            onClick: () => { WsWorkunits.WUAction(selection, "SetToFailed").then(() => refreshTable.call()); }
+            onClick: () => { wuService.WUAction({ Wuids: { Item: selection.map(item => item.Wuid) }, WUActionType: WsWorkunits.ECLWUActions.SetToFailed }).then(() => refreshTable.call()); }
         },
         {
             key: "abort", text: nlsHPCC.Abort, disabled: !uiState.hasNotCompleted,
@@ -284,13 +284,13 @@ export const Workunits: React.FunctionComponent<WorkunitsProps> = ({
         {
             key: "protect", text: nlsHPCC.Protect, disabled: !uiState.hasNotProtected,
             onClick: () => {
-                WsWorkunits.WUAction(selection, "Protect").then(() => refreshTable.call());
+                wuService.WUAction({ Wuids: { Item: selection.map(item => item.Wuid) }, WUActionType: WsWorkunits.ECLWUActions.Protect }).then(() => refreshTable.call());
             }
         },
         {
             key: "unprotect", text: nlsHPCC.Unprotect, disabled: !uiState.hasProtected,
             onClick: () => {
-                WsWorkunits.WUAction(selection, "Unprotect").then(() => refreshTable.call());
+                wuService.WUAction({ Wuids: { Item: selection.map(item => item.Wuid) }, WUActionType: WsWorkunits.ECLWUActions.Unprotect }).then(() => refreshTable.call());
             }
         },
         { key: "divider_4", itemType: ContextualMenuItemType.Divider },
@@ -339,7 +339,7 @@ export const Workunits: React.FunctionComponent<WorkunitsProps> = ({
                 } else {
                     state.hasNotFailed = true;
                 }
-                if (WsWorkunits.isComplete(selection[i].StateID, selection[i].ActionEx)) {
+                if (selection[i].isComplete()) {
                     state.hasCompleted = true;
                 } else {
                     state.hasNotCompleted = true;
