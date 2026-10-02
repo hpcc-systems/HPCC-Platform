@@ -64,7 +64,12 @@ static IHqlExpression * optimizedReplaceSelector(IHqlExpression * expr, IHqlExpr
                     IHqlExpression * newField = lookupNewSelectedField(newDataset, field);
 
                     if (newDataset->getOperator() == no_newrow)
-                        return createNewSelectExpr(LINK(newDataset->queryChild(0)), newField);
+                    {
+                        IHqlExpression * newRow = newDataset->queryChild(0);
+                        if ((newRow->getOperator() == no_select) && !newRow->isDataset())
+                           return createSelectExpr(LINK(newRow), newField);
+                        return createNewSelectExpr(LINK(newRow), newField);
+                    }
 
                     if (newDataset->getOperator() == no_activerow)
                         newDataset = newDataset->queryChild(0);
