@@ -18,6 +18,7 @@
 #include "platform.h"
 #include "jlib.hpp"
 #include "jfile.hpp"
+#include "jplane.hpp"
 #include "azureapi.hpp"
 #include "azureapiutils.hpp"
 
@@ -249,9 +250,11 @@ class AzureFileClient : public AzureAPICopyClientBase
         fileClient->Delete();
     }
 public:
-    AzureFileClient(const char *target, bool _sourceIsBlob, bool useManagedIdentity, CreatedDirsCache &_createdDirsCache)
+    AzureFileClient(const char *target, bool _sourceIsBlob, bool useManagedIdentity, CreatedDirsCache &_createdDirsCache, const StorageApiConfig & config)
         : sourceIsBlob(_sourceIsBlob), targetUrl(target), createdDirsCache(_createdDirsCache)
     {
+        setAzureRetryOptions(clientOptions.Retry, config);
+        clientOptions.Transport.Transport = getHttpTransport();
         if (useManagedIdentity)
         {
             // ShareTokenIntent is required when using token authentication with Azure Files
@@ -260,7 +263,7 @@ public:
             fileClient.reset(new Shares::ShareFileClient(target, credential, clientOptions));
         }
         else
-            fileClient.reset(new Shares::ShareFileClient(target));
+            fileClient.reset(new Shares::ShareFileClient(target, clientOptions));
     }
 };
 
@@ -300,12 +303,15 @@ class AzureBlobClient : public AzureAPICopyClientBase
         blobClient->Delete();
     }
 public:
-    AzureBlobClient(const char * target, bool useManagedIdentity)
+    AzureBlobClient(const char * target, bool useManagedIdentity, const StorageApiConfig & config)
     {
+        BlobClientOptions clientOptions;
+        setAzureRetryOptions(clientOptions.Retry, config);
+        clientOptions.Transport.Transport = getHttpTransport();
         if (useManagedIdentity)
-            blobClient.reset(new BlobClient(target, getAzureManagedIdentityCredential()));
+            blobClient.reset(new BlobClient(target, getAzureManagedIdentityCredential(), clientOptions));
         else
-            blobClient.reset(new BlobClient(target));
+            blobClient.reset(new BlobClient(target, clientOptions));
     }
 };
 
@@ -344,9 +350,9 @@ public:
         Owned<IAPICopyClientOp> apiClient;
         bool tgtUseManagedIdentity = targetApiInfo->useManagedIdentity();
         if (isAzureFile(targetApiInfo->getStorageType()))
-            apiClient.setown(new AzureFileClient(targetURI.str(), isAzureBlob(sourceApiInfo->getStorageType()), tgtUseManagedIdentity, createdDirsCache));
+            apiClient.setown(new AzureFileClient(targetURI.str(), isAzureBlob(sourceApiInfo->getStorageType()), tgtUseManagedIdentity, createdDirsCache, targetApiInfo->queryAPIConfig()));
         else
-            apiClient.setown(new AzureBlobClient(targetURI.str(), tgtUseManagedIdentity));
+            apiClient.setown(new AzureBlobClient(targetURI.str(), tgtUseManagedIdentity, targetApiInfo->queryAPIConfig()));
 
         StringBuffer sourceURI;
         getAzureURI(sourceURI, srcStripeNum, srcPath, sourceApiInfo);
@@ -371,7 +377,7 @@ protected:
     {
         const char *accountName = apiInfo->queryStorageApiAccount(stripeNum);
 
-        auto delegationKey = getCachedDelegationKey(accountName);
+        auto delegationKey = getCachedDelegationKey(accountName, apiInfo->queryAPIConfig());
 
         Sas::BlobSasBuilder sasBuilder;
         sasBuilder.Protocol = Sas::SasProtocol::HttpsOnly;
@@ -386,7 +392,7 @@ protected:
 
     // Return a cached UserDelegationKey for the given account, refreshing if expired or absent.
     // The key is valid for 1 hour; we refresh with 5 minutes of margin to avoid using a nearly-expired key.
-    std::shared_ptr<const Blobs::Models::UserDelegationKey> getCachedDelegationKey(const char *accountName) const
+    std::shared_ptr<const Blobs::Models::UserDelegationKey> getCachedDelegationKey(const char *accountName, const StorageApiConfig &config) const
     {
         CriticalBlock block(delegationKeyCS);
         auto it = delegationKeyCache.find(accountName);
@@ -399,7 +405,10 @@ protected:
         }
 
         std::string serviceUrl = std::string("https://") + accountName + ".blob.core.windows.net";
-        BlobServiceClient serviceClient(serviceUrl, getAzureManagedIdentityCredential());
+        BlobClientOptions clientOptions;
+        setAzureRetryOptions(clientOptions.Retry, config);
+        clientOptions.Transport.Transport = getHttpTransport();
+        BlobServiceClient serviceClient(serviceUrl, getAzureManagedIdentityCredential(), clientOptions);
 
         // Backdate the key start time to tolerate normal clock skew between nodes and Azure.
         Blobs::GetUserDelegationKeyOptions options;
@@ -417,8 +426,9 @@ protected:
 
     void getAzureURI(StringBuffer & uri, unsigned stripeNum, const char *filePath, const IStorageApiInfo *apiInfo) const
     {
-        const char *accountName = apiInfo->queryStorageApiAccount(stripeNum);
-        uri.appendf("https://%s", accountName);
+        StringBuffer accountName, container, token;
+        apiInfo->getSASToken(stripeNum, accountName, container, token);
+        uri.appendf("https://%s", accountName.str());
 
         if (isAzureFile(apiInfo->getStorageType()))
             uri.append(".file");
@@ -427,10 +437,8 @@ protected:
         uri.append(".core.windows.net/");
 
         const char *path = stripDevicePrefix(filePath);
-
-        StringBuffer tmp, token;
-        const char * container = apiInfo->queryStorageContainerName(stripeNum);
-        uri.appendf("%s/%s%s", container, encodeURL(tmp, path).str(), apiInfo->getSASToken(stripeNum, token).str());
+        StringBuffer tmp;
+        uri.appendf("%s/%s%s", container.str(), encodeURL(tmp, path).str(), token.str());
     }
 
     // Strip leading '/' and device/stripe prefix (e.g., "d2/") from a file path.

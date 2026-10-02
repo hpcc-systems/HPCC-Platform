@@ -38,6 +38,7 @@
 #define DEFAULT_MAXLFN_BLOCKTIME_MINS 25 // 25 mins
 
 #include <unordered_map>
+#include <limits>
 #include <string>
 #include <memory>
 
@@ -66,6 +67,7 @@
 #include "thorplugin.hpp"
 #include "jstats.h"
 #include "dafsaudit.hpp"
+#include "jplane.hpp"
 
 #define THORDATALINK_STOPPED            (RCMAX&~(RCMAX>>1))                         // dataLinkStop() was called
 #define THORDATALINK_STARTED            (RCMAX&~THORDATALINK_STOPPED&~(RCMAX>>2))   // dataLinkStart() was called

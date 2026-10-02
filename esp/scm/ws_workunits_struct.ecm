@@ -418,6 +418,7 @@ ESPStruct [nil_remove] ECLWorkunit
     [min_ver("1.53")] string TotalClusterTime;
     [min_ver("1.59")] string AbortBy;
     [min_ver("1.59")] string AbortTime;
+    [min_ver("2.10")] string AbortReason;
 
     ESPstruct ECLQuery Query;
     [min_ver("1.03")] ESParray<ESPstruct ECLHelpFile> Helpers;

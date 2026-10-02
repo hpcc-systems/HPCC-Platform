@@ -1473,6 +1473,12 @@ void WsWuInfo::getInfo(IEspECLWorkunit &info, unsigned long flags)
                 info.setAbortBy(s.str());
         }
     }
+    if (version >= 2.10)
+    {
+        cw->getAbortReason(s);
+        if (s.length())
+            info.setAbortReason(s.str());
+    }
     info.setPriorityClass(cw->getPriority());
     info.setPriorityLevel(cw->getPriorityLevel());
     if (context.querySecManager())

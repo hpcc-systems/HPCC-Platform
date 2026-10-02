@@ -179,14 +179,14 @@ protected:
     Owned<ISecUser> secUser;
 
 protected:
-    
+
 public:
     IMPLEMENT_IINTERFACE;
 
     CLocalWorkUnit(ISecManager *secmgr, ISecUser *secuser);
     void loadPTree(IPropertyTree *ptree);
     void beforeDispose();
-    
+
     IPropertyTree *getUnpackedTree(bool includeProgress) const;
     IPropertyTree *queryMergedTree() const;
 
@@ -311,6 +311,7 @@ public:
     virtual unsigned getTotalThorTime() const;
     virtual IStringVal & getAbortBy(IStringVal & str) const;
     virtual unsigned __int64 getAbortTimeStamp() const;
+    virtual IStringVal & getAbortReason(IStringVal & str) const;
     virtual cost_type getExecuteCost() const;
     virtual cost_type getFileAccessCost() const;
     virtual cost_type getCompileCost() const;
@@ -339,6 +340,7 @@ public:
     void setResultLimit(unsigned value);
     void setState(WUState state);
     void setStateEx(const char * text);
+    void recordAbortDetails(const char * reason, const char * abortBy);
     void setAgentSession(__int64 sessionId);
     void setEngineSession(__int64 sessionId);
     bool setDistributedAccessToken(const char * user);

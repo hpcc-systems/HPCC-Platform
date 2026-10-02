@@ -1362,6 +1362,7 @@ interface IConstWorkUnit : extends IConstWorkUnitInfo
     virtual void clearGraphProgress() const = 0;
     virtual IStringVal & getAbortBy(IStringVal & str) const = 0;
     virtual unsigned __int64 getAbortTimeStamp() const = 0;
+    virtual IStringVal & getAbortReason(IStringVal & str) const = 0;
     virtual cost_type getExecuteCost() const = 0;
     virtual cost_type getFileAccessCost() const = 0;
     virtual cost_type getCostSavingPotential() const = 0;
@@ -1393,6 +1394,7 @@ interface IWorkUnit : extends IConstWorkUnit
     virtual void setResultLimit(unsigned value) = 0;
     virtual void setState(WUState state) = 0;
     virtual void setStateEx(const char * text) = 0;  // Indicates why blocked
+    virtual void recordAbortDetails(const char * reason, const char * abortBy) = 0;
     virtual void setAgentSession(__int64 sessionId) = 0;
     virtual void setEngineSession(__int64 sessionId) = 0;
     virtual void setStatistic(StatisticCreatorType creatorType, const char * creator, StatisticScopeType scopeType, const char * scope, StatisticKind kind, const char * optDescription, unsigned __int64 value, unsigned __int64 count, unsigned __int64 maxValue, StatsMergeAction mergeAction) = 0;
@@ -1692,8 +1694,10 @@ extern WORKUNIT_API void submitWorkUnit(const char *wuid, const char *username, 
 extern WORKUNIT_API void abortWorkUnit(const char *wuid);
 extern WORKUNIT_API void submitWorkUnit(const char *wuid, ISecManager *secmgr, ISecUser *secuser);
 extern WORKUNIT_API void abortWorkUnit(const char *wuid, ISecManager *secmgr, ISecUser *secuser);
+extern WORKUNIT_API void abortWorkUnit(const char *wuid, ISecManager *secmgr, ISecUser *secuser, const char *reason);
 extern WORKUNIT_API void secSubmitWorkUnit(const char *wuid, ISecManager &secmgr, ISecUser &secuser);
 extern WORKUNIT_API void secAbortWorkUnit(const char *wuid, ISecManager &secmgr, ISecUser &secuser);
+extern WORKUNIT_API void secAbortWorkUnit(const char *wuid, ISecManager &secmgr, ISecUser &secuser, const char *reason);
 extern WORKUNIT_API IWUResult * updateWorkUnitResult(IWorkUnit * w, const char *name, unsigned sequence);
 extern WORKUNIT_API IConstWUResult * getWorkUnitResult(IConstWorkUnit * w, const char *name, unsigned sequence);
 extern WORKUNIT_API void updateSuppliedXmlParams(IWorkUnit * w);

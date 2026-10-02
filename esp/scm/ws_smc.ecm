@@ -204,6 +204,7 @@ ESPrequest SMCQueueRequest
     [min_ver("1.19")] string ServerType;
     [min_ver("1.19")] string NetworkAddress;
     [min_ver("1.19")] int Port;
+    [min_ver("1.31")] string AbortReason;
 };
 
 
@@ -218,6 +219,7 @@ ESPrequest SMCJobRequest
     string Cluster;
     string QueueName;
     string Wuid;
+    [min_ver("1.31")] string AbortReason;
 };
 
 
@@ -289,7 +291,7 @@ ESPresponse [exceptions_inline, min_ver("1.30")] GetBannerResponse
 
 ESPrequest NotInCommunityEditionRequest
 {
-    string EEPortal; 
+    string EEPortal;
 };
 
 ESPresponse [exceptions_inline] NotInCommunityEditionResponse
@@ -504,7 +506,7 @@ ESPresponse [exceptions_inline, nil_remove] RecordGlobalMetricsResponse
     string Result;                              // Success or partial success message
 };
 
-ESPservice [auth_feature("DEFERRED"), noforms, version("1.30"), default_client_version("1.30"), exceptions_inline("./smc_xslt/exceptions.xslt"), use_method_name] WsSMC
+ESPservice [auth_feature("DEFERRED"), noforms, version("1.31"), default_client_version("1.31"), exceptions_inline("./smc_xslt/exceptions.xslt"), use_method_name] WsSMC
 {
     ESPmethod Index(SMCIndexRequest, SMCIndexResponse);
     ESPmethod [resp_xsl_default("/esp/xslt/index.xslt")] Activity(ActivityRequest, ActivityResponse);
