@@ -534,8 +534,11 @@ CBlobWriteNode::CBlobWriteNode(offset_t _fpos, CKeyHdr *_keyHdr) : CBlobWriteNod
 CNewBlobWriteNode::CNewBlobWriteNode(CompressionMethod method, offset_t _fpos, CKeyHdr *_keyHdr) : CBlobWriteNodeBase(_fpos, _keyHdr)
 {
     hdr.compressionType = NewBlobCompression;
-    *keyPtr++ = (byte)method;
+    // Leave space for the compression method, but fill in with the base compression type (e.g. zstd)
+    // rather than the compression alias (e.g. ztsd3).
+    keyPtr++;
     compressor.openBlob(method, keyPtr, maxBytes-1);
+    keyPtr[-1] = compressor.getCompressionMethod();
 }
 
 //=========================================================================================================
@@ -666,6 +669,7 @@ void *CJHTreeNode::allocMem(size32_t len)
 
 char *CJHTreeNode::expandData(ICompressHandler * handler, const void *src,size32_t &retsize)
 {
+    assertex(handler);
     Owned<IExpander> exp = handler->getExpander();
     int len=exp->init(src);
     if (len==0)
