@@ -43,18 +43,22 @@
 constexpr const char * azureBlobPrefix = "azureblob:";
 constexpr const char * azureFilePrefix = "azurefile:";
 
+static constexpr unsigned maxAzureBlockCount = 50000;
+
+struct StorageApiConfig;
+
 // Helper functions for creating Azure credentials
 std::shared_ptr<Azure::Storage::StorageSharedKeyCredential> getAzureSharedKeyCredential(const char * accountName, const char * secretName);
 std::shared_ptr<Azure::Core::Credentials::TokenCredential> getAzureManagedIdentityCredential();
 std::shared_ptr<Azure::Core::Http::HttpTransport> getHttpTransport();
+void setAzureRetryOptions(Azure::Core::Http::Policies::RetryOptions & retryOptions, const StorageApiConfig & config);
 
 bool areManagedIdentitiesEnabled();
 bool isBase64Char(char c);
-void handleRequestBackoff(const char * message, unsigned attempt, unsigned maxRetries);
-void handleRequestException(const Azure::Core::RequestFailedException& e, const char * op, unsigned attempt, unsigned maxRetries, const char * filename);
-void handleRequestException(const Azure::Core::RequestFailedException& e, const char * op, unsigned attempt, unsigned maxRetries, const char * filename, offset_t pos, offset_t len);
-void handleRequestException(const std::exception& e, const char * op, unsigned attempt, unsigned maxRetries, const char * filename);
-void handleRequestException(const std::exception& e, const char * op, unsigned attempt, unsigned maxRetries, const char * filename, offset_t pos, offset_t len);
+[[noreturn]] void throwRequestException(const Azure::Core::RequestFailedException& e, const char * op, const char * filename);
+[[noreturn]] void throwRequestException(const Azure::Core::RequestFailedException& e, const char * op, const char * filename, offset_t pos, offset_t len);
+[[noreturn]] void throwRequestException(const std::exception& e, const char * op, const char * filename);
+[[noreturn]] void throwRequestException(const std::exception& e, const char * op, const char * filename, offset_t pos, offset_t len);
 
 struct DirEntry
 {
@@ -151,27 +155,19 @@ private:
     {
         if (!hasMorePages)
             return !items.empty();
-        constexpr unsigned maxRetries = 4;
-        unsigned attempt = 0;
-        for (;;)
+        try
         {
-            try
-            {
-                fetchPage();
-                break;
-            }
-            catch (const Azure::Core::RequestFailedException &e)
-            {
-                attempt++;
-                VStringBuffer msg("%s (container: %s)", fullPrefix.str(), containerOrShare.str());
-                handleRequestException(e, "Azure::directoryFiles", attempt, maxRetries, msg.str());
-            }
-            catch (const std::exception &e)
-            {
-                attempt++;
-                VStringBuffer msg("%s (container: %s)", fullPrefix.str(), containerOrShare.str());
-                handleRequestException(e, "Azure::directoryFiles", attempt, maxRetries, msg.str());
-            }
+            fetchPage();
+        }
+        catch (const Azure::Core::RequestFailedException &e)
+        {
+            VStringBuffer msg("%s (container: %s)", fullPrefix.str(), containerOrShare.str());
+            throwRequestException(e, "Azure::directoryFiles", msg.str());
+        }
+        catch (const std::exception &e)
+        {
+            VStringBuffer msg("%s (container: %s)", fullPrefix.str(), containerOrShare.str());
+            throwRequestException(e, "Azure::directoryFiles", msg.str());
         }
         return !items.empty() || hasMorePages;
     }

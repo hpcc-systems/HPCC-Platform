@@ -148,6 +148,28 @@ interface IStoragePlaneAlias: extends IInterface
 //I'm not sure if this should be used in place of an IGroup, probably as system gradually changes
 interface IStorageApiInfo;
 
+struct StorageApiConfig
+{
+    static constexpr bool defaultTraceEnabled = false;                                    // tracing disabled
+    static constexpr unsigned __int64 defaultParallelThresholdBytes = 16 * 1024 * 1024;   // 16MB in bytes
+    static constexpr unsigned defaultParallelConcurrency = 16;                            // 16 concurrent connections
+    static constexpr unsigned __int64 defaultParallelChunkBytes = 4 * 1024 * 1024;        // 4MB in bytes
+    static constexpr unsigned __int64 defaultParallelInitialChunkBytes = 4 * 1024 * 1024; // 4MB in bytes
+    static constexpr unsigned defaultConnectionTimeoutMs = 10000;                         // 10 seconds
+    static constexpr unsigned defaultMaxRetries = 5;                                      // 5 retries after the initial request
+    static constexpr unsigned defaultRetryDelayMs = 1000;                                 // 1 second
+    static constexpr unsigned defaultMaxRetryDelayMs = 30000;                             // 30 seconds
+
+    bool traceEnabled = defaultTraceEnabled;
+    unsigned __int64 parallelThresholdBytes = defaultParallelThresholdBytes;
+    unsigned parallelConcurrency = defaultParallelConcurrency;
+    unsigned __int64 parallelChunkBytes = defaultParallelChunkBytes;
+    unsigned __int64 parallelInitialChunkBytes = defaultParallelInitialChunkBytes;
+    unsigned maxRetries = defaultMaxRetries;
+    unsigned retryDelayMs = defaultRetryDelayMs;
+    unsigned maxRetryDelayMs = defaultMaxRetryDelayMs;
+};
+
 // This interface should only have specialized methods for accessing the plane information, rather a general function to return a property tree
 interface IStoragePlane: extends IInterface
 {
@@ -179,6 +201,7 @@ extern jlib_decl const IStoragePlane * getDataStoragePlane(const char * name, bo
 extern jlib_decl const IStoragePlane * getRemoteStoragePlane(const char * name, bool required);
 extern jlib_decl IStoragePlane * createStoragePlane(IPropertyTree *meta);
 extern jlib_decl void getDataStoragePlanes(StoragePlaneArray &planes);
+extern jlib_decl unsigned getGlobalConnectionTimeoutMs();
 
 extern jlib_decl bool getDefaultStoragePlane(StringBuffer &ret);
 extern jlib_decl bool getDefaultSpillPlane(StringBuffer &ret);
