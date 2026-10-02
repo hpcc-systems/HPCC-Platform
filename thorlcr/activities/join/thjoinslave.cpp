@@ -74,8 +74,8 @@ class JoinSlaveActivity : public CSlaveActivity, implements ILookAheadStopNotify
     bool rightpartition;
     bool islocal;
 
-    bool hintunsortedoutput = false;
-    bool hintparallelmatch = false;
+    bool unsortedOutput = false;
+    bool hintParallelMatch = false;
 
     bool noSortPartitionSide()
     {
@@ -166,8 +166,9 @@ public:
         if (islocal)
             setRequireInitData(false);
 
-        hintunsortedoutput = getOptBool(THOROPT_UNSORTED_OUTPUT, (JFreorderable & helper->getJoinFlags()) != 0);
-        hintparallelmatch = getOptBool(THOROPT_PARALLEL_MATCH, hintunsortedoutput); // i.e. unsorted, implies use parallel by default, otherwise no point
+        // unsorted_output hint removed: the compiler tracks sort order and isn't aware of it, so reordering can only be driven by JFreorderable
+        unsortedOutput = (JFreorderable & helper->getJoinFlags()) != 0;
+        hintParallelMatch = getOptBool(THOROPT_PARALLEL_MATCH, unsortedOutput); // i.e. unsorted, implies use parallel by default, otherwise no point
 
         appendOutputLinked(this);
     }
@@ -248,7 +249,7 @@ public:
         {
             case TAKjoin:
             {
-                joinhelper.setown(createJoinHelper(*this, helperjn, this, hintparallelmatch, hintunsortedoutput));
+                joinhelper.setown(createJoinHelper(*this, helperjn, this, hintParallelMatch, unsortedOutput));
                 break;
             }
             case TAKdenormalize:

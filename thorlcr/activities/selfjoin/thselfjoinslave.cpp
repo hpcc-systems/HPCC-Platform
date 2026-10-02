@@ -152,19 +152,20 @@ public:
     {
         ActivityTimer s(slaveTimerStats, timeActivities);
         PARENT::start();
-        bool hintunsortedoutput = getOptBool(THOROPT_UNSORTED_OUTPUT, (JFreorderable & helper->getJoinFlags()) != 0);
-        bool hintparallelmatch = getOptBool(THOROPT_PARALLEL_MATCH, hintunsortedoutput); // i.e. unsorted, implies use parallel by default, otherwise no point
+        // unsorted_output hint removed: the compiler tracks sort order and isn't aware of it, so reordering can only be driven by JFreorderable
+        bool unsortedOutput = (JFreorderable & helper->getJoinFlags()) != 0;
+        bool hintParallelMatch = getOptBool(THOROPT_PARALLEL_MATCH, unsortedOutput); // i.e. unsorted, implies use parallel by default, otherwise no point
 
         if (helper->getJoinFlags()&JFlimitedprefixjoin)
         {
             CriticalBlock b(joinHelperCrit);
             // use std join helper (less efficient but implements limited prefix)
-            joinhelper.setown(createJoinHelper(*this, helper, this, hintparallelmatch, hintunsortedoutput));
+            joinhelper.setown(createJoinHelper(*this, helper, this, hintParallelMatch, unsortedOutput));
         }
         else
         {
             CriticalBlock b(joinHelperCrit);
-            joinhelper.setown(createSelfJoinHelper(*this, helper, this, hintparallelmatch, hintunsortedoutput));
+            joinhelper.setown(createSelfJoinHelper(*this, helper, this, hintParallelMatch, unsortedOutput));
         }
         if (isLightweight)
             strm.set(inputStream);

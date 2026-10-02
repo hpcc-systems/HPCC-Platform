@@ -3399,7 +3399,7 @@ void NewSelectorReplacingTransformer::setRootMapping(IHqlExpression * oldSel, IH
         setMappingOnly(oldSel, newSel);
 
     IHqlExpression * newRecord = newSel->queryRecord();
-    if (oldRecord != newRecord)
+    if (newRecord && (oldRecord != newRecord))
     {
         if (oldRecord != queryNullRecord() && newRecord != queryNullRecord())
         {

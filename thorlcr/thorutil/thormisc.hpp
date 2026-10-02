@@ -65,8 +65,7 @@
 #define THOROPT_PARALLEL_FUNNEL "parallelFunnel"                                  // Use parallel funnel impl. if !ordered                                         (default = true)
 #define THOROPT_SORT_MAX_DEVIANCE "sort_max_deviance"                             // Max (byte) variance allowed during sort partitioning                          (default = 10Mb)
 #define THOROPT_OUTPUT_FLUSH_THRESHOLD "output_flush_threshold"                   // When above limit, workunit result is flushed (committed to Dali)              (default = -1 [off])
-#define THOROPT_PARALLEL_MATCH "parallel_match"                                   // Use multi-threaded join helper (retains sort order without unsorted_output)   (default = false)
-#define THOROPT_UNSORTED_OUTPUT "unsorted_output"                                 // Allow Join results to be reodered, implies parallel match                     (default = false)
+#define THOROPT_PARALLEL_MATCH "parallel_match"                                   // Use multi-threaded join helper (retains sort order)                           (default = false)
 #define THOROPT_JOINHELPER_THREADS "joinHelperThreads"                            // Number of threads to use in threaded variety of join helper
 #define THOROPT_JOIN_BATCH_LIMIT "joinBatchLimit"                                 // Max number of candidate join pairs to batch into a single multicore work item (default = 10000)
 #define THOROPT_LKJOIN_LOCALFAILOVER "lkjoin_localfailover"                       // Force SMART to failover to distributed local lookup join (for testing only)   (default = false)

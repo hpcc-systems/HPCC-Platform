@@ -37,7 +37,9 @@
           ser usado como abreviação do contêiner da pasta atual. O uso do
           acento circunflexo no especificador de módulo (como por exemplo,
           myModule.^) seleciona o contêiner dessa pasta. O acento circunflexo
-          principal especifica a raíz lógica da árvore do arquivo.</entry>
+          principal especifica a raíz lógica da árvore do arquivo. Dentro de
+          uma MACRO ou FUNCTIONMACRO, <link linkend="_HASH_DOLLAR">#$</link>
+          refere-se ao módulo e ao pacote em que a macro foi definida.</entry>
         </row>
 
         <row>
