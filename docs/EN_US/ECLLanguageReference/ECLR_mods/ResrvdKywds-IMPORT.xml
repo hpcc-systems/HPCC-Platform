@@ -37,7 +37,9 @@
           the container of the current folder. Using a caret within the module
           specifier (such as, myModule.^) selects the container of that
           folder. A leading caret specifies the logical root of the file
-          tree.</entry>
+          tree. Within a MACRO or FUNCTIONMACRO, <link
+          linkend="_HASH_DOLLAR">#$</link> refers to the module and package
+          where the macro was defined.</entry>
         </row>
 
         <row>

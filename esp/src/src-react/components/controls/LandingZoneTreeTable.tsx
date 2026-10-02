@@ -36,19 +36,6 @@ const useStyles = makeStyles({
             height: "12px !important"
         }
     },
-    roundCheckbox: {
-        "& .fui-Checkbox__indicator": {
-            borderRadius: "50%",
-            width: "18px",
-            height: "18px"
-        },
-        "& .fui-Checkbox__input:checked + .fui-Checkbox__indicator": {
-            borderRadius: "50%",
-            border: "1px solid white",
-            width: "18px",
-            height: "18px"
-        }
-    },
     selectableRow: {
         userSelect: "text",
         ":hover": {
@@ -205,13 +192,12 @@ export const LandingZoneTreeTable: React.FunctionComponent<LandingZoneTreeTableP
             columnId: "selection",
             renderHeaderCell: () => (
                 <Checkbox
-                    className={styles.roundCheckbox}
                     checked={allSelectableSelected}
                     onChange={handleSelectAll}
                 />
             ),
             renderCell: (item) => item.type === "file" ? (
-                <Checkbox className={styles.roundCheckbox} checked={selectedItems.has(item.id)} onChange={() => handleSelectionToggle(item)} />
+                <Checkbox checked={selectedItems.has(item.id)} onChange={() => handleSelectionToggle(item)} />
             ) : (
                 <div style={{ width: "20px" }} />
             )
@@ -255,7 +241,7 @@ export const LandingZoneTreeTable: React.FunctionComponent<LandingZoneTreeTableP
             renderHeaderCell: () => nlsHPCC.Date,
             renderCell: (item) => <span>{item.modifiedTime || ""}</span>
         })
-    ], [allSelectableSelected, expandedItems, getIndentLevel, handleExpansionToggle, handleSelectAll, handleSelectionToggle, loadingItems, selectedItems, styles.compactSpinner, styles.nameCell, styles.roundCheckbox]);
+    ], [allSelectableSelected, expandedItems, getIndentLevel, handleExpansionToggle, handleSelectAll, handleSelectionToggle, loadingItems, selectedItems, styles.compactSpinner, styles.nameCell]);
 
     if (loading) {
         return <div className={styles.loadingContainer}>

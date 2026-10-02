@@ -489,7 +489,8 @@ void SteppingFieldSelection::gatherFieldOffsetSizes(HqlCppTranslator & translato
         IHqlExpression * cur = fields->queryChild(i);
         if (cur->getOperator() == no_negate)
             cur = cur->queryChild(0);
-        assertex(cur->getOperator() == no_select);
+        if (cur->getOperator() != no_select)
+            throwError1(HQLERR_SteppedExactField, getExprECL(cur, s).str());
         Owned<IReferenceSelector> selector = translator.buildActiveReference(ctx, cur);
         selector->getOffset(ctx, bound);
         IValue * offsetValue = bound.expr->queryValue();
