@@ -62,7 +62,7 @@
 #include "hthorerr.hpp"
 
 
-#define EMPTY_LOOP_LIMIT 1000
+static constexpr unsigned defaultEmptyLoopLimit = 1000;
 
 static unsigned const hthorReadBufferSize = 0x100000;
 static offset_t const defaultHThorDiskWriteSizeLimit = I64C(10*1024*1024*1024); //10 GB, per Nigel
@@ -10177,6 +10177,7 @@ void CHThorLoopActivity::ready()
     loopCounter = 1;
     CHThorSimpleActivityBase::ready();
     maxIterations = helper.numIterations();
+    maxEmptyLoopIterations = agent.queryWorkUnit()->getDebugValueInt("loopMaxEmpty", defaultEmptyLoopLimit);
     if ((int)maxIterations < 0) maxIterations = 0;
     finishedLooping = ((kind == TAKloopcount) && (maxIterations == 0));
     if ((flags & IHThorLoopArg::LFnewloopagain) && !helper.loopFirstTime())
@@ -10259,7 +10260,7 @@ const void * CHThorLoopActivity::nextRow()
         {
             //note: any outputs which didn't go around the loop again, would return the record, reinitializing emptyIterations
             emptyIterations++;
-            if (emptyIterations > EMPTY_LOOP_LIMIT)
+            if (emptyIterations > maxEmptyLoopIterations)
                 throw MakeStringException(0, "Executed LOOP with empty input and output %u times", emptyIterations);
             if (emptyIterations % 32 == 0)
                 DBGLOG("Executing LOOP with empty input and output %u times", emptyIterations);

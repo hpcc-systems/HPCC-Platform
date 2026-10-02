@@ -2724,6 +2724,7 @@ class CHThorLoopActivity : public CHThorSimpleActivityBase
     ConstPointerArrayInput arrayInput;
     LocalResultInput resultInput; 
     unsigned maxIterations;
+    unsigned maxEmptyLoopIterations;
     unsigned loopCounter;
     bool finishedLooping;
     bool eof;
