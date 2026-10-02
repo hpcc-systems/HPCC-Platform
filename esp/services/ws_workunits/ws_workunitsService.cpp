@@ -256,14 +256,17 @@ bool doAction(IEspContext& context, StringArray& wuids, CECLWUActions action, IP
                 case CECLWUActions_Abort:
                     ensureWsWorkunitAccess(context, *cw, SecAccess_Full);
                     {
+                        const char *abortReason = params ? params->queryProp("AbortReason") : nullptr;
                         if (cw->getState() == WUStateWait)
                         {
                             WorkunitUpdate wu(&cw->lock());
                             wu->deschedule();
                             wu->setState(WUStateAborted);
+                            const char *abortBy = context.queryUser() ? context.queryUser()->getName() : nullptr;
+                            wu->recordAbortDetails(abortReason, abortBy);
                         }
                         else
-                            abortWorkUnit(wuid, context.querySecManager(), context.queryUser());
+                            abortWorkUnit(wuid, context.querySecManager(), context.queryUser(), abortReason);
                         AuditSystemAccess(context.queryUserId(), true, "Aborted %s", wuid);
                     }
                     break;
@@ -720,6 +723,12 @@ bool CWsWorkunitsEx::onWUAction(IEspContext &context, IEspWUActionRequest &req, 
 
         Owned<IProperties> params = createProperties(true);
         params->setProp("BlockTillFinishTimer", req.getBlockTillFinishTimer());
+        if ((action == CECLWUActions_Abort) && (version >= 2.10))
+        {
+            const char *reason = req.getAbortReason();
+            if (!isEmpty(reason))
+                params->setProp("AbortReason", reason);
+        }
         if (((action == CECLWUActions_Restore) || (action == CECLWUActions_Archive)) && !sashaServerIp.isEmpty())
         {
             params->setProp("sashaServerIP", sashaServerIp.get());
@@ -792,6 +801,12 @@ bool CWsWorkunitsEx::onWUAbort(IEspContext &context, IEspWUAbortRequest &req, IE
         IArrayOf<IConstWUActionResult> results;
         Owned<IProperties> params = createProperties(true);
         params->setProp("BlockTillFinishTimer", req.getBlockTillFinishTimer());
+        if (context.getClientVersion() >= 2.10)
+        {
+            const char *reason = req.getAbortReason();
+            if (!isEmpty(reason))
+                params->setProp("AbortReason", reason);
+        }
         if (!doAction(context,req.getWuids(), CECLWUActions_Abort, params, &results))
             resp.setActionResults(results);
     }
@@ -1526,6 +1541,12 @@ bool getWsWuInfoFromSasha(IEspContext &context, SocketEndpoint &ep, const char* 
     const char * queryText = wpt->queryProp("Query/Text");
     if (notEmpty(queryText))
         info->updateQuery().setText(queryText);
+    if (context.getClientVersion() >= 2.10)
+    {
+        const char *abortReason = wpt->queryProp("Tracing/AbortReason");
+        if (notEmpty(abortReason))
+            info->setAbortReason(abortReason);
+    }
     const char * protectedWU = wpt->queryProp("@protected");
     info->setProtected((protectedWU && *protectedWU!='0'));
 

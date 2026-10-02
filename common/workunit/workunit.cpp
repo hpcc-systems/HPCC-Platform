@@ -4481,6 +4481,8 @@ public:
             { return c->getAbortBy(str); }
     virtual unsigned __int64 getAbortTimeStamp() const
             { return c->getAbortTimeStamp(); }
+    virtual IStringVal & getAbortReason(IStringVal & str) const
+            { return c->getAbortReason(str); }
     virtual cost_type getExecuteCost() const
             { return c->getExecuteCost(); }
     virtual cost_type getFileAccessCost() const
@@ -4543,6 +4545,8 @@ public:
             { c->setState(state); }
     virtual void setStateEx(const char * text)
             { c->setStateEx(text); }
+    virtual void recordAbortDetails(const char * reason, const char * abortBy)
+            { c->recordAbortDetails(reason, abortBy); }
     virtual void setAgentSession(__int64 sessionId)
             { c->setAgentSession(sessionId); }
     virtual void setEngineSession(__int64 sessionId)
@@ -7931,6 +7935,18 @@ void CLocalWorkUnit::setState(WUState value)
             globalFactory->clearAborting(queryWuid());
     }
     CriticalBlock block(crit);
+    switch (value)
+    {
+    case WUStateAborting:
+    case WUStateAborted:
+    case WUStateFailed:
+        break;
+    default:
+        p->removeProp("Tracing/AbortReason");
+        p->removeProp("Tracing/AbortBy");
+        p->removeProp("Tracing/AbortTimeStamp");
+        break;
+    }
     setEnum(p, "@state", value, states);  // For historical reasons, we use state to store the state
     setEnum(p, "State", value, states);   // But we can only subscribe to elements, not attributes
     if (getDebugValueBool("monitorWorkunit", false))
@@ -12928,6 +12944,11 @@ extern WORKUNIT_API void secSubmitWorkUnit(const char *wuid, ISecManager &secmgr
 
 extern WORKUNIT_API void secAbortWorkUnit(const char *wuid, ISecManager &secmgr, ISecUser &secuser)
 {
+    secAbortWorkUnit(wuid, secmgr, secuser, nullptr);
+}
+
+extern WORKUNIT_API void secAbortWorkUnit(const char *wuid, ISecManager &secmgr, ISecUser &secuser, const char *reason)
+{
     if (!checkWuSecAccess(wuid, &secmgr, &secuser, SecAccess_Write, "Submit", true, true))
         return;
 
@@ -12938,9 +12959,7 @@ extern WORKUNIT_API void secAbortWorkUnit(const char *wuid, ISecManager &secmgr,
 
     WorkunitUpdate wu(&cw->lock());
     const char *abortBy = secuser.getName();
-    if (abortBy && *abortBy)
-        wu->setTracingValue("AbortBy", abortBy);
-    wu->setTracingValueInt64("AbortTimeStamp", getTimeStampNowValue());
+    wu->recordAbortDetails(reason, abortBy);
 }
 
 extern WORKUNIT_API void submitWorkUnit(const char *wuid, ISecManager *secmgr, ISecUser *secuser)
@@ -12954,9 +12973,21 @@ extern WORKUNIT_API void submitWorkUnit(const char *wuid, ISecManager *secmgr, I
 
 extern WORKUNIT_API void abortWorkUnit(const char *wuid, ISecManager *secmgr, ISecUser *secuser)
 {
+    abortWorkUnit(wuid, secmgr, secuser, nullptr);
+}
+
+extern WORKUNIT_API void abortWorkUnit(const char *wuid, ISecManager *secmgr, ISecUser *secuser, const char *reason)
+{
     if (secmgr && secuser)
-        return secAbortWorkUnit(wuid, *secmgr, *secuser);
+        return secAbortWorkUnit(wuid, *secmgr, *secuser, reason);
+
     abortWorkUnit(wuid);
+    Owned<IConstWorkUnit> cw = globalFactory->openWorkUnit(wuid);
+    if (cw)
+    {
+        WorkunitUpdate wu(&cw->lock());
+        wu->recordAbortDetails(reason, nullptr);
+    }
 }
 
 bool CLocalWorkUnit::hasWorkflow() const
@@ -13241,6 +13272,28 @@ unsigned __int64 CLocalWorkUnit::getAbortTimeStamp() const
 {
     CriticalBlock block(crit);
     return p->getPropInt64("Tracing/AbortTimeStamp", 0);
+}
+
+IStringVal & CLocalWorkUnit::getAbortReason(IStringVal & str) const
+{
+    CriticalBlock block(crit);
+    str.set(p->queryProp("Tracing/AbortReason"));
+    return str;
+}
+
+void CLocalWorkUnit::recordAbortDetails(const char * reason, const char * abortBy)
+{
+    CriticalBlock block(crit);
+    if (p->hasProp("Tracing/AbortTimeStamp"))
+        return;
+
+    // Ensure the Tracing branch exists before setting properties nested under it.
+    p->setProp("Tracing", "");
+    if (!isEmptyString(reason))
+        p->setProp("Tracing/AbortReason", reason);
+    if (!isEmptyString(abortBy))
+        p->setProp("Tracing/AbortBy", abortBy);
+    p->setPropInt64("Tracing/AbortTimeStamp", getTimeStampNowValue());
 }
 
 cost_type CLocalWorkUnit::getExecuteCost() const

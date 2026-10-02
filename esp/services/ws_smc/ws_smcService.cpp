@@ -87,9 +87,9 @@ void AccessFailure(IEspContext& context, char const * msg,...)
 struct QueueLock
 {
     QueueLock(IJobQueue* q): queue(q) { queue->lock(); }
-    ~QueueLock() 
-    { 
-        queue->unlock(); 
+    ~QueueLock()
+    {
+        queue->unlock();
     }
 
     Linked<IJobQueue> queue;
@@ -988,7 +988,7 @@ void CActivityInfo::readServerJobQueueDetails(IEspContext &context, const char* 
             hasPaused =  true;
         else if (strieq(status.str(), "stopped"))
             hasStopped =  true;
-    
+
         if (details && *details)
             queueStateDetails.appendf("%s: queue %s; %s;", queueName, status.str(), details.str());
         else
@@ -1012,7 +1012,7 @@ void CActivityInfo::readServerJobQueueDetails(IEspContext &context, const char* 
         {
             jobQueue->setQueueStatus("running");
         }
-    
+
         if (details && *details)
         {
             queueStateDetails.appendf("%s: queue %s; %s;", queueName, status.str(), details.str());
@@ -1539,7 +1539,7 @@ void CWsSMCEx::setESPTargetClusters(IEspContext& context, const CIArrayOf<CWsSMC
     }
 }
 
-void CWsSMCEx::addCapabilities(IPropertyTree* pFeatureNode, const char* access, 
+void CWsSMCEx::addCapabilities(IPropertyTree* pFeatureNode, const char* access,
                                          IArrayOf<IEspCapability>& capabilities)
 {
     StringBuffer xpath(access);
@@ -1581,7 +1581,7 @@ bool CWsSMCEx::onMoveJobDown(IEspContext &context, IEspSMCJobRequest &req, IEspS
         resp.setRedirectUrl("/WsSMC/");
     }
     catch(IException* e)
-    {   
+    {
         FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
     }
     return true;
@@ -1610,7 +1610,7 @@ bool CWsSMCEx::onMoveJobUp(IEspContext &context, IEspSMCJobRequest &req, IEspSMC
         resp.setRedirectUrl("/WsSMC/");
     }
     catch(IException* e)
-    {   
+    {
         FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
     }
     return true;
@@ -1656,7 +1656,7 @@ bool CWsSMCEx::onMoveJobBack(IEspContext &context, IEspSMCJobRequest &req, IEspS
         resp.setRedirectUrl("/WsSMC/");
     }
     catch(IException* e)
-    {   
+    {
         FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
     }
     return true;
@@ -1703,7 +1703,7 @@ bool CWsSMCEx::onMoveJobFront(IEspContext &context, IEspSMCJobRequest &req, IEsp
         resp.setRedirectUrl("/WsSMC/");
     }
     catch(IException* e)
-    {   
+    {
         FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
     }
     return true;
@@ -1715,7 +1715,8 @@ bool CWsSMCEx::onRemoveJob(IEspContext &context, IEspSMCJobRequest &req, IEspSMC
     {
         context.ensureFeatureAccess(THORQUEUE_FEATURE, SecAccess_Full, ECLWATCH_THOR_QUEUE_ACCESS_DENIED, QUEUE_ACCESS_DENIED);
 
-        abortWorkUnit(req.getWuid(), context.querySecManager(), context.queryUser());
+        const char *abortReason = (context.getClientVersion() >= 1.31) ? req.getAbortReason() : nullptr;
+        abortWorkUnit(req.getWuid(), context.querySecManager(), context.queryUser(), abortReason);
 
         {
             Owned<IJobQueue> queue = createJobQueue(req.getQueueName());
@@ -1733,7 +1734,7 @@ bool CWsSMCEx::onRemoveJob(IEspContext &context, IEspSMCJobRequest &req, IEspSMC
         resp.setRedirectUrl("/WsSMC/");
     }
     catch(IException* e)
-    {   
+    {
         FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
     }
     return true;
@@ -1759,7 +1760,7 @@ bool CWsSMCEx::onStopQueue(IEspContext &context, IEspSMCQueueRequest &req, IEspS
         resp.setRedirectUrl("/WsSMC/");
     }
     catch(IException* e)
-    {   
+    {
         FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
     }
     return true;
@@ -1785,7 +1786,7 @@ bool CWsSMCEx::onResumeQueue(IEspContext &context, IEspSMCQueueRequest &req, IEs
         resp.setRedirectUrl("/WsSMC/");
     }
     catch(IException* e)
-    {   
+    {
         FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
     }
     return true;
@@ -1828,7 +1829,7 @@ bool CWsSMCEx::onPauseQueue(IEspContext &context, IEspSMCQueueRequest &req, IEsp
         resp.setRedirectUrl("/WsSMC/");
     }
     catch(IException* e)
-    {   
+    {
         FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
     }
     return true;
@@ -1839,6 +1840,7 @@ bool CWsSMCEx::onClearQueue(IEspContext &context, IEspSMCQueueRequest &req, IEsp
     try
     {
         context.ensureFeatureAccess(THORQUEUE_FEATURE, SecAccess_Full, ECLWATCH_THOR_QUEUE_ACCESS_DENIED, QUEUE_ACCESS_DENIED);
+        const char *abortReason = (context.getClientVersion() >= 1.31) ? req.getAbortReason() : nullptr;
         {
             Owned<IJobQueue> queue = createJobQueue(req.getQueueName());
             QueueLock lock(queue);
@@ -1852,7 +1854,7 @@ bool CWsSMCEx::onClearQueue(IEspContext &context, IEspSMCQueueRequest &req, IEsp
                     wuid.set(wuidGraph, sep-wuidGraph);
                 else
                     wuid.set(wuidGraph);
-                abortWorkUnit(wuid, context.querySecManager(), context.queryUser());
+                abortWorkUnit(wuid, context.querySecManager(), context.queryUser(), abortReason);
             }
             queue->clear();
         }
@@ -1865,7 +1867,7 @@ bool CWsSMCEx::onClearQueue(IEspContext &context, IEspSMCQueueRequest &req, IEsp
         resp.setRedirectUrl("/WsSMC/");
     }
     catch(IException* e)
-    {   
+    {
         FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
     }
     return true;
@@ -1930,7 +1932,7 @@ bool CWsSMCEx::onSetJobPriority(IEspContext &context, IEspSMCPriorityRequest &re
         resp.setRedirectUrl("/WsSMC/");
     }
     catch(IException* e)
-    {   
+    {
         FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
     }
     return true;
@@ -1951,7 +1953,7 @@ bool CWsSMCEx::onGetThorQueueAvailability(IEspContext &context, IEspGetThorQueue
             const char* targetName = targetNames.item(x);
             const char* queueName = queueNames.item(x);
             IEspThorCluster* returnCluster = new CThorCluster("","");
-                
+
             returnCluster->setClusterName(targetName);
             returnCluster->setQueueName(queueName);
 
@@ -1978,7 +1980,7 @@ bool CWsSMCEx::onGetThorQueueAvailability(IEspContext &context, IEspGetThorQueue
         resp.setThorClusters(ThorClusters);
     }
     catch(IException* e)
-    {   
+    {
         FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
     }
     return true;
@@ -2059,7 +2061,7 @@ bool CWsSMCEx::onSetBanner(IEspContext &context, IEspSetBannerRequest &req, IEsp
         resp.setRedirectUrl("/WsSMC/Activity");
     }
     catch(IException* e)
-    {   
+    {
         FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
     }
     return true;
@@ -2068,7 +2070,7 @@ bool CWsSMCEx::onSetBanner(IEspContext &context, IEspSetBannerRequest &req, IEsp
 bool CWsSMCEx::onGetBanner(IEspContext &context, IEspGetBannerRequest &req, IEspGetBannerResponse& resp)
 {
     context.ensureFeatureAccess(FEATURE_URL, SecAccess_Read, ECLWATCH_SMC_ACCESS_DENIED, SMC_ACCESS_DENIED);
-    
+
     try
     {
         // Similar to setBannerAndChatData, return the banner information stored in member variables
@@ -2360,7 +2362,7 @@ int CWsSMCSoapBindingEx::onGetForm(IEspContext &context, CHttpRequest* request, 
         }
     }
     catch(IException* e)
-    {   
+    {
         FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
     }
     return onGetForm(context, request, response, service, method);
@@ -2482,7 +2484,7 @@ bool CWsSMCEx::onRoxieControlCmd(IEspContext &context, IEspRoxieControlCmdReques
     ISmartSocketFactory *conn = roxieConnMap.getValue(process);
     if (!conn)
         throw makeStringExceptionV(ECLWATCH_CANNOT_GET_ENV_INFO, "Connection info for '%s' process cluster not found.", process);
-    
+
     Owned<IPropertyTree> controlResp = sendRoxieControlAllNodes(conn, controlReq, true, req.getWait(), ROXIECONNECTIONTIMEOUT);
 #else
     const char *target = req.getTargetCluster();
@@ -2490,7 +2492,7 @@ bool CWsSMCEx::onRoxieControlCmd(IEspContext &context, IEspRoxieControlCmdReques
         target = req.getProcessCluster(); //backward compatible
     if (isEmptyString(target))
         throw makeStringException(ECLWATCH_MISSING_PARAMS, "Target cluster not specified.");
- 
+
     ISmartSocketFactory *conn = roxieConnMap.getValue(target);
     if (!conn)
         throw makeStringExceptionV(ECLWATCH_CANNOT_GET_ENV_INFO, "roxie target cluster not mapped: %s", target);
@@ -2999,7 +3001,7 @@ static void handleRecordGlobalMetrics(IEspRecordGlobalMetricsRequest &req, IEspR
     const char* category = req.getCategory();
     if (isEmptyString(category))
         throw MakeStringException(ECLWATCH_MISSING_PARAMS, "Category is required for recording global metrics");
-    
+
     // Build dimensions list
     MetricsDimensionList dimensions;
     ForEachItemIn(i, req.getDimensions())
@@ -3008,21 +3010,21 @@ static void handleRecordGlobalMetrics(IEspRecordGlobalMetricsRequest &req, IEspR
         if (!isEmptyString(dim.getName()))
             dimensions.push_back({dim.getName(), dim.getValue()});
     }
-    
+
     // Build statistics collection for recording
     CRuntimeStatisticCollection stats(allStatistics);
     unsigned validStatCount = 0;
     StringArray unknownStatNames;
-    
+
     ForEachItemIn(j, req.getStats())
     {
         IConstStat& stat = req.getStats().item(j);
         const char* statName = stat.getName();
         const char* statValue = stat.getValue();
-        
+
         if (isEmptyString(statName) || isEmptyString(statValue))
             continue;
-            
+
         StatisticKind kind = queryStatisticKind(statName, StKindNone);
         if (kind == StKindNone)
         {
@@ -3031,17 +3033,17 @@ static void handleRecordGlobalMetrics(IEspRecordGlobalMetricsRequest &req, IEspR
                 unknownStatNames.append(statName);
             continue;
         }
-        
+
         stat_type value = _atoi64(statValue);
         stats.queryStatistic(kind).set(value);
         validStatCount++;
     }
-    
+
     if (validStatCount == 0)
         throw MakeStringException(ECLWATCH_MISSING_PARAMS, "No valid statistics provided for recording");
-    
+
     recordGlobalMetrics(category, dimensions, stats, &allStatistics);
-    
+
     // Generate appropriate response message
     if (unknownStatNames.ordinality() == 0)
     {
@@ -3144,71 +3146,71 @@ static void daliClientEnd()
 
 static const std::vector<const char*> expectedCategories = { "categoryOne", "categoryTwo" };
 
-class DaliWsSMCGlobalMetricsTest : public CppUnit::TestFixture { 
-    CPPUNIT_TEST_SUITE(DaliWsSMCGlobalMetricsTest); 
-    CPPUNIT_TEST(doStart); 
-    CPPUNIT_TEST(testAllCategoriesExplicit); 
-    CPPUNIT_TEST(testAllCategoriesImplicit); 
-    CPPUNIT_TEST(testSingleCategoryAndDimensions); 
-    CPPUNIT_TEST(testDimensionAcrossCategories); 
-    CPPUNIT_TEST(testRecordMetricsNoCategoryException); 
-    CPPUNIT_TEST(testRecordMetricsNoValidStatsException); 
-    CPPUNIT_TEST(testRecordMetricsAllKnownSuccess); 
-    CPPUNIT_TEST(testRecordMetricsUnknownStatKind); 
-    CPPUNIT_TEST(doStop); 
+class DaliWsSMCGlobalMetricsTest : public CppUnit::TestFixture {
+    CPPUNIT_TEST_SUITE(DaliWsSMCGlobalMetricsTest);
+    CPPUNIT_TEST(doStart);
+    CPPUNIT_TEST(testAllCategoriesExplicit);
+    CPPUNIT_TEST(testAllCategoriesImplicit);
+    CPPUNIT_TEST(testSingleCategoryAndDimensions);
+    CPPUNIT_TEST(testDimensionAcrossCategories);
+    CPPUNIT_TEST(testRecordMetricsNoCategoryException);
+    CPPUNIT_TEST(testRecordMetricsNoValidStatsException);
+    CPPUNIT_TEST(testRecordMetricsAllKnownSuccess);
+    CPPUNIT_TEST(testRecordMetricsUnknownStatKind);
+    CPPUNIT_TEST(doStop);
     CPPUNIT_TEST_SUITE_END();
-public: 
+public:
     void doStart() {
-        daliClientInit(); 
+        daliClientInit();
         // Reset removes all Instances of a category. A category
         // with no instances is not returned in the response.
         // So these calls help ensure the test is starting from a clean slate.
-        resetGlobalMetrics("categoryOne", MetricsDimensionList()); 
-        resetGlobalMetrics("categoryTwo", MetricsDimensionList()); 
-        setGlobalMetricNowTime("1999-07-01T12:00:00"); 
+        resetGlobalMetrics("categoryOne", MetricsDimensionList());
+        resetGlobalMetrics("categoryTwo", MetricsDimensionList());
+        setGlobalMetricNowTime("1999-07-01T12:00:00");
         prepareSampleMetrics();
     }
     void doStop() {
         // Remove our test data from dali to avoid polluting other tests.
-        resetGlobalMetrics("categoryOne", MetricsDimensionList()); 
-        resetGlobalMetrics("categoryTwo", MetricsDimensionList()); 
-        daliClientEnd(); 
+        resetGlobalMetrics("categoryOne", MetricsDimensionList());
+        resetGlobalMetrics("categoryTwo", MetricsDimensionList());
+        daliClientEnd();
     }
-    void prepareSampleMetrics() { 
-        recordGlobalMetrics("categoryOne", MetricsDimensionList{}, { StTimeLocalExecute }, { 111 }); 
-        recordGlobalMetrics("categoryOne", MetricsDimensionList{{"user","alice"}}, { StTimeLocalExecute, StCostExecute }, { 222, 5 }); 
-        recordGlobalMetrics("categoryOne", MetricsDimensionList{{"user","bob"},{"cluster","thor1"}}, { StTimeLocalExecute }, { 333 }); 
-        recordGlobalMetrics("categoryTwo", MetricsDimensionList{}, { StTimeLocalExecute }, { 444 }); 
-        recordGlobalMetrics("categoryTwo", MetricsDimensionList{{"user","alice"}}, { StTimeLocalExecute, StCostExecute }, { 555, 7 }); 
-        recordGlobalMetrics("categoryTwo", MetricsDimensionList{{"user","bob"},{"cluster","thor1"}}, { StTimeLocalExecute }, { 666 }); 
+    void prepareSampleMetrics() {
+        recordGlobalMetrics("categoryOne", MetricsDimensionList{}, { StTimeLocalExecute }, { 111 });
+        recordGlobalMetrics("categoryOne", MetricsDimensionList{{"user","alice"}}, { StTimeLocalExecute, StCostExecute }, { 222, 5 });
+        recordGlobalMetrics("categoryOne", MetricsDimensionList{{"user","bob"},{"cluster","thor1"}}, { StTimeLocalExecute }, { 333 });
+        recordGlobalMetrics("categoryTwo", MetricsDimensionList{}, { StTimeLocalExecute }, { 444 });
+        recordGlobalMetrics("categoryTwo", MetricsDimensionList{{"user","alice"}}, { StTimeLocalExecute, StCostExecute }, { 555, 7 });
+        recordGlobalMetrics("categoryTwo", MetricsDimensionList{{"user","bob"},{"cluster","thor1"}}, { StTimeLocalExecute }, { 666 });
     }
-    static Owned<IEspGetGlobalMetricsRequest> createRequestFromXML(const char * xml) { 
-        Owned<IPropertyTree> t = createPTreeFromXMLString(xml); 
-        Owned<IEspGetGlobalMetricsRequest> req = createGetGlobalMetricsRequest(); 
-        if (const char *cat = t->queryProp("Category")) 
-            req->setCategory(cat); 
-        if (IPropertyTree * rng = t->queryPropTree("DateTimeRange")) { 
-            if (const char *s = rng->queryProp("Start")) 
-                req->updateDateTimeRange().setStart(s); 
-            if (const char *e = rng->queryProp("End")) 
-                req->updateDateTimeRange().setEnd(e); 
-        } 
-        Owned<IPropertyTreeIterator> dims = t->getElements("Dimensions/Dimension"); 
-        ForEach(*dims) { 
-            IPropertyTree &d = dims->query(); 
-            const char *name = d.queryProp("Name"); 
-            if (isEmptyString(name)) continue; 
-            Owned<IEspDimension> dim = createDimension(); 
-            dim->setName(name); 
-            dim->setValue(d.queryProp("Value")); 
-            req->getDimensions().append(*dim.getClear()); 
-        } 
-        return req.getClear(); 
+    static Owned<IEspGetGlobalMetricsRequest> createRequestFromXML(const char * xml) {
+        Owned<IPropertyTree> t = createPTreeFromXMLString(xml);
+        Owned<IEspGetGlobalMetricsRequest> req = createGetGlobalMetricsRequest();
+        if (const char *cat = t->queryProp("Category"))
+            req->setCategory(cat);
+        if (IPropertyTree * rng = t->queryPropTree("DateTimeRange")) {
+            if (const char *s = rng->queryProp("Start"))
+                req->updateDateTimeRange().setStart(s);
+            if (const char *e = rng->queryProp("End"))
+                req->updateDateTimeRange().setEnd(e);
+        }
+        Owned<IPropertyTreeIterator> dims = t->getElements("Dimensions/Dimension");
+        ForEach(*dims) {
+            IPropertyTree &d = dims->query();
+            const char *name = d.queryProp("Name");
+            if (isEmptyString(name)) continue;
+            Owned<IEspDimension> dim = createDimension();
+            dim->setName(name);
+            dim->setValue(d.queryProp("Value"));
+            req->getDimensions().append(*dim.getClear());
+        }
+        return req.getClear();
     }
-    static void serializeResponse(IEspGetGlobalMetricsResponse &resp, StringBuffer &out) { 
-        CGetGlobalMetricsResponse *impl = dynamic_cast<CGetGlobalMetricsResponse *>(&resp); 
-        CPPUNIT_ASSERT_MESSAGE("Response object type unexpected", impl != nullptr); 
-        CGetGlobalMetricsResponse::serializer(nullptr, *impl, out, true); 
+    static void serializeResponse(IEspGetGlobalMetricsResponse &resp, StringBuffer &out) {
+        CGetGlobalMetricsResponse *impl = dynamic_cast<CGetGlobalMetricsResponse *>(&resp);
+        CPPUNIT_ASSERT_MESSAGE("Response object type unexpected", impl != nullptr);
+        CGetGlobalMetricsResponse::serializer(nullptr, *impl, out, true);
     }
 
     void assertResponseMatchesExpected(IEspGetGlobalMetricsResponse &resp, const char * expected) {
@@ -3226,7 +3228,7 @@ public:
     static void assertResponseIncludesCategories(IEspGetGlobalMetricsResponse &resp, const std::vector<const char*>& expectedCategories)
     {
         std::set<std::string> responseCategories;
-        
+
         // Collect all categories from the response
         const IArrayOf<IConstGlobalMetric>& metrics = resp.getGlobalMetrics();
         ForEachItemIn(i, metrics)
@@ -3236,7 +3238,7 @@ public:
             if (category && *category)
                 responseCategories.insert(category);
         }
-        
+
         // Collect all missing categories
         std::vector<std::string> missingCategories;
         for (const char* expectedCategory : expectedCategories)
@@ -3244,7 +3246,7 @@ public:
             if (responseCategories.find(expectedCategory) == responseCategories.end())
                 missingCategories.push_back(expectedCategory);
         }
-        
+
         // Report missing categories if any
         if (!missingCategories.empty())
         {
@@ -3252,115 +3254,115 @@ public:
             bool first = true;
             for (const std::string& missing : missingCategories)
             {
-                if (!first) 
+                if (!first)
                     message.append(", ");
                 message.append("'").append(missing.c_str()).append("'");
                 first = false;
             }
-            
+
             // Add serialized response for debugging
             StringBuffer serializedResp;
             serializeResponse(resp, serializedResp);
             message.append(". Response: ").append(serializedResp.str());
-            
+
             CPPUNIT_FAIL(message.str());
         }
     }
 
-    void testAllCategoriesExplicit() { 
-        static const char * requestXML = "<GetGlobalMetricsRequest><Category>All</Category><DateTimeRange><Start>1999-01-01T00:00:00</Start><End>2099-01-01T00:00:00</End></DateTimeRange></GetGlobalMetricsRequest>"; 
-        Owned<IEspGetGlobalMetricsRequest> req = createRequestFromXML(requestXML); 
-        Owned<IEspGetGlobalMetricsResponse> resp = createGetGlobalMetricsResponse(); 
-        handleGetGlobalMetrics(*req, *resp); 
-        assertResponseIncludesCategories(*resp, expectedCategories);
-    }
-    void testAllCategoriesImplicit() { 
-        static const char * requestXML = "<GetGlobalMetricsRequest><DateTimeRange><Start>1999-01-01T00:00:00</Start><End>2099-01-01T00:00:00</End></DateTimeRange></GetGlobalMetricsRequest>"; 
-        Owned<IEspGetGlobalMetricsRequest> req = createRequestFromXML(requestXML); 
-        Owned<IEspGetGlobalMetricsResponse> resp = createGetGlobalMetricsResponse(); 
+    void testAllCategoriesExplicit() {
+        static const char * requestXML = "<GetGlobalMetricsRequest><Category>All</Category><DateTimeRange><Start>1999-01-01T00:00:00</Start><End>2099-01-01T00:00:00</End></DateTimeRange></GetGlobalMetricsRequest>";
+        Owned<IEspGetGlobalMetricsRequest> req = createRequestFromXML(requestXML);
+        Owned<IEspGetGlobalMetricsResponse> resp = createGetGlobalMetricsResponse();
         handleGetGlobalMetrics(*req, *resp);
         assertResponseIncludesCategories(*resp, expectedCategories);
     }
-    void testSingleCategoryAndDimensions() { 
-        static const char * requestXML = "<GetGlobalMetricsRequest><Category>categoryOne</Category><Dimensions><Dimension><Name>user</Name><Value>bob</Value></Dimension></Dimensions><DateTimeRange><Start>1999-01-01T00:00:00</Start><End>2099-01-01T00:00:00</End></DateTimeRange></GetGlobalMetricsRequest>"; 
-        Owned<IEspGetGlobalMetricsRequest> req = createRequestFromXML(requestXML); 
-        Owned<IEspGetGlobalMetricsResponse> resp = createGetGlobalMetricsResponse(); 
-        handleGetGlobalMetrics(*req, *resp); 
-        static const char * expected = "<GetGlobalMetricsResponse><GlobalMetrics><GlobalMetric><Category>categoryOne</Category><Dimensions><Dimension><Name>user</Name><Value>bob</Value></Dimension><Dimension><Name>cluster</Name><Value>thor1</Value></Dimension></Dimensions><DateTimeRange><Start>1999070112</Start><End>1999070112</End></DateTimeRange><Stats><Stat><Name>TimeLocalExecute</Name><Value>333</Value></Stat></Stats></GlobalMetric></GlobalMetrics></GetGlobalMetricsResponse>"; 
+    void testAllCategoriesImplicit() {
+        static const char * requestXML = "<GetGlobalMetricsRequest><DateTimeRange><Start>1999-01-01T00:00:00</Start><End>2099-01-01T00:00:00</End></DateTimeRange></GetGlobalMetricsRequest>";
+        Owned<IEspGetGlobalMetricsRequest> req = createRequestFromXML(requestXML);
+        Owned<IEspGetGlobalMetricsResponse> resp = createGetGlobalMetricsResponse();
+        handleGetGlobalMetrics(*req, *resp);
+        assertResponseIncludesCategories(*resp, expectedCategories);
+    }
+    void testSingleCategoryAndDimensions() {
+        static const char * requestXML = "<GetGlobalMetricsRequest><Category>categoryOne</Category><Dimensions><Dimension><Name>user</Name><Value>bob</Value></Dimension></Dimensions><DateTimeRange><Start>1999-01-01T00:00:00</Start><End>2099-01-01T00:00:00</End></DateTimeRange></GetGlobalMetricsRequest>";
+        Owned<IEspGetGlobalMetricsRequest> req = createRequestFromXML(requestXML);
+        Owned<IEspGetGlobalMetricsResponse> resp = createGetGlobalMetricsResponse();
+        handleGetGlobalMetrics(*req, *resp);
+        static const char * expected = "<GetGlobalMetricsResponse><GlobalMetrics><GlobalMetric><Category>categoryOne</Category><Dimensions><Dimension><Name>user</Name><Value>bob</Value></Dimension><Dimension><Name>cluster</Name><Value>thor1</Value></Dimension></Dimensions><DateTimeRange><Start>1999070112</Start><End>1999070112</End></DateTimeRange><Stats><Stat><Name>TimeLocalExecute</Name><Value>333</Value></Stat></Stats></GlobalMetric></GlobalMetrics></GetGlobalMetricsResponse>";
         assertResponseMatchesExpected(*resp, expected);
     }
-    void testDimensionAcrossCategories() { 
-        static const char * requestXML = "<GetGlobalMetricsRequest><Dimensions><Dimension><Name>user</Name><Value>alice</Value></Dimension></Dimensions><DateTimeRange><Start>1999-01-01T00:00:00</Start><End>2099-01-01T00:00:00</End></DateTimeRange></GetGlobalMetricsRequest>"; 
-        Owned<IEspGetGlobalMetricsRequest> req = createRequestFromXML(requestXML); 
-        Owned<IEspGetGlobalMetricsResponse> resp = createGetGlobalMetricsResponse(); 
-        handleGetGlobalMetrics(*req, *resp); 
-        static const char * expected = "<GetGlobalMetricsResponse><GlobalMetrics><GlobalMetric><Category>categoryTwo</Category><Dimensions><Dimension><Name>user</Name><Value>alice</Value></Dimension></Dimensions><DateTimeRange><Start>1999070112</Start><End>1999070112</End></DateTimeRange><Stats><Stat><Name>TimeLocalExecute</Name><Value>555</Value></Stat><Stat><Name>CostExecute</Name><Value>7</Value></Stat></Stats></GlobalMetric><GlobalMetric><Category>categoryOne</Category><Dimensions><Dimension><Name>user</Name><Value>alice</Value></Dimension></Dimensions><DateTimeRange><Start>1999070112</Start><End>1999070112</End></DateTimeRange><Stats><Stat><Name>TimeLocalExecute</Name><Value>222</Value></Stat><Stat><Name>CostExecute</Name><Value>5</Value></Stat></Stats></GlobalMetric></GlobalMetrics></GetGlobalMetricsResponse>"; 
+    void testDimensionAcrossCategories() {
+        static const char * requestXML = "<GetGlobalMetricsRequest><Dimensions><Dimension><Name>user</Name><Value>alice</Value></Dimension></Dimensions><DateTimeRange><Start>1999-01-01T00:00:00</Start><End>2099-01-01T00:00:00</End></DateTimeRange></GetGlobalMetricsRequest>";
+        Owned<IEspGetGlobalMetricsRequest> req = createRequestFromXML(requestXML);
+        Owned<IEspGetGlobalMetricsResponse> resp = createGetGlobalMetricsResponse();
+        handleGetGlobalMetrics(*req, *resp);
+        static const char * expected = "<GetGlobalMetricsResponse><GlobalMetrics><GlobalMetric><Category>categoryTwo</Category><Dimensions><Dimension><Name>user</Name><Value>alice</Value></Dimension></Dimensions><DateTimeRange><Start>1999070112</Start><End>1999070112</End></DateTimeRange><Stats><Stat><Name>TimeLocalExecute</Name><Value>555</Value></Stat><Stat><Name>CostExecute</Name><Value>7</Value></Stat></Stats></GlobalMetric><GlobalMetric><Category>categoryOne</Category><Dimensions><Dimension><Name>user</Name><Value>alice</Value></Dimension></Dimensions><DateTimeRange><Start>1999070112</Start><End>1999070112</End></DateTimeRange><Stats><Stat><Name>TimeLocalExecute</Name><Value>222</Value></Stat><Stat><Name>CostExecute</Name><Value>5</Value></Stat></Stats></GlobalMetric></GlobalMetrics></GetGlobalMetricsResponse>";
         assertResponseMatchesExpected(*resp, expected);
     }
-    static Owned<IEspRecordGlobalMetricsRequest> createRecordRequestFromXML(const char * xml) { 
-        Owned<IPropertyTree> t = createPTreeFromXMLString(xml); 
-        Owned<IEspRecordGlobalMetricsRequest> req = createRecordGlobalMetricsRequest(); 
-        if (const char *cat = t->queryProp("Category")) 
-            req->setCategory(cat); 
-        Owned<IPropertyTreeIterator> dims = t->getElements("Dimensions/Dimension"); 
-        ForEach(*dims) { 
-            IPropertyTree &d = dims->query(); 
-            const char *name = d.queryProp("Name"); 
-            if (isEmptyString(name)) continue; 
-            Owned<IEspDimension> dim = createDimension(); 
-            dim->setName(name); 
-            dim->setValue(d.queryProp("Value")); 
-            req->getDimensions().append(*dim.getClear()); 
-        } 
-        Owned<IPropertyTreeIterator> stats = t->getElements("Stats/Stat"); 
-        ForEach(*stats) { 
-            IPropertyTree &s = stats->query(); 
-            const char *name = s.queryProp("Name"); 
-            if (isEmptyString(name)) continue; 
-            Owned<IEspStat> stat = createStat(); 
-            stat->setName(name); 
-            stat->setValue(s.queryProp("Value")); 
-            req->getStats().append(*stat.getClear()); 
-        } 
-        return req.getClear(); 
+    static Owned<IEspRecordGlobalMetricsRequest> createRecordRequestFromXML(const char * xml) {
+        Owned<IPropertyTree> t = createPTreeFromXMLString(xml);
+        Owned<IEspRecordGlobalMetricsRequest> req = createRecordGlobalMetricsRequest();
+        if (const char *cat = t->queryProp("Category"))
+            req->setCategory(cat);
+        Owned<IPropertyTreeIterator> dims = t->getElements("Dimensions/Dimension");
+        ForEach(*dims) {
+            IPropertyTree &d = dims->query();
+            const char *name = d.queryProp("Name");
+            if (isEmptyString(name)) continue;
+            Owned<IEspDimension> dim = createDimension();
+            dim->setName(name);
+            dim->setValue(d.queryProp("Value"));
+            req->getDimensions().append(*dim.getClear());
+        }
+        Owned<IPropertyTreeIterator> stats = t->getElements("Stats/Stat");
+        ForEach(*stats) {
+            IPropertyTree &s = stats->query();
+            const char *name = s.queryProp("Name");
+            if (isEmptyString(name)) continue;
+            Owned<IEspStat> stat = createStat();
+            stat->setName(name);
+            stat->setValue(s.queryProp("Value"));
+            req->getStats().append(*stat.getClear());
+        }
+        return req.getClear();
     }
-    void testRecordMetricsNoCategoryException() { 
-        static const char * requestXML = "<RecordGlobalMetricsRequest><Stats><Stat><Name>TimeLocalExecute</Name><Value>100</Value></Stat></Stats></RecordGlobalMetricsRequest>"; 
-        Owned<IEspRecordGlobalMetricsRequest> req = createRecordRequestFromXML(requestXML); 
-        Owned<IEspRecordGlobalMetricsResponse> resp = createRecordGlobalMetricsResponse(); 
-        try { 
-            handleRecordGlobalMetrics(*req, *resp); 
-            CPPUNIT_FAIL("Expected exception for missing category"); 
-        } catch (IException *e) { 
-            CPPUNIT_ASSERT(e->errorCode() == ECLWATCH_MISSING_PARAMS); 
-            e->Release(); 
-        } 
+    void testRecordMetricsNoCategoryException() {
+        static const char * requestXML = "<RecordGlobalMetricsRequest><Stats><Stat><Name>TimeLocalExecute</Name><Value>100</Value></Stat></Stats></RecordGlobalMetricsRequest>";
+        Owned<IEspRecordGlobalMetricsRequest> req = createRecordRequestFromXML(requestXML);
+        Owned<IEspRecordGlobalMetricsResponse> resp = createRecordGlobalMetricsResponse();
+        try {
+            handleRecordGlobalMetrics(*req, *resp);
+            CPPUNIT_FAIL("Expected exception for missing category");
+        } catch (IException *e) {
+            CPPUNIT_ASSERT(e->errorCode() == ECLWATCH_MISSING_PARAMS);
+            e->Release();
+        }
     }
-    void testRecordMetricsNoValidStatsException() { 
-        static const char * requestXML = "<RecordGlobalMetricsRequest><Category>testCategory</Category></RecordGlobalMetricsRequest>"; 
-        Owned<IEspRecordGlobalMetricsRequest> req = createRecordRequestFromXML(requestXML); 
-        Owned<IEspRecordGlobalMetricsResponse> resp = createRecordGlobalMetricsResponse(); 
-        try { 
-            handleRecordGlobalMetrics(*req, *resp); 
-            CPPUNIT_FAIL("Expected exception for no valid statistics"); 
-        } catch (IException *e) { 
-            CPPUNIT_ASSERT(e->errorCode() == ECLWATCH_MISSING_PARAMS); 
-            e->Release(); 
-        } 
+    void testRecordMetricsNoValidStatsException() {
+        static const char * requestXML = "<RecordGlobalMetricsRequest><Category>testCategory</Category></RecordGlobalMetricsRequest>";
+        Owned<IEspRecordGlobalMetricsRequest> req = createRecordRequestFromXML(requestXML);
+        Owned<IEspRecordGlobalMetricsResponse> resp = createRecordGlobalMetricsResponse();
+        try {
+            handleRecordGlobalMetrics(*req, *resp);
+            CPPUNIT_FAIL("Expected exception for no valid statistics");
+        } catch (IException *e) {
+            CPPUNIT_ASSERT(e->errorCode() == ECLWATCH_MISSING_PARAMS);
+            e->Release();
+        }
     }
-    void testRecordMetricsAllKnownSuccess() { 
-        static const char * requestXML = "<RecordGlobalMetricsRequest><Category>testCategory</Category><Dimensions><Dimension><Name>testUser</Name><Value>alice</Value></Dimension></Dimensions><Stats><Stat><Name>TimeLocalExecute</Name><Value>100</Value></Stat><Stat><Name>CostExecute</Name><Value>5</Value></Stat></Stats></RecordGlobalMetricsRequest>"; 
-        Owned<IEspRecordGlobalMetricsRequest> req = createRecordRequestFromXML(requestXML); 
-        Owned<IEspRecordGlobalMetricsResponse> resp = createRecordGlobalMetricsResponse(); 
-        handleRecordGlobalMetrics(*req, *resp); 
-        CPPUNIT_ASSERT_EQUAL(std::string("All global metrics recorded successfully"), std::string(resp->getResult())); 
+    void testRecordMetricsAllKnownSuccess() {
+        static const char * requestXML = "<RecordGlobalMetricsRequest><Category>testCategory</Category><Dimensions><Dimension><Name>testUser</Name><Value>alice</Value></Dimension></Dimensions><Stats><Stat><Name>TimeLocalExecute</Name><Value>100</Value></Stat><Stat><Name>CostExecute</Name><Value>5</Value></Stat></Stats></RecordGlobalMetricsRequest>";
+        Owned<IEspRecordGlobalMetricsRequest> req = createRecordRequestFromXML(requestXML);
+        Owned<IEspRecordGlobalMetricsResponse> resp = createRecordGlobalMetricsResponse();
+        handleRecordGlobalMetrics(*req, *resp);
+        CPPUNIT_ASSERT_EQUAL(std::string("All global metrics recorded successfully"), std::string(resp->getResult()));
     }
-    void testRecordMetricsUnknownStatKind() { 
-        static const char * requestXML = "<RecordGlobalMetricsRequest><Category>testCategory</Category><Stats><Stat><Name>TimeLocalExecute</Name><Value>100</Value></Stat><Stat><Name>UnknownStatKind</Name><Value>50</Value></Stat></Stats></RecordGlobalMetricsRequest>"; 
-        Owned<IEspRecordGlobalMetricsRequest> req = createRecordRequestFromXML(requestXML); 
-        Owned<IEspRecordGlobalMetricsResponse> resp = createRecordGlobalMetricsResponse(); 
-        handleRecordGlobalMetrics(*req, *resp); 
-        CPPUNIT_ASSERT_EQUAL(std::string("Some global metrics not recorded. Names: UnknownStatKind"), std::string(resp->getResult())); 
+    void testRecordMetricsUnknownStatKind() {
+        static const char * requestXML = "<RecordGlobalMetricsRequest><Category>testCategory</Category><Stats><Stat><Name>TimeLocalExecute</Name><Value>100</Value></Stat><Stat><Name>UnknownStatKind</Name><Value>50</Value></Stat></Stats></RecordGlobalMetricsRequest>";
+        Owned<IEspRecordGlobalMetricsRequest> req = createRecordRequestFromXML(requestXML);
+        Owned<IEspRecordGlobalMetricsResponse> resp = createRecordGlobalMetricsResponse();
+        handleRecordGlobalMetrics(*req, *resp);
+        CPPUNIT_ASSERT_EQUAL(std::string("Some global metrics not recorded. Names: UnknownStatKind"), std::string(resp->getResult()));
     }
 };
 

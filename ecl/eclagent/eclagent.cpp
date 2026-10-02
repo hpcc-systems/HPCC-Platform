@@ -3414,7 +3414,13 @@ void EclAgent::fatalAbort(bool userabort,const char *excepttext)
         if (userabort)
             w->setState(WUStateAborted);
         if (excepttext&&*excepttext)
+        {
             addExceptionEx(SeverityError, MSGAUD_programmer, "eclagent", 1000, excepttext, NULL, 0, 0, true, false);
+            // Record the reason why the job was aborted (e.g., time/cost guillotine) for easy retrieval
+            // User aborts are already recorded
+            if (!userabort)
+                w->recordAbortDetails(excepttext, nullptr);
+        }
         w->deleteTempFiles(NULL, false, true);
         wuRead.clear();
         w->commit();

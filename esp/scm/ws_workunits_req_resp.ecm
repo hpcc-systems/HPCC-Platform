@@ -234,6 +234,7 @@ ESPrequest [nil_remove] WUActionRequest
     //[min_ver("1.01")] string EventText("");
     [min_ver("1.01")] string PageFrom("");
     [min_ver("1.02")] int BlockTillFinishTimer(0);
+    [min_ver("2.10")] string AbortReason;
 };
 
 ESPresponse [exceptions_inline] WUActionResponse
@@ -245,6 +246,7 @@ ESPrequest WUAbortRequest
 {
     ESParray<string> Wuids;
     [min_ver("1.02")] int BlockTillFinishTimer(0);
+    [min_ver("2.10")] string AbortReason;
 };
 
 ESPresponse [exceptions_inline] WUAbortResponse

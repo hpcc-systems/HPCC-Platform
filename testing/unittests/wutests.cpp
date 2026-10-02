@@ -32,6 +32,11 @@ class wuTests : public CppUnit::TestFixture
         CPPUNIT_TEST(testTargetArchitectureMatch);
         CPPUNIT_TEST(testTargetArchitectureDefaults);
         CPPUNIT_TEST(testWorkUnitTargetArchitecturePersistence);
+        CPPUNIT_TEST(testAbortDetailsFirstReasonWins);
+        CPPUNIT_TEST(testAbortDetailsEmptyReasonDoesNotOverwrite);
+        CPPUNIT_TEST(testAbortDetailsWithoutReasonAreRecorded);
+        CPPUNIT_TEST(testAbortDetailsClearedByNonAbortStateTransition);
+        CPPUNIT_TEST(testAbortDetailsResetAfterNonAbortState);
         CPPUNIT_TEST(testCopyWorkUnitForRecompileCompileContext);
         CPPUNIT_TEST(testCopyWorkUnitPreservesScheduledWorkflowCount);
         CPPUNIT_TEST(testCopyWorkUnitForRecompileDoesNotCopyScheduledWorkflowCount);
@@ -98,19 +103,19 @@ public:
         // Basic publish WUID format: PYYYYMMDD-HHMMSS
         CPPUNIT_ASSERT_MESSAGE("looksLikeAWuid should pass for P20250101-120000", looksLikeAWuid("P20250101-120000", 'P'));
         CPPUNIT_ASSERT_MESSAGE("looksLikeAWuid should pass for p20231231-235959", looksLikeAWuid("p20231231-235959", 'P'));
-        
+
         // Publish WUID with uniqueness suffix: PYYYYMMDD-HHMMSS-<n>
         CPPUNIT_ASSERT_MESSAGE("looksLikeAWuid should pass for P20250101-120000-1", looksLikeAWuid("P20250101-120000-1", 'P'));
         CPPUNIT_ASSERT_MESSAGE("looksLikeAWuid should pass for P20250101-120000-123", looksLikeAWuid("P20250101-120000-123", 'P'));
-        
+
         // Publish subtask WUID format: PYYYYMMDD-HHMMSST<taskId>
         CPPUNIT_ASSERT_MESSAGE("looksLikeAWuid should pass for P20250101-120000T1", looksLikeAWuid("P20250101-120000T1", 'P'));
         CPPUNIT_ASSERT_MESSAGE("looksLikeAWuid should pass for P20250101-120000T123", looksLikeAWuid("P20250101-120000T123", 'P'));
-        
+
         // Publish subtask WUID with uniqueness suffix: PYYYYMMDD-HHMMSS-<n>T<taskId>
         CPPUNIT_ASSERT_MESSAGE("looksLikeAWuid should pass for P20250101-120000-1T1", looksLikeAWuid("P20250101-120000-1T1", 'P'));
         CPPUNIT_ASSERT_MESSAGE("looksLikeAWuid should pass for P20250101-120000-5T999", looksLikeAWuid("P20250101-120000-5T999", 'P'));
-        
+
         // Invalid formats
         CPPUNIT_ASSERT_MESSAGE("looksLikeAWuid should fail for W20250101-120000T1", !looksLikeAWuid("W20250101-120000T1", 'W'));
         CPPUNIT_ASSERT_MESSAGE("looksLikeAWuid should fail for P20250101-120000T", !looksLikeAWuid("P20250101-120000T", 'P'));
@@ -172,6 +177,91 @@ public:
         SCMStringBuffer rawValue;
         wu->getDebugValue(targetArchitectureDebugValue, rawValue);
         CPPUNIT_ASSERT_EQUAL_STR(targetArchitectureArm64Linux, rawValue.str());
+    }
+
+    void testAbortDetailsFirstReasonWins()
+    {
+        Owned<ILocalWorkUnit> wu = createLocalWorkUnit();
+        wu->recordAbortDetails("cost limit exceeded", "first-user");
+        wu->recordAbortDetails("time limit exceeded", "second-user");
+
+        SCMStringBuffer reason;
+        wu->getAbortReason(reason);
+        CPPUNIT_ASSERT_EQUAL_STR("cost limit exceeded", reason.str());
+
+        SCMStringBuffer abortBy;
+        wu->getAbortBy(abortBy);
+        CPPUNIT_ASSERT_EQUAL_STR("first-user", abortBy.str());
+        CPPUNIT_ASSERT(wu->getAbortTimeStamp() != 0);
+    }
+
+    void testAbortDetailsEmptyReasonDoesNotOverwrite()
+    {
+        Owned<ILocalWorkUnit> wu = createLocalWorkUnit();
+        wu->recordAbortDetails("cost limit exceeded", "first-user");
+        wu->recordAbortDetails(nullptr, "second-user");
+
+        SCMStringBuffer reason;
+        wu->getAbortReason(reason);
+        CPPUNIT_ASSERT_EQUAL_STR("cost limit exceeded", reason.str());
+
+        SCMStringBuffer abortBy;
+        wu->getAbortBy(abortBy);
+        CPPUNIT_ASSERT_EQUAL_STR("first-user", abortBy.str());
+    }
+
+    void testAbortDetailsWithoutReasonAreRecorded()
+    {
+        Owned<ILocalWorkUnit> wu = createLocalWorkUnit();
+        wu->recordAbortDetails(nullptr, "first-user");
+        const unsigned __int64 timestamp = wu->getAbortTimeStamp();
+        wu->recordAbortDetails("time limit exceeded", "second-user");
+
+        SCMStringBuffer reason;
+        wu->getAbortReason(reason);
+        CPPUNIT_ASSERT_EQUAL_STR("", reason.str());
+
+        SCMStringBuffer abortBy;
+        wu->getAbortBy(abortBy);
+        CPPUNIT_ASSERT_EQUAL_STR("first-user", abortBy.str());
+        CPPUNIT_ASSERT(timestamp != 0);
+        CPPUNIT_ASSERT_EQUAL(timestamp, wu->getAbortTimeStamp());
+    }
+
+    // Uses WUStateRunning because local WU terminal transitions require a live Dali connection.
+    void testAbortDetailsClearedByNonAbortStateTransition()
+    {
+        Owned<ILocalWorkUnit> wu = createLocalWorkUnit();
+        wu->recordAbortDetails("cost limit exceeded", "first-user");
+        wu->setState(WUStateRunning);
+
+        SCMStringBuffer reason;
+        wu->getAbortReason(reason);
+        CPPUNIT_ASSERT_EQUAL_STR("", reason.str());
+
+        SCMStringBuffer abortBy;
+        wu->getAbortBy(abortBy);
+        CPPUNIT_ASSERT_EQUAL_STR("", abortBy.str());
+        CPPUNIT_ASSERT_EQUAL((unsigned __int64) 0, wu->getAbortTimeStamp());
+    }
+
+    // A new execution clears prior abort details before a later abort can record new details.
+    // Uses WUStateRunning because local WU terminal transitions require a live Dali connection.
+    void testAbortDetailsResetAfterNonAbortState()
+    {
+        Owned<ILocalWorkUnit> wu = createLocalWorkUnit();
+        wu->recordAbortDetails("cost limit exceeded", "first-user");
+        wu->setState(WUStateRunning);
+
+        wu->recordAbortDetails("time limit exceeded", "second-user");
+        SCMStringBuffer reason;
+        reason.clear();
+        wu->getAbortReason(reason);
+        CPPUNIT_ASSERT_EQUAL_STR("time limit exceeded", reason.str());
+
+        SCMStringBuffer abortBy;
+        wu->getAbortBy(abortBy);
+        CPPUNIT_ASSERT_EQUAL_STR("second-user", abortBy.str());
     }
 
     void testCopyWorkUnitForRecompileCompileContext()
