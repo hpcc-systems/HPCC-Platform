@@ -143,7 +143,6 @@ public:
     {
         m_cacheTimeoutInSeconds = cacheTimeoutMinutes * 60;
         m_secMgr = secMgr;
-        m_defaultPermission = SecAccess_Unknown;    // TO BE DEPRECATED
         m_secMgrClass.set(_secMgrClass);
     }
 
@@ -205,7 +204,6 @@ private:
 
     //Managed File Scope support
     std::map<std::string, SecAccessFlags> m_userDefaultFileScopePermissions;
-    SecAccessFlags              m_defaultPermission;    // TO BE DEPRECATED - SECURITY HOLE
     map<string, ISecResource*>  m_managedFileScopesMap;
     mutable ReadWriteLock       m_scopesRWLock{SYNC_LOCATION};//guards m_managedFileScopesMap
     ISecManager *               m_secMgr;
