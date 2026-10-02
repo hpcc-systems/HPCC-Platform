@@ -468,6 +468,84 @@ public:
 CPPUNIT_TEST_SUITE_REGISTRATION( JlibWriteSyncCacheTest );
 CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( JlibWriteSyncCacheTest, "JlibWriteSyncCacheTest" );
 
+class JlibAzureAPIConfigTest : public CppUnit::TestFixture
+{
+public:
+    CPPUNIT_TEST_SUITE(JlibAzureAPIConfigTest);
+        CPPUNIT_TEST(testDefaultsAndOverrides);
+        CPPUNIT_TEST(testCachedSnapshot);
+        CPPUNIT_TEST(testStorageApiInfoConfig);
+    CPPUNIT_TEST_SUITE_END();
+
+    Owned<IPropertyTree> createPlaneConfig(const char * expertAttributes)
+    {
+        VStringBuffer xml("<plane name='retry-test' prefix='/tmp/retry-test' category='data'><storageapi>");
+        if (expertAttributes)
+            xml.appendf("<expert %s/>", expertAttributes);
+        xml.append("</storageapi></plane>");
+        return createPTreeFromXMLString(xml);
+    }
+
+    void testDefaultsAndOverrides()
+    {
+        Owned<IPropertyTree> defaultConfig = createPlaneConfig(nullptr);
+        Owned<IStoragePlane> defaultPlane = createStoragePlane(defaultConfig);
+        Owned<IStorageApiInfo> defaultApiInfo = defaultPlane->getStorageApiInfo();
+        const StorageApiConfig & defaults = defaultApiInfo->queryAPIConfig();
+        CPPUNIT_ASSERT_EQUAL(5U, defaults.maxRetries);
+        CPPUNIT_ASSERT_EQUAL(1000U, defaults.retryDelayMs);
+        CPPUNIT_ASSERT_EQUAL(30000U, defaults.maxRetryDelayMs);
+        CPPUNIT_ASSERT_EQUAL(16U, defaults.parallelConcurrency);
+        CPPUNIT_ASSERT(!defaults.traceEnabled);
+
+        Owned<IPropertyTree> overrideConfig = createPlaneConfig("trace='true' parallelThresholdK='8192' parallelConcurrency='4' parallelChunkSizeK='2048' parallelInitialChunkSizeK='1024' maxRetries='8' retryDelayMs='2500' maxRetryDelayMs='45000'");
+        Owned<IStoragePlane> overridePlane = createStoragePlane(overrideConfig);
+        Owned<IStorageApiInfo> overrideApiInfo = overridePlane->getStorageApiInfo();
+        const StorageApiConfig & overrides = overrideApiInfo->queryAPIConfig();
+        CPPUNIT_ASSERT(overrides.traceEnabled);
+        CPPUNIT_ASSERT_EQUAL(8192ULL * 1024, overrides.parallelThresholdBytes);
+        CPPUNIT_ASSERT_EQUAL(4U, overrides.parallelConcurrency);
+        CPPUNIT_ASSERT_EQUAL(2048ULL * 1024, overrides.parallelChunkBytes);
+        CPPUNIT_ASSERT_EQUAL(1024ULL * 1024, overrides.parallelInitialChunkBytes);
+        CPPUNIT_ASSERT_EQUAL(8U, overrides.maxRetries);
+        CPPUNIT_ASSERT_EQUAL(2500U, overrides.retryDelayMs);
+        CPPUNIT_ASSERT_EQUAL(45000U, overrides.maxRetryDelayMs);
+
+        Owned<IPropertyTree> numericBoolConfig = createPlaneConfig("trace='2'");
+        Owned<IStoragePlane> numericBoolPlane = createStoragePlane(numericBoolConfig);
+        Owned<IStorageApiInfo> numericBoolApiInfo = numericBoolPlane->getStorageApiInfo();
+        CPPUNIT_ASSERT(numericBoolApiInfo->queryAPIConfig().traceEnabled);
+    }
+
+    void testCachedSnapshot()
+    {
+        Owned<IPropertyTree> config = createPlaneConfig("maxRetries='7'");
+        Owned<IStoragePlane> originalPlane = createStoragePlane(config);
+        config->setPropInt("storageapi/expert/@maxRetries", 9);
+
+        Owned<IStorageApiInfo> originalApiInfo = originalPlane->getStorageApiInfo();
+        CPPUNIT_ASSERT_EQUAL(7U, originalApiInfo->queryAPIConfig().maxRetries);
+
+        Owned<IStoragePlane> replacementPlane = createStoragePlane(config);
+        Owned<IStorageApiInfo> replacementApiInfo = replacementPlane->getStorageApiInfo();
+        CPPUNIT_ASSERT_EQUAL(9U, replacementApiInfo->queryAPIConfig().maxRetries);
+    }
+
+    void testStorageApiInfoConfig()
+    {
+        Owned<IPropertyTree> config = createPlaneConfig("maxRetries='7' retryDelayMs='2500'");
+        Owned<IStoragePlane> plane = createStoragePlane(config);
+        Owned<IStorageApiInfo> apiInfo = plane->getStorageApiInfo();
+
+        CPPUNIT_ASSERT_EQUAL(7U, apiInfo->queryAPIConfig().maxRetries);
+        CPPUNIT_ASSERT_EQUAL(2500U, apiInfo->queryAPIConfig().retryDelayMs);
+    }
+
+};
+
+CPPUNIT_TEST_SUITE_REGISTRATION(JlibAzureAPIConfigTest);
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(JlibAzureAPIConfigTest, "JlibAzureAPIConfigTest");
+
 
 // This atomic is incremented to allow the writing thread to perform work in parallel with disk output
 std::atomic<unsigned> toil{0};

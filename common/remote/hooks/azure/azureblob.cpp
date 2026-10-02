@@ -45,31 +45,6 @@ using namespace std::chrono;
  * The overhead is trivial, so leave as it is for now.
  */
 
-static constexpr unsigned maxAzureBlockCount = 50000;
-
-static constexpr bool defaultTraceEnabled = false;                                    // tracing disabled
-static constexpr unsigned __int64 defaultParallelThreshold = 16 * 1024 * 1024;        // 16MB in bytes
-static constexpr unsigned defaultParallelConcurrency = 16;                            // 16 concurrent connections
-static constexpr unsigned __int64 defaultParallelChunkSize = 4 * 1024 * 1024;         // 4MB in bytes
-static constexpr unsigned __int64 defaultParallelInitialChunkSize = 4 * 1024 * 1024;  // 4MB in bytes
-static constexpr unsigned defaultMaxRetries = 5;
-static constexpr unsigned defaultRetryDelayMs = 1000;
-static constexpr unsigned defaultMaxRetryDelayMs = 30000;
-
-
-static struct AzureAPIConfig
-{
-    bool traceEnabled = defaultTraceEnabled;
-    unsigned __int64 parallelThreshold = defaultParallelThreshold;
-    unsigned parallelConcurrency = defaultParallelConcurrency;
-    unsigned __int64 parallelChunkSize = defaultParallelChunkSize;
-    unsigned __int64 parallelInitialChunkSize = defaultParallelInitialChunkSize;
-    unsigned maxRetries = defaultMaxRetries;
-    unsigned retryDelayMs = defaultRetryDelayMs;
-    unsigned maxRetryDelayMs = defaultMaxRetryDelayMs;
-} globalAzureAPIConfig;
-
-
 //---------------------------------------------------------------------------------------------------------------------
 
 using SharedBlobClient = std::shared_ptr<Azure::Storage::Blobs::BlockBlobClient>;
@@ -233,9 +208,9 @@ private:
 class AzureBlob final : implements CInterfaceOf<IFile>
 {
 public:
-    AzureBlob(const char *_azureFileName, AzureAPIConfig &&_config);
-    AzureBlob(const char *_azureFileName, AzureAPIConfig &&_config, const DirEntry &entry)
-    : AzureBlob(_azureFileName, std::move(_config)) { setListedInfo(entry.isDir, entry.size, entry.modifiedTime); }
+    AzureBlob(const char *_azureFileName);
+    AzureBlob(const char *_azureFileName, const DirEntry &entry)
+    : AzureBlob(_azureFileName) { setListedInfo(entry.isDir, entry.size, entry.modifiedTime); }
     virtual bool exists() override
     {
         ensureMetaData();
@@ -348,7 +323,7 @@ public:
         lastModified = _lastModified;
         createdOn = 0;
     }
-    const AzureAPIConfig & queryConfig() const { return config; }
+    const StorageApiConfig & queryConfig() const { return config; }
 
 protected:
     std::shared_ptr<StorageSharedKeyCredential> getSharedKeyCredentials() const;
@@ -363,8 +338,8 @@ protected:
 
 protected:
     StringBuffer fullName;
-    StringAttr accountName;
-    StringAttr containerName;
+    StringBuffer accountName;
+    StringBuffer containerName;
     StringBuffer secretName;
     StringAttr blobName;
     offset_t fileSize = unknownFileSize;
@@ -377,7 +352,7 @@ protected:
     std::string blobUrl;
     mutable CriticalSection cs{SYNC_LOCATION};
     mutable std::shared_ptr<Azure::Storage::Blobs::BlockBlobClient> cachedBlobClient;  // Cache client for reuse per-file
-    AzureAPIConfig config;
+    StorageApiConfig config;
 };
 
 
@@ -429,12 +404,13 @@ size32_t AzureBlobReadIO::read(offset_t pos, size32_t len, void * data)
     options.Range.Value().Length = len;
 
     // Configure parallel transfer options based on global configuration
-    if (len >= file->queryConfig().parallelThreshold)
+    const StorageApiConfig &config = file->queryConfig();
+    if (len >= config.parallelThresholdBytes)
     {
         // Use parallel transfers for larger requests
-        options.TransferOptions.Concurrency = file->queryConfig().parallelConcurrency;
-        options.TransferOptions.ChunkSize = file->queryConfig().parallelChunkSize;
-        options.TransferOptions.InitialChunkSize = file->queryConfig().parallelInitialChunkSize;
+        options.TransferOptions.Concurrency = config.parallelConcurrency;
+        options.TransferOptions.ChunkSize = config.parallelChunkBytes;
+        options.TransferOptions.InitialChunkSize = config.parallelInitialChunkBytes;
     }
     else
     {
@@ -447,32 +423,23 @@ size32_t AzureBlobReadIO::read(offset_t pos, size32_t len, void * data)
     uint8_t * buffer = reinterpret_cast<uint8_t*>(data);
     long int sizeRead = 0;
 
-    constexpr unsigned maxRetries = 4;
-    unsigned attempt = 0;
-    for (;;)
+    try
     {
-        try
-        {
-            Azure::Response<Models::DownloadBlobToResult> result = blockBlobClient->DownloadTo(buffer, len, options);
-            // result.Value.BlobSize is the size of the blob, not the size of the data returned, use ContentRange instead
-            Azure::Core::Http::HttpRange range = result.Value.ContentRange;
-            if (range.Length.HasValue())
-                sizeRead = range.Length.Value();
-            else
-                sizeRead = 0;
-            break;
-        }
-        catch (const Azure::Core::RequestFailedException& e)
-        {
-            //Future: update stats if the read fails... - use a local object with a destructor that updates the time
-            attempt++;
-            handleRequestException(e, "AzureBlob::read", attempt, maxRetries, file->queryFilename(), pos, len);
-        }
-        catch (const std::exception& e)
-        {
-            attempt++;
-            handleRequestException(e, "AzureBlob::read", attempt, maxRetries, file->queryFilename(), pos, len);
-        }
+        Azure::Response<Models::DownloadBlobToResult> result = blockBlobClient->DownloadTo(buffer, len, options);
+        // result.Value.BlobSize is the size of the blob, not the size of the data returned, use ContentRange instead
+        Azure::Core::Http::HttpRange range = result.Value.ContentRange;
+        if (range.Length.HasValue())
+            sizeRead = range.Length.Value();
+        else
+            sizeRead = 0;
+    }
+    catch (const Azure::Core::RequestFailedException& e)
+    {
+        throwRequestException(e, "AzureBlob::read", file->queryFilename(), pos, len);
+    }
+    catch (const std::exception& e)
+    {
+        throwRequestException(e, "AzureBlob::read", file->queryFilename(), pos, len);
     }
 
     //Use fastAdd because multi threaded access is not supported by this class
@@ -597,27 +564,19 @@ size32_t AzureBlobBlockBlobWriteIO::write(offset_t pos, size32_t len, const void
     std::string blockId = generateNextUniqueBlockId();
     blockIds.push_back(blockId);
 
-    constexpr unsigned maxRetries = 4;
-    unsigned attempt = 0;
-    for (;;)
+    try
     {
-        try
-        {
-            Azure::Core::IO::MemoryBodyStream content(reinterpret_cast<const uint8_t*>(data), len);
-            blockBlobClient->StageBlock(blockId, content);
-            offset += len;
-            break;
-        }
-        catch (const Azure::Core::RequestFailedException& e)
-        {
-            attempt++;
-            handleRequestException(e, "AzureBlob::write", attempt, maxRetries, file->queryFilename(), pos, len);
-        }
-        catch (const std::exception& e)
-        {
-            attempt++;
-            handleRequestException(e, "AzureBlob::write", attempt, maxRetries, file->queryFilename(), pos, len);
-        }
+        Azure::Core::IO::MemoryBodyStream content(reinterpret_cast<const uint8_t*>(data), len);
+        blockBlobClient->StageBlock(blockId, content);
+        offset += len;
+    }
+    catch (const Azure::Core::RequestFailedException& e)
+    {
+        throwRequestException(e, "AzureBlob::write", file->queryFilename(), pos, len);
+    }
+    catch (const std::exception& e)
+    {
+        throwRequestException(e, "AzureBlob::write", file->queryFilename(), pos, len);
     }
 
     stats.ioWrites.fastAdd(1);
@@ -632,26 +591,18 @@ void AzureBlobBlockBlobWriteIO::close()
         return;
     file->invalidateMeta();
 
-    constexpr unsigned maxRetries = 4;
-    unsigned attempt = 0;
-    for (;;)
+    try
     {
-        try
-        {
-            blockBlobClient->CommitBlockList(blockIds);
-            committed = true;
-            break;
-        }
-        catch (const Azure::Core::RequestFailedException& e)
-        {
-            attempt++;
-            handleRequestException(e, "AzureBlob::close", attempt, maxRetries, file->queryFilename(), offset, 0);
-        }
-        catch (const std::exception& e)
-        {
-            attempt++;
-            handleRequestException(e, "AzureBlob::close", attempt, maxRetries, file->queryFilename(), offset, 0);
-        }
+        blockBlobClient->CommitBlockList(blockIds);
+        committed = true;
+    }
+    catch (const Azure::Core::RequestFailedException& e)
+    {
+        throwRequestException(e, "AzureBlob::close", file->queryFilename(), offset, 0);
+    }
+    catch (const std::exception& e)
+    {
+        throwRequestException(e, "AzureBlob::close", file->queryFilename(), offset, 0);
     }
 }
 
@@ -669,19 +620,7 @@ static std::string getBlobUrl(const char *account, const char * container, const
     return url.append("/").append(blob);
 }
 
-static Azure::Storage::Blobs::BlobClientOptions getBlobClientOptions(const AzureAPIConfig &config)
-{
-    Azure::Storage::Blobs::BlobClientOptions clientOptions;
-    Azure::Core::Http::Policies::RetryOptions retryOptions;
-    retryOptions.MaxRetries = config.maxRetries;
-    retryOptions.RetryDelay = std::chrono::milliseconds(config.retryDelayMs);
-    retryOptions.MaxRetryDelay = std::chrono::milliseconds(config.maxRetryDelayMs);
-    clientOptions.Retry = retryOptions;
-    clientOptions.Transport.Transport = getHttpTransport();
-    return clientOptions;
-}
-
-AzureBlob::AzureBlob(const char *_azureFileName, AzureAPIConfig &&_config) : fullName(_azureFileName), config(std::move(_config))
+AzureBlob::AzureBlob(const char *_azureFileName) : fullName(_azureFileName)
 {
     if (startsWith(fullName, azureBlobPrefix))
     {
@@ -692,13 +631,14 @@ AzureBlob::AzureBlob(const char *_azureFileName, AzureAPIConfig &&_config) : ful
             throw makeStringException(99, "Missing / in azureblob: file reference");
 
         StringBuffer planeName(slash-filename, filename);
-        Owned<const IPropertyTree> plane = getStoragePlaneConfig(planeName, true);
-        const IPropertyTree * storageapi = plane->queryPropTree("storageapi");
-        if (!storageapi)
+        Owned<const IStoragePlane> plane = getStoragePlaneByName(planeName, true);
+        Owned<IStorageApiInfo> apiInfo = plane->getStorageApiInfo();
+        if (!apiInfo)
             throw makeStringExceptionV(99, "No storage api defined for plane %s", planeName.str());
+        config = apiInfo->queryAPIConfig();
         filename = slash+1; // advance past slash
 
-        const char * api = storageapi->queryProp("@type");
+        const char * api = apiInfo->getStorageType();
         if (!api)
             throw makeStringExceptionV(99, "No storage api defined for plane %s", planeName.str());
 
@@ -706,12 +646,12 @@ AzureBlob::AzureBlob(const char *_azureFileName, AzureAPIConfig &&_config) : ful
         if (!strieq(api, azureBlobAPI.str()))
             throw makeStringExceptionV(99, "Storage api for plane %s is not azureblob", planeName.str());
 
-        useManagedIdentity = storageapi->getPropBool("@managed", false);
+        useManagedIdentity = apiInfo->useManagedIdentity();
         //MORE: We could allow the managed identity/secret to be supplied in the configuration
         if (useManagedIdentity && !areManagedIdentitiesEnabled())
             throw makeStringExceptionV(99, "Managed identity is not enabled for this environment");
 
-        unsigned numDevices = plane->getPropInt("@numDevices", 1);
+        unsigned numDevices = plane->numDevices();
         unsigned device = 1;
         if (numDevices != 1)
         {
@@ -731,22 +671,7 @@ AzureBlob::AzureBlob(const char *_azureFileName, AzureAPIConfig &&_config) : ful
             filename = (*endDevice == '/') ? endDevice+1 : endDevice;
         }
 
-        VStringBuffer childPath("containers[%u]", device);
-        const IPropertyTree * deviceInfo = storageapi->queryPropTree(childPath);
-        if (!deviceInfo)
-            throw makeStringExceptionV(99, "Missing container specification for device %u in plane %s", device, planeName.str());
-
-        containerName.set(deviceInfo->queryProp("@name"));
-        // Fallback to storageapi level if not specified in container
-        const char * account = deviceInfo->queryProp("@account");
-        if (isEmptyString(account))
-            account = storageapi->queryProp("@account");
-        accountName.set(account);
-
-        const char * secret = deviceInfo->queryProp("@secret");
-        if (isEmptyString(secret))
-            secret = storageapi->queryProp("@secret");
-        secretName.set(secret);
+        secretName.set(apiInfo->queryStorageApiSecret(device, accountName, containerName));
 
         if (isEmptyString(containerName))
             throw makeStringExceptionV(99, "Missing container name for plane %s", planeName.str());
@@ -771,7 +696,7 @@ IFile * AzureBlobDirectoryIterator::createFile(const char *fullPath, const DirEn
 
 std::shared_ptr<StorageSharedKeyCredential> AzureBlob::getSharedKeyCredentials() const
 {
-    return getAzureSharedKeyCredential(accountName.str(), secretName.str());
+    return getAzureSharedKeyCredential(accountName, secretName.str());
 }
 
 std::string AzureBlob::getBlobUrl() const
@@ -782,7 +707,14 @@ std::string AzureBlob::getBlobUrl() const
 std::shared_ptr<BlobContainerClient> AzureBlob::getBlobContainerClient() const
 {
     std::string blobContainerUrl = getContainerUrl(accountName, containerName);
-    Azure::Storage::Blobs::BlobClientOptions clientOptions = getBlobClientOptions(config);
+
+    // Create optimized client options for better performance
+    Azure::Storage::Blobs::BlobClientOptions clientOptions;
+
+    setAzureRetryOptions(clientOptions.Retry, config);
+
+    // Use shared transport instance for connection pooling across all blob operations
+    clientOptions.Transport.Transport = getHttpTransport();
 
     if (useManagedIdentity)
     {
@@ -801,7 +733,13 @@ SharedBlobClient AzureBlob::getBlobClient() const
     if (cachedBlobClient)
         return cachedBlobClient;
 
-    Azure::Storage::Blobs::BlobClientOptions clientOptions = getBlobClientOptions(config);
+    // Create optimized client options for better performance
+    Azure::Storage::Blobs::BlobClientOptions clientOptions;
+
+    setAzureRetryOptions(clientOptions.Retry, config);
+
+    // Use shared transport instance for connection pooling across all blob operations
+    clientOptions.Transport.Transport = getHttpTransport();
 
     // Create account-specific credentials with caching
     if (useManagedIdentity)
@@ -902,33 +840,25 @@ void AzureBlob::ensureMetaData()
 void AzureBlob::gatherMetaData()
 {
     auto blobClient = getBlobClient();
-    constexpr unsigned maxRetries = 4;
-    unsigned attempt = 0;
-    for (;;)
+    try
     {
-        try
+        Azure::Response<Models::BlobProperties> properties = blobClient->GetProperties();
+        Models::BlobProperties & props = properties.Value;
+        setProperties(props.BlobSize, props.LastModified, props.CreatedOn);
+    }
+    catch (const Azure::Core::RequestFailedException& e)
+    {
+        if (e.StatusCode == Azure::Core::Http::HttpStatusCode::NotFound)
         {
-            Azure::Response<Models::BlobProperties> properties = blobClient->GetProperties();
-            Models::BlobProperties & props = properties.Value;
-            setProperties(props.BlobSize, props.LastModified, props.CreatedOn);
-            break;
+            fileExists = false;
+            fileSize = unknownFileSize;
+            return;
         }
-        catch (const Azure::Core::RequestFailedException& e)
-        {
-            if (e.StatusCode == Azure::Core::Http::HttpStatusCode::NotFound)
-            {
-                fileExists = false;
-                fileSize = unknownFileSize;
-                break;
-            }
-            attempt++;
-            handleRequestException(e, "AzureBlob::gatherMetaData", attempt, maxRetries, queryFilename());
-        }
-        catch (const std::exception& e)
-        {
-            attempt++;
-            handleRequestException(e, "AzureBlob::gatherMetaData", attempt, maxRetries, queryFilename());
-        }
+        throwRequestException(e, "AzureBlob::gatherMetaData", queryFilename());
+    }
+    catch (const std::exception& e)
+    {
+        throwRequestException(e, "AzureBlob::gatherMetaData", queryFilename());
     }
 }
 
@@ -961,57 +891,12 @@ void AzureBlob::setProperties(int64_t _blobSize, Azure::DateTime _lastModified, 
     createdOn = system_clock::to_time_t(system_clock::time_point(_createdOn));
 }
 
-//---------------------------------------------------------------------------------------------------------------------
-
-static CriticalSection azureConfigCS{SYNC_LOCATION};
-static CConfigUpdateHook reloadConfigHook;
-static void updateFunc(const IPropertyTree *oldComponentConfiguration, const IPropertyTree *oldGlobalConfiguration)
-{
-    CriticalBlock block(azureConfigCS);
-
-    Owned<IPropertyTree> azureConfig = getGlobalConfigSP()->getPropTree("expert/azureapi");
-    if (azureConfig)
-    {
-        // Load parallelThresholdK in KB and convert to bytes
-        unsigned thresholdK = azureConfig->getPropInt("@parallelThresholdK", defaultParallelThreshold / 1024);
-        globalAzureAPIConfig.parallelThreshold = (unsigned __int64)thresholdK * 1024;
-
-        // Load parallelConcurrency
-        globalAzureAPIConfig.parallelConcurrency = azureConfig->getPropInt("@parallelConcurrency", defaultParallelConcurrency);
-
-        // Load parallelChunkSizeK in KB and convert to bytes
-        unsigned chunkSizeK = azureConfig->getPropInt("@parallelChunkSizeK", defaultParallelChunkSize / 1024);
-        globalAzureAPIConfig.parallelChunkSize = (unsigned __int64)chunkSizeK * 1024;
-
-        // Load parallelInitialChunkSizeK in KB and convert to bytes
-        unsigned initialChunkSizeK = azureConfig->getPropInt("@parallelInitialChunkSizeK", defaultParallelInitialChunkSize / 1024);
-        globalAzureAPIConfig.parallelInitialChunkSize = (unsigned __int64)initialChunkSizeK * 1024;
-
-        // Load trace flag
-        globalAzureAPIConfig.traceEnabled = azureConfig->getPropBool("@trace", defaultTraceEnabled);
-
-        globalAzureAPIConfig.maxRetries = (unsigned)azureConfig->getPropInt("@maxRetries", defaultMaxRetries);
-        globalAzureAPIConfig.retryDelayMs = (unsigned)azureConfig->getPropInt("@retryDelayMs", defaultRetryDelayMs);
-        globalAzureAPIConfig.maxRetryDelayMs = (unsigned)azureConfig->getPropInt("@maxRetryDelayMs", defaultMaxRetryDelayMs);
-
-        DBGLOG("Azure API configuration loaded: parallelThresholdK=%u KB, parallelConcurrency=%u, parallelChunkSizeK=%u KB, parallelInitialChunkSizeK=%u KB, trace=%s",
-            thresholdK, globalAzureAPIConfig.parallelConcurrency, chunkSizeK, initialChunkSizeK, globalAzureAPIConfig.traceEnabled ? "true" : "false");
-    }
-}
-
-static AzureAPIConfig getAzureConfig()
-{
-    reloadConfigHook.installOnce(updateFunc, true);
-    CriticalBlock block(azureConfigCS);
-    return globalAzureAPIConfig;
-}
-
 IFile *createAzureBlob(const char *azureFileName)
 {
-    return new AzureBlob(azureFileName, getAzureConfig());
+    return new AzureBlob(azureFileName);
 }
 
 IFile *createAzureBlob(const char *azureFileName, const DirEntry &entry)
 {
-    return new AzureBlob(azureFileName, getAzureConfig(), entry);
+    return new AzureBlob(azureFileName, entry);
 }
