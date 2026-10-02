@@ -16,6 +16,7 @@
 ############################################################################## */
 
 #include "platform.h"
+#include <algorithm>
 #include <array>
 #include <limits>
 #include <string>
@@ -413,6 +414,13 @@ MODULE_INIT(INIT_PRIORITY_STANDARD)
 {
     auto updateFunc = [&](const IPropertyTree *oldComponentConfiguration, const IPropertyTree *oldGlobalConfiguration)
     {
+        // Universally pick up the write-sync margin delta from the expert config (component or global)
+        // NB: can be overridden by per-job #option
+        StringBuffer writeSyncMarginDeltaXPath;
+        getExpertOptPath("writeSyncMarginDeltaMs", writeSyncMarginDeltaXPath);
+        int writeSyncMarginDelta = getComponentConfigSP()->getPropInt(writeSyncMarginDeltaXPath, getGlobalConfigSP()->getPropInt("expert/@writeSyncMarginDeltaMs", noWriteSyncMarginDeltaMs));
+        setWriteSyncMarginDeltaMs(writeSyncMarginDelta);
+
         CriticalBlock b(storagePlaneMapCrit);
         storagePlaneMap.clear();
 
@@ -764,12 +772,17 @@ size32_t getIndexBlockedIOSize(const char *planeName, bool isFiltered)
 // The set/get methods below provide a global tuning and debugging aide to adjust
 // the plane's write-sync margin, allowing operators to extend delays or force tracing
 // without changing the plane configuration.
-static constexpr int noWriteSyncMarginDeltaMs = std::numeric_limits<int>::min();
 static std::atomic<int> writeSyncMarginDeltaMs{noWriteSyncMarginDeltaMs};
+static std::atomic<int> jobWriteSyncMarginDeltaMs{noWriteSyncMarginDeltaMs};
 
 void setWriteSyncMarginDeltaMs(int deltaMs)
 {
     writeSyncMarginDeltaMs = deltaMs;
+}
+
+void setJobWriteSyncMarginDeltaMs(int deltaMs)
+{
+    jobWriteSyncMarginDeltaMs = deltaMs;
 }
 
 // Returns true if a write-sync margin delta has been explicitly configured,
@@ -777,7 +790,9 @@ void setWriteSyncMarginDeltaMs(int deltaMs)
 // of the margin delta value.
 bool getWriteSyncMarginDeltaMs(int &deltaMs)
 {
-    int value = writeSyncMarginDeltaMs;
+    int value = jobWriteSyncMarginDeltaMs;
+    if (noWriteSyncMarginDeltaMs == value)
+        value = writeSyncMarginDeltaMs;
     if (noWriteSyncMarginDeltaMs == value)
     {
         deltaMs = 0;
@@ -878,6 +893,7 @@ void resetWriteSyncStateForTest()
     writeSyncDeadlineMap.clear();
     publishWriteSyncSnapshot();
     writeSyncMarginDeltaMs = noWriteSyncMarginDeltaMs;
+    jobWriteSyncMarginDeltaMs = noWriteSyncMarginDeltaMs;
 }
 #endif
 

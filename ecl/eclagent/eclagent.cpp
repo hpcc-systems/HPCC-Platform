@@ -15,6 +15,11 @@
     limitations under the License.
 ############################################################################## */
 
+#include <algorithm>
+#include <limits>
+#include <memory>
+#include <new>
+
 #include "jlib.hpp"
 #include "jcontainerized.hpp"
 #include "jmisc.hpp"
@@ -22,6 +27,7 @@
 #include "jptree.hpp"
 #include "jprop.hpp"
 #include "jfile.hpp"
+#include "jplane.hpp"
 #include "jsocket.hpp"
 #include "jregexp.hpp"
 #include "mplog.hpp"
@@ -58,15 +64,12 @@
 #include "ws_dfsclient.hpp"
 #include "wfcontext.hpp"
 
-using roxiemem::OwnedRoxieString;
-
-#include <memory>
-#include <new>
-
 #ifdef _USE_CPPUNIT
 #include <cppunit/extensions/TestFactoryRegistry.h>
 #include <cppunit/ui/text/TestRunner.h>
 #endif
+
+using roxiemem::OwnedRoxieString;
 
 
 //#define LEAK_FILE         "c:\\leaks.txt"
@@ -2144,6 +2147,17 @@ void EclAgent::runProcess(IEclProcess *process)
     OwnedActiveSpanScope requestSpan = queryTraceManager().createServerSpan("run_workunit", traceHeaders);
     ContextSpanScope spanScope(updateDummyContextLogger(), requestSpan);
     requestSpan->setSpanAttribute("hpcc.wuid", queryWorkUnit()->queryWuid());
+    COnScopeExit clearWriteSyncMarginDelta([] { setJobWriteSyncMarginDeltaMs(noWriteSyncMarginDeltaMs); });
+
+    // Clamp to int range so an out-of-range option value cannot silently wrap/truncate (it is a ms adjustment).
+    int writeSyncMarginDelta = (int)std::clamp<__int64>(queryWorkUnit()->getDebugValueInt64("writeSyncMarginDeltaMs", noWriteSyncMarginDeltaMs),
+        std::numeric_limits<int>::min(), std::numeric_limits<int>::max());
+
+    if (noWriteSyncMarginDeltaMs != writeSyncMarginDelta)
+    {
+        setJobWriteSyncMarginDeltaMs(writeSyncMarginDelta);
+        WARNLOG("hthor write-sync margin delta active: writeSyncMarginDeltaMs=%d", writeSyncMarginDelta);
+    }
 
     // a component may specify an alternate name for the agent/workflow memory area,
     // e.g. Thor specifies in "eclAgentMemory"

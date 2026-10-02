@@ -2853,15 +2853,15 @@ void CJobBase::startJob()
     unsigned manualRenameChk = getOptBool("manualRenameChk", getGlobalConfigSP()->getPropBool("expert/@manualRenameChk", defaultManualRenameChk));
     setRenameRetries(numRenameRetries, manualRenameChk);
 
-    constexpr int noWriteSyncMarginDelta = std::numeric_limits<int>::min();
     // Clamp to int range so an out-of-range option value cannot silently wrap/truncate (it is a ms adjustment).
-    int writeSyncMarginDelta = (int)std::clamp<__int64>(getOptInt64("writeSyncMarginDeltaMs", noWriteSyncMarginDelta),
+    int writeSyncMarginDelta = (int)std::clamp<__int64>(getWorkUnitValueInt("writeSyncMarginDeltaMs", noWriteSyncMarginDeltaMs),
         std::numeric_limits<int>::min(), std::numeric_limits<int>::max());
 
-    // Always reset for this job, including the no-delta marker, in case a previous job did not reset.
-    setWriteSyncMarginDeltaMs(writeSyncMarginDelta);
-    if (noWriteSyncMarginDelta != writeSyncMarginDelta)
+    if (noWriteSyncMarginDeltaMs != writeSyncMarginDelta)
+    {
+        setJobWriteSyncMarginDeltaMs(writeSyncMarginDelta);
         WARNLOG("Thor write-sync margin delta active: writeSyncMarginDeltaMs=%d", writeSyncMarginDelta);
+    }
 }
 
 void CJobBase::endJob()
@@ -2870,7 +2870,7 @@ void CJobBase::endJob()
         return;
 
     jobEnded = true;
-    setWriteSyncMarginDeltaMs(std::numeric_limits<int>::min());
+    setJobWriteSyncMarginDeltaMs(noWriteSyncMarginDeltaMs);
     setPerformanceMonitorHook(nullptr);
     DBGLOG("Job ended : %s", graphName.get());
     clearKeyStoreCache(true);

@@ -23,6 +23,7 @@
 #include "jstring.hpp"
 
 #include <time.h>
+#include <limits>
 #include <string>
 #include <vector>
 
@@ -60,7 +61,10 @@ extern jlib_decl size32_t getForeignBlockedIOSize(bool isFiltered);
 extern jlib_decl size32_t getIndexBlockedIOSize(const char *planeName, bool isFiltered);
 extern jlib_decl size32_t roundIndexBlockedIOSize(size32_t blockedIOSize, size32_t pageSize);
 extern jlib_decl bool getRenameSupportedFromPath(const char *filePath);
-extern jlib_decl void setWriteSyncMarginDeltaMs(int deltaMs); // A value of std::numeric_limits<int>::min() means "not set".
+
+constexpr int noWriteSyncMarginDeltaMs = (std::numeric_limits<int>::min)();
+extern jlib_decl void setWriteSyncMarginDeltaMs(int deltaMs); // A value of noWriteSyncMarginDeltaMs means "not set".
+extern jlib_decl void setJobWriteSyncMarginDeltaMs(int deltaMs); // Overrides the configured value until reset to noWriteSyncMarginDeltaMs.
 extern jlib_decl bool getWriteSyncMarginDeltaMs(int &deltaMs); // Returns true if a delta is set, and fills deltaMs with its value (which may be 0).
 
 // Write-sync visibility cache: tracks recently published file parts that may not yet be visible
