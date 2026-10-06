@@ -25,4 +25,5 @@ void appendEscapedLdapFilter(size_t inputLength, const char *input, StringBuffer
 
 void escapeLdapDistinguishedName(const char *input, StringBuffer &output);
 void escapeLdapDistinguishedName(size_t inputLength, const char *input, StringBuffer &output);
+
 bool usernameContainsLdapUrlForbiddenChars(const char *username);

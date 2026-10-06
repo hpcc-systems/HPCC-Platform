@@ -26,6 +26,7 @@
 #include "aci.ipp"
 #include "ldapsecurity.ipp"
 #include "ldapsanitization.hpp"
+#include "ldapquerybuilders.hpp"
 #include "ldaptimeutils.hpp"
 #include "jsmartsock.hpp"
 #include "jrespool.tpp"
@@ -3758,13 +3759,7 @@ public:
         LdapUtils::normalizeDn(basedn, m_ldapconfig->getBasedn(), basednbuf);
         StringBuffer filter("objectClass=*");
 
-        if(searchstr && *searchstr && strcmp(searchstr, "*") != 0)
-        {
-            filter.insert(0, "(&(");
-            StringBuffer escapedSearch;
-            appendEscapedLdapFilter(searchstr, escapedSearch);
-            filter.appendf(")(|(%s=*%s*)))", "uNCName", escapedSearch.str());
-        }
+        appendResourceNameSearchFilter(searchstr, filter);
 
 
         const char* fldname;
@@ -4319,8 +4314,8 @@ public:
             if(user == NULL || strlen(user) == 0)
                 return;
 
-            StringBuffer filter("sAMAccountName=");
-            appendEscapedLdapFilter(user, filter);
+            StringBuffer filter;
+            appendSAMAccountNameFilter(user, filter);
 
             TIMEVAL timeOut = {m_ldapconfig->getLdapTimeout(),0};
 
@@ -4465,9 +4460,8 @@ public:
         }
 
         StringBuffer dn;
-        dn.append("cn=");
-        escapeLdapDistinguishedName(groupname, dn);
-        dn.append(",").append(basedn);
+        appendGroupCnPrefix(groupname, dn);
+        dn.append(basedn);
 
         char* oc_name;
         if(m_ldapconfig->getServerType() == ACTIVE_DIRECTORY)
@@ -4874,16 +4868,8 @@ public:
 
     virtual int countResources(const char* basedn, const char* searchstr, int limit)
     {
-        StringBuffer filter;
-        filter.append("objectClass=*");
-
-        if(searchstr && *searchstr && strcmp(searchstr, "*") != 0)
-        {
-            filter.insert(0, "(&(");
-            StringBuffer escapedSearch;
-            appendEscapedLdapFilter(searchstr, escapedSearch);
-            filter.appendf(")(|(%s=*%s*)))", "uNCName", escapedSearch.str());
-        }
+        StringBuffer filter("objectClass=*");
+        appendResourceNameSearchFilter(searchstr, filter);
 
         return countEntries(basedn, filter.str(), limit);
     }
@@ -5031,8 +5017,7 @@ private:
         if(m_ldapconfig->getServerType() == ACTIVE_DIRECTORY)
         {
             StringBuffer filter;
-            filter.append("sAMAccountName=");
-            appendEscapedLdapFilter(username, filter);
+            appendSAMAccountNameFilter(username, filter);
 
             char        *attribute;
             LDAPMessage *message;
@@ -5088,9 +5073,7 @@ private:
                 userdn.append(username);
             else
             {
-                userdn.append("uid=");
-                escapeLdapDistinguishedName(username, userdn);
-                userdn.append(",").append(m_ldapconfig->getUserBasedn());
+                appendUserUidDn(username, m_ldapconfig->getUserBasedn(), userdn);
             }
         }
 
@@ -5150,9 +5133,7 @@ private:
             return;
 
         LdapServerType stype = m_ldapconfig->getServerType();
-        groupdn.append("cn=");
-        escapeLdapDistinguishedName(groupname, groupdn);
-        groupdn.append(",");
+        appendGroupCnPrefix(groupname, groupdn);
         if(stype == ACTIVE_DIRECTORY && stricmp(groupname, "Administrators") == 0)
         {
             groupdn.append("cn=Builtin,").append(m_ldapconfig->getBasedn());
@@ -6132,8 +6113,7 @@ private:
         const char* username = user->getName();
 
         StringBuffer filter;
-        filter.append("sAMAccountName=");
-        appendEscapedLdapFilter(username, filter);
+        appendSAMAccountNameFilter(username, filter);
 
         char        *attribute;
         LDAPMessage *message;
@@ -6251,7 +6231,7 @@ private:
         // string: (userdn = "ldap:///uid=<username>,..."). A '"' breaks out of the ACI string
         // enabling clause injection; a '?' truncates the URL's DN component. Reject both at
         // account creation so the bad value never enters the directory.
-        if(serverType != ACTIVE_DIRECTORY && usernameContainsLdapUrlForbiddenChars(username))
+        if(shouldRejectAddUserUsername(serverType == ACTIVE_DIRECTORY, username))
             throw MakeStringException(-1, "Can't add user '%s': username contains character"
                 " not permitted in LDAP ACI userdn URLs ('\"' and '?' are forbidden)", username);
 
@@ -6295,14 +6275,12 @@ private:
             dn.append("cn=");
             escapeLdapDistinguishedName(fullname, dn);
             dn.append(",");
+            dn.append(basedn);
         }
         else
         {
-            dn.append("uid=");
-            escapeLdapDistinguishedName(user.getName(), dn);
-            dn.append(",");
+            appendUserUidDn(user.getName(), basedn, dn);
         }
-        dn.append(basedn);
 
         char* oc_name;
         char* act_fieldname;

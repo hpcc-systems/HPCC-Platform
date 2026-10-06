@@ -19,6 +19,7 @@
 #include "platform.h"
 #include "aci.ipp"
 #include "ldapsanitization.hpp"
+#include "ldapquerybuilders.hpp"
 #include "ldapsecurity.ipp"
 
 /****************************************************************
@@ -684,9 +685,7 @@ public:
 
                 //check if this aci is applicable to this user
                 StringBuffer userdn;
-                userdn.append("uid=");
-                escapeLdapDistinguishedName(user.getName(), userdn);
-                userdn.append(",").append(ldapconfig->getUserBasedn());
+                appendUserUidDn(user.getName(), ldapconfig->getUserBasedn(), userdn);
                 ForEachItemIn(z, aci.userdns())
                 {
                     const char* onedn = aci.userdns().item(z);
@@ -1145,10 +1144,7 @@ CSecurityDescriptor* CIPlanetAciProcessor::createDefaultSD(ISecUser * const user
         sec2aci(DEFAULT_OWNER_PERMISSION, defaultperm);
         StringBuffer default_sd;
         default_sd.append("(targetattr = \"*\") (version 3.0;acl \"default_aci\";allow (").append(defaultperm.str()).append(")");
-        default_sd.append("(userdn = \"ldap:///");
-        default_sd.append("uid=");
-        escapeLdapDistinguishedName(user->getName(), default_sd);
-        default_sd.append(",").append(userbasedn).append("\");)");
+        appendAciUserdnClause(user->getName(), userbasedn, default_sd);
         csd->appendDescriptor(default_sd.length(), (void*)default_sd.str());
     }
     return csd;
