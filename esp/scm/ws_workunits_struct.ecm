@@ -86,6 +86,12 @@ ESPenum WUQueryActivationMode : int
     ActivateDeletePrevious(3, "Activate query, delete previous")
 };
 
+ESPenum QueryCopyFailurePolicy : string
+{
+    FailFast("FailFast"),
+    Continue("Continue")
+};
+
 ESPenum WUExceptionSeverity : string
 {
     INFO("info"),

@@ -257,6 +257,21 @@ This is required by its binding with ESP service '<xsl:value-of select="$espServ
             <xsl:if test="string(@clusterQueryStateThreadPoolSize) != ''">
                 <ClusterQueryStateThreadPoolSize><xsl:value-of select="@clusterQueryStateThreadPoolSize"/></ClusterQueryStateThreadPoolSize>
             </xsl:if>
+            <xsl:if test="string(@queryCopyPreparationThreadPoolSize) != ''">
+                <QueryCopyPreparationThreadPoolSize><xsl:value-of select="@queryCopyPreparationThreadPoolSize"/></QueryCopyPreparationThreadPoolSize>
+            </xsl:if>
+            <xsl:if test="string(@queryCopyMaxActiveRecompiles) != ''">
+                <QueryCopyMaxActiveRecompiles><xsl:value-of select="@queryCopyMaxActiveRecompiles"/></QueryCopyMaxActiveRecompiles>
+            </xsl:if>
+            <xsl:if test="string(@queryCopyRecompileQueueTimeout) != ''">
+                <QueryCopyRecompileQueueTimeout><xsl:value-of select="@queryCopyRecompileQueueTimeout"/></QueryCopyRecompileQueueTimeout>
+            </xsl:if>
+            <xsl:if test="string(@queryCopyRecompileTimeout) != ''">
+                <QueryCopyRecompileTimeout><xsl:value-of select="@queryCopyRecompileTimeout"/></QueryCopyRecompileTimeout>
+            </xsl:if>
+            <xsl:if test="string(@queryCopyProgressInterval) != ''">
+                <QueryCopyProgressInterval><xsl:value-of select="@queryCopyProgressInterval"/></QueryCopyProgressInterval>
+            </xsl:if>
             <xsl:if test="string(@ThorSlaveLogThreadPoolSize) != ''">
                 <ThorSlaveLogThreadPoolSize><xsl:value-of select="@ThorSlaveLogThreadPoolSize"/></ThorSlaveLogThreadPoolSize>
             </xsl:if>

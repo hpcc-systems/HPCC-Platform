@@ -38,6 +38,9 @@
 #define UFO_REMOVE_QUERIES_NOT_IN_QUERYSET       0x08
 
 static const __uint64 defaultWUResultMaxSize = 0x100000*10; //10M
+static constexpr unsigned queryCopyMinParallelWindowSize = 1;
+static constexpr unsigned queryCopyMaxParallelWindowSize = 1024;
+static constexpr unsigned queryCopyMaxPreparationBatchSize = 4;
 
 class QueryFilesInUse : public CInterface, implements ISDSSubscription, implements IThreaded
 {
@@ -214,6 +217,42 @@ public:
     const bool getCheckAllNodes() const { return checkAllNodes; }
 };
 
+class CQueryCopyCleanupManager : implements IThreaded
+{
+public:
+    CQueryCopyCleanupManager();
+    ~CQueryCopyCleanupManager();
+
+    void start();
+    void stop();
+    void track(const char *wuid, ISecManager *secManager, ISecUser *secUser);
+    virtual void threadmain() override;
+
+private:
+    class CTrackedWorkunit : public CInterface, implements IInterface
+    {
+    public:
+        IMPLEMENT_IINTERFACE;
+
+        CTrackedWorkunit(const char *_wuid, ISecManager *_secManager, ISecUser *_secUser)
+            : wuid(_wuid), secManager(_secManager), secUser(_secUser ? _secUser->clone() : nullptr)
+        {
+        }
+
+        StringAttr wuid;
+        Linked<ISecManager> secManager;
+        Owned<ISecUser> secUser;
+    };
+
+    CriticalSection lifecycleCrit{SYNC_LOCATION};
+    CriticalSection crit{SYNC_LOCATION};
+    Semaphore wake{SYNC_LOCATION};
+    CThreaded thread;
+    IArrayOf<CTrackedWorkunit> trackedWorkunits;
+    std::atomic_bool stopping{false};
+    bool started = false;
+};
+
 class CWsWorkunitsEx : public CWsWorkunits
 {
 public:
@@ -225,6 +264,8 @@ public:
     {
         filesInUse.unsubscribe();
         filesInUse.abort();
+        queryCopyPreparationPool.clear();
+        queryCopyCleanupManager.stop();
         clusterQueryStatePool.clear();
     };
 
@@ -429,6 +470,13 @@ private:
     unsigned short port;
     Owned<IPropertyTree> directories;
     int maxRequestEntityLength;
+    Owned<IThreadPool> queryCopyPreparationPool;
+    CQueryCopyCleanupManager queryCopyCleanupManager;
+    unsigned queryCopyPreparationPoolSize = 4;
+    unsigned queryCopyMaxActiveRecompiles = 32;
+    unsigned queryCopyRecompileQueueTimeout = 2 * 60 * 60 * 1000;
+    unsigned queryCopyRecompileTimeout = 30 * 60 * 1000;
+    unsigned queryCopyProgressInterval = 30 * 1000;
     Owned<IThreadPool> clusterQueryStatePool;
     unsigned thorSlaveLogThreadPoolSize = THOR_SLAVE_LOG_THREAD_POOL_SIZE;
     Owned<IWorkUnitFactory> wuFactory;
@@ -511,6 +559,59 @@ private:
 };
 
 void deploySharedObject(IEspContext &context, StringBuffer &wuid, const char *cluster, const char *name, const MemoryBuffer &obj, const char *dir, const char *xml, bool protect, const char *sourceProcess, const char *sourceFilename);
+
+interface IQueryCopyPreparationTask : extends IInterface
+{
+    virtual void prepare() = 0;
+};
+
+class CQueryCopyPreparationThreadFactory : public CInterface, public IThreadFactory
+{
+    class CQueryCopyPreparationThread : public CInterface, implements IPooledThread
+    {
+        Owned<IQueryCopyPreparationTask> task;
+    public:
+        IMPLEMENT_IINTERFACE;
+
+        virtual void init(void *_param) override
+        {
+            task.setown((IQueryCopyPreparationTask *)_param);
+        }
+        virtual void threadmain() override
+        {
+            Owned<IQueryCopyPreparationTask> activeTask = task.getClear();
+            try
+            {
+                activeTask->prepare();
+            }
+            catch (IException *e)
+            {
+                StringBuffer msg;
+                IERRLOG("Exception in query-copy preparation thread: %s", e->errorMessage(msg).str());
+                e->Release();
+            }
+            catch (...)
+            {
+                IERRLOG("Unexpected exception in query-copy preparation thread");
+            }
+        }
+        virtual bool canReuse() const override
+        {
+            return true;
+        }
+        virtual bool stop() override
+        {
+            return false;
+        }
+    };
+
+public:
+    IMPLEMENT_IINTERFACE;
+    virtual IPooledThread *createNew() override
+    {
+        return new CQueryCopyPreparationThread();
+    }
+};
 
 class CClusterQueryStateParam : public CInterface
 {

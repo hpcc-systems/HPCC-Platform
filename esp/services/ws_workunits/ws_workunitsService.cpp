@@ -65,8 +65,27 @@ static constexpr const char* zipFolder = "tempzipfiles" PATHSEPSTR;
 static const char* deployWorkunitsAccess = "DeployWorkunitsAccess";
 
 #define WU_SDS_LOCK_TIMEOUT (5*60*1000) // 5 mins
-const unsigned CHECK_QUERY_STATUS_THREAD_POOL_SIZE = 25;
+static constexpr unsigned CHECK_QUERY_STATUS_THREAD_POOL_SIZE = 25;
+static constexpr unsigned QUERY_COPY_PREPARATION_THREAD_POOL_SIZE = 4;
+static constexpr unsigned QUERY_COPY_MAX_ACTIVE_RECOMPILES = 32;
+static constexpr unsigned QUERY_COPY_RECOMPILE_QUEUE_TIMEOUT = 2 * 60 * 60 * 1000;
+static constexpr unsigned QUERY_COPY_RECOMPILE_TIMEOUT = 30 * 60 * 1000;
+static constexpr unsigned QUERY_COPY_PROGRESS_INTERVAL = 30 * 1000;
 const unsigned MAX_ZAP_BUFFER_SIZE = 10000000; //10M
+
+static unsigned getNonNegativeConfigValue(IPropertyTree &cfg, const char *xpath, unsigned defaultValue)
+{
+    __int64 configuredValue = cfg.getPropInt64(xpath, defaultValue);
+    if (configuredValue < 0 || configuredValue > UINT_MAX)
+        throw makeStringExceptionV(-1, "Configuration value at %s must be between 0 and %u", xpath, UINT_MAX);
+    return static_cast<unsigned>(configuredValue);
+}
+
+static unsigned getThreadPoolSize(IPropertyTree &cfg, const char *xpath, unsigned defaultSize, bool zeroMeansUnlimited)
+{
+    unsigned configuredSize = getNonNegativeConfigValue(cfg, xpath, defaultSize);
+    return (configuredSize || zeroMeansUnlimited) ? configuredSize : 1;
+}
 
 class ExecuteExistingQueryInfo
 {
@@ -486,11 +505,29 @@ void CWsWorkunitsEx::init(IPropertyTree *cfg, const char *process, const char *s
 #endif
     m_sched.start(false);
 
-    //Start thread pool
-    xpath.setf("Software/EspProcess[@name=\"%s\"]/EspService[@name=\"%s\"]/ClusterQueryStateThreadPoolSize", process, service);
+    VStringBuffer serviceXPath("Software/EspProcess[@name=\"%s\"]/EspService[@name=\"%s\"]", process, service);
+    IPropertyTree *serviceConfig = cfg->queryPropTree(serviceXPath);
+    if (!serviceConfig)
+        throw makeStringExceptionV(-1, "Configuration not found for ESP service %s in process %s", service, process);
+
+    queryCopyPreparationPoolSize = getThreadPoolSize(*serviceConfig, "QueryCopyPreparationThreadPoolSize", QUERY_COPY_PREPARATION_THREAD_POOL_SIZE, false);
+    Owned<CQueryCopyPreparationThreadFactory> queryCopyThreadFactory = new CQueryCopyPreparationThreadFactory();
+    queryCopyPreparationPool.setown(createThreadPool("Query Copy Preparation Thread Pool", queryCopyThreadFactory, false, nullptr, queryCopyPreparationPoolSize));
+    queryCopyCleanupManager.start();
+
+    queryCopyMaxActiveRecompiles = getNonNegativeConfigValue(*serviceConfig, "QueryCopyMaxActiveRecompiles", QUERY_COPY_MAX_ACTIVE_RECOMPILES);
+    if (queryCopyMaxActiveRecompiles < queryCopyMinParallelWindowSize)
+        queryCopyMaxActiveRecompiles = queryCopyMinParallelWindowSize;
+    else if (queryCopyMaxActiveRecompiles > queryCopyMaxParallelWindowSize)
+        queryCopyMaxActiveRecompiles = queryCopyMaxParallelWindowSize;
+    queryCopyRecompileQueueTimeout = getNonNegativeConfigValue(*serviceConfig, "QueryCopyRecompileQueueTimeout", QUERY_COPY_RECOMPILE_QUEUE_TIMEOUT);
+    queryCopyRecompileTimeout = getNonNegativeConfigValue(*serviceConfig, "QueryCopyRecompileTimeout", QUERY_COPY_RECOMPILE_TIMEOUT);
+    queryCopyProgressInterval = getNonNegativeConfigValue(*serviceConfig, "QueryCopyProgressInterval", QUERY_COPY_PROGRESS_INTERVAL);
+
+    unsigned clusterQueryStatePoolSize = getThreadPoolSize(*serviceConfig, "ClusterQueryStateThreadPoolSize", CHECK_QUERY_STATUS_THREAD_POOL_SIZE, true);
     Owned<CClusterQueryStateThreadFactory> threadFactory = new CClusterQueryStateThreadFactory();
     clusterQueryStatePool.setown(createThreadPool("CheckAndSetClusterQueryState Thread Pool", threadFactory, false, nullptr,
-            cfg->getPropInt(xpath.str(), CHECK_QUERY_STATUS_THREAD_POOL_SIZE)));
+            clusterQueryStatePoolSize));
 }
 
 bool CWsWorkunitsEx::onWUCreate(IEspContext &context, IEspWUCreateRequest &req, IEspWUCreateResponse &resp)

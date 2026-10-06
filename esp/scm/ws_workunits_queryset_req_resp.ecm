@@ -529,6 +529,11 @@ ESPrequest [nil_remove] WUCopyQuerySetRequest
     [min_ver("2.02")] string KeyCompression;
     [min_ver("2.05")] string DfuTargetPlane; //Override the destination plane for DFU copy
     [min_ver("2.06")] ESPEnum WUQueryActivationMode Activate;
+    [min_ver("2.12")] bool Parallel(false);
+    [min_ver("2.12")] ESPEnum QueryCopyFailurePolicy ParallelFailurePolicy("FailFast");
+    [min_ver("2.12")] nonNegativeInteger ParallelQueueTimeout(0); //Milliseconds; zero uses the service default
+    [min_ver("2.12")] nonNegativeInteger ParallelCompileTimeout(0); //Milliseconds; zero uses the service default
+    [min_ver("2.12")] nonNegativeInteger ParallelWindowSize(0); //Zero uses the service default
 };
 
 ESPresponse [exceptions_inline] WUCopyQuerySetResponse

@@ -38,6 +38,149 @@
 #define DALI_FILE_LOOKUP_TIMEOUT (1000*15*1)  // 15 seconds
 
 static constexpr int querySetCloneRecompileWaitMs = 30 * 60 * 1000;
+static constexpr unsigned queryCopyCancellationWaitMs = 30 * 1000;
+static constexpr unsigned queryCopyRemoteReadTimeoutSecs = 5 * 60;
+
+static bool queryCopyTimeoutExpired(unsigned startTime, unsigned timeout, unsigned now)
+{
+    return timeout && now - startTime >= timeout;
+}
+
+CQueryCopyCleanupManager::CQueryCopyCleanupManager() : thread("Query Copy Cleanup Manager", this)
+{
+}
+
+CQueryCopyCleanupManager::~CQueryCopyCleanupManager()
+{
+    stop();
+}
+
+void CQueryCopyCleanupManager::start()
+{
+    CriticalBlock block(lifecycleCrit);
+    if (!started)
+    {
+        stopping = false;
+        started = true;
+        thread.start(false);
+    }
+}
+
+void CQueryCopyCleanupManager::stop()
+{
+    CriticalBlock block(lifecycleCrit);
+    if (started)
+    {
+        stopping = true;
+        wake.signal();
+        thread.join();
+        started = false;
+    }
+}
+
+void CQueryCopyCleanupManager::track(const char *wuid, ISecManager *secManager, ISecUser *secUser)
+{
+    if (isEmptyString(wuid))
+        return;
+    CriticalBlock block(crit);
+    if (stopping)
+        return;
+    ForEachItemIn(i, trackedWorkunits)
+    {
+        if (streq(trackedWorkunits.item(i).wuid, wuid))
+            return;
+    }
+    trackedWorkunits.append(*new CTrackedWorkunit(wuid, secManager, secUser));
+    wake.signal();
+}
+
+void CQueryCopyCleanupManager::threadmain()
+{
+    Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
+    unsigned shutdownStart = 0;
+    for (;;)
+    {
+        IArrayOf<CTrackedWorkunit> pending;
+        {
+            CriticalBlock block(crit);
+            ForEachItemIn(i, trackedWorkunits)
+                pending.append(*LINK(&trackedWorkunits.item(i)));
+        }
+        ForEachItemInRev(i, pending)
+        {
+            CTrackedWorkunit &tracked = pending.item(i);
+            const char *wuid = tracked.wuid;
+            bool remove = false;
+            try
+            {
+                Owned<IConstWorkUnit> workunit = factory->openWorkUnit(wuid, tracked.secManager, tracked.secUser, false);
+                remove = !workunit;
+                if (workunit)
+                {
+                    WUState state = workunit->getState();
+                    if (isCompiled(state) || state == WUStateFailed || state == WUStateAborted)
+                    {
+                        workunit.clear();
+                        remove = factory->deleteWorkUnit(wuid, tracked.secManager, tracked.secUser);
+                        if (remove)
+                            PROGLOG("Parallel queryset recompile cleanup deleted generatedWuid=%s", wuid);
+                    }
+                    else
+                        abortWorkUnit(wuid, tracked.secManager, tracked.secUser);
+                }
+            }
+            catch (IException *e)
+            {
+                StringBuffer message;
+                WARNLOG("Parallel queryset recompile cleanup failed generatedWuid=%s: %s", wuid, e->errorMessage(message).str());
+                e->Release();
+            }
+            catch (...)
+            {
+                WARNLOG("Parallel queryset recompile cleanup unexpectedly failed generatedWuid=%s", wuid);
+            }
+            if (remove)
+            {
+                CriticalBlock block(crit);
+                ForEachItemInRev(trackedIndex, trackedWorkunits)
+                {
+                    if (&trackedWorkunits.item(trackedIndex) == &tracked)
+                    {
+                        trackedWorkunits.remove(trackedIndex);
+                        break;
+                    }
+                }
+            }
+        }
+        if (stopping)
+        {
+            unsigned remaining;
+            {
+                CriticalBlock block(crit);
+                remaining = trackedWorkunits.ordinality();
+            }
+            if (!remaining)
+                break;
+            if (!shutdownStart)
+                shutdownStart = msTick();
+            if (msTick() - shutdownStart >= queryCopyCancellationWaitMs)
+            {
+                WARNLOG("Parallel queryset recompile cleanup stopped with %u generated workunits still pending", remaining);
+                break;
+            }
+            wake.wait(1000);
+        }
+        else
+        {
+            unsigned waitTime;
+            {
+                CriticalBlock block(crit);
+                waitTime = trackedWorkunits.ordinality() ? 1000 : INFINITE;
+            }
+            wake.wait(waitTime);
+        }
+    }
+}
 
 static int getCrossArchitectureRecompileWait(int requestedWait)
 {
@@ -157,6 +300,7 @@ IClientWUQuerySetDetailsResponse *fetchQueryDetails(IClientWsWorkunits *_ws, IEs
     reqQueryInfo->setQuerySetName(target);
     reqQueryInfo->setFilter(queryid);
     reqQueryInfo->setFilterType("Id");
+    reqQueryInfo->rpc().setReadTimeOutSecs(queryCopyRemoteReadTimeoutSecs);
     return ws->WUQuerysetDetails(reqQueryInfo);
 }
 
@@ -173,6 +317,7 @@ void fetchRemoteWorkunit(IClientWsWorkunits *_ws, IEspContext *ctx, const char *
     req->setErrorMessageFormat(CErrorMessageFormat_XML);
     req->setType("xml");
     req->updateFileOptions().setFileType(CWUFileType::CWUFileType_XML);
+    req->rpc().setReadTimeOutSecs(queryCopyRemoteReadTimeoutSecs);
     Owned<IClientWULogFileResponse> resp = ws->WUFile(req);
     if (!resp || resp->getExceptions().ordinality() || !resp->getThefile().length())
         throw MakeStringException(ECLWATCH_CANNOT_GET_WORKUNIT, "Cannot retrieve remote workunit");
@@ -241,11 +386,7 @@ static StringBuffer &getRemoteWorkUnitTargetArchitecture(StringBuffer &targetArc
 {
     if (getBinaryTargetArchitecture(targetArchitecture, dll))
         return targetArchitecture;
-
-    SCMStringBuffer configuredArchitecture;
-    if (wu)
-        wu->getDebugValue(targetArchitectureDebugValue, configuredArchitecture);
-    return normalizeTargetArchitecture(targetArchitecture, configuredArchitecture.str());
+    return getWorkUnitTargetArchitecture(targetArchitecture, wu, targetArchitectureX86_64Linux);
 }
 
 void fetchRemoteWorkunitArchive(IClientWsWorkunits *_ws, IEspContext *ctx, const char *netAddress, const char *wuid, const MemoryBuffer &dll, StringBuffer &archiveText, bool useSSL)
@@ -256,6 +397,7 @@ void fetchRemoteWorkunitArchive(IClientWsWorkunits *_ws, IEspContext *ctx, const
     req->setErrorMessageFormat(CErrorMessageFormat_XML);
     req->setType(File_ArchiveQuery);
     req->updateFileOptions().setFileType(CWUFileType::CWUFileType_ArchiveQuery);
+    req->rpc().setReadTimeOutSecs(queryCopyRemoteReadTimeoutSecs);
     Owned<IClientWULogFileResponse> resp = ws->WUFile(req);
     if (!resp || resp->getExceptions().ordinality() || !resp->getThefile().length())
     {
@@ -2304,6 +2446,12 @@ static void waitForCrossArchitectureRecompile(const char *wuid, int wait)
         throw makeStringExceptionV(ECLWATCH_CANNOT_UPDATE_WORKUNIT, "Cross-architecture recompile workunit %s did not reach compiled state; current state is %s (wait=%d ms)", wuid, getWorkunitStateStr(state), wait);
 }
 
+static void submitCrossArchitectureRecompile(IEspContext &context, const char *srcWuid, const char *wuid, const char *target, IArrayOf<IConstNamedValue> *debugs, const char *sourceArchitecture, const char *destinationArchitecture)
+{
+    PROGLOG("Cross-architecture deploy/copy detected for %s: %s -> %s; recompiling as %s for target %s", srcWuid, sourceArchitecture, destinationArchitecture, wuid, target);
+    WsWuHelpers::submitWsWorkunit(context, wuid, target, nullptr, 0, 0, true, false, false, nullptr, nullptr, debugs, nullptr);
+}
+
 static void recompileLocalWorkunitForTarget(IEspContext &context, IWorkUnitFactory *factory, const char *srcWuid, const char *target, int wait, IArrayOf<IConstNamedValue> *debugs, const char *sourceArchitecture, const char *destinationArchitecture, StringAttr &wuid, StringAttr &jobname)
 {
     try
@@ -2319,8 +2467,7 @@ static void recompileLocalWorkunitForTarget(IEspContext &context, IWorkUnitFacto
         }
         throw;
     }
-    PROGLOG("Cross-architecture deploy/copy detected for %s: %s -> %s; recompiling as %s for target %s", srcWuid, sourceArchitecture, destinationArchitecture, wuid.str(), target);
-    WsWuHelpers::submitWsWorkunit(context, wuid.str(), target, nullptr, 0, 0, true, false, false, nullptr, nullptr, debugs, nullptr);
+    submitCrossArchitectureRecompile(context, srcWuid, wuid.str(), target, debugs, sourceArchitecture, destinationArchitecture);
     waitForCrossArchitectureRecompile(wuid.str(), wait);
 }
 
@@ -2339,8 +2486,7 @@ static void recompileArchiveForTarget(IEspContext &context, IWorkUnitFactory *fa
         }
         throw;
     }
-    PROGLOG("Cross-architecture deploy/copy detected for %s: %s -> %s; recompiling as %s for target %s", srcWuid, sourceArchitecture, destinationArchitecture, wuid.str(), target);
-    WsWuHelpers::submitWsWorkunit(context, wuid.str(), target, nullptr, 0, 0, true, false, false, nullptr, nullptr, debugs, nullptr);
+    submitCrossArchitectureRecompile(context, srcWuid, wuid.str(), target, debugs, sourceArchitecture, destinationArchitecture);
     waitForCrossArchitectureRecompile(wuid.str(), wait);
 }
 
@@ -3259,6 +3405,7 @@ IPropertyTree *fetchRemoteQuerySetInfo(IEspContext *context, const char *srcAddr
 
     Owned<IHttpClientContext> httpCtx = getHttpClientContext();
     Owned<IHttpClient> httpclient = httpCtx->createHttpClient(NULL, url);
+    httpclient->setTimeOut(queryCopyRemoteReadTimeoutSecs);
 
     const char *user = context->queryUserId();
     if (user && *user)
@@ -3277,11 +3424,103 @@ IPropertyTree *fetchRemoteQuerySetInfo(IEspContext *context, const char *srcAddr
     return createPTreeFromXMLString(response);
 }
 
+class QueryCloner;
+
+class CQueryCopyPreparation : public CInterface, implements IInterface
+{
+public:
+    IMPLEMENT_IINTERFACE;
+
+    CQueryCopyPreparation(QueryCloner &_owner, IPropertyTree *sourceQuery, bool _remote, bool _makeActive, unsigned _sourceOrder);
+
+    void prepare();
+    void releaseFetchedPayload()
+    {
+        xml.kill();
+        dll.resetBuffer();
+        dllName.kill();
+        remoteDfs.kill();
+    }
+    void releaseRecompilePayload()
+    {
+        archiveText.kill();
+        remoteSourceWu.clear();
+    }
+
+    QueryCloner &owner;
+    Owned<IPropertyTree> query;
+    StringAttr sourceQueryId;
+    StringAttr sourceWuid;
+    StringAttr queryName;
+    StringAttr existingQueryId;
+    StringBuffer xml;
+    MemoryBuffer dll;
+    StringBuffer dllName;
+    StringBuffer remoteDfs;
+    StringBuffer sourceArchitecture;
+    StringBuffer archiveText;
+    Owned<ILocalWorkUnit> remoteSourceWu;
+    Owned<IException> exception;
+    Semaphore preparationCompleted{SYNC_LOCATION};
+    StringAttr recompiledWuid;
+    StringAttr recompileJobName;
+    StringBuffer deployedWuid;
+    unsigned sourceOrder;
+    unsigned preparationQueuedTime = 0;
+    unsigned preparationStartTime = 0;
+    unsigned preparationCompletionTime = 0;
+    unsigned remoteTransferTimeMs = 0;
+    unsigned recompileQueueStartTime = 0;
+    unsigned recompileSubmissionTime = 0;
+    unsigned recompileCompletionTime = 0;
+    unsigned compileQueueTimeMs = 0;
+    unsigned compileTimeMs = 0;
+    unsigned deploymentTimeMs = 0;
+    unsigned compileStartTime = 0;
+    unsigned cancellationRequestTime = 0;
+    bool remote;
+    bool makeActive;
+    bool sourceExists = false;
+    bool requiresRecompile = false;
+    bool recompileSubmitted = false;
+    bool recompileFinished = false;
+    bool recompileCreated = false;
+    bool cancellationRequested = false;
+    bool deployed = false;
+};
+
+class CQueryCopyPreparationTask : public CInterface, implements IQueryCopyPreparationTask
+{
+public:
+    IMPLEMENT_IINTERFACE;
+
+    CQueryCopyPreparationTask(CQueryCopyPreparation &_preparation) : preparation(&_preparation)
+    {
+    }
+
+    virtual void prepare() override
+    {
+        try
+        {
+            preparation->prepare();
+        }
+        catch (...)
+        {
+            preparation->preparationCompleted.signal();
+            throw;
+        }
+        preparation->preparationCompleted.signal();
+    }
+
+private:
+    CQueryCopyPreparation *preparation;
+};
+
 class QueryCloner
 {
 public:
-    QueryCloner(IEspContext *_context, const char *address, const char *source, const char *_target, bool _useSSL) :
-        context(_context), srcAddress(address), target(_target), useSSL(_useSSL)
+    QueryCloner(IEspContext *_context, const char *address, const char *source, const char *_target, bool _useSSL, CQueryCopyCleanupManager *_cleanupManager) :
+        context(_context), srcAddress(address), target(_target), userId(_context->queryUserId()), password(_context->queryPassword()), cleanupManager(_cleanupManager), useSSL(_useSSL)
     {
         if (srcAddress.length())
             srcQuerySet.setown(fetchRemoteQuerySetInfo(context, srcAddress, source, useSSL));
@@ -3297,8 +3536,8 @@ public:
         factory.setown(getWorkUnitFactory(context->querySecManager(), context->queryUser()));
     }
 
-    QueryCloner(IEspContext *_context, IPropertyTree *srcTree, const char *_target) :
-        context(_context), target(_target)
+    QueryCloner(IEspContext *_context, IPropertyTree *srcTree, const char *_target, CQueryCopyCleanupManager *_cleanupManager) :
+        context(_context), target(_target), userId(_context->queryUserId()), password(_context->queryPassword()), cleanupManager(_cleanupManager), allowMissingWuids(true)
     {
         srcQuerySet.set(srcTree);
         destQuerySet.setown(getQueryRegistry(target, false));
@@ -3321,7 +3560,17 @@ public:
             activationMode = mode;
     }
 
-    void addToBePublished(const char *wuid, const char *name, bool makeActive, const char *userid, IPropertyTree *query)
+    void setParallelOptions(unsigned _maxActiveRecompiles, unsigned _preparationBatchSize, unsigned _queueTimeout, unsigned _compileTimeout, unsigned _progressInterval, CQueryCopyFailurePolicy failurePolicy)
+    {
+        maxActiveRecompiles = _maxActiveRecompiles ? _maxActiveRecompiles : 1;
+        preparationBatchSize = std::min(_preparationBatchSize ? _preparationBatchSize : 1, queryCopyMaxPreparationBatchSize);
+        recompileQueueTimeout = _queueTimeout;
+        recompileTimeout = _compileTimeout;
+        progressInterval = _progressInterval;
+        failFast = failurePolicy != CQueryCopyFailurePolicy_Continue;
+    }
+
+    IPropertyTree *addToBePublished(const char *wuid, const char *name, bool makeActive, const char *userid, IPropertyTree *query)
     {
         IPropertyTree *entry = toBePublished->addPropTree("Publish");
         entry->setProp("@wuid", wuid);
@@ -3354,247 +3603,181 @@ public:
             const char *atname = aiter->queryName();
             attrs->setProp(atname, aiter->queryValue());
         }
+        return entry;
     }
 
-    void recompileLocalQueryIfNeeded(StringBuffer &wuid)
+    void addPreparedToBePublished(const char *wuid, CQueryCopyPreparation &preparation)
     {
-        Owned<IConstWorkUnit> cw = factory->openWorkUnit(wuid.str());
-        if (!cw)
-            return;
-
-        StringBuffer sourceArchitecture;
-        StringBuffer destinationArchitecture;
-        getWorkUnitTargetArchitecture(sourceArchitecture, cw);
-        getTargetClusterTargetArchitecture(destinationArchitecture, target);
-        if (targetArchitecturesMatch(sourceArchitecture.str(), destinationArchitecture.str()))
-            return;
-
-        StringAttr recompiledWuid;
-        StringAttr jobname;
-        recompileLocalWorkunitForTarget(*context, factory, wuid.str(), target, querySetCloneRecompileWaitMs, nullptr, sourceArchitecture.str(), destinationArchitecture.str(), recompiledWuid, jobname);
-        wuid.set(recompiledWuid);
-    }
-
-    bool recompileRemoteQueryIfNeeded(StringBuffer &wuid, const char *queryName, const char *xml, const MemoryBuffer &dll)
-    {
-        Owned<ILocalWorkUnit> sourceWu = createLocalWorkUnitFromXml(xml);
-        StringBuffer sourceArchitecture;
-        StringBuffer destinationArchitecture;
-        getRemoteWorkUnitTargetArchitecture(sourceArchitecture, sourceWu, dll);
-        getTargetClusterTargetArchitecture(destinationArchitecture, target);
-        if (targetArchitecturesMatch(sourceArchitecture.str(), destinationArchitecture.str()))
-            return false;
-
-        StringBuffer archiveText;
-        try
-        {
-            fetchRemoteWorkunitArchive(nullptr, context, srcAddress.str(), wuid.str(), dll, archiveText, useSSL);
-        }
-        catch (IException *e)
-        {
-            if (isArchiveMissingException(e))
-            {
-                e->Release();
-                throwMissingArchiveForArchitectureMismatch(wuid.str(), sourceArchitecture.str(), destinationArchitecture.str());
-            }
-            throw;
-        }
-
-        StringAttr recompiledWuid;
-        StringAttr jobname;
-        recompileArchiveForTarget(*context, factory, wuid.str(), queryName, archiveText.str(), sourceWu, target, querySetCloneRecompileWaitMs, nullptr, sourceArchitecture.str(), destinationArchitecture.str(), recompiledWuid, jobname);
-        wuid.set(recompiledWuid);
-        return true;
+        IPropertyTree *entry = addToBePublished(wuid, preparation.queryName, preparation.makeActive, context->queryUserId(), preparation.query);
+        entry->setPropBool("@temporaryWorkunit", preparation.requiresRecompile || !streq(wuid, preparation.sourceWuid.get()));
+        entry->setProp("@sourceQueryId", preparation.sourceQueryId);
+        entry->setProp("@sourceWuid", preparation.sourceWuid);
+        entry->setPropInt("@sourceOrder", preparation.sourceOrder);
+        entry->setPropInt("@queueTimeMs", preparation.preparationStartTime - preparation.preparationQueuedTime);
+        entry->setPropInt("@preparationTimeMs", preparation.preparationCompletionTime - preparation.preparationStartTime);
+        entry->setPropInt("@remoteTransferTimeMs", preparation.remoteTransferTimeMs);
+        entry->setPropInt("@deploymentTimeMs", preparation.deploymentTimeMs);
+        entry->setPropInt("@compileQueueTimeMs", preparation.compileQueueTimeMs);
+        entry->setPropInt("@compileTimeMs", preparation.compileTimeMs);
     }
 
     void publish()
+    {
+        if (parallelMode)
+            destQuerySet.setown(getQueryRegistry(target, false));
+
+        Owned<IPropertyTreeIterator> entries = toBePublished->getElements("Publish");
+        ForEach(*entries)
+        {
+            IPropertyTree &entry = entries->query();
+            const char *wuid = entry.queryProp("@wuid");
+            const char *name = entry.queryProp("@name");
+            WUQueryActivationOptions entryActivationMode = (WUQueryActivationOptions)entry.getPropInt("@activationMode", CWUQueryActivationMode_NoActivate);
+            SCMStringBuffer existingQueryId;
+            queryIdFromQuerySetWuid(destQuerySet, wuid, name, existingQueryId);
+            if (existingQueryId.length())
+            {
+                entry.setPropBool("@temporaryWorkunit", false);
+                if (entry.getPropBool("@makeActive"))
+                    activateQuery(destQuerySet, entryActivationMode, name, existingQueryId.str(), entry.queryProp("@userid"));
+                existingQueryIds.append(existingQueryId.str());
+                if (parallelMode)
+                    PROGLOG("Parallel queryset copy completed queryId=%s sourceWuid=%s targetWuid=%s sourceOrder=%u elapsedMs=%u disposition=existing", entry.queryProp("@sourceQueryId"), entry.queryProp("@sourceWuid"), wuid, entry.getPropInt("@sourceOrder"), msTick() - parallelStartTime);
+                continue;
+            }
+
+            StringBuffer newQueryId;
+            Owned<IWorkUnit> workunit = factory->updateWorkUnit(wuid);
+            if (!workunit)
+                throw makeStringExceptionV(ECLWATCH_CANNOT_OPEN_WORKUNIT, "Cannot update workunit %s while publishing query %s", wuid, name);
+            bool queryAdded = false;
+            try
+            {
+                addQueryToQuerySet(workunit, destQuerySet, name, DO_NOT_ACTIVATE, newQueryId, entry.queryProp("@userid"), queryAdded);
+                if (!queryAdded)
+                {
+                    entry.setPropBool("@temporaryWorkunit", false);
+                    if (entry.getPropBool("@makeActive"))
+                        activateQuery(destQuerySet, entryActivationMode, name, newQueryId, entry.queryProp("@userid"));
+                    existingQueryIds.append(newQueryId);
+                    if (parallelMode)
+                        PROGLOG("Parallel queryset copy completed queryId=%s sourceWuid=%s targetWuid=%s sourceOrder=%u elapsedMs=%u disposition=existing", entry.queryProp("@sourceQueryId"), entry.queryProp("@sourceWuid"), wuid, entry.getPropInt("@sourceOrder"), msTick() - parallelStartTime);
+                    continue;
+                }
+                IPropertyTree *info = entry.queryPropTree("Info");
+                if (info)
+                {
+                    Owned<IPropertyTree> destQuery = getQueryById(destQuerySet, newQueryId);
+                    if (destQuery)
+                    {
+                        Owned<IAttributeIterator> aiter = info->getAttributes();
+                        ForEach(*aiter)
+                        {
+                            const char *atname = aiter->queryName();
+                            if (!destQuery->hasProp(atname))
+                                destQuery->setProp(atname, aiter->queryValue());
+                        }
+                        Owned<IPropertyTreeIterator> children = info->getElements("*");
+                        ForEach(*children)
+                        {
+                            IPropertyTree &child = children->query();
+                            destQuery->addPropTree(child.queryName(), createPTreeFromIPT(&child));
+                        }
+                    }
+                }
+                activateQuery(destQuerySet, entryActivationMode, name, newQueryId, entry.queryProp("@userid"));
+            }
+            catch (...)
+            {
+                if (queryAdded && newQueryId.length())
+                {
+                    try
+                    {
+                        removeNamedQuery(destQuerySet, newQueryId.str());
+                    }
+                    catch (...)
+                    {
+                        entry.setPropBool("@temporaryWorkunit", false);
+                        ERRLOG("Failed rolling back partially published query queryId=%s generatedWuid=%s; preserving workunit", newQueryId.str(), wuid);
+                    }
+                }
+                else if (!queryAdded && newQueryId.length())
+                    entry.setPropBool("@temporaryWorkunit", false);
+                throw;
+            }
+            entry.setPropBool("@temporaryWorkunit", false);
+            copiedQueryIds.append(newQueryId);
+            if (parallelMode)
+                PROGLOG("Parallel queryset copy completed queryId=%s sourceWuid=%s targetWuid=%s sourceOrder=%u elapsedMs=%u disposition=published", entry.queryProp("@sourceQueryId"), entry.queryProp("@sourceWuid"), wuid, entry.getPropInt("@sourceOrder"), msTick() - parallelStartTime);
+        }
+        if (parallelMode)
+            logParallelSummary("complete");
+    }
+
+    void cloneQueries(IThreadPool *preparationPool, bool parallel, bool activeOnly, bool cloneActiveState)
+    {
+        cloneQueries(preparationPool, parallel, activeOnly, cloneActiveState, nullptr);
+    }
+
+    void cloneQueries(IThreadPool *preparationPool, bool parallel, bool activeOnly, bool cloneActiveState, const char *queryMask)
+    {
+        parallelStartTime = msTick();
+        if (!parallel)
+            maxActiveRecompiles = 1;
+        getTargetClusterTargetArchitecture(destinationArchitecture, target);
+        OwnedPointerArrayOf<CQueryCopyPreparation> preparations;
+        if (srcAddress.length())
+            enumerateRemoteQueries(preparations, activeOnly, cloneActiveState);
+        else
+            enumerateLocalQueries(preparations, activeOnly, cloneActiveState, queryMask);
+        selectedCount = preparations.ordinality();
+
+        parallelMode = parallel;
+        totalRecompileTimeout = parallelMode ? 0 : querySetCloneRecompileWaitMs;
+        if (parallelMode)
+            destQuerySet.setown(createPTreeFromIPT(destQuerySet.get()));
+
+        try
+        {
+            coordinatePreparedRecompiles(preparationPool, preparations);
+            if (failFast)
+                throwPreparationExceptions(preparations);
+            else
+                logPreparationExceptions(preparations);
+
+            ForEachItemIn(commitIndex, preparations)
+            {
+                CQueryCopyPreparation &preparation = *preparations.item(commitIndex);
+                if (!preparation.exception)
+                    clonePreparedQuery(preparation);
+            }
+        }
+        catch (...)
+        {
+            cancelOutstandingRecompiles(preparations);
+            ForEachItemIn(cleanupIndex, preparations)
+            {
+                CQueryCopyPreparation &preparation = *preparations.item(cleanupIndex);
+                if (preparation.deployed && preparation.deployedWuid.length() && !streq(preparation.deployedWuid.str(), preparation.sourceWuid.get()))
+                    deleteGeneratedWorkunit(preparation.deployedWuid.str(), "completed unpublished deployment");
+            }
+            throw;
+        }
+    }
+
+    void cleanupUnpublishedGeneratedWorkunits()
     {
         Owned<IPropertyTreeIterator> entries = toBePublished->getElements("Publish");
         ForEach(*entries)
         {
             IPropertyTree &entry = entries->query();
-            StringBuffer newQueryId;
-            Owned<IWorkUnit> workunit = factory->updateWorkUnit(entry.queryProp("@wuid"));
-            addQueryToQuerySet(workunit, destQuerySet, entry.queryProp("@name"), (WUQueryActivationOptions)activationMode, newQueryId, entry.queryProp("@userid"));
-            copiedQueryIds.append(newQueryId);
-            IPropertyTree *info = entry.queryPropTree("Info");
-            if (info)
-            {
-                Owned<IPropertyTree> destQuery = getQueryById(destQuerySet, newQueryId);
-                if (destQuery)
-                {
-                    Owned<IAttributeIterator> aiter = info->getAttributes();
-                    ForEach(*aiter)
-                    {
-                        const char *atname = aiter->queryName();
-                        if (!destQuery->hasProp(atname))
-                            destQuery->setProp(atname, aiter->queryValue());
-                    }
-                    Owned<IPropertyTreeIterator> children = info->getElements("*");
-                    ForEach(*children)
-                    {
-                        IPropertyTree &child = children->query();
-                        destQuery->addPropTree(child.queryName(), createPTreeFromIPT(&child));
-                    }
-                }
-            }
-        }
-    }
-
-    void cloneQueryRemote(IPropertyTree *query, bool makeActive)
-    {
-        StringBuffer wuid(query->queryProp("Wuid"));
-        if (!wuid.length())
-            return;
-        const char *queryName = query->queryProp("Name");
-        if (!queryName || !*queryName)
-            return;
-
-        StringBuffer xml;
-        MemoryBuffer dll;
-        StringBuffer dllname;
-        StringBuffer fetchedName;
-        StringBuffer remoteDfs;
-        fetchRemoteWorkunit(NULL, context, srcAddress.str(), NULL, NULL, wuid, fetchedName, xml, dllname, dll, remoteDfs, useSSL);
-        if (!recompileRemoteQueryIfNeeded(wuid, queryName, xml.str(), dll))
-            deploySharedObject(*context, wuid, target, queryName, dll, queryDirectory, xml.str(), false, srcAddress.str(), dllname);
-
-        SCMStringBuffer existingQueryId;
-        queryIdFromQuerySetWuid(destQuerySet, wuid, queryName, existingQueryId);
-        if (existingQueryId.length())
-        {
-            existingQueryIds.append(existingQueryId.str());
-            if (makeActive)
-                activateQuery(destQuerySet, (WUQueryActivationOptions)activationMode, queryName, existingQueryId.str(), context->queryUserId());
-            return;
-        }
-        addToBePublished(wuid, queryName, makeActive, context->queryUserId(), query);
-
-        if (cloneFilesEnabled && wufiles)
-        {
-            VStringBuffer queryPmMatch("%s.0", queryName);
-            Owned<IConstWorkUnit> workunit = factory->openWorkUnit(wuid);
-            wufiles->addFilesFromQuery(workunit, pm, queryPmMatch);
-        }
-    }
-
-    void cloneQueryLocal(IPropertyTree *query, bool makeActive)
-    {
-        const char *wuid = query->queryProp("@wuid");
-        if (!wuid || !*wuid)
-            return;
-        const char *queryName = query->queryProp("@name");
-        if (!queryName || !*queryName)
-            return;
-        SCMStringBuffer existingQueryId;
-        queryIdFromQuerySetWuid(destQuerySet, wuid, queryName, existingQueryId);
-        if (existingQueryId.length())
-        {
-            existingQueryIds.append(existingQueryId.str());
-            if (makeActive)
-                activateQuery(destQuerySet, (WUQueryActivationOptions)activationMode, queryName, existingQueryId.str(), context->queryUserId());
-            return;
-        }
-        StringBuffer newQueryId;
-        StringBuffer targetWuid(wuid);
-        recompileLocalQueryIfNeeded(targetWuid);
-        Owned<IWorkUnit> workunit = factory->updateWorkUnit(targetWuid.str());
-        if (!workunit)
-        {
-            StringBuffer msg(wuid);
-            msg.append(": ").append(query->queryProp("@id"));
-            missingWuids.append(msg);
-            return;
-        }
-        addToBePublished(targetWuid.str(), queryName, makeActive, context->queryUserId(), query);
-        if (cloneFilesEnabled && wufiles)
-            wufiles->addFilesFromQuery(workunit, pm, newQueryId);
-        if (cloneFilesEnabled && wufiles)
-        {
-            VStringBuffer queryPmMatch("%s.0", queryName);
-            Owned<IConstWorkUnit> workunit = factory->openWorkUnit(targetWuid.str());
-            wufiles->addFilesFromQuery(workunit, pm, queryPmMatch);
-        }
-    }
-
-    void cloneActiveRemote(bool makeActive)
-    {
-        Owned<IPropertyTreeIterator> activeQueries = srcQuerySet->getElements("QuerysetAliases/QuerySetAlias");
-        ForEach(*activeQueries)
-        {
-            IPropertyTree &alias = activeQueries->query();
-            VStringBuffer xpath("QuerysetQueries/QuerySetQuery[Id='%s'][1]", alias.queryProp("Id"));
-            IPropertyTree *query = srcQuerySet->queryPropTree(xpath);
-            if (!query)
+            if (!entry.getPropBool("@temporaryWorkunit"))
                 continue;
-            cloneQueryRemote(query, makeActive);
+            entry.setPropBool("@temporaryWorkunit", false);
+            deleteGeneratedWorkunit(entry.queryProp("@wuid"), "unpublished");
         }
     }
 
-    void cloneActiveLocal(bool makeActive, const char *mask)
-    {
-        StringBuffer xpath("Alias");
-        if (mask && *mask)
-            xpath.appendf("[@id='%s']", mask);
-        Owned<IPropertyTreeIterator> activeQueries = srcQuerySet->getElements(xpath);
-        ForEach(*activeQueries)
-        {
-            IPropertyTree &alias = activeQueries->query();
-            Owned<IPropertyTree> query = getQueryById(srcQuerySet, alias.queryProp("@id"));
-            if (!query)
-                return;
-            cloneQueryLocal(query, makeActive);
-        }
-    }
-
-    void cloneActive(bool makeActive)
-    {
-        if (srcAddress.length())
-            cloneActiveRemote(makeActive);
-        else
-            cloneActiveLocal(makeActive, nullptr);
-    }
-
-    void cloneAllRemote(bool cloneActiveState)
-    {
-        Owned<IPropertyTreeIterator> allQueries = srcQuerySet->getElements("QuerysetQueries/QuerySetQuery");
-        ForEach(*allQueries)
-        {
-            IPropertyTree &query = allQueries->query();
-            bool makeActive = false;
-            if (cloneActiveState)
-            {
-                VStringBuffer xpath("QuerysetAliases/QuerySetAlias[Id='%s']", query.queryProp("Id"));
-                makeActive = srcQuerySet->hasProp(xpath);
-            }
-            cloneQueryRemote(&query, makeActive);
-        }
-    }
-    void cloneAllLocal(bool cloneActiveState, const char *mask)
-    {
-        StringBuffer xpath("Query");
-        if (mask && *mask)
-            xpath.appendf("[@id='%s']", mask);
-        Owned<IPropertyTreeIterator> allQueries = srcQuerySet->getElements(xpath);
-        ForEach(*allQueries)
-        {
-            IPropertyTree &query = allQueries->query();
-            bool makeActive = false;
-            if (cloneActiveState)
-            {
-                VStringBuffer xpath("Alias[@id='%s']", query.queryProp("@id"));
-                makeActive = srcQuerySet->hasProp(xpath);
-            }
-            cloneQueryLocal(&query, makeActive);
-        }
-    }
-    void cloneAll(bool cloneActiveState)
-    {
-        if (srcAddress.length())
-            cloneAllRemote(cloneActiveState);
-        else
-            cloneAllLocal(cloneActiveState, nullptr);
-    }
     void enableFileCloning(unsigned _updateFlags, const char *dfsServer, const char *destProcess, const char *sourceProcess, bool allowForeign, const char * keyCompression)
     {
         cloneFilesEnabled = true;
@@ -3640,6 +3823,707 @@ public:
     }
 
 private:
+    friend class CQueryCopyPreparation;
+
+    void trackGeneratedWorkunitForCleanup(const char *wuid)
+    {
+        if (cleanupManager)
+            cleanupManager->track(wuid, context->querySecManager(), context->queryUser());
+    }
+
+    bool deleteGeneratedWorkunit(const char *wuid, const char *description)
+    {
+        try
+        {
+            if (factory->deleteWorkUnit(wuid, context->querySecManager(), context->queryUser()))
+            {
+                PROGLOG("Parallel queryset recompile cleanup deleted %s generatedWuid=%s", description, wuid);
+                return true;
+            }
+            WARNLOG("Parallel queryset recompile cleanup could not delete %s generatedWuid=%s; queued for retry", description, wuid);
+        }
+        catch (IException *e)
+        {
+            StringBuffer message;
+            WARNLOG("Parallel queryset recompile cleanup failed deleting %s generatedWuid=%s: %s", description, wuid, e->errorMessage(message).str());
+            e->Release();
+        }
+        catch (...)
+        {
+            WARNLOG("Parallel queryset recompile cleanup unexpectedly failed deleting %s generatedWuid=%s", description, wuid);
+        }
+        trackGeneratedWorkunitForCleanup(wuid);
+        return false;
+    }
+
+    bool deleteGeneratedWorkunit(CQueryCopyPreparation &preparation, const char *description)
+    {
+        return deleteGeneratedWorkunit(preparation.recompiledWuid, description);
+    }
+
+    bool abortGeneratedWorkunit(CQueryCopyPreparation &preparation)
+    {
+        try
+        {
+            abortWorkUnit(preparation.recompiledWuid, context->querySecManager(), context->queryUser());
+            return true;
+        }
+        catch (IException *e)
+        {
+            StringBuffer message;
+            WARNLOG("Parallel queryset recompile cleanup failed aborting generatedWuid=%s: %s", preparation.recompiledWuid.get(), e->errorMessage(message).str());
+            e->Release();
+        }
+        catch (...)
+        {
+            WARNLOG("Parallel queryset recompile cleanup unexpectedly failed aborting generatedWuid=%s", preparation.recompiledWuid.get());
+        }
+        trackGeneratedWorkunitForCleanup(preparation.recompiledWuid);
+        return false;
+    }
+
+    void logParallelSummary(const char *phase)
+    {
+        PROGLOG("Parallel queryset copy summary target=%s phase=%s selected=%u existing=%u submitted=%u recompiled=%u deployed=%u published=%u failed=%u elapsedMs=%u", target.get(), phase, selectedCount, existingQueryIds.ordinality(), submittedCount, recompiledCount, deployedCount, copiedQueryIds.ordinality(), failedCount, msTick() - parallelStartTime);
+    }
+
+    void logRecompileProgress(OwnedPointerArrayOf<CQueryCopyPreparation> &preparations)
+    {
+        unsigned queued = 0;
+        unsigned compiling = 0;
+        unsigned completed = 0;
+        unsigned failed = 0;
+        ForEachItemIn(i, preparations)
+        {
+            CQueryCopyPreparation &preparation = *preparations.item(i);
+            if (preparation.exception)
+                failed++;
+            else if (preparation.recompileFinished)
+                completed++;
+            else if (preparation.recompileSubmitted)
+            {
+                if (preparation.compileStartTime)
+                    compiling++;
+                else
+                    queued++;
+            }
+        }
+        PROGLOG("Parallel queryset recompile progress target=%s submitted=%u queued=%u compiling=%u completed=%u failed=%u elapsedMs=%u", target.get(), submittedCount, queued, compiling, completed, failed, msTick() - parallelStartTime);
+    }
+
+    void setPreparationException(CQueryCopyPreparation &preparation, const char *phase, IException *e)
+    {
+        StringBuffer message;
+        preparation.exception.setown(makeStringExceptionV(e->errorCode(), "Failed %s query %s (%s): %s", phase, preparation.queryName.get(), preparation.sourceWuid.get(), e->errorMessage(message).str()));
+        e->Release();
+    }
+
+    Owned<IException> logPreparationExceptions(OwnedPointerArrayOf<CQueryCopyPreparation> &preparations)
+    {
+        Owned<IException> firstException;
+        failedCount = 0;
+        ForEachItemIn(errorIndex, preparations)
+        {
+            CQueryCopyPreparation &preparation = *preparations.item(errorIndex);
+            if (preparation.exception)
+            {
+                failedCount++;
+                StringBuffer message;
+                WARNLOG("Parallel queryset copy failed queryId=%s sourceWuid=%s generatedWuid=%s sourceOrder=%u queueMs=%u transferMs=%u deploymentMs=%u compileQueueMs=%u compileMs=%u: %s", preparation.sourceQueryId.get(), preparation.sourceWuid.get(), preparation.recompiledWuid.get(), preparation.sourceOrder, preparation.preparationStartTime - preparation.preparationQueuedTime, preparation.remoteTransferTimeMs, preparation.deploymentTimeMs, preparation.compileQueueTimeMs, preparation.compileTimeMs, preparation.exception->errorMessage(message).str());
+                if (!firstException)
+                    firstException.set(preparation.exception);
+            }
+        }
+        return firstException.getClear();
+    }
+
+    void throwPreparationExceptions(OwnedPointerArrayOf<CQueryCopyPreparation> &preparations)
+    {
+        Owned<IException> firstException = logPreparationExceptions(preparations);
+        if (firstException)
+        {
+            logParallelSummary("failed");
+            throw firstException.getClear();
+        }
+    }
+
+    void enumerateRemoteQueries(OwnedPointerArrayOf<CQueryCopyPreparation> &preparations, bool activeOnly, bool cloneActiveState)
+    {
+        if (activeOnly)
+        {
+            StringArray selectedQueryIds;
+            Owned<IPropertyTreeIterator> activeQueries = srcQuerySet->getElements("QuerysetAliases/QuerySetAlias");
+            ForEach(*activeQueries)
+            {
+                IPropertyTree &alias = activeQueries->query();
+                const char *queryId = alias.queryProp("Id");
+                if (isEmptyString(queryId) || selectedQueryIds.contains(queryId))
+                    continue;
+                VStringBuffer xpath("QuerysetQueries/QuerySetQuery[Id='%s'][1]", queryId);
+                IPropertyTree *query = srcQuerySet->queryPropTree(xpath);
+                if (query)
+                {
+                    selectedQueryIds.append(queryId);
+                    preparations.append(new CQueryCopyPreparation(*this, query, true, cloneActiveState, preparations.ordinality()));
+                }
+            }
+            return;
+        }
+
+        Owned<IPropertyTreeIterator> allQueries = srcQuerySet->getElements("QuerysetQueries/QuerySetQuery");
+        ForEach(*allQueries)
+        {
+            IPropertyTree &query = allQueries->query();
+            bool makeActive = false;
+            if (cloneActiveState)
+            {
+                VStringBuffer xpath("QuerysetAliases/QuerySetAlias[Id='%s']", query.queryProp("Id"));
+                makeActive = srcQuerySet->hasProp(xpath);
+            }
+            preparations.append(new CQueryCopyPreparation(*this, &query, true, makeActive, preparations.ordinality()));
+        }
+    }
+
+    void enumerateLocalQueries(OwnedPointerArrayOf<CQueryCopyPreparation> &preparations, bool activeOnly, bool cloneActiveState, const char *queryMask)
+    {
+        if (activeOnly)
+        {
+            StringBuffer xpath("Alias");
+            if (!isEmptyString(queryMask))
+                xpath.appendf("[@id='%s']", queryMask);
+            StringArray selectedQueryIds;
+            Owned<IPropertyTreeIterator> activeQueries = srcQuerySet->getElements(xpath);
+            ForEach(*activeQueries)
+            {
+                IPropertyTree &alias = activeQueries->query();
+                const char *queryId = alias.queryProp("@id");
+                if (isEmptyString(queryId) || selectedQueryIds.contains(queryId))
+                    continue;
+                Owned<IPropertyTree> query = getQueryById(srcQuerySet, queryId);
+                if (!query)
+                    continue;
+                selectedQueryIds.append(queryId);
+                Owned<CQueryCopyPreparation> preparation = new CQueryCopyPreparation(*this, query, false, cloneActiveState, preparations.ordinality());
+                SCMStringBuffer existingQueryId;
+                queryIdFromQuerySetWuid(destQuerySet, preparation->sourceWuid, preparation->queryName, existingQueryId);
+                preparation->existingQueryId.set(existingQueryId.str());
+                preparations.append(preparation.getClear());
+            }
+            return;
+        }
+
+        StringBuffer xpath("Query");
+        if (!isEmptyString(queryMask))
+            xpath.appendf("[@id='%s']", queryMask);
+        Owned<IPropertyTreeIterator> allQueries = srcQuerySet->getElements(xpath);
+        ForEach(*allQueries)
+        {
+            IPropertyTree &query = allQueries->query();
+            bool makeActive = false;
+            if (cloneActiveState)
+            {
+                VStringBuffer xpath("Alias[@id='%s']", query.queryProp("@id"));
+                makeActive = srcQuerySet->hasProp(xpath);
+            }
+            Owned<CQueryCopyPreparation> preparation = new CQueryCopyPreparation(*this, &query, false, makeActive, preparations.ordinality());
+            SCMStringBuffer existingQueryId;
+            queryIdFromQuerySetWuid(destQuerySet, preparation->sourceWuid, preparation->queryName, existingQueryId);
+            preparation->existingQueryId.set(existingQueryId.str());
+            preparations.append(preparation.getClear());
+        }
+    }
+
+    void prepareQuery(CQueryCopyPreparation &preparation)
+    {
+        if (preparation.sourceWuid.isEmpty() || preparation.queryName.isEmpty())
+            throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "Query-copy source entry is missing %s", preparation.sourceWuid.isEmpty() ? "a workunit ID" : "a query name");
+
+        if (preparation.remote)
+        {
+            unsigned transferStart = msTick();
+            StringBuffer url;
+            url.appendf("%s://%s%s/WsWorkunits", useSSL ? "https" : "http", srcAddress.str(), (!strchr(srcAddress.str(), ':')) ? ":8010" : "");
+            Owned<IClientWsWorkunits> ws = createWsWorkunitsClient();
+            ws->addServiceUrl(url);
+            if (!userId.isEmpty())
+                ws->setUsernameToken(userId, password, nullptr);
+            StringBuffer fetchedName;
+            fetchRemoteWorkunit(ws, nullptr, srcAddress.str(), nullptr, nullptr, preparation.sourceWuid, fetchedName, preparation.xml, preparation.dllName, preparation.dll, preparation.remoteDfs, useSSL);
+            preparation.remoteSourceWu.setown(createLocalWorkUnitFromXml(preparation.xml.str()));
+            getRemoteWorkUnitTargetArchitecture(preparation.sourceArchitecture, preparation.remoteSourceWu, preparation.dll);
+            preparation.requiresRecompile = !targetArchitecturesMatch(preparation.sourceArchitecture.str(), destinationArchitecture.str());
+            if (preparation.requiresRecompile)
+                fetchRemoteWorkunitArchive(ws, nullptr, srcAddress.str(), preparation.sourceWuid, preparation.dll, preparation.archiveText, useSSL);
+            else
+                preparation.deployedWuid.append(preparation.sourceWuid);
+            preparation.remoteTransferTimeMs = msTick() - transferStart;
+            preparation.sourceExists = true;
+            return;
+        }
+
+        if (!preparation.existingQueryId.isEmpty())
+            return;
+        Owned<IConstWorkUnit> sourceWu = factory->openWorkUnit(preparation.sourceWuid);
+        if (sourceWu)
+        {
+            getWorkUnitTargetArchitecture(preparation.sourceArchitecture, sourceWu, targetArchitectureX86_64Linux);
+            preparation.requiresRecompile = !targetArchitecturesMatch(preparation.sourceArchitecture.str(), destinationArchitecture.str());
+            preparation.sourceExists = true;
+        }
+    }
+
+    void deployPreparedQuery(CQueryCopyPreparation &preparation)
+    {
+        if (!preparation.remote || preparation.requiresRecompile || preparation.exception || !preparation.sourceExists)
+            return;
+        try
+        {
+            unsigned deploymentStart = msTick();
+            deploySharedObject(*context, preparation.deployedWuid, target, preparation.queryName, preparation.dll, queryDirectory, preparation.xml.str(), false, srcAddress.str(), preparation.dllName);
+            preparation.deploymentTimeMs = msTick() - deploymentStart;
+            preparation.deployed = true;
+        }
+        catch (IException *e)
+        {
+            setPreparationException(preparation, "deploying", e);
+        }
+        catch (...)
+        {
+            preparation.exception.setown(makeStringExceptionV(ECLWATCH_INTERNAL_ERROR, "Unexpected failure deploying query %s (%s)", preparation.queryName.get(), preparation.sourceWuid.get()));
+        }
+        if (preparation.exception && preparation.deployedWuid.length() && !streq(preparation.deployedWuid.str(), preparation.sourceWuid.get()))
+            deleteGeneratedWorkunit(preparation.deployedWuid.str(), "partially deployed");
+        preparation.releaseFetchedPayload();
+        preparation.releaseRecompilePayload();
+    }
+
+    void submitPreparedRecompile(CQueryCopyPreparation &preparation)
+    {
+        if (!preparation.requiresRecompile || preparation.exception)
+            return;
+        try
+        {
+            if (preparation.remote)
+                createWorkunitForArchiveRecompile(*context, factory, preparation.sourceWuid, preparation.queryName, preparation.archiveText.str(), preparation.remoteSourceWu, preparation.recompiledWuid, preparation.recompileJobName);
+            else
+            {
+                try
+                {
+                    copyWorkunitForRecompile(*context, factory, preparation.sourceWuid, preparation.recompiledWuid, preparation.recompileJobName);
+                }
+                catch (IException *e)
+                {
+                    if (isArchiveMissingException(e))
+                    {
+                        e->Release();
+                        throwMissingArchiveForArchitectureMismatch(preparation.sourceWuid, preparation.sourceArchitecture.str(), destinationArchitecture.str());
+                    }
+                    throw;
+                }
+            }
+
+            preparation.recompileSubmissionTime = msTick();
+            preparation.recompileCreated = true;
+            submitCrossArchitectureRecompile(*context, preparation.sourceWuid, preparation.recompiledWuid, target, nullptr, preparation.sourceArchitecture.str(), destinationArchitecture.str());
+            preparation.recompileSubmitted = true;
+            submittedCount++;
+            PROGLOG("Parallel queryset recompile submitted queryId=%s sourceWuid=%s generatedWuid=%s sourceOrder=%u", preparation.sourceQueryId.get(), preparation.sourceWuid.get(), preparation.recompiledWuid.get(), preparation.sourceOrder);
+        }
+        catch (IException *e)
+        {
+            setPreparationException(preparation, "submitting recompile for", e);
+        }
+        catch (...)
+        {
+            preparation.exception.setown(makeStringExceptionV(ECLWATCH_INTERNAL_ERROR, "Unexpected failure submitting recompile for query %s (%s)", preparation.queryName.get(), preparation.sourceWuid.get()));
+        }
+        if (preparation.exception && !preparation.recompiledWuid.isEmpty() && !preparation.recompileSubmitted)
+        {
+            abortGeneratedWorkunit(preparation);
+            deleteGeneratedWorkunit(preparation, "ambiguously submitted");
+        }
+        preparation.releaseRecompilePayload();
+    }
+
+    void completePreparedRecompile(CQueryCopyPreparation &preparation, IConstWorkUnit &recompiledWu)
+    {
+        preparation.recompileCompletionTime = msTick();
+        stat_type queued = 0;
+        stat_type dequeued = 0;
+        stat_type compileTime = 0;
+        if (recompiledWu.getStatistic(queued, ">compile", StWhenQueued) && recompiledWu.getStatistic(dequeued, ">compile", StWhenDequeued) && dequeued >= queued)
+            preparation.compileQueueTimeMs = (unsigned)((dequeued - queued) / 1000);
+        if (recompiledWu.getStatistic(compileTime, ">compile", StTimeElapsed))
+            preparation.compileTimeMs = (unsigned)nanoToMilli(compileTime);
+        preparation.recompileFinished = true;
+        recompiledCount++;
+        PROGLOG("Parallel queryset recompile completed queryId=%s sourceWuid=%s generatedWuid=%s sourceOrder=%u elapsedMs=%u compileQueueMs=%u compileMs=%u", preparation.sourceQueryId.get(), preparation.sourceWuid.get(), preparation.recompiledWuid.get(), preparation.sourceOrder, preparation.recompileCompletionTime - preparation.recompileSubmissionTime, preparation.compileQueueTimeMs, preparation.compileTimeMs);
+    }
+
+    void cancelOutstandingRecompiles(OwnedPointerArrayOf<CQueryCopyPreparation> &preparations)
+    {
+        unsigned cancelled = 0;
+        ForEachItemIn(i, preparations)
+        {
+            CQueryCopyPreparation &preparation = *preparations.item(i);
+            if (!preparation.recompileCreated || !preparation.recompileSubmitted)
+                continue;
+            if (preparation.recompileFinished)
+            {
+                if (!preparation.exception)
+                    deleteGeneratedWorkunit(preparation, "completed unpublished");
+                continue;
+            }
+            if (!abortGeneratedWorkunit(preparation))
+            {
+                preparation.recompileFinished = true;
+                continue;
+            }
+            preparation.cancellationRequested = true;
+            preparation.cancellationRequestTime = msTick();
+            cancelled++;
+        }
+        if (cancelled)
+        {
+            PROGLOG("Parallel queryset recompile cancellation target=%s requested=%u", target.get(), cancelled);
+            unsigned deadline = msTick() + queryCopyCancellationWaitMs;
+            unsigned remaining = cancelled;
+            while (remaining && (int)(deadline - msTick()) > 0)
+            {
+                remaining = 0;
+                ForEachItemIn(i, preparations)
+                {
+                    CQueryCopyPreparation &preparation = *preparations.item(i);
+                    if (!preparation.cancellationRequested || preparation.recompileFinished)
+                        continue;
+                    try
+                    {
+                        Owned<IConstWorkUnit> workunit = factory->openWorkUnit(preparation.recompiledWuid, context->querySecManager(), context->queryUser(), false);
+                        WUState state = workunit ? workunit->getState() : WUStateUnknown;
+                        if (workunit && !isCompiled(state) && state != WUStateFailed && state != WUStateAborted)
+                        {
+                            remaining++;
+                            continue;
+                        }
+                        preparation.recompileFinished = true;
+                        if (workunit)
+                            deleteGeneratedWorkunit(preparation, "cancelled");
+                    }
+                    catch (IException *e)
+                    {
+                        StringBuffer message;
+                        WARNLOG("Parallel queryset recompile cleanup failed polling generatedWuid=%s: %s", preparation.recompiledWuid.get(), e->errorMessage(message).str());
+                        e->Release();
+                        trackGeneratedWorkunitForCleanup(preparation.recompiledWuid);
+                        preparation.recompileFinished = true;
+                    }
+                    catch (...)
+                    {
+                        WARNLOG("Parallel queryset recompile cleanup unexpectedly failed polling generatedWuid=%s", preparation.recompiledWuid.get());
+                        trackGeneratedWorkunitForCleanup(preparation.recompiledWuid);
+                        preparation.recompileFinished = true;
+                    }
+                }
+                if (remaining)
+                    Sleep(500);
+            }
+            if (remaining)
+            {
+                WARNLOG("Parallel queryset recompile cancellation target=%s stillActive=%u after %u ms", target.get(), remaining, queryCopyCancellationWaitMs);
+                if (cleanupManager)
+                {
+                    ForEachItemIn(i, preparations)
+                    {
+                        CQueryCopyPreparation &preparation = *preparations.item(i);
+                        if (preparation.cancellationRequested && !preparation.recompileFinished)
+                        {
+                            trackGeneratedWorkunitForCleanup(preparation.recompiledWuid);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    bool pollPreparedRecompile(CQueryCopyPreparation &preparation)
+    {
+        WUState observedState = WUStateUnknown;
+        try
+        {
+            Owned<IConstWorkUnit> recompiledWu = factory->openWorkUnit(preparation.recompiledWuid, context->querySecManager(), context->queryUser(), false);
+            if (!recompiledWu)
+            {
+                if (preparation.cancellationRequested)
+                {
+                    preparation.recompileFinished = true;
+                    return true;
+                }
+                throw makeStringExceptionV(ECLWATCH_CANNOT_OPEN_WORKUNIT, "Cannot open recompile workunit %s", preparation.recompiledWuid.get());
+            }
+
+            observedState = recompiledWu->getState();
+            if (preparation.cancellationRequested)
+            {
+                if (!isCompiled(observedState) && observedState != WUStateFailed && observedState != WUStateAborted)
+                {
+                    if (msTick() - preparation.cancellationRequestTime < queryCopyCancellationWaitMs)
+                        return false;
+                    WARNLOG("Parallel queryset recompile cancellation generatedWuid=%s did not complete within %u ms", preparation.recompiledWuid.get(), queryCopyCancellationWaitMs);
+                    if (cleanupManager)
+                    {
+                        trackGeneratedWorkunitForCleanup(preparation.recompiledWuid);
+                    }
+                    preparation.recompileFinished = true;
+                    return true;
+                }
+                preparation.recompileFinished = true;
+                if (preparation.recompileCreated)
+                    deleteGeneratedWorkunit(preparation, "cancelled");
+                return true;
+            }
+            if (isCompiled(observedState))
+            {
+                completePreparedRecompile(preparation, *recompiledWu);
+                return true;
+            }
+            if (observedState == WUStateFailed || observedState == WUStateAborted)
+                throw makeStringExceptionV(ECLWATCH_CANNOT_UPDATE_WORKUNIT, "Recompile workunit %s reached state %s", preparation.recompiledWuid.get(), getWorkunitStateStr(observedState));
+
+            unsigned now = msTick();
+            if (queryCopyTimeoutExpired(preparation.recompileQueueStartTime, totalRecompileTimeout, now))
+                throw makeStringExceptionV(ECLWATCH_CANNOT_UPDATE_WORKUNIT, "Recompile workunit %s exceeded total timeout of %u ms", preparation.recompiledWuid.get(), totalRecompileTimeout);
+            if ((observedState == WUStateCompiling || observedState == WUStateRunning) && !preparation.compileStartTime)
+                preparation.compileStartTime = now;
+            if (preparation.compileStartTime && queryCopyTimeoutExpired(preparation.compileStartTime, recompileTimeout, now))
+                throw makeStringExceptionV(ECLWATCH_CANNOT_UPDATE_WORKUNIT, "Recompile workunit %s exceeded compile timeout of %u ms", preparation.recompiledWuid.get(), recompileTimeout);
+            else if (!preparation.compileStartTime && queryCopyTimeoutExpired(preparation.recompileQueueStartTime, recompileQueueTimeout, now))
+                throw makeStringExceptionV(ECLWATCH_CANNOT_UPDATE_WORKUNIT, "Recompile workunit %s exceeded queue timeout of %u ms", preparation.recompiledWuid.get(), recompileQueueTimeout);
+            return false;
+        }
+        catch (IException *e)
+        {
+            setPreparationException(preparation, "monitoring recompile of", e);
+            if (preparation.recompileCreated && (observedState == WUStateFailed || observedState == WUStateAborted))
+            {
+                preparation.recompileFinished = true;
+                deleteGeneratedWorkunit(preparation, "failed");
+            }
+            else if (preparation.recompileCreated)
+            {
+                if (!abortGeneratedWorkunit(preparation))
+                {
+                    preparation.recompileFinished = true;
+                    return true;
+                }
+                preparation.cancellationRequested = true;
+                preparation.cancellationRequestTime = msTick();
+                return false;
+            }
+            preparation.recompileFinished = true;
+            return true;
+        }
+    }
+
+    void prepareQueries(IThreadPool *preparationPool, OwnedPointerArrayOf<CQueryCopyPreparation> &preparations, unsigned begin, unsigned end)
+    {
+        if (!parallelMode)
+        {
+            for (unsigned i = begin; i < end; i++)
+            {
+                CQueryCopyPreparation &preparation = *preparations.item(i);
+                preparation.preparationQueuedTime = msTick();
+                preparation.prepare();
+                deployPreparedQuery(preparation);
+                if (preparation.requiresRecompile)
+                {
+                    preparation.releaseFetchedPayload();
+                    if (!preparation.exception)
+                        preparation.recompileQueueStartTime = msTick();
+                }
+                if (preparation.deployed)
+                    deployedCount++;
+            }
+            return;
+        }
+
+        unsigned submitted = 0;
+        Owned<IException> startException;
+        for (unsigned i = begin; i < end; i++)
+        {
+            try
+            {
+                preparations.item(i)->preparationQueuedTime = msTick();
+                Owned<IQueryCopyPreparationTask> task = new CQueryCopyPreparationTask(*preparations.item(i));
+                preparationPool->start(task.getClear(), "Query copy preparation", INFINITE);
+                submitted++;
+            }
+            catch (IException *e)
+            {
+                startException.setown(e);
+                break;
+            }
+            catch (...)
+            {
+                startException.setown(makeStringException(ECLWATCH_INTERNAL_ERROR, "Unexpected failure starting query copy preparation"));
+                break;
+            }
+        }
+
+        for (unsigned i = begin; i < begin + submitted; i++)
+            preparations.item(i)->preparationCompleted.wait();
+        if (startException)
+            throw startException.getClear();
+
+        for (unsigned i = begin; i < end; i++)
+        {
+            CQueryCopyPreparation &preparation = *preparations.item(i);
+            deployPreparedQuery(preparation);
+            if (preparation.requiresRecompile)
+            {
+                preparation.releaseFetchedPayload();
+                if (!preparation.exception)
+                    preparation.recompileQueueStartTime = msTick();
+            }
+            if (preparation.deployed)
+                deployedCount++;
+            PROGLOG("Parallel queryset preparation completed queryId=%s sourceWuid=%s sourceOrder=%u queueMs=%u transferMs=%u deploymentMs=%u preparationMs=%u recompile=%s failed=%s", preparation.sourceQueryId.get(), preparation.sourceWuid.get(), preparation.sourceOrder, preparation.preparationStartTime - preparation.preparationQueuedTime, preparation.remoteTransferTimeMs, preparation.deploymentTimeMs, preparation.preparationCompletionTime - preparation.preparationStartTime, preparation.requiresRecompile ? "true" : "false", preparation.exception ? "true" : "false");
+        }
+    }
+
+    void coordinatePreparedRecompiles(IThreadPool *preparationPool, OwnedPointerArrayOf<CQueryCopyPreparation> &preparations)
+    {
+        CESPAbortRequestCallback abortCallback(context);
+        unsigned nextPreparation = 0;
+        unsigned active = 0;
+        unsigned lastProgress = msTick();
+        for (;;)
+        {
+            if (abortCallback.abortRequested())
+                throw makeStringException(ECLWATCH_INTERNAL_ERROR, "Parallel queryset copy cancelled because the client disconnected");
+
+            while (active < maxActiveRecompiles && nextPreparation < preparations.ordinality())
+            {
+                unsigned availableRecompileSlots = maxActiveRecompiles - active;
+                unsigned prepareCount = std::min(availableRecompileSlots, preparationBatchSize);
+                unsigned prepareEnd = std::min(nextPreparation + prepareCount, preparations.ordinality());
+                prepareQueries(preparationPool, preparations, nextPreparation, prepareEnd);
+                if (failFast)
+                    throwPreparationExceptions(preparations);
+
+                for (unsigned i = nextPreparation; i < prepareEnd; i++)
+                {
+                    if (abortCallback.abortRequested())
+                        throw makeStringException(ECLWATCH_INTERNAL_ERROR, "Parallel queryset copy cancelled because the client disconnected");
+                    CQueryCopyPreparation &preparation = *preparations.item(i);
+                    if (!preparation.requiresRecompile || preparation.exception)
+                        continue;
+                    submitPreparedRecompile(preparation);
+                    if (preparation.recompileSubmitted)
+                        active++;
+                    else if (failFast && preparation.exception)
+                        throwPreparationExceptions(preparations);
+                }
+                nextPreparation = prepareEnd;
+            }
+
+            bool completedAny = false;
+            if (abortCallback.abortRequested())
+                throw makeStringException(ECLWATCH_INTERNAL_ERROR, "Parallel queryset copy cancelled because the client disconnected");
+            for (unsigned i = 0; i < nextPreparation; i++)
+            {
+                CQueryCopyPreparation &preparation = *preparations.item(i);
+                if (!preparation.recompileSubmitted || preparation.recompileFinished)
+                    continue;
+                if (pollPreparedRecompile(preparation))
+                {
+                    active--;
+                    completedAny = true;
+                    if (failFast && preparation.exception)
+                        throwPreparationExceptions(preparations);
+                }
+            }
+
+            if (!active && nextPreparation >= preparations.ordinality())
+                break;
+
+            if (completedAny && nextPreparation < preparations.ordinality())
+                continue;
+
+            unsigned now = msTick();
+            if (progressInterval && now - lastProgress >= progressInterval)
+            {
+                logRecompileProgress(preparations);
+                lastProgress = now;
+            }
+            Sleep(1000);
+        }
+        logRecompileProgress(preparations);
+    }
+
+    void clonePreparedQuery(CQueryCopyPreparation &preparation)
+    {
+        if (preparation.sourceWuid.isEmpty() || preparation.queryName.isEmpty())
+            return;
+        if (preparation.remote)
+        {
+            const char *wuid = preparation.requiresRecompile ? preparation.recompiledWuid.get() : preparation.deployedWuid.str();
+
+            SCMStringBuffer existingQueryId;
+            queryIdFromQuerySetWuid(destQuerySet, wuid, preparation.queryName, existingQueryId);
+            if (existingQueryId.length())
+            {
+                addPreparedToBePublished(wuid, preparation);
+                return;
+            }
+            if (cloneFilesEnabled && wufiles)
+            {
+                VStringBuffer queryPmMatch("%s.0", preparation.queryName.get());
+                Owned<IConstWorkUnit> workunit = factory->openWorkUnit(wuid);
+                if (!workunit)
+                    throw makeStringExceptionV(ECLWATCH_CANNOT_OPEN_WORKUNIT, "Cannot open workunit %s while collecting files for query %s", wuid, preparation.sourceQueryId.get());
+                wufiles->addFilesFromQuery(workunit, pm, queryPmMatch);
+            }
+            addPreparedToBePublished(wuid, preparation);
+            return;
+        }
+
+        const char *targetWuid = preparation.requiresRecompile ? preparation.recompiledWuid.get() : preparation.sourceWuid.get();
+        SCMStringBuffer existingQueryId;
+        queryIdFromQuerySetWuid(destQuerySet, targetWuid, preparation.queryName, existingQueryId);
+        if (existingQueryId.length())
+        {
+            addPreparedToBePublished(targetWuid, preparation);
+            return;
+        }
+        if (!preparation.sourceExists)
+        {
+            StringBuffer msg(preparation.sourceWuid);
+            msg.append(": ").append(preparation.query->queryProp("@id"));
+            missingWuids.append(msg);
+            Owned<IException> e = makeStringExceptionV(ECLWATCH_CANNOT_OPEN_WORKUNIT, "Cannot open source workunit %s for query %s", preparation.sourceWuid.get(), preparation.sourceQueryId.get());
+            if (failFast && !allowMissingWuids)
+                throw e.getClear();
+            return;
+        }
+        Owned<IWorkUnit> workunit = factory->updateWorkUnit(targetWuid);
+        if (!workunit)
+        {
+            StringBuffer msg(preparation.sourceWuid);
+            msg.append(": ").append(preparation.query->queryProp("@id"));
+            missingWuids.append(msg);
+            Owned<IException> e = makeStringExceptionV(ECLWATCH_CANNOT_OPEN_WORKUNIT, "Cannot update source workunit %s for query %s", targetWuid, preparation.sourceQueryId.get());
+            if (failFast && !allowMissingWuids)
+                throw e.getClear();
+            return;
+        }
+        if (cloneFilesEnabled && wufiles)
+        {
+            VStringBuffer queryPmMatch("%s.0", preparation.queryName.get());
+            wufiles->addFilesFromQuery(workunit, pm, queryPmMatch);
+        }
+        addPreparedToBePublished(targetWuid, preparation);
+    }
+
     Linked<IEspContext> context;
     Linked<IWorkUnitFactory> factory;
     Owned<IPropertyTree> destQuerySet;
@@ -3654,8 +4538,27 @@ private:
     StringAttr target;
     StringAttr process;
     StringAttr queryDirectory;
+    StringAttr userId;
+    StringAttr password;
+    CQueryCopyCleanupManager *cleanupManager = nullptr;
+    StringBuffer destinationArchitecture;
     bool cloneFilesEnabled = false;
+    bool allowMissingWuids = false;
+    bool parallelMode = false;
+    bool failFast = true;
     bool useSSL = false;
+    unsigned preparationBatchSize = 1;
+    unsigned maxActiveRecompiles = 32;
+    unsigned recompileQueueTimeout = 0;
+    unsigned recompileTimeout = 30 * 60 * 1000;
+    unsigned totalRecompileTimeout = 0;
+    unsigned progressInterval = 30 * 1000;
+    unsigned parallelStartTime = 0;
+    unsigned selectedCount = 0;
+    unsigned submittedCount = 0;
+    unsigned recompiledCount = 0;
+    unsigned deployedCount = 0;
+    unsigned failedCount = 0;
     unsigned updateFlags = 0;
     CWUQueryActivationMode activationMode = CWUQueryActivationMode_ActivateSuspendPrevious;
     StringArray locations;
@@ -3667,6 +4570,38 @@ public:
     StringBuffer dfu_jobname;
     StringAttr dfu_queue;
 };
+
+CQueryCopyPreparation::CQueryCopyPreparation(QueryCloner &_owner, IPropertyTree *sourceQuery, bool _remote, bool _makeActive, unsigned _sourceOrder)
+    : owner(_owner), query(createPTreeFromIPT(sourceQuery)), sourceOrder(_sourceOrder), remote(_remote), makeActive(_makeActive)
+{
+    sourceQueryId.set(query->queryProp(remote ? "Id" : "@id"));
+    sourceWuid.set(query->queryProp(remote ? "Wuid" : "@wuid"));
+    queryName.set(query->queryProp(remote ? "Name" : "@name"));
+}
+
+void CQueryCopyPreparation::prepare()
+{
+    preparationStartTime = msTick();
+    try
+    {
+        owner.prepareQuery(*this);
+    }
+    catch (IException *e)
+    {
+        StringBuffer message;
+        exception.setown(makeStringExceptionV(e->errorCode(), "Failed preparing query %s (%s): %s", queryName.get(), sourceWuid.get(), e->errorMessage(message).str()));
+        e->Release();
+        releaseFetchedPayload();
+        releaseRecompilePayload();
+    }
+    catch (...)
+    {
+        exception.setown(makeStringExceptionV(ECLWATCH_INTERNAL_ERROR, "Unexpected failure preparing query %s (%s)", queryName.get(), sourceWuid.get()));
+        releaseFetchedPayload();
+        releaseRecompilePayload();
+    }
+    preparationCompletionTime = msTick();
+}
 
 bool CWsWorkunitsEx::onWUCopyQuerySet(IEspContext &context, IEspWUCopyQuerySetRequest &req, IEspWUCopyQuerySetResponse &resp)
 {
@@ -3685,10 +4620,21 @@ bool CWsWorkunitsEx::onWUCopyQuerySet(IEspContext &context, IEspWUCopyQuerySetRe
     const char *target = req.getTarget();
     validateTargetName(target);
 
-    DBGLOG("%s copying queryset %s from %s target %s", context.queryUserId(), target, srcAddress.str(), srcTarget.str());
+    if (!req.getParallel() && (req.getParallelFailurePolicy() == CQueryCopyFailurePolicy_Continue || req.getParallelQueueTimeout() || req.getParallelCompileTimeout() || req.getParallelWindowSize()))
+        throw makeStringException(ECLWATCH_INVALID_INPUT, "Parallel control options require Parallel");
 
-    QueryCloner cloner(&context, srcAddress, srcTarget, target, req.getSourceSSL());
+    unsigned requestedWindowSize = req.getParallelWindowSize();
+    if (requestedWindowSize && (requestedWindowSize < queryCopyMinParallelWindowSize || requestedWindowSize > queryCopyMaxParallelWindowSize))
+        throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "Parallel window size must be between %u and %u", queryCopyMinParallelWindowSize, queryCopyMaxParallelWindowSize);
+    unsigned maxActiveRecompiles = req.getParallel() ? (requestedWindowSize ? std::min(requestedWindowSize, queryCopyMaxActiveRecompiles) : queryCopyMaxActiveRecompiles) : 1;
+
+    PROGLOG("%s copying queryset %s from %s target %s parallel=%s maxActiveRecompiles=%u", context.queryUserId(), target, srcAddress.str(), srcTarget.str(), req.getParallel() ? "true" : "false", maxActiveRecompiles);
+
+    QueryCloner cloner(&context, srcAddress, srcTarget, target, req.getSourceSSL(), &queryCopyCleanupManager);
     cloner.setQueryDirectory(queryDirectory);
+    unsigned queueTimeout = req.getParallelQueueTimeout() ? req.getParallelQueueTimeout() : queryCopyRecompileQueueTimeout;
+    unsigned compileTimeout = req.getParallelCompileTimeout() ? req.getParallelCompileTimeout() : queryCopyRecompileTimeout;
+    cloner.setParallelOptions(maxActiveRecompiles, queryCopyPreparationPoolSize, queueTimeout, compileTimeout, queryCopyProgressInterval, req.getParallelFailurePolicy());
 
     cloner.setActivationMode(req.getActivate());
 
@@ -3724,19 +4670,27 @@ bool CWsWorkunitsEx::onWUCopyQuerySet(IEspContext &context, IEspWUCopyQuerySetRe
         }
     }
 
-    if (req.getActiveOnly())
-        cloner.cloneActive(req.getCloneActiveState());
-    else
-        cloner.cloneAll(req.getCloneActiveState());
+    cloner.cloneQueries(queryCopyPreparationPool, req.getParallel(), req.getActiveOnly(), req.getCloneActiveState());
 
-    cloner.cloneFiles(publisherWuid);
-    if (req.getIncludeFileErrors())
-        cloner.gatherFileErrors(resp.getFileErrors());
+    try
+    {
+        cloner.cloneFiles(publisherWuid);
+        if (req.getIncludeFileErrors())
+            cloner.gatherFileErrors(resp.getFileErrors());
 
-    if (handlePublisherResponse(req, resp, publisherWuid))
-        return true;
+        if (handlePublisherResponse(req, resp, publisherWuid))
+        {
+            cloner.cleanupUnpublishedGeneratedWorkunits();
+            return true;
+        }
 
-    cloner.publish();
+        cloner.publish();
+    }
+    catch (...)
+    {
+        cloner.cleanupUnpublishedGeneratedWorkunits();
+        throw;
+    }
 
     resp.setCopiedQueries(cloner.copiedQueryIds);
     resp.setExistingQueries(cloner.existingQueryIds);
@@ -3844,7 +4798,7 @@ bool CWsWorkunitsEx::onWUQuerysetCopyQuery(IEspContext &context, IEspWUQuerySetC
 
     if (!srcAddress.length())
     {
-        getWorkUnitTargetArchitecture(sourceArchitecture, cw);
+        getWorkUnitTargetArchitecture(sourceArchitecture, cw, targetArchitectureX86_64Linux);
         if (!targetArchitecturesMatch(sourceArchitecture.str(), destinationArchitecture.str()))
         {
             StringAttr recompiledWuid;
@@ -3991,7 +4945,8 @@ bool CWsWorkunitsEx::onWUQuerysetImport(IEspContext &context, IEspWUQuerysetImpo
 
         const bool activate = CQuerysetImportActivation_ImportedActive == req.getActivation(); //only two options now but may evolve
 
-        QueryCloner cloner(&context, srcTree, target);
+        QueryCloner cloner(&context, srcTree, target, &queryCopyCleanupManager);
+        cloner.setParallelOptions(1, queryCopyPreparationPoolSize, queryCopyRecompileQueueTimeout, queryCopyRecompileTimeout, queryCopyProgressInterval, CQueryCopyFailurePolicy_FailFast);
 
         SCMStringBuffer process;
         if (req.getCopyFiles())
@@ -4012,20 +4967,28 @@ bool CWsWorkunitsEx::onWUQuerysetImport(IEspContext &context, IEspWUQuerysetImpo
             cloner.enableFileCloning(updateFlags, req.getDfsServer(), process.str(), req.getSourceProcess(), req.getAllowForeignFiles(), req.getKeyCompression());
         }
 
-        if (req.getActiveOnly())
-            cloner.cloneActiveLocal(activate, req.getQueryMask());
-        else
-            cloner.cloneAllLocal(activate, req.getQueryMask());
+        cloner.cloneQueries(queryCopyPreparationPool, false, req.getActiveOnly(), activate, req.getQueryMask());
 
         StringBuffer publisherWuid(req.getDfuPublisherWuid());
-        cloner.cloneFiles(publisherWuid);
-        if (req.getIncludeFileErrors())
-            cloner.gatherFileErrors(resp.getFileErrors());
+        try
+        {
+            cloner.cloneFiles(publisherWuid);
+            if (req.getIncludeFileErrors())
+                cloner.gatherFileErrors(resp.getFileErrors());
 
-        if (handlePublisherResponse(req, resp, publisherWuid))
-            return true;
+            if (handlePublisherResponse(req, resp, publisherWuid))
+            {
+                cloner.cleanupUnpublishedGeneratedWorkunits();
+                return true;
+            }
 
-        cloner.publish();
+            cloner.publish();
+        }
+        catch (...)
+        {
+            cloner.cleanupUnpublishedGeneratedWorkunits();
+            throw;
+        }
 
         resp.setImportedQueries(cloner.copiedQueryIds);
         resp.setExistingQueries(cloner.existingQueryIds);

@@ -220,6 +220,21 @@
                 <xs:attribute name="clusterQueryStateThreadPoolSize" type="xs:nonNegativeInteger"
                               hpcc:presetValue="25" hpcc:displayName=""
                               hpcc:tooltip="Default thread pool size for checking query state on clusters"/>
+                <xs:attribute name="queryCopyPreparationThreadPoolSize" type="xs:positiveInteger"
+                              hpcc:presetValue="4" hpcc:displayName=""
+                              hpcc:tooltip="Default thread pool size for parallel query-copy preparation"/>
+                <xs:attribute name="queryCopyMaxActiveRecompiles" type="xs:positiveInteger"
+                              hpcc:presetValue="32" hpcc:displayName=""
+                              hpcc:tooltip="Maximum concurrent recompiles for a parallel query-set copy"/>
+                <xs:attribute name="queryCopyRecompileQueueTimeout" type="xs:nonNegativeInteger"
+                              hpcc:presetValue="7200000" hpcc:displayName=""
+                              hpcc:tooltip="Maximum recompile queue wait in milliseconds; zero disables the timeout"/>
+                <xs:attribute name="queryCopyRecompileTimeout" type="xs:nonNegativeInteger"
+                              hpcc:presetValue="1800000" hpcc:displayName=""
+                              hpcc:tooltip="Maximum compile execution time in milliseconds; zero disables the timeout"/>
+                <xs:attribute name="queryCopyProgressInterval" type="xs:nonNegativeInteger"
+                              hpcc:presetValue="30000" hpcc:displayName=""
+                              hpcc:tooltip="Parallel query-copy progress log interval in milliseconds; zero disables periodic logs"/>
                 <xs:attribute name="AWUsCacheTimeout" type="xs:nonNegativeInteger" hpcc:presetValue="15"
                               hpcc:displayName="AWUs Cache Timeout"
                               hpcc:tooltip="timeout for archived WU search cache (in minutes)"/>
