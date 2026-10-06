@@ -53,6 +53,14 @@ static inline __uint64 foldHash(__uint64 running, __uint64 attrHash)
     return fnv1a64Seeded(&attrHash, sizeof(attrHash), running);
 }
 
+static bool hashResolvedValue(const char* value, __uint64& hash)
+{
+    if (isEmptyString(value))
+        return false;
+    hash = fnv1a64Seeded(value, strlen(value), fnv1a64InitialHash);
+    return true;
+}
+
 GroupAttribute GroupAttributeExtractor::parseAttribute(const char* attrDesc)
 {
     GroupAttribute ret;
@@ -260,6 +268,8 @@ __uint64 GroupAttributeExtractor::getHash(const std::vector<GroupAttribute>& att
                 __uint64 attrHash;
                 if (metaState->queryLogicalFileNameHash(event, attrHash))
                     hash = foldHash(hash, attrHash);
+                else if (hashResolvedValue(metaState->queryLogicalFileName(event), attrHash))
+                    hash = foldHash(hash, attrHash);
             }
             continue;
         }
@@ -448,10 +458,17 @@ bool GroupAttributeExtractor::resolveMetaFnv(EventAttr attr, const CEvent& event
         break;
     case EvAttrPath:
         if (event.hasAttribute(EvAttrFileId))
-            return metaState->queryFilePathHash(event.queryNumericValue(EvAttrFileId), hash);
+        {
+            __uint64 fileId = event.queryNumericValue(EvAttrFileId);
+            if (metaState->queryFilePathHash(fileId, hash))
+                return true;
+            return hashResolvedValue(metaState->queryFilePath(fileId), hash);
+        }
         break;
     case EvAttrPlane:
-        return metaState->queryPlaneHash(event, hash);
+        if (metaState->queryPlaneHash(event, hash))
+            return true;
+        return hashResolvedValue(metaState->queryPlane(event), hash);
     default:
         break;
     }

@@ -630,9 +630,9 @@ public:
         START_TEST
         SequenceFixture f;
 
-        // No FileInformation events are fed, so meta.Path must remain unresolved while FileId
-        // still distinguishes the two files. Each file's run has 2 leaves so it remains visible
-        // despite singleton-run suppression.
+        // No FileInformation events are fed, so meta.Path uses its diagnostic fallback while
+        // FileId still distinguishes the two files. Each file's run has 2 leaves so it remains
+        // visible despite singleton-run suppression.
         addIndexLoad(f.visitor, 1, 100, 0, LeafNode);
         addIndexLoad(f.visitor, 1, 100, testPageSize, LeafNode);
         addIndexLoad(f.visitor, 1, 200, 0, LeafNode);
@@ -642,9 +642,10 @@ public:
         CPPUNIT_ASSERT_EQUAL(size_t(2), f.sink.rows.size());
         CPPUNIT_ASSERT_EQUAL(__uint64(100), f.sink.rows[0].fileId);
         CPPUNIT_ASSERT_EQUAL(__uint64(2), f.sink.rows[0].leafNodes);
-        CPPUNIT_ASSERT(isEmptyString(f.sink.rows[0].metaPath));
+        CPPUNIT_ASSERT_EQUAL(std::string("path not available (100)"), std::string(f.sink.rows[0].metaPath));
         CPPUNIT_ASSERT_EQUAL(__uint64(200), f.sink.rows[1].fileId);
         CPPUNIT_ASSERT_EQUAL(__uint64(2), f.sink.rows[1].leafNodes);
+        CPPUNIT_ASSERT_EQUAL(std::string("path not available (200)"), std::string(f.sink.rows[1].metaPath));
         END_TEST
     }
 

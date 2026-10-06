@@ -141,8 +141,23 @@ const CMetaInfoState::CachedString* CMetaInfoState::queryFilePathEntry(__uint64 
 {
     auto it = fileIdToPath.find(fileId);
     if (it == fileIdToPath.end())
-        return nullptr;
+        return queryUnavailableEntry(fileId, "path", unavailablePath, unavailableStringPool);
     return &it->second;
+}
+
+const CMetaInfoState::CachedString* CMetaInfoState::queryUnavailableEntry(__uint64 fileId, const char* kind,
+    std::unordered_map<__uint64, CachedString>& entries, std::set<std::string>& stringPool) const
+{
+    auto it = entries.find(fileId);
+    if (it != entries.end())
+        return &it->second;
+
+    std::string value = std::string(kind) + " not available (" + std::to_string(fileId) + ")";
+    auto stringIt = stringPool.insert(std::move(value)).first;
+    auto [entryIt, inserted] = entries.emplace(fileId, CachedString{});
+    entryIt->second.view = *stringIt;
+    entryIt->second.hash = fnv1a64Seeded(entryIt->second.view.data(), entryIt->second.view.size(), fnv1a64InitialHash);
+    return &entryIt->second;
 }
 
 const char* CMetaInfoState::queryFilePath(__uint64 fileId) const
@@ -153,10 +168,10 @@ const char* CMetaInfoState::queryFilePath(__uint64 fileId) const
 
 bool CMetaInfoState::queryFilePathHash(__uint64 fileId, __uint64& hash) const
 {
-    const CachedString* entry = queryFilePathEntry(fileId);
-    if (!entry)
+    auto it = fileIdToPath.find(fileId);
+    if (it == fileIdToPath.end())
         return failHashQuery(hash);
-    hash = entry->hash;
+    hash = it->second.hash;
     return true;
 }
 
@@ -167,7 +182,7 @@ const CMetaInfoState::CachedString* CMetaInfoState::queryPlaneEntry(const CEvent
 
     auto it = fileIdToPlane.find(event.queryNumericValue(EvAttrFileId));
     if (it == fileIdToPlane.end())
-        return nullptr;
+        return queryUnavailableEntry(event.queryNumericValue(EvAttrFileId), "plane", unavailablePlane, unavailableStringPool);
     return &it->second;
 }
 
@@ -191,10 +206,12 @@ bool CMetaInfoState::queryPlaneHash(const CEvent& event, __uint64& hash) const
         hash = fnv1a64Seeded(ptr, len, fnv1a64InitialHash);
         return true;
     }
-    const CachedString* entry = queryPlaneEntry(event);
-    if (!entry)
+    if (!event.hasAttribute(EvAttrFileId))
         return failHashQuery(hash);
-    hash = entry->hash;
+    auto it = fileIdToPlane.find(event.queryNumericValue(EvAttrFileId));
+    if (it == fileIdToPlane.end())
+        return failHashQuery(hash);
+    hash = it->second.hash;
     return true;
 }
 
@@ -206,7 +223,7 @@ const CMetaInfoState::CachedString* CMetaInfoState::queryLogicalFileNameEntry(co
     const unsigned fileId = event.queryNumericValue(EvAttrFileId);
     auto it = fileIdToLogicalName.find(fileId);
     if (it == fileIdToLogicalName.end())
-        return nullptr;
+        return queryUnavailableEntry(fileId, "logical file name", unavailableLogicalName, unavailableStringPool);
     return &it->second;
 }
 
@@ -218,10 +235,12 @@ const char* CMetaInfoState::queryLogicalFileName(const CEvent& event) const
 
 bool CMetaInfoState::queryLogicalFileNameHash(const CEvent& event, __uint64& hash) const
 {
-    const CachedString* entry = queryLogicalFileNameEntry(event);
-    if (!entry || entry->view.empty())
+    if (!event.hasAttribute(EvAttrFileId))
         return failHashQuery(hash);
-    hash = entry->hash;
+    auto it = fileIdToLogicalName.find(event.queryNumericValue(EvAttrFileId));
+    if (it == fileIdToLogicalName.end() || it->second.view.empty())
+        return failHashQuery(hash);
+    hash = it->second.hash;
     return true;
 }
 
@@ -267,6 +286,10 @@ void CMetaInfoState::clearAll()
     fileIdToPath.clear();
     fileIdToLogicalName.clear();
     fileIdToPlane.clear();
+    unavailablePath.clear();
+    unavailablePlane.clear();
+    unavailableLogicalName.clear();
+    unavailableStringPool.clear();
     logicalNamePool.clear();
     sourceToProps.clear();
     indexFiles.clear();
@@ -743,7 +766,7 @@ public:
         q3.reset(MetaFileInformation);
         q3.setValue(EvAttrFileId, (unsigned long long)3);
         const char * plane3 = state.queryPlane(q3);
-        CPPUNIT_ASSERT(plane3 == nullptr || *plane3 == 0);
+        CPPUNIT_ASSERT_EQUAL(std::string("plane not available (3)"), std::string(plane3));
 
         END_TEST
     }

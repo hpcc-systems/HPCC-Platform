@@ -35,6 +35,7 @@ set (
     ${CMAKE_CURRENT_SOURCE_DIR}/eventindexmodelmemory.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/eventindexmodelstorage.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/eventindexplot.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/eventindexcachespan.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/eventindexsummarize.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/eventindexloadsequence.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/eventiterator.cpp

@@ -1,6 +1,6 @@
 /*##############################################################################
 
-    Copyright (C) 2025 HPCC Systems®.
+    Copyright (C) 2026 HPCC Systems®.
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -15,19 +15,8 @@
     limitations under the License.
 ############################################################################## */
 
-#include "evtindex.hpp"
-#include "evtindex_load.hpp"
+#pragma once
 
-static constexpr const char* brief = "group of commands for analyzing index file events";
-static constexpr const char* verbose = "Commands focused on the analysis of index file events.";
+#include "evtool.hpp"
 
-IEvToolCommand* createIndexCommand()
-{
-    return new CEvtCommandGroup({
-        { "cache", createIndexCacheCommand },
-        { "load", createIndexLoadCommand },
-        { "summarize", createIndexSummaryCommand },
-        { "hotspot", createIndexHotspotCommand },
-        { "plot", createIndexPlotCommand },
-    }, verbose, brief);
-}
+extern IEvToolCommand* createIndexCacheCommand();
