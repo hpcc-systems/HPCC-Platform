@@ -51,6 +51,11 @@ bool CEventConsumingOp::acceptAttribute(EventAttr attr, const char* values)
     return ensureFilter()->acceptAttribute(attr, values);
 }
 
+bool CEventConsumingOp::acceptExtendedAttribute(unsigned attr, const char* values)
+{
+    return ensureFilter()->acceptExtendedAttribute(attr, values);
+}
+
 bool CEventConsumingOp::acceptMetaAttribute(const char* name, const char* values)
 {
     return ensureFilter()->acceptMetaAttribute(name, values);

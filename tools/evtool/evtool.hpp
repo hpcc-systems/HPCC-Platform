@@ -135,6 +135,8 @@ protected:
             const char* attrName = key + 10;
             if (strncmp(attrName, EVENT_META_PREFIX, sizeof(EVENT_META_PREFIX) - 1) == 0)
                 return op.acceptMetaAttribute(attrName, value);
+            if (const IndexSearchFlagInfo* flag = queryIndexSearchFlagInfo(attrName))
+                return op.acceptExtendedAttribute(flag->attrId, value);
             EventAttr attr = queryEventAttribute(attrName);
             switch (attr)
             {

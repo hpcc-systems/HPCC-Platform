@@ -16,6 +16,7 @@
 ############################################################################## */
 
 #include "eventdescribe.h"
+#include "eventindex.hpp"
 #include "eventmetaparser.hpp"
 #include "jevent.hpp"
 #include "jfile.hpp"
@@ -291,6 +292,7 @@ enum class NamedSelectionKind : byte
     event = 0x02,
     attribute = 0x04,
     meta = 0x08,
+    extendedAttribute = 0x10,
 };
 BITMASK_ENUM(NamedSelectionKind);
 
@@ -300,6 +302,7 @@ struct NamedSelection
     EventContext context{EventCtxInvalid};
     EventType event{EventNone};
     EventAttr attribute{EvAttrNone};
+    unsigned extendedAttribute{EvExtAttrMax};
     EventMetaAttr meta{MetaAttrMax};
 
     bool empty() const
@@ -361,6 +364,11 @@ static NamedSelection resolveNamedSelectionFrom(const char* text)
     {
         selection.attribute = attribute;
         selection.kinds |= NamedSelectionKind::attribute;
+    }
+    if (const IndexSearchFlagInfo* flag = queryIndexSearchFlagInfo(text))
+    {
+        selection.extendedAttribute = flag->attrId;
+        selection.kinds |= NamedSelectionKind::extendedAttribute;
     }
     if (auto meta = queryMetaAttribute(text); meta != MetaAttrMax)
     {
@@ -944,6 +952,30 @@ void DescribeRenderer::appendAttributes()
         }
     }
 
+    // SearchFlags is a bit field. Expose each traceable bit as a selectable
+    // attribute label, while omitting non-search flags such as TLK and single-part.
+    for (unsigned idx = 0; idx < queryIndexSearchFlagCount(); idx++)
+    {
+        const auto& flag = *queryIndexSearchFlagInfoByIndex(idx);
+        if (ctx.namedSelection.has(NamedSelectionKind::extendedAttribute))
+        {
+            if (ctx.namedSelection.extendedAttribute == flag.attrId
+                && ctx.anyEventPassesObservedFilter(ctx.attrEvents[EvAttrSearchFlags]))
+                output.addPropTreeArrayItem("attribute", createPTree())->setProp(nullptr, flag.name);
+            continue;
+        }
+        if (ctx.namedSelection.has(NamedSelectionKind::attribute))
+            continue;
+        for (EventType t : ctx.attrEvents[EvAttrSearchFlags])
+        {
+            if (ctx.eventMatches(t))
+            {
+                output.addPropTreeArrayItem("attribute", createPTree())->setProp(nullptr, flag.name);
+                break;
+            }
+        }
+    }
+
     appendTerseMetaItems("attribute");
 }
 }
@@ -971,7 +1003,9 @@ static void appendDescriptionTree(IPropertyTree& description, const DescribeRend
         const bool canRenderInEnabledSection =
             (contextsEnabled && ctx.namedSelection.has(NamedSelectionKind::context))
             || (eventsEnabled && ctx.namedSelection.has(NamedSelectionKind::event))
-            || (attributesEnabled && (ctx.namedSelection.has(NamedSelectionKind::attribute) || ctx.namedSelection.has(NamedSelectionKind::meta)));
+            || (attributesEnabled && (ctx.namedSelection.has(NamedSelectionKind::attribute)
+                || ctx.namedSelection.has(NamedSelectionKind::extendedAttribute)
+                || ctx.namedSelection.has(NamedSelectionKind::meta)));
 
         if (!canRenderInEnabledSection)
         {
@@ -990,7 +1024,9 @@ static void appendDescriptionTree(IPropertyTree& description, const DescribeRend
                 neededSection = "events";
                 sectionFlag = "-e";
             }
-            else if (ctx.namedSelection.has(NamedSelectionKind::attribute) || ctx.namedSelection.has(NamedSelectionKind::meta))
+            else if (ctx.namedSelection.has(NamedSelectionKind::attribute)
+                || ctx.namedSelection.has(NamedSelectionKind::extendedAttribute)
+                || ctx.namedSelection.has(NamedSelectionKind::meta))
             {
                 excludedType = "attribute";
                 neededSection = "attributes";
@@ -1027,6 +1063,7 @@ class EventDescribeTests : public CppUnit::TestFixture
         CPPUNIT_TEST(testNamesAttributesOmitMetadata);
         CPPUNIT_TEST(testMetaRulesHaveRequiredDependencies);
         CPPUNIT_TEST(testNamedEntitySelection);
+        CPPUNIT_TEST(testNamedSearchFlagSelection);
         CPPUNIT_TEST(testNamedEntitySelectionCaseInsensitive);
         CPPUNIT_TEST(testNamedMetaSelectionRendersInAttributeList);
         CPPUNIT_TEST(testNamedContextSelection);
@@ -1252,6 +1289,12 @@ public:
         stream->flush();
         const char* result = output.str();
         CPPUNIT_ASSERT(strstr(result, "\"attribute\"") != nullptr);
+        CPPUNIT_ASSERT(strstr(result, "SearchFlags.AllKeyed") != nullptr);
+        CPPUNIT_ASSERT(strstr(result, "SearchFlags.SingleValue") != nullptr);
+        CPPUNIT_ASSERT(strstr(result, "SearchFlags.Unfiltered") != nullptr);
+        CPPUNIT_ASSERT(strstr(result, "SearchFlags.Count") != nullptr);
+        CPPUNIT_ASSERT(strstr(result, "SearchFlags.TLK") == nullptr);
+        CPPUNIT_ASSERT(strstr(result, "SearchFlags.SinglePart") == nullptr);
         CPPUNIT_ASSERT(strstr(result, "\"@category\"") == nullptr);
         CPPUNIT_ASSERT(strstr(result, "\"@presence\"") == nullptr);
         END_TEST
@@ -1278,6 +1321,26 @@ public:
         assertExactSectionValues(describeTree, "context", {});
         assertExactSectionValues(describeTree, "event", { "QueryStart" });
         assertExactSectionValues(describeTree, "attribute", {});
+        END_TEST
+    }
+
+    void testNamedSearchFlagSelection()
+    {
+        START_TEST
+
+        CDescribeEventsOp op;
+        op.setFormat(DescribeOutputFormat::json);
+        op.setNamedEntity("SearchFlags.Count");
+
+        StringBuffer output;
+        Owned<IBufferedSerialOutputStream> stream;
+        setupOutput(op, output, stream);
+
+        CPPUNIT_ASSERT(op.doOp());
+        stream->flush();
+        Owned<IPropertyTree> jsonTree = createPTreeFromJSONString(output.str());
+        const IPropertyTree& describeTree = queryDescribeRoot(*jsonTree);
+        assertExactSectionValues(describeTree, "attribute", { "SearchFlags.Count" });
         END_TEST
     }
 

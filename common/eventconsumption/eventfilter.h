@@ -79,6 +79,10 @@ interface IEventFilter : extends IEventVisitationLink
     //   service name for a trace ID may be filtered independently using the special attribute
     //   name "meta.ServiceName".
     virtual bool acceptAttribute(EventAttr attr, const char* values) = 0;
+    // Filter on a synthetic or derived attribute ID that is not represented by EventAttr.
+    // Values use the comparison syntax appropriate to the extended attribute; for example,
+    // SearchFlags bit attributes accept true/false tokens.
+    virtual bool acceptExtendedAttribute(unsigned attr, const char* values) = 0;
     // Filter on a comma-delimited list of value tokens for a named meta attribute derived from
     // another event attribute. Recognized names (and the attribute they derive from):
     //   "meta.Path"            - file path derived from EvAttrFileId

@@ -51,6 +51,30 @@ public:
     }
 };
 
+// Extended attributes used by event-consumption index operations. The SearchFlags
+// definitions and jhconst.hpp dependency are kept in eventindex.cpp.
+enum ExtendedEventAttr : unsigned
+{
+    EvExtAttrSearchAllKeyed = EvAttrMax + 1,
+    EvExtAttrSearchSingleValue,
+    EvExtAttrSearchUnfiltered,
+    EvExtAttrSearchCount,
+    EvExtAttrLogicalFileName,
+    EvExtAttrMax,
+};
+
+struct IndexSearchFlagInfo
+{
+    unsigned attrId;
+    __uint64 mask;
+    const char* name;
+};
+
+event_decl unsigned queryIndexSearchFlagCount();
+event_decl const IndexSearchFlagInfo* queryIndexSearchFlagInfoByIndex(unsigned index);
+event_decl const IndexSearchFlagInfo* queryIndexSearchFlagInfo(unsigned attrId);
+event_decl const IndexSearchFlagInfo* queryIndexSearchFlagInfo(const char* name);
+
 enum NodeKind : unsigned
 {
     BranchNode,

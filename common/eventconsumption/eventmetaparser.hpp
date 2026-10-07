@@ -18,6 +18,7 @@
 #pragma once
 
 #include "eventvisitor.h"
+#include "eventindex.hpp"
 #include "jstring.hpp"
 #include <functional>
 #include <map>
@@ -31,9 +32,6 @@ constexpr char EVENT_META_SERVICE_NAME[] = "meta.ServiceName";
 constexpr char EVENT_META_LOGICAL_FILE_NAME[] = "meta.LogicalFileName";
 constexpr char EVENT_META_PATH[] = "meta.Path";
 constexpr char EVENT_META_PLANE[] = "meta.Plane";
-
-// Extended grouping attr id for a logical file name derived from FileId metadata.
-constexpr unsigned EvExtAttrLogicalFileName = EvAttrMax + 1;
 
 // Canonical mapping APIs for derived meta attributes used by describe/filter/dump/summarize.
 //

@@ -18,6 +18,7 @@ project(eventconsumption)
 
 include_directories (
     ${HPCC_SOURCE_DIR}/system/jlib
+    ${HPCC_SOURCE_DIR}/system/jhtree
     ${HPCC_SOURCE_DIR}/system/include
     ${HPCC_SOURCE_DIR}/testing/unittests
 )
@@ -28,6 +29,7 @@ set (
     ${CMAKE_CURRENT_SOURCE_DIR}/eventdumpstream.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/eventdumpptree.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/eventgrouping.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/eventindex.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/eventfilter.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/eventindexhotspot.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/eventindexhotspotbuckets.cpp
