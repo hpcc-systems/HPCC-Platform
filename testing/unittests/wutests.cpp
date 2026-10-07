@@ -21,6 +21,44 @@
 #include "unittests.hpp"
 #include "workunit.hpp"
 #include "jcomp.hpp"
+#include "querycopysetoptions.hpp"
+
+enum class TestQueryCopyFailurePolicy
+{
+    FailFast,
+    Continue
+};
+
+class CTestQueryCopySetRequest
+{
+public:
+    void setParallel(bool value)
+    {
+        parallel = value;
+    }
+    void setParallelFailurePolicy(TestQueryCopyFailurePolicy value)
+    {
+        failurePolicy = value;
+    }
+    void setParallelQueueTimeout(unsigned value)
+    {
+        queueTimeout = value;
+    }
+    void setParallelCompileTimeout(unsigned value)
+    {
+        compileTimeout = value;
+    }
+    void setParallelWindowSize(unsigned value)
+    {
+        windowSize = value;
+    }
+
+    bool parallel = false;
+    TestQueryCopyFailurePolicy failurePolicy = TestQueryCopyFailurePolicy::FailFast;
+    unsigned queueTimeout = 0;
+    unsigned compileTimeout = 0;
+    unsigned windowSize = 0;
+};
 
 class wuTests : public CppUnit::TestFixture
 {
@@ -40,6 +78,14 @@ class wuTests : public CppUnit::TestFixture
         CPPUNIT_TEST(testCopyWorkUnitForRecompileCompileContext);
         CPPUNIT_TEST(testCopyWorkUnitPreservesScheduledWorkflowCount);
         CPPUNIT_TEST(testCopyWorkUnitForRecompileDoesNotCopyScheduledWorkflowCount);
+        CPPUNIT_TEST(testParallelCopySetAllowedOptions);
+        CPPUNIT_TEST(testParallelCopySetOnlyCopyFilesRejected);
+        CPPUNIT_TEST(testParallelCopySetStopIfFilesCopiedRejected);
+        CPPUNIT_TEST(testParallelCopySetControlsRequireParallel);
+        CPPUNIT_TEST(testParallelCopySetUnsignedParsing);
+        CPPUNIT_TEST(testParallelCopySetCommandOptions);
+        CPPUNIT_TEST(testParallelCopySetTimeoutBounds);
+        CPPUNIT_TEST(testParallelCopySetWindowSizeBounds);
         CPPUNIT_TEST(testMaxCompileThreadsSelection);
     CPPUNIT_TEST_SUITE_END();
 
@@ -323,6 +369,93 @@ public:
         copyWorkUnitForRecompile(target, source);
 
         CPPUNIT_ASSERT_EQUAL(0U, target->queryEventScheduledCount());
+    }
+
+    void testParallelCopySetAllowedOptions()
+    {
+        CPPUNIT_ASSERT(QueryCopySetParallelOptionError::None == validateQueryCopySetParallelOptions(true, false, false));
+        CPPUNIT_ASSERT(QueryCopySetParallelOptionError::None == validateQueryCopySetParallelOptions(false, true, false));
+        CPPUNIT_ASSERT(QueryCopySetParallelOptionError::None == validateQueryCopySetParallelOptions(false, false, true));
+    }
+
+    void testParallelCopySetOnlyCopyFilesRejected()
+    {
+        CPPUNIT_ASSERT(QueryCopySetParallelOptionError::OnlyCopyFiles == validateQueryCopySetParallelOptions(true, true, false));
+        CPPUNIT_ASSERT(QueryCopySetParallelOptionError::OnlyCopyFiles == validateQueryCopySetParallelOptions(true, true, true));
+    }
+
+    void testParallelCopySetStopIfFilesCopiedRejected()
+    {
+        CPPUNIT_ASSERT(QueryCopySetParallelOptionError::StopIfFilesCopied == validateQueryCopySetParallelOptions(true, false, true));
+    }
+
+    void testParallelCopySetControlsRequireParallel()
+    {
+        CPPUNIT_ASSERT(queryCopySetParallelControlsAllowed(true, true, true, true, true));
+        CPPUNIT_ASSERT(queryCopySetParallelControlsAllowed(false, false, false, false, false));
+        CPPUNIT_ASSERT(!queryCopySetParallelControlsAllowed(false, true, false, false, false));
+        CPPUNIT_ASSERT(!queryCopySetParallelControlsAllowed(false, false, true, false, false));
+        CPPUNIT_ASSERT(!queryCopySetParallelControlsAllowed(false, false, false, true, false));
+        CPPUNIT_ASSERT(!queryCopySetParallelControlsAllowed(false, false, false, false, true));
+    }
+
+    void testParallelCopySetUnsignedParsing()
+    {
+        unsigned value = 0;
+        CPPUNIT_ASSERT(queryCopySetParseUnsigned("0", value));
+        CPPUNIT_ASSERT_EQUAL(0U, value);
+        StringBuffer maxUnsignedText;
+        maxUnsignedText.append(~0U);
+        CPPUNIT_ASSERT(queryCopySetParseUnsigned(maxUnsignedText, value));
+        CPPUNIT_ASSERT_EQUAL(~0U, value);
+        CPPUNIT_ASSERT(!queryCopySetParseUnsigned(nullptr, value));
+        CPPUNIT_ASSERT(!queryCopySetParseUnsigned("", value));
+        CPPUNIT_ASSERT(!queryCopySetParseUnsigned("-1", value));
+        CPPUNIT_ASSERT(!queryCopySetParseUnsigned("+1", value));
+        CPPUNIT_ASSERT(!queryCopySetParseUnsigned("1x", value));
+        CPPUNIT_ASSERT(!queryCopySetParseUnsigned(" 1", value));
+        CPPUNIT_ASSERT(!queryCopySetParseUnsigned("4294967296", value));
+    }
+
+    void testParallelCopySetCommandOptions()
+    {
+        const char *argv[] =
+        {
+            "copy-set",
+            "--parallel",
+            "--continue-on-error",
+            "--parallel-queue-timeout=3",
+            "--parallel-compile-timeout", "7",
+            "--parallel-window-size=11"
+        };
+        ArgvIterator iter(_elements_in(argv), argv);
+        CQueryCopySetParallelOptions options;
+        for (; !iter.done(); iter.next())
+            CPPUNIT_ASSERT(QueryCopySetParallelOptionMatch::Match == options.match(iter));
+        CPPUNIT_ASSERT(options.controlsAllowed());
+
+        CTestQueryCopySetRequest request;
+        options.updateRequest(&request, TestQueryCopyFailurePolicy::Continue, TestQueryCopyFailurePolicy::FailFast);
+        CPPUNIT_ASSERT(request.parallel);
+        CPPUNIT_ASSERT(TestQueryCopyFailurePolicy::Continue == request.failurePolicy);
+        CPPUNIT_ASSERT_EQUAL(3000U, request.queueTimeout);
+        CPPUNIT_ASSERT_EQUAL(7000U, request.compileTimeout);
+        CPPUNIT_ASSERT_EQUAL(11U, request.windowSize);
+    }
+
+    void testParallelCopySetTimeoutBounds()
+    {
+        CPPUNIT_ASSERT(queryCopySetTimeoutSecondsValid(0));
+        CPPUNIT_ASSERT(queryCopySetTimeoutSecondsValid(~0U / 1000));
+        CPPUNIT_ASSERT(!queryCopySetTimeoutSecondsValid(~0U / 1000 + 1));
+    }
+
+    void testParallelCopySetWindowSizeBounds()
+    {
+        CPPUNIT_ASSERT(!queryCopySetParallelWindowSizeValid(0));
+        CPPUNIT_ASSERT(queryCopySetParallelWindowSizeValid(queryCopySetMinParallelWindowSize));
+        CPPUNIT_ASSERT(queryCopySetParallelWindowSizeValid(queryCopySetMaxParallelWindowSize));
+        CPPUNIT_ASSERT(!queryCopySetParallelWindowSizeValid(queryCopySetMaxParallelWindowSize + 1));
     }
 
     void testMaxCompileThreadsSelection()

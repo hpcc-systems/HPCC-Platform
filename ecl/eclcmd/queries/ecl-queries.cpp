@@ -24,6 +24,7 @@
 
 #include "eclcmd.hpp"
 #include "eclcmd_common.hpp"
+#include "querycopysetoptions.hpp"
 #include "eclcmd_core.hpp"
 #include "workunit.hpp"
 
@@ -745,6 +746,23 @@ public:
                 continue;
             if (iter.matchFlag(optAllQueries, ECLOPT_ALL))
                 continue;
+            QueryCopySetParallelOptionMatch parallelOptionMatch = parallelOptions.match(iter);
+            switch (parallelOptionMatch)
+            {
+            case QueryCopySetParallelOptionMatch::Match:
+                continue;
+            case QueryCopySetParallelOptionMatch::InvalidQueueTimeout:
+                fputs("Invalid parallel queue timeout.\n", stderr);
+                return EclCmdOptionNoMatch;
+            case QueryCopySetParallelOptionMatch::InvalidCompileTimeout:
+                fputs("Invalid parallel compile timeout.\n", stderr);
+                return EclCmdOptionNoMatch;
+            case QueryCopySetParallelOptionMatch::InvalidWindowSize:
+                fputs("Invalid parallel window size.\n", stderr);
+                return EclCmdOptionNoMatch;
+            case QueryCopySetParallelOptionMatch::NoMatch:
+                break;
+            }
             if (iter.matchFlag(optAllowForeign, ECLOPT_ALLOW_FOREIGN))
                 continue;
             if (iter.matchFlag(optOverwrite, ECLOPT_OVERWRITE)||iter.matchFlag(optOverwrite, ECLOPT_OVERWRITE_S))
@@ -769,9 +787,35 @@ public:
             return false;
         if (!dfuOptions.finalizeOptions(*this, globals))
             return false;
+        QueryCopySetParallelOptionError parallelOptionError = validateQueryCopySetParallelOptions(parallelOptions.parallel, dfuOptions.optOnlyCopyFiles, dfuOptions.optStopIfFilesCopied);
+        if (parallelOptionError == QueryCopySetParallelOptionError::OnlyCopyFiles)
+        {
+            fputs("--parallel cannot be used with --only-copy-files.\n", stderr);
+            return false;
+        }
+        if (parallelOptionError == QueryCopySetParallelOptionError::StopIfFilesCopied)
+        {
+            fputs("--parallel cannot be used with --stop-if-files-copied.\n", stderr);
+            return false;
+        }
         if (!optCloneActiveState && optDeletePrevious)
         {
             fputs("--delete-prev also requires --clone-active-state.\n", stderr);
+            return false;
+        }
+        if (!queryCopySetTimeoutSecondsValid(parallelOptions.queueTimeout) || !queryCopySetTimeoutSecondsValid(parallelOptions.compileTimeout))
+        {
+            fputs("Parallel timeout values are too large.\n", stderr);
+            return false;
+        }
+        if (parallelOptions.windowSizeSpecified && !queryCopySetParallelWindowSizeValid(parallelOptions.windowSize))
+        {
+            fprintf(stderr, "Parallel window size must be between %u and %u.\n", queryCopySetMinParallelWindowSize, queryCopySetMaxParallelWindowSize);
+            return false;
+        }
+        if (!parallelOptions.controlsAllowed())
+        {
+            fputs("Parallel control options require --parallel.\n", stderr);
             return false;
         }
         if (optSourceQuerySet.isEmpty() || optDestQuerySet.isEmpty())
@@ -816,6 +860,7 @@ public:
         req->setCopyFiles(!optDontCopyFiles);
         req->setAllowForeignFiles(optAllowForeign);
         req->setIncludeFileErrors(true);
+        parallelOptions.updateRequest(req.get(), CQueryCopyFailurePolicy_Continue, CQueryCopyFailurePolicy_FailFast);
 
         dfuOptions.updateRequest(req.get());
 
@@ -859,7 +904,7 @@ public:
             "\n"
             "By default only active queries will be copied.  Use --all to copy all queries.\n"
             "\n"
-            "ecl queries copy-set <source_target> <destination_target> [--clone-active-state]\n"
+            "ecl queries copy-set <source_target> <destination_target> [--clone-active-state] [--parallel]\n"
 
             "ecl queries copy-set roxie1 roxie2\n"
             "ecl queries copy-set //ip:port/roxie1 roxie2 --clone-active-state\n"
@@ -871,6 +916,15 @@ public:
             "   --source-ssl           Use SSL when connecting to source (default if --ssl is used)\n"
             "   --source-no-ssl        Do not use SSL when connecting to source (default if --ssl is NOT used)\n"
             "   --all                  Copy both active and inactive queries\n"
+            "   --parallel             Prepare independent queries concurrently\n"
+            "   --continue-on-error    Finish processing independent queries before reporting failures\n"
+            "   --parallel-queue-timeout=<seconds>\n"
+            "                          Maximum eclccserver queue wait; zero uses the service default\n"
+            "   --parallel-compile-timeout=<seconds>\n"
+            "                          Maximum compile execution time; zero uses the service default\n"
+            "   --parallel-window-size=<count>\n"
+            "                          Requested active-recompile window (1-1024)\n"
+            "                          Capped by the service limit (default 32)\n"
             "   --no-files             Do not copy DFS file information for referenced files\n"
             "   --daliip=<ip>          Remote Dali DFS to use for copying file information\n"
             "   --source-process       Process cluster to copy files from\n"
@@ -901,6 +955,7 @@ private:
     bool optDontCopyFiles;
     bool optAllowForeign;
     bool optAllQueries;
+    CQueryCopySetParallelOptions parallelOptions;
     bool optDeletePrevious = false;
     bool optSourceSSL = false; //user explicitly turning on SSL for accessing the remote source location (ssl defaults to use SSL if we are hitting ESP via SSL)
     bool optSourceNoSSL = false; //user explicitly turning OFF SSL for accessing the remote source location (ssl defaults to not use SSL if we are not hitting ESP via SSL)

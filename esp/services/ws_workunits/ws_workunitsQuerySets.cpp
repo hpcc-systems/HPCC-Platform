@@ -3743,7 +3743,7 @@ public:
             if (failFast)
                 throwPreparationExceptions(preparations);
             else
-                logPreparationExceptions(preparations);
+                recordPreparationExceptions(preparations);
 
             ForEachItemIn(commitIndex, preparations)
             {
@@ -3763,6 +3763,12 @@ public:
             }
             throw;
         }
+    }
+
+    void throwContinuedExceptions()
+    {
+        if (continuedExceptions)
+            throw continuedExceptions.getClear();
     }
 
     void cleanupUnpublishedGeneratedWorkunits()
@@ -3945,6 +3951,24 @@ private:
             logParallelSummary("failed");
             throw firstException.getClear();
         }
+    }
+
+    void recordPreparationExceptions(OwnedPointerArrayOf<CQueryCopyPreparation> &preparations)
+    {
+        logPreparationExceptions(preparations);
+        ForEachItemIn(errorIndex, preparations)
+        {
+            CQueryCopyPreparation &preparation = *preparations.item(errorIndex);
+            if (preparation.exception)
+                recordContinuedException(LINK(preparation.exception));
+        }
+    }
+
+    void recordContinuedException(IException *exception)
+    {
+        if (!continuedExceptions)
+            continuedExceptions.setown(makeMultiException("Parallel queryset copy"));
+        continuedExceptions->append(*exception);
     }
 
     void enumerateRemoteQueries(OwnedPointerArrayOf<CQueryCopyPreparation> &preparations, bool activeOnly, bool cloneActiveState)
@@ -4501,8 +4525,13 @@ private:
             msg.append(": ").append(preparation.query->queryProp("@id"));
             missingWuids.append(msg);
             Owned<IException> e = makeStringExceptionV(ECLWATCH_CANNOT_OPEN_WORKUNIT, "Cannot open source workunit %s for query %s", preparation.sourceWuid.get(), preparation.sourceQueryId.get());
-            if (failFast && !allowMissingWuids)
-                throw e.getClear();
+            if (!allowMissingWuids)
+            {
+                if (failFast)
+                    throw e.getClear();
+                failedCount++;
+                recordContinuedException(e.getClear());
+            }
             return;
         }
         Owned<IWorkUnit> workunit = factory->updateWorkUnit(targetWuid);
@@ -4512,8 +4541,13 @@ private:
             msg.append(": ").append(preparation.query->queryProp("@id"));
             missingWuids.append(msg);
             Owned<IException> e = makeStringExceptionV(ECLWATCH_CANNOT_OPEN_WORKUNIT, "Cannot update source workunit %s for query %s", targetWuid, preparation.sourceQueryId.get());
-            if (failFast && !allowMissingWuids)
-                throw e.getClear();
+            if (!allowMissingWuids)
+            {
+                if (failFast)
+                    throw e.getClear();
+                failedCount++;
+                recordContinuedException(e.getClear());
+            }
             return;
         }
         if (cloneFilesEnabled && wufiles)
@@ -4560,6 +4594,7 @@ private:
     unsigned deployedCount = 0;
     unsigned failedCount = 0;
     unsigned updateFlags = 0;
+    Owned<IMultiException> continuedExceptions;
     CWUQueryActivationMode activationMode = CWUQueryActivationMode_ActivateSuspendPrevious;
     StringArray locations;
 
@@ -4672,19 +4707,20 @@ bool CWsWorkunitsEx::onWUCopyQuerySet(IEspContext &context, IEspWUCopyQuerySetRe
 
     cloner.cloneQueries(queryCopyPreparationPool, req.getParallel(), req.getActiveOnly(), req.getCloneActiveState());
 
+    bool publisherResponseHandled = false;
     try
     {
         cloner.cloneFiles(publisherWuid);
         if (req.getIncludeFileErrors())
             cloner.gatherFileErrors(resp.getFileErrors());
 
-        if (handlePublisherResponse(req, resp, publisherWuid))
+        publisherResponseHandled = handlePublisherResponse(req, resp, publisherWuid);
+        if (publisherResponseHandled)
         {
             cloner.cleanupUnpublishedGeneratedWorkunits();
-            return true;
         }
-
-        cloner.publish();
+        else
+            cloner.publish();
     }
     catch (...)
     {
@@ -4692,8 +4728,13 @@ bool CWsWorkunitsEx::onWUCopyQuerySet(IEspContext &context, IEspWUCopyQuerySetRe
         throw;
     }
 
-    resp.setCopiedQueries(cloner.copiedQueryIds);
-    resp.setExistingQueries(cloner.existingQueryIds);
+    if (!publisherResponseHandled)
+    {
+        resp.setCopiedQueries(cloner.copiedQueryIds);
+        resp.setExistingQueries(cloner.existingQueryIds);
+    }
+
+    cloner.throwContinuedExceptions();
 
     return true;
 }
