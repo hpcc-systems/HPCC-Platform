@@ -249,6 +249,7 @@ protected:
     unsigned int yieldCount = (unsigned)-1;
     mutable PayloadReference activePayload;
     NodeTypeWithFlags nodeFilterFlags = NodeNoFlags;   // Set by reset() from the filter; narrowing calls (nextRange/incrementKey/fixSortSegs) do not recalculate it
+    NodeTypeWithFlags fixedNodeFilterFlags = NodeNoFlags;   // Flags that survive reset()
     
     mutable bool fullBufferValid = false;
     bool eof=false;
@@ -273,6 +274,7 @@ public:
     virtual bool lookupSkip(const void *seek, size32_t seekOffset, size32_t seeklen, IContextLogger *ctx) override;
     virtual bool skipTo(const void *_seek, size32_t seekOffset, size32_t seeklen) override;
     virtual IKeyCursor *fixSortSegs(unsigned sortFieldOffset) override;
+    virtual void setStepping(bool stepping) override;
 
     virtual unsigned __int64 getCount(IContextLogger *ctx) override;
     virtual unsigned __int64 checkCount(unsigned __int64 max, IContextLogger *ctx) override;
