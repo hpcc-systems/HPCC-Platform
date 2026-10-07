@@ -1179,6 +1179,7 @@ enum
     TDWexpires          = 0x100000,
     TDWrestricted       = 0x200000,
     TDWnocompress       = 0x400000,
+    TDWhaswidth         = 0x800000,
 };
 
 //flags for thor index read
@@ -1304,6 +1305,7 @@ struct IHThorDiskWriteArg : public IHThorArg
     virtual void getEncryptKey(size32_t & keyLen, void * & key) = 0;
     virtual unsigned getFormatCrc() = 0;
     virtual const char * getCluster(unsigned idx) = 0;
+    virtual unsigned getWidth() = 0;                // only guaranteed present if TDWhaswidth defined
 };
 
 //New prototype interface for writing any format file through the same interface
@@ -1965,16 +1967,19 @@ struct IHThorHashDistributeArg : public IHThorArg
     virtual ICompare * queryMergeCompare()=0;       // iff TAKhasdistributemerge
 };
 
+
 enum
 {
-    SDFisall   = 0x0001,
+    SDFisall    = 0x0001,
+    SDFwidth    = 0x0002,
 };
-
 
 struct IHThorNWayDistributeArg : public IHThorArg
 {
     virtual unsigned   getFlags()=0;
     virtual bool       include(const byte * left, unsigned targetNode) = 0;
+    virtual unsigned   getWidth()=0;
+
     inline bool        isAll() { return (getFlags() & SDFisall) != 0; }
 };
 

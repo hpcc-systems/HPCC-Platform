@@ -105,6 +105,7 @@ class ECLRTL_API CThorDiskWriteArg : public CThorSinkArgOf<IHThorGenericDiskWrit
     virtual void getUpdateCRCs(unsigned & eclCRC, unsigned __int64 & totalCRC) override;
     virtual void getEncryptKey(size32_t & keyLen, void * & key) override;
     virtual const char * getCluster(unsigned idx) override;
+    virtual unsigned getWidth() override;
     virtual const char * queryFormat() override;
     virtual void getFormatOptions(IXmlWriter & options) override;
     virtual const char * queryProvider() override;
@@ -288,6 +289,7 @@ class ECLRTL_API CThorSpillArg : public CThorArgOf<IHThorSpillArg>
     virtual void getUpdateCRCs(unsigned & eclCRC, unsigned __int64 & totalCRC) override;
     virtual void getEncryptKey(size32_t & keyLen, void * & key) override;
     virtual const char * getCluster(unsigned idx) override;
+    virtual unsigned getWidth() override;
     virtual const char * queryFormat() override;
     virtual void getFormatOptions(IXmlWriter & options) override;
     virtual const char * queryProvider() override;
@@ -668,6 +670,7 @@ class ECLRTL_API CThorNWayDistributeArg : public CThorArgOf<IHThorNWayDistribute
 {
     virtual unsigned getFlags() override;
     virtual bool     include(const byte * left, unsigned targetNode) override;
+    virtual unsigned getWidth() override;
 };
 
 class ECLRTL_API CThorHashDedupArg : public CThorArgOf<IHThorHashDedupArg>
@@ -748,6 +751,7 @@ class ECLRTL_API CThorCsvWriteArg : public CThorSinkArgOf<IHThorCsvWriteArg>
     virtual void getUpdateCRCs(unsigned & eclCRC, unsigned __int64 & totalCRC) override;
     virtual void getEncryptKey(size32_t & keyLen, void * & key) override;
     virtual const char * getCluster(unsigned idx) override;
+    virtual unsigned getWidth() override;
 };
 
 class ECLRTL_API CThorCsvFetchArg: public CThorArgOf<IHThorCsvFetchArg>
@@ -799,6 +803,7 @@ class ECLRTL_API CThorXmlWriteArg : public CThorSinkArgOf<IHThorXmlWriteArg>
     virtual void getUpdateCRCs(unsigned & eclCRC, unsigned __int64 & totalCRC) override;
     virtual void getEncryptKey(size32_t & keyLen, void * & key) override;
     virtual const char * getCluster(unsigned idx) override;
+    virtual unsigned getWidth() override;
 };
 
 //-- SOAP --

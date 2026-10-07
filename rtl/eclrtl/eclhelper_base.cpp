@@ -75,6 +75,7 @@ unsigned CThorDiskWriteArg::getExpiryDays() { return 0; }
 void CThorDiskWriteArg::getUpdateCRCs(unsigned & eclCRC, unsigned __int64 & totalCRC) { }
 void CThorDiskWriteArg::getEncryptKey(size32_t & keyLen, void * & key) { keyLen = 0; key = 0; }
 const char * CThorDiskWriteArg::getCluster(unsigned idx) { return NULL; }
+unsigned CThorDiskWriteArg::getWidth() { return 0; }
 const char * CThorDiskWriteArg::queryFormat()                      { return nullptr; }
 void CThorDiskWriteArg::getFormatOptions(IXmlWriter & options)     { }
 const char * CThorDiskWriteArg::queryProvider()                    { return nullptr; }
@@ -192,6 +193,7 @@ unsigned CThorSpillArg::getExpiryDays() { return 0; }
 void CThorSpillArg::getUpdateCRCs(unsigned & eclCRC, unsigned __int64 & totalCRC) { }
 void CThorSpillArg::getEncryptKey(size32_t & keyLen, void * & key) { keyLen = 0; key = 0; }
 const char * CThorSpillArg::getCluster(unsigned idx) { return NULL; }
+unsigned CThorSpillArg::getWidth() { return 0; }
 const char * CThorSpillArg::queryFormat()                      { return nullptr; }
 void CThorSpillArg::getFormatOptions(IXmlWriter & options)     { }
 const char * CThorSpillArg::queryProvider()                    { return nullptr; }
@@ -502,6 +504,7 @@ ICompare * CThorHashDistributeArg::queryMergeCompare() { return NULL; }
 
 unsigned CThorNWayDistributeArg::getFlags() { return 0; }
 bool     CThorNWayDistributeArg::include(const byte * left, unsigned targetNode) { return true; }    // default to include all
+unsigned CThorNWayDistributeArg::getWidth() { return 0; }
 
 //CThorHashDedupArg
 
@@ -540,6 +543,7 @@ unsigned CThorCsvWriteArg::getExpiryDays() { return 0; }
 void CThorCsvWriteArg::getUpdateCRCs(unsigned & eclCRC, unsigned __int64 & totalCRC) { }
 void CThorCsvWriteArg::getEncryptKey(size32_t & keyLen, void * & key) { keyLen = 0; key = 0; }
 const char * CThorCsvWriteArg::getCluster(unsigned idx) { return NULL; }
+unsigned CThorCsvWriteArg::getWidth() { return 0; }
 
 //CThorXmlParseArg
 
@@ -593,6 +597,7 @@ unsigned CThorXmlWriteArg::getExpiryDays() { return 0; }
 void CThorXmlWriteArg::getUpdateCRCs(unsigned & eclCRC, unsigned __int64 & totalCRC) { }
 void CThorXmlWriteArg::getEncryptKey(size32_t & keyLen, void * & key) { keyLen = 0; key = 0; }
 const char * CThorXmlWriteArg::getCluster(unsigned idx) { return NULL; }
+unsigned CThorXmlWriteArg::getWidth() { return 0; }
 
 //CHThorXmlWriteExtra
 const char * CHThorXmlWriteExtra::getXmlIteratorPath() { return NULL; }             // supplies the prefix and suffix for a row
