@@ -58,6 +58,18 @@ protected:
     Linked<CMetaInfoState> metaState;
     DumpMetaFlag metaFlags = DumpMetaFlag::None;
     mutable bool inForEachMetaField = false;
+    unsigned fileVisitDepth{0};
+
+    bool beginFileVisit()
+    {
+        return 0 == fileVisitDepth++;
+    }
+
+    bool endFileVisit()
+    {
+        assertex(fileVisitDepth != 0);
+        return 0 == --fileVisitDepth;
+    }
 
 public:
     void setMetaInfo(CMetaInfoState& _metaState, DumpMetaFlag _metaFlags)

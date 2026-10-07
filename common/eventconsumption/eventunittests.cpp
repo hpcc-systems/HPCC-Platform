@@ -35,6 +35,7 @@ static const char* queryEventAttributeStateName(CEventAttribute::State state)
 
 bool CEventVisitationLinkTester::visitFile(const char* filename, uint32_t version)
 {
+    fileVisitDepth++;
     return true;
 }
 
@@ -76,35 +77,42 @@ bool CEventVisitationLinkTester::visitEvent(CEvent& actualEvent)
 
 void CEventVisitationLinkTester::departFile(uint32_t bytesRead)
 {
+    assertex(fileVisitDepth != 0);
+    if (0 == --fileVisitDepth)
+        CPPUNIT_ASSERT(hasNoRemainingEvents());
+}
+
+bool CEventVisitationLinkTester::hasNoRemainingEvents()
+{
     CEvent noEvent;
-    if (expect->nextEvent(noEvent))
+    if (!expect->nextEvent(noEvent))
+        return true;
+
+    VStringBuffer tmp("unexpected next event %s", queryEventName(noEvent.queryType()));
+    for (CEventAttribute& attr : noEvent.assignedAttributes)
     {
-        VStringBuffer tmp("unexpected next event %s", queryEventName(noEvent.queryType()));
-        for (CEventAttribute& attr : noEvent.assignedAttributes)
+        tmp.appendf(" %s:", queryEventAttributeName(attr.queryId()));
+        switch (attr.queryTypeClass())
         {
-            tmp.appendf(" %s:", queryEventAttributeName(attr.queryId()));
-            switch (attr.queryTypeClass())
-            {
-            case EATCtext:
-                tmp.appendf("'%s'", attr.queryTextValue());
-                break;
-            case EATCnumeric:
-                tmp.appendf("%" I64F "d", attr.queryNumericValue());
-                break;
-            case EATCboolean:
-                tmp.appendf("%s", attr.queryBooleanValue() ? "true" : "false");
-                break;
-            case EATCtimestamp:
-                tmp.appendf("'%s'", attr.queryTextValue());
-                break;
-            default:
-                tmp.appendf("<unknown type>");
-                break;
-            }
+        case EATCtext:
+            tmp.appendf("'%s'", attr.queryTextValue());
+            break;
+        case EATCnumeric:
+            tmp.appendf("%" I64F "d", attr.queryNumericValue());
+            break;
+        case EATCboolean:
+            tmp.appendf("%s", attr.queryBooleanValue() ? "true" : "false");
+            break;
+        case EATCtimestamp:
+            tmp.appendf("'%s'", attr.queryTextValue());
+            break;
+        default:
+            tmp.appendf("<unknown type>");
+            break;
         }
-        CPPUNIT_FAIL(tmp.str());
     }
-    // CPPUNIT_ASSERT(!expect->nextEvent(noEvent));
+    CPPUNIT_FAIL(tmp.str());
+    return false;
 }
 
 CEventVisitationLinkTester::CEventVisitationLinkTester(IEventIterator& _expect)
@@ -196,7 +204,8 @@ static bool runEventVisitationLinks(const IPropertyTree& inputTree, const IPrope
         virtual bool doOp() override
         {
             Owned<IEventIterator> expect = createPropertyTreeEvents(expectTree, flags);
-            Owned<IEventVisitor> visitor = new CEventVisitationLinkTester(*expect);
+            Owned<CEventVisitationLinkTester> tester = new CEventVisitationLinkTester(*expect);
+            Owned<IEventVisitor> visitor = LINK(tester);
             Owned<IEventVisitor> currentVisitor = LINK(visitor);
 
             bool needsPreScan = false;

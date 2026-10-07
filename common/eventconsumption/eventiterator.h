@@ -52,11 +52,28 @@ enum PropertyTreeEventFlags : unsigned
 extern event_decl IEventIterator* createPropertyTreeEvents(const IPropertyTree& events, unsigned flags);
 inline IEventIterator* createPropertyTreeEvents(const IPropertyTree& events) { return createPropertyTreeEvents(events, PTEFnone); }
 
+// Result metadata for one event returned by IEventMultiplexer::nextEvent.
+// `properties` is non-null whenever the call returns true and identifies the source
+// of `event`. It remains valid until the next `nextEvent` call (or iterator destruction).
+// `firstVisit` is true only for the first returned event from that source; `lastVisit`
+// is true when the returned event is the source's final event.
+struct EventIterationTransition
+{
+    const EventFileProperties* properties{nullptr};
+    bool firstVisit{false};
+    bool lastVisit{false};
+};
+
 // Extension of IEventIterator intended to act on events originating from multiple source
 // iterators. Implementations choose how to interleave events from the various sources.
 interface IEventMultiplexer : extends IEventIterator
 {
+    using IEventIterator::nextEvent;
     virtual void addSource(IEventIterator& source) = 0;
+    // Returns false from the transition overload when no event is available. Implementations
+    // must not mutate source collections after reporting an accepted source; an onAddSource
+    // false result means the source contained no events and was not retained.
+    virtual bool nextEvent(CEvent& event, EventIterationTransition& transition) = 0;
 };
 
 // Creates an IEventMultiplexer that interleaves events based on EventTimestamp values, in

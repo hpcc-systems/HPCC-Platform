@@ -20,6 +20,8 @@
 #include <list>
 #include <map>
 #include <string>
+#include <utility>
+#include <vector>
 
 // Implementation of IEventIterator that distributes events extracted from a property tree.
 // Distribution occurs in the order that events appear in the tree. If event order is important,
@@ -201,8 +203,11 @@ CPropertyTreeEvents::CPropertyTreeEvents(const IPropertyTree& _events, unsigned 
 class event_decl CEventMultiplexer : public CInterfaceOf<IEventMultiplexer>
 {
 public:
+    using IEventMultiplexer::nextEvent;
     virtual const EventFileProperties& queryFileProperties() const override;
     virtual void addSource(IEventIterator& source) override;
+    virtual bool nextEvent(CEvent& event) override;
+    virtual bool nextEvent(CEvent& event, EventIterationTransition& transition) final override;
 
 public:
     CEventMultiplexer(CMetaInfoState& _metaState, bool bypassMetaCollector);
@@ -218,15 +223,46 @@ protected:
     virtual bool areSame(IEventIterator& candidate, IEventIterator& existing) const;
     // Applies subclass-specific conditions to source acceptance.
     virtual bool acceptsSource(IEventIterator& source) { return true; };
-    // Adds the unique and accepted source to the subclass collection of sources.
-    virtual void onAddSource(IEventIterator& source) = 0;
+    // Adds the unique source to the subclass collection. Returns false when the source contains
+    // no events and is not retained. Implementations must complete their mutation before
+    // returning; callers use the result only for metadata notification.
+    virtual bool onAddSource(IEventIterator& source) = 0;
+    // Subclass-specific implementation of event retrieval logic following common preparation steps.
+    virtual bool nextEventImpl(CEvent& event, EventIterationTransition& transition) = 0;
 
     CMetaInfoState& metaState;
     Owned<IEventVisitor> metaStateCollector;
     EventFileProperties properties;
+    // Keep a completed source alive until the caller has consumed the transition properties.
+    Linked<IEventIterator> pendingDeparture;
     bool acceptSources{true};
     bool bypassMetaCollector{false};
+
+    void releasePendingDeparture()
+    {
+        pendingDeparture.clear();
+    }
+
+    void beginSource(IEventIterator& source, bool& visited, EventIterationTransition& transition)
+    {
+        transition.properties = &source.queryFileProperties();
+        transition.firstVisit = !visited;
+        visited = true;
+    }
 };
+
+bool CEventMultiplexer::nextEvent(CEvent& event)
+{
+    EventIterationTransition transition{};
+    return nextEvent(event, transition);
+}
+
+bool CEventMultiplexer::nextEvent(CEvent& event, EventIterationTransition& transition)
+{
+    transition = {};
+    releasePendingDeparture();
+    return nextEventImpl(event, transition);
+}
 
 const EventFileProperties& CEventMultiplexer::queryFileProperties() const
 {
@@ -285,8 +321,7 @@ void CEventMultiplexer::addSource(IEventIterator& source)
     }
     else
         return; // Reject instances that are duplicates or already contained
-    onAddSource(source);
-    if (metaStateCollector)
+    if (onAddSource(source) && metaStateCollector)
         metaStateCollector->visitFile(sourceProps.path.str(), sourceProps.version);
 }
 
@@ -324,35 +359,41 @@ bool CEventMultiplexer::areSame(IEventIterator& needle, IEventIterator& within) 
 class event_decl CChronologicalEventMultiplexer : public CEventMultiplexer
 {
 public:
-    using Sources = std::list<std::pair<Linked<IEventIterator>, CEvent>>;
+    struct Source
+    {
+        Linked<IEventIterator> iterator;
+        CEvent nextEvent;
+        bool visited{false};
+    };
+    using Sources = std::list<Source>;
     using CEventMultiplexer::CEventMultiplexer;
 
-    virtual bool nextEvent(CEvent& event) override;
+    virtual bool nextEventImpl(CEvent& event, EventIterationTransition& transition) override;
 protected:
     virtual bool contains(IEventIterator& source) const override;
     virtual bool isEmpty() const override { return sources.empty(); }
     virtual bool acceptsSource(IEventIterator& source) override;
-    virtual void onAddSource(IEventIterator& source) override;
+    virtual bool onAddSource(IEventIterator& source) override;
 
 private:
     Sources sources;
     CEvent firstEvent;
 };
 
-bool CChronologicalEventMultiplexer::nextEvent(CEvent& event)
+bool CChronologicalEventMultiplexer::nextEventImpl(CEvent& event, EventIterationTransition& transition)
 {
     // If at least one source has a next event with a timestamp, choose the timestamped event with
     // the lowest chronological value.
     Sources::iterator best = sources.end();
     for (Sources::iterator it = sources.begin(); it != sources.end(); ++it)
     {
-        if (it->second.queryType() == EventNone)
+        if (it->nextEvent.queryType() == EventNone)
             continue;
-        if (!it->second.hasAttribute(EvAttrEventTimestamp))
+        if (!it->nextEvent.hasAttribute(EvAttrEventTimestamp))
             continue;
         if (sources.end() == best)
             best = it;
-        else if (it->second.queryNumericValue(EvAttrEventTimestamp) < best->second.queryNumericValue(EvAttrEventTimestamp))
+        else if (it->nextEvent.queryNumericValue(EvAttrEventTimestamp) < best->nextEvent.queryNumericValue(EvAttrEventTimestamp))
             best = it;
     }
     // If the loop terminated without a best candidate, all remaining sources have a next event
@@ -365,7 +406,8 @@ bool CChronologicalEventMultiplexer::nextEvent(CEvent& event)
     // If no best candidate has been found, no events remain.
     if (best != sources.end())
     {
-        event = best->second;
+        beginSource(*best->iterator, best->visited, transition);
+        event = best->nextEvent;
         if (metaStateCollector)
             (void)metaStateCollector->visitEvent(event);
         else if (bypassMetaCollector)
@@ -373,11 +415,13 @@ bool CChronologicalEventMultiplexer::nextEvent(CEvent& event)
         properties.eventsRead++;
         acceptSources = false;
 
-        if (!best->first->nextEvent(best->second))
+        if (!best->iterator->nextEvent(best->nextEvent))
         {
             // Source completed - accumulate final stats
-            const EventFileProperties& sourceProps = best->first->queryFileProperties();
+            const EventFileProperties& sourceProps = best->iterator->queryFileProperties();
             properties.bytesRead += sourceProps.bytesRead;
+            transition.lastVisit = true;
+            pendingDeparture.set(best->iterator);
             sources.erase(best);
         }
         return true;
@@ -390,9 +434,9 @@ bool CChronologicalEventMultiplexer::contains(IEventIterator& source) const
 {
     for (const auto& entry : sources)
     {
-        if (areSame(source, *entry.first))
+        if (areSame(source, *entry.iterator))
             return true;
-        CEventMultiplexer* nested = dynamic_cast<CEventMultiplexer*>(entry.first.get());
+        CEventMultiplexer* nested = dynamic_cast<CEventMultiplexer*>(entry.iterator.get());
         if (nested && nested->contains(source))
             return true;
     }
@@ -404,9 +448,13 @@ bool CChronologicalEventMultiplexer::acceptsSource(IEventIterator& source)
     return source.nextEvent(firstEvent);
 }
 
-void CChronologicalEventMultiplexer::onAddSource(IEventIterator& source)
+bool CChronologicalEventMultiplexer::onAddSource(IEventIterator& source)
 {
-    sources.emplace_back(Linked<IEventIterator>(&source), firstEvent);
+    Source entry;
+    entry.iterator.set(&source);
+    entry.nextEvent = firstEvent;
+    sources.emplace_back(std::move(entry));
+    return true;
 }
 
 IEventMultiplexer* createChronologicalEventMultiplexer(CMetaInfoState& metaState, bool bypassMetaCollector)
@@ -418,28 +466,42 @@ IEventMultiplexer* createChronologicalEventMultiplexer(CMetaInfoState& metaState
 class event_decl CSerialEventMultiplexer : public CEventMultiplexer
 {
 public:
-    using Sources = std::vector<Linked<IEventIterator>>;
+    struct Source
+    {
+        Linked<IEventIterator> iterator;
+        CEvent nextEvent;
+        bool visited{false};
+    };
+    using Sources = std::vector<Source>;
     using CEventMultiplexer::CEventMultiplexer;
 
-    virtual bool nextEvent(CEvent& event) override;
+    virtual bool nextEventImpl(CEvent& event, EventIterationTransition& transition) override;
 protected:
     virtual bool contains(IEventIterator& source) const override;
     virtual bool isEmpty() const override { return sources.empty(); }
     virtual bool acceptsSource(IEventIterator& source) override;
-    virtual void onAddSource(IEventIterator& source) override;
+    virtual bool onAddSource(IEventIterator& source) override;
 
 private:
     Sources sources;
     size_t currentSourceIndex = 0;
 };
 
-bool CSerialEventMultiplexer::nextEvent(CEvent& event)
+bool CSerialEventMultiplexer::nextEventImpl(CEvent& event, EventIterationTransition& transition)
 {
     while (currentSourceIndex < sources.size())
     {
-        IEventIterator* source = sources[currentSourceIndex].get();
-        if (source->nextEvent(event))
+        Source& source = sources[currentSourceIndex];
+        if (source.nextEvent.queryType() != EventNone)
         {
+            beginSource(*source.iterator, source.visited, transition);
+            event = source.nextEvent;
+            if (!source.iterator->nextEvent(source.nextEvent))
+            {
+                properties.bytesRead += source.iterator->queryFileProperties().bytesRead;
+                transition.lastVisit = true;
+                currentSourceIndex++;
+            }
             if (metaStateCollector)
                 (void)metaStateCollector->visitEvent(event);
             else if (bypassMetaCollector)
@@ -449,8 +511,7 @@ bool CSerialEventMultiplexer::nextEvent(CEvent& event)
             return true;
         }
 
-        const EventFileProperties& sourceProps = source->queryFileProperties();
-        properties.bytesRead += sourceProps.bytesRead;
+        properties.bytesRead += source.iterator->queryFileProperties().bytesRead;
         currentSourceIndex++;
     }
     return false;
@@ -465,17 +526,24 @@ bool CSerialEventMultiplexer::contains(IEventIterator& source) const
 {
     for (const auto& entry : sources)
     {
-        if (areSame(source, *entry))
+        if (areSame(source, *entry.iterator))
             return true;
-        CEventMultiplexer* nested = dynamic_cast<CEventMultiplexer*>(entry.get());
+        CEventMultiplexer* nested = dynamic_cast<CEventMultiplexer*>(entry.iterator.get());
         if (nested && nested->contains(source))
             return true;
     }
     return false;
 }
-void CSerialEventMultiplexer::onAddSource(IEventIterator& source)
+bool CSerialEventMultiplexer::onAddSource(IEventIterator& source)
 {
-    sources.emplace_back(&source);
+    Source entry;
+    entry.iterator.set(&source);
+    if (source.nextEvent(entry.nextEvent))
+    {
+        sources.emplace_back(std::move(entry));
+        return true;
+    }
+    return false;
 }
 
 IEventMultiplexer* createSerialEventMultiplexer(CMetaInfoState& metaState, bool bypassMetaCollector)
@@ -488,8 +556,24 @@ void visitIterableEvents(IEventIterator& iter, IEventVisitor& visitor)
     CEvent event;
     const EventFileProperties& props = iter.queryFileProperties();
     visitor.visitFile(props.path, props.version);
-    while (iter.nextEvent(event))
-        visitor.visitEvent(event);
+    IEventMultiplexer* multiplexer = dynamic_cast<IEventMultiplexer*>(&iter);
+    if (multiplexer)
+    {
+        EventIterationTransition transition;
+        while (multiplexer->nextEvent(event, transition))
+        {
+            if (transition.firstVisit)
+                visitor.visitFile(transition.properties->path, transition.properties->version);
+            visitor.visitEvent(event);
+            if (transition.lastVisit)
+                visitor.departFile(transition.properties->bytesRead);
+        }
+    }
+    else
+    {
+        while (iter.nextEvent(event))
+            visitor.visitEvent(event);
+    }
     visitor.departFile(props.bytesRead);
 }
 
@@ -514,9 +598,113 @@ class EventIteratorTests : public CppUnit::TestFixture
     CPPUNIT_TEST(testMultiplexerMetaCollectorEnabled);
     CPPUNIT_TEST(testMultiplexerMetaCollectorBypassed);
     CPPUNIT_TEST(testMultiplexerBypassedRemapsFileId);
+    CPPUNIT_TEST(testMultiplexerVisitsNonemptySourcesLazily);
+    CPPUNIT_TEST(testSerialMultiplexerVisitsNonemptySourcesLazily);
     CPPUNIT_TEST_SUITE_END();
 
 public:
+    class BoundaryVisitor : public CInterfaceOf<IEventVisitor>
+    {
+    public:
+        virtual bool visitFile(const char* filename, uint32_t) override
+        {
+            files.emplace_back(filename ? filename : "");
+            sequence.emplace_back(std::string("visit:") + (filename ? filename : ""));
+            return true;
+        }
+
+        virtual bool visitEvent(CEvent& event) override
+        {
+            events++;
+            sequence.emplace_back(std::string("event:") + queryEventName(event.queryType()));
+            return true;
+        }
+
+        virtual void departFile(uint32_t bytesRead) override
+        {
+            departures++;
+            departBytes.push_back(bytesRead);
+            sequence.emplace_back("depart");
+        }
+
+        std::vector<std::string> files;
+        std::vector<std::string> sequence;
+        std::vector<uint32_t> departBytes;
+        unsigned events{0};
+        unsigned departures{0};
+    };
+
+    void testMultiplexerVisitsNonemptySourcesLazily()
+    {
+        Owned<IPropertyTree> emptyTree = createPTreeFromXMLString("<events filename='empty.evt' version='1'/>");
+        Owned<IPropertyTree> firstTree = createPTreeFromXMLString("<events filename='first.evt' version='1'><event type='IndexCacheMiss' EventTimestamp='1'/><event type='IndexCacheMiss' EventTimestamp='3'/><event type='IndexCacheMiss' EventTimestamp='5'/></events>");
+        Owned<IPropertyTree> secondTree = createPTreeFromXMLString("<events filename='second.evt' version='1'><event type='IndexCacheMiss' EventTimestamp='2'/></events>");
+        Owned<IEventIterator> empty = createPropertyTreeEvents(*emptyTree, PTEFlenientParsing);
+        Owned<IEventIterator> first = createPropertyTreeEvents(*firstTree, PTEFlenientParsing);
+        Owned<IEventIterator> second = createPropertyTreeEvents(*secondTree, PTEFlenientParsing);
+        CMetaInfoState metaState;
+        Owned<IEventMultiplexer> multiplexer = createChronologicalEventMultiplexer(metaState, true);
+        multiplexer->addSource(*empty);
+        multiplexer->addSource(*first);
+        multiplexer->addSource(*second);
+
+        BoundaryVisitor visitor;
+        visitIterableEvents(*multiplexer, visitor);
+
+        CPPUNIT_ASSERT_EQUAL(size_t(3), visitor.files.size());
+        CPPUNIT_ASSERT_EQUAL(std::string("multiplexed"), visitor.files[0]);
+        CPPUNIT_ASSERT_EQUAL(std::string("first.evt"), visitor.files[1]);
+        CPPUNIT_ASSERT_EQUAL(std::string("second.evt"), visitor.files[2]);
+        CPPUNIT_ASSERT_EQUAL(unsigned(4), visitor.events);
+        CPPUNIT_ASSERT_EQUAL(unsigned(3), visitor.departures);
+        const std::vector<std::string> expectedSequence{
+            "visit:multiplexed",
+            "visit:first.evt",
+            "event:IndexCacheMiss",
+            "visit:second.evt",
+            "event:IndexCacheMiss",
+            "depart",
+            "event:IndexCacheMiss",
+            "event:IndexCacheMiss",
+            "depart",
+            "depart",
+        };
+        CPPUNIT_ASSERT(expectedSequence == visitor.sequence);
+    }
+
+    void testSerialMultiplexerVisitsNonemptySourcesLazily()
+    {
+        Owned<IPropertyTree> emptyTree = createPTreeFromXMLString("<events filename='empty.evt' version='1' bytesRead='0'/>");
+        Owned<IPropertyTree> firstTree = createPTreeFromXMLString("<events filename='first.evt' version='1' bytesRead='11'><event type='IndexCacheMiss'/></events>");
+        Owned<IPropertyTree> secondTree = createPTreeFromXMLString("<events filename='second.evt' version='1' bytesRead='22'><event type='IndexCacheMiss'/><event type='IndexCacheMiss'/></events>");
+        Owned<IEventIterator> empty = createPropertyTreeEvents(*emptyTree, PTEFlenientParsing);
+        Owned<IEventIterator> first = createPropertyTreeEvents(*firstTree, PTEFlenientParsing);
+        Owned<IEventIterator> second = createPropertyTreeEvents(*secondTree, PTEFlenientParsing);
+        CMetaInfoState metaState;
+        Owned<IEventMultiplexer> multiplexer = createSerialEventMultiplexer(metaState, true);
+        multiplexer->addSource(*empty);
+        multiplexer->addSource(*first);
+        multiplexer->addSource(*second);
+
+        BoundaryVisitor visitor;
+        visitIterableEvents(*multiplexer, visitor);
+
+        const std::vector<std::string> expectedSequence{
+            "visit:multiplexed",
+            "visit:first.evt",
+            "event:IndexCacheMiss",
+            "depart",
+            "visit:second.evt",
+            "event:IndexCacheMiss",
+            "event:IndexCacheMiss",
+            "depart",
+            "depart",
+        };
+        CPPUNIT_ASSERT(expectedSequence == visitor.sequence);
+        const std::vector<uint32_t> expectedDepartBytes{11, 22, 33};
+        CPPUNIT_ASSERT(expectedDepartBytes == visitor.departBytes);
+    }
+
     void testStrictEventParsingUnknownEvent()
     {
         constexpr const char* testData = R"!!!(

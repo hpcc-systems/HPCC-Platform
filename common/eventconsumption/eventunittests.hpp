@@ -37,10 +37,11 @@ public:
     virtual bool visitFile(const char* filename, uint32_t version) override;
     virtual bool visitEvent(CEvent& actualEvent) override;
     virtual void departFile(uint32_t bytesRead) override;
-public:
     CEventVisitationLinkTester(interface IEventIterator& expect);
 private:
+    bool hasNoRemainingEvents();
     Linked<IEventIterator> expect;
+    unsigned fileVisitDepth{0};
 };
 
 // Extracts `input`, `expect`, and `link` property tree sections from `testData`, passing them to
