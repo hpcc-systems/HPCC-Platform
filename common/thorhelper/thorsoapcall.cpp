@@ -50,6 +50,7 @@ using roxiemem::OwnedRoxieString;
 #define CONNECTION "Connection"
 
 unsigned soapTraceLevel = 1;
+unsigned soapAuthTraceLevel = 1;
 static StringBuffer soapSepString;
 
 void setSoapSepString(const char *_soapSepString)
@@ -84,6 +85,163 @@ static void multiLineAppendReplace(StringBuffer &origStr, StringBuffer &newStr)
         ++cursor;
     }
 }
+
+static bool isAuthorizationHeaderName(const char *name, size32_t length)
+{
+    constexpr char authorizationHeader[] = "Authorization";
+    constexpr size32_t authorizationHeaderLength = sizeof(authorizationHeader) - 1;
+    constexpr char proxyAuthorizationHeader[] = "Proxy-Authorization";
+    constexpr size32_t proxyAuthorizationHeaderLength = sizeof(proxyAuthorizationHeader) - 1;
+    return (length == authorizationHeaderLength && !strnicmp(name, authorizationHeader, authorizationHeaderLength)) ||
+           (length == proxyAuthorizationHeaderLength && !strnicmp(name, proxyAuthorizationHeader, proxyAuthorizationHeaderLength));
+}
+
+static bool isAuthorizationHeader(const char *line, size32_t length)
+{
+    const char *colon = static_cast<const char *>(memchr(line, ':', length));
+    return colon && isAuthorizationHeaderName(line, colon - line);
+}
+
+static IException *makeInvalidHttpHeaderValueException(const char *name, const char *value, unsigned authLevel)
+{
+    if (authLevel == 0 && name && isAuthorizationHeaderName(name, strlen(name)))
+        return makeStringExceptionV(-1, "HTTPHEADER %s value (hidden) is not valid", name);
+    return makeStringExceptionV(-1, "HTTPHEADER value contained illegal characters: %s", value);
+}
+
+static void appendHeadersForLogging(StringBuffer &output, const char *input, size32_t length, unsigned authLevel)
+{
+    if (authLevel > 0)
+    {
+        output.append(length, input);
+        return;
+    }
+
+    const char *cursor = input;
+    const char *end = input + length;
+    bool hideContinuation = false;
+    while (cursor < end)
+    {
+        const char *lineEnd = static_cast<const char *>(memchr(cursor, '\n', end - cursor));
+        const char *next = lineEnd ? lineEnd + 1 : end;
+        const char *contentEnd = lineEnd ? lineEnd : end;
+        if (contentEnd > cursor && contentEnd[-1] == '\r')
+            --contentEnd;
+        size32_t lineLength = contentEnd - cursor;
+        if (!lineLength)
+        {
+            output.append(end - cursor, cursor);
+            return;
+        }
+
+        bool isContinuation = *cursor == ' ' || *cursor == '\t';
+        if (hideContinuation && isContinuation)
+        {
+            cursor = next;
+            continue;
+        }
+
+        hideContinuation = false;
+        if (isAuthorizationHeader(cursor, lineLength))
+        {
+            const char *colon = static_cast<const char *>(memchr(cursor, ':', lineLength));
+            const char *scheme = colon + 1;
+            while (scheme < contentEnd && (*scheme == ' ' || *scheme == '\t'))
+                ++scheme;
+            const char *schemeEnd = scheme;
+            while (schemeEnd < contentEnd && *schemeEnd != ' ' && *schemeEnd != '\t')
+                ++schemeEnd;
+            const char *credentials = schemeEnd;
+            while (credentials < contentEnd && (*credentials == ' ' || *credentials == '\t'))
+                ++credentials;
+
+            output.append(colon + 1 - cursor, cursor).append(' ');
+            if (credentials < contentEnd)
+                output.append(schemeEnd - scheme, scheme).append(' ');
+            output.append("(hidden)").append(next - contentEnd, contentEnd);
+            hideContinuation = true;
+        }
+        else
+            output.append(next - cursor, cursor);
+        cursor = next;
+    }
+}
+
+#ifdef _USE_CPPUNIT
+#include "unittests.hpp"
+
+namespace thorsoapcalltests
+{
+class SoapCallHeaderLoggingTests : public CppUnit::TestFixture
+{
+    CPPUNIT_TEST_SUITE(SoapCallHeaderLoggingTests);
+        CPPUNIT_TEST(testAuthorizationHeadersHidden);
+        CPPUNIT_TEST(testAuthorizationHeadersPreserved);
+        CPPUNIT_TEST(testInvalidAuthorizationValueMessages);
+    CPPUNIT_TEST_SUITE_END();
+
+    void assertHeaders(const char *expected, const char *input, unsigned authLevel)
+    {
+        StringBuffer output;
+        appendHeadersForLogging(output, input, strlen(input), authLevel);
+        CPPUNIT_ASSERT_EQUAL(std::string(expected), std::string(output.str()));
+    }
+
+    void assertExceptionMessage(const char *expected, const char *name, const char *value, unsigned authLevel)
+    {
+        Owned<IException> exception = makeInvalidHttpHeaderValueException(name, value, authLevel);
+        StringBuffer message;
+        exception->errorMessage(message);
+        CPPUNIT_ASSERT_EQUAL(std::string(expected), std::string(message.str()));
+    }
+
+public:
+    void testAuthorizationHeadersHidden()
+    {
+        constexpr const char *input =
+            "Host: example.com\r\n"
+            "authorization: Basic secret\r\n"
+            "\tcontinued-secret\r\n"
+            "Proxy-Authorization: proxy-token\n"
+            "Authorization-Foo: visible\r\n"
+            "\r\n"
+            "Authorization: body-content";
+        constexpr const char *expected =
+            "Host: example.com\r\n"
+            "authorization: Basic (hidden)\r\n"
+            "Proxy-Authorization: (hidden)\n"
+            "Authorization-Foo: visible\r\n"
+            "\r\n"
+            "Authorization: body-content";
+
+        assertHeaders(expected, input, 0);
+    }
+
+    void testAuthorizationHeadersPreserved()
+    {
+        constexpr const char *input =
+            "Authorization: Basic secret\r\n"
+            "Proxy-Authorization: Bearer proxy-secret\r\n";
+
+        assertHeaders(input, input, 1);
+    }
+
+    void testInvalidAuthorizationValueMessages()
+    {
+        constexpr const char *invalidValue = "Basic secret\r\nInjected: value";
+        constexpr const char *detailedMessage = "HTTPHEADER value contained illegal characters: Basic secret\r\nInjected: value";
+
+        assertExceptionMessage("HTTPHEADER Authorization value (hidden) is not valid", "Authorization", invalidValue, 0);
+        assertExceptionMessage("HTTPHEADER Proxy-Authorization value (hidden) is not valid", "Proxy-Authorization", invalidValue, 0);
+        assertExceptionMessage(detailedMessage, "Authorization", invalidValue, 1);
+        assertExceptionMessage(detailedMessage, "X-Custom-Header", invalidValue, 0);
+    }
+};
+
+CPPUNIT_TEST_SUITE_REGISTRATION(SoapCallHeaderLoggingTests);
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(SoapCallHeaderLoggingTests, "SoapCallHeaderLoggingTests");
+}
+#endif
 
 #define WSCBUFFERSIZE 0x10000
 #define MAXWSCTHREADS 50    //Max Web Service Call Threads
@@ -1054,6 +1212,7 @@ public:
         logXML = (flags & SOAPFlog) != 0;
         logUserMsg = (flags & SOAPFlogusermsg) != 0;
         logUserTailMsg = (flags & SOAPFlogusertail) != 0;
+        authTraceLevel = rowProvider->getSoapAuthTraceLevel();
 
         double dval = helper->getTimeout(); // In seconds, but may include fractions of a second...
         if (dval < 0.0) //not provided, or out of range
@@ -1111,7 +1270,7 @@ public:
 
             httpHeaderValue.set(s.setown(helper->getHttpHeaderValue()));
             if(httpHeaderValue.get() && !isValidHttpValue(httpHeaderValue.get()))
-                throw MakeStringException(-1, "HTTPHEADER value contained illegal characters: %s", httpHeaderValue.get());
+                throw makeInvalidHttpHeaderValueException(httpHeaderName.get(), httpHeaderValue.get(), authTraceLevel);
 
             if ((flags & SOAPFliteral) && (flags & SOAPFencoding))
                 throw MakeStringException(0, "SOAPCALL 'LITERAL' and 'ENCODING' options are mutually exclusive");
@@ -1493,6 +1652,7 @@ protected:
     unsigned maxRetries;
     unsigned timeoutMS;
     unsigned timeLimitMS;
+    unsigned authTraceLevel;
     bool logXML;
     bool logMin;
     bool logUserMsg;
@@ -1995,17 +2155,22 @@ private:
         if (soapTraceLevel > 6 || master->logXML)
         {
             StringBuffer contentStr;
+            bool filterAuthorization = (master->authTraceLevel == 0);
+            StringBuffer filteredRequest;
+            if (filterAuthorization)
+                appendHeadersForLogging(filteredRequest, request.str(), request.length(), master->authTraceLevel);
+            StringBuffer &loggableRequest = filterAuthorization ? filteredRequest : request;
             if (contentEncoded)
                 contentStr.append(", content encoded.");
             // Only do translation if soapcall LOG option set and soapSepString defined
             if ( (master->logXML) && (soapSepString.length() > 0) )
             {
                 StringBuffer request2;
-                multiLineAppendReplace(request, request2);
+                multiLineAppendReplace(loggableRequest, request2);
                 master->logctx.CTXLOG("%s: request(%s)%s", master->wscCallTypeText(), request2.str(), contentStr.str());
             }
             else
-                master->logctx.mCTXLOG("%s: request(%s)%s", master->wscCallTypeText(), request.str(), contentStr.str());
+                master->logctx.mCTXLOG("%s: request(%s)%s", master->wscCallTypeText(), loggableRequest.str(), contentStr.str());
         }
     }
 
@@ -2028,7 +2193,11 @@ private:
         if (httpheaders && *httpheaders)
         {
             if (soapTraceLevel > 6 || master->logXML)
-                master->logctx.mCTXLOG("%s: Adding HTTP Headers(%s)", master->wscCallTypeText(), httpheaders);
+            {
+                StringBuffer loggableHeaders;
+                appendHeadersForLogging(loggableHeaders, httpheaders, strlen(httpheaders), master->authTraceLevel);
+                master->logctx.mCTXLOG("%s: Adding HTTP Headers(%s)", master->wscCallTypeText(), loggableHeaders.str());
+            }
             request.append(httpheaders);
         }
 
@@ -2082,7 +2251,11 @@ private:
                 StringBuffer hdr(master->httpHeaderName.get());
                 hdr.append(": ").append(master->httpHeaderValue);
                 if (soapTraceLevel > 6 || master->logXML)
-                    master->logctx.mCTXLOG("SOAPCALL: Adding HTTP Header(%s)", hdr.str());
+                {
+                    StringBuffer loggableHeader;
+                    appendHeadersForLogging(loggableHeader, hdr.str(), hdr.length(), master->authTraceLevel);
+                    master->logctx.mCTXLOG("SOAPCALL: Adding HTTP Header(%s)", loggableHeader.str());
+                }
                 request.append(hdr.append("\r\n"));
             }
             if (!httpHeaderBlockContainsHeader(httpheaders, "Content-Type"))
@@ -2320,16 +2493,18 @@ private:
             decodeContent(contentEncoding.str(), response);
         if (soapTraceLevel > 6 || master->logXML)
         {
+            StringBuffer loggableHeader;
+            appendHeadersForLogging(loggableHeader, dbgheader.str(), dbgheader.length(), master->authTraceLevel);
             // Only do translation if soapcall LOG option set and soapSepString defined
             if ( (master->logXML) && (soapSepString.length() > 0) )
             {
                 StringBuffer response2;
-                multiLineAppendReplace(dbgheader, response2);
+                multiLineAppendReplace(loggableHeader, response2);
                 multiLineAppendReplace(response, response2);
                 master->logctx.CTXLOG("%s: LEN=%d %sresponse(%s)", getWsCallTypeName(master->wscType),response.length(),chunked?"CHUNKED ":"", response2.str());
             }
             else
-                master->logctx.mCTXLOG("%s: LEN=%d %sresponse(%s%s)", getWsCallTypeName(master->wscType),response.length(),chunked?"CHUNKED ":"", dbgheader.str(), response.str());
+                master->logctx.mCTXLOG("%s: LEN=%d %sresponse(%s%s)", getWsCallTypeName(master->wscType),response.length(),chunked?"CHUNKED ":"", loggableHeader.str(), response.str());
         }
         return rval;
     }

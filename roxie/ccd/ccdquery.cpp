@@ -26,9 +26,14 @@
 #include "ccdcontext.hpp"
 
 #include "thorplugin.hpp"
+#include "thorsoapcall.hpp"
 
 #include <thread>
 #include <mutex>
+
+#ifdef _USE_CPPUNIT
+#include <cppunit/extensions/HelperMacros.h>
+#endif
 
 void ActivityArray::append(IActivityFactory &cur)
 {
@@ -344,6 +349,7 @@ QueryOptions::QueryOptions()
     timeActivities = defaultTimeActivities;
     traceEnabled = defaultTraceEnabled;
     traceLimit = defaultTraceLimit;
+    soapAuthTraceLevel = ::soapAuthTraceLevel;
     noSeekBuildIndex = defaultNoSeekBuildIndex;
     allSortsMaySpill = false; // No global default for this
     statsToWorkunit = false; // No global default or workunit setting for this
@@ -385,6 +391,7 @@ QueryOptions::QueryOptions(const QueryOptions &other)
     timeActivities = other.timeActivities;
     traceEnabled = other.traceEnabled;
     traceLimit = other.traceLimit;
+    soapAuthTraceLevel = other.soapAuthTraceLevel;
     noSeekBuildIndex = other.noSeekBuildIndex;
     allSortsMaySpill = other.allSortsMaySpill;
     failOnLeaks = other.failOnLeaks;
@@ -455,6 +462,7 @@ void QueryOptions::setFromWorkUnit(IConstWorkUnit &wu, const IPropertyTree *stat
     updateFromWorkUnit(timeActivities, wu, "timeActivities");
     updateFromWorkUnit(traceEnabled, wu, "traceEnabled");
     updateFromWorkUnit(traceLimit, wu, "traceLimit");
+    updateFromWorkUnit(soapAuthTraceLevel, wu, "soapAuthTraceLevel");
     updateFromWorkUnit(allSortsMaySpill, wu, "allSortsMaySpill");
     updateFromWorkUnit(failOnLeaks, wu, "failOnLeaks");
     updateFromWorkUnit(noSeekBuildIndex, wu, "noSeekBuildIndex");
@@ -547,6 +555,7 @@ void QueryOptions::setFromContext(const IPropertyTree *ctx)
         updateFromContext(timeActivities, ctx, "@timeActivities", "_TimeActivities");
         updateFromContext(traceEnabled, ctx, "@traceEnabled", "_TraceEnabled");
         updateFromContext(traceLimit, ctx, "@traceLimit", "_TraceLimit");
+        updateFromContext(soapAuthTraceLevel, ctx, "@soapAuthTraceLevel", "_SoapAuthTraceLevel");
         updateFromContext(noSeekBuildIndex, ctx, "@noSeekBuildIndex", "_NoSeekBuildIndex");
         // Note: allSortsMaySpill is not permitted at context level (too late anyway, unless I refactored)
         updateFromContext(failOnLeaks, ctx, "@failOnLeaks", "_FailOnLeaks");
@@ -607,6 +616,36 @@ void QueryOptions::setFromAgentLoggingFlags(unsigned loggingFlags)
     checkingHeap = (loggingFlags & LOGGING_CHECKINGHEAP) != 0;
     timeActivities = (loggingFlags & LOGGING_TIMEACTIVITIES) != 0;
 }
+
+#ifdef _USE_CPPUNIT
+class QueryOptionsTest : public CppUnit::TestFixture
+{
+    CPPUNIT_TEST_SUITE(QueryOptionsTest);
+        CPPUNIT_TEST(testSoapAuthTraceLevel);
+    CPPUNIT_TEST_SUITE_END();
+
+public:
+    void testSoapAuthTraceLevel()
+    {
+        QueryOptions options;
+        CPPUNIT_ASSERT_EQUAL(::soapAuthTraceLevel, options.soapAuthTraceLevel);
+
+        Owned<IPropertyTree> elementContext = createPTreeFromXMLString("<Query><_SoapAuthTraceLevel>0</_SoapAuthTraceLevel></Query>");
+        options.setFromContext(elementContext);
+        CPPUNIT_ASSERT_EQUAL(0U, options.soapAuthTraceLevel);
+
+        QueryOptions copiedOptions(options);
+        CPPUNIT_ASSERT_EQUAL(0U, copiedOptions.soapAuthTraceLevel);
+
+        Owned<IPropertyTree> attributeContext = createPTreeFromXMLString("<Query soapAuthTraceLevel='1'><_SoapAuthTraceLevel>0</_SoapAuthTraceLevel></Query>");
+        options.setFromContext(attributeContext);
+        CPPUNIT_ASSERT_EQUAL(1U, options.soapAuthTraceLevel);
+    }
+};
+
+CPPUNIT_TEST_SUITE_REGISTRATION(QueryOptionsTest);
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(QueryOptionsTest, "QueryOptionsTest");
+#endif
 
 //----------------------------------------------------------------------------------------------
 // Class CQueryFactory is the main implementation of IQueryFactory, combining a IQueryDll and a

@@ -27563,6 +27563,7 @@ public:
     virtual const void * getNextRow() { return NULL; };
     virtual void releaseRow(const void * r) { ReleaseRoxieRow(r); };
     virtual unsigned queryActivityId() const override { return activityId; }
+    virtual unsigned getSoapAuthTraceLevel() const override { return ctx->queryOptions().soapAuthTraceLevel; }
     virtual bool useBlacklister() const { return static_cast<const CRoxieServerSoapActivityBaseFactory *>(factory)->useBlacklist; }
     virtual unsigned getBLConnectTimeout() const override
     {
