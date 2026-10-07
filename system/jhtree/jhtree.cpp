@@ -1176,6 +1176,7 @@ unsigned CKeyStore::getUniqId(unsigned useId, const char * filename)
     // protraceRecord(MetaFileInformation);
     if (unlikely(recordingEvents()))
         queryRecorder().recordFileInformation(id, filename);
+    protraceNoteFilename(id, filename);
 
     return id;
 }
