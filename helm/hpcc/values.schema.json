@@ -1773,6 +1773,10 @@
           "description": "The storage plane to check git repositories out to",
           "type": "string"
         },
+        "gitFetchTolerance": {
+          "description": "Number of seconds a successful or failed git fetch remains fresh for subsequent compilations. Negative values disable fetch skipping",
+          "type": "integer"
+        },
         "image": {
           "$ref": "#/definitions/image"
         },

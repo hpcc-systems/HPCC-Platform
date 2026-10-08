@@ -29,6 +29,39 @@
 static std::atomic<unsigned> fetchNesting{0};
 static std::atomic<bool> abortPending{false};
 
+enum class GitFetchAction
+{
+    fetch,
+    skipFresh,
+    skipRecentFailure
+};
+
+static GitFetchAction decideGitFetch(unsigned __int64 requestTimeStamp, __int64 fetchToleranceMicroseconds, unsigned __int64 lastFetchTimestamp, unsigned __int64 lastFailedFetchTimestamp)
+{
+    if (fetchToleranceMicroseconds < 0)
+        return GitFetchAction::fetch;
+
+    unsigned __int64 toleranceValue = (unsigned __int64)fetchToleranceMicroseconds;
+    if (lastFetchTimestamp && requestTimeStamp <= lastFetchTimestamp + toleranceValue)
+        return GitFetchAction::skipFresh;
+    if (lastFailedFetchTimestamp && lastFailedFetchTimestamp >= lastFetchTimestamp && requestTimeStamp <= lastFailedFetchTimestamp + toleranceValue)
+        return GitFetchAction::skipRecentFailure;
+    return GitFetchAction::fetch;
+}
+
+static bool isFullCommitSha(const char * version)
+{
+    size_t length = strlen(version);
+    if ((length != 40) && (length != 64))
+        return false;
+    for (size_t i = 0; i < length; i++)
+    {
+        if (!isxdigit((unsigned char)version[i]))
+            return false;
+    }
+    return true;
+}
+
 extern HQL_API bool checkAbortGitFetch()
 {
     abortPending = true;
@@ -825,13 +858,25 @@ IEclSourceCollection * EclRepositoryManager::resolveGitCollection(const char * r
         throw makeStringExceptionV(99, "Unsupported repository link format '%s'", defaultUrl);
 
     bool alreadyExists = false;
+    bool skipFetch = false;
+
+    if (!options.cleanRepos && checkGitDirIsValid(repoPath) && isFullCommitSha(version.str()))
+    {
+        VStringBuffer params("cat-file -e %s^{commit}", version.str());
+        if (runGitCommand(nullptr, params, repoPath, false) == 0)
+        {
+            DBGLOG("Skipping git fetch for '%s': full commit SHA '%s' is already cached", repoPath, version.str());
+            skipFetch = true;
+            alreadyExists = true;
+        }
+    }
 
     CCycleTimer gitDownloadTimer;
-    Owned<IInterface> gitUpdateLock(getGitUpdateLock(repoPath));
+    Owned<IGitUpdateLock> gitUpdateLock(skipFetch ? nullptr : getGitUpdateLock(repoPath));
     cycle_t blockedCycles = gitDownloadTimer.elapsedCycles();
     gitDownloadBlockedCycles += blockedCycles;
 
-    if (checkDirExists(repoPath))
+    if (!skipFetch && checkDirExists(repoPath))
     {
         if (options.cleanRepos)
         {
@@ -862,9 +907,25 @@ IEclSourceCollection * EclRepositoryManager::resolveGitCollection(const char * r
     Owned<IError> error;
     if (alreadyExists)
     {
-        if (options.updateRepos)
+        if (options.updateRepos && !skipFetch)
         {
-            unsigned retCode = runGitCommand(nullptr, "fetch origin --prune", repoPath, true);
+            unsigned __int64 fetchStartTimestamp = getTimeStampNowValue();
+            GitFetchAction action = gitUpdateLock ? decideGitFetch(options.requestTimeStamp, options.fetchToleranceSeconds * 1000000, gitUpdateLock->getLastFetchTimestamp(), gitUpdateLock->getLastFailedFetchTimestamp()) : GitFetchAction::fetch;
+            unsigned retCode = 0;
+            if (action == GitFetchAction::fetch)
+            {
+                retCode = runGitCommand(nullptr, "fetch origin --prune", repoPath, true);
+                if (gitUpdateLock)
+                    gitUpdateLock->noteFetchResult(fetchStartTimestamp, retCode == 0);
+            }
+            else
+            {
+                  unsigned __int64 storedTimestamp = action == GitFetchAction::skipFresh ? gitUpdateLock->getLastFetchTimestamp() : gitUpdateLock->getLastFailedFetchTimestamp();
+                  DBGLOG("Skipping git fetch for '%s': request timestamp %llu, last %s fetch timestamp %llu", repoPath, options.requestTimeStamp,
+                      action == GitFetchAction::skipFresh ? "successful" : "failed", storedTimestamp);
+                if (action == GitFetchAction::skipRecentFailure)
+                    retCode = 1;
+            }
             if (retCode != 0)
             {
                 VStringBuffer msg("Failed to download the latest version of '%s' error code (%u)", defaultUrl, retCode);
@@ -883,7 +944,10 @@ IEclSourceCollection * EclRepositoryManager::resolveGitCollection(const char * r
                 throw makeStringExceptionV(99, "Failed to create directory %s'", options.eclRepoPath.str());
 
             VStringBuffer params("clone %s \"%s\" --no-checkout", repoUrn.str(), repo.str());
+            unsigned __int64 fetchStartTimestamp = getTimeStampNowValue();
             unsigned retCode = runGitCommand(nullptr, params, options.eclRepoPath, true);
+            if (gitUpdateLock && retCode == 0)
+                gitUpdateLock->noteFetchResult(fetchStartTimestamp, true);
             if (retCode != 0)
             {
                 VStringBuffer msg("Failed to clone dependency '%s' error code (%u)", defaultUrl, retCode);
@@ -1069,5 +1133,40 @@ unsigned EclRepositoryManager::runGitCommand(StringBuffer * output, const char *
 
     return ret;
 }
+
+#ifdef _USE_CPPUNIT
+#include "unittests.hpp"
+
+class GitRepositoryTests : public CppUnit::TestFixture
+{
+    CPPUNIT_TEST_SUITE(GitRepositoryTests);
+        CPPUNIT_TEST(testFetchDecision);
+        CPPUNIT_TEST(testFullCommitSha);
+    CPPUNIT_TEST_SUITE_END();
+
+public:
+    void testFetchDecision()
+    {
+        CPPUNIT_ASSERT_EQUAL(GitFetchAction::fetch, decideGitFetch(100, 10, 0, 0));
+        CPPUNIT_ASSERT_EQUAL(GitFetchAction::skipFresh, decideGitFetch(100, 10, 95, 0));
+        CPPUNIT_ASSERT_EQUAL(GitFetchAction::fetch, decideGitFetch(100, 10, 89, 0));
+        CPPUNIT_ASSERT_EQUAL(GitFetchAction::skipRecentFailure, decideGitFetch(100, 10, 80, 95));
+        CPPUNIT_ASSERT_EQUAL(GitFetchAction::fetch, decideGitFetch(110, 10, 95, 90));
+        CPPUNIT_ASSERT_EQUAL(GitFetchAction::fetch, decideGitFetch(100, -1, 95, 95));
+    }
+
+    void testFullCommitSha()
+    {
+        CPPUNIT_ASSERT(isFullCommitSha("0123456789abcdef0123456789ABCDEF01234567"));
+        CPPUNIT_ASSERT(isFullCommitSha("0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"));
+        CPPUNIT_ASSERT(!isFullCommitSha("0123456789abcdef0123456789abcdef0123456"));
+        CPPUNIT_ASSERT(!isFullCommitSha("0123456789abcdef0123456789abcdef0123456z"));
+        CPPUNIT_ASSERT(!isFullCommitSha("refs/heads/main"));
+    }
+};
+
+CPPUNIT_TEST_SUITE_REGISTRATION(GitRepositoryTests);
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(GitRepositoryTests, "GitRepositoryTests");
+#endif
 
 //-------------------------------------------------------------------------------------------------------------------

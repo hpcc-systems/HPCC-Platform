@@ -734,6 +734,14 @@ class EclccCompiler : implements IErrorReporter
         if (guardGitUpdates)
             eclccCmd.appendf(" \"--gitlock=%s\"", gitLockKey.str());
 
+        stat_type requestTimeStamp = 0;
+        // Use the time workunit was created as the git request time.
+        // This means that a resubmit will NOT trigger a refetch of the git repositories.
+        if (workunit->getStatistic(requestTimeStamp, nullptr, StWhenCreated))
+            eclccCmd.appendf(" --gitrequesttime=%llu", (unsigned long long)requestTimeStamp);
+        if (config->hasProp("@gitFetchTolerance"))
+            eclccCmd.appendf(" --gitfetchtolerance=%s", config->queryProp("@gitFetchTolerance"));
+
         if (config->queryProp("@defaultRepo"))
             eclccCmd.appendf(" --defaultrepo=%s", config->queryProp("@defaultRepo"));
         if (config->queryProp("@defaultRepoVersion"))
