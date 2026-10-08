@@ -71,6 +71,8 @@ class CDumpTextEventVisitor : public CDumpStreamEventVisitor
 public:
     virtual bool visitFile(const char* filename, uint32_t version) override
     {
+        if (!beginFileVisit())
+            return true;
         state = State::Header;
         doVisitHeader(filename, version);
         return true;
@@ -94,6 +96,8 @@ public:
 
     virtual void departFile(uint32_t bytesRead) override
     {
+        if (!endFileVisit())
+            return;
         if (inHeader())
             closeElement();
         state = State::Footer;
@@ -142,6 +146,8 @@ class CDumpXMLEventVisitor : public CDumpStreamEventVisitor
 public:
     virtual bool visitFile(const char* filename, uint32_t version) override
     {
+        if (!beginFileVisit())
+            return true;
         state = State::Header;
         openElement(DUMP_STRUCTURE_ROOT, true);
         openElement(DUMP_STRUCTURE_HEADER);
@@ -167,6 +173,8 @@ public:
 
     virtual void departFile(uint32_t bytesRead) override
     {
+        if (!endFileVisit())
+            return;
         if (inHeader())
             closeElement();
         state = State::Footer;
@@ -224,6 +232,8 @@ class CDumpJSONEventVisitor : public CDumpStreamEventVisitor
 public:
     virtual bool visitFile(const char* filename, uint32_t version) override
     {
+        if (!beginFileVisit())
+            return true;
         state = State::Header;
         openElement();
         openElement(DUMP_STRUCTURE_HEADER);
@@ -256,6 +266,8 @@ public:
 
     virtual void departFile(uint32_t bytesRead) override
     {
+        if (!endFileVisit())
+            return;
         if (inHeader())
             closeElement();
         else if (inEvents())
@@ -356,6 +368,8 @@ class CDumpYAMLEventVisitor : public CDumpStreamEventVisitor
 public:
     virtual bool visitFile(const char* filename, uint32_t version) override
     {
+        if (!beginFileVisit())
+            return true;
         state = State::Header;
         openElement(DUMP_STRUCTURE_HEADER);
         doVisitHeader(filename, version);
@@ -382,6 +396,8 @@ public:
 
     virtual void departFile(uint32_t bytesRead) override
     {
+        if (!endFileVisit())
+            return;
         if (inHeader())
             closeElement();
         state = State::Footer;
@@ -448,6 +464,8 @@ class CDumpCSVEventVisitor : public CDumpStreamEventVisitor
 public:
     virtual bool visitFile(const char* filename, uint32_t version) override
     {
+        if (!beginFileVisit())
+            return true;
         state = State::Header;
         encodeCSVColumn(markup, "EventName");
         for (unsigned a = EvAttrNone + 1; a < EvAttrMax; a++)
@@ -505,6 +523,8 @@ public:
 
     virtual void departFile(uint32_t bytesRead) override
     {
+        if (!endFileVisit())
+            return;
     }
 
 protected:

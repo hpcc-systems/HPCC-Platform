@@ -237,6 +237,30 @@ protected:
         }
     };
 
+    struct SearchFlagFilterTerm : public BoolFilterTerm
+    {
+        __uint64 mask;
+
+        SearchFlagFilterTerm(CMetaInfoState& metaState, __uint64 _mask)
+            : BoolFilterTerm(metaState), mask(_mask)
+        {
+        }
+
+        bool matches(const CEvent& event, const CEventAttribute&) const override
+        {
+            bool set = event.hasAttribute(EvAttrSearchFlags)
+                && (event.queryNumericValue(EvAttrSearchFlags) & mask);
+            return accepted[set];
+        }
+
+        bool matchesFlag(const CEvent& event) const
+        {
+            bool set = event.hasAttribute(EvAttrSearchFlags)
+                && (event.queryNumericValue(EvAttrSearchFlags) & mask);
+            return accepted[set];
+        }
+    };
+
     struct UnsignedFilterTerm : public FilterTerm
     {
         std::set<std::pair<std::pair<__uint64, __uint64>, FilterTermComparison>> accepted;
@@ -599,6 +623,17 @@ public: // IEventVisitor
                 return true;
         }
 
+        if (event.hasAttribute(EvAttrSearchFlags))
+        {
+            for (unsigned idx = 0; idx < queryIndexSearchFlagCount(); idx++)
+            {
+                const auto& flag = *queryIndexSearchFlagInfoByIndex(idx);
+                const auto* term = static_cast<const SearchFlagFilterTerm*>(terms[flag.attrId].get());
+                if (term && !term->matchesFlag(event))
+                    return true;
+            }
+        }
+
         // Special case for implied attribute(s)
         if (event.queryType() == EventIndexPayload)
         {
@@ -633,6 +668,11 @@ public: // IEventFilter
                 {
                     if (!acceptMetaAttribute(idName, values))
                         throw makeStringExceptionV(-1, "event filter meta attribute '%s' term '%s' unsupported", idName, values);
+                }
+                else if (const IndexSearchFlagInfo* flag = queryIndexSearchFlagInfo(idName))
+                {
+                    if (!ensureSearchFlagTerm(*flag, values))
+                        throw makeStringExceptionV(-1, "event filter attribute '%s' term '%s' not accepted", flag->name, values);
                 }
                 else
                 {
@@ -796,6 +836,14 @@ public: // IEventFilter
         // The preceding switch statements must return or throw for all cases.
     }
 
+    virtual bool acceptExtendedAttribute(unsigned id, const char* values) override
+    {
+        const IndexSearchFlagInfo* flag = queryIndexSearchFlagInfo(id);
+        if (!flag)
+            return false;
+        return ensureSearchFlagTerm(*flag, values) != nullptr;
+    }
+
     virtual bool acceptMetaAttribute(const char* name, const char* values) override
     {
         if (streq(name, EVENT_META_PATH))
@@ -822,6 +870,16 @@ protected:
             throw makeStringExceptionV(-1, "event attribute id %d has a different type of filter term", int(id));
 #endif
         return static_cast<term_type_t*>(terms[id].get());
+    }
+
+    SearchFlagFilterTerm* ensureSearchFlagTerm(const IndexSearchFlagInfo& flag, const char* values)
+    {
+        if (!terms[flag.attrId])
+            terms[flag.attrId].setown(new SearchFlagFilterTerm(metaState, flag.mask));
+        auto* term = static_cast<SearchFlagFilterTerm*>(terms[flag.attrId].get());
+        if (!term->accept(values))
+            return nullptr;
+        return term;
     }
 
     // Examines the given token string for an optional comparison designation at thestart of the
@@ -860,7 +918,7 @@ protected:
 
 protected:
     static std::map<std::string, FilterTermComparison> comparisonMap;
-    Owned<FilterTerm> terms[EvAttrMax];
+    Owned<FilterTerm> terms[EvExtAttrMax];
     std::unordered_set<EventType> acceptedEvents;
     CMetaInfoState& metaState;
     CEvent payloadNodeKindEvent;
@@ -927,6 +985,7 @@ class EventFilterTests : public CppUnit::TestFixture
     CPPUNIT_TEST(testFilterByAttributeByPath3);
     CPPUNIT_TEST(testFilterByAttributeByBool1);
     CPPUNIT_TEST(testFilterByAttributeByBool2);
+    CPPUNIT_TEST(testFilterBySearchFlagBit);
     CPPUNIT_TEST(testFilterByAttributeByTimestamp1);
     CPPUNIT_TEST(testFilterByAttributeByTimestamp2);
     CPPUNIT_TEST(testFilterByAttributeByTimestamp3);
@@ -1834,6 +1893,29 @@ public:
             </test>
         )!!!";
         testEventVisitationLinks(testData, PTEFlenientParsing);
+    }
+
+    void testFilterBySearchFlagBit()
+    {
+        const IndexSearchFlagInfo* countFlag = queryIndexSearchFlagInfo(EvExtAttrSearchCount);
+        CPPUNIT_ASSERT(countFlag != nullptr);
+        VStringBuffer testData(R"!!!(
+            <test>
+                <link kind="event-filter">
+                    <attribute id="SearchFlags.Count" values="true"/>
+                </link>
+                <input>
+                    <event type="IndexCacheMiss" FileId="1" FileOffset="0" SearchFlags="%llu"/>
+                    <event type="IndexCacheMiss" FileId="2" FileOffset="0" SearchFlags="0"/>
+                    <event type="IndexCacheMiss" FileId="3" FileOffset="0"/>
+                </input>
+                <expect>
+                    <event type="IndexCacheMiss" FileId="1" FileOffset="0" SearchFlags="%llu"/>
+                    <event type="IndexCacheMiss" FileId="3" FileOffset="0"/>
+                </expect>
+            </test>
+        )!!!", countFlag->mask, countFlag->mask);
+        testEventVisitationLinks(testData.str(), PTEFlenientParsing);
     }
 
     void testFilterByAttributeByTimestamp1()

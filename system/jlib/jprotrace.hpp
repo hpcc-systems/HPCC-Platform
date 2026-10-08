@@ -215,6 +215,14 @@ inline uint32_t protraceNoteFunction([[maybe_unused]] const char *name)
 #endif
 }
 
+inline void protraceNoteFilename([[maybe_unused]] unsigned id, [[maybe_unused]] const char *filename)
+{
+#if defined(_USE_PROTRACE) && defined(PROTRACE_DETAILED)
+    static auto & fileMapping = protrace::get_mapping_table(1, sizeof(uint32_t));
+    fileMapping.record_mapping(id, protrace::note_string(filename));
+#endif
+}
+
 // Registers a function name with protrace and holds the assigned ID.
 // Intended for use as a static local variable; zero-overhead when protrace is disabled.
 class TracedFunction

@@ -25,3 +25,4 @@ extern IEvToolCommand* createIndexSummaryCommand();
 extern IEvToolCommand* createIndexHotspotCommand();
 extern IEvToolCommand* createIndexPlotCommand();
 extern IEvToolCommand* createIndexLoadCommand();
+extern IEvToolCommand* createIndexCacheCommand();

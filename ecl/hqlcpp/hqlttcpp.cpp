@@ -2494,6 +2494,25 @@ ThorHqlTransformer::ThorHqlTransformer(HqlCppTranslator & _translator, ClusterTy
     groupAllDistribute = isThorCluster(targetClusterType) && options.groupAllDistribute;
 }
 
+static IHqlExpression * normalizeOutputWidth(IHqlExpression * expr)
+{
+    IHqlExpression * width = expr->queryAttribute(widthAtom);
+    if (!width)
+        return nullptr;
+
+    IHqlExpression * dataset = expr->queryChild(0);
+    if (dataset->getOperator() == no_nwaydistribute)
+    {
+        IHqlExpression * distributedWidth = dataset->queryAttribute(widthAtom);
+        if (distributedWidth == width)
+            return nullptr;
+    }
+
+    // Ensure that the input is distributed N ways before the output activity is executed.
+    OwnedHqlExpr distributed = createDataset(no_nwaydistribute, LINK(dataset), LINK(width));
+    return replaceChild(expr, 0, distributed);
+}
+
 
 IHqlExpression * ThorHqlTransformer::createTransformed(IHqlExpression * expr)
 {
@@ -2566,6 +2585,9 @@ IHqlExpression * ThorHqlTransformer::createTransformed(IHqlExpression * expr)
         break;
     case no_temptable:
         normalized = normalizeTempTable(transformed);
+        break;
+    case no_output:
+        normalized = normalizeOutputWidth(transformed);
         break;
         //MORE should do whole aggregate expression e.g., max(x)-min(x)
     case NO_AGGREGATE:

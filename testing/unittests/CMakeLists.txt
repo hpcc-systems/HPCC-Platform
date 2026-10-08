@@ -121,6 +121,7 @@ include_directories (
          ${HPCC_SOURCE_DIR}/common/workunit
          ${HPCC_SOURCE_DIR}/dali/sasha
          ${HPCC_SOURCE_DIR}/ecl/hql
+         ${HPCC_SOURCE_DIR}/ecl/eclcmd/queries
          ${HPCC_SOURCE_DIR}/ecl/schemasniffer
          ${HPCC_SOURCE_DIR}/esp/bindings
          ${HPCC_SOURCE_DIR}/esp/bindings/SOAP/xpp

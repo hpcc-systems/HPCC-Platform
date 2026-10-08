@@ -18,9 +18,62 @@
 #pragma once
 
 #include "jevent.hpp"
+#include "jsuperhash.hpp"
+#include <functional>
 
 constexpr byte defaultPageBits = 13; // 8K page size
 constexpr __uint64 indexPageSize = __uint64(1) << defaultPageBits;
+
+class FileIdFileOffsetKey
+{
+public:
+    __uint64 fileId{0};
+    __uint64 fileOffset{0};
+
+    FileIdFileOffsetKey() = default;
+    FileIdFileOffsetKey(__uint64 _fileId, __uint64 _fileOffset) : fileId(_fileId), fileOffset(_fileOffset) {}
+    FileIdFileOffsetKey(const CEvent& event) : fileId(event.queryNumericValue(EvAttrFileId)), fileOffset(event.queryNumericValue(EvAttrFileOffset)) {}
+
+    bool operator == (const FileIdFileOffsetKey& other) const
+    {
+        return fileId == other.fileId && fileOffset == other.fileOffset;
+    }
+};
+
+class FileIdFileOffsetKeyHash
+{
+public:
+    size_t operator()(const FileIdFileOffsetKey& key) const
+    {
+        size_t h1 = std::hash<__uint64>{}(key.fileId);
+        size_t h2 = std::hash<__uint64>{}(key.fileOffset);
+        return h1 ^ (h2 + fnvInitialHash32 + (h1 << 6) + (h1 >> 2));
+    }
+};
+
+// Extended attributes used by event-consumption index operations. The SearchFlags
+// definitions and jhconst.hpp dependency are kept in eventindex.cpp.
+enum ExtendedEventAttr : unsigned
+{
+    EvExtAttrSearchAllKeyed = EvAttrMax + 1,
+    EvExtAttrSearchSingleValue,
+    EvExtAttrSearchUnfiltered,
+    EvExtAttrSearchCount,
+    EvExtAttrLogicalFileName,
+    EvExtAttrMax,
+};
+
+struct IndexSearchFlagInfo
+{
+    unsigned attrId;
+    __uint64 mask;
+    const char* name;
+};
+
+event_decl unsigned queryIndexSearchFlagCount();
+event_decl const IndexSearchFlagInfo* queryIndexSearchFlagInfoByIndex(unsigned index);
+event_decl const IndexSearchFlagInfo* queryIndexSearchFlagInfo(unsigned attrId);
+event_decl const IndexSearchFlagInfo* queryIndexSearchFlagInfo(const char* name);
 
 enum NodeKind : unsigned
 {

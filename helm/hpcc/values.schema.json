@@ -1790,6 +1790,10 @@
           "description": "The storage plane to check git repositories out to",
           "type": "string"
         },
+        "gitFetchTolerance": {
+          "description": "Number of seconds a successful or failed git fetch remains fresh for subsequent compilations. Negative values disable fetch skipping",
+          "type": "integer"
+        },
         "image": {
           "$ref": "#/definitions/image"
         },
@@ -2527,6 +2531,12 @@
           "default": 1,
           "minimum": 0,
           "description": "Level of detail in reporting SOAPCALL information(set to 0 for none, 1 for normal, >1 or more for extended)"
+        },
+        "soapAuthTraceLevel": {
+          "type": "integer",
+          "default": 1,
+          "minimum": 0,
+          "description": "Enable logging authorization headers in SOAPCALL or HTTPCALL information (set to 0 to suppress, >0 to log)"
         },
         "traceTranslations": {
           "type": "boolean",

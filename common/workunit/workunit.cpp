@@ -5336,6 +5336,8 @@ bool CWorkUnitFactory::deleteWorkUnitEx(const char * wuid, bool throwException, 
     StringBuffer wuRoot;
     getXPath(wuRoot, wuid);
     Owned<CLocalWorkUnit> cw = _updateWorkUnit(wuid, secmgr, secuser);
+    if (!cw)
+        return false;
     if (!checkWuSecAccess(*cw.get(), secmgr, secuser, SecAccess_Full, "delete", true, true))
         return false;
 
@@ -13967,6 +13969,13 @@ static void clearAliases(IPropertyTree * queryRegistry, const char * id)
 
 IPropertyTree * addNamedQuery(IPropertyTree * queryRegistry, const char * name, const char * wuid, const char * dll, bool library, const char *userid, const char *snapshot)
 {
+    bool queryAdded;
+    return addNamedQuery(queryRegistry, name, wuid, dll, library, userid, snapshot, queryAdded);
+}
+
+IPropertyTree * addNamedQuery(IPropertyTree * queryRegistry, const char * name, const char * wuid, const char * dll, bool library, const char *userid, const char *snapshot, bool &queryAdded)
+{
+    queryAdded = false;
     StringBuffer lcName(name);
     lcName.toLowerCase();
     StringBuffer xpath;
@@ -13999,7 +14008,9 @@ IPropertyTree * addNamedQuery(IPropertyTree * queryRegistry, const char * name, 
         newEntry->setProp("@publishedBy", userid);
     if (snapshot && *snapshot)
         newEntry->setProp("@snapshot", snapshot);
-    return queryRegistry->addPropTree("Query", newEntry);
+    IPropertyTree *addedEntry = queryRegistry->addPropTree("Query", newEntry);
+    queryAdded = true;
+    return addedEntry;
 }
 
 void removeNamedQuery(IPropertyTree * queryRegistry, const char * id)
@@ -14266,6 +14277,13 @@ extern WORKUNIT_API IPropertyTree * getPackageSetRegistry(const char * wsEclId, 
 
 void addQueryToQuerySet(IWorkUnit *workunit, IPropertyTree *queryRegistry, const char *queryName, WUQueryActivationOptions activateOption, StringBuffer &newQueryId, const char *userid)
 {
+    bool queryAdded;
+    addQueryToQuerySet(workunit, queryRegistry, queryName, activateOption, newQueryId, userid, queryAdded);
+}
+
+void addQueryToQuerySet(IWorkUnit *workunit, IPropertyTree *queryRegistry, const char *queryName, WUQueryActivationOptions activateOption, StringBuffer &newQueryId, const char *userid, bool &queryAdded)
+{
+    queryAdded = false;
     StringBuffer cleanQueryName;
     appendUtf8XmlName(cleanQueryName, strlen(queryName), queryName);
 
@@ -14296,13 +14314,13 @@ void addQueryToQuerySet(IWorkUnit *workunit, IPropertyTree *queryRegistry, const
         }
     }
 
-    IPropertyTree *newEntry = addNamedQuery(queryRegistry, cleanQueryName, workunit->queryWuid(), dllName.str(), isLibrary(workunit), userid, snapshot.str());
+    IPropertyTree *newEntry = addNamedQuery(queryRegistry, cleanQueryName, workunit->queryWuid(), dllName.str(), isLibrary(workunit), userid, snapshot.str(), queryAdded);
+    newQueryId.append(newEntry->queryProp("@id"));
     StringBuffer targetArchitecture;
     getWorkUnitTargetArchitecture(targetArchitecture, workunit);
     newEntry->setProp("@targetArchitecture", targetArchitecture.str());
     Owned<IConstWULibraryIterator> libraries = &workunit->getLibraries();
     checkAddLibrariesToQueryEntry(newEntry, libraries);
-    newQueryId.append(newEntry->queryProp("@id"));
     workunit->setIsQueryService(true); //will check querysets before delete
     workunit->commit();
 
@@ -14320,10 +14338,18 @@ void activateQuery(IPropertyTree *queryRegistry, WUQueryActivationOptions activa
         setQueryAlias(queryRegistry, cleanQueryName, queryId);
         if (prevQuery && !streq(queryId, prevQuery->queryProp("@id")))
         {
-            if (activateOption == ACTIVATE_SUSPEND_PREVIOUS)
-                setQuerySuspendedState(queryRegistry, prevQuery->queryProp("@id"), true, userid);
-            else
-                removeNamedQuery(queryRegistry, prevQuery->queryProp("@id"));
+            try
+            {
+                if (activateOption == ACTIVATE_SUSPEND_PREVIOUS)
+                    setQuerySuspendedState(queryRegistry, prevQuery->queryProp("@id"), true, userid);
+                else
+                    removeNamedQuery(queryRegistry, prevQuery->queryProp("@id"));
+            }
+            catch (...)
+            {
+                setQueryAlias(queryRegistry, cleanQueryName, prevQuery->queryProp("@id"));
+                throw;
+            }
         }
     }
     else if (activateOption == MAKE_ACTIVATE || activateOption == MAKE_ACTIVATE_LOAD_DATA_ONLY)

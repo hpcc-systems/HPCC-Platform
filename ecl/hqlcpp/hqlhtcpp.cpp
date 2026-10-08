@@ -11329,6 +11329,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityOutput(BuildCtx & ctx, IHqlExp
 
             //virtual unsigned getFlags() = 0;
             IHqlExpression * updateAttr = expr->queryAttribute(updateAtom);
+            IHqlExpression * widthExpr = queryAttributeChild(expr, widthAtom, 0);
             StringBuffer s;
             StringBuffer flags;
             if (expr->hasAttribute(_spill_Atom)) flags.append("|TDXtemporary");
@@ -11352,6 +11353,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityOutput(BuildCtx & ctx, IHqlExp
             if (updateAttr && !updateAttr->queryAttribute(alwaysAtom)) flags.append("|TDWupdate");
             if (expires) flags.append("|TDWexpires");
             if (expr->hasAttribute(restrictedAtom)) flags.append("|TDWrestricted");
+            if (widthExpr) flags.append("|TDWhaswidth");
 
             if (flags.length())
                 doBuildUnsignedFunction(instance->classctx, "getFlags", flags.str()+1);
@@ -11368,6 +11370,9 @@ ABoundActivity * HqlCppTranslator::doBuildActivityOutput(BuildCtx & ctx, IHqlExp
 
             buildExpiryHelper(instance->createctx, expireAttr);
             buildUpdateHelper(instance->createctx, *instance, dataset, updateAttr);
+
+            if (widthExpr)
+                doBuildUnsignedFunction(instance->startctx, "getWidth", widthExpr);
         }
 
         doBuildSequenceFunc(instance->classctx, seq, true);
@@ -15058,11 +15063,12 @@ ABoundActivity * HqlCppTranslator::doBuildActivityNWayDistribute(BuildCtx & ctx,
 {
     IHqlExpression * dataset = expr->queryChild(0);
     IHqlExpression * cond = expr->queryChild(1);
-    bool isAll = matchesBoolean(cond, true);
+    IHqlExpression * width = expr->queryAttribute(widthAtom);
 
+    bool isAll = matchesBoolean(cond, true);
     if (!targetThor() || insideChildQuery(ctx))
     {
-        if (isAll)
+        if (isAll || width)
         {
             if (isGrouped(dataset))
             {
@@ -15089,18 +15095,26 @@ ABoundActivity * HqlCppTranslator::doBuildActivityNWayDistribute(BuildCtx & ctx,
         instance->graphLabel.set("Distribute All");
     buildActivityFramework(instance);
     buildInstancePrefix(instance);
-    if (!isAll)
+
+    StringBuffer flags;
+    if (isAll)
+        flags.append("|SDFisall");
+    else if (width)
+        flags.append("|SDFwidth");
+
+    if (flags.length())
+        doBuildUnsignedFunction(instance->classctx, "getFlags", flags.str()+1);
+
+    if (width)
+    {
+        doBuildUnsignedFunction(instance->startctx, "getWidth", width->queryChild(0));
+    }
+    else if (!isAll)
     {
         UNIMPLEMENTED_X("DISTRIBUTE(NWAY)");
         // Come back to this when DISTRIBUTE(ds, bool) is being implemented
         //doBuildBoolFunction(instance->startctx, "include", cond);
     }
-
-    StringBuffer flags;
-    if (isAll)
-        flags.append("|SDFisall");
-    if (flags.length())
-        doBuildUnsignedFunction(instance->classctx, "getFlags", flags.str()+1);
 
     buildInstanceSuffix(instance);
     buildConnectInputOutput(ctx, instance, boundDataset, 0, 0);

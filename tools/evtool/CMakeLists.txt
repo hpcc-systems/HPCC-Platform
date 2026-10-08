@@ -36,6 +36,8 @@ set (  SRCS
        evtdump.cpp
        evtsim.cpp
        evtindex.cpp
+    evtindex_cache.cpp
+    evtindex_cache_span.cpp
        evtindex_load.cpp
        evtindex_load_sequence.cpp
        evtindex_summary.cpp

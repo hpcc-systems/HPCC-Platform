@@ -87,6 +87,7 @@ public:
     unsigned warnTimeLimit;
     unsigned minTimeLimit;
     unsigned traceLimit;
+    unsigned soapAuthTraceLevel;
 
     memsize_t memoryLimit;
 

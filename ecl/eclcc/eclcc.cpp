@@ -267,7 +267,7 @@ public:
     virtual IHqlExpression *lookupDFSlayout(const char *filename, IErrorReceiver &errs, const ECLlocation &location, bool isOpt) const override;
     virtual unsigned lookupClusterSize() const override;
     virtual void getTargetPlatform(StringBuffer & result) override;
-    virtual IInterface * getGitUpdateLock(const char * key) override;
+    virtual IGitUpdateLock * getGitUpdateLock(const char * key) override;
 
 
 public:
@@ -353,7 +353,7 @@ public:
     virtual IHqlExpression *lookupDFSlayout(const char *filename, IErrorReceiver &errs, const ECLlocation &location, bool isOpt) const override;
     virtual unsigned lookupClusterSize() const override;
     virtual void getTargetPlatform(StringBuffer & result) override;
-    virtual IInterface * getGitUpdateLock(const char * key) override;
+    virtual IGitUpdateLock * getGitUpdateLock(const char * key) override;
 
 protected:
     bool checkDaliConnected() const;
@@ -388,6 +388,7 @@ protected:
 protected:
     EclRepositoryManager repositoryManager;
     mutable CriticalSection dfsCrit{SYNC_LOCATION};
+    unsigned __int64 processStartTimestamp = getTimeStampNowValue();
     mutable MapStringToMyClass<IHqlExpression> fileCache;
     mutable MapStringTo<int> fileMissCache;  // values are the error code
     mutable Owned<IUserDescriptor> udesc;    // For file lookups
@@ -450,6 +451,8 @@ protected:
     StringAttr optDefaultGitPrefix;
     StringAttr optGitLock; // A key used to lock access to git updates
     StringAttr optGitUser;
+    unsigned __int64 optGitRequestTimeStamp = 0;
+    __int64 optGitFetchToleranceSeconds = 5;
 
     bool defaultAllowed[2];
 
@@ -2229,6 +2232,7 @@ bool EclCC::processFiles()
         //Set up the default repository information.  This could be simplified to not use a localRepositoryManager later
         //if eclcc did not have a strange mode for running multiple queries as part of the regression suite testing on windows.
         repositoryManager.setOptions(eclRepoPath, optGitUser, optDefaultGitPrefix, optFetchRepos, optUpdateRepos, optCleanRepos, optCleanInvalidRepos, logVerbose);
+        repositoryManager.setGitOptions(optGitRequestTimeStamp ? optGitRequestTimeStamp : processStartTimestamp, optGitFetchToleranceSeconds);
         ForEachItemIn(iMapping, repoMappings)
         {
             const char * cur = repoMappings.item(iMapping);
@@ -2376,7 +2380,7 @@ unsigned EclCompileInstance::lookupClusterSize() const
     return eclcc.lookupClusterSize();
 }
 
-IInterface * EclCompileInstance::getGitUpdateLock(const char * key)
+IGitUpdateLock * EclCompileInstance::getGitUpdateLock(const char * key)
 {
     return eclcc.getGitUpdateLock(key);
 }
@@ -2497,7 +2501,34 @@ unsigned EclCC::lookupClusterSize() const
     return prevClusterSize;
 }
 
-IInterface * EclCC::getGitUpdateLock(const char * path)
+class CGitUpdateLock : public CInterfaceOf<IGitUpdateLock>
+{
+public:
+    CGitUpdateLock(IRemoteConnection * _connection) : connection(_connection)
+    {
+    }
+
+    virtual unsigned __int64 getLastFetchTimestamp() const override
+    {
+        return connection->queryRoot()->getPropInt64("@lastFetch", 0);
+    }
+
+    virtual unsigned __int64 getLastFailedFetchTimestamp() const override
+    {
+        return connection->queryRoot()->getPropInt64("@lastFailedFetch", 0);
+    }
+
+    virtual void noteFetchResult(unsigned __int64 startTimestamp, bool succeeded) override
+    {
+        connection->queryRoot()->setPropInt64(succeeded ? "@lastFetch" : "@lastFailedFetch", startTimestamp);
+        connection->commit();
+    }
+
+protected:
+    Owned<IRemoteConnection> connection;
+};
+
+IGitUpdateLock * EclCC::getGitUpdateLock(const char * path)
 {
     if (optGitLock.isEmpty())
         return nullptr;
@@ -2521,9 +2552,9 @@ IInterface * EclCC::getGitUpdateLock(const char * path)
             if (remaining == 0)
                 break;
 
-            Owned<IInterface> connection = querySDS().connect(lockPath, myProcessSession(), RTM_LOCK_WRITE|RTM_CREATE_QUERY, connectTimeout);
+            Owned<IRemoteConnection> connection = querySDS().connect(lockPath, myProcessSession(), RTM_LOCK_WRITE|RTM_CREATE_QUERY, connectTimeout);
             if (connection)
-                return connection.getClear();
+                return new CGitUpdateLock(connection.getClear());
         }
         catch (IException * e)
         {
@@ -2872,6 +2903,14 @@ int EclCC::parseCommandLineOptions(int argc, const char* argv[])
         }
         else if (iter.matchOption(optGitLock, "--gitlock"))
         {
+        }
+        else if (iter.matchOption(tempArg, "--gitrequesttime"))
+        {
+            optGitRequestTimeStamp = strtoull(tempArg, nullptr, 10);
+        }
+        else if (iter.matchOption(tempArg, "--gitfetchtolerance"))
+        {
+            optGitFetchToleranceSeconds = strtoll(tempArg, nullptr, 10);
         }
         else if (iter.matchOption(optGitUser, "--gituser"))
         {

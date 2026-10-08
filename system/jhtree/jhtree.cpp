@@ -1176,6 +1176,7 @@ unsigned CKeyStore::getUniqId(unsigned useId, const char * filename)
     // protraceRecord(MetaFileInformation);
     if (unlikely(recordingEvents()))
         queryRecorder().recordFileInformation(id, filename);
+    protraceNoteFilename(id, filename);
 
     return id;
 }
@@ -2335,6 +2336,7 @@ CKeyCursor::CKeyCursor(const CKeyCursor &from)
     nodeKey = from.nodeKey;
     node.set(from.node);
     nodeFilterFlags = from.nodeFilterFlags;
+    fixedNodeFilterFlags = from.fixedNodeFilterFlags;
     for (unsigned i = 0; i < maxParentNodes; i++)
     {
         parents[i].set(from.parents[i]);
@@ -2364,7 +2366,7 @@ void CKeyCursor::reset(IContextLogger *ctx)
     if (!eof)
         setLow(0);
 
-    nodeFilterFlags = NodeNoFlags;
+    nodeFilterFlags = fixedNodeFilterFlags;
     if (!eof)
     {
         if (filter->isUnfiltered())
@@ -2859,6 +2861,7 @@ bool CKeyCursor::_lookup(bool exact, unsigned lastSeg, bool unfiltered, IContext
 
 bool CKeyCursor::lookupSkip(const void *seek, size32_t seekOffset, size32_t seeklen, IContextLogger *ctx)
 {
+    ScopedNodeFilterFlags insideSteppingScope(*this, NodeSearchStepping);
     if (skipTo(seek, seekOffset, seeklen))
         noteSkips(ctx, 1, 0);
     else
@@ -3043,6 +3046,20 @@ bool CKeyCursor::skipTo(const void *_seek, size32_t seekOffset, size32_t seeklen
 IKeyCursor * CKeyCursor::fixSortSegs(unsigned sortFieldOffset)
 {
     return new CPartialKeyCursor(*this, sortFieldOffset);
+}
+
+void CKeyCursor::setStepping(bool stepping)
+{
+    if (stepping)
+    {
+        fixedNodeFilterFlags |= NodeSearchStepping;
+        nodeFilterFlags |= NodeSearchStepping;
+    }
+    else
+    {
+        fixedNodeFilterFlags &= ~NodeSearchStepping;
+        nodeFilterFlags &= ~NodeSearchStepping;
+    }
 }
 
 CPartialKeyCursor::CPartialKeyCursor(const CKeyCursor &from, unsigned sortFieldOffset)
@@ -4080,6 +4097,7 @@ public:
         for (i = 0; i < numkeys; i++)
         {
             Owned<IKeyCursor> cursor = keyset->queryPart(i)->getCursor(filter, logExcessiveSeeks);
+            cursor->setStepping(sortFieldOffset != 0);
             cursor->reset(ctx);
             for (;;)
             {
@@ -4287,6 +4305,7 @@ public:
             mb.read(keyno);
             keyNoArray.append(keyno);
             keyCursor = keyset->queryPart(keyno)->getCursor(filter, logExcessiveSeeks);
+            keyCursor->setStepping(sortFieldOffset != 0);
             keyCursor->deserializeCursorPos(mb, ctx);
             cursorArray.append(*keyCursor);
             mergeHeapArray.append(i);

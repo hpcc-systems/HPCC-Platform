@@ -203,6 +203,8 @@ interface IEclPackage: public IEclRepository
 };
 
 
+interface IGitUpdateLock;
+
 interface ICodegenContextCallback : public IInterface
 {
     virtual void noteCluster(const char *clusterName) = 0;
@@ -228,7 +230,14 @@ interface ICodegenContextCallback : public IInterface
     virtual void getTargetPlatform(StringBuffer & result) = 0;
     /*
     */
-    virtual IInterface * getGitUpdateLock(const char * key) = 0;
+    virtual IGitUpdateLock * getGitUpdateLock(const char * key) = 0;
+};
+
+interface IGitUpdateLock : extends IInterface
+{
+    virtual unsigned __int64 getLastFetchTimestamp() const = 0;
+    virtual unsigned __int64 getLastFailedFetchTimestamp() const = 0;
+    virtual void noteFetchResult(unsigned __int64 startTimestamp, bool succeeded) = 0;
 };
 
 

@@ -53,6 +53,14 @@ static inline __uint64 foldHash(__uint64 running, __uint64 attrHash)
     return fnv1a64Seeded(&attrHash, sizeof(attrHash), running);
 }
 
+static bool hashResolvedValue(const char* value, __uint64& hash)
+{
+    if (isEmptyString(value))
+        return false;
+    hash = fnv1a64Seeded(value, strlen(value), fnv1a64InitialHash);
+    return true;
+}
+
 GroupAttribute GroupAttributeExtractor::parseAttribute(const char* attrDesc)
 {
     GroupAttribute ret;
@@ -78,6 +86,11 @@ GroupAttribute GroupAttributeExtractor::parseAttribute(const char* attrDesc)
         {
             ret.attrId = attr;
             ret.unit = queryEventAttributeUnit(attr);
+        }
+        else if (const IndexSearchFlagInfo* flag = queryIndexSearchFlagInfo(attrName.c_str()))
+        {
+            ret.attrId = flag->attrId;
+            ret.unit = EAUnone;
         }
         else if (strieq(attrName.c_str(), "LogicalFileName"))
         {
@@ -132,6 +145,8 @@ GroupAttribute GroupAttributeExtractor::parseAttribute(const char* attrDesc)
 
 const char* GroupAttributeExtractor::queryCanonicalName(unsigned attrId)
 {
+    if (const IndexSearchFlagInfo* flag = queryIndexSearchFlagInfo(attrId))
+        return flag->name;
     const char* derivedName = queryDerivedMetaAttributeName(attrId);
     if (derivedName)
         return derivedName;
@@ -166,6 +181,8 @@ std::string GroupAttributeExtractor::formatValue(const GroupAttribute& groupAttr
 bool GroupAttributeExtractor::isApplicable(const GroupAttribute& groupAttr, const CEvent& event)
 {
     unsigned attrId = groupAttr.attrId;
+    if (queryIndexSearchFlagInfo(attrId))
+        return event.hasAttribute(EvAttrSearchFlags);
     if (attrId == EvExtAttrLogicalFileName)
     {
         return event.isAttribute(EvAttrFileId);
@@ -189,6 +206,14 @@ bool GroupAttributeExtractor::isApplicable(const GroupAttribute& groupAttr, cons
 std::string GroupAttributeExtractor::getValue(const GroupAttribute& groupAttr, const CEvent& event, const CMetaInfoState* metaState)
 {
     unsigned attrId = groupAttr.attrId;
+    if (const IndexSearchFlagInfo* flag = queryIndexSearchFlagInfo(attrId))
+    {
+        if (!event.hasAttribute(EvAttrSearchFlags))
+            return "";
+        bool set = event.hasAttribute(EvAttrSearchFlags)
+            && (event.queryNumericValue(EvAttrSearchFlags) & flag->mask);
+        return set ? "true" : "false";
+    }
     if (attrId == EvExtAttrLogicalFileName)
     {
         if (metaState)
@@ -253,12 +278,21 @@ __uint64 GroupAttributeExtractor::getHash(const std::vector<GroupAttribute>& att
     for (const GroupAttribute& groupAttr : attrs)
     {
         unsigned attrId = groupAttr.attrId;
+        if (const IndexSearchFlagInfo* flag = queryIndexSearchFlagInfo(attrId))
+        {
+            __uint64 value = event.hasAttribute(EvAttrSearchFlags)
+                ? 1 + !!(event.queryNumericValue(EvAttrSearchFlags) & flag->mask) : 2;
+            hash = foldHash(hash, value);
+            continue;
+        }
         if (attrId == EvExtAttrLogicalFileName)
         {
             if (metaState)
             {
                 __uint64 attrHash;
                 if (metaState->queryLogicalFileNameHash(event, attrHash))
+                    hash = foldHash(hash, attrHash);
+                else if (hashResolvedValue(metaState->queryLogicalFileName(event), attrHash))
                     hash = foldHash(hash, attrHash);
             }
             continue;
@@ -337,6 +371,21 @@ bool GroupAttributeExtractor::isEqual(const std::vector<GroupAttribute>& attrs, 
         const GroupAttribute& groupAttr = attrs[i];
         unsigned attrId = groupAttr.attrId;
         const std::string& expected = groupValues[i];
+
+        if (const IndexSearchFlagInfo* flag = queryIndexSearchFlagInfo(attrId))
+        {
+            if (!event.hasAttribute(EvAttrSearchFlags))
+            {
+                if (!expected.empty())
+                    return false;
+                continue;
+            }
+            bool set = event.hasAttribute(EvAttrSearchFlags)
+                && (event.queryNumericValue(EvAttrSearchFlags) & flag->mask);
+            if (expected != (set ? "true" : "false"))
+                return false;
+            continue;
+        }
 
         if (attrId == EvExtAttrLogicalFileName) {
             const char* lfn = metaState ? metaState->queryLogicalFileName(event) : nullptr;
@@ -448,10 +497,17 @@ bool GroupAttributeExtractor::resolveMetaFnv(EventAttr attr, const CEvent& event
         break;
     case EvAttrPath:
         if (event.hasAttribute(EvAttrFileId))
-            return metaState->queryFilePathHash(event.queryNumericValue(EvAttrFileId), hash);
+        {
+            __uint64 fileId = event.queryNumericValue(EvAttrFileId);
+            if (metaState->queryFilePathHash(fileId, hash))
+                return true;
+            return hashResolvedValue(metaState->queryFilePath(fileId), hash);
+        }
         break;
     case EvAttrPlane:
-        return metaState->queryPlaneHash(event, hash);
+        if (metaState->queryPlaneHash(event, hash))
+            return true;
+        return hashResolvedValue(metaState->queryPlane(event), hash);
     default:
         break;
     }
@@ -473,6 +529,7 @@ class EventGroupingTest : public CppUnit::TestFixture
 {
     CPPUNIT_TEST_SUITE(EventGroupingTest);
     CPPUNIT_TEST(testParseAttribute_Valid);
+    CPPUNIT_TEST(testSearchFlagGroupingAttribute);
     CPPUNIT_TEST(testParseAttribute_MetaPrefixAlias);
     CPPUNIT_TEST(testParseAttribute_Invalid);
     CPPUNIT_TEST(testCanonicalGroupNames);
@@ -483,6 +540,27 @@ class EventGroupingTest : public CppUnit::TestFixture
     CPPUNIT_TEST_SUITE_END();
 
 public:
+    void testSearchFlagGroupingAttribute()
+    {
+        GroupAttribute attr = GroupAttributeExtractor::parseAttribute("SearchFlags.Count");
+        CPPUNIT_ASSERT_EQUAL((unsigned)EvExtAttrSearchCount, attr.attrId);
+        CPPUNIT_ASSERT_EQUAL(std::string("SearchFlags.Count"), std::string(GroupAttributeExtractor::queryCanonicalName(attr.attrId)));
+        const IndexSearchFlagInfo* countFlag = queryIndexSearchFlagInfo(EvExtAttrSearchCount);
+        CPPUNIT_ASSERT(countFlag != nullptr);
+
+        CEvent event;
+        event.reset(EventIndexLoad);
+        event.setValue(EvAttrSearchFlags, __uint64(countFlag->mask));
+        CPPUNIT_ASSERT(GroupAttributeExtractor::isApplicable(attr, event));
+        CPPUNIT_ASSERT_EQUAL(std::string("true"), GroupAttributeExtractor::getValue(attr, event, nullptr));
+
+        event.setValue(EvAttrSearchFlags, __uint64(0));
+        CPPUNIT_ASSERT_EQUAL(std::string("false"), GroupAttributeExtractor::getValue(attr, event, nullptr));
+
+        event.reset(EventIndexLoad);
+        CPPUNIT_ASSERT_EQUAL(std::string(""), GroupAttributeExtractor::getValue(attr, event, nullptr));
+    }
+
     static void assertParsedAttributeId(const char* name, unsigned expectedAttrId)
     {
         GroupAttribute attr = GroupAttributeExtractor::parseAttribute(name);

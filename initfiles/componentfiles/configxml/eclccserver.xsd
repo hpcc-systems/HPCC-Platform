@@ -203,6 +203,13 @@
                     </xs:appinfo>
                 </xs:annotation>
             </xs:attribute>
+            <xs:attribute name="gitFetchTolerance" type="xs:integer" use="optional">
+                <xs:annotation>
+                    <xs:appinfo>
+                        <tooltip>Number of seconds a successful or failed git fetch remains fresh for subsequent compilations. Negative values disable fetch skipping.</tooltip>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:attribute>
             <xs:attribute name="enableSysLog" type="xs:boolean" use="optional" default="true">
                 <xs:annotation>
                     <xs:appinfo>

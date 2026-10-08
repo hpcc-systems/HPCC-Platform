@@ -407,8 +407,11 @@ CWriteMasterBase::CWriteMasterBase(CMasterGraphElement *info)
      : CMasterActivity(info, diskWriteActivityStatistics)
 {
     diskHelperBase = (IHThorDiskWriteArg *)queryHelper();
-    reInit = 0 != (diskHelperBase->getFlags() & (TDXvarfilename|TDXdynamicfilename));
+    unsigned writeFlags = diskHelperBase->getFlags();
+    reInit = 0 != (writeFlags & (TDXvarfilename|TDXdynamicfilename));
     targetOffset = 0;
+    if (writeFlags & TDWhaswidth)
+        throwUnimplementedX("OUTPUT(WIDTH)");
 }
 
 void CWriteMasterBase::preStart(size32_t parentExtractSz, const byte *parentExtract)

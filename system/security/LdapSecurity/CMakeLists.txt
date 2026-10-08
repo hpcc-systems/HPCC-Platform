@@ -33,6 +33,7 @@ set (    SRCS
          ../shared/caching.cpp 
          aci.cpp 
          ldapsanitization.cpp
+         ldapquerybuilders.cpp
          ldaptimeutils.cpp
          ldapconnection.cpp 
          ldapsecurity.cpp 
@@ -52,6 +53,7 @@ IF (USE_CPPUNIT)
          unittests/ldapsecuritytests.cpp
          unittests/permissionsmappingtests.cpp
          unittests/passwordexpirytests.cpp
+         unittests/querybuilderstests.cpp
     )
 ENDIF (USE_CPPUNIT)
 

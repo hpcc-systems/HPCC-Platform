@@ -10023,6 +10023,7 @@ bool HqlGram::okToAddSideEffects(IHqlExpression * expr)
     case no_typedef:
     case no_forwardscope:
     case no_enum:
+    case no_funcdef:
         return false;
     default:
         {

@@ -2602,10 +2602,20 @@ IHqlExpression * calcRowInformation(IHqlExpression * expr)
             return getRecordCountInfo(ds);
         }
     case no_allnodes:
-    case no_nwaydistribute:
         {
             retrieveRowInformation(info, ds);
             info.scaleRange(RCclusterSizeEstimate);
+            break;
+        }
+    case no_nwaydistribute:
+        {
+            retrieveRowInformation(info, ds);
+            if (expr->hasAttribute(widthAtom))
+            {
+                //width does not affect the row counts
+            }
+            else
+                info.scaleRange(RCclusterSizeEstimate);
             break;
         }
     case no_limit:

@@ -24,6 +24,7 @@ This document summarizes how `traceLevel` is used across the `roxie` directory o
 | `udpTraceLevel`      | `1`           | ccdmain.cpp (`@udpTraceLevel`)    | UDP networking trace level for Roxie agent/server comms       |
 | `memTraceLevel`      | `1`           | ccdmain.cpp (`@memTraceLevel`)    | Memory-related tracing, mainly in roxiemem module             |
 | `soapTraceLevel`     | `1`           | ccdmain.cpp (`@soapTraceLevel`)   | SOAP protocol (web service) tracing/logging                   |
+| `soapAuthTraceLevel` | `1`           | ccdmain.cpp (`@soapAuthTraceLevel`)| Includes authorization headers in SOAP/HTTP logs when nonzero |
 | `miscDebugTraceLevel`| `0`           | ccdmain.cpp (`@miscDebugTraceLevel`)| Extra, miscellaneous debug output (purpose can vary)        |
 | `udpTraceFlow`       | `false`       | ccdmain.cpp (`@udpTraceFlow`)     | Boolean: traces per-message UDP network flow                  |
 | `udpTraceTimeouts`   | `false`       | ccdmain.cpp (`@udpTraceTimeouts`) | Boolean: traces timeouts on UDP communication                 |

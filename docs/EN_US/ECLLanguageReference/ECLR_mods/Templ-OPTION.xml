@@ -1203,6 +1203,16 @@
             </row>
 
             <row>
+              <entry><emphasis>soapAuthTraceLevel</emphasis></entry>
+
+              <entry>Default: 1</entry>
+
+              <entry>Controls whether SOAPCALL or HTTPCALL authorization
+              headers are included in logs. Set to 0 to suppress authorization
+              headers or a nonzero value to include them.</entry>
+            </row>
+
+            <row>
               <entry><emphasis>traceEnabled</emphasis></entry>
 
               <entry>Default: FALSE</entry>

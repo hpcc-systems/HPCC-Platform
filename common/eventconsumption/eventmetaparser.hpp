@@ -18,6 +18,7 @@
 #pragma once
 
 #include "eventvisitor.h"
+#include "eventindex.hpp"
 #include "jstring.hpp"
 #include <functional>
 #include <map>
@@ -31,9 +32,6 @@ constexpr char EVENT_META_SERVICE_NAME[] = "meta.ServiceName";
 constexpr char EVENT_META_LOGICAL_FILE_NAME[] = "meta.LogicalFileName";
 constexpr char EVENT_META_PATH[] = "meta.Path";
 constexpr char EVENT_META_PLANE[] = "meta.Plane";
-
-// Extended grouping attr id for a logical file name derived from FileId metadata.
-constexpr unsigned EvExtAttrLogicalFileName = EvAttrMax + 1;
 
 // Canonical mapping APIs for derived meta attributes used by describe/filter/dump/summarize.
 //
@@ -52,7 +50,8 @@ event_decl unsigned queryDerivedMetaAttributeCount();
 event_decl const char* queryDerivedMetaAttributeNameByIndex(unsigned idx);
 event_decl EventAttrUnit queryDerivedMetaAttributeUnit(unsigned attrId);
 
-// Visitor that parses and caches file ID to path mappings and trace ID to service name mappings
+// Visitor that parses and caches file ID to path mappings and trace ID to service name mappings.
+// The state is not thread-safe; callers must serialize access when sharing an instance.
 class event_decl CMetaInfoState : public CInterface
 {
 public:
@@ -125,8 +124,8 @@ public:
     // Obtain a new event visitor instance to populate this state object.
     IEventVisitationLink* getCollector();
 
-    // Accessor functions for file ID to path mappings
-    // Note: Returns "" (empty string) to represent a cache miss
+    // Accessor functions for file-derived metadata. Missing mappings return a
+    // diagnostic fallback containing the unresolved FileId.
     const char* queryFilePath(__uint64 fileId) const;
     bool queryFilePathHash(__uint64 fileId, __uint64& hash) const;
     bool hasFileMapping(__uint64 fileId) const;
@@ -190,6 +189,10 @@ private:
         __uint64 hash{0};
     };
 
+    const CachedString* queryUnavailableEntry(__uint64 fileId, const char* kind,
+        std::unordered_map<__uint64, CachedString>& entries,
+        std::set<std::string>& stringPool) const;
+
     // Service name entry: owns the string and caches its hash.
     struct ServiceEntry
     {
@@ -222,6 +225,7 @@ private:
     std::set<IndexFileProperties, IndexFilePropertiesCompare> indexFiles;
     std::unordered_map<SourceFileKey, const IndexFileProperties*, SourceFileKeyHash> sourceToProps;
     std::unordered_map<__uint64, CachedString> fileIdToPath;
+    mutable std::unordered_map<__uint64, CachedString> unavailablePath;
 
     // Trace ID to service name mappings (from EventQueryStart events)
     std::unordered_map<std::string, ServiceEntry> traceIdToService;
@@ -240,5 +244,8 @@ private:
     // fileIdToPlane caches the storage plane identifier for each known file Id
     std::unordered_map<__uint64, CachedString> fileIdToPlane;
     std::unordered_map<__uint64, CachedString> fileIdToLogicalName;
+    mutable std::unordered_map<__uint64, CachedString> unavailablePlane;
+    mutable std::unordered_map<__uint64, CachedString> unavailableLogicalName;
+    mutable std::set<std::string> unavailableStringPool;
     std::set<std::string, std::less<>> logicalNamePool;
 };

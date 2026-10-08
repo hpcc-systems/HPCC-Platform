@@ -25,6 +25,7 @@ set (    SRCS
          ${ESPSCM_GENERATED_DIR}/ws_logaccess_esp.cpp
          ${ESPSCM_GENERATED_DIR}/ws_fs_esp.cpp
          ecl-queries.cpp
+         querycopysetoptions.hpp
          ../eclcmd_shell.cpp
          ../eclcmd_common.hpp
          ../eclcmd_common.cpp

@@ -98,6 +98,8 @@ const char * const helpText[] = {
     "?   --fetchrepos  Automatically download missing repositories associated with dependencies",
     "!   --gituser=x   Which user should be used for accessing git repositories (for servers)",
     "!   --gitlock=key The dali key (e.g. plane name) that should be used to protect updates to git repositories",
+    "!   --gitrequesttime=us Request time used when deciding whether a git cache is fresh",
+    "!   --gitfetchtolerance=seconds Tolerance used when deciding whether a git cache is fresh",
     "    -help, --help Display this message",
     "    -help -v      Display verbose help message",
     "!   --ignoresimplified Do not use simplified expressions when syntax checking",

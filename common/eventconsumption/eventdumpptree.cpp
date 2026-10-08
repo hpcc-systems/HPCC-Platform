@@ -24,6 +24,8 @@ class CPTreeEventVisitor : public CDumpEventVisitor
 public:
     virtual bool visitFile(const char* filename, uint32_t version) override
     {
+        if (!beginFileVisit())
+            return true;
         tree.setown(createPTree(DUMP_STRUCTURE_ROOT));
         active = tree->addPropTree(DUMP_STRUCTURE_HEADER, createPTree());
         doVisitHeader(filename, version);
@@ -43,6 +45,8 @@ public:
 
     virtual void departFile(uint32_t bytesRead) override
     {
+        if (!endFileVisit())
+            return;
         active = tree->addPropTree(DUMP_STRUCTURE_FOOTER, createPTree());
         doVisitFooter(bytesRead);
     }

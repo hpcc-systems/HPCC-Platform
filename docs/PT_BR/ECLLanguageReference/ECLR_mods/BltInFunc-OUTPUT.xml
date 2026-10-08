@@ -19,7 +19,8 @@
       <primary>NOXPATH</primary>
     </indexterm> ] </emphasis><emphasis role="bold">[, UNORDERED |
   ORDERED(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [,
-  STABLE | UNSTABLE ] [, PARALLEL [ (</emphasis> <emphasis>numthreads
+  STABLE | UNSTABLE ] [, WIDTH(</emphasis> <emphasis>width</emphasis><emphasis
+  role="bold">) | SINGLE ] [, PARALLEL [ (</emphasis> <emphasis>numthreads
   </emphasis><emphasis role="bold">) ] ] [, ALGORITHM(</emphasis>
   <emphasis>name </emphasis><emphasis role="bold">) ] );</emphasis></para>
 
@@ -37,7 +38,8 @@
   role="bold">[</emphasis><emphasis>,</emphasis><emphasis role="bold"> NOXPATH
   ] </emphasis><emphasis role="bold">[, UNORDERED | ORDERED(</emphasis>
   <emphasis>bool </emphasis><emphasis role="bold">) ] [, STABLE | UNSTABLE ]
-  [, PARALLEL [ (</emphasis> <emphasis>numthreads </emphasis><emphasis
+  [, WIDTH(</emphasis> <emphasis>width</emphasis><emphasis role="bold">) |
+  SINGLE ] [, PARALLEL [ (</emphasis> <emphasis>numthreads </emphasis><emphasis
   role="bold">) ] ] [, ALGORITHM(</emphasis> <emphasis>name
   </emphasis><emphasis role="bold">) ] );</emphasis></para>
 
@@ -55,7 +57,8 @@
   role="bold">[</emphasis><emphasis>,</emphasis><emphasis role="bold"> NOXPATH
   ] </emphasis><emphasis role="bold">[, UNORDERED | ORDERED(</emphasis>
   <emphasis>bool </emphasis><emphasis role="bold">) ] [, STABLE | UNSTABLE ]
-  [, PARALLEL [ (</emphasis> <emphasis>numthreads </emphasis><emphasis
+  [, WIDTH(</emphasis> <emphasis>width</emphasis><emphasis role="bold">) |
+  SINGLE ] [, PARALLEL [ (</emphasis> <emphasis>numthreads </emphasis><emphasis
   role="bold">) ] ] [, ALGORITHM(</emphasis> <emphasis>name
   </emphasis><emphasis role="bold">) ] );</emphasis></para>
 
@@ -72,7 +75,8 @@
   role="bold"> ] </emphasis><emphasis
   role="bold">[</emphasis><emphasis>,</emphasis><emphasis role="bold"> NOXPATH
   ] <emphasis role="bold">[, UNORDERED | ORDERED(</emphasis> <emphasis>bool
-  </emphasis><emphasis role="bold">) ] [, STABLE | UNSTABLE ] [, PARALLEL [
+  </emphasis><emphasis role="bold">) ] [, STABLE | UNSTABLE ] [, WIDTH(</emphasis>
+  <emphasis>width</emphasis><emphasis role="bold">) | SINGLE ] [, PARALLEL [
   (</emphasis> <emphasis>numthreads </emphasis><emphasis role="bold">) ] ] [,
   ALGORITHM(</emphasis> <emphasis>name </emphasis><emphasis role="bold">) ]
   );</emphasis></emphasis></para>
@@ -131,7 +135,8 @@
   role="bold">[</emphasis><emphasis>,</emphasis><emphasis role="bold"> NOXPATH
   ] </emphasis><emphasis role="bold">[, UNORDERED | ORDERED(</emphasis>
   <emphasis>bool </emphasis><emphasis role="bold">) ] [, STABLE | UNSTABLE ]
-  [, PARALLEL [ (</emphasis> <emphasis>numthreads </emphasis><emphasis
+  [, WIDTH(</emphasis> <emphasis>width</emphasis><emphasis role="bold">) |
+  SINGLE ] [, PARALLEL [ (</emphasis> <emphasis>numthreads </emphasis><emphasis
   role="bold">) ] ] [, ALGORITHM(</emphasis> <emphasis>name
   </emphasis><emphasis role="bold">) ] );</emphasis></para>
 
@@ -461,7 +466,8 @@
     [</emphasis><emphasis>,</emphasis><emphasis role="bold">EXPIRE<indexterm>
         <primary>EXPIRE</primary>
       </indexterm>( [</emphasis><emphasis> days </emphasis><emphasis
-    role="bold">] ) ] ] ] )</emphasis></para>
+    role="bold">] ) ] ] ] [, WIDTH(</emphasis><emphasis> width </emphasis><emphasis
+    role="bold">) | SINGLE ] )</emphasis></para>
 
     <para><informaltable colsep="1" frame="all" rowsep="1">
         <tgroup cols="2">
@@ -477,9 +483,9 @@
               específica de clusters de destino. Se omitido, o arquivo é
               gravado no cluster pelo qual a workunit é executada. O número de
               partes do arquivo físico gravado em disco sempre é determinado
-              pelo número de nós no cluster onde a workunit é executada,
-              independentemente do número de nós nos clusters de
-              destino.</entry>
+              pelo número de nós no cluster onde a workunit é executada, a
+              menos que WIDTH ou SINGLE seja especificado, independentemente
+              do número de nós nos clusters de destino.</entry>
             </row>
 
             <row>
@@ -570,6 +576,29 @@
               padrão ele usará as configurações do ExpiryDefault no
               Sasha.</entry>
             </row>
+
+            <row>
+              <entry><emphasis role="bold">WIDTH</emphasis></entry>
+
+              <entry>Opcional. Especifica o número de partes físicas do
+              arquivo a serem criadas. Isso pode reduzir o espaço desperdiçado
+              em partes pequenas do arquivo ao gravar a partir de um cluster
+              com muitos nós.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>width</emphasis></entry>
+
+              <entry>O número de partes físicas do arquivo a serem
+              criadas.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis role="bold">SINGLE</emphasis></entry>
+
+              <entry>Opcional. Especifica que a saída será gravada como uma
+              única parte física do arquivo.</entry>
+            </row>
           </tbody>
         </tgroup>
       </informaltable></para>
@@ -648,7 +677,8 @@ OUTPUT(People(Attr1=FALSE));
     role="bold"> EXPIRE<indexterm>
         <primary>EXPIRE</primary>
       </indexterm>( [ </emphasis><emphasis>days </emphasis><emphasis
-    role="bold">] ) ] )</emphasis></para>
+    role="bold">] ) ] [, WIDTH(</emphasis><emphasis> width </emphasis><emphasis
+    role="bold">) | SINGLE ] )</emphasis></para>
 
     <para><informaltable colsep="1" frame="all" rowsep="1">
         <tgroup cols="2">
@@ -664,9 +694,9 @@ OUTPUT(People(Attr1=FALSE));
               específica de clusters de destino. Se omitido, o arquivo é
               gravado no cluster pelo qual a workunit é executada. O número de
               partes do arquivo físico gravado em disco sempre é determinado
-              pelo número de nós no cluster onde a workunit é executada,
-              independentemente do número de nós nos clusters de
-              destino.</entry>
+              pelo número de nós no cluster onde a workunit é executada, a
+              menos que WIDTH ou SINGLE seja especificado, independentemente
+              do número de nós nos clusters de destino.</entry>
             </row>
 
             <row>
@@ -964,7 +994,8 @@ OUTPUT(ds,,'~thor::outdata.csv',CSV(HEADING(FORMAT(STD.Str.ToUpperCase))));
     role="bold"> EXPIRE<indexterm>
         <primary>EXPIRE</primary>
       </indexterm>( [ </emphasis><emphasis>days </emphasis><emphasis
-    role="bold">] ) ] )</emphasis></para>
+    role="bold">] ) ] [, WIDTH(</emphasis><emphasis> width </emphasis><emphasis
+    role="bold">) | SINGLE ] )</emphasis></para>
 
     <para><informaltable colsep="1" frame="all" rowsep="1">
         <tgroup cols="2">
@@ -980,9 +1011,9 @@ OUTPUT(ds,,'~thor::outdata.csv',CSV(HEADING(FORMAT(STD.Str.ToUpperCase))));
               específica de clusters de destino. Se omitido, o arquivo é
               gravado no cluster pelo qual a workunit é executada. O número de
               partes do arquivo físico gravado em disco sempre é determinado
-              pelo número de nós no cluster onde a workunit é executada,
-              independentemente do número de nós nos clusters de
-              destino.</entry>
+              pelo número de nós no cluster onde a workunit é executada, a
+              menos que WIDTH ou SINGLE seja especificado, independentemente
+              do número de nós nos clusters de destino.</entry>
             </row>
 
             <row>
@@ -1219,7 +1250,8 @@ OUTPUT(B,,'fred3.xml',XML('MyRow',TRIM,OPT));
     role="bold"> EXPIRE<indexterm>
         <primary>EXPIRE</primary>
       </indexterm>( [ </emphasis><emphasis>days </emphasis><emphasis
-    role="bold">] ) ] )</emphasis></para>
+    role="bold">] ) ] [, WIDTH(</emphasis><emphasis> width </emphasis><emphasis
+    role="bold">) | SINGLE ] )</emphasis></para>
 
     <para><informaltable colsep="1" frame="all" rowsep="1">
         <tgroup cols="2">
@@ -1235,9 +1267,9 @@ OUTPUT(B,,'fred3.xml',XML('MyRow',TRIM,OPT));
               específica de clusters de destino. Se omitido, o arquivo é
               gravado no cluster pelo qual a workunit é executada. O número de
               partes do arquivo físico gravado em disco sempre é determinado
-              pelo número de nós no cluster onde a workunit é executada,
-              independentemente do número de nós nos clusters de
-              destino.</entry>
+              pelo número de nós no cluster onde a workunit é executada, a
+              menos que WIDTH ou SINGLE seja especificado, independentemente
+              do número de nós nos clusters de destino.</entry>
             </row>
 
             <row>

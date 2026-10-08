@@ -1046,6 +1046,13 @@
         </xs:appinfo>
       </xs:annotation>
     </xs:attribute>
+    <xs:attribute name="soapAuthTraceLevel" type="xs:nonNegativeInteger" use="optional" default="1">
+      <xs:annotation>
+        <xs:appinfo>
+          <tooltip>Enable logging authorization headers in SOAPCALL or HTTPCALL information (set to 0 to suppress, >0 to log)</tooltip>
+        </xs:appinfo>
+      </xs:annotation>
+    </xs:attribute>
     <xs:attribute name="traceTranslations" type="xs:boolean" use="optional" default="true">
       <xs:annotation>
         <xs:appinfo>

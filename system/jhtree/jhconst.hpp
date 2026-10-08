@@ -44,15 +44,19 @@ enum NodeTypeWithFlags : unsigned
     NodeSearchSingleValue= 0x10, // Only a single value is provided when searching
     NodeSearchUnfiltered = 0x20, // No filtering is applied - only postfiltering
     NodeSearchCount      = 0x40, // An index count operation is in progress.
+    NodeSearchStepping   = 0x80, // Smart stepping through the index
 
 // Which flags should be passed through to evt event traces?
-    NodeSearchFlagsMask   = (NodeSearchAllKeyed | NodeSearchSingleValue | NodeSearchUnfiltered | NodeSearchCount),
+    NodeSearchFlagsMask   = (NodeSearchAllKeyed | NodeSearchSingleValue | NodeSearchUnfiltered | NodeSearchCount | NodeSearchStepping),
 
 // The following are specific to an index.  They are less useful for tracing, but may be useful in getCachedNode()
-    NodeInTLK            = 0x80, // The node is part of a top-level key (TLK) - used to optimize loading of TLK nodes
-    NodeInSinglePartFile = 0x100, // The node is part of a single-partition file
+    NodeInTLK            = 0x100, // The node is part of a top-level key (TLK) - used to optimize loading of TLK nodes
+    NodeInSinglePartFile = 0x200, // The node is part of a single-partition file
 
-// MORE: If any other values are required then it may cause problems oring into position since the minimum node size is 512
+// For convenience and efficiency, these flags are ORed into the position field when tracing some events.
+// The normal node size is 0x2000 i.e. 8K, so flags up to 0x1000 will not cause any confusion.
+// It is possible to shrink a node size to 0x200 - in which case flags >= 0x200 could cause confusion - but only in the tracing.
+// This value is unlikely to be used in production, but is used as a test case in the regression test suite
 };
 
 enum CompressionType : unsigned char

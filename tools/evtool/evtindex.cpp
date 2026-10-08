@@ -24,6 +24,7 @@ static constexpr const char* verbose = "Commands focused on the analysis of inde
 IEvToolCommand* createIndexCommand()
 {
     return new CEvtCommandGroup({
+        { "cache", createIndexCacheCommand },
         { "load", createIndexLoadCommand },
         { "summarize", createIndexSummaryCommand },
         { "hotspot", createIndexHotspotCommand },

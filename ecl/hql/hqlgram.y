@@ -3078,6 +3078,9 @@ buildFlag
                             $$.setPosition($1);
                         }
     | planeAttr
+    | SINGLE            {
+                            $$.setExpr(createExprAttribute(widthAtom, createConstant(1)), $1);
+                        }
     | WIDTH '(' expression ')'
                         {
                             parser->normalizeExpression($3, type_numeric, false);
@@ -3607,6 +3610,9 @@ outputFlag
                             $$.setPosition($1);
                         }
     | planeAttr
+    | SINGLE            {
+                            $$.setExpr(createExprAttribute(widthAtom, createConstant(1)), $1);
+                        }
     | WIDTH '(' expression ')'
                         {
                             parser->normalizeExpression($3, type_numeric, false);
@@ -8591,6 +8597,13 @@ simpleDataSet
                                 parser->normalizeExpression($6, type_numeric, false);
                             }
                             $$.setExpr(createDataset(op, $3.getExpr(), createComma($6.getExpr(), $7.getExpr())));
+                            $$.setPosition($1);
+                        }
+    | DISTRIBUTE '(' startTopFilter startDistributeAttrs ',' WIDTH '('  expression ')' optDistributeAttrs ')' endTopFilter
+                        {
+                            parser->normalizeExpression($8, type_numeric, false);
+                            OwnedHqlExpr width = createExprAttribute(widthAtom, $8.getExpr());
+                            $$.setExpr(createDataset(no_nwaydistribute, $3.getExpr(), createComma(width.getClear(), $10.getExpr())));
                             $$.setPosition($1);
                         }
     | DISTRIBUTE '(' startTopFilter startDistributeAttrs optDistributeAttrs ')' endTopFilter
