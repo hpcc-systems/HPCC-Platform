@@ -119,15 +119,15 @@
     "typescript-eslint": "8.59.4",
     "url-loader": "4.1.1",
     "webpack": "5.107.0",
-    "webpack-cli": "6.0.1"
+    "webpack-cli": "6.0.1",
+    "@xmldom/xmldom": "0.9.12",
+    "tmp": "0.2.7",
+    "undici": "7.30.0"
   },
   "overrides": {
-    "brace-expansion@<=1.1.17": "1.1.18",
-    "brace-expansion@>=2.0.0 <2.1.4": "2.1.4",
-    "brace-expansion@>=4.0.0 <5.0.9": "5.0.9",
-    "fast-uri": "3.1.5",
+    "@xmldom/xmldom": "0.9.12",
     "tmp": "0.2.7",
-    "undici": "7.29.0"
+    "undici": "7.30.0"
   },
   "author": "HPCC Systems",
   "license": "Apache-2.0",
