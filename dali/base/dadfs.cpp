@@ -1789,6 +1789,14 @@ class CDistributedFileTransaction: implements IDistributedFileTransactionExt, pu
             return NULL;
         return trackedFile->queryFile();
     }
+    void checkCachedLookupAccess(const char *name, AccessMode accessMode, IDistributedFile *file)
+    {
+        CDfsLogicalFileName logicalName;
+        logicalName.set(name);
+        checkLogicalName(logicalName, udesc, true, isWrite(accessMode), true, nullptr);
+        if (!isWrite(accessMode) && file->isRestrictedAccess() && !defaultPrivilegedUser)
+            throw new CDFS_Exception(DFSERR_RestrictedFileAccessDenied, logicalName.get());
+    }
     void deleteFiles()      // no rollback at this point
     {
         Owned<IMultiException> me = MakeMultiException("Transaction");
@@ -1889,11 +1897,21 @@ public:
     {
         return isactive;
     }
+
+    /*
+     * Transaction reuse is keyed by normalized logical name, so the cached file's
+     * construction-time AccessMode is retained. If storage-plane aliases that vary
+     * by AccessMode are used, physical path selection must be moved to operation
+     * context instead of relying on this cached state. See #37626.
+     */
     virtual IDistributedFile *lookupFile(const char *name, AccessMode accessMode, unsigned timeout)
     {
         IDistributedFile *ret = findFile(name);
         if (ret)
+        {
+            checkCachedLookupAccess(name, accessMode, ret);
             return LINK(ret);
+        }
         else
         {
             ret = queryDistributedFileDirectory().lookup(name, udesc, accessMode, false, false, this, defaultPrivilegedUser, timeout);
@@ -1906,7 +1924,10 @@ public:
     {
         IDistributedFile *f = findFile(name);
         if (f)
+        {
+            checkCachedLookupAccess(name, accessMode, f);
             return LINK(f->querySuperFile());
+        }
         else
         {
             IDistributedSuperFile *ret = queryDistributedFileDirectory().lookupSuperFile(name, udesc, accessMode, this, timeout);

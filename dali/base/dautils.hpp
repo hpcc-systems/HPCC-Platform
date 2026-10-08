@@ -629,11 +629,12 @@ inline void logNullUser(IUserDescriptor *userDesc) { }
 inline void logNullUserWithSource(IUserDescriptor *userDesc, const char *source) { }
 #endif
 
+interface IDistributedFileTransaction;
 interface IFileReadPropertiesUpdater : extends IInterface
 {
 public:
     virtual cost_type addCostAndNumReads(IDistributedFile * file, stat_type numDiskReads, cost_type curReadCost) = 0;
-    virtual void publish() = 0;
+    virtual void publish(IDistributedFileTransaction *transaction = nullptr) = 0;
 };
 
 extern da_decl IFileReadPropertiesUpdater * createFileReadPropertiesUpdater(IUserDescriptor * udesc);

@@ -1421,6 +1421,11 @@ bool CGraphBase::fireException(IException *e)
     return queryJobChannel().fireException(e);
 }
 
+IDistributedFileTransaction *CGraphBase::queryReadFilesTransaction()
+{
+    return readFilesTransaction.query([&]() { return createDistributedFileTransaction(job.queryUserDescriptor()); }, readFilesTransactionCreateCS);
+}
+
 bool CGraphBase::preStart(size32_t parentExtractSz, const byte *parentExtract)
 {
     Owned<IThorActivityIterator> iter = getConnectedIterator();
