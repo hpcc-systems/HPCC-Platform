@@ -22,7 +22,17 @@ class TimingColumn extends Column {
 
 const columns = ["label", "start", "end", "icon", "color", "series", "depth"];
 
+export interface TimelineTooltipAnchor {
+    left: number;
+    top: number;
+}
+
+type TimelineHoverCallback = (scope: IScope, anchor: TimelineTooltipAnchor) => void;
+
 export class WUTimelinePatched extends WUTimeline {
+
+    private _hoverCallback?: TimelineHoverCallback;
+    private _hoverOutCallback?: () => void;
 
     constructor() {
         super();
@@ -43,6 +53,26 @@ export class WUTimelinePatched extends WUTimeline {
         this.tooltipHTML(d => {
             return d[7].__hpcc_id;
         });
+        this._gantt.mouseover = row => {
+            if (this._hoverCallback) {
+                const [left, top] = this._gantt["_tooltip"]?._cursorLoc ?? [0, 0];
+                this._gantt["_tooltip"].visible(false).render();
+                this._hoverCallback(row[7], { left, top });
+            }
+        };
+        this._gantt.mouseout = () => {
+            this._hoverOutCallback?.();
+        };
+    }
+
+    hoverCallback(callback?: TimelineHoverCallback): this {
+        this._hoverCallback = callback;
+        return this;
+    }
+
+    hoverOutCallback(callback?: () => void): this {
+        this._hoverOutCallback = callback;
+        return this;
     }
 
     data(): any;
