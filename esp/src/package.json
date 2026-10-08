@@ -44,6 +44,7 @@
   },
   "main": "src/stub.js",
   "dependencies": {
+    "@ctrl/tinycolor":"4.2.1",
     "@fluentui-contrib/react-data-grid-react-window": "1.4.2",
     "@fluentui-contrib/react-draggable-dialog": "0.2.5",
     "@fluentui/react-components": "9.74.5",
@@ -115,15 +116,17 @@
     "typescript-eslint": "8.66.0",
     "url-loader": "4.1.1",
     "webpack": "5.108.4",
-    "webpack-cli": "7.2.2"
+    "webpack-cli": "7.2.2",
+    "@xmldom/xmldom": "0.9.12",
+    "tmp": "0.2.7",
+    "fast-uri": "3.1.8",
+    "undici": "8.11.2"
   },
   "overrides": {
+    "@xmldom/xmldom": "0.9.12",
     "tmp": "0.2.7",
-    "brace-expansion@<=1.1.17": "1.1.18",
-    "brace-expansion@>=2.0.0 <2.1.4": "2.1.4",
-    "brace-expansion@>=4.0.0 <5.0.9": "5.0.9",
-    "fast-uri": "3.1.5",
-    "undici": "8.9.0"
+    "fast-uri": "3.1.8",
+    "undici": "8.11.2"
   },
   "author": "HPCC Systems",
   "license": "Apache-2.0",
