@@ -1,51 +1,361 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
-<sect1 id="ESDL_Attributes_auth_feature">
-  <title><emphasis role="bold">auth_feature</emphasis></title>
+<sect1 id="ESDL_AuthFeature">
+  <title>auth_feature</title>
 
   <para><indexterm>
       <primary>auth_feature</primary>
-    </indexterm>O atributo auth_feature (válido apenas para ESPService ou
-  ESPMethod) permite especificar meios de verificar as permissões de um
-  usuário para executar um método.</para>
+    </indexterm>O atributo <emphasis>auth_feature</emphasis> configura a
+  segurança em nível de feature no ESDL associando features e níveis de acesso
+  a elementos <code>ESPservice</code> e <code>ESPmethod</code>. Na sintaxe
+  formal, eles correspondem a valores <literal>scope-name</literal>, como
+  <literal>ESDLSERVICE</literal> e <literal>ESDLMETHOD</literal>, ao avaliar
+  precedência e substituições. Nomes de escopo adicionais podem estar
+  relacionados a bindings específicos de integração. Isso oferece controle de
+  acesso declarativo e granular para serviços e métodos ESDL.</para>
 
-  <para>Para ativar este recurso, seu sistema deve estar configurado para usar
-  um formulário de segurança compatível com a autenticação em nível de
-  recurso, tal como a segurança LDAP incluída na Community Edition da
-  plataforma. Depois da LDAP ter sido configurada, adicione o nome da tag
-  fornecido como o valor do atributo <emphasis
-  role="bold">authFeature</emphasis> à lista de autenticação em nível de
-  recurso na seção “Segurança” do ECL Watch. Em seguida, defina as permissões
-  para os usuários e/ou grupos.</para>
+  <para>Escopos de maior precedência podem substituir requisitos de escopos
+  ancestrais. Para escopos de serviço/método definidos em arquivos .ecm, a precedência é <literal>ESDLSERVICE</literal>, depois
+  <literal>ESDLMETHOD</literal>. Em implantações DESDL que incluem escopos de
+  binding, a precedência continua com <literal>BINDINGSERVICE</literal> e,
+  depois, <literal>BINDINGMETHOD</literal>.</para>
 
-  <para>Se estiver usando um Security Manager Plugin (Plugin do Gerenciador de
-  Segurança) de terceiros, consulte a documentação do plugin para obter
-  detalhes sobre como adicionar nome de tag à configuração de
-  segurança.</para>
+  <para><emphasis role="bold">Exemplos: </emphasis></para>
 
-  <para>O atributo auth_feature é obrigatório para cada método, mas pode ser
-  especificado no nível ESPService para ser aplicado a todos os métodos em um
-  serviço. Você pode substituir um método individual configurando o atributo
-  em um nível de método</para>
+  <para><emphasis role="bold">Autenticação em nível de serviço</emphasis></para>
 
-  <para>A configuração auth_feature("NONE") significa que nenhuma autenticação
-  é necessária. A configuração auth_feature("DEFERRED") adia a autenticação
-  para a lógica de negócios na lógica de implementação do método do
-  desenvolvedor do ESP .</para>
+  <para><literal>GetData</literal> e <literal>ListData</literal> exigem
+  acesso <literal>SecAccess_Read</literal> para
+  <literal>DataAccess</literal>.</para>
 
-  <para><emphasis role="bold">Exemplo:</emphasis></para>
+  <programlisting>
+ESPservice [auth_feature("DataAccess:Read")] DataService
+{
+  ESPmethod GetData(GetDataRequest, GetDataResponse);
+  ESPmethod ListData(ListDataRequest, ListDataResponse);
+};
+    </programlisting>
 
-  <programlisting> ESPservice MyService [auth_feature("NONE")]
- {
-   ESPmethod MyMethod1(MyMethod1Request, MyMethod1Response);
-   ESPmethod 
-    [
-     description("MyMethod Two"),
-     auth_feature("AllowMyMethod2"),
-     help("This method does everything MyMethod1 does plus a few extra features"),
-     min_ver("1.2")
-    ]
-   MyMethod2(MyMethod2Request, MyMethod2Response);
- };</programlisting>
+  <para><emphasis role="bold">Autenticação combinada de serviço e
+  método</emphasis></para>
+
+  <para><literal>GetData</literal> exige <literal>SecAccess_Read</literal>;
+  <literal>UpdateData</literal> exige tanto
+  <literal>SecAccess_Read</literal> quanto <literal>SecAccess_Write</literal>
+  para <literal>DataAccess</literal>.</para>
+
+  <programlisting>
+ESPservice [auth_feature("DataAccess:Read")] DataService
+{
+  ESPmethod GetData(GetDataRequest, GetDataResponse);
+  ESPmethod [auth_feature("DataAccess:Write")]
+      UpdateData(UpdateDataRequest, UpdateDataResponse);
+};
+    </programlisting>
+
+  <para><emphasis role="bold">Método que ignora a autenticação do
+  serviço</emphasis></para>
+
+  <para><literal>GetData</literal> exige acesso <literal>SecAccess_Full</literal>;
+  <literal>GetPublicData</literal> não exige acesso para
+  <literal>DataAccess</literal>.</para>
+
+  <programlisting>
+ESPservice [auth_feature("DataAccess:Full")] DataService
+{
+  ESPmethod GetData(GetDataRequest, GetDataResponse);
+  ESPmethod [auth_feature("DataAccess:NONE")]
+      GetPublicData(GetPublicDataRequest, GetPublicDataResponse);
+};
+    </programlisting>
+
+  <para>Uma string <emphasis>auth_feature</emphasis> é uma lista de tokens
+  delimitada por vírgulas, interpretada em ordem do serviço (menor
+  precedência) ao método (maior precedência) e processada em ordem
+  inversa.</para>
+
+  <para>Valores <code>ESPservice</code> entram em vigor no escopo
+  <code>EsdlService</code>, enquanto valores <code>ESPmethod</code> entram em
+  vigor no escopo <code>EsdlMethod</code> e podem estender ou substituir
+  requisitos do escopo de serviço. Se <emphasis>auth_feature</emphasis> for
+  definido no serviço e no método, combine ambos os conjuntos de tokens no
+  requisito de segurança resultante, com os tokens em nível de método tendo
+  precedência quando houver conflitos.</para>
+
+  <para>Consulte a sintaxe e os detalhes de análise para obter a semântica
+  precisa.</para>
+
+  <para><emphasis role="bold">Semântica dos Tokens</emphasis></para>
+
+  <para>Cada <emphasis>auth_feature</emphasis> pode incluir tokens universais
+  e tokens específicos de feature, cada um com semântica e suporte bem
+  definidos.</para>
+
+  <para><emphasis role="bold">Tokens Independentes de Feature</emphasis></para>
+
+  <para>Os tokens a seguir têm suporte universal e não fazem referência a
+  nenhuma feature específica:</para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="120pt"/>
+
+      <tbody>
+        <row>
+          <entry><literal>NONE</literal></entry>
+
+          <entry>Nenhum acesso a feature é necessário. Suprime todos os tokens de menor precedência
+          (incluindo requisitos de feature), mas não substitui requisitos já
+          aplicados de escopos/tokens de maior precedência. Suportado por <literal>esdllib</literal> e
+          <literal>hidl</literal>.</entry>
+        </row>
+
+        <row>
+          <entry><literal>DEFERRED</literal></entry>
+
+          <entry>Indica que autorização pode ser necessária, mas deixa a
+          imposição para o manipulador do método. Como nenhuma feature é
+          identificada, o ESP genérico não tem contexto para buscar previamente
+          o estado de autorização. Suportado por <literal>esdllib</literal> e
+          <literal>hidl</literal>.</entry>
+        </row>
+
+        <row>
+          <entry><literal>!X</literal> (onde X é vazio, um escopo ou um
+          seletor de feature)</entry>
+
+          <entry>Token de exclusão. Use <literal>!</literal> para excluir
+          todas as configurações de menor precedência; use
+          <literal>!scope</literal> para excluir um escopo de menor
+          precedência; use <literal>!::feature</literal> ou
+          <literal>!scope::feature</literal> para excluir uma feature de menor
+          precedência. Suportado por <literal>esdllib</literal> e
+          <literal>hidl</literal>.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para><literal>hidl</literal> aplica-se aos escopos .ecm
+  (<literal>ESDLSERVICE</literal>, <literal>ESDLMETHOD</literal>), enquanto
+  <literal>esdllib</literal> também oferece suporte a escopos de binding DESDL
+  (<literal>BINDINGSERVICE</literal>,
+  <literal>BINDINGMETHOD</literal>).</para>
+
+  <para><emphasis role="bold">Tokens Específicos de Feature
+  Permitidos</emphasis></para>
+
+  <para>Para uma feature chamada <literal>MyFeature</literal>, os tokens
+  permitidos incluem:</para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="201*"/>
+
+      <colspec colwidth="264*"/>
+
+      <tbody>
+        <row>
+          <entry><literal>Token</literal></entry>
+
+          <entry><literal>SecAccess Required</literal></entry>
+        </row>
+
+        <row>
+          <entry><literal>MyFeature</literal></entry>
+
+          <entry>SecAccess_Full</entry>
+        </row>
+
+        <row>
+          <entry><literal>MyFeature:Access</literal></entry>
+
+          <entry>SecAccess_Access</entry>
+        </row>
+
+        <row>
+          <entry><literal>MyFeature:Read</literal></entry>
+
+          <entry>SecAccess_Read</entry>
+        </row>
+
+        <row>
+          <entry><literal>MyFeature:Write</literal></entry>
+
+          <entry>SecAccess_Write</entry>
+        </row>
+
+        <row>
+          <entry><literal>MyFeature:Full</literal></entry>
+
+          <entry>SecAccess_Full</entry>
+        </row>
+
+        <row>
+          <entry><literal>MyFeature:NONE</literal></entry>
+
+          <entry>Nenhum acesso é necessário para esta feature; remove-a da
+          consideração de autorização</entry>
+        </row>
+
+        <row>
+          <entry><literal>MyFeature:DEFERRED</literal></entry>
+
+          <entry>O estado de autorização é obtido para esta feature, mas não é
+          imposto para acesso à solicitação, a menos que seja verificado
+          condicionalmente pelo manipulador do método; isso oferece suporte a
+          autorização condicional sem outra ida ao gerenciador de
+          segurança</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para><emphasis role="bold">Tokens Proibidos</emphasis></para>
+
+  <para>Os tokens a seguir não são permitidos para a feature
+  <literal>MyFeature</literal>:</para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="120pt"/>
+
+      <tbody>
+        <row>
+          <entry><literal>MyFeature:</literal></entry>
+
+          <entry>Não permitido; token inválido; erro porque o nível de acesso
+          está ausente.</entry>
+        </row>
+
+        <row>
+          <entry><literal>MyFeature:X</literal> (onde X não está listado
+          acima)</entry>
+
+          <entry>Token inválido; resulta em erro.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para><emphasis role="bold">Sintaxe Formal: </emphasis></para>
+
+  <para>Tokens <emphasis>auth_feature</emphasis> seguem a gramática e a
+  precedência demonstradas abaixo:</para>
+
+  <para><literal>token ::= ( exclusion | suppression | deferral | assignment
+  )</literal></para>
+
+  <para><literal>exclusion ::= ( exclude-all | exclude-scope | exclude-feature
+  | exclude-feature-in-scope )</literal></para>
+
+  <para>Não trate nenhuma forma de exclusão como uma especificação de segurança
+  afirmativa.</para>
+
+  <para><literal>exclude-all ::= '!'</literal></para>
+
+  <para>Ignore todos os tokens de menor precedência, incluindo qualquer
+  afirmação de segurança de menor precedência.</para>
+
+  <para><literal>exclude-scope ::= '!' scope-name</literal></para>
+
+  <para>Ignore todos os tokens de menor precedência especificados pelo escopo
+  nomeado, incluindo qualquer afirmação de segurança resultante.</para>
+
+  <para><literal>exclude-feature ::= '!' '::' feature-name</literal></para>
+
+  <para>Ignore qualquer token de menor precedência que especifique a feature
+  nomeada sem um qualificador de escopo (por exemplo, <literal>!::FeatureName</literal>),
+  incluindo qualquer afirmação de segurança resultante.</para>
+
+  <para><literal>exclude-feature-in-scope ::= '!' scope-name '::'
+  feature-name</literal></para>
+
+  <para>Ignore qualquer token de menor precedência que especifique a feature
+  nomeada no escopo nomeado, incluindo qualquer afirmação de segurança
+  resultante.</para>
+
+  <para><literal>suppression ::= ( suppress-all | suppress-feature
+  )</literal></para>
+
+  <para><literal>suppress-all ::= 'NONE'</literal></para>
+
+  <para>Ignore todos os tokens de menor precedência (incluindo requisitos de feature) e afirme a ausência de segurança, mas não substitui requisitos já aplicados de escopos/tokens de maior precedência.</para>
+
+  <para><literal>suppress-feature ::= feature-name ':NONE'</literal></para>
+
+  <para>Ignore qualquer token de menor precedência que especifique a feature nomeada, remova essa feature da consideração de autorização de menor precedência e descarte qualquer requisito resultante de menor precedência para autorizá-la.</para>
+
+  <para><literal>deferral ::= ( 'DEFERRED' | feature-name ':DEFERRED'
+  )</literal></para>
+
+  <para><literal>DEFERRED</literal> isolado indica que autorização pode ser
+  necessária, mas deixa a imposição para o manipulador do método. Como nenhuma
+  feature é identificada, o ESP genérico não tem contexto para buscar
+  previamente o estado de autorização.</para>
+
+  <para><literal>feature-name:DEFERRED</literal> preserva o estado de autorização
+  para a feature nomeada sem impô-lo para acesso à solicitação, permitindo que
+  o manipulador do método realize autorização condicional posteriormente sem
+  outra ida ao gerenciador de segurança.</para>
+
+  <para><literal>assignment ::= ( assign-default-level |
+  assign-default-feature | assign-feature-and-level )</literal></para>
+
+  <para><literal>assign-default-level ::= feature-name</literal></para>
+
+  <para>Ignore qualquer token de menor precedência que especifique a feature
+  nomeada, exija nível de acesso completo para essa feature e afirme o estado
+  de segurança.</para>
+
+  <para><literal>assign-default-feature ::= ':' access-level</literal></para>
+
+  <para>Ignore qualquer token de menor precedência que especifique o feature-name
+  equivalente a <literal>${service}Access</literal>, exija o access-level
+  fornecido para essa feature e afirme o estado de segurança.</para>
+
+  <para><literal>assign-feature-and-level ::= feature-name ':'
+  access-level</literal></para>
+
+  <para>Ignore qualquer token de menor precedência que especifique a feature
+  nomeada, exija o access-level fornecido para essa feature e afirme o estado
+  de segurança.</para>
+
+  <para><literal>scope-name ::= ( 'DEFAULT' | 'ESDLSERVICE' | 'ESDLMETHOD' |
+  'BINDINGSERVICE' | 'BINDINGMETHOD' | ... )</literal></para>
+
+  <para>Para features definidas em arquivos .ecm, use <literal>ESDLSERVICE</literal> e
+  <literal>ESDLMETHOD</literal>. Em implantações Dynamic ESDL (DESDL), escopos
+  de binding adicionais podem ser usados: <literal>BINDINGSERVICE</literal> e
+  <literal>BINDINGMETHOD</literal>. Trate valores <literal>scope-name</literal>, <literal>access-level</literal>, <literal>reserved-word</literal> e <literal>variable-name</literal> como não sensíveis a maiúsculas e minúsculas, e corresponda valores <literal>feature-name</literal> sem diferenciar maiúsculas de minúsculas.</para>
+
+  <para><literal>hidl</literal> aplica-se aos escopos .ecm
+  (<literal>ESDLSERVICE</literal>, <literal>ESDLMETHOD</literal>), enquanto
+  <literal>esdllib</literal> também oferece suporte a escopos de binding DESDL
+  (<literal>BINDINGSERVICE</literal>,
+  <literal>BINDINGMETHOD</literal>).</para>
+
+  <para><literal>access-level ::= ( 'ACCESS' | 'READ' | 'WRITE' | 'FULL'
+  )</literal></para>
+
+  <para><literal>reserved-word ::= scope-name | access-level | 'NONE' |
+  'DEFERRED'</literal></para>
+
+  <para><literal>feature-name ::= feature-name-part+</literal></para>
+
+  <para><literal>feature-name-part ::= feature-name-char+ | '${' variable-name '}'</literal></para>
+
+  <para>Defina <literal>feature-name-char</literal> como qualquer caractere,
+  exceto espaço em branco, <literal>,</literal>, <literal>"</literal>,
+  <literal>!</literal> ou <literal>:</literal>. Também exigimos que
+  <literal>feature-name</literal> não seja uma reserved-word.</para>
+
+  <para><literal>variable-name ::= feature-name-char+</literal></para>
+
+  <para>Nomes de variáveis não fazem distinção entre maiúsculas e minúsculas e devem ser definidos pela ferramenta invocadora. Em contextos ESP/DESDL, as variáveis comumente definidas são <literal>SERVICE</literal> e <literal>METHOD</literal>.</para>
+
+  <para><emphasis role="bold">Ver também: </emphasis> <link
+  linkend="EPservice">ESPservice</link>, <link
+  linkend="ESPmethod">ESPmethod</link></para>
 </sect1>

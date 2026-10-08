@@ -49,7 +49,7 @@
             <entry><programlisting lang="text" role="tab"><emphasis
                   role="bold">ROWSET<indexterm>
                     <primary>ROWSET</primary>
-                  </indexterm>LEFT<indexterm>
+                  </indexterm>(LEFT)<indexterm>
                     <primary>ROWSET(LEFT)</primary>
                   </indexterm>   </emphasis>Especifica o conjunto de datasets de entrada que podem ser indexados
                                 para especificar o recordset de qualquer iteração específica – 

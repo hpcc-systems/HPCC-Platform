@@ -2,7 +2,8 @@
 <!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="ldap_config">
-  <title>Configurando HPCC para Autenticação</title>
+  <title>Configurando HPCC Systems<superscript>®</superscript> para
+  autenticação</title>
 
   <para>Esta seção detalha as etapas para configurar a plataforma HPCC a usar
   autenticação. Atualmente existem algumas formas de usar a autenticação em
@@ -32,14 +33,16 @@
         <row>
           <entry><inlinegraphic fileref="../../images/caution.png"/></entry>
 
-          <entry>Ao implementar qualquer forma de autenticação, recomendamos
-          ativar seu servidor ESP a usar HTTPS (SSL) e a configurar TODAS as
-          conexões do serviço a usarem apenas HTTPS. Isso garante que as
-          credenciais sejam transmitidas pela rede usando a criptografia SSL
-          <emphasis role="bold">Veja Como configurar o ESP Server para usar
-          HTTPS (SSL)</emphasis> para obter mais informações. <para>Não se
-          deve tentar isso até que o ambiente a ser usado já tenha sido
-          implementado, configurado e certificado. </para></entry>
+          <entry><emphasis role="bold">Ao implementar qualquer forma de
+          autenticação, recomendamos enfaticamente que você habilite seu
+          servidor ESP para usar HTTPS (SSL) e configure TODOS os service
+          bindings para usar somente HTTPS. Isso garante que as credenciais
+          sejam transmitidas pela rede usando criptografia SSL. Consulte
+          </emphasis><link linkend="ssl4esp"><emphasis>Configuring ESP Server
+          to use HTTPS (SSL)</emphasis></link> <emphasis role="bold">para
+          obter detalhes. </emphasis><para><emphasis role="bold">Você não
+          deve tentar fazer isso até que já tenha implementado, configurado e
+          certificado o ambiente que usará. </emphasis></para></entry>
         </row>
       </tbody>
     </tgroup>
@@ -213,10 +216,8 @@
               </listitem>
 
               <listitem>
-                <para>Selecione a <emphasis role="bold"> aba
-                de</emphasis><emphasis role="bold">conexões do</emphasis>
-                <emphasis role="bold">ESP</emphasis> <emphasis
-                role="bold">Service</emphasis></para>
+                <para>Selecione a aba <emphasis role="bold">ESP</emphasis>
+                <emphasis role="bold">Service bindings</emphasis></para>
               </listitem>
 
               <listitem>
@@ -704,17 +705,6 @@
               <emphasis>ldapserver.</emphasis></para>
 
               <para>Confirme a alteração quando solicitado.</para>
-
-              <para>O <emphasis role="bold">filesDefaultUser</emphasis> é uma
-              conta do LDAP usada para acessar arquivos quando nenhuma não há
-              nenhuma credencial. É semelhante a conta “convidado”, por isso
-              deve ter acesso <emphasis role="bold">bastante</emphasis>
-              limitado em seu uso. Deixe o <emphasis
-              role="bold">filesDefaultUser</emphasis> em branco para
-              desabilitar esse tipo de acesso.</para>
-
-              <para>O <emphasis role="bold">filesDefaultPassword</emphasis>
-              corresponde a senha dessa conta.</para>
             </listitem>
 
             <listitem>
@@ -818,7 +808,7 @@
       <para><programlisting>Enter the '389DirectoryServer' LDAP Admin User name on '10.123.456.78'...Directory Manager        
 Enter the LDAP Admin user 'Directory Manager' password...********
 
-Ready to initialize HPCC LDAP Environment, using the following settings
+Ready to initialize HPCC Systems LDAP Environment, using the following settings
        LDAP Server     : 10.123.456.78
        LDAP Type       : 389DirectoryServer
        HPCC Admin User : HPCCAdmin389
@@ -826,33 +816,5 @@ Proceed?  y/n
 </programlisting></para>
     </sect3>
 
-    <sect3 id="UsingLDAP_Using_addScopesTool">
-      <title>Utilizando a ferramenta addScopes</title>
-
-      <para>Quando uma nova conta de usuário do ESP é criada, um escopo de
-      arquivo privado "hpccinternal::&lt;user&gt;” também é criado concedendo
-      aos novos usuários o acesso total àquele escopo e acesso restrito aos
-      outros usuários. Este escopo de arquivo é usado para armazenar
-      temporariamente arquivos do HPCC como os arquivos de despejo e
-      temporário.</para>
-
-      <para>Se você estiver habilitando a segurança do escopo de arquivos do
-      LDAP e já tiver contas de usuários, execute o programa de utilitário
-      addScopes para criar um escopo hpccinternal::&lt;user&gt; para esses
-      usuários existentes.</para>
-
-      <para>Usuários que já pertençam a esse escopo são ignorados o que
-      permite o uso seguro dessa solução tanto em contas de usuários ESP novas
-      como pré-existentes.</para>
-
-      <para>A ferramenta está localizada na pasta <emphasis
-      role="bold">/opt/HPCCSystems/bin/</emphasis> e, para executá-la, é
-      preciso especificar a localização do <emphasis
-      role="bold">daliconf.xml</emphasis>, por exemplo:</para>
-
-      <para><programlisting>/opt/HPCCSystems/bin/addScopes /var/lib/HPCCSystems/mydali/daliconf.xml</programlisting></para>
-
-      <para>Execute o addScopes no nó do Dali.</para>
-    </sect3>
   </sect2>
 </sect1>

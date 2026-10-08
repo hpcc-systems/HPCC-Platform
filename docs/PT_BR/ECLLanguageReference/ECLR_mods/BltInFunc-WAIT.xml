@@ -35,12 +35,11 @@
 
     <para>Exemplo:</para>
 
-    <programlisting>   //You can either do this:
-  action1;
-  action2 : WHEN('expectedEvent');
-  
-  //can also be written as:
-  SEQUENTIAL(action1,WAIT('expectedEvent'),action2);
+    <programlisting language="ECL" role="notrunnable">//You can either do this:
+action1;
+action2 : WHEN('expectedEvent');
+//can also be written as:
+SEQUENTIAL(action1,WAIT('expectedEvent'),action2);
 </programlisting>
   </informalexample>
 

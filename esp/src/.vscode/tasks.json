@@ -5,8 +5,19 @@
     "tasks": [
         {
             "type": "npm",
-            "label": "tsc watch",
-            "script": "compile-watch",
+            "label": "tsc watch dojo",
+            "script": "compile-dojo-watch",
+            "problemMatcher": [
+                "$tsc-watch"
+            ],
+            "presentation": {
+                "group": "group-build"
+            }
+        },
+        {
+            "type": "npm",
+            "label": "tsc watch react",
+            "script": "compile-react-watch",
             "problemMatcher": [
                 "$tsc-watch"
             ],
@@ -26,7 +37,8 @@
         {
             "label": "build-all",
             "dependsOn": [
-                "tsc watch",
+                "tsc watch dojo",
+                "tsc watch react",
                 "dev start vite"
             ],
             "group": {

@@ -51,7 +51,7 @@
 
   <para>Exemplo:</para>
 
-  <programlisting>MyFile := DATASET('MyFile',{STRING20 F1, STRING20 F2},THOR);
+  <programlisting lang="ECL" role="notrunnable">MyFile := DATASET('MyFile',{STRING20 F1, STRING20 F2},THOR);
   COUNT(PRELOAD(MyFile))</programlisting>
 
   <para>Ver também: <link linkend="DATASET">DATASET</link></para>

@@ -1237,36 +1237,40 @@ IPropertyTree *CClientRemoteTree::collateData()
     }
 
     Owned<IPropertyTree> childTree;
-    Owned<IPropertyTreeIterator> _iter = getElements("*");
-    IPropertyTreeIterator *iter = _iter;
-    if (iter->first())
+    // If children have not been read locally, avoid iterating to see if any children have changed.
+    if (checkChildrenInMemory())
     {
-        while (iter->isValid())
+        Owned<IPropertyTreeIterator> _iter = getElements("*");
+        IPropertyTreeIterator *iter = _iter;
+        if (iter->first())
         {
-            CClientRemoteTree *child = (CClientRemoteTree *) &iter->query();
-            childTree.setown(child->collateData());
-            if (childTree)
+            while (iter->isValid())
             {
-                if (0 == child->queryServerId())
+                CClientRemoteTree *child = (CClientRemoteTree *) &iter->query();
+                childTree.setown(child->collateData());
+                if (childTree)
                 {
-                    if (CPS_InsPos & child->queryState())
+                    if (0 == child->queryServerId())
+                    {
+                        if (CPS_InsPos & child->queryState())
+                        {
+                            int pos = findChild(child);
+                            assertex(NotFound != pos);
+                            childTree->setPropInt("@pos", pos+1);
+                        }
+                    }
+                    else
                     {
                         int pos = findChild(child);
                         assertex(NotFound != pos);
                         childTree->setPropInt("@pos", pos+1);
+                        childTree->setPropInt64("@id", child->queryServerId());
                     }
                 }
-                else
-                {
-                    int pos = findChild(child);
-                    assertex(NotFound != pos);
-                    childTree->setPropInt("@pos", pos+1);
-                    childTree->setPropInt64("@id", child->queryServerId());
-                }
+                if (childTree)
+                    ct.queryCreateTree()->addPropTree(RESERVED_CHANGE_NODE, childTree.getClear());
+                iter->next();
             }
-            if (childTree)
-                ct.queryCreateTree()->addPropTree(RESERVED_CHANGE_NODE, childTree.getClear());
-            iter->next();
         }
     }
     if (ct.queryTree())
@@ -1286,7 +1290,7 @@ void CClientRemoteTree::clearCommitChanges(MemoryBuffer *mb)
             tree.clearChanges();
             if (tree.queryState())
                 tree.setState(0);
-            return true;
+            return tree.checkChildrenInMemory();
         }
         virtual bool applyChild(IPropertyTree &parent, IPropertyTree &child, bool &levelBreak)
         {

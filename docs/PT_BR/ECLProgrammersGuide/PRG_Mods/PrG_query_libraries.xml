@@ -2,7 +2,7 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="Query_Libraries">
-  <title><emphasis role="bold">Bibliotecas de Consultas</emphasis></title>
+  <title>Bibliotecas de Consultas</title>
 
   <para>Uma biblioteca de consulta é um conjunto de atributos, agrupados em
   uma unidade autocontida, que permite que o código seja compartilhado entre
@@ -105,13 +105,13 @@ END;</programlisting>
     #WORKUNIT normalmente seria usada para dar um nome de trabalho
     significativo à tarefa, como neste exemplo:</para>
 
-    <programlisting>#WORKUNIT('name','Ppass.FilterDsLib'); 
+    <programlisting>#WORKUNIT('name','Ppass.FilterDsLib');
 BUILD(FilterDsLib1);</programlisting>
 
     <para>Este código compila a biblioteca para a versão de parâmetros de
     INTERFACE do código acima:</para>
 
-    <programlisting>#WORKUNIT('name','Ipass.FilterDsLib'); 
+    <programlisting>#WORKUNIT('name','Ipass.FilterDsLib');
 BUILD(FilterDsLib2);</programlisting>
 
     <para>O sistema mantém um catálogo das mais recentes versões de cada
@@ -164,7 +164,7 @@ lib1 := LIBRARY(INTERNAL(FilterDsLib1),FilterLibIface1(NamesTable, 'Holliday'));
       correspondências e outros – que podem ser usados da mesma forma que
       qualquer outro MODULE, como neste exemplo:</para>
 
-      <programlisting>OUTPUT(lib1.matches); 
+      <programlisting>OUTPUT(lib1.matches);
 OUTPUT(lib1.others);</programlisting>
 
       <para>e o código muda para esse, para a variedade que usa uma
@@ -305,6 +305,25 @@ MyResults := LIBRARY(LibToUse, InterfaceCommonToBoth(args));
     datasets, das linhas de dados e das expressões de valores únicos.
     Especificamente, elas não podem realizar ações EXPORT (como OUTPUT),
     estruturas TRANSFORM ou de outras estruturas MODULE.</para>
+
+    <para>Para usar OUTPUT em uma LIBRARY, você precisará:</para>
+
+    <orderedlist>
+      <listitem>
+        <para>Usar WHEN, SUCCESS para anexar o OUTPUT a uma atividade dentro
+        da biblioteca</para>
+      </listitem>
+
+      <listitem>
+        <para>Gerar a saída para um resultado de dataset nomeado com
+        ,EXTEND</para>
+      </listitem>
+
+      <listitem>
+        <para>Especificar uma saída para o mesmo resultado de dataset nomeado
+        em qualquer query que chame a biblioteca e espere ver saída</para>
+      </listitem>
+    </orderedlist>
   </sect2>
 
   <sect2 id="Notes_on_the_implementation">

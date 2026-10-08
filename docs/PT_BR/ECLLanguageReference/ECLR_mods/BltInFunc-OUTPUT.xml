@@ -366,8 +366,10 @@
             <entry><emphasis>name</emphasis></entry>
 
             <entry>Uma constante de string que contém o rótulo do resultado.
-            Deve ser uma constante de tempo de compilação e deve cumprir com
-            os requisitos de nomeação de atributo.</entry>
+            Deve ser uma constante de tempo de compilação e atender aos
+            requisitos de nomeação de atributo. Deve ser um rótulo válido
+            (consulte <link linkend="Attribute_Name_Rules">Definition Name
+            Rules</link>)</entry>
           </row>
 
           <row>
@@ -419,7 +421,7 @@
     exclusivos, caso contrário resultará em erro de sintaxe. Por
     exemplo:</para>
 
-    <programlisting>          OUTPUT(person(), {module1.attr1, module2.attr1});</programlisting>
+    <programlisting lang="ECL" role="fragment">OUTPUT(person(), {module1.attr1, module2.attr1});</programlisting>
 
     <para>resultará em um erro de sintaxe. Os nomes dos campos do resultado
     são adotados com base nos nomes de definição.</para>
@@ -427,7 +429,7 @@
     <para>Para mudar isso, é possível especificar um nome exclusivo para o
     campo do resultado no formato de registro “dinâmico”, como este:</para>
 
-    <programlisting>          OUTPUT (person (), {module1.attr1, name: = module2.attr1});</programlisting>
+    <programlisting lang="ECL" role="fragment">OUTPUT(person(), {module1.attr1, name := module2.attr1});</programlisting>
   </sect2>
 
   <sect2 id="OUTPUT_Thor-Flat_Files">
@@ -573,8 +575,8 @@
               <entry>Opcional. O número de dias contados a partir da última
               leitura do arquivo em que o arquivo será automaticamente
               removido. Se EXPIRE for especificado sem o número de dias, por
-              padrão ele usará as configurações do ExpiryDefault no
-              Sasha.</entry>
+              padrão ele usará a configuração <emphasis
+              role="bold">ExpiryDefault</emphasis> no Sasha.</entry>
             </row>
 
             <row>
@@ -603,17 +605,19 @@
         </tgroup>
       </informaltable></para>
 
-    <para>Esta forma grava o <emphasis>record set</emphasis> em um
-    <emphasis>arquivo</emphasis> especificado no <emphasis>formato</emphasis>
-    determinado. Se o <emphasis>formato</emphasis> for omitido, todos os
-    campos do <emphasis>recordset</emphasis> serão considerados como
-    resultados. Se <emphasis>file</emphasis> se o arquivo for omitido, o
-    resultado é enviado de volta para o programa que o solicitou (geralmente o
-    ECL IDE ou o programa que enviou a consulta SOAP para o Roxie).</para>
+    <para>Esta forma grava o <emphasis>recordset</emphasis> no
+    <emphasis>file</emphasis> especificado, no <emphasis>format</emphasis>
+    especificado. Se <emphasis>format</emphasis> for omitido, todos os campos
+    de <emphasis>recordset</emphasis> serão enviados. Se
+    <emphasis>file</emphasis> for omitido, então o resultado será enviado de
+    volta ao programa solicitante (normalmente o ECL IDE ou o programa que
+    enviou a query SOAP para um Roxie).</para>
+
+
 
     <para>Exemplo:</para>
 
-    <programlisting>OutputFormat1 := RECORD
+    <programlisting lang="ECL" role="notrunnable">OutputFormat1 := RECORD
   People.firstname;
   People.lastname;
 END;
@@ -943,11 +947,12 @@ OUTPUT(People(Attr1=FALSE));
     <para>Se nenhuma das opções ASCII, EBCDIC, ou UNICODE forem especificadas,
     o resultado padrão será no formato ASCII com quaisquer campos UNICODE no
     formato UTF8. As outras <emphasis>csvoptions</emphasis> padrão são:
-    <programlisting>           CSV(HEADING('',''), SEPARATOR(','), TERMINATOR('\n'), QUOTE())</programlisting></para>
+    <programlisting
+    lang="ECL" role="fragment">  CSV(HEADING('',''), SEPARATOR(','), TERMINATOR('\n'), QUOTE())</programlisting></para>
 
     <para>Exemplo:</para>
 
-    <programlisting>//SINGLE option writes the header only to the first file part:
+    <programlisting lang="ECL" role="notrunnable">//SINGLE option writes the header only to the first file part:
 OUTPUT(ds,,'~thor::outdata.csv',CSV(HEADING(SINGLE)));
 
 //This example writes the header and footer to every file part:
@@ -1179,11 +1184,11 @@ OUTPUT(ds,,'~thor::outdata.csv',CSV(HEADING(FORMAT(STD.Str.ToUpperCase))));
     <para>Se nenhuma <emphasis>xmloptions</emphasis> for especificada, o
     padrão é:</para>
 
-    <programlisting>         XML('Row',HEADING('&lt;Dataset&gt;\n','&lt;/Dataset&gt;\n'))</programlisting>
+    <programlisting lang="ECL" role="fragment">  XML('Row',HEADING('&lt;Dataset&gt;\n','&lt;/Dataset&gt;\n'))</programlisting>
 
     <para>Exemplo:</para>
 
-    <programlisting>R := {STRING10 fname,STRING12 lname};
+    <programlisting lang="ECL" role="notrunnable">R := {STRING10 fname,STRING12 lname};
 B := DATASET([{'Fred','Bell'},{'George','Blanda'},{'Sam',''}],R);
 
 OUTPUT(B,,'fred1.xml', XML); // writes B to the fred1.xml file
@@ -1194,8 +1199,7 @@ OUTPUT(B,,'fred1.xml', XML); // writes B to the fred1.xml file
   &lt;Row&gt;&lt;fname&gt;Sam &lt;/fname&gt;&lt;lname&gt;&lt;/lname&gt;&lt;/Row&gt;
 &lt;/Dataset&gt; */
 
-OUTPUT(B,,'fred2.xml',XML('MyRow', HEADING('&lt;?xml version=1.0 ...?&gt;
-    \n&lt;filetag&gt;\n','&lt;/filetag&gt;\n')));
+OUTPUT(B,,'fred2.xml',XML('MyRow', HEADING('&lt;?xml version=1.0 ...?&gt;\n&lt;filetag&gt;\n','&lt;/filetag&gt;\n')));
 /* the Fred2.XML file looks like this:
 &lt;?xml version=1.0 ...?&gt;
 &lt;filetag&gt;
@@ -1435,11 +1439,11 @@ OUTPUT(B,,'fred3.xml',XML('MyRow',TRIM,OPT));
     <para>Se nenhum <emphasis>jsonoptions</emphasis> for especificado, o
     padrão é:</para>
 
-    <programlisting>         JSON('Row',HEADING('[',']'))</programlisting>
+    <programlisting lang="ECL" role="fragment">         JSON('Row',HEADING('[',']'))</programlisting>
 
     <para>Exemplo:</para>
 
-    <programlisting>R := {STRING10 fname,STRING12 lname};
+    <programlisting lang="ECL" role="notrunnable">R := {STRING10 fname,STRING12 lname};
 B := DATASET([{'Fred','Bell'},{'George','Blanda'},{'Sam',''}],R);
 
 OUTPUT(B,,'fred1.json', JSON); // writes B to the fred1.json file
@@ -1535,7 +1539,7 @@ OUTPUT(B,,'fred2.json',JSON('MyResult', HEADING('[', ']')));
 
     <para>Exemplo:</para>
 
-    <programlisting>OUTPUT(A_People,,PIPE('MyCommandLIneProgram'),OVERWRITE);
+    <programlisting lang="ECL" role="PipeRestricted">OUTPUT(A_People,,PIPE('MyCommandLIneProgram'),OVERWRITE);
    // sends the A_People to MyCommandLIneProgram as
    // standard in</programlisting>
   </sect2>
@@ -1556,26 +1560,36 @@ OUTPUT(B,,'fred2.json',JSON('MyResult', HEADING('[', ']')));
     role="bold">NAMED<indexterm>
         <primary>NAMED</primary>
       </indexterm>(</emphasis><emphasis> name </emphasis><emphasis
-    role="bold">) [,EXTEND<indexterm>
+    role="bold">) [,EXTEND |,OVERWRITE<indexterm>
         <primary>EXTEND</primary>
+      </indexterm> <indexterm>
+        <primary>OVERWRITE</primary>
       </indexterm>] [</emphasis><emphasis>,</emphasis><emphasis
     role="bold">ALL<indexterm>
         <primary>ALL</primary>
       </indexterm>])</emphasis></para>
 
     <para>Esta forma grava o <emphasis>recordset</emphasis> na workunit com o
-    <emphasis>nome</emphasis> especificado. A opção EXTEND permite várias
-    ações OUTPUT em um mesmo resultado <emphasis>nomeado</emphasis> . A opção
-    ALL é usada para substituir CHOOSEN implícita aplicada às consultas
-    interativas no Programa do Compilador de Consultas ECL. Isso especifica o
-    retorno de todos os registros.</para>
+    <emphasis>name</emphasis> especificado. Deve ser um rótulo válido
+    (consulte <link linkend="Attribute_Name_Rules">Definition Name
+    Rules</link>)</para>
+
+    <para>A opção EXTEND permite várias ações OUTPUT para o mesmo resultado
+    <emphasis>named</emphasis>. A opção OVERWRITE é uma alternativa a EXTEND e
+    substitui o resultado nomeado existente. A opção ALL é usada para
+    substituir o CHOOSEN implícito aplicado a queries interativas no programa
+    ECL IDE. Isso especifica o retorno de todos os registros.</para>
+
+    <para>Ao gravar várias ações OUTPUT para o mesmo resultado nomeado,
+    especifique EXTEND ou OVERWRITE. Omitir ambas pode resultar em erro de
+    geração de código ou de tempo de execução.</para>
 
     <para>Exemplo:</para>
 
-    <programlisting>OUTPUT(CHOOSEN(people(firstname[1]='A'),10));
-  // writes the A People to the query builder
+    <programlisting lang="ECL" role="notrunnable">OUTPUT(CHOOSEN(people(firstname[1]='A'),10));
+  // writes the A People to the workunit
 OUTPUT(CHOOSEN(people(firstname[1]='A'),10),ALL);
-  // writes all the A People to the query builder
+  // writes all the A People to the workunit
 OUTPUT(CHOOSEN(people(firstname[1]='A'),10),NAMED('fred'));
   // writes the A People to the fred named output
   
@@ -1593,6 +1607,9 @@ OUTPUT(DATASET([{100, 'Failed'}],errMsgRec),NAMED('ErrorResult'),EXTEND);
 
 //Something else creates the dataset
 OUTPUT(makeErrMsg(101, 'Failed again'),NAMED('ErrorResult'),EXTEND);
+
+//replace any existing named result instead of appending.
+OUTPUT(makeErrMsg(103, 'Replacement message'),NAMED('ErrorResult'),OVERWRITE);
   
 //output and dataset handled elsewhere.
 rptErrMsg(102, 'And again');
@@ -1614,18 +1631,24 @@ rptErrMsg(102, 'And again');
     NAMED<indexterm>
         <primary>NAMED</primary>
       </indexterm>(</emphasis><emphasis> name </emphasis><emphasis
-    role="bold">) ] )</emphasis></para>
+    role="bold">) [,OVERWRITE<indexterm>
+        <primary>OVERWRITE</primary>
+      </indexterm>] ] )</emphasis></para>
 
-    <para>Esta forma é usada para permitir o envio da
-    <emphasis>expressão</emphasis> escalar, especialmente dentro das ações
-    <indexterm>
-        <primary>SEQUENTIAL</primary>
-      </indexterm> e PARALLEL.</para>
+    <para>Esta forma é usada para permitir saída de
+    <emphasis>expression</emphasis> escalar, especialmente dentro de ações
+    SEQUENTIAL e PARALLEL<indexterm>
+        <primary>PARALLEL action</primary>
+      </indexterm>.</para>
+
+    <para>Para saída escalar nomeada, OVERWRITE substitui um resultado nomeado
+    existente na workunit.</para>
 
     <para>Exemplo:</para>
 
-    <programlisting>OUTPUT(10) // scalar value output
+    <programlisting lang="ECL_Runnable">OUTPUT(10) // scalar value output
 OUTPUT('Fred') // scalar value output
+OUTPUT('replaced',NAMED('ErrorReason'),OVERWRITE) // overwrite named scalar output
 </programlisting>
   </sect2>
 
@@ -1650,9 +1673,13 @@ OUTPUT('Fred') // scalar value output
     resultado grande no programa Compilador de Consultas ECL, porém sem que os
     dados ocupem memória no armazenamento de dados do sistema.</para>
 
+    <para>Para resultados nomeados armazenados diretamente em uma workunit
+    (usando NAMED), consulte <link linkend="Named_OUTPUT">Named OUTPUT</link>
+    para a semântica de EXTEND e OVERWRITE.</para>
+
     <para>Exemplo:</para>
 
-    <programlisting>OUTPUT(Person(per_st='FL'), THOR)
+    <programlisting lang="ECL" role="notrunnable">OUTPUT(Person(per_st='FL'), THOR)
   // output records to screen, but store the 
   // result on disk instead of in the workunit</programlisting>
 

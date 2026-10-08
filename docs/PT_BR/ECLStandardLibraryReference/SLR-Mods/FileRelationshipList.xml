@@ -10,14 +10,7 @@
       <primary>File.FileRelationshipList</primary>
     </indexterm><indexterm>
       <primary>FileRelationshipList</primary>
-    </indexterm>(</emphasis> <emphasis> primary, secondary</emphasis>
-  <emphasis> </emphasis> <emphasis role="bold">[</emphasis> <emphasis>,
-  primaryfields </emphasis> <emphasis role="bold">]</emphasis> <emphasis>
-  </emphasis> <emphasis role="bold">[</emphasis> <emphasis>, secondaryfields
-  </emphasis> <emphasis role="bold">]</emphasis> <emphasis role="bold">
-  [</emphasis> <emphasis>,</emphasis> <emphasis role="bold"> </emphasis>
-  <emphasis>relationship </emphasis> <emphasis
-  role="bold">]);</emphasis></para>
+    </indexterm>(</emphasis> <emphasis>primary, secondary, primflds, secondaryflds, kind</emphasis> <emphasis role="bold">)</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -69,7 +62,7 @@
         </row>
 
         <row>
-          <entry>Return:</entry>
+          <entry>Retorno:</entry>
 
           <entry>FileRelationshipList retorna um dataset no formato
           FsFileRelationshipRecord.</entry>

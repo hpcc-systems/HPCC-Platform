@@ -26,7 +26,7 @@
           <entry><emphasis>location</emphasis></entry>
 
           <entry>Uma string terminada em nulo contendo o endereço IP da
-          máquina remota. Opcional se planename for fornecido.</entry>
+          máquina remota. Opcional se <emphasis>planename</emphasis> for fornecido.</entry>
         </row>
 
         <row>
@@ -41,7 +41,7 @@
 
           <entry>Uma string terminada em nulo contendo o nome do plano de
           dados que contém o arquivo. Opcional se
-          <emphasis>localização</emphasis> for fornecida, mas
+          <emphasis>location</emphasis> for fornecida, mas
           <emphasis>planename</emphasis> é preferível.</entry>
         </row>
       </tbody>
@@ -55,8 +55,10 @@
 
   <para>Exemplo:</para>
 
-  <programlisting format="linespecific">IP   := '10.150.254.6';
-infile := '/c$/training/import/AdvancedECL/people';
-STD.File.DeleteExternalFile(IP,infile);
+  <programlisting format="linespecific">IMPORT STD;
+IP   := '';
+infile := '/var/lib/HPCCSystems/dropzone/originalperson';
+planename := 'mydropzone';
+STD.File.DeleteExternalFile(IP,infile,planename);
 </programlisting>
 </sect1>

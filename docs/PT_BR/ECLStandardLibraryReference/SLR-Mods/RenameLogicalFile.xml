@@ -10,8 +10,7 @@
       <primary>File.RenameLogicalFile</primary>
     </indexterm><indexterm>
       <primary>RenameLogicalFile</primary>
-    </indexterm>(</emphasis> <emphasis> filename, newname </emphasis>
-  <emphasis role="bold">)</emphasis></para>
+    </indexterm>(</emphasis> <emphasis>oldname, newname, allowOverwrite</emphasis> <emphasis role="bold">)</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -21,7 +20,7 @@
 
       <tbody>
         <row>
-          <entry><emphasis>filename</emphasis></entry>
+          <entry><emphasis>oldname</emphasis></entry>
 
           <entry>Uma string terminada por nulo que contém o nome lógico atual do arquivo.</entry>
         </row>
@@ -30,6 +29,14 @@
           <entry><emphasis>newname</emphasis></entry>
 
           <entry>Uma string terminada por nulo que contém o novo nome lógico do arquivo.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>allowOverwrite</emphasis></entry>
+
+          <entry>Opcional. Uma flag booleana TRUE ou FALSE que indica se deve
+          permitir que o arquivo renomeado sobrescreva um arquivo existente
+          com o mesmo nome. Se omitido, o padrão é FALSE.</entry>
         </row>
       </tbody>
     </tgroup>

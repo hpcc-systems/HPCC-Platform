@@ -35,7 +35,7 @@
     em um cluster com nome de escopo padrão "Training", as duas ações OUTPUT a
     seguir resultarão no mesmo escopo:</para>
 
-    <programlisting>OUTPUT(SomeFile,,'SomeDir::SomeFileOut1');
+    <programlisting lang="ECL">OUTPUT(SomeFile,,'SomeDir::SomeFileOut1');
 OUTPUT(SomeFile,,'~Training::SomeDir::SomeFileOut2');</programlisting>
 
     <para>A presença de um til no início do nome do campo define apenas o nome
@@ -67,6 +67,12 @@ FileY := DATASET('~Training::SomeDir::SomeFileOut2',RecStruct,THOR);</programlis
 
     <para>Note a presença do nome do escopo nas duas definições. Isso é
     obrigatório porque os arquivos estão em outro escopo.</para>
+
+    <para>Você deve ser econômico no uso de escopos de arquivo. A profundidade
+    dos escopos de arquivo pode ter um custo de desempenho em sistemas com File
+    Scope Security ativado. Esse custo é ainda maior quando File Scope Scans
+    estão ativadas, porque o sistema precisa fazer uma chamada LDAP externa
+    para verificar todos os níveis no escopo, de cima para baixo.</para>
   </sect2>
 
   <sect2 id="Foreign_Files">

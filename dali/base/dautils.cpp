@@ -3862,13 +3862,13 @@ public:
 
     // Publish the readCost and numDiskReads to the file properties and for owning superfiles
     // N.b. It is ok for fileStatItem.file to be null when calling this function
-    virtual void publish() override
+    virtual void publish(IDistributedFileTransaction *_transaction) override
     {
         FileStatMap ownerStats;
         // Iterate through files, updating the ownerStats
         // (Also, set FileStatItem::file to a valid IDistributedFile, if possible)
 
-        Owned<IDistributedFileTransaction> transaction = createDistributedFileTransaction(udesc);
+        Owned<IDistributedFileTransaction> transaction = _transaction ? LINK(_transaction) : createDistributedFileTransaction(udesc);
         for (auto & [logicalName, curStatItem] : stats)
         {
             curStatItem.file.setown(transaction->lookupFile(logicalName.c_str(), AccessMode::readLogicalMeta));

@@ -4,9 +4,10 @@
 <sect1 id="User_Security_Maint">
   <title>Manutenção de Segurança do Usuário</title>
 
-  <para>Configurar o HPCC System para usar o Active Directory ou segurança
-  baseada em LDAP permite definir permissões para o controle de acesso aos
-  Recursos, Escopo de arquivos e Escopos da Workunit.</para>
+  <para>Configurar uma plataforma HPCC Systems<superscript>®</superscript> para
+  usar segurança baseada em Active Directory ou LDAP permite definir
+  permissões para controlar o acesso a Features, File Scopes e Workunit
+  Scopes.</para>
 
   <sect2 id="User_Security_Intro">
     <title>Introdução</title>
@@ -163,34 +164,23 @@
       topo da página do ECL Watch .</para>
 
       <para><graphic fileref="../../images/ECLWMyAccount.jpg"
-      vendor="eclwatchSS"/> <orderedlist>
+      vendor="eclwatchSS"/> <itemizedlist>
           <listitem>
-            <para>Clique no link <emphasis role="bold">LOGGED IN
-            AS:</emphasis></para>
-
-            <para>A aba User Details será exibida com as informações de sua
-            conta.<graphic fileref="../../images/ECLWUserDetails.jpg"
+            <para>Uma aba <emphasis role="bold">User Details</emphasis> com
+            as informações da sua conta é exibida.<graphic
+            fileref="../../images/ECLWUserDetails.jpg"
             vendor="eclwatchSS"/></para>
           </listitem>
 
           <listitem>
-            <para>Confirme o User Name que você usou para entrar no
-            sistema.</para>
-
-            <para>Observe que são necessários direitos de administrador para
-            gerenciar usuários e permissões.</para>
-
-            <para>Verifique se você está usando uma conta com direitos de
-            administrador se precisar gerenciar usuários ou permissões.</para>
+            <para>Você pode alterar sua senha aqui, se desejar.</para>
           </listitem>
 
           <listitem>
-            <para>Verifique a data de validade da senha ou se a senha está
-            prestes a expirar.</para>
-
-            <para>Se desejar, você também pode mudar sua senha aqui.</para>
+            <para>Você também pode verificar a data de expiração da senha,
+            caso sua senha expire.</para>
           </listitem>
-        </orderedlist></para>
+        </itemizedlist></para>
     </sect3>
 
     <sect3 id="UsingSecurity_SettingAndModifyingUserPermissions" role="brk">
@@ -1542,20 +1532,20 @@
               </row>
 
               <row>
-                <entry/>
+                <entry></entry>
 
-                <entry>Acesso à Modificar ou reenviar workunit do
+                <entry>Acesso para modificar ou reenviar workunits do
                 usuário</entry>
 
-                <entry>Gravação</entry>
+                <entry>Write</entry>
               </row>
 
               <row>
-                <entry/>
+                <entry></entry>
 
-                <entry>Acesso à Remover workunit de outros usuários</entry>
+                <entry>Acesso para excluir workunits de outro usuário</entry>
 
-                <entry>Completo</entry>
+                <entry>Full</entry>
               </row>
 
               <row>
@@ -1567,19 +1557,19 @@
               </row>
 
               <row>
-                <entry/>
+                <entry></entry>
 
-                <entry>Acesso à Criar ou modificar a própria workunit</entry>
+                <entry>Acesso para criar ou modificar a própria workunit</entry>
 
-                <entry>Gravação</entry>
+                <entry>Write</entry>
               </row>
 
               <row>
-                <entry/>
+                <entry></entry>
 
-                <entry>Acesso a remoção da própria workunit</entry>
+                <entry>Acesso à exclusão da própria workunit</entry>
 
-                <entry>Completo</entry>
+                <entry>Full</entry>
               </row>
 
               <row>
@@ -1604,6 +1594,73 @@
                 <entry>Acesso ao controle da fila de workunit do Thor</entry>
 
                 <entry>Completo</entry>
+              </row>
+
+              <row>
+                <entry>CodeSignAccess</entry>
+
+                <entry>Acesso ao serviço de assinatura de código
+                ListUserIDs</entry>
+
+                <entry>Read</entry>
+              </row>
+
+              <row>
+                <entry></entry>
+
+                <entry>Assinar código</entry>
+
+                <entry>Full</entry>
+              </row>
+
+              <row>
+                <entry>WsELKAccess</entry>
+
+                <entry>Acesso ao serviço de integração ELK</entry>
+
+                <entry>Access</entry>
+              </row>
+
+              <row>
+                <entry></entry>
+
+                <entry>Ler a configuração ELK</entry>
+
+                <entry>Read</entry>
+              </row>
+
+              <row>
+                <entry>WsStoreAccess</entry>
+
+                <entry>Acesso ao serviço WsStore</entry>
+
+                <entry>Access</entry>
+              </row>
+
+              <row>
+                <entry></entry>
+
+                <entry>Listar stores, buscar pares key-value, listkeys,
+                listnamespaces</entry>
+
+                <entry>Read</entry>
+              </row>
+
+              <row>
+                <entry></entry>
+
+                <entry>Definir pares key-value</entry>
+
+                <entry>Write</entry>
+              </row>
+
+              <row>
+                <entry></entry>
+
+                <entry>Excluir keys, excluir namespaces, buscar
+                keymetadata</entry>
+
+                <entry>Full</entry>
               </row>
 
               <row>
@@ -1690,6 +1747,15 @@
             entrada de arquivos para o cluster, assim como para fazer o
             despray (consolidar dados dos nós) dos arquivos do cluster para a
             zona de entrada de arquivos.</para>
+          </listitem>
+
+          <listitem>
+            <para>O serviço WsStore usa <emphasis
+            role="bold">namespaces</emphasis> (semelhantes a um banco de
+            dados em um sistema DBMS), <emphasis role="bold">stores</emphasis>
+            (semelhantes a tabelas em um banco de dados) e <emphasis
+            role="bold">pares key-value</emphasis> (semelhantes a
+            campos).</para>
           </listitem>
         </itemizedlist>
       </sect4>
@@ -1955,10 +2021,8 @@
           entrada de arquivos</para>
 
           <para>Isso oferece uma maneira de permitir ou negar acesso ao escopo
-          de arquivo principal.</para>
-
-          <para>Por padrão, apenas os administradores têm acesso a esse
-          escopo.</para>
+          de arquivo principal. Por padrão, apenas os administradores têm
+          acesso a esse escopo.</para>
         </listitem>
 
         <listitem>
@@ -2171,7 +2235,7 @@
 
     <para>Você pode substituir o escopo padrão usando o código ECL:</para>
 
-    <para><programlisting>#workunit(‘scope’,’MyScopeValue’);</programlisting></para>
+    <para><programlisting>#workunit('scope','MyScopeValue');</programlisting></para>
 
     <sect3 id="Securing_Workunit_Scopes">
       <title>Protegendo os escopos dos workunits</title>

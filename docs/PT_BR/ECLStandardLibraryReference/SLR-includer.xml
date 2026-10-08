@@ -17,9 +17,8 @@
 
     <legalnotice>
       <para>Sua opinião e comentários sobre este documento são muito
-      bem-vindos e podem ser enviados por e-mail para <email></email></para>
-
-      <para role="syntax"><email>docfeedback@hpccsystems.com</email></para>
+      bem-vindos e podem ser enviados por e-mail para
+      <email>docfeedback@hpccsystems.com</email></para>
 
       <para>Inclua a frase <emphasis role="bold">Feedback sobre
       documentação</emphasis> na linha de assunto e indique o nome do
@@ -72,10 +71,13 @@
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/DeleteLogicalFile.xml"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLStandardLibraryReference/SLR-Mods/GetNoCommonDefault.xml"
+    <xi:include href="ECLStandardLibraryReference/SLR-Mods/LogicalFileList.xml"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLStandardLibraryReference/SLR-Mods/LogicalFileList.xml"
+    <xi:include href="ECLStandardLibraryReference/SLR-Mods/LogicalFileListFiltered.xml"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+    <xi:include href="ECLStandardLibraryReference/SLR-Mods/GetNoCommonDefault.xml"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/FileExists.xml"
@@ -260,6 +262,12 @@
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/CleanSpaces.xml"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
+    <xi:include href="ECLStandardLibraryReference/SLR-Mods/CommonPrefix.xml"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+    <xi:include href="ECLStandardLibraryReference/SLR-Mods/CommonSuffix.xml"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/CompareAtStrength.xml"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
@@ -382,7 +390,7 @@
   </chapter>
 
   <chapter id="MetaphoneSupport">
-    <title>Suporte a Metaphone</title>
+    <title><emphasis>Suporte a Metaphone</emphasis></title>
 
     <para>Essas funções fornecem uma forma de implementar codificação fonética
     do Double Metaphone ou do Metaphone 3, ou algoritmos de pesquisa difusa,
@@ -525,6 +533,24 @@
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/AppendTZAdjustedTime.xml"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+    <xi:include href="ECLStandardLibraryReference/SLR-Mods/ISODayOfWeekFromDate.xml"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+    <xi:include href="ECLStandardLibraryReference/SLR-Mods/ISOIsLongYear.xml"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+    <xi:include href="ECLStandardLibraryReference/SLR-Mods/ISOWeeksFromDate.xml"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+    <xi:include href="ECLStandardLibraryReference/SLR-Mods/ISORawWeekNumForDate.xml"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+    <xi:include href="ECLStandardLibraryReference/SLR-Mods/ISOWeekNumWeekDayAndYearFromDate.xml"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+    <xi:include href="ECLStandardLibraryReference/SLR-Mods/ISOWeekDate.xml"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
   </chapter>
 
@@ -700,11 +726,17 @@
 
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/WorkunitTimings.xml"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+    <xi:include href="ECLStandardLibraryReference/SLR-Mods/WorkunitStatistics.xml"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
   </chapter>
 
   <xi:include href="ECLStandardLibraryReference/SLR-Mods/BLAS.xml"
               xmlns:xi="http://www.w3.org/2001/XInclude" />
 
   <xi:include href="ECLStandardLibraryReference/SLR-Mods/Math.xml"
+              xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+  <xi:include href="ECLStandardLibraryReference/SLR-Mods/Store.xml"
               xmlns:xi="http://www.w3.org/2001/XInclude" />
 </book>

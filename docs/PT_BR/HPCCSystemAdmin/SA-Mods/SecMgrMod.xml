@@ -48,7 +48,7 @@
 
     <para><emphasis role="bold">Definição de Buildset</emphasis> O plugin
     declara a si mesmo como um componente do Security Manager Plugin do HPCC
-    Systems, assim como declara a localização dos arquivos do plugin e o
+    Systems<superscript>®</superscript>, assim como declara a localização dos arquivos do plugin e o
     esquema de definição de configuração.</para>
 
     <para><emphasis role="bold">EXEMPLO:</emphasis></para>
@@ -167,7 +167,7 @@
 
     <para><emphasis role="bold">EXEMPLO:</emphasis></para>
 
-    <para><programlisting> do_not_generate=mysecuritypluginname</programlisting></para>
+    <para><programlisting>do_not_generate=mysecuritypluginname</programlisting></para>
 
     <para><emphasis role="bold">Regras de Transformação de
     Configuração</emphasis> – (opcional) especificado como modelo xsl, este

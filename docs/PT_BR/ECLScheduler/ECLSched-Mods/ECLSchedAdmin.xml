@@ -52,7 +52,8 @@
               <row>
                 <entry><emphasis>operation</emphasis></entry>
 
-                <entry>Uma das seguintes ações: <programlisting role="tab">     servers
+                <entry>Uma das seguintes ações: <programlisting
+                role="tab">     servers
      add
      remove
      removeall

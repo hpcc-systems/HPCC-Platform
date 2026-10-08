@@ -144,10 +144,26 @@
 
   <para>Exemplo:</para>
 
-  <programlisting>MinVal1 := MIN(Trades,Trades.trd_rate);
-MinVal2 := MIN(4,8,16,2,1); //returns 1
+  <programlisting lang="ECL_Runnable">MinVal2 := MIN(4,8,16,2,1); 
 SetVals := [4,8,16,2,1];
-MinVal3 := MIN(SetVals); //returns 1
+MinVal3 := MIN(SetVals); 
+
+OUTPUT(MinVal2); //returns 1
+OUTPUT(MinVal3); //returns 1
+
+//example using a DATASET
+SalesRecord := RECORD
+  INTEGER OrderNumber;
+  INTEGER SaleAmount;
+END;
+Sales := DATASET([{923,1001},
+                  {924,23},
+                  {925,3000},
+                  {926,3423},
+                  {927,9999},
+                  {931,113}], SalesRecord);
+
+OUTPUT(MIN(Sales,Sales.SaleAmount)); //returns 23
 </programlisting>
 
   <para>Ver também: <link linkend="MAX">MAX</link>, <link

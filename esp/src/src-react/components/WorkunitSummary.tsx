@@ -413,7 +413,7 @@ export const WorkunitSummary: React.FunctionComponent<WorkunitSummaryProps> = ({
                 );
             }
         },
-    ], [wuProtected, canDelete, canDeschedule, canReschedule, canSave, description, jobname, otTraceParent, refresh, refreshSavings, setShowDeleteConfirm, showMessageBar, workunit, wuid]);
+    ], [wuProtected, canDelete, canDeschedule, canReschedule, canSave, description, jobname, refresh, refreshSavings, setShowDeleteConfirm, showMessageBar, workunit, wuid]);
 
     React.useEffect(() => {
         if (dockpanel && layout) {

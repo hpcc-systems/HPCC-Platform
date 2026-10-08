@@ -6,7 +6,7 @@
 
   <para>Existem alguns componentes adicionais que não são servidores do
   sistema nem interfaces do cliente, mas são importantes no suporte a tarefas
-  do HPCC.</para>
+  do HPCC Systems<superscript>®</superscript>.</para>
 
   <sect3 id="DAFilesrv">
     <title>dafilesrv</title>

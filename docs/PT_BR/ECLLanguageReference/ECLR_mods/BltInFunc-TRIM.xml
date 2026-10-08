@@ -8,6 +8,8 @@
       <primary>TRIM</primary>
     </indexterm><indexterm>
       <primary>TRIM Function</primary>
+    </indexterm><indexterm>
+      <primary>WHITESPACE</primary>
     </indexterm>(</emphasis><emphasis>string_value </emphasis><emphasis
   role="bold">[ </emphasis><emphasis>,flag</emphasis><emphasis role="bold"> ]
   )</emphasis></para>
@@ -56,19 +58,27 @@
   <emphasis>string_value </emphasis>com todos os espaços à direita e/ou à
   esquerda removidos.</para>
 
+  <para>A opção <emphasis role="bold">WHITESPACE</emphasis> remove todos os
+  caracteres de espaço em branco. Em STRING, isso inclui espaço (0x20),
+  tabulação horizontal, tabulação vertical, alimentação de linha, avanço de
+  página, retorno de carro (0x09 a 0x0D) e espaço sem quebra (0xA0). Para
+  UNICODE, ela remove todos os caracteres com a propriedade de espaço em
+  branco.</para>
+
   <para>Exemplo:</para>
 
-  <programlisting>  STRING20 SomeStringValue := 'ABC';
-  //contains 17 trailing spaces
-  
-  VARSTRING MyVal := TRIM(SomeStringValue);
-  // MyVal is "ABC" with no trailing spaces
-  
-  STRING20 SomeStringValue := ' ABC DEF';
-  //contains 2 leading and 11 trailing spaces
-  
-  VARSTRING MyVal := TRIM(SomeStringValue,LEFT,RIGHT);
-  // MyVal is "ABC DEF" with no trailing spaces
+  <programlisting lang="ECL_Runnable">STRING20 MyString1 := 'ABC';
+                    //contains 17 trailing spaces
+VARSTRING MyTrimmedVarString1 := TRIM(MyString1);
+                   // MyVal is "ABC" with no trailing spaces
+STRING20 MyString2 := ' ABC DEF';
+                   //contains 2 leading and 11 trailing spaces
+VARSTRING MyTrimmedVarString2 := TRIM(MyString2,LEFT,RIGHT);
+                   // MyVal is "ABC DEF" with no trailing spaces
+OUTPUT(MyString1);
+OUTPUT(MyTrimmedVarString1);
+OUTPUT(MyString2);
+OUTPUT(MyTrimmedVarString2);
 </programlisting>
 
   <para>Ver também: <link linkend="STRING">STRING</link>, <link

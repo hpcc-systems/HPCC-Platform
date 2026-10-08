@@ -56,6 +56,8 @@ ArcTangent := ATAN2(TangentNumerator, TangentDenominator);
 OUTPUT(ArcTangent); //1.190289949682532
 </programlisting></para>
 
+  <para></para>
+
   <para>Ver também: <link linkend="ATAN">ATAN</link>, <link
   linkend="ACOS">ACOS</link>, <link linkend="COS">COS</link>, <link
   linkend="ASIN">ASIN</link>, <link linkend="SIN">SIN</link>, <link

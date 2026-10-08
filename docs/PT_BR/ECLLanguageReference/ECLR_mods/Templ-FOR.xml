@@ -57,7 +57,7 @@
 
   <para>Exemplo:</para>
 
-  <programlisting>  // This script processes XML and generates ECL COUNT statements
+  <programlisting lang="ECL" role="notrunnable">  // This script processes XML and generates ECL COUNT statements
   // which run against the datasets and filters specified in the XML.
   XMLstuff :=
    '&lt;section&gt;'+

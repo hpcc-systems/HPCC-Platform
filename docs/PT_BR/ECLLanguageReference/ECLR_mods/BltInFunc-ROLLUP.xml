@@ -192,7 +192,7 @@
   o próximo registro no <emphasis>recordset</emphasis>, como descrito neste
   exemplo:</para>
 
-  <programlisting>ds := DATASET([{1,10},{1,20},{1,30},{3,40},{4,50}], 
+  <programlisting lang="ECL" role="notrunnable">ds := DATASET([{1,10},{1,20},{1,30},{3,40},{4,50}], 
               {UNSIGNED r, UNSIGNED n});
 d t(ds L, ds R) := TRANSFORM
   SELF.r := L.r + R.r;
@@ -242,7 +242,7 @@ ROLLUP(ds, LEFT.r = RIGHT.r,t(LEFT, RIGHT));
 
     <para>Exemplo:</para>
 
-    <programlisting>//a crosstab table of last names and the number of times they occur
+    <programlisting lang="ECL" role="notrunnable">//a crosstab table of last names and the number of times they occur
 MyRec := RECORD
   Person.per_last_name;
   INTEGER4 PersonCount := 1;
@@ -274,7 +274,7 @@ XtabOut := ROLLUP(SortedTable,
 
     <para>Exemplo:</para>
 
-    <programlisting>rec := {STRING1 str1,STRING1 str2,STRING1 str3};
+    <programlisting lang="ECL_Runnable">rec := {STRING1 str1,STRING1 str2,STRING1 str3};
 ds := DATASET([{'a', 'b', 'c'},{'a', 'b', 'c'},
                {'a', 'c', 'c'},{'a', 'c', 'd'}], rec);
 rec tr(rec L, rec R) := TRANSFORM
@@ -301,6 +301,13 @@ r6 := ROLLUP(ds, tr(LEFT, RIGHT), str1 + str2);
 r7 := ROLLUP(ds, tr(LEFT, RIGHT), Cat(str1,str2));
   //equivalent to Cat(LEFT.str1,LEFT.str2) =
   // Cat(RIGHT.str1,RIGHT.str2 )
+OUTPUT(r1);
+OUTPUT(r2);
+OUTPUT(r3);
+OUTPUT(r4);
+OUTPUT(r5);
+OUTPUT(r6);
+OUTPUT(r7);
 </programlisting>
   </sect2>
 
@@ -318,7 +325,7 @@ r7 := ROLLUP(ds, tr(LEFT, RIGHT), Cat(str1,str2));
 
     <para>Exemplo:</para>
 
-    <programlisting>inrec := RECORD
+    <programlisting lang="ECL_Runnable">inrec := RECORD
   UNSIGNED6 did;
 END;
 
@@ -387,6 +394,7 @@ finalRec doRollup(outRec l, DATASET(outRec) allRows) :=
 END;
 
 results := ROLLUP(combined, GROUP, doRollup(LEFT,ROWS(LEFT)));
+OUTPUT(results);
 </programlisting>
 
     <para>Ver também: <link linkend="TRANSFORM_Structure">Estrutura

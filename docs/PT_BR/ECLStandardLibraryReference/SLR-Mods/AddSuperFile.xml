@@ -10,11 +10,7 @@
       <primary>File.AddSuperFile</primary>
     </indexterm><indexterm>
       <primary>AddSuperFile</primary>
-    </indexterm>(</emphasis> <emphasis> superfile, subfile </emphasis>
-  <emphasis role="bold">[</emphasis> <emphasis>, atpos </emphasis> <emphasis
-  role="bold">] [</emphasis> <emphasis>, addcontents </emphasis> <emphasis
-  role="bold">] [</emphasis> <emphasis>,strict </emphasis> <emphasis
-  role="bold">])</emphasis></para>
+    </indexterm>(</emphasis> <emphasis>superName, subName, atPos, addContents, strict</emphasis> <emphasis role="bold">)</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -71,7 +67,7 @@
         </row>
 
         <row>
-          <entry>Return:<emphasis> </emphasis></entry>
+          <entry>Retorno:<emphasis> </emphasis></entry>
 
           <entry>Nulo</entry>
         </row>

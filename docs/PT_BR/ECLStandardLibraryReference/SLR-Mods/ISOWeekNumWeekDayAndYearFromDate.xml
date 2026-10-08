@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="ISOWeekNumWeekDayAndYearFromDate">
+  <title>ISOWeekNumWeekDayAndYearFromDate</title>
+
+  <para><emphasis
+  role="bold">STD.Date.ISOWeekNumWeekDayAndYearFromDate<indexterm>
+      <primary>STD.Date.ISOWeekNumWeekDayAndYearFromDate</primary>
+    </indexterm><indexterm>
+      <primary>ISOWeekNumWeekDayAndYearFromDate</primary>
+    </indexterm>(</emphasis> <emphasis>d</emphasis> <emphasis role="bold">)</emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt"/>
+
+      <colspec/>
+
+      <tbody>
+        <row>
+          <entry><emphasis>d</emphasis></entry>
+
+          <entry>Um valor de data no formato Date_t.</entry>
+        </row>
+
+        <row>
+          <entry>Retorno:</entry>
+
+          <entry>ISOWeekNumWeekDayAndYearFromDate retorna um módulo com
+          <emphasis>weekNumber</emphasis> (1 a 53), <emphasis>year</emphasis>
+          (o ano de numeração de semanas ISO) e <emphasis>weekDay</emphasis>
+          (1 a 7, em que 1 = segunda-feira).</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>A função <emphasis role="bold">ISOWeekNumWeekDayAndYearFromDate</emphasis>
+  retorna um módulo contendo o número da semana ISO, o ano de numeração de
+  semanas ISO e o dia da semana ISO para a data informada. Esta é uma
+  implementação ISO-8601 do cálculo de números de semanas ("week dates").</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting format="linespecific" lang="ECL_Runnable">IMPORT STD;
+D := 20210101;
+W := STD.Date.ISOWeekNumWeekDayAndYearFromDate(D);
+      // W.weekNumber, W.year, W.weekDay for January 1, 2021
+OUTPUT(W);</programlisting>
+
+  <para/>
+</sect1>

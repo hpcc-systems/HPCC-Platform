@@ -2,12 +2,12 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="Type_Casting">
-  <title>Conversão de Conversão<indexterm>
+  <title>Type Casting<indexterm>
       <primary>Type Casting</primary>
     </indexterm></title>
 
   <sect2 id="Explicit_Casting">
-    <title>Conversão Explicita<indexterm>
+    <title>Explicit Casting<indexterm>
         <primary>Explicit Casting</primary>
       </indexterm></title>
 
@@ -15,8 +15,8 @@
     tipo para outro em expressões. Para isso, basta colocar o tipo de valor
     pretendido entre parênteses. Isso cria um operador de conversão.<indexterm>
         <primary>casting operator</primary>
-      </indexterm> Em seguida, coloque o operador de conversão imediatamente à
-    esquerda da expressão a ser convertida.</para>
+      </indexterm> Then place that casting operator immediately to the left of
+    the expression to cast.</para>
 
     <para>Os dados serão convertidos do formato original para o novo formato
     (para manter o mesmo padrão de bits, consulte a função incorporada
@@ -33,7 +33,7 @@ MyValue := (INTEGER) MAP(MyString = '1' =&gt; MyString, '0');
 MySet := (SET OF INTEGER1) [1,2,3,4,5,6,7,8,9,10];
           //casts from a SET OF INTEGER8 (the default) to SET OF INTEGER1
 
-UTPUT(MyBoolean);
+OUTPUT(MyBoolean);
 OUTPUT(MyString);
 OUTPUT(MyValue);
 OUTPUT(MySet);
@@ -41,7 +41,7 @@ OUTPUT(MySet);
   </sect2>
 
   <sect2 id="Implicit_Casting">
-    <title>Conversão Implícita<indexterm>
+    <title>Implicit Casting<indexterm>
         <primary>Implicit Casting</primary>
       </indexterm></title>
 
@@ -77,8 +77,71 @@ OUTPUT(MySet);
     comum deve ser acessível às conversões implícitas padrão.</para>
   </sect2>
 
+  <sect2 id="Signed_Unsigned_Integer_Mixing">
+    <title>Signed and Unsigned Integer Mixing<indexterm>
+        <primary>Signed and Unsigned Integer Mixing</primary>
+      </indexterm></title>
+
+    <para>Quando uma expressão mistura valores inteiros SIGNED e UNSIGNED, ECL
+    determina um tipo base comum para a subexpressão. Esse tipo comum é sempre
+    <emphasis role="bold">SIGNED</emphasis>. Isso significa que um cast
+    explícito para um tipo UNSIGNED pode ser desfeito silenciosamente quando o
+    outro operando na mesma expressão é SIGNED.</para>
+
+    <para>Literais inteiros sem qualificador (como <emphasis>100</emphasis>) são
+    tratados como SIGNED. Portanto, uma expressão no formato
+    <emphasis>(UNSIGNED8)value % 100</emphasis> é avaliada como
+    <emphasis>(SIGNED) % (SIGNED)</emphasis>, e o resultado é SIGNED — mesmo
+    que um operando tenha sido convertido explicitamente para UNSIGNED8.</para>
+
+    <para>Para garantir aritmética unsigned, cada operando na subexpressão deve
+    ser convertido explicitamente para um tipo UNSIGNED.</para>
+
+    <programlisting lang="ECL_Runnable">ExampleRec := RECORD
+    INTEGER8    signed_hash64_value;
+    UNSIGNED8   unsigned_hash64_value;
+    INTEGER2    implicit_casting_result;
+    INTEGER2    explicit_casting_result;
+END;
+
+ExampleRec MakeExampleRec(UNSIGNED1 c) := TRANSFORM
+    h := HASH64(c);
+    SELF.signed_hash64_value    := h;
+    SELF.unsigned_hash64_value  := (UNSIGNED8)h;
+    // bare 100 is SIGNED, so (UNSIGNED8)h % 100 resolves as (SIGNED) % (SIGNED)
+    SELF.implicit_casting_result := (UNSIGNED8)h % 100;
+    // both operands explicitly UNSIGNED: result stays UNSIGNED
+    SELF.explicit_casting_result := (UNSIGNED8)h % (UNSIGNED1)100;
+END;
+
+ds := DATASET(10, MakeExampleRec(COUNTER));
+OUTPUT(ds);
+//*********************************************************************************************
+/*
+Results:
+ signed_hash64_value    unsigned_hash64_value   implicit_casting_result explicit_casting_result
+ ----------------------------------------------------------------------------------------------
+-2056600594528442646    16390143479181108970            -46                     70
+ 2171580671610491919     2171580671610491919            19                      19
+ 6399761937749426484     6399761937749426484            84                      84
+-7818800869821190567    10627943203888361049            -67                     49
+-3590619603682256002    14856124470027295614            -2                      14
+  637561662456678563      637561662456678563            63                      63
+ 4865742928595613128     4865742928595613128            28                      28
+ 9093924194734547693     9093924194734547693            93                      93
+-5124638612836069358    13322105460873482258            -58                     58
+ -896457346697134793    17550286727012416823            -93                     23
+*/</programlisting>
+
+    <para>A coluna <emphasis>implicit_casting_result</emphasis> produz valores
+    negativos nas linhas em que HASH64 retornou um inteiro signed negativo,
+    porque o cast explícito para UNSIGNED8 é sobreposto pela promoção
+    implícita. A coluna <emphasis>explicit_casting_result</emphasis> sempre
+    produz um valor não negativo porque ambos os operandos são unsigned.</para>
+  </sect2>
+
   <sect2 id="Type_Transfer">
-    <title>Transferência de Tipo<indexterm>
+    <title>Type Transfer<indexterm>
         <primary>Type Transfer</primary>
       </indexterm></title>
 
@@ -97,21 +160,21 @@ OUTPUT(MyVal);
   </sect2>
 
   <sect2 id="Casting_Rules">
-    <title>Regras de Conversão<indexterm>
+    <title>Casting Rules<indexterm>
         <primary>Casting Rules</primary>
       </indexterm></title>
 
     <informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="3">
-        <colspec colwidth="90pt"/>
+        <colspec colwidth="90pt" />
 
-        <colspec colwidth="95.00pt"/>
+        <colspec colwidth="95.00pt" />
 
-        <colspec/>
+        <colspec />
 
         <tbody>
           <row>
-            <entry><emphasis role="bold">De</emphasis></entry>
+            <entry><emphasis role="bold">From</emphasis></entry>
 
             <entry><emphasis role="bold">Para</emphasis></entry>
 

@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="ISOWeekDate">
+  <title>ISOWeekDate</title>
+
+  <para><emphasis role="bold">STD.Date.ISOWeekDate<indexterm>
+      <primary>STD.Date.ISOWeekDate</primary>
+    </indexterm><indexterm>
+      <primary>ISOWeekDate</primary>
+    </indexterm>(</emphasis> <emphasis>d, extended</emphasis> <emphasis role="bold">)</emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt"/>
+
+      <colspec/>
+
+      <tbody>
+        <row>
+          <entry><emphasis>d</emphasis></entry>
+
+          <entry>Um valor de data no formato Date_t.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>extended</emphasis></entry>
+
+          <entry>BOOLEAN opcional. Se TRUE, retorna a data da semana ISO na
+          forma estendida (por exemplo, 2018-W23-7). Se FALSE (padrão),
+          retorna a forma compacta (por exemplo, 2018W237).</entry>
+        </row>
+
+        <row>
+          <entry>Retorno:</entry>
+
+          <entry>ISOWeekDate retorna uma STRING que representa a data da
+          semana ISO-8601 para a data informada.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>A função <emphasis role="bold">ISOWeekDate</emphasis> retorna a data
+  da semana ISO-8601 para a data informada, na forma estendida ou compacta.
+  Esta é uma implementação ISO-8601 do cálculo de números de semanas ("week
+  dates").</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting format="linespecific" lang="ECL_Runnable">IMPORT STD;
+D := 20211231;
+WeekDate := STD.Date.ISOWeekDate(D, TRUE);
+      // WeekDate is "2021-W52-5" for December 31, 2021
+OUTPUT(WeekDate);</programlisting>
+
+  <para/>
+</sect1>

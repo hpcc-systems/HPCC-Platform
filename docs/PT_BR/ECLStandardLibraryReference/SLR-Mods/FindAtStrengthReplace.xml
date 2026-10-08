@@ -10,9 +10,7 @@
       <primary>Uni.LocaleFindAtStrengthReplace</primary>
     </indexterm><indexterm>
       <primary>LocaleFindAtStrengthReplace</primary>
-    </indexterm>(</emphasis> <emphasis>source, target,</emphasis> <emphasis>
-  replacement, locale, strength </emphasis> <emphasis
-  role="bold">)</emphasis></para>
+    </indexterm>(</emphasis> <emphasis>src, sought, replacement, locale_name, strength</emphasis> <emphasis role="bold">)</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -22,13 +20,13 @@
 
       <tbody>
         <row>
-          <entry><emphasis>source</emphasis></entry>
+          <entry><emphasis>src</emphasis></entry>
 
           <entry>Uma string contendo os dados para pesquisar.</entry>
         </row>
 
         <row>
-          <entry><emphasis>target </emphasis></entry>
+          <entry><emphasis>sought </emphasis></entry>
 
           <entry>Uma string que contém a substring a ser pesquisada.</entry>
         </row>
@@ -40,7 +38,7 @@
         </row>
 
         <row>
-          <entry><emphasis>locale</emphasis></entry>
+          <entry><emphasis>locale_name</emphasis></entry>
 
           <entry>Uma string terminada por nulo que contém o código de idioma e
           país a ser usado para determinar a ordem correta de classificação e

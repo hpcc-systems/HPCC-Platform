@@ -9,22 +9,22 @@
         <primary>EVALUATE</primary>
       </indexterm> action</title>
 
-    <para><emphasis>[</emphasis><emphasis>attrname</emphasis> :=<emphasis
-    role="bold"> ] EVALUATE<indexterm>
+    <para><emphasis role="bold">[</emphasis><emphasis>attrname</emphasis> :=<emphasis role="bold"> ] EVALUATE<indexterm>
         <primary>EVALUATE action</primary>
-      </indexterm>(</emphasis><emphasis>expression</emphasis><emphasis
-    role="bold">) ;</emphasis></para>
+      </indexterm>(</emphasis><emphasis>expression</emphasis><emphasis role="bold">) ;</emphasis></para>
 
-    <para><emphasis>[</emphasis><emphasis>attrname</emphasis> :=<emphasis
-    role="bold"> ] EVALUATE(</emphasis><emphasis>module </emphasis><emphasis
-    role="bold">[</emphasis><emphasis>, defname </emphasis><emphasis
-    role="bold"> ] ) ;</emphasis></para>
+    <para><emphasis role="bold">[</emphasis><emphasis>attrname</emphasis> :=<emphasis role="bold"> ] EVALUATE(</emphasis><emphasis>module </emphasis><emphasis role="bold">[</emphasis><emphasis>, defname
+    </emphasis><emphasis role="bold"> ] ) ;</emphasis></para>
+
+    <para><emphasis role="bold">[</emphasis><emphasis>attrname</emphasis>
+    :=<emphasis role="bold"> ] EVALUATE(</emphasis><emphasis>engine
+    </emphasis><emphasis>, defname </emphasis><emphasis role="bold"> ] ) ;</emphasis></para>
 
     <para><informaltable colsep="1" frame="all" rowsep="1">
         <tgroup cols="2">
-          <colspec colwidth="80.60pt"/>
+          <colspec colwidth="80.60pt" />
 
-          <colspec/>
+          <colspec />
 
           <tbody>
             <row>
@@ -48,11 +48,18 @@
             </row>
 
             <row>
+              <entry><emphasis>engine</emphasis></entry>
+
+              <entry>O engine no qual avaliar. As opções válidas são
+              <emphasis role="bold">ECLAGENT</emphasis> (para hThor) ou o
+              nome de uma fila Thor.</entry>
+            </row>
+          <row>
               <entry><emphasis>defname</emphasis></entry>
 
               <entry>Opcional. O nome de uma definição específica dentro do
-              <emphasis>módulo</emphasis> a ser avaliado. Se omitido, todas as
-              definições no <emphasis>módulo</emphasis> serão
+              <emphasis>module</emphasis> a ser avaliado. Se omitido, todas as
+              definições no <emphasis>module</emphasis> serão
               avaliadas.</entry>
             </row>
           </tbody>
@@ -70,9 +77,15 @@
     <emphasis>módulo</emphasis> . Se um <emphasis>defname</emphasis> for
     especificado, apenas essa definição será avaliada.</para>
 
-    <para>Exemplo:</para>
+    <para>A terceira forma da ação <emphasis role="bold">EVALUATE</emphasis>
+    avalia a expressão no engine especificado. Essa opção é desabilitada por
+    padrão; para habilitá-la, use:</para>
 
-    <para>Exemplo da Form 1:</para>
+    <programlisting>#OPTION('enableClusterHopping', TRUE);</programlisting>
+
+    <para>Exemplos:</para>
+
+    <para>Exemplo da forma 1:</para>
 
     <programlisting lang="ECL">myService := SERVICE
   UNSIGNED4 doSomething(STRING text);
@@ -85,7 +98,7 @@ APPLY(ds, EVALUATE(doSomething(ds.text)));
  // dataset, ignoring the returned values from the function
 </programlisting>
 
-    <para>Form 2 example:</para>
+    <para>Exemplo da forma 2:</para>
 
     <programlisting lang="ECL_Runnable">M := MODULE
   EXPORT a := OUTPUT(10);
@@ -103,23 +116,55 @@ EVALUATE(M2);
 //  Result_2: Hello
 //  Result_3: Richard</programlisting>
 
-    <para>See Also: <link linkend="APPLY">APPLY</link>, <link
-    linkend="SERVICE_Structure">SERVICE Structure</link>,</para>
+    <para>Exemplo da forma 3:</para>
+
+    <programlisting>#OPTION('enableClusterHopping', TRUE);
+
+MyLayout := RECORD
+    UNSIGNED4   id;
+    STRING20    n;
+END;
+
+ds1 := DATASET([{100,'Fred'},
+                 {101,'Wilms'},
+                 {102,'Barney'},
+                 {103,'Betty'},
+                 {104,'Dino'}], MyLayout);
+
+ds2 := DATASET([{100,'Miami'},
+                 {101,'Hollywood'},
+                 {102,'Miami'},
+                 {103,'Fort Lauderdale'},
+                 {104,'Hialeah'}], MyLayout);       
+
+JoinData(DATASET(MyLayout) d1, DATASET(MyLayout) d2) := JOIN
+        (d1,d2,LEFT.id = RIGHT.id,TRANSFORM
+        ({UNSIGNED4 id,
+          STRING20  n1,
+          STRING20  n2},
+         SELF.id := LEFT.id,
+         SELF.n1 := LEFT.n,
+         SELF.n2 := RIGHT.n));
+
+OUTPUT(EVALUATE('mythor1', JoinData(ds1, ds2)), NAMED('mythor1'));
+OUTPUT(EVALUATE('mythor2', JoinData(ds1, ds2)), NAMED('mythor2'));
+OUTPUT(EVALUATE('ECLAGENT', JoinData(ds1, ds2)), NAMED('ecl_agent'));</programlisting>
+
+    <para>Ver também: <link linkend="APPLY">APPLY</link>, <link linkend="SERVICE_Structure">SERVICE Structure</link>,</para>
   </sect2>
 
   <sect2 id="EVALUATE_function">
-    <title>Função EVALUATE</title>
+    <title>EVALUATE function</title>
 
     <para><emphasis role="bold">EVALUATE(</emphasis><indexterm>
         <primary>EVALUATE function</primary>
-      </indexterm><emphasis>onerecord, value</emphasis><emphasis
-    role="bold">)</emphasis></para>
+      </indexterm><emphasis>onerecord, value</emphasis><emphasis role="bold">)</emphasis></para>
 
     <para><informaltable colsep="1" frame="all" rowsep="1">
         <tgroup cols="2">
-          <colspec colwidth="79.15pt"/>
+          <colspec colwidth="79.15pt" />
 
-          <colspec colwidth="309.65pt"/>
+          <colspec colwidth="309.65pt" />
 
           <tbody>
             <row>
@@ -137,7 +182,7 @@ EVALUATE(M2);
             </row>
 
             <row>
-              <entry>Return:</entry>
+              <entry>Retorno:</entry>
 
               <entry>EVALUATE retorna um único valor.</entry>
             </row>
@@ -159,7 +204,7 @@ EVALUATE(M2);
   </sect2>
 
   <sect2 id="Accessing_Field-level_Data_in_a_Specific_Record">
-    <title>Acessando dados em nível de campo em um Registro Específico</title>
+    <title>Accessing Field-level Data in a Specific Record</title>
 
     <para>Para acessar os dados de nível de campo em um registro específico,
     os recursos de indexação do conjunto de registro deve ser usado para
@@ -199,6 +244,6 @@ OUTPUT(Person,{lastname,firstname,Highest_HC});
     // because Trades is a Child of Person
 </programlisting>
 
-    <para>See Also: <link linkend="SORT">SORT</link></para>
+    <para>Ver também: <link linkend="SORT">SORT</link></para>
   </sect2>
 </sect1>

@@ -19,7 +19,7 @@
   </bookinfo>
 
   <chapter id="The_ECL_Ide">
-    <title><emphasis role="bold">O ECL IDE</emphasis></title>
+    <title>O ECL IDE</title>
 
     <sect1 id="ECL_IDE_Introduction" role="nobrk">
       <title>Introdução</title>
@@ -96,7 +96,7 @@
       </sect2>
 
       <sect2 id="Configuration_Files">
-        <title><emphasis>Arquivos de Configuração</emphasis></title>
+        <title>Arquivos de Configuração</title>
 
         <para>O ECL IDE usa arquivos de configuração (. CFG) para armazenar as
         informações dos ambientes aos quais se conectará. Crie vários arquivos
@@ -195,6 +195,11 @@
               <para>Selecione a aba <emphasis role="bold">Compile</emphasis>
               .</para>
 
+              <para>Os detalhes do compilador são especificados
+              automaticamente. Se quiser substituir os padrões, marque a caixa
+              de seleção <emphasis role="bold">Override Automatic Compiler
+              Selection</emphasis>.</para>
+
               <para><emphasis role="bold">Nota:</emphasis> Você pode ter
               várias versões do compilador e das ferramentas do cliente
               instaladas. Isso permite que você tenha várias configurações em
@@ -203,18 +208,18 @@
               role="bold">Override Automatic Compiler Selection</emphasis> e
               especifique o Complier que deseja usar.</para>
 
-              <para>Para o Compiler, geralmente é melhor deixar o sistema
-              selecionar a melhor correspondência para você. Você pode ver os
-              compiladores disponíveis na lista suspensa <emphasis
-              role="bold">Best Compiler Match</emphasis>.</para>
+              <para>Para o <emphasis role="bold">Compiler</emphasis>,
+              geralmente é melhor deixar o sistema selecionar a melhor
+              correspondência para você. Você pode ver os compiladores
+              disponíveis na lista suspensa <emphasis role="bold">Best
+              Compiler Match</emphasis>.</para>
 
               <para>Use o botão <emphasis role="bold">Scan</emphasis> para
               atualizar a lista de compiladores disponíveis. Use o botão
               <emphasis role="bold">Match</emphasis> para encontrar a melhor
               correspondência.</para>
 
-              <para><graphic
-              fileref="../../images/CT03a.jpg"/><parameter/></para>
+              <para><graphic fileref="../../images/CT03a.jpg"/></para>
             </listitem>
 
             <listitem>
@@ -396,6 +401,15 @@
                   <entry>Marque essa caixa se preferir que as janelas
                   secundárias sejam abertas maximizadas na estrutura da
                   aplicação.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold"><emphasis role="bold"><emphasis
+                  role="bold">Show Whitespace
+                  Characters</emphasis></emphasis></emphasis></entry>
+
+                  <entry>Marque essa caixa para exibir caracteres de espaço em
+                  branco no editor.</entry>
                 </row>
 
                 <row>
@@ -602,8 +616,7 @@
 
               <tbody>
                 <row>
-                  <entry><emphasis role="bold"><emphasis
-                  role="bold">Compiler</emphasis></emphasis></entry>
+                  <entry><emphasis role="bold">Compiler</emphasis></entry>
 
                   <entry>Especifica o caminho completo e o nome executável do
                   compilador.</entry>
@@ -646,6 +659,20 @@
 
                   <entry>As setas ao lado da pasta ECL permitem que você suba
                   ou desça pastas na exibição no espaço de trabalho</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Add</emphasis></entry>
+
+                  <entry>Pressione o botão Add para procurar e selecionar
+                  pastas a serem adicionadas como pastas ECL</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Delete</emphasis></entry>
+
+                  <entry>Pressione o botão Delete para remover as pastas ECL
+                  selecionadas</entry>
                 </row>
 
                 <row>
@@ -702,14 +729,6 @@
                 </row>
 
                 <row>
-                  <entry><emphasis role="bold">Graph Search Includes
-                  Tooltips</emphasis></entry>
-
-                  <entry>Marque essa caixa para garantir que tooltips (dicas
-                  de ferramentas) também sejam incluídas em sua busca.</entry>
-                </row>
-
-                <row>
                   <entry><emphasis role="bold">Ignore Whitespace on
                   Compare</emphasis></entry>
 
@@ -744,16 +763,27 @@
                 </row>
 
                 <row>
-                  <entry><emphasis role="bold">ECL Watch Graph
-                  Control</emphasis></entry>
+                  <entry><emphasis role="bold">WU Persist
+                  Limit</emphasis></entry>
 
-                  <entry>Embora o controle de visualizador grafo seja
-                  incorporado ao ECL IDE, o ECL Watch exige que esse controle
-                  seja instalado para que possa exibir os grafos corretamente.
-                  A versão instalada atualmente é identificada e o número de
-                  versão da nova versão é mostrado. Você só deve ajustar essa
-                  configuração se for orientado a fazer isso pelo suporte ao
-                  cliente.</entry>
+                  <entry>O número máximo de dias durante os quais as WUs podem
+                  persistir.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Disable Update Checking
+                  </emphasis></entry>
+
+                  <entry>Marque essa caixa para desabilitar a verificação de
+                  atualizações disponíveis.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Disable Meta Processing
+                  </emphasis></entry>
+
+                  <entry>Marque essa caixa para desabilitar o processamento de
+                  metadados.</entry>
                 </row>
               </tbody>
             </tgroup>
@@ -762,7 +792,7 @@
       </sect2>
 
       <sect2 id="Login" role="brk">
-        <title><emphasis>Login</emphasis></title>
+        <title>Login</title>
 
         <para>Ao iniciar o ECL IDE, a janela Login é exibida. <itemizedlist>
             <listitem>
@@ -1353,7 +1383,7 @@
       </sect2>
 
       <sect2 id="Orb_Menu">
-        <title><emphasis>Menu Orb</emphasis></title>
+        <title>Menu Orb</title>
 
         <sect3 id="CT_ECLIDE_OrbMenu">
           <title>Menu Orb</title>
@@ -1384,12 +1414,10 @@
                   <entry><emphasis role="bold">Open</emphasis></entry>
 
                   <entry>Oferece acesso aos seguintes submenus:
-                  <programlisting role="tab"><emphasis role="bold">Open Builder:</emphasis> opens a saved query (.ECL file) into a new ECL Builder window.
-CTRL-O
-<emphasis role="bold">Open Attribute:</emphasis> opens a dialog to name the attribute to open.
-Enter the fully qualified attribute name, then press the <emphasis role="bold">OK </emphasis>button.
+                  <programlisting role="tab"><emphasis role="bold">Open Builder:</emphasis> Opens a saved query (.ECL file) in a new ECL Builder window. CTRL+O
 <emphasis role="bold">Open Workunit:</emphasis> opens a dialog to name the Workunit to open. 
-Enter the Workunit ID (WUID), then press the <emphasis role="bold">OK</emphasis> button.</programlisting></entry>
+                      Enter the Workunit ID (WUID), then press the <emphasis
+                        role="bold">OK</emphasis> button.</programlisting></entry>
                 </row>
 
                 <row>
@@ -1409,13 +1437,20 @@ Enter the Workunit ID (WUID), then press the <emphasis role="bold">OK</emphasis>
                 </row>
 
                 <row>
+                  <entry><emphasis role="bold">New
+                  Workspace</emphasis></entry>
+
+                  <entry>Abre uma nova área de trabalho em branco.</entry>
+                </row>
+
+                <row>
                   <entry><emphasis role="bold">Print</emphasis></entry>
 
                   <entry>Oferece acesso aos seguintes submenus do menu Print:
                   <programlisting role="tab"><emphasis role="bold">Print <emphasis
-                          role="bold">Setup</emphasis>:</emphasis> abre uma caixa de diálogo de configuração da página onde você pode 
-definir margens, tamanho do papel, orientação etc.
-<emphasis role="bold">Print:</emphasis> imprime o conteúdo da janela ativa. CTRL-P
+                          role="bold">Setup</emphasis>:</emphasis> opens a page setup dialog where you can set margins,
+                      paper size, and orientation, etc.
+<emphasis role="bold">Print:</emphasis> prints the contents of the active window. CTRL+P
 </programlisting></entry>
                 </row>
 
@@ -1462,7 +1497,7 @@ definir margens, tamanho do papel, orientação etc.
       </sect2>
 
       <sect2 id="Ribbon_Tabs">
-        <title><emphasis>Painéis</emphasis></title>
+        <title>Painéis</title>
 
         <para/>
 
@@ -1755,6 +1790,15 @@ definir margens, tamanho do papel, orientação etc.
                   <entry>Selecione para definir uma largura de guia entre 1 e
                   16.</entry>
                 </row>
+
+                <row>
+                  <entry/>
+
+                  <entry><programlisting role="tab"><emphasis role="bold">   Toggle Whitespace Chars</emphasis></programlisting></entry>
+
+                  <entry>Alterna entre exibir ou não caracteres de espaço em
+                  branco.</entry>
+                </row>
               </tbody>
             </tgroup>
           </informaltable>
@@ -1782,6 +1826,15 @@ definir margens, tamanho do papel, orientação etc.
 
                   <entry>Encontra o texto específico na janela atualmente
                   ativa. CTRL+F</entry>
+                </row>
+
+                <row>
+                  <entry><graphic fileref="../../images/CT34.png"/></entry>
+
+                  <entry><emphasis role="bold">Find Next</emphasis></entry>
+
+                  <entry>Localiza a próxima instância do mesmo texto
+                  específico na janela atualmente ativa. F3</entry>
                 </row>
 
                 <row>
@@ -1969,11 +2022,11 @@ definir margens, tamanho do papel, orientação etc.
 
                   <entry>Press the lower half of the Bookmarks icon to access
                   the submenu:<programlisting role="tab"> <emphasis
-                        role="bold"> Open </emphasis>- Abre o marcador selecionado.
-<emphasis role="bold">  Save</emphasis> - Salava o marcador atual.
-  <emphasis role="bold">Load</emphasis> - Carrega o último marcador salvo.
-  <emphasis role="bold">Load Merge</emphasis> - Mescla o último marcador salva com o atual.
-  <emphasis role="bold">Delete</emphasis> - Exclui o marcador selecionado.
+                        role="bold"> Open </emphasis>- Opens the selected bookmark.
+<emphasis role="bold">  Save</emphasis> - Saves the current bookmarks.
+  <emphasis role="bold">Load</emphasis> - Loads the last saved bookmarks.
+  <emphasis role="bold">Load Merge</emphasis> - Merges the last saved bookmarks with the current bookmarks.
+  <emphasis role="bold">Delete</emphasis> - Deletes the selected bookmark.
 </programlisting></entry>
                 </row>
 
@@ -2217,8 +2270,6 @@ definir margens, tamanho do papel, orientação etc.
             <tgroup cols="2">
               <colspec align="left" colwidth="122.40pt"/>
 
-              <colspec colwidth="333.00pt"/>
-
               <tbody>
                 <row>
                   <entry><emphasis role="bold">Download
@@ -2243,19 +2294,18 @@ definir margens, tamanho do papel, orientação etc.
       </sect2>
 
       <sect2 id="CT_ECLIDE_Pop-Up_Menus">
-        <title><emphasis>Menus Pop-ups</emphasis></title>
+        <title>Menus Pop-ups</title>
 
         <sect3 id="CT_ECLIDE_WorkUnitPopUpMenu_">
           <title>Menu Workunit</title>
 
-          <para>Clique com o botão direito em qualquer workunit para exibir um
-          menu pop-up que contém:</para>
+          <para>Clique com o botão direito em qualquer workunit no painel
+          <emphasis role="bold">Workunits</emphasis> para exibir um menu
+          pop-up que contém:</para>
 
           <informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
               <colspec align="left" colwidth="122.40pt"/>
-
-              <colspec/>
 
               <tbody>
                 <row>
@@ -2397,8 +2447,6 @@ definir margens, tamanho do papel, orientação etc.
             <tgroup cols="2">
               <colspec align="left" colwidth="130.40pt"/>
 
-              <colspec/>
-
               <tbody>
                 <row>
                   <entry><emphasis role="bold">Open in Builder
@@ -2447,16 +2495,8 @@ definir margens, tamanho do papel, orientação etc.
                 </row>
 
                 <row>
-                  <entry><emphasis role="bold"><emphasis role="bold">Insert
-                  Root Module</emphasis></emphasis></entry>
-
-                  <entry>Adiciona uma nova pasta no nível mais alto da árvore
-                  de repositório</entry>
-                </row>
-
-                <row>
                   <entry><emphasis role="bold">Insert
-                  Module</emphasis></entry>
+                  Folder</emphasis></entry>
 
                   <entry>Adiciona uma nova pasta "aninhada" na pasta
                   atualmente selecionada</entry>
@@ -2464,62 +2504,87 @@ definir margens, tamanho do papel, orientação etc.
 
                 <row>
                   <entry><emphasis role="bold">Rename
-                  Module</emphasis></entry>
+                  Folder</emphasis></entry>
 
-                  <entry>Renomeia a pasta selecionada.</entry>
+                  <entry>Renomeia a pasta selecionada</entry>
                 </row>
 
                 <row>
                   <entry><emphasis role="bold">Delete
-                  Module</emphasis></entry>
+                  Folder</emphasis></entry>
 
-                  <entry>Apaga a pasta selecionada.</entry>
+                  <entry>Apaga a pasta selecionada</entry>
                 </row>
 
                 <row>
-                  <entry><emphasis role="bold">Insert
-                  Attribute</emphasis></entry>
+                  <entry><emphasis role="bold">Insert File</emphasis></entry>
 
                   <entry>Adiciona um novo arquivo ECL na pasta
-                  selecionada.</entry>
+                  selecionada</entry>
                 </row>
 
                 <row>
                   <entry><emphasis role="bold"><emphasis role="bold">Rename
-                  Attribute</emphasis></emphasis></entry>
+                  File</emphasis></emphasis></entry>
 
                   <entry>Renomeia o arquivo ECL selecionado</entry>
                 </row>
 
                 <row>
+                  <entry><emphasis role="bold"><emphasis role="bold">Change
+                  Type</emphasis></emphasis></entry>
+
+                  <entry>Exibe um submenu de tipos de arquivo disponíveis que
+                  você pode escolher para alterar</entry>
+                </row>
+
+                <row>
                   <entry><emphasis role="bold"><emphasis role="bold">Copy
-                  Attribute</emphasis></emphasis></entry>
+                  File</emphasis></emphasis></entry>
 
                   <entry>Permite que você copie o arquivo ECL selecionado para
-                  que possa ser colado em uma pasta diferente.</entry>
+                  que possa ser colado em uma pasta diferente</entry>
                 </row>
 
                 <row>
                   <entry><emphasis role="bold"><emphasis role="bold">Move
-                  Attribute</emphasis></emphasis></entry>
+                  File</emphasis></emphasis></entry>
 
                   <entry>Move o arquivo ECL selecionado para a pasta
-                  especificada.</entry>
+                  especificada</entry>
                 </row>
 
                 <row>
                   <entry><emphasis role="bold"><emphasis role="bold">Delete
-                  Attribute</emphasis></emphasis></entry>
+                  File</emphasis></emphasis></entry>
 
                   <entry>Move o arquivo ECL selecionado para a pasta Lixeira
-                  em sua área de trabalho.</entry>
+                  em sua área de trabalho. Você também pode pressionar a tecla
+                  <emphasis role="bold">Delete</emphasis> para acessar essa
+                  funcionalidade</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold"><emphasis role="bold">Create
+                  Mod File</emphasis></emphasis></entry>
+
+                  <entry>Combina os arquivos ECL selecionados em um arquivo
+                  MOD</entry>
                 </row>
 
                 <row>
                   <entry><emphasis role="bold"><emphasis
                   role="bold">Refresh</emphasis></emphasis></entry>
 
-                  <entry>Atualiza a exibição de pastas de repositório.</entry>
+                  <entry>Atualiza a exibição de pastas de repositório</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold"><emphasis role="bold">Collapse
+                  All </emphasis></emphasis></entry>
+
+                  <entry>Recolhe todos os arquivos e pastas de repositório
+                  abertos</entry>
                 </row>
               </tbody>
             </tgroup>
@@ -2535,8 +2600,6 @@ definir margens, tamanho do papel, orientação etc.
           <informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
               <colspec align="left" colwidth="130.40pt"/>
-
-              <colspec/>
 
               <tbody>
                 <row>
@@ -2738,6 +2801,14 @@ definir margens, tamanho do papel, orientação etc.
                 </row>
 
                 <row>
+                  <entry><emphasis role="bold"><emphasis role="bold">Locate
+                  Workunit in Explorer</emphasis></emphasis></entry>
+
+                  <entry>Abre uma janela do Explorador de Arquivos no local do
+                  arquivo da workunit.</entry>
+                </row>
+
+                <row>
                   <entry><emphasis role="bold"><emphasis role="bold">Close
                   Workunit</emphasis></emphasis></entry>
 
@@ -2749,6 +2820,13 @@ definir margens, tamanho do papel, orientação etc.
                   Workunit</emphasis></emphasis></entry>
 
                   <entry>Exclui a workunit atual</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold"><emphasis role="bold">Close All
+                  Workunits</emphasis></emphasis></entry>
+
+                  <entry>Fecha todas as workunits abertas</entry>
                 </row>
               </tbody>
             </tgroup>
@@ -3178,7 +3256,7 @@ ENDMACRO;
       </sect2>
 
       <sect2 id="ECL_Builder_Window" role="brk">
-        <title><emphasis>Janela do compilador ECL</emphasis></title>
+        <title>Janela do compilador ECL</title>
 
         <para>Essa janela permite que você edite, compile e execute Consultas
         ECL. Ela também mostra resultados e informações de workunit para cada
@@ -3204,12 +3282,6 @@ ENDMACRO;
             executada posteriormente.</para>
           </listitem>
 
-          <listitem>
-            <para><emphasis role="bold">Debug</emphasis> Depurar envia o
-            código ECL hThor ou Roxie para o compilador e abre uma janela do
-            depurador. Veja a seção <link linkend="ECL_Debugger">ECL
-            Debugger</link> para obter mais informações.</para>
-          </listitem>
         </itemizedlist>
 
         <para>O botão <emphasis role="bold">More</emphasis> exibe opções
@@ -3322,10 +3394,6 @@ ENDMACRO;
           especificar um tempo limite que cancelará a tarefa caso seja
           excedido.</para>
 
-          <para>O botão <emphasis role="bold">Debug </emphasis>invoca o
-          navegador que possibilita navegar pelo ECL para monitorar o
-          progresso e identificar problemas.</para>
-
           <para>O botão <emphasis role="bold">Archive </emphasis> serve para
           fins de depuração e arquiva todo o ECL (incluindo suas dependências)
           na workunit para exame sem executar o código.</para>
@@ -3334,14 +3402,11 @@ ENDMACRO;
           </emphasis> permite ativar a verificação aprimorada de
           sintaxe.</para>
 
-          <para>A caixa de texto <emphasis role="bold">Debug </emphasis>
-          permite que você forneça opções de depuração (com nossa assistência)
-          para ajudar nossos desenvolvedores a solucionar problemas.</para>
         </sect3>
       </sect2>
 
       <sect2 id="Editing" role="brk">
-        <title><emphasis>Editando</emphasis></title>
+        <title>Editando</title>
 
         <para>A janela do Compilador também oferece suporte para edição de
         arquivos ECL.</para>
@@ -3354,6 +3419,160 @@ ENDMACRO;
         <para>Há também um menu pop-up, acionado com o botão direito do mouse,
         que possui todas as opções encontradas no menu <emphasis
         role="bold">Edit</emphasis> .</para>
+
+        <sect3 id="IDE_Support_For_Other_Languages">
+          <title>Suporte a outros idiomas</title>
+
+          <para>Além de oferecer suporte nativo a arquivos ECL, o ECL IDE
+          também oferece suporte para trabalhar com outras linguagens. O IDE
+          diferencia tipos de arquivo por cor, de modo que tipos de arquivo
+          diferentes sejam exibidos em cores diferentes. O IDE também colore
+          as palavras-chave nas linguagens compatíveis. A colorização é
+          configurada por padrão, mas pode ser personalizada. Outras
+          linguagens compatíveis com o IDE</para>
+
+          <para><informaltable colsep="1" frame="all" rowsep="1">
+              <tgroup cols="2">
+                <colspec align="left" colwidth="122.40pt"/>
+
+                <tbody>
+                  <row>
+                    <entry><emphasis role="bold">Language</emphasis></entry>
+
+                    <entry><emphasis
+                    role="bold">Functionality</emphasis></entry>
+                  </row>
+
+                  <row>
+                    <entry>ECL</entry>
+
+                    <entry><itemizedlist>
+                        <listitem>
+                          <para>Ícone do repositório colorido para identificar
+                          o tipo de arquivo</para>
+                        </listitem>
+
+                        <listitem>
+                          <para>Realce de sintaxe</para>
+                        </listitem>
+
+                        <listitem>
+                          <para>Verificação de sintaxe</para>
+                        </listitem>
+
+                        <listitem>
+                          <para>Submit Selected</para>
+                        </listitem>
+
+                        <listitem>
+                          <para>Compile</para>
+                        </listitem>
+                      </itemizedlist></entry>
+                  </row>
+
+                  <row>
+                    <entry>ESDL</entry>
+
+                    <entry><itemizedlist>
+                        <listitem>
+                          <para>Ícone do repositório colorido para identificar
+                          o tipo de arquivo</para>
+                        </listitem>
+
+                        <listitem>
+                          <para>Realce de sintaxe</para>
+                        </listitem>
+
+                        <listitem>
+                          <para>Verificação de sintaxe</para>
+                        </listitem>
+
+                        <listitem>
+                          <para>Gera ECL</para>
+                        </listitem>
+
+                        <listitem>
+                          <para>Publish</para>
+                        </listitem>
+                      </itemizedlist></entry>
+                  </row>
+
+                  <row>
+                    <entry>KEL</entry>
+
+                    <entry><itemizedlist>
+                        <listitem>
+                          <para>Ícone do repositório colorido para identificar
+                          o tipo de arquivo</para>
+                        </listitem>
+
+                        <listitem>
+                          <para>Realce de sintaxe</para>
+                        </listitem>
+
+                        <listitem>
+                          <para>Verificação de sintaxe</para>
+                        </listitem>
+
+                        <listitem>
+                          <para>Gera arquivos ECL e DUD</para>
+                        </listitem>
+
+                        <listitem>
+                          <para>Submit</para>
+                        </listitem>
+                      </itemizedlist></entry>
+                  </row>
+
+                  <row>
+                    <entry>SPC (SALT)</entry>
+
+                    <entry><itemizedlist>
+                        <listitem>
+                          <para>Ícone do repositório colorido para identificar
+                          o tipo de arquivo</para>
+                        </listitem>
+
+                        <listitem>
+                          <para>Realce de sintaxe</para>
+                        </listitem>
+
+                        <listitem>
+                          <para>Verificação de sintaxe</para>
+                        </listitem>
+
+                        <listitem>
+                          <para>Gera ECL</para>
+                        </listitem>
+
+                        <listitem>
+                          <para>Submit</para>
+                        </listitem>
+                      </itemizedlist></entry>
+                  </row>
+
+                  <row>
+                    <entry>DUD</entry>
+
+                    <entry><itemizedlist>
+                        <listitem>
+                          <para>Ícone do repositório colorido para identificar
+                          o tipo de arquivo</para>
+                        </listitem>
+
+                        <listitem>
+                          <para>Realce de sintaxe</para>
+                        </listitem>
+
+                        <listitem>
+                          <para>Verificação de sintaxe</para>
+                        </listitem>
+                      </itemizedlist></entry>
+                  </row>
+                </tbody>
+              </tgroup>
+            </informaltable></para>
+        </sect3>
       </sect2>
 
       <sect2>
@@ -3399,7 +3618,7 @@ ENDMACRO;
       </sect2>
 
       <sect2 id="Results_Viewer">
-        <title><emphasis>Visualizador de Resultados</emphasis></title>
+        <title>Visualizador de Resultados</title>
 
         <para>Cada resultado é exibido em uma guia de resultados na aba da
         workunit.</para>
@@ -3501,7 +3720,7 @@ ENDMACRO;
       </sect2>
 
       <sect2 id="Graph_Viewer" role="brk">
-        <title><emphasis>Visualizar grafos</emphasis></title>
+        <title>Visualizar grafos</title>
 
         <para>Um grafo de execução de workunit é exibido na guia Graph.</para>
 
@@ -3535,7 +3754,7 @@ ENDMACRO;
       </sect2>
 
       <sect2 id="ECLWatch_View" role="brk">
-        <title><emphasis>ECL Watch View </emphasis></title>
+        <title>ECL Watch View </title>
 
         <para>A visão da página Workunit Details de uma workunit é exibida na
         guia ECL Watch.</para>

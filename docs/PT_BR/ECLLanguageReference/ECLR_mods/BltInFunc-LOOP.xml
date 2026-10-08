@@ -4,57 +4,25 @@
 <sect1 id="LOOP">
   <title>LOOP</title>
 
-  <para><emphasis role="bold">LOOP<indexterm>
+  <para role="syntax"><emphasis role="bold">LOOP<indexterm>
       <primary>LOOP</primary>
     </indexterm><indexterm>
       <primary>LOOP function</primary>
-    </indexterm>(</emphasis><emphasis> dataset,</emphasis><emphasis
-  role="bold"> </emphasis><emphasis>loopcount, loopbody </emphasis><emphasis
-  role="bold">[, UNORDERED | ORDERED(</emphasis> <emphasis>bool
-  </emphasis><emphasis role="bold">) ] [, STABLE | UNSTABLE ] [, PARALLEL [
-  (</emphasis> <emphasis>numthreads </emphasis><emphasis role="bold">) ] ] [,
-  ALGORITHM(</emphasis> <emphasis>name </emphasis><emphasis role="bold">) ][,
-  FEW] )</emphasis></para>
-
-  <para><emphasis role="bold">LOOP(</emphasis><emphasis>
-  dataset,</emphasis><emphasis role="bold"> </emphasis><emphasis>loopcount,
-  loopfilter, loopbody </emphasis><emphasis role="bold">[, UNORDERED |
-  ORDERED(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [,
-  STABLE | UNSTABLE ] [, PARALLEL [ (</emphasis> <emphasis>numthreads
-  </emphasis><emphasis role="bold">) ] ] [, ALGORITHM(</emphasis>
-  <emphasis>name </emphasis><emphasis role="bold">) ] [,
-  FEW])</emphasis></para>
-
-  <para><emphasis role="bold">LOOP(</emphasis><emphasis>
-  dataset,</emphasis><emphasis role="bold"> </emphasis><emphasis>loopfilter,
+    </indexterm>(</emphasis><emphasis> dataset</emphasis><emphasis
+  role="bold"> </emphasis> <emphasis role="bold"> [ </emphasis> <emphasis>
+  ,loopcount</emphasis> <emphasis role="bold"> ][</emphasis> <emphasis>
+  ,loopfilter</emphasis> <emphasis role="bold"> ][ </emphasis> <emphasis>
+  ,loopcondition</emphasis> <emphasis role="bold"> ] </emphasis> <emphasis>,
   loopbody </emphasis><emphasis role="bold">[, UNORDERED | ORDERED(</emphasis>
   <emphasis>bool </emphasis><emphasis role="bold">) ] [, STABLE | UNSTABLE ]
-  [, PARALLEL [ (</emphasis> <emphasis>numthreads </emphasis><emphasis
-  role="bold">) ] ] [, ALGORITHM(</emphasis> <emphasis>name
-  </emphasis><emphasis role="bold">) ] [, FEW])</emphasis></para>
-
-  <para><emphasis role="bold">LOOP(</emphasis><emphasis> dataset, rowfilter,
-  loopcondition, loopbody </emphasis><emphasis role="bold">[, UNORDERED |
-  ORDERED(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [,
-  STABLE | UNSTABLE ] [, PARALLEL [ (</emphasis> <emphasis>numthreads
-  </emphasis><emphasis role="bold">) ] ] [, ALGORITHM(</emphasis>
-  <emphasis>name </emphasis><emphasis role="bold">) ][, FEW]
-  )</emphasis></para>
-
-  <para><emphasis role="bold">LOOP(</emphasis><emphasis>
-  dataset,</emphasis><emphasis role="bold"> </emphasis><emphasis>loopfilter,
-  loopcondition, loopbody </emphasis><emphasis role="bold">[, UNORDERED |
-  ORDERED(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [,
-  STABLE | UNSTABLE ] [, PARALLEL [ (</emphasis> <emphasis>numthreads
-  </emphasis><emphasis role="bold">) ] ] [, ALGORITHM(</emphasis>
-  <emphasis>name </emphasis><emphasis role="bold">) ][, FEW]
-  )</emphasis></para>
+  [,ALGORITHM(</emphasis> <emphasis>name </emphasis><emphasis role="bold">)
+  ][, FEW] )</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
-      <colspec colwidth="85.50pt"/>
+      <colspec colwidth="85.50pt" />
 
-      <colspec/>
+      <colspec />
 
       <tbody>
         <row>
@@ -68,19 +36,8 @@
               <primary>loopcount</primary>
             </indexterm></emphasis></entry>
 
-          <entry>Uma expressão de número inteiro que especifica o número de
+          <entry>Opcional. Uma expressão inteira que especifica o número de
           vezes a iterar.</entry>
-        </row>
-
-        <row>
-          <entry><emphasis>loopbody<indexterm>
-              <primary>loopbody</primary>
-            </indexterm></emphasis></entry>
-
-          <entry>A operação a ser executada iterativamente. Pode ser PROJECT,
-          JOIN, ou outra operação do tipo. ROWS(LEFT) é sempre usado como o
-          primeiro parâmetro da operação, indicando que o dataset especificado
-          é o parâmetro de entrada.</entry>
         </row>
 
         <row>
@@ -88,12 +45,12 @@
               <primary>loopfilter</primary>
             </indexterm></emphasis></entry>
 
-          <entry>Uma expressão lógica que especifica o conjunto de registros
-          cujo processamento ainda não foi concluído. O conjunto de registros
-          que não atende à condição não será mais processado iterativamente e
-          será colocado no final do conjunto de resultado. Esta avaliação
-          ocorre antes de cada iteração do
-          <emphasis>loopbody</emphasis>.</entry>
+          <entry>Opcional. Uma expressão BOOLEAN que deve ser um filtro de
+          registros para o <emphasis>dataset</emphasis>, identificando os
+          registros cujo processamento ainda não foi concluído. Os registros
+          filtrados estão concluídos e, portanto, são colocados
+          imediatamente no conjunto de resultado final. Essa avaliação ocorre
+          antes de cada iteração de <emphasis>loopbody</emphasis>.</entry>
         </row>
 
         <row>
@@ -101,97 +58,86 @@
               <primary>loopcondition</primary>
             </indexterm></emphasis></entry>
 
-          <entry>Uma expressão lógica que especifica a continuidade da
-          iteração de loopbody enquanto for TRUE.
-          <emphasis>loopbody</emphasis> iteração enquanto TRUE.</entry>
+          <entry>Opcional. Uma expressão BOOLEAN que continua a iteração de
+          <emphasis>loopbody</emphasis> enquanto for TRUE. Pode ser qualquer
+          expressão lógica.</entry>
         </row>
 
         <row>
-          <entry><emphasis>rowfilter</emphasis></entry>
+          <entry><emphasis>loopbody<indexterm>
+              <primary>loopbody</primary>
+            </indexterm></emphasis></entry>
 
-          <entry>Uma expressão lógica que especifica um único registro cujo
-          processamento foi concluído. O registro que atende à condição não
-          será mais processado iterativamente e será colocado no final do
-          conjunto de resultado. Esta avaliação ocorre durante de os iteração
-          do <emphasis>loopbody</emphasis>.</entry>
+          <entry>A operação a ser executada iterativamente. Pode ser um
+          PROJECT, JOIN, uma função ou qualquer outra operação desse tipo.
+          ROWS(LEFT) é sempre usado como parâmetro da operação
+          <emphasis>loopbody</emphasis>, passando a forma atual de
+          <emphasis>dataset</emphasis> como parâmetro de entrada de cada
+          iteração.</entry>
         </row>
 
         <row>
           <entry><emphasis role="bold">UNORDERED</emphasis></entry>
 
-          <entry>Opcional. Especifica que a ordem do registro de resultado não
-          é importante.</entry>
+          <entry>Opcional. Especifica que a ordem dos registros de saída não
+          é significativa.</entry>
         </row>
 
         <row>
           <entry><emphasis role="bold">ORDERED</emphasis></entry>
 
-          <entry>Especifica a importância da ordem do registro de
-          resultado.</entry>
+          <entry>Especifica a significância da ordem dos registros de
+          saída.</entry>
         </row>
 
         <row>
           <entry><emphasis>bool</emphasis></entry>
 
-          <entry>Quando for “False” (Falso), especifica que a ordem do
-          registro de resultado não é importante. Quando for “True’
-          (Verdadeiro), especifica a ordem padrão do registro de
-          resultado.</entry>
+          <entry>Quando False, especifica que a ordem dos registros de saída
+          não é significativa. Quando True, especifica a ordem padrão dos
+          registros de saída.</entry>
         </row>
 
         <row>
           <entry><emphasis role="bold">STABLE</emphasis></entry>
 
-          <entry>Opcional. Especifica que a ordem do registro de entrada é
-          importante.</entry>
+          <entry>Opcional. Especifica que a ordem dos registros de entrada é
+          significativa.</entry>
         </row>
 
         <row>
           <entry><emphasis role="bold">UNSTABLE</emphasis></entry>
 
-          <entry>Opcional. Especifica que a ordem do registro de entrada não é
-          importante.</entry>
-        </row>
-
-        <row>
-          <entry><emphasis role="bold">PARALLEL</emphasis></entry>
-
-          <entry>Opcional. Tenta avaliar essa atividade em paralelo.</entry>
-        </row>
-
-        <row>
-          <entry><emphasis>numthreads</emphasis></entry>
-
-          <entry>Opcional. Tenta avaliar essa atividade usando os
-          <emphasis>numthreads</emphasis> threads</entry>
+          <entry>Opcional. Especifica que a ordem dos registros de entrada não
+          é significativa.</entry>
         </row>
 
         <row>
           <entry><emphasis role="bold">ALGORITHM</emphasis></entry>
 
-          <entry>Opcional. Substitui o algoritmo usado para essa
+          <entry>Opcional. Substitui o algoritmo usado para esta
           atividade.</entry>
         </row>
 
         <row>
           <entry><emphasis>name</emphasis></entry>
 
-          <entry>O algoritmo a ser usado para essa atividade. Precisa fazer
-          parte da lista de algoritmos compatíveis com as opções STABLE e
-          UNSTABLE da função SORT.</entry>
+          <entry>O algoritmo a ser usado para esta atividade. Deve estar na
+          lista de algoritmos compatíveis com as opções STABLE e UNSTABLE da
+          função SORT.</entry>
         </row>
 
         <row>
           <entry><emphasis role="bold">FEW</emphasis></entry>
 
           <entry>Opcional. Indica que as atividades não exigirão uma grande
-          quantidade de memória. Isso pode reduzir o número de subgráficos
-          gerados em um LOOP, que diminui a sobrecarga. Usar apenas em
-          consultas Thor.</entry>
+          quantidade de memória. Isso pode reduzir o número de subgraphs
+          gerados dentro de um LOOP, reduzindo a sobrecarga. Use apenas em
+          queries Thor.</entry>
         </row>
 
         <row>
-          <entry>Return:</entry>
+          <entry>Retorno:</entry>
 
           <entry>LOOP retorna um conjunto de registros.</entry>
         </row>
@@ -199,72 +145,146 @@
     </tgroup>
   </informaltable>
 
-  <para>A função <emphasis role="bold">LOOP </emphasis> executa iterativamente
-  a operação <emphasis>loopbody</emphasis> . O <indexterm>
+  <para>A função <emphasis role="bold">LOOP</emphasis> executa
+  iterativamente a operação <emphasis>loopbody</emphasis>. A palavra-chave
+  COUNTER<indexterm>
       <primary>COUNTER</primary>
-    </indexterm> está implícito e disponível para uso para retornar a iteração
+    </indexterm> fica implicitamente disponível para retornar a iteração
   atual.</para>
 
-  <sect2 id="The_PARALLEL_Option">
-    <title>A opção PARALLEL</title>
+  <para>Os parâmetros <emphasis>loopcount</emphasis>,
+  <emphasis>loopfilter</emphasis> e <emphasis>loopcondition</emphasis> são
+  todos opcionais, mas pelo menos um dos três deve estar presente.</para>
 
-    <para>A opção PARALLEL permite que múltiplas iterações de loop sejam
-    executadas em paralelo.</para>
+  <para>Para cada iteração sucessiva, o <emphasis>dataset</emphasis> de
+  entrada (expresso como ROWS(LEFT) como parâmetro de
+  <emphasis>loopbody</emphasis>) é o conjunto de resultado da iteração
+  anterior após a aplicação de qualquer <emphasis>loopfilter</emphasis>. O
+  resultado final de LOOP retorna todos os registros que concluíram o
+  processamento, independentemente da iteração em que essa conclusão ocorreu
+  (não apenas o conjunto de resultado da iteração final).</para>
 
-    <para>Há uma restrição: ROWS(LEFT) não pode ser usado diretamente em uma
-    subconsulta de <emphasis>loopbody</emphasis>.</para>
+  <para>Exemplo:</para>
 
-    <para>Exemplo:</para>
-
-    <programlisting>namesRec := RECORD  
-STRING20 lname;
-STRING10 fname;
+  <para><programlisting lang="ECL_Runnable">namesRec := RECORD  
+  STRING20 lname;
+  STRING10 fname;
   UNSIGNED2 age := 25;
   UNSIGNED2 ctr := 0;
 END;
-namesTable2 := DATASET([{'Flintstone','Fred',35},
-    {'Flintstone','Wilma',33},
-    {'Jetson','Georgie',10},
-    {'Mr. T','Z-man'}], namesRec);
-loopBody(DATASET(namesRec) ds, unsigned4 c) :=
- PROJECT(ds,
-    TRANSFORM(namesRec,
-    SELF.age := LEFT.age*c;
-    SELF.ctr := COUNTER ;
-    SELF := LEFT));
-//Form 1:
-OUTPUT(LOOP(namesTable2,
-  COUNTER &lt;= 10,
-            PROJECT(ROWS(LEFT),
-     TRANSFORM(namesRec,
-     SELF.age := LEFT.age*2;
-     SELF.ctr := LEFT.ctr + COUNTER ;
-     SELF := LEFT))));
-OUTPUT(LOOP(namesTable2, 4, ROWS(LEFT) &amp; ROWS(LEFT)));
-//Form 2:
-OUTPUT(LOOP(namesTable2,
-  10,
-  LEFT.age * COUNTER &lt;= 200,
-            PROJECT(ROWS(LEFT),
-     TRANSFORM(namesRec,
-     SELF.age := LEFT.age*2;
-     SELF := LEFT))));
-//Form 3:
-OUTPUT(LOOP(namesTable2,
-  LEFT.age &lt; 100,
-  loopBody(ROWS(LEFT), COUNTER)));
-//Form 4:
-OUTPUT(LOOP(namesTable2,
-  SUM(ROWS(LEFT), age) &lt; 1000 * COUNTER,
-            PROJECT(ROWS(LEFT),
-     TRANSFORM(namesRec,
-     SELF.age := LEFT.age*2;
-     SELF := LEFT))));
-//Form 5:
-OUTPUT(LOOP(namesTable2,
-  LEFT.age &lt; 100,
-  EXISTS(ROWS(LEFT)) and SUM(ROWS(LEFT), age) &lt; 1000,
-  loopBody(ROWS(LEFT), COUNTER)));
-</programlisting>
-  </sect2>
+namesTable := DATASET([{'Flintstone','Fred',35},
+                       {'Flintstone','Wilma',43}, 
+                       {'Jetson','Georgie',10},
+                       {'Mr. T','Z-man'}], namesRec);
+BodyFunc(DATASET(namesRec) ds, UNSIGNED4 c) :=
+  PROJECT(ds,
+          TRANSFORM(namesRec,
+                    SELF.age := LEFT.age*c;
+                    SELF.ctr := COUNTER*c ;
+                    SELF := LEFT));
+
+/* Form 1 -- LOOP(ds, loopcount, loopbody) 
+   Processes loopcount times, basically a "for loop" construct.
+
+   This example also demonstrates the two possible scopes of the COUNTER 
+   keyword within a LOOP: 
+   * The COUNTER in the LOOP function (passed to BodyFunc) is the number 
+     of iterations the LOOP has done.
+   * The COUNTER in the TRANSFORM for the PROJECT in the BodyFunc counts 
+     the number of records processed by the current iteration of PROJECT. 
+*/
+Form1 := LOOP(namesTable, 
+              2,                    //iterate 2 times
+              ROWS(LEFT) &amp; BodyFunc(ROWS(LEFT),COUNTER)); //16 rows
+OUTPUT(Form1,NAMED('Form1_example')); 
+
+/* Form 2 -- LOOP(ds, loopfilter, loopbody) 
+   Continues processing while the loopfilter expression is TRUE for any 
+   records in ROWS(LEFT). This is basically a "while loop" construct. The 
+   loopfilter expression is evaluated on the entire set of ROWS(LEFT) 
+   records prior to each iteration. 
+ */
+Form2 := LOOP(namesTable,
+              LEFT.age &lt; 100, //process only recs where TRUE
+              PROJECT(ROWS(LEFT),
+                      TRANSFORM(namesRec,
+                                SELF.age := LEFT.age*2;
+                                SELF     := LEFT)));
+OUTPUT(Form2,NAMED('Form2_example'));
+
+/* Form 3 -- LOOP(ds, loopcondition, loopbody) 
+   Continues processing while the loopcondition expression is TRUE.
+   This is basically a "while loop" construct. The loopcondition expression 
+   is evaluated on the entire set of ROWS(LEFT) records prior to each 
+   iteration. 
+ */
+Form3 := LOOP(namesTable,
+              SUM(ROWS(LEFT), age) &lt; 1000 * COUNTER,
+              PROJECT(ROWS(LEFT),
+                      TRANSFORM(namesRec,
+                                SELF.age := LEFT.age*2;
+                                SELF     := LEFT)));
+OUTPUT(Form3,NAMED('Form3_example'));
+
+/* Form 4 --  LOOP(ds, loopcount, loopfilter, loopbody)
+   Processes loopcount times, with the loopfilter expression
+   defining when each record continues to process through the loopbody 
+   expression. This is basically a "for loop" construct with a filter 
+   specifying which records are processed each iteration.
+ */
+Form4 := LOOP(namesTable,
+              10,
+              LEFT.age &lt; 100,            //process only recs where TRUE
+              BodyFunc(ROWS(LEFT), COUNTER));
+OUTPUT(Form4,NAMED('Form4_example')); 
+
+/* Form 5 -- LOOP(ds, loopcount, loopcondition, loopbody) 
+   Processes loopcount times, with the loopcondition expression
+   defining the set of records that continue to process through the loopbody 
+   expression. This is basically a "for loop" construct with a filter 
+   specifying the record set processed for each iteration.
+
+   This example also demonstrates the two possible scopes of the COUNTER 
+   keyword within a LOOP: 
+   * The COUNTER in the LOOP function's loopfilter expression is the number 
+     of recursive iterations the LOOP has done.
+   * The COUNTER in the TRANSFORM for the PROJECT counts the number of records 
+     processed by the current iteration of PROJECT. 
+*/
+Form5 := LOOP(namesTable,
+              10,                        //iterate 10 times
+              LEFT.age * COUNTER &lt;= 200, //process only recs where TRUE
+              PROJECT(ROWS(LEFT),
+                      TRANSFORM(namesRec,
+                                SELF.age := LEFT.age*2,
+                                SELF.ctr := COUNTER,
+                                SELF := LEFT)));
+OUTPUT(Form5,NAMED('Form5_example')); 
+
+
+/* Form 6 -- LOOP(ds, loopfilter, loopcondition, loopbody)
+   Continues processing while the loopcondition expression is TRUE.
+   Records where the loopfilter expression is TRUE continue processing. 
+   This is basically a "while loop" construct with individual record 
+   processing continuation logic. 
+ */
+Form6 := LOOP(namesTable,
+              LEFT.age &lt; 100,
+              EXISTS(ROWS(LEFT)) and SUM(ROWS(LEFT), age) &lt; 1000,
+              BodyFunc(ROWS(LEFT), COUNTER));
+OUTPUT(Form6,NAMED('Form6_example')); 
+
+/* Form 7 -- LOOP(ds, loopcount, loopfilter, loopcondition, loopbody)
+   Continues processing while the loopcondition expression is TRUE.
+   Records where the loopfilter expression is TRUE continue processing. 
+   This is basically a "while loop" construct with individual record 
+   processing continuation logic. 
+ */
+Form7 := LOOP(namesTable,
+              10,
+              LEFT.age &lt; 100,
+              EXISTS(ROWS(LEFT)) and SUM(ROWS(LEFT), age) &lt; 1000,
+              BodyFunc(ROWS(LEFT), COUNTER));
+OUTPUT(Form7,NAMED('Form7_example'));</programlisting>Ver também: <link
+  linkend="GRAPH">GRAPH</link></para>
 </sect1>

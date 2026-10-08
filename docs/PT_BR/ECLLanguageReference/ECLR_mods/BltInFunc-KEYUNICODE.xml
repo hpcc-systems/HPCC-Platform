@@ -46,7 +46,7 @@
 
   <para>Exemplo:</para>
 
-  <programlisting>//where you might do this:
+  <programlisting lang="ECL">//where you might do this:
 my_record := RECORD
    UNICODE_en_US str;
 END;

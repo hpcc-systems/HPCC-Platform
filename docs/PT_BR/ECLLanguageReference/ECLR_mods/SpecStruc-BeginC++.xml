@@ -452,8 +452,7 @@ STREAMED DATASET(out1Rec) extractResult3(doneRec done) := BEGINC++
    class myStream : public IRowStream, public RtlCInterface
    {
     public:
-        myStream(IEngineRowAllocator * _allocator, unsigned _id) : 
-        allocator(_allocator), id(_id), idx(0) {}
+        myStream(IEngineRowAllocator * _allocator, unsigned _id) : allocator(_allocator), id(_id), idx(0) {}
         RTLIMPLEMENT_IINTERFACE
 
         virtual const void *nextRow()
@@ -467,7 +466,7 @@ STREAMED DATASET(out1Rec) extractResult3(doneRec done) := BEGINC++
         }
         virtual void stop() {}
     private:
-	   Linked&lt;IEngineRowAllocator&gt; allocator;
+        Linked&lt;IEngineRowAllocator&gt; allocator;
         unsigned id;
         unsigned idx;
         
@@ -488,7 +487,8 @@ out3 := NORMALIZE(processed, extractResult3(LEFT), TRANSFORM(RIGHT));
 SEQUENTIAL(OUTPUT(out1),OUTPUT(out2),OUTPUT(out3));
 </programlisting>
 
-    <para>Ver também: Implementação de Serviços Externos, Estrutura
-    EMBED</para>
+    <para>Ver também: <link linkend="External_Service_Implementation">External
+    Service Implementation</link>, <link linkend="EMBED_Structure">EMBED
+    Structure</link></para>
   </sect2>
 </sect1>

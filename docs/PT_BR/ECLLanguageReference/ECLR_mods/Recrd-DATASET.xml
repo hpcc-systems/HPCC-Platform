@@ -951,7 +951,7 @@ books := DATASET('MyFile',rform,XML('library/book'));</programlisting>
 
     <para><emphasis role="bold">Exemplo:</emphasis></para>
 
-    <programlisting lang="ECL">/* a JSON  file called "MyBooks.json" contains this data:
+    <programlisting lang="ECL">/* a JSON  file called "mybooks.json" contains this data:
 [
   {
     "id" : "978-0641723445",
@@ -1050,7 +1050,7 @@ OUTPUT(books);</programlisting>
   STRING15 Fname;
 END;
          
-Ptbl := DATASET('~LR::RTTEMP::TestFile',
+Ptbl := DATASET('~LR::TestFile',
                 PtblRec,
                 PIPE('ProcessFile'));
           // ProcessFile is the input pipe</programlisting>
@@ -1197,7 +1197,7 @@ T2(IDtype idval,FMtype fname,FMtype mname, Ltype lname ) :=
 ds := DATASET([T1(123,'Fred','Jones'),
                T2(456,'John','Q','Public'),
                T1(789,'Susie','Smith')]);
-               
+
 // You can construct a DATASET from a SET.
 SET OF STRING s := ['Jim','Bob','Richard','Tom'];
 DATASET(s,{STRING txt});
@@ -1459,7 +1459,9 @@ r := ROLLUP(fatIn, id, makeChildren(LEFT, RIGHT));</programlisting>
     role="bold">)</emphasis></para>
 
     <para>Esta forma é usada apenas como Tipo de valor para passagem de
-    parâmetros, especificar os tipos de retorno da função ou definir um SET OF
+    parâmetros<indexterm>
+        <primary>Passing a DATASET parameter</primary>
+      </indexterm>, especificar os tipos de retorno da função ou definir um SET OF
     (CONJUNTO DE) datasets. Se GROUPED estiver presente, o parâmetro
     transferido precisa ter sido agrupado através da função GROUP . As
     palavras-chave LINKCOUNTED e STREAMED são usadas principalmente nas
@@ -1582,7 +1584,7 @@ ColorCodes := DATASET([{'Black' ,0 , 'Fred'},
 ColorCodesDCT := DICTIONARY(ColorCodes,{Color,Code});
 
 ds := DATASET(ColorCodesDCT);
-OUTPUT(ds);   </programlisting>
+OUTPUT(ds);         </programlisting>
 
     <para>Ver também: <link linkend="OUTPUT">OUTPUT</link>, <link
     linkend="RECORD_Structure"> Estrutura RECORD</link>, <link

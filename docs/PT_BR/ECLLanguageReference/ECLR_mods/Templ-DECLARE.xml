@@ -6,14 +6,13 @@
 
   <para><emphasis role="bold">#DECLARE<indexterm>
       <primary>#DECLARE</primary>
-    </indexterm>( </emphasis><emphasis>symbol </emphasis><emphasis
-  role="bold">);</emphasis></para>
+    </indexterm>( </emphasis><emphasis>symbol </emphasis><emphasis role="bold">);</emphasis></para>
 
   <para><informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
-        <colspec colwidth="76.70pt"/>
+        <colspec colwidth="76.70pt" />
 
-        <colspec colwidth="276.10pt"/>
+        <colspec colwidth="276.10pt" />
 
         <tbody>
           <row>
@@ -29,14 +28,24 @@
   <emphasis>symbol</emphasis> definido pelo usuário para uso no modelo. O
   <emphasis>symbol</emphasis> é simplesmente criado e não é inicializado para
   nenhum valor específico. Portanto, pode ser destinado a conter dados string
-  ou numéricos.</para>
+  ou numéricos. Isso cria um <emphasis>Template Symbol</emphasis> que pode
+  então ser usado em outras instruções da Template Language (como <link linkend="_SET">#SET</link> e <link linkend="_APPEND">#APPEND</link>).</para>
+
+  <para>Ao contrário de <link linkend="_UNIQUENAME">#UNIQUENAME</link>, que gera
+  automaticamente um nome exclusivo, <emphasis role="bold">#DECLARE</emphasis>
+  apenas declara um template symbol com o nome fornecido e não gera, por si só,
+  um identificador ECL exclusivo. Se esse símbolo for atribuído posteriormente
+  e usado para gerar ECL, o chamador será responsável por evitar colisões de
+  nomes, o que é especialmente importante ao usar <emphasis role="bold">#DECLARE</emphasis>
+  dentro de uma estrutura MACRO que pode ser chamada várias vezes no mesmo
+  escopo.</para>
 
   <para>Exemplo:</para>
 
-  <programlisting>  #DECLARE(MySymbol); //declare a symbol named "MySymbol"
-  #SET(MySymbol,1); //initialize MySymbol to 1
+  <programlisting lang="ECL_Runnable">#DECLARE(MySymbol); //declare a symbol named "MySymbol"
+#SET(MySymbol,11); //initialize MySymbol to 11
+OUTPUT(%'MySymbol'%)
 </programlisting>
 
-  <para>Ver também: <link linkend="_SET">#SET</link>, <link
-  linkend="_APPEND">#APPEND</link></para>
+  <para>Ver também: <link linkend="_SET">#SET</link>, <link linkend="_APPEND">#APPEND</link>, <link linkend="_UNIQUENAME">#UNIQUENAME</link></para>
 </sect1>

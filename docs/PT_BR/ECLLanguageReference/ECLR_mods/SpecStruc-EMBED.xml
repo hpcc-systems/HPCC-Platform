@@ -2,33 +2,33 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="EMBED_Structure">
-  <title>Estrutura EMBED<indexterm>
+  <title>EMBED Structure<indexterm>
       <primary>EMBED Structure</primary>
     </indexterm></title>
 
-  <para><emphasis>resulttype funcname</emphasis> <emphasis
-  role="bold">(</emphasis> <emphasis>parameterlist</emphasis> <emphasis
-  role="bold">) := EMBED(<indexterm>
+  <para><emphasis>resulttype funcname</emphasis> <emphasis role="bold">(</emphasis> <emphasis>parameterlist</emphasis> <emphasis role="bold">) := EMBED(<indexterm>
       <primary>EMBED</primary>
-    </indexterm></emphasis> <emphasis>language</emphasis> <emphasis
-  role="bold">)</emphasis></para>
+    </indexterm></emphasis> <emphasis>language</emphasis> <emphasis role="bold">[:TIME</emphasis> [(<emphasis>label</emphasis>)]<emphasis role="bold">]</emphasis></para>
 
-  <para><emphasis>code</emphasis></para>
+  <para><emphasis> code</emphasis></para>
 
   <para><emphasis role="bold">ENDEMBED<indexterm>
       <primary>ENDEMBED</primary>
     </indexterm>;</emphasis></para>
 
-  <para><emphasis>resulttype funcname</emphasis> <emphasis
-  role="bold">(</emphasis> <emphasis>parameterlist</emphasis> <emphasis
-  role="bold">) := EMBED(</emphasis> <emphasis>language, code</emphasis>
-  <emphasis role="bold">);</emphasis></para>
+  <para><emphasis role="bold" /></para>
+
+  <para><emphasis>resulttype funcname</emphasis> <emphasis role="bold">(</emphasis> <emphasis>parameterlist</emphasis> <emphasis role="bold">) := EMBED(</emphasis> <emphasis>language, code</emphasis>
+  <emphasis role="bold">[: TIME</emphasis>
+  [(<emphasis>label</emphasis>)]<emphasis role="bold">]); </emphasis></para>
+
+  <para><emphasis role="bold" /></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
-      <colspec align="left" colwidth="122.40pt"/>
+      <colspec align="left" colwidth="122.40pt" />
 
-      <colspec/>
+      <colspec />
 
       <tbody>
         <row>
@@ -68,65 +68,79 @@
 
           <entry>A código fonte a ser incorporado.</entry>
         </row>
+      <row>
+          <entry><emphasis role="bold">TIME</emphasis></entry>
+
+          <entry>Rastreia o tempo de uma chamada de função externa ou de código-fonte
+          incorporado e o informa de volta ao usuário como métricas.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>label</emphasis></entry>
+
+          <entry>Opcional. Uma constante de string que contém o nome a associar ao
+          temporizador. Se omitida, o padrão será usado.</entry>
+        </row>
       </tbody>
     </tgroup>
   </informaltable>
 
-  <para>A estrutura <emphasis role="bold">EMBED</emphasis> possibilita a
-  adição de código de <emphasis>linguagem</emphasis> em linha à sua ECL. Essa
-  estrutura é semelhante à estrutura BEGINC++, mas está disponível para
-  qualquer <emphasis>linguagem</emphasis> com um módulo de suporte à linguagem
-  plugável instalado, como R, Javascript e Python. Outros módulos poderão ser
-  fornecidos. Como alternativa, é possível escrever o seu próprio módulo usado
-  os módulos fornecidos como modelos/exemplos/pontos de partida. Essa
-  estrutura pode ser usada para escrever código Javascript, R ou Python, mas
-  não para escrever código Java (use a função IMPORT para código Java).</para>
+  <para>A estrutura <emphasis role="bold">EMBED</emphasis> possibilita adicionar
+  código <emphasis>language</emphasis> inline à sua ECL. Ela é semelhante à
+  estrutura BEGINC++, mas está disponível para qualquer
+  <emphasis>language</emphasis> que tenha um módulo de suporte plugável
+  instalado, como Java e Python. Outras linguagens podem surgir, ou você pode
+  escrever a sua usando os módulos fornecidos como modelos, exemplos ou pontos
+  de partida. Isso não pode ser usado com código Java (use a função IMPORT para
+  código Java).</para>
 
-  <para>Os tipos de parâmetro que podem ser passados e retornados variam em
-  função de <emphasis>linguagem</emphasis>, mas de forma geral os tipos
-  escalares simples (INTEGER, REAL, STRING, UNICODE, BOOLEAN e DATA), bem como
-  os SETs desses tipos escalares, são permitidos desde que exista um tipo de
-  dados adequado na <emphasis>linguagem</emphasis> que possa ser usado para
-  mapear esses tipos escalares.</para>
+  <para>Os tipos de parâmetros que podem ser passados e retornados variam por
+  <emphasis>language</emphasis>, mas, em geral, há suporte aos tipos escalares
+  simples (INTEGER, REAL, STRING, UNICODE, BOOLEAN e DATA) e a SETs desses
+  tipos escalares, desde que exista um tipo de dados apropriado em
+  <emphasis>language</emphasis> para mapeá-los.</para>
 
-  <para>Esse primeiro formato de EMBED é a estrutura que deve ser encerrada
-  com ENDEMBED. Essa estrutura pode conter qualquer código na <emphasis>
-  linguagem</emphasis> permitida.</para>
+  <para>A primeira forma de EMBED é a estrutura que deve terminar com ENDEMBED.
+  Ela pode conter qualquer código na <emphasis>language</emphasis> com suporte.</para>
 
-  <para>O segundo formato de EMBED é uma função autocontida. Os parâmetros de
-  <emphasis>code</emphasis> contêm todo o código a ser executado, o que limita
-  a utilidade a expressões bem simples.</para>
+  <para>A segunda forma de EMBED é uma função autônoma. O parâmetro
+  <emphasis>code</emphasis> contém todo o código a executar, tornando essa
+  forma útil apenas para expressões muito simples.</para>
 
-  <para>Utilizando este form, você pode usar EMBED ao invés de BEGINC++ para
-  incorporar código C++ e especificar opções adicionais (por exemplo,
-  DISTRIBUTED):</para>
+  <para>Você pode usar EMBED em vez de BEGINC++ para incorporar código C++ e
+  especificar opções adicionais (por exemplo, DISTRIBUTED) usando esta forma:</para>
 
   <para><programlisting lang="ECL">myFunction(string name) := EMBED(C++ [: options]) 
   ... text 
 ENDEMBED</programlisting></para>
 
-  <para><emphasis role="bold">ATENÇÃO: Esse recurso pode gerar corrupção de
-  memória e/ou problemas de segurança. Portanto, recomendamos cautela e uma
-  consideração detalhada. Consulte o Suporte Técnico antes de
-  usar.</emphasis></para>
+  <para><emphasis role="bold">AVISO: Este recurso pode criar corrupção de
+  memória e/ou problemas de segurança; portanto, recomenda-se muito cuidado e
+  planejamento -- consulte o Suporte Técnico antes de usar.</emphasis></para>
 
-  <para>Exemplo:</para>
+  <para>Exemplos:</para>
 
   <programlisting lang="ECL">//First form: a structure
 IMPORT Python3 AS Python;  //make Python language available
 
-INTEGER addone(INTEGER p) := EMBED(Python)
+INTEGER addone(INTEGER p) := EMBED(Python :TIME('MyTime'))
 # Python code that returns one more than the value passed to it
 if p &lt; 10:
   return p+1
 else:
   return 0
 ENDEMBED;
+addone(3);
+addone(11);
+</programlisting>
 
-//Second form: a function
-INTEGER addtwo(INTEGER p) := EMBED(Python, 'p+2');   </programlisting>
+  <para />
 
-  <para>Ver também: <link linkend="BEGINCplus_Structure">Estrutura
-  BEGINC++</link>, <link linkend="IMPORT">IMPORT</link>, <link
-  linkend="IMPORT_function">Função IMPORT</link></para>
+  <programlisting>//Second form: a function
+IMPORT Python3 as Python;
+INTEGER addtwo(INTEGER p) := EMBED(Python, 'p+2' : TIME('MyTime'));  
+addtwo(27);</programlisting>
+
+  <para>Ver também: <link linkend="BEGINCplus_Structure">BEGINC++
+  Structure</link>, <link linkend="IMPORT">IMPORT</link>, <link linkend="IMPORT_function">IMPORT function</link></para>
 </sect1>

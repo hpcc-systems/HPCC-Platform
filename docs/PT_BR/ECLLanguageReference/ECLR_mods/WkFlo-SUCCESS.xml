@@ -7,16 +7,15 @@
   <para><emphasis>attribute </emphasis>:= <emphasis>expression
   </emphasis><emphasis role="bold">: SUCCESS<indexterm>
       <primary>SUCCESS</primary>
-    </indexterm>(</emphasis><emphasis>handler</emphasis><emphasis
-  role="bold">) </emphasis><indexterm>
+    </indexterm>(</emphasis><emphasis>handler</emphasis><emphasis role="bold">) [,LABEL(</emphasis><emphasis>text</emphasis><emphasis role="bold">)]</emphasis>; <indexterm>
       <primary>SUCCESS workflow service</primary>
-    </indexterm>;</para>
+    </indexterm></para>
 
   <para><informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
-        <colspec colwidth="79.65pt"/>
+        <colspec colwidth="79.65pt" />
 
-        <colspec colwidth="273.15pt"/>
+        <colspec colwidth="273.15pt" />
 
         <tbody>
           <row>
@@ -37,6 +36,20 @@
             <entry>A ação a ser executada se a expressão for
             bem-sucedida.</entry>
           </row>
+        <row>
+            <entry><emphasis role="bold">LABEL</emphasis></entry>
+
+            <entry>Opcional. Define o <emphasis>Text</emphasis> a exibir para
+            o item de workflow no Graph da workunit. Se omitido, o gerador de
+            código deduzirá um rótulo a partir do identificador que está sendo
+            definido.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>text</emphasis></entry>
+
+            <entry>Uma constante de string que contém o texto a exibir.</entry>
+          </row>
         </tbody>
       </tgroup>
     </informaltable></para>
@@ -44,20 +57,21 @@
   <para>O serviço <emphasis role="bold">SUCCESS </emphasis>executa a o
   atributo handler quando a expressão é bem sucedida. O SUCCESS é executado em
   paralelo com o retorno bem-sucedido do resultado. Esse serviço
-  implicitamente faz com que o <emphasis>atributo</emphasis> seja avaliado em
+  implicitamente faz com que o <emphasis>handler</emphasis> Attribute when the
+  <emphasis>expression</emphasis> succeeds. SUCCESS notionally executes in
+  em paralelo com o retorno bem-sucedido do resultado. Esse serviço implicitamente
+  causes the <emphasis>atributo</emphasis> seja avaliado em
   um escopo global em vez de escopo de função. Disponível apenas se os
   serviços de fluxo de trabalho estiverem ativados (consulte
   #OPTION(workflow)).</para>
 
   <para>Exemplo:</para>
 
-  <programlisting>  SPeople  := SORT(Person,Person.first_name);
-  nUniques := COUNT(DEDUP(sPeople,Person.per_first_name AND
-                   Person.address))
+  <programlisting lang="ECL" role="notrunnable">SPeople  := SORT(Person,Person.first_name);
+nUniques := COUNT(DEDUP(sPeople,Person.per_first_name AND Person.address))
            : SUCCESS(Email.simpleSend(SystemsPersonel,
                     SystemsPersonel.email,'yeah.htm'));
 </programlisting>
 
-  <para>Ver também: <link linkend="FAILURE">FAILURE</link>, <link
-  linkend="RECOVERY">RECOVERY</link></para>
+  <para>Ver também: <link linkend="FAILURE">FAILURE</link>, <link linkend="RECOVERY">RECOVERY</link></para>
 </sect1>

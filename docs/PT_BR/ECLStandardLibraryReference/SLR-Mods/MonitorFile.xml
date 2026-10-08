@@ -10,13 +10,7 @@
       <primary>File.MonitorFile</primary>
     </indexterm><indexterm>
       <primary>MonitorFile</primary>
-    </indexterm>(</emphasis> <emphasis> event, </emphasis> <emphasis
-  role="bold">[</emphasis> <emphasis> ip </emphasis> <emphasis role="bold">] ,
-  </emphasis> <emphasis>filename, </emphasis> <emphasis role="bold">
-  [</emphasis> <emphasis>,subdirs</emphasis> <emphasis role="bold">]
-  [</emphasis> <emphasis>,shotcount</emphasis> <emphasis role="bold">]
-  [</emphasis> <emphasis>,espserverIPport</emphasis> <emphasis role="bold">]
-  )</emphasis> <emphasis/></para>
+    </indexterm>(</emphasis> <emphasis>eventToFire, ip, filename, subdirs, shotCount, espServerIpPort</emphasis> <emphasis role="bold">)</emphasis></para>
 
   <para><emphasis>dfuwuid </emphasis> <emphasis role="bold">:=
   STD.File.fMonitorFile<indexterm>
@@ -25,13 +19,7 @@
       <primary>File.fMonitorFile</primary>
     </indexterm><indexterm>
       <primary>fMonitorFile</primary>
-    </indexterm>(</emphasis> <emphasis> event, </emphasis> <emphasis
-  role="bold">[</emphasis> <emphasis> ip </emphasis> <emphasis role="bold">] ,
-  </emphasis> <emphasis>filename, </emphasis> <emphasis role="bold">
-  [</emphasis> <emphasis>,subdirs</emphasis> <emphasis role="bold">]
-  [</emphasis> <emphasis>,shotcount</emphasis> <emphasis role="bold">]
-  [</emphasis> <emphasis>,espserverIPport</emphasis> <emphasis role="bold">]
-  );</emphasis></para>
+    </indexterm>(</emphasis> <emphasis>eventToFire, ip, filename, subDirs, shotCount, espServerIpPort</emphasis> <emphasis role="bold">)</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -105,7 +93,7 @@
         </row>
 
         <row>
-          <entry>Return:<emphasis> </emphasis></entry>
+          <entry>Retorno:<emphasis> </emphasis></entry>
 
           <entry>fMonitorFile retorna uma string terminada por nulo que contém
           o ID da workunit DFU (DFUWUID).</entry>

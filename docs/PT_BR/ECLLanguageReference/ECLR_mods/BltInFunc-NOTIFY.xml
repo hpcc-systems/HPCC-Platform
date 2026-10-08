@@ -67,7 +67,8 @@
 
     <para>Exemplo:</para>
 
-    <programlisting>doMyService := FUNCTION
+    <programlisting lang="ECL_Runnable">//run this first
+doMyService := FUNCTION
   O := OUTPUT('Did a Service for: ' + 'EVENTNAME=' + EVENTNAME);
   N := NOTIFY(EVENT('MyServiceComplete',
                     '&lt;Event&gt;&lt;returnTo&gt;FRED&lt;/returnTo&gt;&lt;/Event&gt;'),
@@ -75,8 +76,11 @@
   RETURN WHEN(EVENTEXTRA('returnTo'),ORDERED(O,N));
 END;
 OUTPUT(doMyService) : WHEN('MyService');
+</programlisting>
 
-// and a call (in a separate workunit):
+    <para>Então:</para>
+
+    <programlisting lang="ECL_Runnable">// run this in a separate workunit after the first part above completes:
 NOTIFY('MyService',
        '&lt;Event&gt;&lt;returnTo&gt;'+ WORKUNIT + '&lt;/returnTo&gt;&lt;/Event&gt;');
 WAIT('MyServiceComplete');

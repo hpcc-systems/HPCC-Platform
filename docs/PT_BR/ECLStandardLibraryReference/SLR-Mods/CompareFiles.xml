@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="CompareFiles">
@@ -10,12 +10,7 @@
       <primary>File.CompareFiles</primary>
     </indexterm><indexterm>
       <primary>CompareFiles</primary>
-    </indexterm>(</emphasis> <emphasis> file1, file2 </emphasis> <emphasis
-  role="bold">[</emphasis> <emphasis>, logicalonly </emphasis> <emphasis
-  role="bold">]</emphasis> <emphasis> </emphasis> <emphasis
-  role="bold">[</emphasis> <emphasis>, usecrcs </emphasis> <emphasis
-  role="bold">]</emphasis> <emphasis> </emphasis> <emphasis
-  role="bold">)</emphasis></para>
+    </indexterm>(</emphasis> <emphasis>lfn1, lfn2, logical_only, use_crcs</emphasis> <emphasis role="bold">)</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -49,7 +44,7 @@
         </row>
 
         <row>
-          <entry>Return:<emphasis> </emphasis></entry>
+          <entry>Retorno:<emphasis> </emphasis></entry>
 
           <entry>CompareFiles retorna retorna um valor INTEGER4.</entry>
         </row>

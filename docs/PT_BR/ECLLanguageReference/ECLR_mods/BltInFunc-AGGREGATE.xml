@@ -210,8 +210,8 @@
     <para>O <emphasis>mergetransform</emphasis> é gerado para expressões da
     forma:</para>
 
-    <programlisting>  SELF.x := &lt;RIGHT.x &lt;op&gt; f(LEFT) 
-  SELF.x := f(LEFT) &lt;op&gt; RIGHT.x</programlisting>
+    <programlisting lang="ECL">  SELF.x := &lt;RIGHT.x &lt;op&gt; f(LEFT)
+  SELF.x := f(LEFT)  &lt;op&gt; RIGHT.x</programlisting>
 
     <para>onde &lt;op&gt; é: MAX, MIN, SUM, +, &amp;, |, ^, *</para>
   </sect2>

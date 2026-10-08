@@ -261,7 +261,7 @@
 
     <para/>
 
-    <programlisting>  1.  &lt;RoxiePackages&gt;
+    <programlisting> 1.  &lt;RoxiePackages&gt;
  2.   &lt;!-- Begin Queries --&gt;
  3.     &lt;Package id="MyQuery"&gt;
  4.     &lt;Base id="thor::MyData_Key"/&gt;
@@ -309,6 +309,48 @@
   &lt;/Package&gt;
 &lt;/PackageMap&gt;
 </programlisting></para>
+
+    <sect2 id="RefFilesDirectly">
+      <title>Referenciando arquivos diretamente</title>
+
+      <para>Além dos elementos <emphasis role="bold">SuperFile</emphasis>,
+      você pode usar um elemento <emphasis role="bold">File</emphasis> dentro
+      de um elemento <emphasis role="bold">Package</emphasis> para
+      referenciar diretamente arquivos que não fazem parte de superfiles. Isso
+      é útil ao testar implantações com queries simples em que os arquivos de
+      dados não estão organizados como superfiles ou superkeys.</para>
+
+      <para>O elemento <emphasis role="bold">File</emphasis> usa um atributo
+      <emphasis role="bold">value</emphasis> para especificar o nome lógico
+      do arquivo. O elemento <emphasis role="bold">File</emphasis> herda todos
+      os atributos <emphasis role="bold">daliip</emphasis>, <emphasis
+      role="bold">sourceCluster</emphasis> e <emphasis
+      role="bold">remoteStorage</emphasis> do elemento <emphasis
+      role="bold">Package</emphasis> pai.</para>
+
+      <para><emphasis role="bold">Exemplo:</emphasis></para>
+
+      <programlisting>&lt;RoxiePackages&gt;
+  &lt;Package id="MyQuery"&gt;
+    &lt;File value="~thor::mydatafile"/&gt;
+  &lt;/Package&gt;
+&lt;/RoxiePackages&gt;
+</programlisting>
+
+      <para>O exemplo a seguir mostra um package que especifica os atributos
+      <emphasis role="bold">daliip</emphasis> e <emphasis
+      role="bold">sourceCluster</emphasis> no elemento <emphasis
+      role="bold">Package</emphasis> pai. Eles são herdados pelo elemento
+      <emphasis role="bold">File</emphasis> e usados para resolver o arquivo
+      do cluster especificado.</para>
+
+      <programlisting>&lt;RoxiePackages&gt;
+  &lt;Package id="MyQuery" daliip="127.0.0.1" sourceCluster="thor1"&gt;
+    &lt;File value="~thor::mydatafile"/&gt;
+  &lt;/Package&gt;
+&lt;/RoxiePackages&gt;
+</programlisting>
+    </sect2>
   </sect1>
 
   <sect1>
@@ -474,43 +516,103 @@ ecl packagemap activate &lt;target&gt; multipart.pkg
 
     <xi:include href="../../HPCCClientTools/CT_Mods/CT_ECL_CLI.xml"
                 xpointer="xpointer(//*[@id='eclpackageadd'])"
-                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+                xmlns:xi="http://www.w3.org/2001/XInclude">
+      <xi:fallback>
+        <para>
+          <emphasis>eclpackageadd Failed to load</emphasis>
+        </para>
+      </xi:fallback>
+    </xi:include>
 
     <xi:include href="../../HPCCClientTools/CT_Mods/CT_ECL_CLI.xml"
                 xpointer="xpointer(//*[@id='eclpackagedelete'])"
-                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+                xmlns:xi="http://www.w3.org/2001/XInclude">
+      <xi:fallback>
+        <para>
+          <emphasis>eclpackageadd Failed to load</emphasis>
+        </para>
+      </xi:fallback>
+    </xi:include>
 
     <xi:include href="../../HPCCClientTools/CT_Mods/CT_ECL_CLI.xml"
-                xpointer="xpointer(//*[@id='eclpackageactivate'])"
-                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+                xpointer="eclpackageactivate"
+                xmlns:xi="http://www.w3.org/2001/XInclude">
+      <xi:fallback>
+        <para>
+          <emphasis>eclpackagectivate Failed to load</emphasis>
+        </para>
+      </xi:fallback>
+    </xi:include>
 
     <xi:include href="../../HPCCClientTools/CT_Mods/CT_ECL_CLI.xml"
-                xpointer="xpointer(//*[@id='eclpackagedeactivate'])"
-                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+                xpointer="eclpackagedeactivate"
+                xmlns:xi="http://www.w3.org/2001/XInclude">
+      <xi:fallback>
+        <para>
+          <emphasis>eclpackdeactivate Failed to load</emphasis>
+        </para>
+      </xi:fallback>
+    </xi:include>
 
     <xi:include href="../../HPCCClientTools/CT_Mods/CT_ECL_CLI.xml"
-                xpointer="xpointer(//*[@id='eclpackagelist'])"
-                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+                xpointer="eclpackagelist"
+                xmlns:xi="http://www.w3.org/2001/XInclude">
+      <xi:fallback>
+        <para>
+          <emphasis>eclpackagelist Failed to load</emphasis>
+        </para>
+      </xi:fallback>
+    </xi:include>
 
     <xi:include href="../../HPCCClientTools/CT_Mods/CT_ECL_CLI.xml"
-                xpointer="xpointer(//*[@id='eclpackageinfo'])"
-                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+                xpointer="eclpackageinfo"
+                xmlns:xi="http://www.w3.org/2001/XInclude">
+      <xi:fallback>
+        <para>
+          <emphasis>eclpackageInfo Failed to load</emphasis>
+        </para>
+      </xi:fallback>
+    </xi:include>
 
     <xi:include href="../../HPCCClientTools/CT_Mods/CT_ECL_CLI.xml"
-                xpointer="xpointer(//*[@id='eclpackagemapaddpart'])"
-                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+                xpointer="eclpackagemapaddpart"
+                xmlns:xi="http://www.w3.org/2001/XInclude">
+      <xi:fallback>
+        <para>
+          <emphasis>eclpackmapaddpart Failed to load</emphasis>
+        </para>
+      </xi:fallback>
+    </xi:include>
 
     <xi:include href="../../HPCCClientTools/CT_Mods/CT_ECL_CLI.xml"
-                xpointer="xpointer(//*[@id='eclpackagemapgetpart'])"
-                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+                xpointer="eclpackagemapgetpart"
+                xmlns:xi="http://www.w3.org/2001/XInclude">
+      <xi:fallback>
+        <para>
+          <emphasis>eclpackagemapgetpart Failed to load</emphasis>
+        </para>
+      </xi:fallback>
+    </xi:include>
 
     <xi:include href="../../HPCCClientTools/CT_Mods/CT_ECL_CLI.xml"
-                xpointer="xpointer(//*[@id='eclpackagemapremovepart'])"
-                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+                xpointer="eclpackagemapremovepart"
+                xmlns:xi="http://www.w3.org/2001/XInclude">
+      <xi:fallback>
+        <para>
+          <emphasis>eclpackagemapremovepart Failed to load</emphasis>
+        </para>
+      </xi:fallback>
+    </xi:include>
 
     <xi:include href="../../HPCCClientTools/CT_Mods/CT_ECL_CLI.xml"
-                xpointer="xpointer(//*[@id='eclpackagevalidate'])"
-                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+                xpointer="eclpackagevalidate"
+                xmlns:xi="http://www.w3.org/2001/XInclude">
+      <xi:fallback>
+        <para>
+          <emphasis>eclpackagevalidate Failed to load</emphasis>
+        </para>
+      </xi:fallback>
+    </xi:include>
 
     <sect2 role="brk">
       <title>Dicas:</title>

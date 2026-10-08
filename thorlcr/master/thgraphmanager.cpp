@@ -19,6 +19,7 @@
 #include <future>
 #include <string>
 #include <unordered_set>
+#include <atomic>
 
 #include "platform.h"
 #include <math.h>
@@ -1276,15 +1277,16 @@ void setExitCode(int code) { exitCode = code; }
 int queryExitCode() { return exitCode; }
 
 static Owned<IJobQueue> thorQueue; // used for job queueing, and here so abortThor can cancel
-static unsigned aborting = 99;
+static CriticalSection thorQueueCrit{"ThorQueueCrit"}; // guards thorQueue against concurrent clear() in thorMain
+static std::atomic<unsigned> aborting{99};
 void abortThor(IException *e, unsigned errCode, bool abortCurrentJob)
 {
     if (-1 == queryExitCode()) setExitCode(errCode);
     Owned<CJobManager> jM = ((CJobManager *)getJobManager());
     Owned<IThorException> te;
-    if (0 == aborting)
+    unsigned abortState = aborting.load();
+    if ((0 == abortState) && aborting.compare_exchange_strong(abortState, 1))
     {
-        aborting = 1;
         if (errCode != TEC_Clean)
         {
             if (e)
@@ -1300,15 +1302,23 @@ void abortThor(IException *e, unsigned errCode, bool abortCurrentJob)
         DBGLOG("abortThor called");
         if (jM)
             jM->stop();
-        if (thorQueue)
+        Owned<IJobQueue> queue;
         {
-            Owned<IJobQueue> queue = thorQueue.getLink();
-            queue->cancelAcceptConversation();
+            CriticalBlock b(thorQueueCrit);
+            queue.setown(thorQueue.getLink());
         }
+        if (queue)
+            queue->cancelAcceptConversation();
     }
-    if (2 > aborting && abortCurrentJob)
+
+    bool doAbortCurrentJob = false;
+    if (abortCurrentJob)
     {
-        aborting = 2;
+        // Only the thread that transitions the abort state to 2 aborts the current job.
+        doAbortCurrentJob = (aborting.exchange(2) < 2);
+    }
+    if (doAbortCurrentJob)
+    {
         DBGLOG("aborting any current active job");
         if (jM)
         {
@@ -1380,7 +1390,9 @@ void closeThorServerStatus()
 /*
  * Waits on queue(s) for another wuid/graph to run.
  * Return values:
- * -1 = dequeue failed/timedout
+ * -2 = dequeue cancelled/stopped - explicit shutdown/cancel path
+ * -1 = dequeue timed out, or was woken early via interruptDequeueWait() (e.g. a linger period config change);
+ *      either way the caller should just re-evaluate and retry
  *  0 = unrecognised format, or wuid mismatch
  *  1 = success. new graph/wuid received.
  */
@@ -1391,9 +1403,10 @@ static int recvNextGraph(unsigned timeoutMs, StringBuffer &retWfid, StringBuffer
     StringBuffer next;
 
     {
-        Owned<IJobQueueItem> item = thorQueue->dequeuePriority(priority, timeoutMs);
+        bool timedout = false;
+        Owned<IJobQueueItem> item = thorQueue->dequeuePriority(priority, timeoutMs, &timedout);
         if (!item)
-            return -1;
+            return timedout ? -1 : -2;
         next.set(item->queryWUID());
     }
 
@@ -1416,6 +1429,12 @@ static std::vector<CConnectedWorkerDetail> connectedWorkers;
 void setConnectedWorkers(const std::vector<CConnectedWorkerDetail> &workers)
 {
     connectedWorkers = workers;
+}
+
+static std::atomic<bool> saveQueryDllsOpt{true}; // NB: read from the async config-reload callback
+void setSaveQueryDllsOpt(bool _saveQueryDlls)
+{
+    saveQueryDllsOpt.store(_saveQueryDlls);
 }
 
 static unsigned __int64 k8sStartedTs = 0;
@@ -1501,7 +1520,7 @@ void auditThorJobEvent(const char *eventName, const char *wuid, const char *grap
 
 void thorMain(ILogMsgHandler *logHandler)
 {
-    aborting = 0;
+    aborting.store(0);
     unsigned multiThorMemoryThreshold = globals->getPropInt("@multiThorMemoryThreshold")*0x100000;
     try
     {
@@ -1536,21 +1555,64 @@ void thorMain(ILogMsgHandler *logHandler)
                 jobManager->run();
             else
             {
-                unsigned lingerPeriod = globals->getPropInt("@lingerPeriod", defaultThorLingerPeriod)*1000;
-                dbgassertex(lingerPeriod>=1000); // NB: the schema or the default ensure the linger period is non-zero
+                auto queryConfiguredLingerPeriodMs = []() -> unsigned
+                {
+                    Owned<IPropertyTree> config = getComponentConfigSP();
+                    return config->getPropInt("@lingerPeriod", defaultThorLingerPeriod)*1000;
+                };
+                // NB: primed here, so the initial linger period does not depend on the install-time callback firing
+                std::atomic<unsigned> lingerPeriodMs{queryConfiguredLingerPeriodMs()};
+                CConfigUpdateHook configUpdateHook;
+                auto updateLingerPeriod = [&lingerPeriodMs, &queryConfiguredLingerPeriodMs](const IPropertyTree *, const IPropertyTree *)
+                {
+                    // saveQueryDlls controls the QueryInit wire format; keep it in sync with already-started workers.
+                    setExpertOpt("saveQueryDlls", boolToStr(saveQueryDllsOpt.load()));
+
+                    unsigned updatedLingerPeriodMs = queryConfiguredLingerPeriodMs();
+                    unsigned previousLingerPeriodMs = lingerPeriodMs.exchange(updatedLingerPeriodMs);
+                    if (previousLingerPeriodMs && (previousLingerPeriodMs != updatedLingerPeriodMs))
+                        PROGLOG("Updated Thor linger period from %.2f to %.2f seconds", ((float)previousLingerPeriodMs)/1000, ((float)updatedLingerPeriodMs)/1000);
+                    if (previousLingerPeriodMs != updatedLingerPeriodMs)
+                    {
+                        Owned<IJobQueue> queue;
+                        {
+                            CriticalBlock b(thorQueueCrit);
+                            queue.setown(thorQueue.getLink());
+                        }
+                        if (queue)
+                            queue->interruptDequeueWait();
+                    }
+                };
 
                 StringBuffer queueNames;
                 getClusterThorQueueName(queueNames, globals->queryProp("@name"));
                 queueNames.append(',');
                 getClusterThorInternalQueueName(queueNames, globals->queryProp("@name"));
                 PROGLOG("Thor queue names: %s", queueNames.str());
-                thorQueue.setown(createJobQueue(queueNames));
+                // Note: constructed outside thorQueueCrit, since creation can block (SDS connect); avoids stalling abortThor()'s lock acquisition
+                Owned<IJobQueue> newThorQueue = createJobQueue(queueNames);
+                {
+                    CriticalBlock b(thorQueueCrit);
+                    thorQueue.swap(newThorQueue);
+                }
+                // handle abort that may have been signalled to the pre-existing (null/prior) queue whilst this one was being constructed
+                if (aborting.load())
+                    thorQueue->cancelAcceptConversation();
                 thorQueue->connect(false);
 
-                CTimeMon lingerTimer(lingerPeriod);
+                // install after thorQueue is set, to avoid a race between publication and the async config-reload callback
+                configUpdateHook.installOnce(updateLingerPeriod, true);
+
+                CTimeMon lingerTimer(lingerPeriodMs.load(std::memory_order_relaxed));
+                auto refreshLingerTimeout = [&]()
+                {
+                    // Update the linger duration without restarting the idle timer; elapsed idle time still counts.
+                    lingerTimer.timeout = lingerPeriodMs.load(std::memory_order_relaxed);
+                };
 
                 while (true)
                 {
+                    refreshLingerTimeout();
                     unsigned lingerRemaining;
                     if (lingerTimer.timedout(&lingerRemaining))
                         break;
@@ -1559,8 +1621,12 @@ void thorMain(ILogMsgHandler *logHandler)
                     StringBuffer currentWfId, currentWuid, currentGraphName;
                     CCycleTimer waitTimer;
                     unsigned __int64 priority = getTimeStampNowValue();
-                    do
+                    while (true)
                     {
+                        refreshLingerTimeout();
+                        if (lingerTimer.timedout(&lingerRemaining))
+                            break;
+
                         StringBuffer wuid;
                         int ret = recvNextGraph(lingerRemaining, currentWfId, wuid, currentGraphName, priority);
                         if (ret > 0)
@@ -1569,9 +1635,13 @@ void thorMain(ILogMsgHandler *logHandler)
                             break; // success
                         }
                         else if (ret < 0)
-                            break; // timeout/abort
+                        {
+                            if (aborting.load() || (-2 == ret))
+                                break; // explicit shutdown/cancel path (no genuine timeout, so no point re-looping)
+                            continue;
+                        }
                         // else - reject/ignore duff message.
-                    } while (!lingerTimer.timedout(&lingerRemaining));
+                    }
 
                     __uint64 waitTimeNs = waitTimer.elapsedNs();
                     double expenseWait = calcCostNs(thorRate, waitTimeNs);
@@ -1672,11 +1742,17 @@ void thorMain(ILogMsgHandler *logHandler)
                                 }
                             }
                             saveWuidToFile(""); // clear wuid file. Signifies that no wuid is running.
-                            lingerTimer.reset(lingerPeriod);
+                            lingerTimer.reset(lingerPeriodMs.load(std::memory_order_relaxed));
                         }
                     }
                 }
-                thorQueue.clear();
+                // Uninstall config callback before clearing queue; clear() blocks on notifyFuncCS if a callback is in-flight.
+                configUpdateHook.clear();
+                Owned<IJobQueue> queue;
+                {
+                    CriticalBlock b(thorQueueCrit);
+                    queue.setown(thorQueue.getClear());
+                }
             }
         }
         catch (IException *e)

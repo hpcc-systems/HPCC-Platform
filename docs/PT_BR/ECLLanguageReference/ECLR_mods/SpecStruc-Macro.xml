@@ -88,6 +88,15 @@
   usado para conter o resultado da macro (para que qualquer código depois da
   chamada da macro possa usar o resultado).</para>
 
+  <para>Quando uma macro Attribute é chamada várias vezes dentro do mesmo
+  escopo de visibilidade, nomes de definições internas podem colidir. Use
+  <link linkend="_UNIQUENAME">#UNIQUENAME</link> para gerar nomes exclusivos
+  automaticamente. <link linkend="_DECLARE">#DECLARE</link> declara apenas um
+  símbolo de template; quando usado (normalmente com <literal>#SET</literal>
+  ou <literal>#APPEND</literal>), você ainda deve garantir que o identificador
+  ECL gerado seja exclusivo, por exemplo incorporando parâmetros ou outro
+  desambiguador.</para>
+
   <para>Exemplo:</para>
 
   <programlisting lang="ECL">// This is a DATASET Value macro that results in a crosstab
@@ -161,6 +170,7 @@ MAC_join(J1,People,Property,'LEFT.ID=RIGHT.PeopleID,LEFT  OUTER')
 
   <para>Ver também: <link linkend="TRANSFORM_Structure">Estrutura
   TRANSFORM</link>, <link linkend="RECORD_Structure">Estrutura RECORD</link>,
-  <link linkend="_UNIQUENAME">#UNIQUENAME</link>, <link
+  <link linkend="_DECLARE">#DECLARE</link>, <link
+  linkend="_UNIQUENAME">#UNIQUENAME</link>, <link
   linkend="_EXPAND">#EXPAND</link></para>
 </sect1>

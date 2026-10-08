@@ -3,7 +3,7 @@
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <book lang="en_US" xml:base="../">
   <bookinfo>
-    <title>Ferramentas do Cliente HPCC e ECL IDE</title>
+    <title>ECL IDE e Ferramentas do Cliente HPCC Systems<superscript>®</superscript></title>
 
     <mediaobject>
       <imageobject>
@@ -17,9 +17,8 @@
 
     <legalnotice>
       <para>Sua opinião e comentários sobre este documento são muito
-      bem-vindos e podem ser enviados por e-mail para <email></email></para>
-
-      <para role="syntax"><email>docfeedback@hpccsystems.com</email></para>
+      bem-vindos e podem ser enviados por e-mail para
+      <email>docfeedback@hpccsystems.com</email></para>
 
       <para>Inclua a frase <emphasis role="bold">Feedback sobre
       documentação</emphasis> na linha de assunto e indique o nome do
@@ -38,8 +37,6 @@
       <para>Todos os nomes e dados de exemplo usados neste manual são
       fictícios. Qualquer semelhança com pessoas reais, vivas ou mortas, é
       mera coincidência.</para>
-
-      <para></para>
     </legalnotice>
 
     <xi:include href="common/Version.xml"
@@ -85,5 +82,9 @@
 
   <xi:include href="HPCCClientTools/CT_Mods/CT_ESDL_CLI.xml"
               xpointer="xpointer(//*[@id='ESDL_CLI'])"
+              xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+  <xi:include href="HPCCClientTools/CT_Mods/CT_JSON_XML_Tools.xml"
+              xpointer="xpointer(//*[@id='JSON_XML_Tools'])"
               xmlns:xi="http://www.w3.org/2001/XInclude" />
 </book>

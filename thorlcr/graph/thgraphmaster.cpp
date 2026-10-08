@@ -435,7 +435,9 @@ IDistributedFile *CMasterActivity::lookupReadFile(const char *lfnName, AccessMod
     unsigned fileId = queryReadFileId(normalizedFileName.str());
     if (fileId==NotFound)
     {
-        file.setown(queryThorFileManager().lookup(container.queryJob(), lfnName, mode, jobTemp|temp, opt, true, container.activityIsCodeSigned()));
+        // lookup within a transaction to avoid subsequent lookups in same subgraph performing cost of lookup again. Particularly significant for superfiles,
+        // and IFileReadPropertiesUpdater::publish which re. looks up files read to update stats
+        file.setown(queryThorFileManager().lookup(container.queryJob(), lfnName, mode, jobTemp|temp, opt, true, container.activityIsCodeSigned(), queryGraph().queryReadFilesTransaction()));
         if (file)
         {
             fileId = readFiles.size();
@@ -3332,7 +3334,11 @@ IFileReadPropertiesUpdater * CMasterGraph::queryFileReadPropsUpdater()
 void CMasterGraph::end()
 {
     if (fileReadPropsUpdater.query())
-        fileReadPropsUpdater.query()->publish();
+    {
+        // ensure reuses read files transaction, to avoid repeating expensive DFS calls (particularly for superfiles)
+        fileReadPropsUpdater.query()->publish(queryReadFilesTransaction());
+    }
+    readFilesTransaction.clear();
     CGraphBase::end();
 }
 

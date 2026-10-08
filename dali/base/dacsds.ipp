@@ -320,6 +320,7 @@ public:
     inline SessionId querySessionId() { return connection.querySessionId(); }
     inline unsigned queryMode() { return connection.queryMode(); }
     inline unsigned queryTimeout() { return connection.queryTimeout(); }
+    inline bool checkChildrenInMemory() const { return children != nullptr; }
     void checkExt() const;
 
     virtual bool setLazyFetch(bool fetch) { return connection.setLazyFetch(fetch); }

@@ -7,12 +7,9 @@
   <para><emphasis>attribute </emphasis>:= <emphasis>expression
   </emphasis><emphasis role="bold">: PERSIST<indexterm>
       <primary>PERSIST</primary>
-    </indexterm>(</emphasis><emphasis> filename </emphasis><emphasis
-  role="bold">[</emphasis><emphasis>, cluster</emphasis> <emphasis
-  role="bold">]</emphasis><emphasis role="bold"> [, CLUSTER<indexterm>
-      <primary>CLUSTER</primary>
-    </indexterm>(</emphasis><emphasis>target</emphasis><emphasis
-  role="bold">)] [, EXPIRE<indexterm>
+    </indexterm>(</emphasis><emphasis> filename </emphasis><emphasis role="bold">[</emphasis><emphasis>, cluster</emphasis> <emphasis role="bold">]</emphasis><emphasis role="bold"> [, PLANE<indexterm>
+      <primary>PLANE</primary>
+    </indexterm>(</emphasis><emphasis>target</emphasis><emphasis role="bold">)] [, EXPIRE<indexterm>
       <primary>EXPIRE</primary>
     </indexterm>(</emphasis><emphasis>days</emphasis> <emphasis role="bold">)]
   [, REFRESH<indexterm>
@@ -22,16 +19,15 @@
       <primary>SINGLE</primary>
     </indexterm> | MULTIPLE<indexterm>
       <primary>MULTIPLE</primary>
-    </indexterm>[(</emphasis><emphasis>count</emphasis><emphasis
-  role="bold">)]] ) <indexterm>
+    </indexterm>[(</emphasis><emphasis>count</emphasis><emphasis role="bold">)]] [,LABEL(</emphasis><emphasis>text</emphasis><emphasis role="bold">)])</emphasis>; <indexterm>
       <primary>PERSIST workflow service</primary>
-    </indexterm></emphasis>;</para>
+    </indexterm></para>
 
   <para><informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
-        <colspec colwidth="82.80pt"/>
+        <colspec colwidth="82.80pt" />
 
-        <colspec/>
+        <colspec />
 
         <tbody>
           <row>
@@ -51,8 +47,7 @@
             <entry><emphasis>filename</emphasis></entry>
 
             <entry>Uma constante de string que especifica o nome de
-            armazenamento do resultado de expressão. Consulte <emphasis
-            role="bold">Escopo e nomes de arquivo lógicos.</emphasis>.</entry>
+            armazenamento do resultado de expressão. Consulte <emphasis role="bold">Escopo e nomes de arquivo lógicos.</emphasis>.</entry>
           </row>
 
           <row>
@@ -68,18 +63,18 @@
           </row>
 
           <row>
-            <entry><emphasis role="bold">CLUSTER</emphasis></entry>
+            <entry><emphasis role="bold">PLANE</emphasis></entry>
 
-            <entry>Opcional. Especifica a gravação do <emphasis>nome de
-            arquivo</emphasis> para a lista especificada de clusters de
-            <emphasis>destino</emphasis> . Se omitido, o <emphasis>nome de
-            arquivo</emphasis> é gravado no cluster no qual a função PERSIST é
-            executada (como especificado pelo parâmetro
-            <emphasis>cluster</emphasis> ). O número de partes de arquivos
-            físicos gravadas em disco é sempre determinado pelo número de nós
-            no <emphasis>cluster</emphasis> no qual a função PERSIST é
-            executada, independentemente do número de nós no(s)
-            <emphasis>destino(s)</emphasis>.</entry>
+            <entry>Opcional. Especifica a gravação de <emphasis>filename</emphasis>
+            na lista especificada de planes ou clusters de
+            <emphasis>target</emphasis>. Se omitido,
+            <emphasis>filename</emphasis> é gravado no cluster em que o
+            PERSIST é executado (conforme especificado pelo parâmetro
+            <emphasis>cluster</emphasis>). O número de partes físicas do
+            arquivo gravadas em disco é sempre determinado pelo número de nós
+            no <emphasis>cluster</emphasis> em que o PERSIST é executado,
+            independentemente do número de nós em
+            <emphasis>target(s)</emphasis>.</entry>
           </row>
 
           <row>
@@ -109,7 +104,8 @@
 
             <entry>Opcional. O número de dias em que o arquivo será
             automaticamente removido. Se omitido, por padrão, a configuração
-            PersistExpiryDefault será usada no Sasha.</entry>
+            PersistExpiryDefault será usada no Sasha.<emphasis role="bold">PersistExpiryDefault</emphasis> setting in
+            Sasha.</entry>
           </row>
 
           <row>
@@ -151,6 +147,23 @@
           <row>
             <entry><emphasis>count</emphasis></entry>
 
+            <entry>Opcional. O número de versões de um PERSIST a manter. Se omitido,
+            o padrão do sistema será usado. Se definido como -1, um número
+            ilimitado será mantido.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">LABEL</emphasis></entry>
+
+            <entry>Opcional. Define o <emphasis>Text</emphasis> a exibir para
+            o item de workflow no Graph da workunit. Se omitido, o gerador de
+            código deduzirá um rótulo a partir do identificador que está sendo
+            definido.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>text</emphasis></entry>
+
             <entry>Opcional. O número de versões de um PERSIST deve ser
             mantido. Se omitido, o padrão do sistema será usado.</entry>
           </row>
@@ -189,25 +202,22 @@
 
   <para>Exemplo:</para>
 
-  <programlisting>  CountPeople := COUNT(Person) : PERSIST('PeopleCount');
+  <programlisting lang="ECL" role="notrunnable">// #OPTION ('multiplePersistInstances', true|false); // if true retains MULTIPLE, if false SINGLE
+// #OPTION ('defaultNumPersistInstances', &lt;n&gt;);      // the number to retain if MULTIPLE allowed. 
+                                                     // Defaults to -1 (retain all)
+
+CountPeople := COUNT(Person) : PERSIST('PeopleCount');
   //Makes CountPeople available for use in all subsequent work units
   
-  sPeople := SORT(Person,Person.per_first_name) :
-          PERSIST('SortPerson'),WHEN(Daily);
+sPeople := SORT(Person,first_name): PERSIST('SortPerson'),WHEN(Daily);
   //Makes sPeople available for use in all subsequent work units
   
-  s1 := SORT(Person,Person.per_first_name) :
-          PERSIST('SortPerson1','OtherThor');
+s1 := SORT(Person,first_name): PERSIST('SortPerson1','OtherThor');
       //run the code on the OtherThor cluster
-  s2 := SORT(Person,Person.per_first_name) :
-          PERSIST('SortPerson2',
-                  'OtherThor',
-                  CLUSTER('AnotherThor'));
+s2 := SORT(Person,first_name): PERSIST('SortPerson2','OtherThor',PLANE('AnotherThor'));
        //run the code on the OtherThor cluster
-       // and write the file to the AnotherThor cluster
+       // and write the file to the AnotherThor plane
 </programlisting>
 
-  <para>Ver também: <link linkend="STORED">STORED</link>, <link
-  linkend="WHEN">WHEN</link>, <link linkend="GLOBAL">GLOBAL</link>, <link
-  linkend="CHECKPOINT">CHECKPOINT</link></para>
+  <para>Ver também: <link linkend="STORED">STORED</link>, <link linkend="WHEN">WHEN</link>, <link linkend="GLOBAL">GLOBAL</link>, <link linkend="CHECKPOINT">CHECKPOINT</link><link linkend="_OPTION">#OPTION</link></para>
 </sect1>

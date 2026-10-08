@@ -10,26 +10,7 @@
       <primary>File.Copy</primary>
     </indexterm><indexterm>
       <primary>Copy</primary>
-    </indexterm>(</emphasis> <emphasis> sourceLogicalName,
-  destinationGroup</emphasis> <emphasis role="bold">, </emphasis>
-  <emphasis>destinationLogicalName, </emphasis> <emphasis role="bold">
-  [</emphasis> <emphasis>,sourceDali</emphasis> <emphasis role="bold">]
-  [</emphasis> <emphasis>,timeOut</emphasis> <emphasis role="bold">]
-  [</emphasis> <emphasis>,espServerIPPort </emphasis> <emphasis
-  role="bold">]</emphasis> <emphasis role="bold"> [</emphasis>
-  <emphasis>,maxConnections</emphasis> <emphasis role="bold">] [</emphasis>
-  <emphasis>,allowOverwrite</emphasis> <emphasis role="bold">]</emphasis>
-  <emphasis role="bold"> [</emphasis> <emphasis>,replicate</emphasis>
-  <emphasis role="bold">] [</emphasis> <emphasis>,asSuperfile</emphasis>
-  <emphasis role="bold">] [</emphasis> <emphasis>,compress</emphasis>
-  <emphasis role="bold">] [</emphasis> <emphasis>,forcePush</emphasis>
-  <emphasis role="bold">] [</emphasis>
-  <emphasis>,transferBufferSize</emphasis> <emphasis role="bold">]
-  [</emphasis> <emphasis>,preserveCompression</emphasis> <emphasis
-  role="bold">] [</emphasis> <emphasis>,noSplit</emphasis> <emphasis
-  role="bold">] [</emphasis> <emphasis>,expireDays</emphasis> <emphasis
-  role="bold">] [</emphasis> <emphasis>,ensure</emphasis> <emphasis
-  role="bold">]);</emphasis></para>
+    </indexterm>(</emphasis> <emphasis>sourceLogicalName, destinationGroup, destinationLogicalName, sourceDali, timeOut, espServerIpPort, maxConnections, allowOverwrite, replicate, asSuperfile, compress, forcePush, transferBufferSize, preserveCompression, noSplit, expireDays, ensure, wrap, keyCompression</emphasis> <emphasis role="bold">)</emphasis></para>
 
   <para><emphasis>dfuwuid</emphasis> <emphasis role="bold"> :=
   STD.File.fCopy<indexterm>
@@ -38,26 +19,7 @@
       <primary>File.fCopy</primary>
     </indexterm><indexterm>
       <primary>fCopy</primary>
-    </indexterm>(</emphasis> <emphasis> sourceLogicalName,
-  destinationGroup</emphasis> <emphasis role="bold">,</emphasis> <emphasis
-  role="bold"> </emphasis> <emphasis>destinationLogicalName, </emphasis>
-  <emphasis role="bold"> [</emphasis> <emphasis>,sourceDali</emphasis>
-  <emphasis role="bold">] [</emphasis> <emphasis>,timeOut</emphasis> <emphasis
-  role="bold">] [</emphasis> <emphasis>,espServerIPPort </emphasis> <emphasis
-  role="bold">]</emphasis> <emphasis role="bold"> [</emphasis>
-  <emphasis>,maxConnections</emphasis> <emphasis role="bold">] [</emphasis>
-  <emphasis>,allowOverwrite</emphasis> <emphasis role="bold">]</emphasis>
-  <emphasis role="bold"> [</emphasis> <emphasis>,replicate</emphasis>
-  <emphasis role="bold">] [</emphasis> <emphasis>,asSuperfile</emphasis>
-  <emphasis role="bold">] [</emphasis> <emphasis>,compress</emphasis>
-  <emphasis role="bold">] [</emphasis> <emphasis>,forcePush</emphasis>
-  <emphasis role="bold">] [</emphasis>
-  <emphasis>,transferBufferSize</emphasis> <emphasis role="bold">]
-  [</emphasis> <emphasis>,preserveCompression</emphasis> <emphasis
-  role="bold">] [</emphasis> <emphasis>,noSplit</emphasis> <emphasis
-  role="bold">] [</emphasis> <emphasis>,expireDays</emphasis> <emphasis
-  role="bold">] [</emphasis> <emphasis>,ensure</emphasis><emphasis
-  role="bold">]); </emphasis></para>
+    </indexterm>(</emphasis> <emphasis>sourceLogicalName, destinationGroup, destinationLogicalName, sourceDali, timeOut, espServerIpPort, maxConnections, allowOverwrite, replicate, asSuperfile, compress, forcePush, transferBufferSize, preserveCompression, noSplit, expireDays, ensure, wrap, keyCompression</emphasis> <emphasis role="bold">)</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -69,153 +31,169 @@
         <row>
           <entry><emphasis>sourceLogicalName</emphasis></entry>
 
-          <entry>Uma string terminada em nulo contendo o nome lógico do
+          <entry>Uma string terminada por nulo contendo o nome lógico do
           arquivo.</entry>
         </row>
 
         <row>
           <entry><emphasis>destinationGroup</emphasis></entry>
 
-          <entry>Uma string terminada por nulo que contém o cluster de destino
-          do arquivo.</entry>
+          <entry>Uma string terminada por nulo contendo o cluster de destino para
+          o arquivo.</entry>
         </row>
 
         <row>
           <entry><emphasis>destinationLogicalName</emphasis></entry>
 
-          <entry>Uma string terminada por nulo que contém o novo nome lógico
-          do arquivo.</entry>
+          <entry>Uma string terminada por nulo contendo o novo nome lógico do
+          arquivo.</entry>
         </row>
 
         <row>
           <entry><emphasis>sourceDali</emphasis></entry>
 
-          <entry>Opcional. Uma string terminada por nulo que contém o IP e a
-          porta do Dali que contém o arquivo a ser copiado. Se omitida, o
-          padrão é uma cópia intra-Dali.</entry>
+          <entry>Opcional. Uma string terminada por nulo contendo o IP e a porta
+          do Dali que contém o arquivo a copiar. Se omitida, o padrão é uma
+          cópia intra-Dali.</entry>
         </row>
 
         <row>
           <entry><emphasis>timeOut</emphasis></entry>
 
-          <entry>Opcional. Um valor inteiro que indica a configuração de tempo
-          limite. Se omitido, o padrão é -1. Se definido como (0), o controle
-          da execução retorna imediatamente à workunit ECL sem esperar a
+          <entry>Opcional. Um valor inteiro indicando a configuração de timeout.
+          Se omitido, o padrão é -1. Se definido como zero (0), o controle
+          de execução retorna imediatamente à workunit ECL sem aguardar a
           conclusão da workunit DFU.</entry>
         </row>
 
         <row>
-          <entry><emphasis>espServerIPPort</emphasis></entry>
+          <entry><emphasis>espServerIpPort</emphasis></entry>
 
-          <entry>Opcional. Isso quase sempre deve ser omitido, o que, por
-          padrão, é o valor contido no atributo lib_system.ws_fs_server.
-          Quando não omitido, deve ser uma string terminada em nulo contendo o
-          protocolo, IP, porta e diretório, ou o DNS equivalente, do programa
-          do servidor ESP. Geralmente, é o mesmo IP e porta do ] ECL Watch,
-          com "/FileSpray" anexado.</entry>
+          <entry>Opcional. Quase sempre deve ser omitido; nesse caso, usa por
+          padrão o valor contido no atributo lib_system.ws_fs_server. Quando
+          não for omitido, deve ser uma string terminada por nulo contendo o
+          protocolo, IP, porta e diretório, ou o equivalente DNS, do programa
+          servidor ESP. Geralmente é o mesmo IP e porta do ECL Watch, com
+          "/FileSpray" acrescentado.</entry>
         </row>
 
         <row>
           <entry><emphasis>maxConnections</emphasis></entry>
 
-          <entry>Opcional. Um inteiro especificando o número máximo de
-          conexões. Se omitido, o padrão é -1, o que indica que o sistema
-          escolhe um padrão adequado com base no tamanho do cluster.</entry>
+          <entry>Opcional. Um inteiro que especifica o número máximo de conexões.
+          Se omitido, o padrão é -1, o que indica que o sistema escolhe um
+          padrão adequado com base no tamanho do cluster.</entry>
         </row>
 
         <row>
           <entry><emphasis>allowOverwrite</emphasis></entry>
 
-          <entry>Opcional. Um indicador booleano TRUE ou FALSE que indica se o
-          novo arquivo pode sobrescrever um arquivo existente do mesmo nome.
-          Se omitido, o padrão é FALSE.</entry>
+          <entry>Opcional. Uma flag booleana TRUE ou FALSE indicando se o novo
+          arquivo pode sobrescrever um arquivo existente com o mesmo nome. Se
+          omitida, o padrão é FALSE.</entry>
         </row>
 
         <row>
           <entry><emphasis>replicate</emphasis></entry>
 
-          <entry>Opcional. Um indicador booleano TRUE ou FALSE que indica se o
-          novo arquivo deve ser replicado automaticamente. Se omitido, o
-          padrão é FALSE.</entry>
+          <entry>Opcional. Uma flag booleana TRUE ou FALSE indicando se o novo
+          arquivo deve ser replicado automaticamente. Se omitida, o padrão é
+          FALSE.</entry>
         </row>
 
         <row>
           <entry><emphasis>asSuperfile</emphasis></entry>
 
-          <entry>Opcional. Um indicador booleano TRUE ou FALSE que indica se o
-          arquivo deve ser tratado como superarquivo. Se omitido, o padrão é
-          FALSE. Se TRUE e o arquivo a ser copiado for um superarquivo, a
-          operação criará um superarquivo no destino, criando subarquivos
-          conforme a necessidade e sobrescrevendo apenas os subarquivos já
-          existentes cujo conteúdo tenha sido alterado. Se FALSE e o arquivo
-                    a ser copiado é um superfile contendo INDEXes, então a
-          operação não é           válida e produzirá um erro.</entry>
+          <entry>Opcional. Uma flag booleana TRUE ou FALSE indicando se o
+          arquivo deve ser tratado como superfile. Se omitida, o padrão é
+          FALSE. Se TRUE e o arquivo a copiar for um superfile, a operação
+          cria um superfile no destino, criando subfiles conforme necessário
+          enquanto sobrescreve apenas os subfiles existentes cujo conteúdo
+          mudou. Se FALSE e o arquivo a copiar for um superfile, a operação
+          consolida todo o conteúdo do superfile em um único arquivo lógico no
+          destino, não em um superfile. Se FALSE e o arquivo a copiar for um
+          superfile que contém INDEXes, a operação não é válida e produzirá um
+          erro. </entry>
         </row>
 
         <row>
           <entry><emphasis>compress</emphasis></entry>
 
-          <entry>Opcional. Um booleano TRUE ou FALSE indica se LZW compactou o
-          novo arquivo. Se omitido, o padrão é FALSE.</entry>
+          <entry>Opcional. Uma flag booleana TRUE ou FALSE indicando se o novo
+          arquivo deve ser compactado com LZW. Se omitida, o padrão é FALSE.</entry>
         </row>
 
         <row>
           <entry><emphasis>forcePush </emphasis></entry>
 
-          <entry>Opcional. Um indicador booleano TRUE ou FALSE que indica se o
-          processo de cópia deve ser executado nos nós de origem enviando para
-          os destinos, em vez de executado nos destinos e recebendo da origem.
-          Esta opção só é válida dentro do mesmo ambiente. Se omitido, o
-          padrão é FALSE.</entry>
+          <entry>Opcional. Uma flag booleana TRUE ou FALSE indicando se o
+          processo de cópia deve ser executado nos nós de origem e fazer push
+          para os destinos, em vez de executar nos destinos e fazer pull da
+          origem. Esta opção só é válida dentro do mesmo ambiente. Se omitida,
+          o padrão é FALSE.</entry>
         </row>
 
         <row>
           <entry><emphasis>transferBufferSize </emphasis></entry>
 
-          <entry>Opcional. Um valor inteiro que substitui o valor do tamanho
-          do buffer do servidor DFU (o padrão é 64 k)</entry>
+          <entry>Opcional. Um valor inteiro para sobrepor o valor de tamanho de
+          buffer do DFU Server (o padrão é 64k)</entry>
         </row>
 
         <row>
-          <entry><emphasis>preservecompression </emphasis></entry>
+          <entry><emphasis>preserveCompression </emphasis></entry>
 
-          <entry>Opcional. Um indicador booleano TRUE ou FALSE que indica se a
-          compressão do arquivo antigo deve ser preservada durante a cópia. Se
-          omitido, o padrão é TRUE.</entry>
+          <entry>Opcional. Uma flag booleana TRUE ou FALSE indicando se a
+          compactação do arquivo antigo deve ser preservada ao copiar. Se
+          omitida, o padrão é TRUE.</entry>
         </row>
 
         <row>
           <entry><emphasis>noSplit</emphasis></entry>
 
           <entry>Opcional. Uma flag booleana TRUE ou FALSE indicando para não
-                    dividir uma parte do arquivo em várias partes de destino.
-          O padrão é           FALSO</entry>
+          dividir uma parte do arquivo em várias partes de destino. O padrão
+          é FALSE.</entry>
         </row>
 
         <row>
           <entry><emphasis>expireDays </emphasis></entry>
 
-          <entry>Opcional. Um valor inteiro indicando o número de dias antes
-          de remover automaticamente o arquivo. Se omitido, o padrão é -1
-          (nunca expira).</entry>
+          <entry>Opcional. Especifica que o arquivo é temporário e será excluído
+          automaticamente após o número especificado de dias desde que o
+          arquivo foi lido. Se omitido, o padrão é -1 (nunca expira). Se
+          definido como 0, o arquivo é excluído automaticamente quando atinge
+          o limite definido na configuração <emphasis
+          role="bold">expiryDefault</emphasis> do Sasha Server.</entry>
         </row>
 
         <row>
           <entry><emphasis>ensure</emphasis></entry>
 
           <entry>Opcional. Copia o arquivo lógico, mas não copia partes do
-          arquivo se elas já existirem. O padrão é FALSO.</entry>
+          arquivo se elas já existirem. O padrão é FALSE.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>wrap</emphasis></entry>
+
+          <entry>Opcional. Uma flag booleana TRUE ou FALSE indicando se as partes
+          do arquivo devem sofrer wrap automaticamente ao copiar para
+          clusters menores. Por exemplo, ao copiar de um cluster de 6 nós para
+          um cluster de 3 nós, duas partes do arquivo terminarão em cada nó;
+          a diferença é se o nó 1 recebe as partes 1 e 2 ou as partes 1 e 4.
+          Se omitida, o padrão é FALSE.</entry>
         </row>
 
         <row>
           <entry><emphasis>dfuwuid</emphasis></entry>
 
-          <entry>O nome do atributo que receberá a string terminada por nulo
-          que contém o ID da workunit DFU (DFUWUID) gerada para o job.</entry>
+          <entry>O nome do atributo que recebe a string terminada por nulo
+          contendo o ID da workunit DFU (DFUWUID) gerado para o job.</entry>
         </row>
 
         <row>
-          <entry>Return:<emphasis> </emphasis></entry>
+          <entry>Retorno:<emphasis> </emphasis></entry>
 
           <entry>Copy retorna uma string terminada por nulo contendo o ID da
           workunit DFU (DFUWUID).</entry>
@@ -224,12 +202,24 @@
     </tgroup>
   </informaltable>
 
-  <para>A função <emphasis role="bold">Copy </emphasis> recebe um arquivo
-  lógico e o copia para outro arquivo lógico. Isso pode ser feito no mesmo
-  cluster, para outro. O destino não pode ser um arquivo externo.</para>
+  <para>A função <emphasis role="bold">Copy </emphasis>recebe um arquivo
+  lógico e o copia para outro arquivo lógico. Isso pode ser feito dentro do
+  mesmo cluster ou para outro cluster. O destino não pode ser um arquivo
+  estrangeiro.</para>
 
   <para>Exemplo:</para>
 
-  <programlisting format="linespecific">STD.File.Copy('OUT::MyFile',STD.System.Thorlib.Group(),'OUT::MyNewFile');
-</programlisting>
+  <para><emphasis role="bold">Observação:</emphasis> Em implantações conteinerizadas do HPCC Systems, o parâmetro
+  <emphasis>destinationGroup</emphasis> deve ser um data plane nomeado (por
+  exemplo, <emphasis role="bold">'data'</emphasis>) em vez de <emphasis
+  role="bold">STD.System.Thorlib.Group()</emphasis>.</para>
+
+  <programlisting format="linespecific">// Recommended: explicit data plane name (containerized and bare-metal)
+STD.File.Copy('OUT::MyFile', 'data', 'OUT::MyNewFile');
+
+// Also valid in containerized: empty string uses the default data plane
+STD.File.Copy('OUT::MyFile', '', 'OUT::MyNewFile');
+
+// Bare-metal: specify a cluster/group name or use STD.System.Thorlib.Group()
+ STD.File.Copy('OUT::MyFile', STD.System.Thorlib.Group(), 'OUT::MyNewFile');</programlisting>
 </sect1>

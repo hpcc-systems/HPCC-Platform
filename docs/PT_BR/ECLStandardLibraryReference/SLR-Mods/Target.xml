@@ -2,7 +2,7 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="Target">
-  <title><emphasis role="bold">Target</emphasis></title>
+  <title>Target</title>
 
   <para><emphasis role="bold">STD.System.Job.Target <indexterm>
       <primary>STD.System.Job.Target</primary>
@@ -29,11 +29,13 @@
 
   <para>A função <emphasis role="bold">Target </emphasis> retorna o nome do
   cluster onde a workunit está sendo executada. Essa função não é suportada em
-  clusters Roxie. Esse nome é usado por #WORKUNIT, pelo utilitário de linha de
-  comando do ECL e pelo utilitário de linha de comando eclplus para
-  especificar o cluster de destino de um job.</para>
+  clusters Roxie. Esse nome é usado por #WORKUNIT ou pelo utilitário de linha de
+  comando <literal>ecl</literal> para especificar o cluster de destino de
+  uma workunit.</para>
 
   <para>Exemplo:</para>
 
-  <programlisting format="linespecific">A := STD.System.Job.Target();</programlisting>
+  <programlisting format="linespecific">IMPORT STD;
+A := STD.System.Job.Target();
+OUTPUT(A);</programlisting>
 </sect1>

@@ -50,9 +50,9 @@
 
   <para>Exemplo:</para>
 
-  <programlisting>SomeRealValue1 := 3.14159;
+  <programlisting lang="ECL_Runnable">SomeRealValue1 := 3.14159;
 INTEGER4 MyVal1 := ROUND(SomeRealValue1);   // MyVal1 is 3
-INTEGER4 MyVal2 := ROUND(SomeRealValue1,2); // MyVal2 is 3.14
+REAL     MyVal2 := ROUND(SomeRealValue1,2); // MyVal2 is 3.14
 
 SomeRealValue2 := 3.5;
 INTEGER4 MyVal3 := ROUND(SomeRealValue2); // MyVal is 4
@@ -62,6 +62,11 @@ INTEGER4 MyVal4 := ROUND(SomeRealValue3); // MyVal is -1
 
 SomeRealValue4 := -1.8;
 INTEGER4 MyVal5 := ROUND(SomeRealValue4); // MyVal is -2
+OUTPUT(MyVal1);
+OUTPUT(MyVal2);
+OUTPUT(MyVal3);
+OUTPUT(MyVal4);
+OUTPUT(MyVal5);
 </programlisting>
 
   <para>Ver também: <link linkend="ROUNDUP">ROUNDUP</link>, <link

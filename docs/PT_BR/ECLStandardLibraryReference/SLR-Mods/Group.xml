@@ -22,19 +22,30 @@
 
       <tbody>
         <row>
-          <entry>Return:<emphasis> </emphasis></entry>
+          <entry>Retorno:<emphasis> </emphasis></entry>
 
-          <entry>Group retrona um valor VARSTRING</entry>
+          <entry>Group retorna um valor VARSTRING.</entry>
         </row>
       </tbody>
     </tgroup>
   </informaltable>
 
   <para>A função <emphasis role="bold">Group </emphasis> retorna o nome do
-  grupo de nós onde a workunit está sendo executada. Essa função não é
-  permitida em clusters Roxie. Esse nome é usado no código ECL para
-  especificar o CLUSTER de destino para uma ação OUTPUT ou um atributo
+  grupo de nós que está executando a workunit. Esse nome é usado no código ECL
+  para especificar o CLUSTER de destino para uma ação OUTPUT ou um atributo
   PERSISTed.</para>
+
+  <para><emphasis role="bold">Obsoleta em ambientes
+  conteinerizados.</emphasis> Em implantações conteinerizadas da plataforma
+  HPCC Systems, nós de computação são efêmeros e o nome do grupo de nós não
+  tem significado estável. O armazenamento é desacoplado da computação e
+  referenciado por data planes (por exemplo, <emphasis
+  role="bold">'data'</emphasis>). Em implantações conteinerizadas, esta
+  função retorna uma string em branco (<emphasis role="bold">''</emphasis>),
+  que é interpretada como o data plane padrão. Novo código ECL destinado a
+  HPCC conteinerizado deve usar um nome explícito de data plane (por exemplo,
+  <emphasis role="bold">'data'</emphasis>) em vez de chamar esta
+  função.</para>
 
   <para>Exemplo:</para>
 

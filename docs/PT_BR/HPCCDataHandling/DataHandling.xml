@@ -3,11 +3,11 @@
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <book lang="en_US" xml:base="../">
   <bookinfo>
-    <title>Manipulação de Dados do HPCC</title>
+    <title>Manipulação de Dados do HPCC Systems<superscript>®</superscript></title>
 
     <mediaobject>
       <imageobject>
-        <imagedata fileref="images/redswooshWithLogo3.jpg" />
+        <imagedata fileref="images/redswooshWithLogo3.jpg"/>
       </imageobject>
     </mediaobject>
 
@@ -17,9 +17,7 @@
 
     <legalnotice>
       <para>Sua opinião e comentários sobre este documento são muito
-      bem-vindos e podem ser enviados por e-mail para <email></email></para>
-
-      <para role="syntax"><email>docfeedback@hpccsystems.com</email></para>
+      bem-vindos e podem ser enviados por e-mail para <email>docfeedback@hpccsystems.com</email></para>
 
       <para>Inclua a frase <emphasis role="bold">Feedback sobre
       documentação</emphasis> na linha de assunto e indique o nome do
@@ -39,38 +37,38 @@
       fictícios. Qualquer semelhança com pessoas reais, vivas ou mortas, é
       mera coincidência.</para>
 
-      <para></para>
+      <para/>
     </legalnotice>
 
     <xi:include href="common/Version.xml"
                 xpointer="xpointer(//*[@id='FooterInfo'])"
-                xmlns:xi="http://www.w3.org/2001/XInclude" />
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
 
     <xi:include href="common/Version.xml"
                 xpointer="xpointer(//*[@id='DateVer'])"
-                xmlns:xi="http://www.w3.org/2001/XInclude" />
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
 
     <corpname>HPCC Systems<superscript>®</superscript></corpname>
 
     <xi:include href="common/Version.xml"
                 xpointer="xpointer(//*[@id='Copyright'])"
-                xmlns:xi="http://www.w3.org/2001/XInclude" />
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
 
     <mediaobject role="logo">
       <imageobject>
-        <imagedata fileref="images/LN_Rightjustified.jpg" />
+        <imagedata fileref="images/LN_Rightjustified.jpg"/>
       </imageobject>
     </mediaobject>
   </bookinfo>
 
   <chapter id="Data_Handling">
-    <title><emphasis>Manipulação de Dados do HPCC</emphasis></title>
+    <title><emphasis>Manipulação de Dados do HPCC Systems<superscript>®</superscript></emphasis></title>
 
     <sect1 id="Introduction" role="nobrk">
       <title>Introdução</title>
 
       <para>Há diferentes formas pelas quais os dados podem ser transferidos
-      de, para ou dentro de um HPCC system. Para cada uma dessas
+      de, para ou dentro de um cluster HPCC Systems. Para cada uma dessas
       transferências de dados, há alguns parâmetros-chave que precisam ser
       conhecidos.</para>
 
@@ -137,23 +135,27 @@
 
     <xi:include href="HPCCDataHandling/DH-Mods/DH-Mod1.xml"
                 xpointer="xpointer(//*[@id='Data_Handling_Terms'])"
-                xmlns:xi="http://www.w3.org/2001/XInclude" />
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="HPCCDataHandling/DH-Mods/DH-Mod1.xml"
+                xpointer="xpointer(//*[@id='FileMovement'])"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
 
     <xi:include href="HPCCDataHandling/DH-Mods/DH-Mod1.xml"
                 xpointer="xpointer(//*[@id='Working_with_a_data_file'])"
-                xmlns:xi="http://www.w3.org/2001/XInclude" />
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
 
     <xi:include href="HPCCDataHandling/DH-Mods/DH-Mod1.xml"
                 xpointer="xpointer(//*[@id='Data_Handling_Methods'])"
-                xmlns:xi="http://www.w3.org/2001/XInclude" />
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
 
     <xi:include href="HPCCDataHandling/DH-Mods/DH-Mod1.xml"
                 xpointer="xpointer(//*[@id='Data_Handling_Using_ECL-Watch'])"
-                xmlns:xi="http://www.w3.org/2001/XInclude" />
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
   </chapter>
 
   <chapter id="HPCC_DataBackups">
-    <title><emphasis>Backup de Dados do HPCC</emphasis></title>
+    <title><emphasis>Backups de Dados do HPCC Systems<superscript>®</superscript></emphasis></title>
 
     <sect1 id="Introduction2DataBackup" role="nobrk">
       <title>Introdução</title>
@@ -250,13 +252,14 @@
           <listitem>
             <para>Execute o comando:</para>
 
-            <programlisting>sudo su hpcc /opt/HPCCSystems/bin/start_backupnode &lt;thor_cluster_name&gt; </programlisting>
+            <programlisting>sudo su hpcc
+/opt/HPCCSystems/bin/start_backupnode &lt;thor_cluster_name&gt; </programlisting>
 
             <para>Isso iniciará o processo de backup.</para>
 
-            <para></para>
+            <para/>
 
-            <graphic fileref="images/backupnode.jpg" />
+            <graphic fileref="images/backupnode.jpg"/>
 
             <para>Aguarde até a conclusão. Você verá a mensagem "backupnode
             finished” (backup do nó concluído) como mostrado acima.</para>
@@ -298,7 +301,7 @@
 
         <programlisting>sudo crontab -l</programlisting>
 
-        <para></para>
+        <para/>
       </sect2>
     </sect1>
 

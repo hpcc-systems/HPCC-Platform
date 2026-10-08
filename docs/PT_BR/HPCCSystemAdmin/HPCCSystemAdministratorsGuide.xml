@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+<!DOCTYPE article PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <book xml:base="../">
-  <title>Guia do Administrador do HPCC Systems</title>
+  <title>Guia do Administrador do HPCC Systems<superscript>®</superscript></title>
 
   <bookinfo>
     <title>Guia do Administrador do HPCC
@@ -20,9 +20,8 @@
 
     <legalnotice>
       <para>Sua opinião e comentários sobre este documento são muito
-      bem-vindos e podem ser enviados por e-mail para <email></email></para>
-
-      <para role="syntax"><email>docfeedback@hpccsystems.com</email></para>
+      bem-vindos e podem ser enviados por e-mail para
+      <email>docfeedback@hpccsystems.com</email></para>
 
       <para>Inclua a frase <emphasis role="bold">Feedback sobre
       documentação</emphasis> na linha de assunto e indique o nome do
@@ -298,6 +297,17 @@
           gerados sob demanda quando uma tarefa é enviada.</para>
         </sect3>
 
+        <sect3 id="ECLScheduler">
+          <title>ECL Scheduler</title>
+
+          <para>O ECL Scheduler fornece um meio de automatizar processos no
+          código ECL ou de encadear processos para trabalhar em sequência. O
+          agendamento ECL é baseado em eventos. O ECL Scheduler monitora uma
+          lista Schedule contendo Workunits e Events registrados e executa
+          quaisquer Workunits associadas a um Event quando esse Event é
+          acionado.</para>
+        </sect3>
+
         <sect3 id="SysAdm_ESPServer">
           <title>ESP Server</title>
 
@@ -342,6 +352,14 @@
           acessar o ECL Watch, WsECL, ECL IDE ou quaisquer outras ferramentas
           de clientes. As credenciais são então usadas para autenticar
           quaisquer solicitações dessas ferramentas.</para>
+        </sect3>
+
+        <sect3 id="TopoSvr">
+          <title>Topology Server</title>
+
+          <para>O topology server é um componente interno usado pelo ROXIE
+          para acompanhar a integridade dos diferentes processos ROXIE em um
+          cluster.</para>
         </sect3>
       </sect2>
 
@@ -407,6 +425,14 @@
           para obter mais detalhes.</para>
         </sect3>
 
+        <sect3 id="SysAdm_VSCode">
+          <title>ECL for Visual Studio</title>
+
+          <para>Você pode localizar e adicionar a extensão ECL for Visual
+          Studio Code no Visual Studio Marketplace. Essa extensão adiciona
+          suporte avançado à linguagem ECL no VS Code.</para>
+        </sect3>
+
         <sect3 id="SysAdm_ComLine">
           <title><emphasis role="bold">Ferramentas de linha de
           comando:</emphasis></title>
@@ -421,6 +447,10 @@
           para obter mais detalhes.</para>
         </sect3>
       </sect2>
+
+      <xi:include href="HPCCSystemAdmin/SA-Mods/DAFtslave.xml"
+                  xpointer="xpointer(//*[@id='SA_SupportUtilities'])"
+                  xmlns:xi="http://www.w3.org/2001/XInclude"/>
     </sect1>
 
     <!--Inclusion-from-ClientTool-As-Sect1: REMOVED-->
@@ -666,8 +696,8 @@
       de cópia de segurança – algo como um WinSCP.</para>
 
       <para>Para obter mais informações sobre o processamento de dados da
-      plataforma HPCC Systems<superscript>®</superscript>, consulte os
-      documentos <emphasis> Manipulação dos Dados do HPCC Systems</emphasis> e
+      plataforma HPCC Systems, consulte os documentos <emphasis>Manipulação dos
+      Dados do HPCC Systems<superscript>®</superscript></emphasis> e
       <emphasis>Tutorial de dados do HPCC Systems<superscript>®</superscript>
       </emphasis> .</para>
 
@@ -716,6 +746,152 @@
           você possa recuperar todo o ambiente, arquivos e tarefas em caso de
           perda. Isso também influenciaria todos os outros clusters Thor/Roxie
           no mesmo ambiente se você perder esse nó.</para>
+
+          <sect4 id="DaliRestore">
+          <title>Restauração do Dali a partir do backup</title>
+
+          <para>Se configurado corretamente, o Dali cria uma cópia de backup
+          ou espelho em um local secundário em outro servidor físico.
+          (Somente Bare-Metal).</para>
+
+          <para>Os sistemas podem ser configurados com seu próprio backup
+          agendado para criar um snapshot dos arquivos do armazenamento
+          primário em um local personalizado. As mesmas etapas se aplicam ao
+          usar uma cópia snapshot de um conjunto de backup e ao usar a cópia
+          espelho. Em outras palavras, essa técnica se aplica a implantações
+          Bare-Metal ou k8s.</para>
+
+          <para>Os metarquivos do Dali são compostos por:</para>
+
+          <orderedlist>
+            <listitem>
+              <para><emphasis role="bold">store.&lt;NNNN&gt;</emphasis>
+              (por exemplo, store.36). Este arquivo é uma referência à edição
+              atual do metarquivo do Dali. Nunca deve haver mais de um desses
+              arquivos. O NNNN é usado para determinar os arquivos base e delta
+              atuais em uso.</para>
+            </listitem>
+
+            <listitem>
+              <para><emphasis role="bold">dalisds&lt;NNNN&gt;.xml</emphasis>
+              (por exemplo, dalisds36.xml). Este é o principal arquivo de
+              metainformações do Dali, contendo todas as informações de
+              arquivos lógicos, workunits e estado. O Sasha (ou o Dali ao
+              salvar) cria periodicamente novas versões (com NNNN crescente de
+              forma incremental). Ele mantém as últimas T cópias (padrão 10)
+              com base na opção de configuração “keepStores”.</para>
+            </listitem>
+
+            <listitem>
+              <para><emphasis role="bold">daliinc&lt;NNNN&gt;.xml</emphasis>
+              (por exemplo, daliinc36.xml). Este é o log de transações delta.
+              O Dali grava continuamente nesse arquivo, registrando todas as
+              alterações feitas em quaisquer metadados. Ele é usado para
+              reproduzir alterações e aplicá-las às metainformações base do
+              arquivo dalisds&lt;NNNN&gt;xml.</para>
+
+              <para>Especificamente, quando o Sasha cria uma nova versão do
+              armazenamento, ele carrega o arquivo base (por exemplo,
+              dalisds36.xml), em seguida carrega e aplica o arquivo delta (por
+              exemplo, daliinc36.xml). Então o Sasha passa a ter sua própria
+              representação independente do estado atual e salva um novo
+              arquivo base (por exemplo, dalisds(NNNN+1).xml).</para>
+            </listitem>
+
+            <listitem>
+              <para><emphasis role="bold">dalidet&lt;NNNN&gt;.xml</emphasis>
+              (por exemplo, dalidet36.xml). Este arquivo é criado no momento
+              em que o Sasha inicia o processo de criação de um novo arquivo
+              base. Nesse ponto, ele renomeia atomicamente o arquivo de
+              transação delta para um arquivo ‘det’ (abreviação de
+              'detached'). Por exemplo, ele renomeia daliinc36.xml para
+              dalidet36.xml. O Dali então continua gravando novas transações em
+              daliinc36.xml.</para>
+            </listitem>
+
+            <listitem>
+              <para><emphasis
+              role="bold">dalisds_&lt;MMMM&gt;.bv2</emphasis> files. Esses
+              arquivos são, na prática, parte do armazenamento principal
+              (parte de dalisdsNNNN.xml). Eles são valores únicos grandes que
+              foram considerados grandes demais para permanecer na memória do
+              Dali e, por isso, gravados separadamente em disco (e carregados
+              sob demanda).</para>
+            </listitem>
+          </orderedlist>
+
+          <para>Se o Dali for desligado de forma limpa e salvar seus arquivos
+          como esperado, os arquivos daliinc*.xml e dalidet*.xml não serão
+          necessários, pois ele salva todo o estado do armazenamento
+          diretamente da memória interna e, na inicialização, não há
+          daliincNNNN.xml nem dalidetNNNN.xml relacionado à nova versão.</para>
+
+          <para>Esses arquivos delta de transação só são usados pelo Sasha ao
+          criar novas versões do armazenamento base ou se o Dali tiver sido
+          interrompido abruptamente (por exemplo, reinicialização da máquina).
+          Se o Dali reiniciar após uma saída não limpa, haverá um arquivo
+          daliincNNN.xml (e possivelmente um arquivo dalidetNNNN.xml se o
+          Sasha estava criando ativamente uma nova versão naquele momento).
+          Nesses casos, o Dali carregará esses arquivos além do arquivo
+          base.</para>
+
+          <para>Por padrão, o diretório principal de armazenamento de dados do
+          Dali é /var/lib/HPCCSystems/hpcc-data/dali/ . Em outras palavras,
+          todos os metadados são gravados e lidos desse local.</para>
+
+          <para>Ao restaurar a partir de um backup: <orderedlist>
+              <listitem>
+                <para>Certifique-se de que o Dali não esteja em
+                execução</para>
+              </listitem>
+
+              <listitem>
+                <para>Certifique-se de que a pasta
+                /var/lib/HPCCSystems/hpcc-data/dali esteja vazia.</para>
+              </listitem>
+
+              <listitem>
+                <para>Copie todos os arquivos de backup pertinentes para a
+                pasta /var/lib/HPCCSystems/hpcc-data/dali:</para>
+
+                <itemizedlist>
+                  <listitem>
+                    <para>Um arquivo store.NNNN</para>
+                  </listitem>
+
+                  <listitem>
+                    <para>Um arquivo dalisdsNNNN.xml</para>
+                  </listitem>
+
+                  <listitem>
+                    <para>&lt;=1 arquivo daliincNNNN.xml (somente se
+                    presente)</para>
+                  </listitem>
+
+                  <listitem>
+                    <para>&lt;=1 arquivo dalidetNNNN.xml (somente se
+                    presente)</para>
+                  </listitem>
+
+                  <listitem>
+                    <para>Todos os arquivos dalisds_MMMM.bv2.</para>
+                  </listitem>
+                </itemizedlist>
+              </listitem>
+            </orderedlist>Outras edições mais antigas de dalisds/daliinc/dalidet
+          poderiam ser copiadas, mas as acima são as únicas que serão usadas.
+          Em outras palavras, somente a versão NNNN baseada no único arquivo
+          store.NNNN será carregada.</para>
+
+          <para>O backup automático para um local espelho é somente Bare-Metal.
+          Em uma implantação em nuvem, presume-se que as opções de
+          armazenamento fornecidas pelo provedor de nuvem ofereçam
+          redundância, como replicação multizona.</para>
+
+          <para>Em qualquer caso, e/ou se uma estratégia manual tiver sido
+          usada para copiar os arquivos do Dali em um cronograma, o processo de
+          restauração a partir de um backup deverá ser o mesmo.</para>
+          </sect4>
         </sect3>
 
         <sect3 id="SysAdm_BkUp_Sasha">
@@ -778,7 +954,7 @@
           <title>Thor</title>
 
           <para>Thor, a refinaria de dados, como um dos componentes críticos
-          da plataforma HPCC Systems precisa ser salvo em backup. Faça um
+          da plataforma HPCC Systems<superscript>®</superscript> precisa ser salvo em backup. Faça um
           backup do Thor ao configurar a replicação e definir uma tarefa de
           backup noturno do cron. Se não houver um RAID configurado, crie um
           backup do Thor sob demanda antes e/ou depois de qualquer troca de nó
@@ -1278,10 +1454,10 @@ jvmoptions=-XX:-UsePerfData
 # Python plugins can call python cleanup code on exit, but this seems to cause lockups in some Tensorflow examples
 # In most cases, skipping the cleanup is harmless and avoids these lockups
 skipPythonCleanup=true 
-#
+
 # Multiple paths can be specified (separate with :, or ; on Windows).
 # Relative paths are assumed to be relative to ${INSTALL_DIR}/versioned
-additionalPlugins=python3
+additionalPlugins=python3 
 
 # To en-/disable Drop Zone restriction.
 # Default is enabled (true).
@@ -1289,17 +1465,19 @@ useDropZoneRestriction=true
 # If set, will force matching local file paths to become remote reads, e.g:
 #forceRemotePattern=/var/lib/HPCCSystems/hpcc-data/eclagent/*
 
-# Dafilesrv: default client side connection settings (NB: 0 = disable/use Systems defaults)
+# Dafilesrv: default client side connection settings (NB: 0 = disable/use system defaults)
 #dafsConnectTimeoutSeconds=100
 #dafsConnectRetries=2
 #dafsMaxReceiveTimeSeconds=0
 
-# Dafilesrv: set to change number of seconds before retrying an unresponsive dafilesrv (default 10 seconds)
-
+# Dafilesrv: set to change number of seconds before retrying an unresponsive dafilesrv connection (default 10 seconds)
 # NB: for now this only applies to the last cached server 
 #dafsConnectFailRetrySeconds=10
 
 </programlisting></para>
+
+      <para>O arquivo environment.conf padrão inclui vários comentários e
+      explicações para muitos dos valores definidos nele.</para>
 
       <sect2 id="SysAdm_Paths">
         <title>Considerações sobre caminhos</title>
@@ -1318,7 +1496,7 @@ lock=/var/lock/HPCCSystems</programlisting>
         ou componente não conseguir localizar um caminho, será exibida uma
         mensagem de erro como esta:</para>
 
-        <programlisting>“There are no components configured to run on the node…” </programlisting>
+        <programlisting>"There are no components configured to run on the node..." </programlisting>
 
         <para>Se o caminho mudar do HPCCSystems, ele NÃO será alterado no
         arquivo environment.xml. Quaisquer alterações precisarão ser
@@ -1560,6 +1738,47 @@ lock=/var/lock/HPCCSystems</programlisting>
           </variablelist></para>
       </sect2>
 
+      <sect2 id="SysAdm_Java_env.conf">
+        <title>Environment.conf e configurações Java</title>
+
+        <para>Especifique a configuração JNI_PATH se o HPCC não conseguir
+        encontrar a biblioteca JNI adequada (libjvm) ou se você quiser usar
+        uma libjvm alternativa. Por exemplo:</para>
+
+        <para><programlisting>JNI_PATH=/absolute/path/to/alternative/libjvm.so
+</programlisting></para>
+
+        <para><informaltable colsep="1" frame="all" rowsep="1">
+            <?dbfo keep-together="always"?>
+
+            <tgroup cols="2">
+              <colspec colwidth="49.50pt"/>
+
+              <colspec/>
+
+              <tbody>
+                <row>
+                  <entry><inlinegraphic fileref="images/OSSgr3.png"/></entry>
+
+                  <entry><para>Ao direcionar classes personalizadas, todas as
+                  dependências devem estar acessíveis declarando sua localização
+                  no classpath ou incluindo-as no arquivo jar do host.</para>
+                  <para>Classes Java personalizadas devem ser compiladas usando
+                  versões Java compatíveis. Para verificar a versão do Java
+                  usada para compilar uma determinada classe, use:</para>
+                  <para> <programlisting>javap: javap -verbose MyClass | grep "major" </programlisting>
+                  </para> <para>Ao direcionar um determinado método, certifique-se
+                  de que a assinatura declarada na seção Java incorporada
+                  corresponda à assinatura real do método. Para obter a
+                  assinatura, use:</para>
+                  <para> <programlisting>javap: javap –s MyClass</programlisting>
+                  </para></entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+      </sect2>
+
       <sect2 id="ConfiguringRemoteAccessOverTLS">
         <title>Acesso Remoto sobre TLS</title>
 
@@ -1612,8 +1831,7 @@ HPCCPrivateKeyFile=/keyfilepath/keyfile
           utilizada na criação das chaves.</para>
 
           <para>Uma boa maneira de garantir a implementação apropriada dos
-          arquivos de chave segura é, conforme documentado no manual <emphasis
-          role="bold">Installing &amp; Running the HPCC Systems
+          arquivos de chave segura é, conforme documentado no manual <emphasis>Installing &amp; Running the HPCC Systems
           Platform</emphasis> e usar o script
           <emphasis>install-cluster.sh</emphasis>.</para>
         </sect3>
@@ -1624,11 +1842,100 @@ HPCCPrivateKeyFile=/keyfilepath/keyfile
 
     <xi:include href="Installing_and_RunningTheHPCCPlatform/Inst-Mods/hpcc_ldap.xml"
                 xpointer="element(/1)"
-                xmlns:xi="http://www.w3.org/2001/XInclude" />
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="Installing_and_RunningTheHPCCPlatform/Inst-Mods/ssl-esp.xml"
+                xpointer="xpointer(//*[@id='ssl4esp'])"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
 
     <xi:include href="Installing_and_RunningTheHPCCPlatform/Inst-Mods/UserSecurityMaint.xml"
                 xpointer="xpointer(//*[@id='User_Security_Maint'])"
-                xmlns:xi="http://www.w3.org/2001/XInclude" />
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <!--LDAP and DALI Include-->
+
+    <xi:include href="HPCCSystemAdmin/SA-Mods/DaliLDAP.xml"
+                xpointer="xpointer(//*[@id='Dali-LDAP'])"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <sect1 id="SystemD_initScripts">
+      <title>Inicialização sob Systemd</title>
+
+      <para>A principal ferramenta para iniciar e parar a plataforma HPCC
+      Systems em uma máquina de destino usando systemd é o
+      <emphasis>hpccsystems-platform.target</emphasis>. Esse script de destino
+      depende do arquivo environment.xml e é gerado usando o script
+      <emphasis>generate-hpccsystems-target.sh</emphasis>, localizado por
+      padrão em /opt/HPCCSystems/sbin em instalações padrão. Esse script de
+      destino deve ser gerado sempre que você modificar o arquivo de
+      configuração environment.xml em sua máquina local. Isso pode ser feito
+      manualmente por um administrador ou habilitando o script systemd
+      <emphasis>hpcc-environment-monitor.path</emphasis> fornecido.</para>
+
+      <sect2 id="ManualGenHPCCPlatformTarget">
+        <title>Regeneração manual de hpccsystems-platform.target</title>
+
+        <para>O script hpccsystems-platform.target contém uma lista de
+        requisitos para cada instância de um componente declarado no arquivo
+        environment.xml. O hpccsystems-platform.target pode ser gerado
+        manualmente invocando o script
+        <emphasis>generate-hpccsystems-target.sh</emphasis> em um sistema de
+        destino. É importante observar que isso substituirá qualquer
+        hpccsystems-platform.target existente atualmente no sistema. Portanto,
+        quaisquer componentes declarados anteriormente no environment.xml que
+        não estejam mais declarados não poderão ser iniciados/parados com o
+        novo hpccsystems-platform.target. Para atualizar manualmente (ou
+        programaticamente por meio de um script) o hpccsystems-platform.target,
+        execute o seguinte:</para>
+
+        <programlisting> systemctl stop hpccsystems-platform.target </programlisting>
+
+        <para>Para encerrar corretamente os componentes hpccsystems antes que
+        o hpccsystems-platform.target mude.</para>
+      </sect2>
+
+      <sect2>
+        <title id="AutomatedGenHPCCPlatformTgt">Regeneração automática de
+        hpccsystems-platform.target</title>
+
+        <para>O script hpccsystems-platform.target contém uma lista de
+        requisitos para cada instância de um componente explicitamente
+        declarado no arquivo environment.xml. Para gerar a lista de
+        componentes necessária, invoque o script
+        <emphasis>generate-hpccsystems-target.sh</emphasis>. Isso pode ser
+        feito automaticamente habilitando o script systemd
+        hpcc-environemnt-monitor.path. O script hpcc-environemnt-monitor.path
+        chama um script de serviço correspondente com o mesmo nome sempre que
+        environment.xml é modificado.</para>
+
+        <para>Quando você tenta regenerar o hpccsystems-platform.target
+        modificando o arquivo environment.xml com hpcc-environment-monitor.path
+        habilitado, o script hpcc-environment-monitor.service primeiro tenta
+        encerrar qualquer hpccsystems-platform.target que esteja em execução no
+        sistema de destino. Isso é feito para que componentes declarados
+        anteriormente e possivelmente não existentes mais no ambiente não
+        fiquem órfãos no sistema de destino. Depois que o script
+        generate-hpccsystems-target.sh termina de invocar o utilitário
+        hpccsystems configgen, os scripts de serviço apropriados são gerados a
+        partir de modelos e um hpccsystems-platform.target novo existirá em
+        /opt/HPCCSystems/etc/systemd/system e será vinculado simbolicamente a
+        /etc/systemd/system quando apropriado.</para>
+      </sect2>
+
+      <sect2>
+        <title id="SystemD_Ulimits">ulimits do Systemd</title>
+
+        <para>Se quiser definir ulimits personalizados para componentes
+        hpccsystems específicos, faça isso nos modelos localizados em</para>
+
+        <para>/opt/HPCCSystems/etc/systemd/system</para>
+
+        <para>para que eles persistam entre regenerações do
+        hpccsystems-platform.target e dos scripts de serviço dos componentes.
+        Para a sintaxe de modificação dos limites de usuário, consulte man
+        systemd.exec.</para>
+      </sect2>
+    </sect1>
 
     <sect1 id="SysAdm_WUs_ActiveDir">
       <title>Workunits e Active Directory</title>
@@ -1712,13 +2019,13 @@ HPCCPrivateKeyFile=/keyfilepath/keyfile
         <title>Comando de Controles</title>
 
         <para>Existem comandos de controle que podem ser executados por meio
-        da CLI <emphasis role="bold">ecl</emphasis>, que passa pelo ESP para
+        da CLI <emphasis>ecl</emphasis>, que passa pelo ESP para
         encaminhar os comandos de controle aos componentes no back-end.</para>
 
         <sect3 id="CT-CheckMemIndivNodes">
           <title>Roxie Memlock Status em Nós Individuais</title>
 
-          <para>O comando <emphasis role="bold">ecl roxie
+          <para>O comando <emphasis>ecl roxie
           getmemlocked</emphasis> ecl CLI é uma maneira de verificar se a
           memória Roxie está bloqueada. Se você quiser verificar bloqueios em
           nós Roxie individuais e se puder acessar esses nós. Use o
@@ -1967,16 +2274,14 @@ HPCCPrivateKeyFile=/keyfilepath/keyfile
     </sect1>
 
     <sect1 id="BP_High_Availability">
-      <title>Alto Disponibilidade</title>
+      <title>Alta Disponibilidade</title>
 
-      <para>Se precisar de alta disponibilidade para seu HPCC Systems, há
-      algumas considerações adicionais que devem ser analisadas.</para>
-
-      <para>Esta não é uma lista completa e não visa fornecer instruções passo
-      a passo para configuração de recuperação de desastres. Em vez disso, a
-      seção apenas oferece algumas informações adicionais que devem ser
-      levadas conta ao incorporar o HPCC em seu plano de recuperação de
-      desastres.</para>
+      <para>Se precisar de alta disponibilidade para sua plataforma HPCC
+      Systems, há algumas considerações adicionais que você deve conhecer.
+      Esta não é uma lista completa e não visa fornecer instruções passo a
+      passo para configurar recuperação de desastres. Em vez disso, esta seção
+      apenas oferece algumas informações adicionais a considerar ao incorporar
+      o HPCC Systems ao seu plano de recuperação de desastres.</para>
 
       <sect2 id="Thor_HA">
         <title>Thor</title>
@@ -2335,11 +2640,10 @@ HPCCPrivateKeyFile=/keyfilepath/keyfile
       </sect2>
 
       <sect2 id="virtual-thor-slaves">
-        <title><emphasis role="strong">Virtual Thor
-        secundários</emphasis></title>
+        <title>Virtual Thor slaves</title>
 
         <para><indexterm>
-            <primary>Virtual Thor secundários</primary>
+            <primary>Virtual Thor slaves</primary>
           </indexterm>A partir da versão 6.0.0, os clusters Thor podem ser
         configurados de forma a obter todos os benefícios oferecidos pelos
         recursos disponíveis por nó ao usar os secundários Thor
@@ -2554,7 +2858,8 @@ HPCCPrivateKeyFile=/keyfilepath/keyfile
           nos atributos do Roxie e nos atributos do Thor. Há dois valores em
           cada componente:</para>
 
-          <programlisting>heapUseHugePages heapUseTransparentHugePages</programlisting>
+          <programlisting>heapUseHugePages  
+heapUseTransparentHugePages</programlisting>
 
           <para>Ative Huge Pages em seu sistema operacional e depois configure
           o HPCC para os componentes desejados.</para>

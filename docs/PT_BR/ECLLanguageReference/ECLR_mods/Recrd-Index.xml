@@ -27,25 +27,31 @@
   MAXLENGTH<indexterm>
       <primary>MAXLENGTH</primary>
     </indexterm>[</emphasis>(<emphasis>**value</emphasis>**)<emphasis
-  role="bold">] ] );</emphasis></para>
+  role="bold">] ] [,TRIM<indexterm>
+      <primary>TRIM</primary>
+    </indexterm>]);</emphasis></para>
 
   <para><emphasis> attr</emphasis><emphasis role="bold"> :=
   INDEX([</emphasis><emphasis> baserecset, </emphasis><emphasis
   role="bold">]</emphasis><emphasis> keys, payload, indexfile
-  </emphasis><emphasis role="bold">[,SORTED] [,OPT] [,COMPRESSED( LZW | ROW |
-  FIRST) ] [,DISTRIBUTED] [,FILEPOSITION( [
+  </emphasis><emphasis role="bold">[,SORTED] [,OPT]
+  [,COMPRESSED(<emphasis>option</emphasis>) ] [,DISTRIBUTED] [,FILEPOSITION( [
   </emphasis><emphasis>flag</emphasis><emphasis role="bold">] ) ] [,
   MAXLENGTH<indexterm>
       <primary>MAXLENGTH</primary>
     </indexterm>[</emphasis>(<emphasis>value</emphasis>)<emphasis
-  role="bold">] ]</emphasis>);</para>
+  role="bold">] ] [,TRIM<indexterm>
+      <primary>TRIM</primary>
+    </indexterm>]</emphasis>);</para>
 
   <para><emphasis> attr</emphasis><emphasis role="bold"> :=
   INDEX(</emphasis><emphasis>index,newindexfile</emphasis><emphasis
   role="bold"> [, MAXLENGTH<indexterm>
       <primary>MAXLENGTH</primary>
     </indexterm>[</emphasis>(<emphasis>value</emphasis>)<emphasis
-  role="bold">] ]); </emphasis></para>
+  role="bold">] ][,TRIM<indexterm>
+      <primary>TRIM</primary>
+    </indexterm>]); </emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -140,16 +146,17 @@
         <row>
           <entry><emphasis role="bold">COMPRESSED</emphasis></entry>
 
-          <entry><para>Opcional. Especifica o tipo de compactação usado. Se
-          omitido, o padrão usado é <emphasis role="bold"> LZW</emphasis>, uma
-          variante do algoritmo Lempel-Ziv-Welch. A especificação de <emphasis
-          role="bold">ROW</emphasis> compacta entradas de índice com base nas
-          diferenças entre linhas contíguas (apenas para uso com registros de
-          comprimento fixo) e é recomendada quando um tempo de descompactação
-          rápido é mais importante que a quantidade de compactação conseguida.
-          <emphasis role="bold">FIRST</emphasis> compacta os elementos
-          principais comuns da chave (recomendado apenas para uso na
-          comparação de cronometragem de tempo).</para></entry>
+          <entry><para>Opcional. Especifica que o índice deve ser compactado
+          usando o tipo de compactação especificado. Se omitido, o padrão é
+          <emphasis role="bold">LZW</emphasis>, uma variante do algoritmo
+          Lempel-Ziv-Welch. </para></entry>
+        </row>
+
+        <row>
+          <entry><emphasis>option</emphasis></entry>
+
+          <entry>Consulte <link linkend="IDXCOMP">Indexes and
+          Compression</link> para ver as opções.</entry>
         </row>
 
         <row>
@@ -221,6 +228,13 @@
           registro. Registros de comprimento variável que não especificam
           MAXLENGTH podem ser ligeiramente ineficientes.</entry>
         </row>
+
+        <row>
+          <entry><emphasis role="bold">TRIM</emphasis></entry>
+
+          <entry>Opcional. Esta opção especifica aparar strings de comprimento
+          variável antes de criar o índice.</entry>
+        </row>
       </tbody>
     </tgroup>
   </informaltable>
@@ -266,6 +280,8 @@
         <para>QSTRING</para>
 
         <para>Todas as STRINGs devem ter comprimento fixo.</para>
+
+        <para/>
       </listitem>
     </itemizedlist></para>
 
@@ -301,23 +317,26 @@ Bld := BUILDINDEX(AlphaInStateCity);</programlisting>
   <sect2 id="Payload_INDEX">
     <title>INDEX Payload</title>
 
-    <para>Essa forma define um arquivo de índice que contém campos adicionais
-    de carga útil, além das chaves. A carga útil pode conter campos com o
-    modificador {BLOB} para permitir a criação de mais de 32 K de dados por
-    entrada de índice. Esses campos BLOB são armazenados dentro do
-    <emphasis>indexfile</emphasis>, mas não com o resto do registro. O acesso
-    aos dados do BLOB exige uma procura adicional.</para>
+    <para>Essa forma define um arquivo de índice que contém campos de payload
+    extras além das chaves. O payload pode conter campos com o modificador
+    {BLOB} para permitir mais de 32K de dados por entrada de índice. Esses
+    campos BLOB são armazenados dentro do <emphasis>indexfile</emphasis>, mas
+    não com o restante do registro; acessar os dados BLOB exige uma busca
+    adicional.</para>
 
-    <para>Essa forma é usada principalmente em operações JOIN com “half-key”
+    <para>Essa forma é usada principalmente por operações JOIN de "half-key"
     para eliminar a necessidade de acessar diretamente o
-    <emphasis>baserecset</emphasis>. Assim, o desempenho é superior ao da
-    versão da mesma operação com "chave completa" (executada com a opção KEYED
-    no JOIN). Por padrão, os campos de carga útil não são classificados
-    durante a ação BUILD<indexterm>
+    <emphasis>baserecset</emphasis>, aumentando assim o desempenho em relação
+    à versão "full-keyed" da mesma operação (feita com a opção KEYED no JOIN).
+    Por padrão, os campos de payload não são classificados durante a ação
+    BUILD<indexterm>
         <primary>BUILD action</primary>
-      </indexterm> para minimizar o espaço dos nós folha da chave. Esse
+      </indexterm> para minimizar o espaço nos nós folha da chave. Esse
     comportamento de classificação pode ser controlado usando
     <emphasis>sortIndexPayload</emphasis> em uma declaração #OPTION.</para>
+
+    <para>Você também pode usar o operador "results in" (=&gt;) antes dos
+    campos de payload, conforme mostrado abaixo.</para>
 
     <para>Exemplo:</para>
 
@@ -337,19 +356,194 @@ Payload     := RECORD
 END; 
 VehicleKey2 := INDEX(Vehicles,SearchTerms,Payload,'vkey::st.city2');
 BUILD(VehicleKey2);
+
+// Using "results in" operator (=&gt;) for payload fields
+VehicleKey3 := INDEX(Vehicles,{st,city  =&gt; lname},'vkey::st.city3');
+BUILD(VehicleKey3);
 </programlisting>
   </sect2>
 
   <sect2 id="Duplicate_INDEX">
     <title>INDEX Duplicado</title>
 
-    <para>Essa forma define um <emphasis>newindexfile </emphasis> idêntico ao
-    <emphasis>index</emphasis> previamente definido.</para>
+    <para>Essa forma define um <emphasis>newindexfile </emphasis>que é
+    idêntico ao <emphasis>index</emphasis> definido anteriormente.</para>
 
     <para>Exemplo:</para>
 
     <programlisting>NewVehicleKey := INDEX(VehicleKey,'NEW::vkey::st.city');
           //define NewVehicleKey like VehicleKey</programlisting>
+  </sect2>
+
+  <sect2 id="IDXCOMP" role="brk">
+    <title>Índices e Compactação</title>
+
+    <para><emphasis role="bold">Opções de compactação:</emphasis></para>
+
+    <informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec align="left" colwidth="188*"/>
+
+        <colspec colwidth="836*"/>
+
+        <tbody>
+          <row>
+            <entry><emphasis role="bold">LZW</emphasis></entry>
+
+            <entry>A compactação padrão. Uma variante do algoritmo
+            Lempel-Ziv-Welch.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">ROW</emphasis></entry>
+
+            <entry>Compacta entradas de índice com base nas diferenças entre
+            linhas (<emphasis role="bold">somente para uso com registros de
+            comprimento fixo</emphasis>). Normalmente não compacta tão bem
+            quanto LZW, mas ocupa menos espaço na memória porque as linhas são
+            expandidas sob demanda.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">'inplace'</emphasis></entry>
+
+            <entry>Faz com que o índice seja criado usando o formato de
+            compactação inplace. O payload usa compactação lz4 por
+            padrão.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold"><emphasis
+            role="bold">'inplace:lz4hc'</emphasis> </emphasis></entry>
+
+            <entry>Faz compactação inplace nos campos-chave e compactação
+            lz4hc no payload. O índice resultante pode ser menor do que ao
+            usar lz4.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold"><emphasis
+            role="bold">'inplace:lz4s'</emphasis> </emphasis></entry>
+
+            <entry>Faz compactação inplace nos campos-chave e compactação
+            lz4s no payload. Isso usa a API de stream LZ4 para evitar
+            recomprimir os dados e reduzir os tempos de criação do
+            índice.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold"><emphasis
+            role="bold">'inplace:lz4shc'</emphasis> </emphasis></entry>
+
+            <entry>Faz compactação inplace nos campos-chave e compactação
+            lz4shc no payload. Isso usa a versão de alta compactação (HC) da
+            API de stream LZ4 para evitar recomprimir os dados e reduzir os
+            tempos de criação do índice. A compactação padrão para índices
+            inplace nas versões posteriores a 9.6.90, 9.8.66 e
+            9.10.12.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">'inplace:zstds'</emphasis></entry>
+
+            <entry>Faz compactação inplace usando o algoritmo Zstandard
+            (zstd), um algoritmo de compactação rápido que fornece altas taxas
+            de compactação.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable>
+
+    <para>O formato de compactação de índice inplace (introduzido na versão
+    9.2.0) melhora a compactação dos campos keyed e permite pesquisá-los sem
+    descompactação. A implementação original de compactação de índice
+    descompacta as linhas quando elas são lidas do disco.</para>
+
+    <para>Os formatos de compactação de índice inplace lz4s e lz4hc
+    (introduzidos nas versões 9.6.90, 9.8.66 e 9.10.12 9.2.0 ou posterior)
+    melhoram a compactação e reduzem o tempo de criação. Esses formatos
+    exigem um engine que os suporte. Em outras palavras, <emphasis
+    role="bold">se você criar um índice usando os formatos lz4s ou lz4shc,
+    deverá usar uma plataforma posterior a 9.6.90, 9.8.66 e 9.10.12 para ler
+    esses índices.</emphasis></para>
+
+    <para>O mesmo vale para índices criados usando o formato zstds. <emphasis
+    role="bold">Se você criar um índice usando o formato zstds, deverá usar
+    uma plataforma posterior a 9.10.40 ou 9.12.14 para ler esses
+    índices.</emphasis></para>
+
+    <para>Se você tentar ler um índice com o formato de compactação inplace em
+    um sistema que não oferece suporte a ele, receberá uma mensagem de
+    erro.</para>
+
+    <para>Como os nós de ramificação podem ser pesquisados sem descompactação,
+    mais nós de ramificação cabem na memória, o que pode melhorar o desempenho
+    da pesquisa. A compactação lz4 usada para o payload é significativamente
+    mais rápida ao descompactar páginas folha do que a compactação LZW
+    anterior. Se o desempenho é melhor com lz4hc (uma variante de alta
+    compactação de lz4) nos campos de payload depende das características de
+    acesso dos dados e de quanto do índice está em cache na memória.</para>
+
+    <para><emphasis role="bold">Níveis de compactação:</emphasis></para>
+
+    <informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec align="left" colwidth="240*"/>
+
+        <colspec colwidth="733*"/>
+
+        <tbody>
+          <row>
+            <entry><emphasis role="bold">hclevel</emphasis></entry>
+
+            <entry>Um inteiro entre 3 e 12 para especificar o nível de
+            compactação. O padrão é 3. Níveis mais altos aumentam a
+            compactação, mas também aumentam os tempos de compactação. Isso
+            pode ser vantajoso dependendo de por quanto tempo os dados são
+            armazenados e dos custos de armazenamento em comparação com os
+            custos de computação para criar o índice.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">maxcompression</emphasis></entry>
+
+            <entry>A taxa máxima de compactação desejada. Isso evita que os
+            nós folha fiquem grandes demais quando expandidos, mas aumenta o
+            tamanho de alguns índices. O padrão é 20.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">maxrecompress</emphasis></entry>
+
+            <entry>Especifica o número de vezes que todo o dataset de entrada
+            deve ser recomprimido para liberar espaço. Aumentar o número
+            diminui o tamanho dos índices e provavelmente reduzirá
+            ligeiramente o tempo de descompactação (porque há menos blocos de
+            stream), mas aumentará o tempo de criação. O padrão é 1.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable>
+
+    <para/>
+
+    <para>Exemplo:</para>
+
+    <programlisting>Vehicles := DATASET('vehicles',
+          {STRING2 st,STRING20 city,STRING20 lname},FLAT);
+
+SearchTerms := RECORD
+  Vehicles.st;
+  Vehicles.city;
+END; 
+Payload     := RECORD
+  Vehicles.lname;
+END; 
+VehicleKey := INDEX(Vehicles,SearchTerms,Payload,'vkey::st.city',
+                    COMPRESSED('inplace:lz4shc,compressopt(hclevel=9,
+                                                           maxcompression=25,
+                                                           maxrecompress=4)'));
+BUILD(VehicleKey);</programlisting>
 
     <para>Ver também: <link linkend="DATASET">DATASET</link>, <link
     linkend="BUILD">BUILDINDEX</link>, <link linkend="JOIN">JOIN</link>, <link

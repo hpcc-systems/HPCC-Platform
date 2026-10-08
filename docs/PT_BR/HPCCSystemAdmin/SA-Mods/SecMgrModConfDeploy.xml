@@ -5,8 +5,8 @@
   <title role="nbrk">Configurar e implementar o Plugin do Gerenciador de
   Segurança</title>
 
-  <para>As seções a seguir detalham o processo de configuração de seu HPCC
-  Systems para usar o Plugin do Gerenciador de Segurança.</para>
+  <para>As seções a seguir detalham o processo de configuração de sua plataforma HPCC
+  Systems<superscript>®</superscript> para usar o Plugin do Gerenciador de Segurança.</para>
 
   <sect1 id="how-to-configure-an-existing-security-manager-plugin"
          role="nobrk">
@@ -20,7 +20,7 @@
           <para>Pare a execução de todos os componentes do HPCC.</para>
 
           <para>Verifique se eles não estão mais sendo executados. É possível
-          usar um comando único, como: <programlisting>  sudo /opt/HPCCSystems/sbin/hpcc-run.sh -a hpcc-init status</programlisting></para>
+          usar um comando único, como: <programlisting>sudo /opt/HPCCSystems/sbin/hpcc-run.sh -a hpcc-init status</programlisting></para>
         </listitem>
 
         <listitem>

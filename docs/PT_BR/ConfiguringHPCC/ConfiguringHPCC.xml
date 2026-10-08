@@ -1280,6 +1280,18 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
           xpointer="xpointer(//*[@id='dz.t1'])"
           xmlns:xi="http://www.w3.org/2001/XInclude"/></para>
 
+          <para>Você pode fornecer uma lista de destinos de dropzone
+          preferenciais e manter alguns destinos ocultos usando o atributo
+          <emphasis>ECLWatchVisible</emphasis>. Quando definido como true, a
+          landing zone especificada será exibida na lista suspensa de dropzones
+          disponíveis no ECL Watch. Quando o atributo
+          <emphasis>ECLWatchVisible</emphasis> é definido como false, a dropzone
+          fica oculta. Isso pode ser útil em situações nas quais você deseja
+          manter várias dropzones, mas ocultar e proteger alguns locais para que
+          não sejam usados por determinados usuários ou grupos. Você pode usar a
+          aba Notes para registrar os detalhes sobre as configurações da sua
+          dropzone.</para>
+
           <!-- /*Attribute table***replace with dynamically generated table*/
           <informaltable>
             <tgroup cols="2">
@@ -1413,9 +1425,11 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
           <para><xi:include
           href="../XMLGeneration/xml/eclagent_config.xsd.mod.xml"
           xpointer="xpointer(//*[@id='EA.t2'])"
-          xmlns:xi="http://www.w3.org/2001/XInclude"/> <sect3
-              id="AllowedPipePrograms_hThor">
-              <title>Programas PIPE permitidos</title>
+          xmlns:xi="http://www.w3.org/2001/XInclude"/></para>
+        </sect3>
+
+        <sect3 id="AllowedPipePrograms_hThor">
+          <title>Programas PIPE permitidos</title>
 
               <para>Na versão 9.2.0 e superior, os comandos usados numa ação
               PIPE são restritos por padrão. No entanto, por razões de legado,
@@ -1438,14 +1452,19 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
               </para>
 
               <para/>
-            </sect3> <sect3>
+            </sect3>
+
+        <sect3>
               <title>Notas sobre EclAgent Process</title>
 
               <para>Esta aba permite que você adicione notas pertinentes à
               configuração do componente. Isso pode ser útil para manter um
               registro de alterações e para comunicar essas informações aos
               parceiros.</para>
-            </sect3> <sect2 role="brk">
+            </sect3>
+      </sect2>
+
+      <sect2 role="brk">
               <title>ECL CC Server Process</title>
 
               <sect3>
@@ -2721,6 +2740,8 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
                   incluindo programas de sistema, de serem
                   executados.</emphasis>
                 </para>
+
+                <para />
               </sect3>
 
               <sect3 id="ECLWatchXREFMultiThor">
@@ -3149,6 +3170,8 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
                 <listitem>
                   <para>Copie o /etc/HPCCSystems/environment.xml para o
                   /etc/HPCCSystems/ em cada nó.</para>
+
+                  <para />
                 </listitem>
 
                 <listitem>
@@ -3163,9 +3186,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
                   nós.</para>
                 </listitem>
               </orderedlist>
-            </sect2></para>
-        </sect3>
-      </sect2>
+            </sect2>
     </sect1>
   </chapter>
 </book>

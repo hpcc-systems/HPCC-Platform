@@ -112,7 +112,7 @@
 
   <para>Exemplo:</para>
 
-  <programlisting>inrec := {UNSIGNED6 did};
+  <programlisting lang="ECL_Runnable">inrec := {UNSIGNED6 did};
 
 outrec := RECORD(inrec)
   STRING20 name;

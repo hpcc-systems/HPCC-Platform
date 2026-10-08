@@ -1,0 +1,161 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="WorkunitStatistics">
+  <title>WorkunitStatistics</title>
+
+  <para><emphasis role="bold">STD.System.Workunit.WorkunitStatistics
+  <indexterm>
+      <primary>STD.System.Workunit.WorkunitStatistics</primary>
+    </indexterm> <indexterm>
+      <primary>System.Workunit.WorkunitStatistics</primary>
+    </indexterm> <indexterm>
+      <primary>Workunit.WorkunitStatistics</primary>
+    </indexterm> <indexterm>
+      <primary>WorkunitStatistics</primary>
+    </indexterm> (</emphasis> <emphasis> wuid </emphasis> <emphasis
+  role="bold">[</emphasis><emphasis>, includeActivities </emphasis><emphasis
+  role="bold">] [</emphasis><emphasis>, _filter </emphasis><emphasis
+  role="bold">])</emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="120.50pt"/>
+
+      <colspec/>
+
+      <tbody>
+        <row>
+          <entry><emphasis>wuid</emphasis></entry>
+
+          <entry>Uma string terminada em nulo contendo o WorkUnit
+          IDentifier.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>includeActivities</emphasis></entry>
+
+          <entry>Opcional. Um sinalizador booleano TRUE ou FALSE que
+          especifica se as estatísticas em nível de atividade são incluídas.
+          Se omitido, o padrão é FALSE.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>_filter</emphasis></entry>
+
+          <entry>Opcional. Uma string terminada em nulo contendo uma expressão
+          de filtro de estatísticas. Se omitido, o padrão é uma string
+          vazia.</entry>
+        </row>
+
+        <row>
+          <entry>Retorno:<emphasis> </emphasis></entry>
+
+          <entry>WorkunitStatistics retorna um valor DATASET.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>A função <emphasis role="bold">WorkunitStatistics </emphasis>retorna
+  um DATASET com este formato:</para>
+
+  <programlisting>EXPORT WsStatistic := RECORD
+  UNSIGNED8 value;
+  UNSIGNED8 count;
+  UNSIGNED8 maxValue;
+  STRING creatorType;
+  STRING creator;
+  STRING scopeType;
+  STRING scope;
+  STRING name;
+  STRING description;
+  STRING unit;
+END;</programlisting>
+
+  <para>Cada registro do dataset retornado especifica uma estatística da
+  workunit.</para>
+
+  <para>O parâmetro opcional <literal>_filter</literal> é uma lista separada
+  por vírgulas de cláusulas <literal>option[value]</literal> que pode ser
+  usada para limitar quais escopos são pesquisados e quais estatísticas são
+  retornadas.</para>
+
+  <para>As cláusulas de filtro suportadas são:</para>
+
+  <itemizedlist>
+    <listitem>
+      <para><literal>scope[&lt;scope-id&gt;]</literal>,
+      <literal>stype[&lt;scope-type&gt;]</literal> ou
+      <literal>id[&lt;id&gt;]</literal> para selecionar os escopos
+      correspondentes. Essas cláusulas podem ser repetidas, mas
+      <literal>scope</literal>, <literal>stype</literal> e
+      <literal>id</literal> não devem ser combinadas no mesmo filtro.</para>
+    </listitem>
+
+    <listitem>
+      <para><literal>depth[n]</literal>, <literal>depth[low,high]</literal> ou
+      <literal>depth[low..high]</literal> para restringir a profundidade
+      pesquisada em busca de correspondências.</para>
+    </listitem>
+
+    <listitem>
+      <para><literal>source[global|stats|statistics|graph|workflow|exception|all]</literal>
+      para escolher quais fontes da workunit são pesquisadas.</para>
+    </listitem>
+
+    <listitem>
+      <para><literal>where[&lt;stat&gt;]</literal>,
+      <literal>where[&lt;stat&gt;(=|&lt;|&lt;=|&gt;|&gt;=)&lt;value&gt;]</literal>
+      ou <literal>where[&lt;stat&gt;=&lt;low&gt;..&lt;high&gt;]</literal> para
+      filtrar pela existência da estatística ou pelo intervalo de
+      valores.</para>
+    </listitem>
+
+    <listitem>
+      <para><literal>matched[true|false]</literal>,
+      <literal>nested[&lt;depth&gt;|all]</literal> e
+      <literal>include[&lt;scope-type&gt;]</literal> ou
+      <literal>includetype[&lt;scope-type&gt;]</literal> para controlar quais
+      escopos correspondentes são retornados.</para>
+    </listitem>
+
+    <listitem>
+      <para><literal>properties[statistics|hints|attributes|notes|scope|all]</literal>
+      ou <literal>props[...]</literal> para escolher as categorias de
+      propriedades a serem retornadas.</para>
+    </listitem>
+
+    <listitem>
+      <para><literal>statistic[&lt;statistic-kind&gt;|none|all]</literal> ou
+      <literal>stat[...]</literal>,
+      <literal>attribute[&lt;attribute-name&gt;|none|all]</literal> ou
+      <literal>attr[...]</literal>,
+      <literal>hint[&lt;hint-name&gt;]</literal>,
+      <literal>property[&lt;name&gt;]</literal> ou
+      <literal>prop[...]</literal>,
+      <literal>measure[&lt;measure&gt;]</literal> e
+      <literal>version[&lt;version&gt;]</literal> para controlar quais
+      detalhes são retornados para cada escopo.</para>
+    </listitem>
+  </itemizedlist>
+
+  <para>Os valores comuns de tipo de escopo incluem
+  <literal>global</literal>, <literal>graph</literal>,
+  <literal>subgraph</literal>, <literal>activity</literal>,
+  <literal>operation</literal>, <literal>workflow</literal>,
+  <literal>file</literal> e <literal>child</literal>. Os nomes das
+  estatísticas usam os nomes internos dos tipos de estatística, por exemplo
+  <literal>TimeElapsed</literal> e
+  <literal>NumRowsProcessed</literal>.</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting format="linespecific">OUTPUT(STD.System.Workunit.WorkunitStatistics('W20260330-164946'));
+OUTPUT(STD.System.Workunit.WorkunitStatistics('W20260330-164946', TRUE));
+OUTPUT(STD.System.Workunit.WorkunitStatistics('W20260330-164946', FALSE,
+       'source[stats],where[TimeElapsed&gt;1000000]'));
+OUTPUT(STD.System.Workunit.WorkunitStatistics('W20260330-164946', TRUE,
+       'stype[activity],where[NumRowsProcessed&gt;0],stat[NumRowsProcessed],
+       stat[TimeElapsed]'));</programlisting>
+</sect1>

@@ -2,7 +2,7 @@
 <!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <book lang="en_US" xml:base="../">
-  <title>Preflight e Certificação</title>
+  <title>HPCC Systems<superscript>®</superscript> Preflight e Certificação</title>
 
   <bookinfo>
     <mediaobject>
@@ -17,9 +17,7 @@
 
     <legalnotice>
       <para>Sua opinião e comentários sobre este documento são muito
-      bem-vindos e podem ser enviados por e-mail para <email></email></para>
-
-      <para role="syntax"><email>docfeedback@hpccsystems.com</email></para>
+      bem-vindos e podem ser enviados por e-mail para <email>docfeedback@hpccsystems.com</email></para>
 
       <para>Inclua a frase <emphasis role="bold">Feedback sobre
       documentação</emphasis> na linha de assunto e indique o nome do
@@ -69,7 +67,7 @@ Copyright is used for the copyright line on title page. The ID attribute is Copy
     <title>Introdução: Abordagem sobre Certificação</title>
 
     <para>Este documento informa as etapas que podem ser usadas para
-    certificar o seu ambiente HPCC.</para>
+    certificar o seu ambiente HPCC Systems<superscript>®</superscript>.</para>
 
     <para>Use este procedimento ao criar um novo sistema HPCC ou após alterar
     ou fazer upgrade em um sistema já existente. O procedimento garante que o

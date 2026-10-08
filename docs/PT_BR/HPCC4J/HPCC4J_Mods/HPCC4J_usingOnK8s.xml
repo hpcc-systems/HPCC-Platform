@@ -1,0 +1,197 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<chapter id="UsingHPCC4J_k8s">
+  <title>Usando o HPCC4J com o HPCC em um Cluster Kubernetes</title>
+
+  <para>A seção a seguir é baseada na documentação Helm do HPCC Systems, que
+  pode ser encontrada aqui: <ulink
+  url="https://github.com/hpcc-systems/HPCC-Platform/tree/master/helm/examples/certmanager">https://github.com/hpcc-systems/HPCC-Platform/tree/master/helm/examples/certmanager</ulink></para>
+
+  <sect1 id="certificate-manager-setup" role="nobrk">
+    <title>Configuração do Gerenciador de Certificados</title>
+
+    <para>Durante a instalação, os charts Helm do HPCC Systems utilizam um
+    gerenciador de certificados para gerar os certificados do cluster. Esses
+    certificados são necessários para criar conexões seguras com o cluster e
+    devem estar configurados para que o HPCC4j possa ser utilizado. As etapas
+    a seguir configuram um gerenciador de certificados local dentro do
+    Kubernetes:</para>
+
+    <para><emphasis role="strong">Instalar o JetStack Cert
+    Manager</emphasis></para>
+
+    <programlisting role="font7">helm repo add jetstack https://charts.jetstack.io
+kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.11.0/cert-manager.crds.yaml
+helm install cert-manager jetstack/cert-manager --version v1.11.0</programlisting>
+
+    <para><emphasis role="strong">Adicionar a Autoridade Certificadora
+    Raiz</emphasis></para>
+
+    <para>Crie uma solicitação de certificado semelhante ao exemplo a
+    seguir:</para>
+
+    <programlisting> [req]
+ default_bits           = 2048
+ default_keyfile        = ca.key
+ distinguished_name     = dn
+ prompt                 = no
+ x509_extensions        = x509_ca
+
+ [dn]
+ C                      = YOUR_COUNTRY
+ ST                     = YOUR_STATE
+ L                      = YOUR_CITY
+ O                      = YOUR_ORGANIZATION
+ OU                     = YOUR_ORGANIZATION_UNIT
+ CN                     = Internal Cluster CA
+ emailAddress           = YOUR_SUPPORT_EMAIL
+
+ [x509_ca]
+ basicConstraints=CA:true,pathlen:1</programlisting>
+
+    <para>Crie o certificado raiz por meio do OpenSSL e adicione-o a um secret
+    do Kubernetes.</para>
+
+    <programlisting language="bash" role="font7">openssl req -x509 -newkey rsa:2048 -nodes -keyout ca.key -sha256 -days 1825 -out ca.crt -config ca-req.cfg
+kubectl create secret tls hpcc-local-issuer-key-pair --cert=ca.crt --key=ca.key
+kubectl create secret tls hpcc-signing-issuer-key-pair --cert=ca.crt --key=ca.key</programlisting>
+  </sect1>
+
+  <sect1 id="configuring-hpcc-systems-certificates">
+    <title>Configurando os Certificados do HPCC Systems</title>
+
+    <para>Agora que criamos uma autoridade certificadora, precisamos
+    configurar o HPCC para utilizar o gerenciador de certificados / o
+    certificado raiz e habilitar o rowservice.</para>
+
+    <para><emphasis role="bold">OBSERVAÇÃO</emphasis>: O rowservice é um
+    serviço interno do HPCC Systems do qual o HPCC4j depende para ler e gravar
+    dados de/para clusters HPCC Systems de maneira performática e
+    segura.</para>
+
+    <para>Podemos alterar essa configuração criando e aplicando um arquivo
+    yaml de override para sobrescrever as configurações padrão dos charts Helm
+    do HPCC.</para>
+
+    <para><emphasis role="strong">certificateValues.yaml:</emphasis></para>
+
+    <programlisting language="yaml">certificates:
+  enabled: true
+dafilesrv:
+  - name: rowservice
+    disabled: false
+    application: stream
+    service:
+      servicePort: 7600
+      visibility: global
+  - name: direct-access
+    disabled: true
+    application: directio
+    service:
+      servicePort: 7200
+      visibility: local
+  - name: spray-service
+    application: spray
+    service:
+      servicePort: 7300
+      visibility: cluster</programlisting>
+
+    <para><emphasis role="strong">Aplicando as Alterações de Configuração do
+    Helm</emphasis></para>
+
+    <para>Instalando um cluster HPCC com alterações de configuração:</para>
+
+    <programlisting language="bash">helm install myhpcc hpcc/hpcc --set global.image.version=latest -f certificateValues.yaml</programlisting>
+
+    <para>Essas alterações de configuração também podem ser feitas depois que
+    o cluster HPCC tiver sido instalado, por meio do helm upgrade:</para>
+
+    <programlisting language="bash">helm upgrade -f certificateValues.yaml myhpcc hpcc/hpcc</programlisting>
+
+    <para><emphasis role="bold">OBSERVAÇÃO</emphasis>: Se você encontrar um
+    problema em que os charts Helm do HPCC reclamem da ausência do
+    cert-manager, certifique-se de aplicar o cert-manager.crds.yaml na etapa
+    de Configuração do Gerenciador de Certificados acima e, em seguida,
+    verifique se cert-manager.io/v1 aparece na saída de <literal>kubectl
+    api-versions</literal></para>
+  </sect1>
+
+  <sect1 id="trusting-generated-certificates">
+    <title>Confiando nos Certificados Gerados</title>
+
+    <para>Os certificados criados nas etapas anteriores vêm de uma autoridade
+    certificadora desconhecida (a autoridade certificadora local que criamos)
+    e, portanto, não são confiáveis por padrão. Como os certificados não são
+    confiáveis, qualquer tentativa de conexão com o cluster falhará com uma
+    mensagem de erro indicando que os certificados não são confiáveis e/ou que
+    a construção do caminho PKIX falhou.</para>
+
+    <para><emphasis role="strong">Exemplo de mensagem de
+    erro:</emphasis></para>
+
+    <para><programlisting lang="bash" role="font7">ERROR RowServiceOutputStream Exception occurred while attempting to connect to row service (localhost:7600):
+  PKIX path building failed: sun.security.provider.certpath.SunCertPathBuilderException:
+    unable to find valid certification path to requested target
+
+java.lang.Exception: Exception occured while attempting to connect to row service (localhost:7600):
+  PKIX path building failed: sun.security.provider.certpath.SunCertPathBuilderException:
+    unable to find valid certification path to requested target</programlisting></para>
+
+    <para>Podemos resolver esse problema adicionando os certificados ao
+    repositório de confiança local (trust store) e acrescentando uma entrada
+    ao nosso arquivo hosts para os nomes de domínio associados aos
+    certificados.</para>
+  </sect1>
+
+  <sect1 id="resolving-certificate-domain-name-locally">
+    <title>Resolvendo o Nome de Domínio do Certificado Localmente</title>
+
+    <para>Os certificados são vinculados a um nome de domínio específico
+    quando criados; por padrão, os charts Helm do HPCC geram os certificados
+    usando o nome de domínio <emphasis
+    role="strong">eclwatch.default</emphasis>. No entanto, o seu servidor de
+    nomes de domínio não saberá que o domínio eclwatch.default deve apontar
+    para o seu endereço IP local; portanto, precisaremos adicionar uma entrada
+    ao seu arquivo de hosts local para que eclwatch.default seja resolvido
+    corretamente.</para>
+
+    <programlisting language="bash">sudo -- sh -c -e "echo '127.0.0.1 eclwatch.default' &gt;&gt; /etc/hosts";
+sudo -- sh -c -e "echo '127.0.0.1 rowservice.default' &gt;&gt; /etc/hosts";
+sudo -- sh -c -e "echo '127.0.0.1 sql2ecl.default' &gt;&gt; /etc/hosts";
+</programlisting>
+
+    <para><emphasis role="strong">Adicionando os Certificados ao Trust Store
+    do Java</emphasis></para>
+
+    <para>Baixe o certificado TLS e adicione-o ao keystore do Java.</para>
+
+    <para><emphasis role="bold">OBSERVAÇÃO</emphasis>: O caminho para o
+    keystore indicado abaixo pode precisar ser atualizado. Por exemplo, em
+    algumas instalações o caminho seria:
+    <literal>$JAVA_HOME/lib/security/cacerts</literal></para>
+
+    <programlisting language="bash" role="font6">openssl s_client -showcerts -connect eclwatch.default:8010 &lt; /dev/null | openssl x509 -outform DER &gt; cert.der
+sudo keytool -import -keystore $JAVA_HOME/jre/lib/security/cacerts -storepass changeit -noprompt -alias eclwatch-tls -file cert.der
+openssl s_client -showcerts -connect rowservice.default:7600 &lt; /dev/null | openssl x509 -outform DER &gt; cert.der
+sudo keytool -import -keystore $JAVA_HOME/jre/lib/security/cacerts -storepass changeit -noprompt -alias dafilesrv-tls -file cert.der
+openssl s_client -showcerts -connect sql2ecl.default:8510 &lt; /dev/null | openssl x509 -outform DER &gt; cert.der
+sudo keytool -import -keystore $JAVA_HOME/jre/lib/security/cacerts -storepass changeit -noprompt -alias sqltoecl-tls -file cert.der</programlisting>
+  </sect1>
+
+  <sect1 id="testing" role="nobrk">
+    <title role="nobrk">Testes</title>
+
+    <para>Seu cluster local agora deve estar disponível em
+    https://eclwatch.default:8010; no entanto, provavelmente você precisará
+    informar ao seu navegador que ele deve confiar nos certificados SSL, pois
+    as etapas acima criaram confiança apenas para aplicações Java.</para>
+
+    <para>O utilitário de arquivos (file utility) do DFSClient pode ser usado
+    para testar a configuração dos certificados. Se você encontrar um erro
+    PKIX ao executar o comando do file utility, será necessário revisar as
+    etapas acima.</para>
+
+    <programlisting language="bash" role="font5">java -cp dfsclient-jar-with-dependencies.jar org.hpccsystems.dfs.client.FileUtility -read existing::hpcc::file_to_read -url https://eclwatch.default:8010</programlisting>
+  </sect1>
+</chapter>

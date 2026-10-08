@@ -23,6 +23,7 @@ import { MetricsPropertiesTables } from "./MetricsPropertiesTables";
 import { MetricsSQL } from "./MetricsSQL";
 import { ScopesTable } from "./MetricsScopes";
 import { useMetricsGraphData, MetricsGraph, calcLineage, idsToScopes } from "./MetricsGraph";
+import { MetricsTooltip } from "./MetricsGraphTooltip";
 import { MetricsHeatmap } from "./MetricsHeatmap";
 import { useUserTheme } from "../hooks/theme";
 
@@ -196,12 +197,38 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
     const timeline = useConst(() => new WUTimelineNoFetch()
         .maxZoom(Number.MAX_SAFE_INTEGER)
     );
+    const [timelineTooltip, setTimelineTooltip] = React.useState<{ scope: IScope; anchor: { left: number; top: number } }>();
+    const timelineTooltipTimer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    const clearTimelineTooltipTimer = React.useCallback(() => {
+        if (timelineTooltipTimer.current !== null) {
+            clearTimeout(timelineTooltipTimer.current);
+            timelineTooltipTimer.current = null;
+        }
+    }, []);
+
+    const hideTimelineTooltip = React.useCallback((delay = 800) => {
+        clearTimelineTooltipTimer();
+        timelineTooltipTimer.current = setTimeout(() => setTimelineTooltip(undefined), delay);
+    }, [clearTimelineTooltipTimer]);
+
+    React.useEffect(() => {
+        if (logicalGraph || !showTimeline) {
+            clearTimelineTooltipTimer();
+            setTimelineTooltip(undefined);
+        }
+    }, [clearTimelineTooltipTimer, logicalGraph, showTimeline]);
 
     const [scopeFilter, setScopeFilter] = React.useState("");
     const [scopeFilterVersion, setScopeFilterVersion] = React.useState(0);
 
     React.useEffect(() => {
         timeline
+            .hoverCallback((scope, anchor) => {
+                clearTimelineTooltipTimer();
+                setTimelineTooltip({ scope, anchor });
+            })
+            .hoverOutCallback(() => hideTimelineTooltip())
             .on("click", (row, col, sel) => {
                 if (sel) {
                     timeline.selection([]);
@@ -212,7 +239,14 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
                 }
             }, true)
             ;
-    }, [timeline, lineageSelectionScope?.name, parentUrl, pushSelectedMetricsUrl]);
+        return () => {
+            timeline.hoverCallback(undefined).hoverOutCallback(undefined);
+        };
+    }, [clearTimelineTooltipTimer, hideTimelineTooltip, timeline, lineageSelectionScope?.name, parentUrl, pushSelectedMetricsUrl]);
+
+    React.useEffect(() => {
+        return () => clearTimelineTooltipTimer();
+    }, [clearTimelineTooltipTimer]);
 
     React.useEffect(() => {
         if (!logicalGraph && showTimeline) {
@@ -465,6 +499,13 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
         header={<>
             <CommandBar items={buttons} farItems={rightButtons} />
             <AutosizeHpccJSComponent widget={timeline} fixedHeight={`${TIMELINE_FIXEDHEIGHT + 8}px`} padding={4} hidden={logicalGraph || !showTimeline} />
+            {timelineTooltip && <MetricsTooltip
+                item={timelineTooltip.scope}
+                metricGraph={metricGraph}
+                anchor={timelineTooltip.anchor}
+                onMouseEnter={clearTimelineTooltipTimer}
+                onMouseLeave={() => hideTimelineTooltip(0)}
+            />}
         </>}
         main={
             <ErrorBoundary>

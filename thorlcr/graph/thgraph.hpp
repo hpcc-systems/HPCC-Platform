@@ -661,6 +661,8 @@ protected:
     CReplyCancelHandler graphCancelHandler;
     bool loopBodySubgraph;
     Owned<IPropertyTree> sourceActDependents;
+    CriticalSection readFilesTransactionCreateCS{SYNC_LOCATION};
+    AtomicShared<IDistributedFileTransaction> readFilesTransaction;
 
 public:
     IMPLEMENT_IINTERFACE_USING(CGraphStub);
@@ -834,6 +836,8 @@ public:
     {
         return lastElapsedCycles;
     }
+    virtual IDistributedFileTransaction *queryReadFilesTransaction();
+
 // IExceptionHandler
     virtual bool fireException(IException *e);
 

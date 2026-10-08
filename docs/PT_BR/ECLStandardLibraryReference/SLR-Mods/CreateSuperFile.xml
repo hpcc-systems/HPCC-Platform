@@ -10,11 +10,7 @@
       <primary>File.CreateSuperFile</primary>
     </indexterm><indexterm>
       <primary>CreateSuperFile</primary>
-    </indexterm>(</emphasis> <emphasis> superfile </emphasis> <emphasis
-  role="bold">[</emphasis> <emphasis>, sequentialparts </emphasis> <emphasis
-  role="bold">] [</emphasis> <emphasis>, allowExist </emphasis> <emphasis
-  role="bold">]</emphasis> <emphasis> </emphasis> <emphasis
-  role="bold">)</emphasis></para>
+    </indexterm>(</emphasis> <emphasis>superName, sequentialParts, allowExist</emphasis> <emphasis role="bold">)</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -47,7 +43,7 @@
         </row>
 
         <row>
-          <entry>Return:<emphasis> </emphasis></entry>
+          <entry>Retorno:<emphasis> </emphasis></entry>
 
           <entry>Nulo</entry>
         </row>

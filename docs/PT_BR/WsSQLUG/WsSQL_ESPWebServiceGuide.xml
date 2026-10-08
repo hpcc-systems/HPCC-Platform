@@ -17,14 +17,11 @@
 
     <legalnotice>
       <para>Sua opinião e comentários sobre este documento são muito
-      bem-vindos e podem ser enviados por e-mail para <email></email></para>
-
-      <para role="syntax"><email>docfeedback@hpccsystems.com</email> </para>
-
-      <para>Inclua a frase <emphasis role="bold">Feedback sobre
-      documentação</emphasis> na linha de assunto e indique o nome do
-      documento, o número das páginas e número da Versão atual no corpo da
-      mensagem.</para>
+      bem-vindos e podem ser enviados por e-mail para
+      <email>docfeedback@hpccsystems.com</email> Inclua a frase <emphasis
+      role="bold">Feedback sobre documentação</emphasis> na linha de assunto e
+      indique o nome do documento, o número das páginas e número da Versão
+      atual no corpo da mensagem.</para>
 
       <para>LexisNexis e o logotipo Knowledge Burst são marcas comerciais
       registradas da Reed Elsevier Properties Inc., usadas sob licença. Os
@@ -60,8 +57,8 @@
   <chapter>
     <title>Introdução</title>
 
-    <para>O WsSQL é um serviço que fornece uma interface SQL para o HPCC
-    System. Esse serviço da web aceita um subconjunto preparado e padrão de
+    <para>O WsSQL é um serviço que fornece uma interface SQL para a plataforma HPCC
+    Systems<superscript>®</superscript>. Esse serviço da web aceita um subconjunto preparado e padrão de
     consultas SQL. Isso fornece acesso à maioria dos dados do HPCC e consultas
     publicadas por HTTP ou HTTPS usando interfaces SOAP ou REST.</para>
 
@@ -198,8 +195,7 @@
               servidores.</para>
 
               <para><programlisting># for example
-sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml 
-/etc/HPCCSystems/environment.xml</programlisting></para>
+sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/environment.xml</programlisting></para>
             </listitem>
 
             <listitem>
@@ -283,8 +279,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml
               servidores</para>
 
               <programlisting># for example
-sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml 
-/etc/HPCCSystems/environment.xml</programlisting>
+sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/environment.xml</programlisting>
             </listitem>
 
             <listitem>
@@ -998,7 +993,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml
                 </row>
 
                 <row>
-                  <entry><programlisting role="wsig">        Columns</programlisting></entry>
+                  <entry><programlisting role="wsig">        Column</programlisting></entry>
 
                   <entry>Colunas</entry>
                 </row>
@@ -2846,7 +2841,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml
                 </row>
 
                 <row>
-                  <entry><programlisting role="wsig">  Exceção</programlisting></entry>
+                  <entry><programlisting role="wsig">  Exception</programlisting></entry>
 
                   <entry>Estrutura contendo uma exceção</entry>
                 </row>
@@ -2870,7 +2865,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml
                 </row>
 
                 <row>
-                  <entry><programlisting role="wsig">    Menssage</programlisting></entry>
+                  <entry><programlisting role="wsig">    Message</programlisting></entry>
 
                   <entry>Mensagem de Erro</entry>
                 </row>
@@ -2950,7 +2945,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml
                 </row>
 
                 <row>
-                  <entry><programlisting role="wsig">  Snapshots</programlisting></entry>
+                  <entry><programlisting role="wsig">  Snapshot</programlisting></entry>
 
                   <entry>Snapshots</entry>
                 </row>
@@ -3892,7 +3887,7 @@ SUM TABLE TRUE UPPER USE WHERE XOR DIV MOD OR AND</programlisting>
           especiais que não sejam:</para>
 
           <programlisting>( 'A'..'Z' | 'a'..'z' | '' | '$') ( 'A'..'Z' | 'a'..'z' | '' | '$' | '0'..'9' )
-Os nomes dos arquivos podem ser prefixados com um ~ (til) ou .:: 
+File names can be prefixed with a ~ (tilde) or .:: 
 </programlisting>
 
           <para>Se um nome de arquivo não for suportado, ele não será

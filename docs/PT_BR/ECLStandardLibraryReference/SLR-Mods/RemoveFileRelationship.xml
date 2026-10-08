@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE sect2 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="RemoveFileRelationship">
@@ -10,13 +10,7 @@
       <primary>File.RemoveFileRelationship</primary>
     </indexterm><indexterm>
       <primary>RemoveFileRelationship</primary>
-    </indexterm>(</emphasis> <emphasis> primary, secondary,</emphasis>
-  <emphasis> </emphasis> <emphasis role="bold">[</emphasis> <emphasis>, primaryfields </emphasis> <emphasis role="bold">]</emphasis> <emphasis>
-  </emphasis> <emphasis role="bold">[</emphasis> <emphasis>, secondaryfields
-  </emphasis> <emphasis role="bold">]</emphasis> <emphasis role="bold">
-  [</emphasis> <emphasis>,</emphasis> <emphasis role="bold"> </emphasis>
-  <emphasis>relationship </emphasis> <emphasis
-  role="bold">]);</emphasis></para>
+    </indexterm>(</emphasis> <emphasis>primary, secondary, primaryflds, secondaryflds, kind</emphasis> <emphasis role="bold">)</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">

@@ -220,7 +220,7 @@
 
     <para>Exemplo:</para>
 
-    <programlisting>//form one example **********************************
+    <programlisting lang="ECL" role="notrunnable">//form one example **********************************
 Ages := RECORD
   STRING15 per_first_name;
   STRING25 per_last_name;

@@ -10,14 +10,7 @@
       <primary>File.LogicalFileList</primary>
     </indexterm><indexterm>
       <primary>LogicalFileList</primary>
-    </indexterm>(</emphasis> <emphasis> </emphasis> <emphasis role="bold">[
-  </emphasis> <emphasis>pattern </emphasis> <emphasis role="bold">] [,
-  </emphasis> <emphasis>includenormal</emphasis> <emphasis role="bold"> ] [,
-  </emphasis> <emphasis>includesuper</emphasis> <emphasis role="bold">
-  ]</emphasis> <emphasis role="bold"> [, </emphasis> <emphasis>unknownszero
-  </emphasis> <emphasis role="bold">] </emphasis><emphasis role="bold"> [,
-  </emphasis> <emphasis>foreigndali </emphasis> <emphasis role="bold">]
-  )</emphasis></para>
+    </indexterm>(</emphasis> <emphasis>namepattern, includenormal, includesuper, unknownszero, foreigndali</emphasis> <emphasis role="bold">)</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -27,7 +20,7 @@
 
       <tbody>
         <row>
-          <entry><emphasis>pattern</emphasis></entry>
+          <entry><emphasis>namepattern</emphasis></entry>
 
           <entry>Opcional. Uma string terminada por nulo que contém a máscara
           dos arquivos a serem listados. Se omitida, o padrão é "*" (todos os
@@ -65,7 +58,7 @@
         </row>
 
         <row>
-          <entry>Return:<emphasis/></entry>
+          <entry>Retorno:<emphasis/></entry>
 
           <entry>LogicalFileList retorna um dataset no seguinte
           formato:</entry>
@@ -73,6 +66,15 @@
       </tbody>
     </tgroup>
   </informaltable>
+
+  <para><emphasis role="bold">Observação: </emphasis><emphasis
+  role="bold">LogicalFileList está obsoleta.</emphasis> Para recursos
+  aprimorados de filtragem e informações adicionais de arquivo, use <link
+  linkend="LogicalFileListFiltered">LogicalFileListFiltered</link> em vez
+  dela. No entanto, LogicalFileListFiltered não pode ser usada com ambientes
+  remotos e não há suporte a Dali externo. Se você precisar dessa
+  funcionalidade, use STD.File.LogicalFileList e forneça o IP do Dali
+  externo.</para>
 
   <para><programlisting format="linespecific">EXPORT FsLogicalFileNameRecord := RECORD
   STRING name;
@@ -97,4 +99,7 @@ END;
     
 OUTPUT(STD.File.LogicalFileList(,FALSE,TRUE));
   //returns all SuperFiles</programlisting>
+
+  <para>Ver também: <link
+  linkend="LogicalFileListFiltered">LogicalFileListFiltered</link></para>
 </sect1>

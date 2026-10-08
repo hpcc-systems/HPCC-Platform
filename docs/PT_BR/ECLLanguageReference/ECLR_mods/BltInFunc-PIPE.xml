@@ -193,7 +193,7 @@
 
   <para>Exemplo:</para>
 
-  <programlisting>namesRecord := RECORD
+  <programlisting lang="ECL" role="PipeRestricted">namesRecord := RECORD
   STRING10 forename;
   STRING10 surname;
   STRING2 nl := '\r\n';

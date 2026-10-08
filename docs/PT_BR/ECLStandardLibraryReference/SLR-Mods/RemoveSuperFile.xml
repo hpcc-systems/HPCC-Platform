@@ -10,10 +10,7 @@
       <primary>File.RemoveSuperFile</primary>
     </indexterm><indexterm>
       <primary>RemoveSuperFile</primary>
-    </indexterm>(</emphasis> <emphasis> superfile, subfile </emphasis>
-  <emphasis role="bold">[</emphasis> <emphasis>, delete</emphasis> <emphasis
-  role="bold">] [</emphasis> <emphasis>, removecontents</emphasis> <emphasis
-  role="bold">])</emphasis></para>
+    </indexterm>(</emphasis> <emphasis>superName, subName, del, removeContents</emphasis> <emphasis role="bold">)</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -58,7 +55,7 @@
         </row>
 
         <row>
-          <entry>Return:<emphasis> </emphasis></entry>
+          <entry>Retorno:<emphasis> </emphasis></entry>
 
           <entry>Nulo</entry>
         </row>

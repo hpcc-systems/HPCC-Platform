@@ -10,12 +10,7 @@
       <primary>File.AddFileRelationship</primary>
     </indexterm><indexterm>
       <primary>AddFileRelationship</primary>
-    </indexterm>(</emphasis> <emphasis> primary, secondary,</emphasis>
-  <emphasis> primaryfields, secondaryfields, </emphasis> <emphasis
-  role="bold"> [ </emphasis> <emphasis>relationship </emphasis> <emphasis
-  role="bold">]</emphasis> <emphasis>, cardinality, payload </emphasis>
-  <emphasis role="bold"> [</emphasis> <emphasis>, description </emphasis>
-  <emphasis role="bold">] );</emphasis></para>
+    </indexterm>(</emphasis> <emphasis>primary, secondary, primaryflds, secondaryflds, kind, cardinality, payload, description</emphasis> <emphasis role="bold">)</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">

@@ -10,9 +10,7 @@
       <primary>File.AbortDfuWorkunit</primary>
     </indexterm><indexterm>
       <primary>AbortDfuWorkunit</primary>
-    </indexterm>(</emphasis> <emphasis> dfuwuid</emphasis> <emphasis
-  role="bold"> [</emphasis> <emphasis>,espserverIPport </emphasis> <emphasis
-  role="bold">] )</emphasis></para>
+    </indexterm>(</emphasis> <emphasis>wuid, espServerIpPort</emphasis> <emphasis role="bold">)</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -22,7 +20,7 @@
 
       <tbody>
         <row>
-          <entry><emphasis>dfuwuid</emphasis></entry>
+          <entry><emphasis>wuid</emphasis></entry>
 
           <entry>Uma string terminada por nulo que contém o ID da workunit DFU
           (DFUWUID) do job a ser abortado. Esse valor é retornado pelas
@@ -31,7 +29,7 @@
         </row>
 
         <row>
-          <entry><emphasis>espserverIPport</emphasis></entry>
+          <entry><emphasis>espServerIpPort</emphasis></entry>
 
           <entry>Opcional. Isso quase sempre deve ser omitido, o que, por
           padrão, é o valor contido no atributo lib_system.ws_fs_server.

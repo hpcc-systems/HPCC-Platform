@@ -193,6 +193,19 @@
     formatos de registro “dinâmicos” nas funções que exigem estruturas de
     registro (OUTPUT, TABLE, DATASET etc.), em vez de definir o registro como
     uma definição separada.</para>
+
+    <para>Se a estrutura RECORD estiver definindo um INDEX, você também pode
+    usar o operador "results in" (=&gt;) antes dos campos de payload, conforme
+    mostrado abaixo.</para>
+
+    <programlisting lang="ECL" role="NOTRunnable">VehicleKey2 := INDEX(Vehicles,SearchTerms,Payload,'vkey::st.city2');
+BUILD(VehicleKey2);
+
+// Using "results in" operator (=&gt;) for payload fields
+VehicleKey3 := INDEX(Vehicles,{st,city  =&gt; lname},'vkey::st.city3');
+BUILD(VehicleKey3);</programlisting>
+
+    <para></para>
   </sect2>
 
   <sect2 id="Field_Definitions">
@@ -808,7 +821,7 @@ END;</programlisting>
     do campo em caixa baixa, e o valor padrão do Repeated será “Row”. Por
     exemplo, isso demonstra "Container/Repeated":</para>
 
-    <programlisting lang="ECL">DATASET(PeopleNames) People{xpath('people/name'])};
+    <programlisting lang="ECL">DATASET(PeopleNames) People{xpath('people/name')};
           /*matches: &lt;people&gt;
                         &lt;name&gt;Gavin&lt;/name&gt;
                         &lt;name&gt;Ricardo&lt;/name&gt;
@@ -816,7 +829,7 @@ END;</programlisting>
 
     <para>Isso demonstra "/Repeated":</para>
 
-    <programlisting lang="ECL">DATASET(Names) Names{xpath('/name'])};
+    <programlisting lang="ECL">DATASET(Names) Names{xpath('/name')};
           /*matches: &lt;name&gt;Gavin&lt;/name&gt;
                      &lt;name&gt;Ricardo&lt;/name&gt; */</programlisting>
 
@@ -883,9 +896,7 @@ SET OF STRING Xpeople{xpath('/Name/@id')};
   STRING100 F3;
 END;
           
-D1 := DATASET('LR::SomeFile',R1,THOR);
-
-      
+D1 := DATASET('~LR::SomeFile',R1,THOR);      
 </programlisting>
 
     <para>Para TABLE de “fatia vertical”, é preciso especificar o tipo de
@@ -986,7 +997,7 @@ END;
 
     <para>Um exemplo usando {XPATH('tag')}</para>
 
-    <programlisting lang="ECL_Runnable">R := record
+    <programlisting lang="ECL_Runnable">R := RECORD
      STRING10 fname;
      STRING12 lname;
      SET OF STRING1 MySet{XPATH('Set/Element')}; //define set tags
@@ -995,7 +1006,7 @@ B := DATASET([{'Fred','Bell',['A','B']},
             {'George','Blanda',['C','D']},
             {'Sam','',['E','F'] } ], R);
          
-OUTPUT(B,,'~RTTEST::test.xml', XML,OVERWRITE);
+OUTPUT(B,,'~LR::test.xml', XML,OVERWRITE);
 
 /* this example produces XML output that looks like this:
 &lt;Dataset&gt;
@@ -1017,6 +1028,11 @@ END;
 r := RECORD,MAXLENGTH(4096)
   STRING id{XPATH('COMP-ID')};cr := RECORD,MAXLENGTH(1024)
   STRING phoneEx{XPATH('')};
+END;
+r := RECORD,MAXLENGTH(4096)
+  STRING id{XPATH('COMP-ID')};
+  STRING phone{XPATH('PHONE-NUMBER')};
+  DATASET(cr) Fred{XPATH('PHONE-NUMBER-EXP')};
 END;
          
 DS := DATASET([{'1002','1352,9493',['1352','9493']},
@@ -1048,7 +1064,7 @@ OUTPUT(ds,,'~LR::XMLtest2',
 
     <para>XPATH também pode ser usado para definir um arquivo JSON</para>
 
-    <programlisting lang="ECL">/* a JSON  file called "myBooks.json" contains this data:
+    <programlisting lang="ECL">/* a JSON  file called "mybooks.json" contains this data:
 [
   {
     "id" : "978-0641723445",

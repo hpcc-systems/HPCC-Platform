@@ -10,16 +10,13 @@
       <primary>Str.GetNthWord</primary>
     </indexterm><indexterm>
       <primary>GetNthWord</primary>
-    </indexterm>(</emphasis> <emphasis>source, instance </emphasis><emphasis
-  role="bold">)</emphasis></para>
+    </indexterm>(</emphasis> <emphasis>text, n</emphasis> <emphasis role="bold">)</emphasis></para>
 
   <para><emphasis role="bold">STD.Uni.GetNthWord <indexterm>
       <primary>STD.Uni.GetNthWord</primary>
     </indexterm> <indexterm>
       <primary>Uni.GetNthWord</primary>
-    </indexterm> (</emphasis> <emphasis>source, instance </emphasis> <emphasis
-  role="bold">[</emphasis> <emphasis>, locale</emphasis><emphasis role="bold">
-  ] )</emphasis></para>
+    </indexterm> (</emphasis> <emphasis>text, n, localename</emphasis> <emphasis role="bold">)</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -29,20 +26,20 @@
 
       <tbody>
         <row>
-          <entry><emphasis>source</emphasis></entry>
+          <entry><emphasis>text</emphasis></entry>
 
           <entry>Uma string que contém as palavras delimitadas por
           espaço.</entry>
         </row>
 
         <row>
-          <entry><emphasis>instance</emphasis></entry>
+          <entry><emphasis>n</emphasis></entry>
 
           <entry>Um inteiro que especifica a palavra a ser retornada.</entry>
         </row>
 
         <row>
-          <entry><emphasis>locale</emphasis></entry>
+          <entry><emphasis>localename</emphasis></entry>
 
           <entry>Uma string terminada por nulo que contém o código de idioma e
           país a ser usado para determinar a ordem correta de classificação e

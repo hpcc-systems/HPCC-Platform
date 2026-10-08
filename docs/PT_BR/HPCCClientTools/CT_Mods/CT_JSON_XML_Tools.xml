@@ -1,0 +1,748 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<book>
+  <bookinfo>
+    <title>Ferramentas de Conversão JSON e XML</title>
+
+    <author>
+      <firstname>Boca Raton</firstname>
+
+      <surname>Equipe de documentação</surname>
+
+      <affiliation>
+        <orgname>HPCC Systems</orgname>
+      </affiliation>
+    </author>
+
+    <pubdate>2026</pubdate>
+  </bookinfo>
+
+  <chapter id="JSON_XML_Tools">
+    <title>Ferramentas de JSON e XML para ECL</title>
+
+    <para>As Ferramentas de Cliente do HPCC Systems incluem utilitários para
+    examinar arquivos de dados JSON e XML e gerar definições de registro ECL.
+    Essas ferramentas de linha de comando simplificam o processo de integração
+    de fontes de dados externas, gerando automaticamente estruturas RECORD do
+    ECL a partir de arquivos de dados de exemplo.</para>
+
+    <para>Ambas as ferramentas estão disponíveis no pacote de ferramentas de
+    cliente e, em instalações bare metal, no diretório
+    <emphasis>/opt/HPCCSystems/bin</emphasis>. O objetivo geral de ambas é
+    examinar arquivos de dados e derivar uma estrutura RECORD do ECL capaz de
+    ler esses arquivos.</para>
+
+    <sect1 id="json2ecl" role="nobrk">
+      <title>json2ecl</title>
+
+      <para><emphasis role="bold">json2ecl [</emphasis>OPTIONS<emphasis
+      role="bold">] [</emphasis>FILES...<emphasis
+      role="bold">]</emphasis></para>
+
+      <para>O utilitário <emphasis role="bold">json2ecl</emphasis> examina
+      dados JSON e deduz as definições RECORD do ECL necessárias para
+      analisá-los. A ferramenta suporta tanto documentos JSON padrão quanto o
+      formato NDJSON (Newline Delimited JSON). Essa ferramenta analisa a
+      estrutura da entrada JSON e gera as definições RECORD do ECL
+      correspondentes, com anotações XPATH adequadas para uso com o formato de
+      dataset JSON() do ECL.</para>
+
+      <para>Os dados JSON podem ser fornecidos como um ou mais arquivos ou
+      pela entrada padrão. As definições ECL resultantes são retornadas pela
+      saída padrão.</para>
+
+      <para>Por questões de eficiência, ao examinar arrays ou fluxos NDJSON, a
+      ferramenta interrompe o processamento após 500 elementos consecutivos
+      que não modifiquem o esquema. Isso evita o processamento desnecessário
+      de grandes conjuntos de dados uniformes, garantindo ao mesmo tempo a
+      precisão do esquema. Use --full-scan para examinar todos os elementos,
+      se necessário.</para>
+
+      <para>Quando vários arquivos são fornecidos, eles são analisados como se
+      tivessem a mesma estrutura de registro. Isso é útil quando nem todos os
+      campos estão definidos em um único arquivo, permitindo que a ferramenta
+      descubra o esquema completo em todos os arquivos.</para>
+
+      <para>A ferramenta detecta e trata automaticamente o formato NDJSON.
+      Quando vários objetos JSON de nível superior são detectados, o
+      sinalizador NOROOT é adicionado automaticamente ao código ECL
+      gerado.</para>
+
+      <informaltable colsep="1" frame="all" rowsep="1">
+        <tgroup cols="2">
+          <colspec align="left" colwidth="125.55pt"/>
+
+          <colspec/>
+
+          <tbody>
+            <row>
+              <entry><emphasis>FILES</emphasis></entry>
+
+              <entry>Um ou mais arquivos JSON a serem processados. Vários
+              arquivos são analisados como se tivessem a mesma estrutura de
+              registro, o que é útil quando nem todos os campos estão
+              definidos em um único arquivo. Se omitido, os dados são lidos da
+              entrada padrão.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>OPTIONS</emphasis></entry>
+
+              <entry/>
+            </row>
+
+            <row>
+              <entry><emphasis>-h, --help</emphasis></entry>
+
+              <entry>Exibe a mensagem de ajuda e sai.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>-s, --string-type TYPE</emphasis></entry>
+
+              <entry>Especifica o tipo de string do ECL a ser usado para os
+              campos de texto. As opções válidas são: UTF8, STRING, VARSTRING,
+              UNICODE. Padrão: UTF8</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>--full-scan</emphasis></entry>
+
+              <entry>Examina todos os elementos de array ou elementos NDJSON
+              sem limite. Por padrão, por questões de eficiência, a ferramenta
+              interrompe o processamento após 500 elementos consecutivos que
+              não modifiquem o esquema. Use esta opção para examinar todos os
+              elementos, se necessário.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>--version</emphasis></entry>
+
+              <entry>Exibe as informações de versão e sai.</entry>
+            </row>
+          </tbody>
+        </tgroup>
+      </informaltable>
+
+      <para><emphasis role="bold">Limitações Conhecidas:</emphasis></para>
+
+      <itemizedlist>
+        <listitem>
+          <para>Números entre aspas (por exemplo, "1234") são tratados como
+          números, e não como strings.</para>
+        </listitem>
+
+        <listitem>
+          <para>Valores null do JSON não podem ser distinguidos de strings
+          vazias.</para>
+        </listitem>
+
+        <listitem>
+          <para>Nomes de campos que contêm espaços podem não ser tratados
+          corretamente devido ao comportamento do analisador JSON subjacente
+          (por exemplo, 'this is a test' pode se tornar
+          'this_sis_sa_stest'). Em vez disso, use nomes com sublinhado ou em
+          camelCase.</para>
+        </listitem>
+      </itemizedlist>
+
+      <para><emphasis role="bold">Notas de Uso:</emphasis></para>
+
+      <itemizedlist>
+        <listitem>
+          <para>A ferramenta detecta automaticamente os tipos de campo a
+          partir dos dados JSON (strings, inteiros, números de ponto
+          flutuante, booleanos, objetos, arrays).</para>
+        </listitem>
+
+        <listitem>
+          <para>Objetos aninhados são convertidos em estruturas RECORD filhas
+          com nomes gerados automaticamente.</para>
+        </listitem>
+
+        <listitem>
+          <para>Os arrays são tratados adequadamente conforme o tipo do seu
+          conteúdo (arrays de valores primitivos ou arrays de objetos).</para>
+        </listitem>
+
+        <listitem>
+          <para>Todos os campos gerados incluem anotações XPATH
+          correspondentes ao caminho JSON até aquele campo.</para>
+        </listitem>
+
+        <listitem>
+          <para>Palavras reservadas do ECL usadas como nomes de campo recebem
+          automaticamente o prefixo 'f_' para evitar conflitos.</para>
+        </listitem>
+
+        <listitem>
+          <para>O tipo de string padrão é UTF8. Use a opção -s para alterar
+          para STRING, VARSTRING ou UNICODE, conforme necessário.</para>
+        </listitem>
+
+        <listitem>
+          <para>Ao processar vários arquivos, garanta que eles representem a
+          mesma estrutura lógica de dados, com coberturas de campo
+          diferentes.</para>
+        </listitem>
+      </itemizedlist>
+
+      <para><emphasis role="bold">Exemplos:</emphasis></para>
+
+      <para><emphasis role="bold">Examinar dados JSON de um
+      arquivo</emphasis></para>
+
+      <programlisting>json2ecl data.json</programlisting>
+
+      <para>Lê os dados JSON de <emphasis>data.json</emphasis> e grava a
+      definição de registro ECL na saída padrão.</para>
+
+      <para><emphasis role="bold">Examinar JSON da entrada
+      padrão</emphasis></para>
+
+      <programlisting>cat sample.json | json2ecl</programlisting>
+
+      <para>Lê o JSON da entrada padrão e gera como saída a definição de
+      registro ECL.</para>
+
+      <para><emphasis role="bold">Processar vários arquivos com o tipo
+      STRING</emphasis></para>
+
+      <programlisting>json2ecl -s STRING file1.json file2.json</programlisting>
+
+      <para>Processa vários arquivos JSON, combinando os esquemas deles, e
+      gera definições de registro ECL usando o tipo STRING em vez do UTF8
+      padrão.</para>
+
+      <para><emphasis role="bold">Redirecionar a saída para um
+      arquivo</emphasis></para>
+
+      <programlisting>json2ecl data.json &gt; layout.ecl</programlisting>
+
+      <para>Gera a definição de registro ECL e a salva em
+      <emphasis>layout.ecl</emphasis>.</para>
+
+      <para><emphasis role="bold">Examinar todos os elementos de um arquivo
+      grande</emphasis></para>
+
+      <programlisting>json2ecl --full-scan large_dataset.json</programlisting>
+
+      <para>Processa todos os elementos do arquivo JSON sem o limite padrão de
+      500 elementos.</para>
+
+      <para><emphasis role="bold">Exemplo de Entrada e Saída</emphasis></para>
+
+      <para>Dado um arquivo JSON <emphasis>foo.json</emphasis> com o seguinte
+      conteúdo:</para>
+
+      <programlisting>{
+  "foo": "bar",
+  "start": 12,
+  "end": 98.76
+}</programlisting>
+
+      <para>Ao executar o comando:</para>
+
+      <programlisting>json2ecl foo.json</programlisting>
+
+      <para>É gerada a seguinte saída ECL:</para>
+
+      <programlisting>FOO_LAYOUT := RECORD
+    UTF8 foo {XPATH('foo')};
+    UNSIGNED start {XPATH('start')};
+    REAL f_end {XPATH('end')};
+END;
+
+// ds := DATASET('~data::foo', FOO_LAYOUT, JSON());</programlisting>
+
+      <para>Observe que o código gerado inclui:</para>
+
+      <itemizedlist>
+        <listitem>
+          <para>Anotações XPATH para cada campo, indicando o caminho JSON até
+          os dados</para>
+        </listitem>
+
+        <listitem>
+          <para>Tipos ECL apropriados com base nos valores JSON (UTF8 para
+          strings, UNSIGNED para inteiros positivos, REAL para números de
+          ponto flutuante)</para>
+        </listitem>
+
+        <listitem>
+          <para>Uma declaração DATASET de exemplo comentada, mostrando como
+          usar o layout gerado</para>
+        </listitem>
+
+        <listitem>
+          <para>Nomes de campo com o prefixo 'f_' caso conflitem com palavras
+          reservadas do ECL (por exemplo, 'end' se torna 'f_end')</para>
+        </listitem>
+      </itemizedlist>
+
+      <para><emphasis role="bold">Usando Layouts JSON</emphasis></para>
+
+      <para>As estruturas de registro ECL geradas pelo json2ecl podem ser
+      usadas diretamente com a declaração DATASET do ECL, utilizando o formato
+      JSON():</para>
+
+      <programlisting>// Generated layout from json2ecl
+FOO_LAYOUT := RECORD
+    UTF8 foo {XPATH('foo')};
+    UNSIGNED start {XPATH('start')};
+    REAL f_end {XPATH('end')};
+END;
+
+// Use the layout to read JSON data
+ds := DATASET('~data::foo', FOO_LAYOUT, JSON());</programlisting>
+
+      <para>Para estruturas mais complexas, com registros aninhados:</para>
+
+      <programlisting>// Nested JSON layout example
+PERSON_LAYOUT := RECORD
+    UTF8 firstName {XPATH('firstName')};
+    UTF8 lastName {XPATH('lastName')};
+    UNSIGNED age {XPATH('age')};
+    DATASET(ADDRESS_REC) addresses {XPATH('addresses')};
+END;
+
+// Read the JSON file
+people := DATASET('~data::people', PERSON_LAYOUT, JSON());</programlisting>
+
+      <para><emphasis role="bold">Boas Práticas:</emphasis></para>
+
+      <itemizedlist>
+        <listitem>
+          <para><emphasis role="bold">Revise o Código Gerado:</emphasis> Sempre
+          revise o código ECL gerado. As ferramentas oferecem um ponto de
+          partida, mas talvez você precise refinar os tipos ou os tamanhos dos
+          campos de acordo com os seus requisitos específicos.</para>
+        </listitem>
+
+        <listitem>
+          <para><emphasis role="bold">Use Amostras Representativas:</emphasis>
+          Garanta que os seus arquivos de dados de exemplo incluam exemplos
+          representativos de todas as variações de campo. As ferramentas
+          analisam os dados para determinar o esquema, portanto amostras
+          incompletas podem resultar em esquemas incompletos.</para>
+        </listitem>
+
+        <listitem>
+          <para><emphasis role="bold">Processe Vários Arquivos:</emphasis> Se
+          os seus dados tiverem campos opcionais que não aparecem em todos os
+          registros, processe vários arquivos representativos em conjunto para
+          capturar o esquema completo.</para>
+        </listitem>
+
+        <listitem>
+          <para><emphasis role="bold">Teste com Dados Reais:</emphasis> Sempre
+          teste as definições de registro geradas com os seus dados reais para
+          verificar se a análise e o tratamento de tipos estão
+          corretos.</para>
+        </listitem>
+
+        <listitem>
+          <para><emphasis role="bold">Lide com Arquivos Grandes:</emphasis>
+          Para arquivos muito grandes, o limite padrão de 500 elementos
+          normalmente é suficiente. Use --full-scan apenas se você suspeitar
+          que o esquema muda ao longo do arquivo.</para>
+        </listitem>
+
+        <listitem>
+          <para><emphasis role="bold">Seleção do Tipo de String:</emphasis>
+          Escolha o tipo de string apropriado (opção -s) de acordo com os seus
+          dados. UTF8 é o padrão e o recomendado para a maioria dos casos de
+          uso, especialmente com dados internacionais.</para>
+        </listitem>
+
+        <listitem>
+          <para><emphasis role="bold">Lide com Palavras
+          Reservadas:</emphasis> Esteja ciente de que palavras reservadas do
+          ECL em nomes de campo recebem prefixo automaticamente. Verifique
+          esses prefixos no código gerado (por exemplo, o prefixo
+          'f_').</para>
+        </listitem>
+
+        <listitem>
+          <para><emphasis role="bold">Salve os Layouts Gerados:</emphasis>
+          Salve os layouts ECL gerados em arquivos e inclua-os no seu sistema
+          de controle de versão para acompanhar as alterações ao longo do
+          tempo.</para>
+        </listitem>
+
+        <listitem>
+          <para><emphasis role="bold">Namespaces XML:</emphasis> Para arquivos
+          XML com namespaces, pode ser necessário limpar ou tratar manualmente
+          os campos de atributo xmlns:* no código gerado.</para>
+        </listitem>
+      </itemizedlist>
+    </sect1>
+
+    <sect1 id="xml2ecl">
+      <title>xml2ecl</title>
+
+      <para><emphasis role="bold">xml2ecl [OPTIONS]
+      [FILES...]</emphasis></para>
+
+      <para>O utilitário <emphasis role="bold">xml2ecl</emphasis> examina
+      dados XML e deduz as definições RECORD do ECL necessárias para
+      analisá-los. Essa ferramenta analisa a estrutura XML e gera as
+      definições RECORD do ECL correspondentes, com anotações XPATH adequadas
+      para uso com o formato de dataset XML() do ECL ou com a função
+      PARSE.</para>
+
+      <para>Os dados XML podem ser fornecidos como um ou mais arquivos ou pela
+      entrada padrão. As definições ECL resultantes são retornadas pela saída
+      padrão.</para>
+
+      <informaltable colsep="1" frame="all" rowsep="1">
+        <tgroup cols="2">
+          <colspec align="left" colwidth="125.55pt"/>
+
+          <colspec/>
+
+          <tbody>
+            <row>
+              <entry><emphasis>FILES</emphasis></entry>
+
+              <entry>Um ou mais arquivos XML a serem processados. Vários
+              arquivos são analisados como se tivessem a mesma estrutura de
+              registro, o que é útil quando nem todos os campos estão
+              definidos em um único arquivo. Se omitido, os dados são lidos da
+              entrada padrão.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>OPTIONS</emphasis></entry>
+
+              <entry/>
+            </row>
+
+            <row>
+              <entry><emphasis>-h, --help</emphasis></entry>
+
+              <entry>Exibe a mensagem de ajuda e sai.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>-s, --string-type TYPE</emphasis></entry>
+
+              <entry>Especifica o tipo de string do ECL a ser usado para os
+              campos de texto. As opções válidas são: UTF8, STRING, VARSTRING,
+              UNICODE. Padrão: UTF8</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>--full-scan</emphasis></entry>
+
+              <entry>Examina todos os elementos de array sem limite. Por
+              padrão, por questões de eficiência, a ferramenta interrompe o
+              processamento após 500 elementos consecutivos que não modifiquem
+              o esquema. Use esta opção para examinar todos os elementos, se
+              necessário.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>--version</emphasis></entry>
+
+              <entry>Exibe as informações de versão e sai.</entry>
+            </row>
+          </tbody>
+        </tgroup>
+      </informaltable>
+
+      <para>O xml2ecl examina dados XML e deduz as definições RECORD do ECL
+      necessárias para analisá-los. A ferramenta analisa a estrutura dos
+      elementos XML, os atributos e o conteúdo para gerar as definições RECORD
+      do ECL apropriadas.</para>
+
+      <para><emphasis role="bold">Vários Arquivos:</emphasis> Quando vários
+      arquivos são fornecidos, eles são analisados como se tivessem a mesma
+      estrutura de registro. Isso é útil quando nem todos os campos estão
+      definidos em um único arquivo, permitindo que a ferramenta descubra o
+      esquema completo em todos os arquivos.</para>
+
+      <para><emphasis role="bold">Tratamento de Atributos:</emphasis> Os
+      atributos XML são incluídos no esquema com os nomes originais. Quando um
+      elemento possui tanto atributos quanto conteúdo de texto, o texto é
+      armazenado em um campo chamado '_inner_value'.</para>
+
+      <para><emphasis role="bold">Desempenho:</emphasis> Por questões de
+      eficiência, ao examinar elementos repetidos, a ferramenta interrompe o
+      processamento após 500 elementos consecutivos que não modifiquem o
+      esquema. Isso evita o processamento desnecessário de grandes conjuntos
+      de dados uniformes, garantindo ao mesmo tempo a precisão do esquema. Use
+      --full-scan para examinar todos os elementos, se necessário.</para>
+
+      <para><emphasis role="bold">Limitações Conhecidas:</emphasis></para>
+
+      <itemizedlist>
+        <listitem>
+          <para>As declarações de namespace (atributos xmlns:*) são
+          preservadas como campos no esquema ECL gerado.</para>
+        </listitem>
+
+        <listitem>
+          <para>Conteúdo misto (texto e elementos intercalados) pode não ser
+          totalmente suportado.</para>
+        </listitem>
+      </itemizedlist>
+
+      <para><emphasis role="bold">Exemplos</emphasis>:</para>
+
+      <para><emphasis role="bold">Examinar dados XML de um
+      arquivo</emphasis></para>
+
+      <programlisting>xml2ecl data.xml</programlisting>
+
+      <para>Lê os dados XML de <emphasis>data.xml</emphasis> e grava a
+      definição de registro ECL na saída padrão.</para>
+
+      <para><emphasis role="bold">Examinar XML da entrada
+      padrão</emphasis></para>
+
+      <programlisting>cat document.xml | xml2ecl</programlisting>
+
+      <para>Lê o XML da entrada padrão e gera como saída a definição de
+      registro ECL.</para>
+
+      <para><emphasis role="bold">Processar vários arquivos com o tipo
+      STRING</emphasis></para>
+
+      <programlisting>xml2ecl -s STRING file1.xml file2.xml</programlisting>
+
+      <para>Processa vários arquivos XML, combinando os esquemas deles, e gera
+      definições de registro ECL usando o tipo STRING em vez do UTF8
+      padrão.</para>
+
+      <para><emphasis role="bold">Redirecionar a saída para um
+      arquivo</emphasis></para>
+
+      <programlisting>xml2ecl data.xml &gt; layout.ecl</programlisting>
+
+      <para>Gera a definição de registro ECL e a salva em
+      <emphasis>layout.ecl</emphasis>.</para>
+
+      <para><emphasis role="bold">Examinar todos os elementos de um arquivo
+      grande</emphasis></para>
+
+      <programlisting>xml2ecl --full-scan large_dataset.xml</programlisting>
+
+      <para>Processa todos os elementos do arquivo XML sem o limite padrão de
+      500 elementos.</para>
+
+      <para><emphasis role="bold">Exemplo de Uso:</emphasis></para>
+
+      <para>Dado um arquivo XML <emphasis>customer.xml</emphasis> com o
+      seguinte conteúdo:</para>
+
+      <programlisting>&lt;?xml version="1.0" encoding="UTF-8"?&gt;
+&lt;Customer id="12345"&gt;
+  &lt;FirstName&gt;Ember&lt;/FirstName&gt;
+  &lt;LastName&gt;Shiloh&lt;/LastName&gt;
+  &lt;Age&gt;28&lt;/Age&gt;
+  &lt;Email&gt;ember.shiloh@example.com&lt;/Email&gt;
+  &lt;Address&gt;
+    &lt;Street&gt;456 Oak Avenue&lt;/Street&gt;
+    &lt;City&gt;Portland&lt;/City&gt;
+    &lt;State&gt;OR&lt;/State&gt;
+    &lt;ZipCode&gt;97201&lt;/ZipCode&gt;
+  &lt;/Address&gt;
+&lt;/Customer&gt;</programlisting>
+
+      <para>Ao executar o comando:</para>
+
+      <programlisting>xml2ecl customer.xml</programlisting>
+
+      <para>É gerada uma saída ECL com:</para>
+
+      <itemizedlist>
+        <listitem>
+          <para>Anotações XPATH para cada campo, indicando o caminho XML até
+          os dados</para>
+        </listitem>
+
+        <listitem>
+          <para>Tipos ECL apropriados com base no conteúdo XML (UTF8 para
+          texto, UNSIGNED para inteiros positivos)</para>
+        </listitem>
+
+        <listitem>
+          <para>Estruturas RECORD aninhadas para elementos XML aninhados (por
+          exemplo, Address)</para>
+        </listitem>
+
+        <listitem>
+          <para>Atributos XML incluídos como campos com os nomes originais
+          (por exemplo, id)</para>
+        </listitem>
+
+        <listitem>
+          <para>Uma declaração DATASET de exemplo comentada, mostrando como
+          usar o layout gerado</para>
+        </listitem>
+      </itemizedlist>
+
+      <para>Quando um elemento XML contém tanto atributos quanto conteúdo de
+      texto, o conteúdo de texto é armazenado em um campo chamado
+      '_inner_value'.</para>
+
+      <para><emphasis role="bold">Notas de Uso:</emphasis></para>
+
+      <itemizedlist>
+        <listitem>
+          <para>A ferramenta detecta automaticamente os tipos de campo a
+          partir dos dados XML (conteúdo de texto, valores numéricos,
+          elementos aninhados).</para>
+        </listitem>
+
+        <listitem>
+          <para>Elementos aninhados são convertidos em estruturas RECORD
+          filhas com nomes gerados automaticamente.</para>
+        </listitem>
+
+        <listitem>
+          <para>Elementos repetidos (arrays) são tratados adequadamente com
+          anotações XPATH.</para>
+        </listitem>
+
+        <listitem>
+          <para>Os atributos XML são incluídos no esquema com os nomes
+          originais.</para>
+        </listitem>
+
+        <listitem>
+          <para>Quando um elemento possui tanto atributos quanto conteúdo de
+          texto, o texto é armazenado em um campo chamado
+          '_inner_value'.</para>
+        </listitem>
+
+        <listitem>
+          <para>Todos os campos gerados incluem anotações XPATH
+          correspondentes ao caminho XML até aquele campo.</para>
+        </listitem>
+
+        <listitem>
+          <para>O tipo de string padrão é UTF8. Use a opção -s para alterar
+          para STRING, VARSTRING ou UNICODE, conforme necessário.</para>
+        </listitem>
+
+        <listitem>
+          <para>As declarações de namespace (atributos xmlns:*) são
+          preservadas como campos. Talvez seja necessário removê-las ou
+          tratá-las manualmente no seu código ECL.</para>
+        </listitem>
+
+        <listitem>
+          <para>Ao processar vários arquivos, garanta que eles representem a
+          mesma estrutura lógica de dados, com coberturas de campo
+          diferentes.</para>
+        </listitem>
+      </itemizedlist>
+
+      <para><emphasis role="bold">Usando Layouts XML:</emphasis></para>
+
+      <para>As estruturas de registro ECL geradas pelo xml2ecl podem ser
+      usadas com a declaração DATASET do ECL, utilizando o formato XML(), ou
+      com a função PARSE:</para>
+
+      <programlisting>// Using DATASET with XML() format
+CUSTOMER_LAYOUT := RECORD
+    UTF8 id {XPATH('@id')};
+    UTF8 FirstName {XPATH('FirstName')};
+    UTF8 LastName {XPATH('LastName')};
+    UNSIGNED Age {XPATH('Age')};
+END;
+
+// Read XML file
+customers := DATASET('~data::customers.xml', 
+                     CUSTOMER_LAYOUT, 
+                     XML('Customer'));</programlisting>
+
+      <para>Como alternativa, usando a função PARSE para obter mais
+      controle:</para>
+
+      <programlisting>// Read the raw XML file
+xmlFile := DATASET('~data::customers.xml', 
+                   {STRING line}, 
+                   CSV(SEPARATOR(''), QUOTE('')));
+
+// Parse XML data
+parsedCustomers := PARSE(xmlFile, 
+                         line, 
+                         CUSTOMER_LAYOUT, 
+                         XML('Customer'));
+
+OUTPUT(parsedCustomers);</programlisting>
+
+      <para><emphasis role="bold">Boas Práticas:</emphasis></para>
+
+      <itemizedlist>
+        <listitem>
+          <para><emphasis role="bold">Revise o Código Gerado:</emphasis> Sempre
+          revise o código ECL gerado. As ferramentas oferecem um ponto de
+          partida, mas talvez você precise refinar os tipos ou os tamanhos dos
+          campos de acordo com os seus requisitos específicos.</para>
+        </listitem>
+
+        <listitem>
+          <para><emphasis role="bold">Use Amostras Representativas:</emphasis>
+          Garanta que os seus arquivos de dados de exemplo incluam exemplos
+          representativos de todas as variações de campo. As ferramentas
+          analisam os dados para determinar o esquema, portanto amostras
+          incompletas podem resultar em esquemas incompletos.</para>
+        </listitem>
+
+        <listitem>
+          <para><emphasis role="bold">Processe Vários Arquivos:</emphasis> Se
+          os seus dados tiverem campos opcionais que não aparecem em todos os
+          registros, processe vários arquivos representativos em conjunto para
+          capturar o esquema completo.</para>
+        </listitem>
+
+        <listitem>
+          <para><emphasis role="bold">Teste com Dados Reais:</emphasis> Sempre
+          teste as definições de registro geradas com os seus dados reais para
+          verificar se a análise e o tratamento de tipos estão
+          corretos.</para>
+        </listitem>
+
+        <listitem>
+          <para><emphasis role="bold">Lide com Arquivos Grandes:</emphasis>
+          Para arquivos muito grandes, o limite padrão de 500 elementos
+          normalmente é suficiente. Use --full-scan apenas se você suspeitar
+          que o esquema muda ao longo do arquivo.</para>
+        </listitem>
+
+        <listitem>
+          <para><emphasis role="bold">Seleção do Tipo de String:</emphasis>
+          Escolha o tipo de string apropriado (opção -s) de acordo com os seus
+          dados. UTF8 é o padrão e o recomendado para a maioria dos casos de
+          uso, especialmente com dados internacionais.</para>
+        </listitem>
+
+        <listitem>
+          <para><emphasis role="bold">Lide com Palavras
+          Reservadas:</emphasis> Esteja ciente de que palavras reservadas do
+          ECL em nomes de campo recebem prefixo automaticamente. Verifique
+          esses prefixos no código gerado (por exemplo, o prefixo
+          'f_').</para>
+        </listitem>
+
+        <listitem>
+          <para><emphasis role="bold">Salve os Layouts Gerados:</emphasis>
+          Salve os layouts ECL gerados em arquivos e inclua-os no seu sistema
+          de controle de versão para acompanhar as alterações ao longo do
+          tempo.</para>
+        </listitem>
+
+        <listitem>
+          <para><emphasis role="bold">Namespaces XML:</emphasis> Para arquivos
+          XML com namespaces, pode ser necessário limpar ou tratar manualmente
+          os campos de atributo xmlns:* no código gerado.</para>
+        </listitem>
+      </itemizedlist>
+    </sect1>
+  </chapter>
+</book>

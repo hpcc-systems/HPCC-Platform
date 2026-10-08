@@ -2,7 +2,7 @@
 <!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <chapter id="CT_Overview">
-  <title><emphasis role="bold">Visão geral</emphasis></title>
+  <title>Visão geral</title>
 
   <para>Este manual contém informações para o conjunto de Ferramentas do
   cliente a serem usadas no HPCC da LexisNexis. Essas ferramentas
@@ -21,14 +21,6 @@
           <entry>Um ambiente de desenvolvimento integrado para que os
           programadores de ECL possam criar, editar e executar códigos
           ECL.</entry>
-        </row>
-
-        <row>
-          <entry><emphasis role="bold">ECL Debugger</emphasis></entry>
-
-          <entry>Uma ferramenta de desenvolvimento integrada ao ECL IDE, usada
-          para fazer a depuração das consultas na medida em que elas são
-          criadas.</entry>
         </row>
 
         <row>
@@ -67,7 +59,7 @@
     <title>Convenções de documentação</title>
 
     <sect2 id="ECL_Language">
-      <title><emphasis>Linguagem ECL</emphasis></title>
+      <title>Linguagem ECL</title>
 
       <para>Embora o ECL não faça distinção entre maiúsculas e minúsculas, as
       palavras-chave reservadas do ECL e as funções contidas neste documento
@@ -125,11 +117,22 @@
         <listitem>
           <para>Na página de download do HPCC
           Systems<superscript>®</superscript> , <ulink
-          url="http://hpccsystems.com/download">https://hpccsystems.com/download</ulink></para>
+          url="https://hpccsystems.com/download/">https://hpccsystems.com/download/</ulink></para>
 
           <para>Faça o download das Ferramentas do cliente apropriadas para
           seu sistema operacional. (disponível para CentOS, Ubuntu, Mac OSX,
           ou Windows)</para>
+
+          <variablelist>
+            <varlistentry>
+              <term>Observação:</term>
+
+              <listitem>
+                <para>O ECL IDE só é executado em sistemas operacionais
+                Windows.</para>
+              </listitem>
+            </varlistentry>
+          </variablelist>
         </listitem>
 
         <listitem>
@@ -149,7 +152,7 @@
 
       <para>Será fornecido um pacote de instalação do RPM. Instale o RPM com o
       comutador -Uvh, o “U” ou “atualização” fará uma atualização se uma
-      versão prévia já tiver sido instalada. <programlisting>sudo rpm -Uvh &lt;rpm file name&gt;</programlisting></para>
+      versão prévia já tiver sido instalada. <programlisting>sudo yum install &lt;rpm file name&gt;</programlisting></para>
 
       <para><emphasis role="bold">Sistemas baseados em Debian
       (Ubuntu):</emphasis></para>

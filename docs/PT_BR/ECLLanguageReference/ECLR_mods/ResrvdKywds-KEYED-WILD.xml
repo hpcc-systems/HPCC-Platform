@@ -60,14 +60,16 @@
   seguimento não usados no filtro são ignorados (sempre tratados como
   curingas).</para>
 
+  <para>Antes da versão 7.0, KEYED(expression) em um filtro de leitura de
+  disco gerava um erro em tempo de compilação se o campo filtrado não tivesse
+  tamanho fixo. Na versão 7.0 e versões posteriores, isso não acontece.</para>
+
   <para>As regras de uso são as seguintes (o termo “segmonitor” se refere a um
   objeto interno criado para representar possíveis condições de coincidência
   para um campo de chave única):</para>
 
-  <para>1. KEYED gera um segmonitor. O segmonitor pode ser wild se a expressão
-  nunca puder ser falsa, tal como: <emphasis>expression</emphasis> o
-  segmonitor pode ser wild se a expressão nunca puder ser falsa, tal
-  como:</para>
+  <para>1. KEYED gera um segmonitor. O segmonitor pode ser wild se a
+  <emphasis>expression</emphasis> nunca puder ser falsa, tal como:</para>
 
   <programlisting lang="ECL">   KEYED(inputval = '' OR field = inputval)</programlisting>
 

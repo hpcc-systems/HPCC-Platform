@@ -68,8 +68,6 @@ z := 'D' IN x;  //results in TRUE
   <para>DICTIONARY examples:</para>
 
   <programlisting lang="ECL_Runnable">//DICTIONARY examples:
-
-//DICTIONARY examples:
 rec := {STRING color,UNSIGNED1 code};
 ColorCodes := DATASET([{'Black' ,0 },
                        {'Brown' ,1 },
@@ -80,8 +78,7 @@ CodeColorDCT  := DICTIONARY(ColorCodes,{Code =&gt; Color});
 OUTPUT(6 IN CodeColorDCT);     //false
 
 ColorCodesDCT := DICTIONARY(ColorCodes,{Color,Code});
-OUTPUT(ROW({'Red',2},rec) IN ColorCodesDCT);
-</programlisting>
+OUTPUT(ROW({'Red',2},rec) IN ColorCodesDCT);</programlisting>
 
   <para>Ver também: <link linkend="Basic_Attribute_Types">Tipos Básicos de
   Definições</link>, <link linkend="Basic_Attribute_Types">Tipos de
