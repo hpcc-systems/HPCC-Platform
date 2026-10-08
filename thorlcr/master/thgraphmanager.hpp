@@ -51,6 +51,7 @@ struct CConnectedWorkerDetail
 void publishPodNames(IWorkUnit *workunit, const char *graphName, const std::vector<CConnectedWorkerDetail> *connectedWorkers);
 void setConnectedWorkers(const std::vector<CConnectedWorkerDetail> &workers);
 void setK8sResourceTimestamps(unsigned __int64 startedTs, unsigned __int64 readyTs);
+void setSaveQueryDllsOpt(bool saveQueryDlls); // records the manager's effective (possibly defaulted) setting, so it can be reapplied to live config across reloads
 void relayWuidException(IConstWorkUnit *wu, const IException *exception);
 void auditThorSystemEvent(const char *eventName);
 void auditThorSystemEvent(const char *eventName, std::initializer_list<const char*> args);

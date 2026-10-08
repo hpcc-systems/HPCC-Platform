@@ -280,7 +280,40 @@ public:
             watchdog->addWorker(ep, worker);
         ++workersRegistered;
     }
-    void connect(unsigned workers)
+    // Build the payload from the live config (so settings such as the saveQueryDlls expert option, which is only ever
+    // applied to the live component config via setExpertOpt(), are included), then re-apply any manager-derived
+    // settings that are only ever mutated on 'globals' directly, in case the live config has since been reloaded.
+    static void buildWorkerConfig(IPropertyTree *componentConfig, unsigned channelsPerWorker, unsigned workerBasePort, unsigned localThorPortInc, unsigned numWorkersPerNode)
+    {
+        // A reload may have changed the live tree; workers must receive the topology the manager actually used.
+        componentConfig->setPropInt("@channelsPerWorker", channelsPerWorker);
+        componentConfig->setPropInt("@channelsPerSlave", channelsPerWorker);
+        componentConfig->setPropInt("@slaveport", workerBasePort);
+        componentConfig->setPropInt("@localThorPortInc", localThorPortInc);
+        componentConfig->setPropInt("@slavesPerNode", numWorkersPerNode);
+        auto copyDerivedSetting = [&](const char *xpath)
+        {
+            if (!globals->hasProp(xpath))
+                return;
+            IPropertyTree *tree = globals->queryPropTree(xpath);
+            if (tree)
+                componentConfig->setPropTree(xpath, createPTreeFromIPT(tree));
+            else
+            {
+                StringBuffer value;
+                globals->getProp(xpath, value);
+                componentConfig->setProp(xpath, value);
+            }
+        };
+        StringBuffer saveQueryDllsXPath;
+        getExpertOptPath("saveQueryDlls", saveQueryDllsXPath); // resolves to expert/@saveQueryDlls (containerized) or Debug/@saveQueryDlls (bare-metal)
+        for (const char *xpath: {"@masterBuildTag", "@name", "@nodeGroup", "NAS",
+                                 "@thorPath", "@query_so_dir", "@dllsToSlaves", "@thorTempDirectory",
+                                 "@watchdogProgressEnabled", saveQueryDllsXPath.str(), "managerMemory", "workerMemory"})
+            copyDerivedSetting(xpath);
+    }
+    // The port/channel settings must match the values already used to set up the manager's cluster view.
+    void connect(unsigned workers, unsigned channelsPerWorker, unsigned workerBasePort, unsigned localThorPortInc, unsigned numWorkersPerNode)
     {
         std::vector<CConnectedWorkerDetail> connectedWorkers;
         connectedWorkers.reserve(workers);
@@ -363,10 +396,6 @@ public:
         }
         assertex(workers == connectedWorkers.size());
 
-        unsigned localThorPortInc = globals->getPropInt("@localThorPortInc", DEFAULT_WORKERPORTINC);
-        unsigned workerBasePort = globals->getPropInt("@slaveport", DEFAULT_THORWORKERPORT);
-        unsigned channelsPerWorker = globals->getPropInt("@channelsPerWorker", 1);
-
         Owned<IGroup> processGroup;
 
         // NB: in bare metal Thor is bound to a group and cluster/communicator have already been setup (see earlier setClusterGroup call)
@@ -398,15 +427,15 @@ public:
         if (isContainerized())
             setConnectedWorkers(connectedWorkers);
 
-        //Check that nothing has caused the global configuration to be refreshed - otherwise inconsistent values may be used by the slave
-        assertex(globals == getComponentConfigSP());
-
         PROGLOG("Workers connected, initializing..");
         msg.clear();
         msg.append(THOR_VERSION_MAJOR).append(THOR_VERSION_MINOR);
         processGroup->serialize(msg);
-        globals->serialize(msg);
-        getGlobalConfigSP()->serialize(msg);
+        Owned<IPropertyTree> componentConfig = createPTreeFromIPT(getComponentConfigSP());
+        Owned<IPropertyTree> globalConfig = createPTreeFromIPT(getGlobalConfigSP());
+        buildWorkerConfig(componentConfig, channelsPerWorker, workerBasePort, localThorPortInc, numWorkersPerNode);
+        componentConfig->serialize(msg);
+        globalConfig->serialize(msg);
         msg.append(managerWorkerMpTag);
         msg.append(kjServiceMpTag);
         if (!queryNodeComm().send(msg, RANK_ALL_OTHER, MPTAG_THORREGISTRATION, MP_ASYNC_SEND))
@@ -649,8 +678,8 @@ int main( int argc, const char *argv[]  )
     InitModuleObjects();
     NoQuickEditSection xxx;
     {
-        bool monitorConfig = false; // Do not allow updates to the config file, otherwise the slave may not be in sync.
-        //MORE: What about updates to storage planes - they will not be passed through to the slaves
+        bool monitorConfig = true; // Allow manager configuration updates.
+        // MORE: Settings needed by workers, including storage planes, are not propagated dynamically; workers retain their startup configuration.
         globals.setown(loadConfiguration(thorDefaultConfigYaml, argv, "thor", "THOR", "thor.xml", nullptr, nullptr, monitorConfig));
     }
     updateTraceFlags(loadTraceFlags(globals, thorTraceOptions, queryTraceFlags()), true);
@@ -708,11 +737,16 @@ int main( int argc, const char *argv[]  )
         channelsPerWorker = globals->getPropInt("@channelsPerSlave", 1);
         globals->setPropInt("@channelsPerWorker", channelsPerWorker);
     }
+    unsigned localThorPortInc = globals->getPropInt("@localThorPortInc", DEFAULT_WORKERPORTINC);
+    unsigned workerBasePort = globals->getPropInt("@slaveport", DEFAULT_THORWORKERPORT);
+    unsigned numWorkersPerNode = globals->getPropInt("@slavesPerNode", 1);
 
     installDefaultFileHooks(globals);
     ILogMsgHandler *logHandler;
     IPropertyTree *managerMemory = ensurePTree(globals, "managerMemory");
     IPropertyTree *workerMemory = ensurePTree(globals, "workerMemory");
+    // Keep the bare-metal reload hook alive until main exits.
+    CConfigUpdateHook saveQueryDllsConfigUpdateHook;
 
     try
     {
@@ -906,8 +940,17 @@ int main( int argc, const char *argv[]  )
             saveQueryDlls = getExpertOptBool("saveQueryDlls");
         else
         {
-            // propagate default setting (so seen by workers)
+            // Materialize the default before worker registration; it controls the QueryInit wire format.
             setExpertOpt("saveQueryDlls", boolToStr(saveQueryDlls));
+        }
+        setSaveQueryDllsOpt(saveQueryDlls); // remembered so it can be reapplied to live config across subsequent reloads
+        if (!isContainerized())
+        {
+            saveQueryDllsConfigUpdateHook.installOnce([saveQueryDlls](const IPropertyTree *, const IPropertyTree *)
+            {
+                // Workers keep their startup config, and this option changes the QueryInit wire format.
+                setExpertOpt("saveQueryDlls", boolToStr(saveQueryDlls));
+            }, true);
         }
         if (saveQueryDlls)
         {
@@ -1042,10 +1085,7 @@ int main( int argc, const char *argv[]  )
             StringBuffer thorEpStr;
             PROGLOG("ThorManager version %d.%d, Started on %s", THOR_VERSION_MAJOR,THOR_VERSION_MINOR,thorEp.getEndpointHostText(thorEpStr).str());
             PROGLOG("Thor name = %s, queue = %s, nodeGroup = %s",thorName.str(),queueName.str(),nodeGroup.str());
-            unsigned localThorPortInc = globals->getPropInt("@localThorPortInc", DEFAULT_WORKERPORTINC);
-            unsigned workerBasePort = globals->getPropInt("@slaveport", DEFAULT_THORWORKERPORT);
             Owned<IGroup> rawGroup = getClusterNodeGroup(thorName, "ThorCluster");
-            unsigned numWorkersPerNode = globals->getPropInt("@slavesPerNode", 1);
             setClusterGroup(queryMyNode(), rawGroup, numWorkersPerNode, channelsPerWorker, workerBasePort, localThorPortInc);
             numWorkers = queryNodeClusterWidth();
             if (numWorkersPerNode > 1)
@@ -1059,7 +1099,7 @@ int main( int argc, const char *argv[]  )
             workerProvisionTracker.noteWaiting(numWorkers);
         }
 
-        registry->connect(numWorkers);
+        registry->connect(numWorkers, channelsPerWorker, workerBasePort, localThorPortInc, numWorkersPerNode);
         if (isContainerized())
             setK8sResourceTimestamps(k8sStartedTs, getTimeStampNowValue());
         if (!isContainerized())

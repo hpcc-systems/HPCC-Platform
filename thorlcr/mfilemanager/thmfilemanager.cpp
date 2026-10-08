@@ -283,24 +283,24 @@ public:
         wu->noteFileRead(file);
     }
 
-    IDistributedFile *timedLookup(CJobBase &job, CDfsLogicalFileName &lfn, AccessMode accessMode, bool privilegedUser=false, unsigned timeout=INFINITE, const DFSAuditContext &auditCtx = DFSAuditContext{})
+    IDistributedFile *timedLookup(CJobBase &job, CDfsLogicalFileName &lfn, AccessMode accessMode, bool privilegedUser=false, unsigned timeout=INFINITE, const DFSAuditContext &auditCtx = DFSAuditContext{}, IDistributedFileTransaction *transaction=nullptr)
     {
-        auto func = [&job, &lfn, accessMode, privilegedUser, &auditCtx](unsigned timeout)
+        auto func = [&job, &lfn, accessMode, privilegedUser, &auditCtx, transaction](unsigned timeout)
         {
-            return wsdfs::lookup(lfn, job.queryUserDescriptor(), accessMode, false, false, nullptr, privilegedUser, timeout, auditCtx);
+            return wsdfs::lookup(lfn, job.queryUserDescriptor(), accessMode, false, false, transaction, privilegedUser, timeout, auditCtx);
         };
 
         VStringBuffer blockedMsg("lock file '%s' for %s access", lfn.get(), isWrite(accessMode) ? "WRITE" : "READ");
         return blockReportFunc<IDistributedFile *>(job, func, timeout, blockedMsg);
     }
     
-    IDistributedFile *timedLookup(CJobBase &job, const char *logicalName, AccessMode accessMode, bool privilegedUser=false, unsigned timeout=INFINITE, const DFSAuditContext &auditCtx = DFSAuditContext{})
+    IDistributedFile *timedLookup(CJobBase &job, const char *logicalName, AccessMode accessMode, bool privilegedUser=false, unsigned timeout=INFINITE, const DFSAuditContext &auditCtx = DFSAuditContext{}, IDistributedFileTransaction *transaction=nullptr)
     {
         CDfsLogicalFileName lfn;
         lfn.set(logicalName);
-        return timedLookup(job, lfn, accessMode, privilegedUser, timeout, auditCtx);
+        return timedLookup(job, lfn, accessMode, privilegedUser, timeout, auditCtx, transaction);
     }
-    IDistributedFile *lookup(CJobBase &job, const char *logicalName, AccessMode mode, bool temporary, bool optional, bool reportOptional, bool privilegedUser, bool updateAccessed=true)
+    IDistributedFile *lookup(CJobBase &job, const char *logicalName, AccessMode mode, bool temporary, bool optional, bool reportOptional, bool privilegedUser, IDistributedFileTransaction *transaction=nullptr, bool updateAccessed=true)
     {
         StringBuffer scopedName;
         bool paused = false;
@@ -320,7 +320,7 @@ public:
         if (fileMapping)
             return &fileMapping->get();
 
-        Owned<IDistributedFile> file = timedLookup(job, scopedName.str(), mode, privilegedUser, job.queryMaxLfnBlockTimeMins() * 60000, job.queryBaseAuditContext());
+        Owned<IDistributedFile> file = timedLookup(job, scopedName.str(), mode, privilegedUser, job.queryMaxLfnBlockTimeMins() * 60000, job.queryBaseAuditContext(), transaction);
         if (file && 0 == file->numParts())
         {
             if (file->querySuperFile())
@@ -529,7 +529,7 @@ public:
 
     unsigned __int64 getFileOffset(CJobBase &job, const char *logicalName, unsigned partno)
     {
-        Owned<IDistributedFile> file = lookup(job, logicalName, AccessMode::readLogicalMeta, false, false, false, defaultPrivilegedUser);
+        Owned<IDistributedFile> file = lookup(job, logicalName, AccessMode::readLogicalMeta, false, false, false, defaultPrivilegedUser, nullptr);
         StringBuffer scopedName;
         addScope(job, logicalName, scopedName);
         if (!file)

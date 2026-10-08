@@ -796,6 +796,7 @@ public:
     Owned<IConversation> initiateconv;
     StringAttr initiatewu;
     std::atomic<bool> isProcessingDequeue{false}; // Used to detect more than one thread waiting on the same queue
+    std::atomic<bool> dequeueInterrupt{false};
     bool dequeuestop = false;
     bool cancelwaiting = false;
     bool validateitemsessions = false;
@@ -1214,6 +1215,12 @@ public:
         //Similar problems occur when the clientPriority is mixed.
         if (isProcessingDequeue.exchange(true))
             throw MakeStringException(0, "Multiple concurrent dequeue not supported");
+        // Consume any pending interrupt while arming dequeue so it cannot be lost.
+        // NB: forcing timeout=0 here means *timedout will end up true for this early exit too, indistinguishable
+        // from a genuine full-duration timeout - that's intentional, since callers should react the same way to
+        // either (re-evaluate current state/config and retry), and only false indicates the queue was stopped/cancelled.
+        if (dequeueInterrupt.exchange(false))
+            timeout = 0;
 
         bool hasminprio=(minprio!=INT_MIN);
         if (timedout)
@@ -1245,7 +1252,7 @@ public:
                 }
                 if (stopped==total)
                 {
-                    isProcessingDequeue.store(false);
+                    isProcessingDequeue = false;
                     return NULL; // all stopped
                 }
                 sQueueData **activeqds = (sQueueData **)active.getArray();
@@ -1298,6 +1305,8 @@ public:
             if (to>timeout)
                 to = timeout;
             notifySubscription->notifysem.wait(to);
+            if (dequeueInterrupt.exchange(false))
+                timeout = 0;
             if (timeout!=(unsigned)INFINITE) {
                 t = msTick()-t;
                 if (t<timeout)
@@ -1307,7 +1316,7 @@ public:
             }
         }
 
-        isProcessingDequeue.store(false);
+        isProcessingDequeue = false;
         return ret;
     }
 
@@ -1330,9 +1339,9 @@ public:
         return item.getClear();
     }
 
-    IJobQueueItem *dequeuePriority(unsigned __int64 priority, unsigned timeout=INFINITE)
+    IJobQueueItem *dequeuePriority(unsigned __int64 priority, unsigned timeout, bool *timedout) override
     {
-        return dodequeue(INT_MIN, priority, timeout, false, nullptr);
+        return dodequeue(INT_MIN, priority, timeout, false, timedout);
     }
 
     void placeonqueue(sQueueData &qd, IJobQueueItem *qitem,unsigned idx) // takes ownership of qitem
@@ -1878,6 +1887,14 @@ public:
         CriticalBlock block(crit);
         dequeuestop = true;
         notifySubscription->notifysem.signal();
+    }
+
+    void interruptDequeueWait() override
+    {
+        // Keep a pending interrupt so a config update between timer refresh and dequeue arming is observed.
+        dequeueInterrupt = true;
+        if (isProcessingDequeue)
+            notifySubscription->notifysem.signal();
     }
 
     bool cancelInitiateConversation(sQueueData &qd,const char *wuid)
