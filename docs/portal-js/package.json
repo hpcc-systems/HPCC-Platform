@@ -19,10 +19,11 @@
   "devDependencies": {
     "@hpcc-js/common": "2.73.6",
     "@hpcc-js/codemirror": "2.66.5",
-    "esbuild": "0.28.1",
-    "rimraf": "5.0.10"
+    "esbuild": "0.28.2",
+    "rimraf": "5.0.10",
+    "brace-expansion": "2.1.7"
   },
   "overrides": {
-    "brace-expansion": "2.1.4"
+    "brace-expansion": "2.1.7"
   }
 }

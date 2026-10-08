@@ -96,7 +96,7 @@
     "@types/node": "22.18.6",
     "@types/react": "18.3.24",
     "@types/react-dom": "18.3.7",
-    "@typescript-eslint/parser": "8.44.1",
+    "@typescript-eslint/parser": "8.71.0",
     "copyfiles": "2.4.1",
     "cross-env": "7.0.3",
     "css-loader": "7.1.2",
@@ -114,18 +114,18 @@
     "style-loader": "4.0.0",
     "tslib": "2.8.1",
     "typescript": "5.9.2",
-    "typescript-eslint": "8.44.1",
+    "typescript-eslint": "8.71.0",
     "url-loader": "4.1.1",
     "webpack": "5.101.0",
-    "webpack-cli": "6.0.1"
+    "webpack-cli": "6.0.1",
+    "@xmldom/xmldom": "0.9.12",
+    "tmp": "0.2.7",
+    "undici": "8.11.2"
   },
   "overrides": {
-    "@xmldom/xmldom": "0.9.10",
-    "brace-expansion@1": "1.1.18",
-    "brace-expansion@2": "2.1.4",
-    "fast-uri": "3.1.5",
+    "@xmldom/xmldom": "0.9.12",
     "tmp": "0.2.7",
-    "undici": "7.29.0"
+    "undici": "8.11.2"
   },
   "author": "HPCC Systems",
   "license": "Apache-2.0",
