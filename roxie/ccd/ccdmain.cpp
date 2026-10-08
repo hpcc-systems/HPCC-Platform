@@ -1019,6 +1019,7 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         udpTraceLevel = topology->getPropInt("@udpTraceLevel", runOnce ? 0 : 1);
         roxiemem::setMemTraceLevel(topology->getPropInt("@memTraceLevel", runOnce ? 0 : 1));
         soapTraceLevel = topology->getPropInt("@soapTraceLevel", runOnce ? 0 : 1);
+        soapAuthTraceLevel = topology->getPropInt("@soapAuthTraceLevel", 1);
         if (topology->hasProp("@soapLogSepString"))
         {
             StringBuffer tmpSepString;

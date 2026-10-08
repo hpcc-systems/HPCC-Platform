@@ -31,6 +31,9 @@
 #define DEBLACKLIST_RETRIES 10
 #define DEBLACKLIST_CONNECT_TIMEOUT 10000
 
+extern THORHELPER_API unsigned soapTraceLevel;
+extern THORHELPER_API unsigned soapAuthTraceLevel;
+
 //Web Service Call Row Provider
 interface IWSCRowProvider : extends IInterface
 {
@@ -43,6 +46,7 @@ interface IWSCRowProvider : extends IInterface
     virtual unsigned getBLRetries() const { return DEBLACKLIST_RETRIES; };
     virtual unsigned getBLDelay() const { return DEBLACKLIST_RETRY_DELAY; };
     virtual const char * getBLerror() const { return "connection failed"; }
+    virtual unsigned getSoapAuthTraceLevel() const { return soapAuthTraceLevel; }
     virtual unsigned queryActivityId() const = 0;
 };
 
@@ -83,7 +87,6 @@ interface IRoxieAbortMonitor
 };
 
 
-extern THORHELPER_API unsigned soapTraceLevel;
 extern THORHELPER_API IWSCHelper * createSoapCallHelper(IWSCRowProvider *, IEngineRowAllocator * outputAllocator, const char *authToken, SoapCallMode scMode, ClientCertificate *clientCert, const IContextLogger &logctx, IRoxieAbortMonitor * roxieAbortMonitor);
 extern THORHELPER_API IWSCHelper * createHttpCallHelper(IWSCRowProvider *, IEngineRowAllocator * outputAllocator, const char *authToken, SoapCallMode scMode, ClientCertificate *clientCert, const IContextLogger &logctx, IRoxieAbortMonitor * roxieAbortMonitor);
 extern THORHELPER_API void setSoapSepString(const char *_soapSepString);

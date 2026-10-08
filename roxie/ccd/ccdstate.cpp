@@ -1154,6 +1154,7 @@ public:
                     VStringBuffer xpath("Query[%u]", i+1);
                     const IPropertyTree *query = querySet->queryPropTree(xpath);
                     const char *dllName = query->queryProp("@dll");
+                    const char *id = query->queryProp("@id");
                     try
                     {
                         if (!dllName)
@@ -1196,7 +1197,9 @@ public:
                     }
                     catch (IException *E)
                     {
-                        ::Release(E);
+                        VStringBuffer msg("Failed to gather file dependencies for query %s from %s", id ? id : "(null)", dllName ? dllName : "(null)");
+                        EXCLOG(E, msg.str());
+                        E->Release();
                     }
                 });
 
@@ -1226,12 +1229,13 @@ public:
                 // The files will be added to the cache - so that the subsequent query load will match immediately
                 asyncFor("Async Resolve Filenames", filenames.size(), numResolveFilenameThreads, [this, &filenames, &resolvedFiles, &packages, &stats](unsigned i)
                 {
+                    const char *filename = nullptr;
                     try
                     {
                         const auto & entry = filenames[i];
                         const IRoxiePackage * package = entry.first;
                         const SummaryMap::value_type * filenameEntry = entry.second;
-                        const char * filename = filenameEntry->first.c_str();
+                        filename = filenameEntry->first.c_str();
                         SummaryFlags flags = filenameEntry->second;
                         bool isOpt = (flags & SummaryFlags::IsOpt) != 0;
                         bool isCodeSigned = (flags & SummaryFlags::IsSigned) != 0;
@@ -1284,7 +1288,9 @@ public:
                     }
                     catch (IException *E)
                     {
-                        ::Release(E);
+                        VStringBuffer msg("Failed to resolve file %s", filename ? filename : "(unknown)");
+                        EXCLOG(E, msg.str());
+                        E->Release();
                     }
                 });
 

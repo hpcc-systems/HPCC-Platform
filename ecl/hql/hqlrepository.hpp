@@ -74,6 +74,12 @@ public:
         options.optVerbose = _verbose;
     }
 
+    void setGitOptions(unsigned __int64 _requestTimeStamp, __int64 _fetchToleranceSeconds)
+    {
+        options.requestTimeStamp = _requestTimeStamp;
+        options.fetchToleranceSeconds = _fetchToleranceSeconds;
+    }
+
     IEclSourceCollection * resolveGitCollection(const char * repoPath, const char * defaultUrl);
     void setErrorReceiver(IErrorReceiver * _errorReceiver) const
     {
@@ -87,7 +93,7 @@ protected:
 
     unsigned runGitCommand(StringBuffer * output, const char *args, const char * cwd, bool needCredentials);
     IEclPackage * queryRepository(IIdAtom * name, const char * defaultUrl, IEclSourceCollection * overrideSource, bool includeDefinitions);
-    IInterface * getGitUpdateLock(const char * path)
+    IGitUpdateLock * getGitUpdateLock(const char * path)
     {
         if (!callback)
             return nullptr;
@@ -116,6 +122,8 @@ private:
         bool cleanRepos = false;
         bool cleanInvalidRepos = false;
         bool optVerbose = false;
+        unsigned __int64 requestTimeStamp = getTimeStampNowValue();
+        __int64 fetchToleranceSeconds = 5;
     } options;
 };
 

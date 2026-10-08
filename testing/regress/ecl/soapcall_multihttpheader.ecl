@@ -15,6 +15,14 @@
     limitations under the License.
 ############################################################################## */
 
+//version soapAuthTraceLevel=1
+//version soapAuthTraceLevel=0
+
+IMPORT ^ AS root;
+
+#OPTION('soapAuthTraceLevel', #IFDEFINED(root.soapAuthTraceLevel, 1));
+#OPTION('roxie:soapAuthTraceLevel', #IFDEFINED(root.soapAuthTraceLevel, 1));
+
 string TargetIP := '.' : stored('TargetIP');
 string storedHeader := 'StoredHeaderDefault' : stored('storedHeader');
 
@@ -38,10 +46,13 @@ httpEchoServiceRequestRecord :=
     END;
 
 string constHeader := 'constHeaderValue';
+string authHeaderValue := 'Basic ' + WORKUNIT;
 
 soapcallResult := SOAPCALL(TargetURL, 'HttpEcho', httpEchoServiceRequestRecord, DATASET(httpEchoServiceResponseRecord), LITERAL, xpath('HttpEchoResponse'),
+                LOG,
                 httpheader('StoredHeader', storedHeader), httpheader('literalHeader', 'literalHeaderValue'), httpheader('constHeader', constHeader),
                 httpheader('HPCC-Global-Id','9876543210'), httpheader('HPCC-Caller-Id','http111'),
+                httpheader('Authorization', authHeaderValue),
                 httpheader('traceparent', '00-0123456789abcdef0123456789abcdef-0123456789abcdef-01'));
 
 output(soapcallResult, named('soapcallResult'));

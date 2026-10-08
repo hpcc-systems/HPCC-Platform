@@ -7926,6 +7926,7 @@ void CHThorWSCBaseActivity::init()
         JBASE64_Encode(uidpair.str(), uidpair.length(), authToken, false);
     }
     soapTraceLevel = agent.queryWorkUnit()->getDebugValueInt("soapTraceLevel", 1);
+    soapAuthTraceLevel = agent.queryWorkUnit()->getDebugValueInt("soapAuthTraceLevel", 1);
     StringBuffer soapSepStr;
     StringBufferAdaptor soapSepAdaptor(soapSepStr);
     agent.queryWorkUnit()->getDebugValue("soapLogSepString", soapSepAdaptor);
