@@ -56,6 +56,8 @@
                               hpcc:sourceKey="daliprocess_name" hpcc:tooltip="Specifies the dali server to which this eclscheduler is attached"/>
                 <xs:attribute name="enableEclccDali" type="xs:boolean" hpcc:displayName="Enable ECL CC Dali" hpcc:presetValue="true"
                               hpcc:tooltip="Enables passing Dali address to eclcc for compile-time file resolution"/>
+                <xs:attribute name="gitFetchTolerance" type="xs:integer" hpcc:displayName="Git Fetch Tolerance"
+                              hpcc:tooltip="Number of seconds a successful or failed git fetch remains fresh for subsequent compilations. Negative values disable fetch skipping"/>
                 <xs:attribute name="enableSysLog" type="xs:boolean"  hpcc:displayName="Enable Syslog" hpcc:presetValue="true"
                               hpcc:tooltip="Enables syslog monitoring of the eclccserver process"/>
                 <xs:attribute name="generatePrecompiledHeader" type="xs:boolean"  hpcc:displayName="Generate Precompiled Header" hpcc:presetValue="true"
