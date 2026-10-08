@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1>
+  <title>Utilitário ZAP</title>
+
+  <sect2 id="ZAP">
+    <title>Utilitário Z.A.P.</title>
+
+    <para>O botão Zipped Analysis Package (Z.A.P.) é um utilitário para
+    coletar informações do sistema e encapsulá-las em um pacote que pode ser
+    compartilhado. É uma ferramenta útil para relatar erros, inconsistências
+    ou outros comportamentos inesperados. Quando ocorre uma situação desse
+    tipo, esse utilitário empacota as informações para serem enviadas para
+    análise posterior.</para>
+
+    <figure>
+      <title>Botão Z.A.P.</title>
+
+      <mediaobject>
+        <imageobject>
+          <imagedata fileref="../../images/ECLWAZ00.jpg"/>
+        </imageobject>
+      </mediaobject>
+    </figure>
+
+    <para>Para usar o utilitário Z.A.P., pressione o botão Z.A.P. na página de
+    detalhes da workunit correspondente. O botão abre a caixa de diálogo
+    Zipped Analysis Package.</para>
+
+    <para>Alguns dos campos obrigatórios já vêm preenchidos. Preencha os
+    valores correspondentes em Description, History e nos demais campos.
+    Opcionalmente, você pode proteger o pacote ZAP com senha e optar por
+    incluir os logs dos workers. Os logs dos workers não são incluídos por
+    padrão. Se houver logs de workers, a opção de incluí-los estará
+    disponível. Você deve marcar esse campo quando ele estiver disponível para
+    incluir os logs dos workers.</para>
+
+    <para>Se os seus dados contiverem informações sensíveis, como informações
+    de identificação pessoal (PII), salve o pacote ZAP, higienize os dados e
+    depois envie-o manualmente por e-mail. Se for apropriado compartilhar seus
+    dados, você pode utilizar o campo Send Email.</para>
+
+    <para>O campo Send Email só fica disponível se o e-mail estiver
+    configurado para o serviço ESP no Configuration Manager. Se estiver
+    disponível, marque a caixa Send Email para enviar o relatório ZAP por
+    e-mail. Apenas um Administrador pode configurar o e-mail. O endereço de
+    e-mail (To) também é definido pelo Administrador e só pode ser alterado na
+    configuração. O endereço de e-mail (From) pode ser definido no
+    Configuration Manager, mas pode ser alterado se desejado. O campo Email
+    Subject é obrigatório, mas o Email Body é opcional.</para>
+
+    <para>Pressione o botão <emphasis role="bold">Apply </emphasis>quando
+    todos os campos da caixa de diálogo estiverem preenchidos. Nesse momento,
+    se você tiver marcado a caixa Send Email, o relatório Z.A.P. será enviado.
+    Se o e-mail não estiver configurado, o utilitário Z.A.P. gera um arquivo
+    zip com todas as informações apropriadas para a resolução de
+    problemas.</para>
+
+    <para>Você pode encontrar o arquivo zip gerado no diretório de downloads
+    designado do seu navegador. Agora você pode enviar esse arquivo
+    manualmente para a pessoa que está tratando sua solicitação de suporte, ou
+    pode fazer o upload do arquivo no sistema de acompanhamento de chamados.
+    Lembre-se: você só deve usar o recurso de e-mail se for apropriado
+    compartilhar seus dados.</para>
+
+    <sect3 id="ZAP_Config_Options">
+      <title>Opções de Configuração</title>
+
+      <para>Os logs dos componentes são alguns dos artefatos mais importantes
+      incluídos nesses relatórios ZAP.</para>
+
+      <para>O comportamento de log difere entre implantações bare metal e
+      conteinerizadas. No bare metal, alguns logs sempre estão previstos para
+      inclusão (Thor Manager, ECLCC Server e ECL Agent). A caixa de seleção
+      “Include worker logs” da interface controla a inclusão dos arquivos de
+      log do Thor Worker.</para>
+
+      <para>Em um ambiente conteinerizado, você pode optar por excluir todos
+      os logs. Desmarque as caixas de seleção da interface referentes à
+      inclusão dos logs. As implantações conteinerizadas permitem essa
+      flexibilidade porque os logs exigem um componente leitor de logs remoto
+      que pode não estar configurado no seu sistema. O registro de logs
+      baseado em nuvem pode gerar despesas adicionais com coleta e download de
+      dados em comparação com os sistemas bare metal tradicionais, razão pela
+      qual algumas implantações em nuvem podem ter o registro de logs
+      desabilitado.</para>
+    </sect3>
+
+    <sect3 id="ZAP-IncludeLogs">
+      <title>Incluindo os Logs</title>
+
+      <para>Para incluir os logs, marque as duas caixas de seleção da
+      interface:</para>
+
+      <para><emphasis role="bold">Include related logs</emphasis> : Controla a
+      inclusão do arquivo &lt;wuid&gt;.log.</para>
+
+      <para><emphasis role="bold">Include per-component logs</emphasis>:
+      Controla a inclusão dos logs gerados por pelo menos estes componentes (a
+      lista pode variar de acordo com a sua implantação): ECLCC Server,
+      Thor-ECL Agent, Thor Manager, Thor Agent e Thor Worker.</para>
+
+      <para>Para que esses logs sejam incluídos no Z.A.P., as implantações
+      bare metal exigem que o valor da permissão de recurso do ESP <emphasis
+      role="bold">Cluster Topology Access</emphasis> esteja definido como
+      <emphasis role="bold">READ</emphasis>.</para>
+
+      <programlisting>ClusterTopologyAccess:READ</programlisting>
+
+      <para>Uma implantação conteinerizada deve ter o registro de logs
+      devidamente configurado para poder incluir os logs. Além disso, o
+      usuário deve ter a permissão de recurso
+      <emphasis>WsLogAccess:Read</emphasis>, caso contrário os logs serão
+      excluídos e, em seu lugar, será exibida uma mensagem de erro indicando
+      qual permissão é necessária.</para>
+
+      <para>Se houver uma mensagem "no access" no arquivo ZAP e não houver
+      arquivos de log, o valor de permissão especificado na mensagem de erro
+      deve ser definido para garantir que os logs sejam incluídos no relatório
+      ZAP.</para>
+
+      <para>Consulte a seção <link
+      linkend="Containerized_Logging">Containerized Logging</link> na
+      documentação <ulink
+      url="https://hpccsystems.com/training/documentation/all/">Containerized
+      HPCC Systems Platform</ulink> para obter mais informações sobre a
+      configuração do processamento de logs.</para>
+    </sect3>
+  </sect2>
+</sect1>

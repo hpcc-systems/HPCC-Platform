@@ -10,16 +10,10 @@
       <primary>File.Replicate</primary>
     </indexterm> <indexterm>
       <primary>Replicate</primary>
-    </indexterm> (</emphasis> <emphasis> filename </emphasis> <emphasis
-  role="bold">[</emphasis> <emphasis>, timeout </emphasis> <emphasis
-  role="bold">] [</emphasis> <emphasis>, espserverIPport</emphasis> <emphasis
-  role="bold">])</emphasis> <emphasis/></para>
+    </indexterm> (</emphasis> <emphasis>logicalName, timeOut, espServerIpPort</emphasis> <emphasis role="bold">)</emphasis></para>
 
   <para><emphasis>dfuwuid </emphasis> <emphasis role="bold">:=
-  STD.File.fReplicate(</emphasis> <emphasis> filename </emphasis> <emphasis
-  role="bold">[</emphasis> <emphasis>, timeout </emphasis> <emphasis
-  role="bold">] [</emphasis> <emphasis>, espserverIPport</emphasis> <emphasis
-  role="bold">]);</emphasis></para>
+  STD.File.fReplicate(</emphasis> <emphasis>logicalName, timeOut, espServerIpPort</emphasis> <emphasis role="bold">)</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -70,7 +64,7 @@
   cluster. Normalmente, isso significa que a parte do arquivo na unidade C de
   um nó é copiada para a unidade D do nó vizinho.</para>
 
-  <para>Example:</para>
+  <para>Exemplo:</para>
 
   <programlisting format="linespecific">A := STD.File.Replicate('Fred');</programlisting>
 </sect1>

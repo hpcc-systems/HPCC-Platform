@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE article PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <chapter id="Cert_Spray_Despray">
@@ -207,7 +207,7 @@
                   <tbody>
                     <row>
                       <entry align="right"><emphasis
-                      role="bold">Destino</emphasis></entry>
+                      role="bold">Target</emphasis></entry>
                     </row>
 
                     <row>
@@ -217,9 +217,16 @@
                     </row>
 
                     <row>
-                      <entry><emphasis role="bold">Name Prefix</emphasis></entry>
+                      <entry><emphasis role="bold">Queue</emphasis></entry>
 
-                      <entry>O prefixo do arquivo lógico. Neste caso, 
+                      <entry>Selecione a fila do spray.</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis role="bold">Target
+                      Scope</emphasis></entry>
+
+                      <entry>O prefixo do arquivo lógico. Neste caso,
                       <emphasis role="bold">certification</emphasis></entry>
                     </row>
 
@@ -238,7 +245,7 @@
 
                     <row>
                       <entry align="right"><emphasis
-                      role="bold">Opções:</emphasis></entry>
+                      role="bold">Options:</emphasis></entry>
                     </row>
 
                     <row>
@@ -268,7 +275,17 @@
                     </row>
 
                     <row>
-                      <entry><emphasis role="bold">Fail if no source file</emphasis></entry>
+                      <entry><emphasis role="bold">Expire in
+                      (days)</emphasis></entry>
+
+                      <entry>Um valor inteiro que indica o número de dias antes
+                      da remoção automática do arquivo. Se omitido, o padrão é
+                      -1 (nunca expira).</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis role="bold">Fail if no source
+                      file</emphasis></entry>
 
                       <entry>Marque essa caixa para permitir que o spray falhe se nenhum arquivo de origem for encontrado.</entry>
                     </row>

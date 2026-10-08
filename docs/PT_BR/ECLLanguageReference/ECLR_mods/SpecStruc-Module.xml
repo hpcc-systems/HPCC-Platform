@@ -159,8 +159,6 @@
     MyModule.MyModuleStructure.MyDefinition:</para>
 
     <para><programlisting lang="ECL_Runnable">MyMod := MODULE
-
-MyMod := MODULE
   SHARED x := 88;
   y := 42;
   EXPORT InMod := MODULE //nested MODULE
@@ -179,7 +177,7 @@ OUTPUT(MyMod.InMod.Val2);</programlisting></para>
     <para>As ações de efeitos colaterais são permitidas no MODULE apenas com o
     uso da função WHEN, como neste exemplo:</para>
 
-    <programlisting>//An Example with a side-effect action 
+    <programlisting lang="ECL_Runnable">//An Example with a side-effect action 
 EXPORT customerNames := MODULE 
   EXPORT Layout := RECORD 
     STRING20 surname;  
@@ -326,19 +324,18 @@ END;
 filtered2 := filterDataset2(TRUE);
 OUTPUT(filtered2.included('Smith'),,NAMED('Included2'));
 OUTPUT(filterDataset2(true).excluded('Smith'),,NAMED('Excluded2'));
-          
-          
+
 //VIRTUAL examples
 Mod1 := MODULE,VIRTUAL //a fully abstract module
   EXPORT val := 1;
   EXPORT func(INTEGER sc) := val * sc;
 END;
-         
+
 Mod2 := MODULE(Mod1) //instance
-  EXPORT val := 3; //a concete member, overriding default value
-                   //while func remains abstract
+  EXPORT val := 3;   //a concete member, overriding default value
+                     //while func remains abstract
 END;
-     
+
 Mod3 := MODULE(Mod1) //a fully concete instance
   EXPORT func(INTEGER sc) := val + sc; //overrides inherited func
 END;
@@ -352,7 +349,6 @@ MyModule := MODULE, FORWARD
 END;
 
 OUTPUT(MyModule.foo);
-
 </programlisting>
 
     <para>Ver também: <link linkend="FUNCTION_Structure">Estrutura

@@ -10,15 +10,14 @@
       <primary>Str.ToUpperCase</primary>
     </indexterm><indexterm>
       <primary>ToUpperCase</primary>
-    </indexterm>(</emphasis> <emphasis>source</emphasis> <emphasis
-  role="bold">)</emphasis> <emphasis role="bold"/></para>
+    </indexterm>(</emphasis> <emphasis>src</emphasis> <emphasis role="bold">)</emphasis></para>
 
   <para><emphasis role="bold">STD.Uni.ToUpperCase<indexterm>
       <primary>STD.Uni.ToUpperCase</primary>
     </indexterm><indexterm>
       <primary>Uni.ToUpperCase</primary>
-    </indexterm>(</emphasis> <emphasis>source</emphasis> <emphasis
-  role="bold">)</emphasis> <emphasis role="bold"/></para>
+    </indexterm>(</emphasis> <emphasis>src</emphasis> <emphasis
+  role="bold">)</emphasis> <emphasis role="bold"></emphasis></para>
 
   <para><emphasis role="bold">STD.Uni.LocaleToUpperCase<indexterm>
       <primary>STD.Uni.LocaleToUpperCase</primary>
@@ -26,7 +25,7 @@
       <primary>Uni.LocaleToUpperCase</primary>
     </indexterm><indexterm>
       <primary>LocaleToUpperCase</primary>
-    </indexterm>(</emphasis> <emphasis> source, locale </emphasis> <emphasis
+    </indexterm>(</emphasis> <emphasis>src, locale_name</emphasis> <emphasis
   role="bold">)</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
@@ -37,14 +36,14 @@
 
       <tbody>
         <row>
-          <entry><emphasis>source</emphasis></entry>
+          <entry><emphasis>src</emphasis></entry>
 
           <entry>Uma string que contém os dados cuja formatação de maiúsculas
           e minúsculas será alterada.</entry>
         </row>
 
         <row>
-          <entry><emphasis>locale</emphasis></entry>
+          <entry><emphasis>locale_name</emphasis></entry>
 
           <entry>Uma string terminada por nulo que contém o código de idioma e
           país a ser usado para determinar a ordem correta de classificação e

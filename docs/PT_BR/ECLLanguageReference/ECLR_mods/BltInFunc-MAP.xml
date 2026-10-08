@@ -86,9 +86,16 @@
   retorno forem escalar, o otimizador de código pode alterar essa
   ordem.</para>
 
+  <para><emphasis role="bold">Note:</emphasis> Em CASE e MAP, valores de
+  string retornados são convertidos para um tipo/tamanho de resultado comum,
+  portanto valores mais curtos podem ser preenchidos à direita com espaços. Se
+  você precisar de um valor sem preenchimento, aplique TRIM ao resultado (por
+  exemplo, <literal>TRIM(result, RIGHT)</literal> ou <literal>TRIM(result,
+  LEFT, RIGHT))</literal>.</para>
+
   <para>Exemplo:</para>
 
-  <programlisting>Attr01 := MAP(EXISTS(Person(Person.EyeColor = 'Blue')) =&gt; 1,
+  <programlisting lang="ECL" role="notrunnable">Attr01 := MAP(EXISTS(Person(Person.EyeColor = 'Blue')) =&gt; 1,
               EXISTS(Person(Person.Haircolor = 'Brown')) =&gt; 2,
               3);
  //If there are any blue-eyed people, Attr01 gets 1

@@ -2,17 +2,17 @@
 <!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="ESDL_boolean" role="nobrk">
-  <title><emphasis role="bold">booleanbool</emphasis> <indexterm>
+  <title>boolean<indexterm>
       <primary>boolean</primary>
-    </indexterm></title>
-
-  <para><indexterm>
+    </indexterm> / <indexterm>
       <primary>bool</primary>
-    </indexterm>A um tipo de dado lógico ou booleano que possui um ou dois
-  valores possíveis: verdadeiro (1) ou falso (0).</para>
+    </indexterm>bool</title>
+
+  <para>Um tipo de dado lógico ou booleano que possui um de dois valores
+  possíveis: verdadeiro (1) ou falso (0).</para>
 
   <para><emphasis role="bold">Exemplo:</emphasis></para>
 
-  <programlisting>boolean includeFlag;
+  <programlisting>boolean includeFlag; 
 bool includeMore;</programlisting>
 </sect1>

@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="LogicalFileListFiltered">
+  <title>LogicalFileListFiltered</title>
+
+  <para><emphasis role="bold">STD.File.LogicalFileListFiltered<indexterm>
+      <primary>STD.File.LogicalFileListFiltered</primary>
+    </indexterm><indexterm>
+      <primary>File.LogicalFileListFiltered</primary>
+    </indexterm><indexterm>
+      <primary>LogicalFileListFiltered</primary>
+    </indexterm>(</emphasis> <emphasis role="bold"> [ </emphasis>
+  <emphasis>namepattern </emphasis> <emphasis role="bold">] [, </emphasis>
+  <emphasis>filters</emphasis> <emphasis role="bold"> ] [, </emphasis>
+  <emphasis>fields</emphasis> <emphasis role="bold"> ]</emphasis> <emphasis
+  role="bold"> [, </emphasis> <emphasis>unknownszero </emphasis> <emphasis
+  role="bold">] </emphasis><emphasis role="bold"> [, </emphasis>
+  <emphasis>remoteDfs </emphasis> <emphasis role="bold">] [, </emphasis>
+  <emphasis>maxFileLimit </emphasis> <emphasis role="bold">]
+  )</emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt"/>
+
+      <colspec/>
+
+      <tbody>
+        <row>
+          <entry><emphasis>namepattern</emphasis></entry>
+
+          <entry>Opcional. Uma string terminada em nulo contendo o padrão de
+          máscara dos arquivos a serem listados. Se omitido, o padrão é '*'
+          (todos os arquivos).</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>filters</emphasis></entry>
+
+          <entry>Opcional. Uma string separada por vírgulas com expressões de
+          filtro para filtragem avançada. Os exemplos incluem
+          'size&gt;100000000' para arquivos maiores que 100MB,
+          'owner:username' para filtrar por proprietário, 'is:superfile' para
+          incluir apenas SuperFiles, 'is:normal' para arquivos normais,
+          'has:description' para arquivos com descrição e
+          'modified&gt;=2026-01-01' para arquivos modificados em uma data
+          específica ou depois dela. Se omitido, o padrão é '' (sem
+          filtragem).</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>fields</emphasis></entry>
+
+          <entry>Opcional. Uma string separada por vírgulas especificando
+          quais campos serão retornados no conjunto de resultados. Para
+          qualquer valor não vazio, o campo do nome do arquivo ('name') é
+          sempre incluído, mesmo que você não o solicite explicitamente. Os
+          exemplos incluem 'name' para apenas o nome do arquivo, 'size' para
+          nome do arquivo e tamanho, ou 'superfile,owner' para nome do
+          arquivo, superfile e proprietário. Se omitido ou vazio, o padrão é o
+          subconjunto de campos legado
+          'name,superfile,size,rowcount,modified,owner,cluster'. Solicite
+          explicitamente quaisquer campos adicionais desejados.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>unknownszero</emphasis></entry>
+
+          <entry>Opcional. Um sinalizador booleano que indica se os valores
+          numéricos desconhecidos do resultado, incluindo tamanhos de arquivo
+          e contagens de registros, devem ser definidos como zero (0) em vez
+          de menos um (-1). Se omitido, o padrão é FALSE.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>remoteDfs</emphasis></entry>
+
+          <entry>Opcional. O nome do serviço DFS remoto usado para resolver o
+          arquivo. Se estiver em branco, o arquivo é resolvido localmente. Se
+          omitido, o padrão é em branco. (Ainda não suportado; especificá-lo
+          gerará um erro.)</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>maxFileLimit</emphasis></entry>
+
+          <entry>Opcional. Número máximo de arquivos a serem retornados.
+          Defina como -1 para usar o limite padrão do servidor (100.000). O
+          limite máximo no lado do cliente é 1.000.000. Se omitido, o padrão é
+          -1.</entry>
+        </row>
+
+        <row>
+          <entry>Retorno:<emphasis/></entry>
+
+          <entry>LogicalFileListFiltered retorna um registro contendo count,
+          limitBreached e um dataset com as informações dos arquivos no
+          formato mostrado abaixo.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>A função <emphasis role="bold">LogicalFileListFiltered
+  </emphasis>retorna um registro contendo o número de arquivos retornados, um
+  sinalizador que indica se o resultado foi limitado por maxFileLimit e um
+  dataset dos arquivos lógicos do ambiente, com filtragem aprimorada e
+  informações detalhadas dos arquivos.</para>
+
+  <para>Formatos de registro:</para>
+
+  <para><programlisting format="linespecific">EXPORT FsLogicalFileInfoRecordEx := RECORD(FsLogicalFileInfoRecord)
+  VARSTRING description;
+  VARSTRING workunit;
+  VARSTRING job;
+  VARSTRING directory;
+  BOOLEAN compressed;
+  INTEGER4 recordsize;
+  VARSTRING kind;
+  INTEGER8 compressedsize;
+  BOOLEAN persistent;
+  VARSTRING protect;
+  STRING19 accessed;
+  INTEGER4 expiredays;
+  REAL8 readcost;
+  REAL8 writecost;
+END;
+
+EXPORT FsLogicalFileListResult := RECORD
+  UNSIGNED4 count;
+  BOOLEAN limitBreached;
+  DATASET(FsLogicalFileInfoRecordEx) files;
+END;</programlisting></para>
+
+  <para>Exemplo:</para>
+
+  <programlisting format="linespecific">IMPORT STD;
+
+// List all files
+result1 := STD.File.LogicalFileListFiltered();
+OUTPUT(result1.count);
+OUTPUT(result1.files);
+
+// List with limit
+result2 := STD.File.LogicalFileListFiltered(maxFileLimit := 100);
+OUTPUT(result2.limitBreached);
+
+// List files larger than 100MB
+result3 := STD.File.LogicalFileListFiltered(filters := 'size&gt;100000000');
+
+// List superfiles owned by userXYZ
+result4 := STD.File.LogicalFileListFiltered(filters := 'owner:userXYZ,is:superfile');
+
+// List normal files without description, modified on or after 01 Jan 2026
+result5 := STD.File.LogicalFileListFiltered(filters := 'is:normal,!has:description,modified&gt;=2026-01-01');
+
+// List only specific fields
+result6 := STD.File.LogicalFileListFiltered(fields := 'name,size,modified,owner');</programlisting>
+
+  <para>Ver também: <link
+  linkend="LogicalFileList">LogicalFileList</link></para>
+</sect1>

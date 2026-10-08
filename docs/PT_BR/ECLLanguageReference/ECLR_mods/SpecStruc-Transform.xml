@@ -178,16 +178,16 @@
     não foram definidos previamente na função de transformação, ao passo que
     este formato:</para>
 
-    <programlisting>SELF.<emphasis>outfield</emphasis> := [];   //the <emphasis>outfield</emphasis> names a child DATASET in
+    <programlisting lang="ECL">SELF.<emphasis>outfield</emphasis> := [];   //the <emphasis>outfield</emphasis> names a child DATASET in
                        // the <emphasis>resulttype </emphasis>RECORD Structure</programlisting>
 
     <para>limpa apenas os campos secundários em <emphasis>outfield</emphasis>,
     e este formato:</para>
 
-    <programlisting lang="ECL">SELF := <emphasis>label</emphasis>; //the <emphasis>label</emphasis> names a RECORD structure<indexterm>
+    <programlisting>SELF := <emphasis>label</emphasis>; //the <emphasis>label</emphasis> names a RECORD structure<indexterm>
         <primary>RECORD structure</primary>
       </indexterm> parameter
-// in the <emphasis>parameterlist</emphasis></programlisting>
+// in the <emphasis lang="ECL">parameterlist</emphasis></programlisting>
 
     <para>define os resultados de cada campo no formato de resultados de
     <emphasis>resulttype</emphasis> que não foi definido como oriundo do campo

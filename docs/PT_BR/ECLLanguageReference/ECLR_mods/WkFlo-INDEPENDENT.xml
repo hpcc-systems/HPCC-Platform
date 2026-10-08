@@ -6,18 +6,17 @@
 
   <para><emphasis>attribute </emphasis>:= <emphasis>expression
   </emphasis><emphasis role="bold">: INDEPENDENT
-  [</emphasis><emphasis>(cluster)</emphasis><emphasis role="bold">]</emphasis>
-  <indexterm>
-      <primary>INDEPENDENT</primary>
-    </indexterm><indexterm>
+  [</emphasis><emphasis>(cluster </emphasis><emphasis role="bold">[,LABEL(</emphasis><emphasis>text</emphasis><emphasis role="bold">)]</emphasis>)<emphasis role="bold">]</emphasis>; <indexterm>
       <primary>INDEPENDENT workflow service</primary>
-    </indexterm>;</para>
+    </indexterm><indexterm>
+      <primary>INDEPENDENT</primary>
+    </indexterm></para>
 
   <para><informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
-        <colspec colwidth="79.65pt"/>
+        <colspec colwidth="79.65pt" />
 
-        <colspec colwidth="273.15pt"/>
+        <colspec colwidth="273.15pt" />
 
         <tbody>
           <row>
@@ -40,6 +39,20 @@
             <emphasis>atributo</emphasis> é executado no cluster atual em
             execução.</entry>
           </row>
+        <row>
+            <entry><emphasis role="bold">LABEL</emphasis></entry>
+
+            <entry>Opcional. Define o <emphasis>Text</emphasis> a exibir para
+            o item de workflow no Graph da workunit. Se omitido, o gerador de
+            código deduzirá um rótulo a partir do identificador que está sendo
+            definido.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>text</emphasis></entry>
+
+            <entry>Uma constante de string que contém o texto a exibir.</entry>
+          </row>
         </tbody>
       </tgroup>
     </informaltable></para>
@@ -60,28 +73,24 @@
 
   <para>Exemplo:</para>
 
-  <programlisting>  IMPORT STD;
-  File1 := 'names1.txt';
-  File2 := 'names2.txt';
-  
-  SrcIP := '10.239.219.2';
-  SrcPath := '/var/lib/HPCCSystems/mydropzone/';
-  DestPath := '~THOR::IN::';
-  ESPportIP := 'http://192.168.56.120:8010/FileSpray';
-  
-  DeleteOldFiles :=
-     PARALLEL(STD.File.DeleteLogicalFile(DestPath+File1),
-              STD.File.DeleteLogicalFile(DestPath+File2))
-                           : INDEPENDENT;
-  SprayNewFiles :=
-     PARALLEL(STD.File.SprayFixed(SrcIP,SrcPath+File1,11,
-                                      'mythor',DestPath+File1,
-                                      -1,ESPportIP),
-              STD.File.SprayFixed(SrcIP,SrcPath+File2,11,
-                                     'mythor',DestPath+File2,
-                                     -1,ESPportIP))
-                           : INDEPENDENT;
-    SEQUENTIAL(DeleteOldFiles,SprayNewFiles);
+  <programlisting lang="ECL_Runnable">I := RANDOM() : INDEPENDENT(LABEL('CalcRandom'));  //calculated once, period
+G := RANDOM() : GLOBAL;       //calculated once in each graph
+
+ds := 
+  DATASET([{1,0,0,0},{2,0,0,0}],{UNSIGNED1 rec,UNSIGNED Ival, UNSIGNED Gval , UNSIGNED Aval });
+
+RECORDOF(ds) XF(ds L) := TRANSFORM
+  SELF.Ival := I;
+  SELF.Gval := G;
+  SELF.Aval := RANDOM();     //calculated each time used
+  SELF := L;
+END;
+
+P1 := PROJECT(ds,XF(left)) : PERSIST('~TEMP::PERSIST::IndependentVsGlobal1');
+P2 := PROJECT(ds,XF(left)) : PERSIST('~TEMP::PERSIST::IndependentVsGlobal2');
+
+OUTPUT(P1);    
+OUTPUT(P2);  //this gets the same Ival values as P1, but the Gval value is different than P1
 </programlisting>
 
   <para>Ver também: <link linkend="GLOBAL">GLOBAL</link></para>

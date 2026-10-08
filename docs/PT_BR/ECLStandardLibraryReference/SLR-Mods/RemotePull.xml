@@ -10,208 +10,178 @@
       <primary>File.RemotePull</primary>
     </indexterm><indexterm>
       <primary>RemotePull</primary>
-    </indexterm>(</emphasis> <emphasis> remoteURL, sourcelogicalname,
-  destinationGroup</emphasis> <emphasis role="bold">,</emphasis> <emphasis
-  role="bold"> </emphasis> <emphasis>destinationlogicalname, </emphasis>
-  <emphasis role="bold">[</emphasis> <emphasis>,timeout</emphasis> <emphasis
-  role="bold">] [</emphasis> <emphasis>,maxConnections</emphasis> <emphasis
-  role="bold">]</emphasis> <emphasis role="bold"> [</emphasis>
-  <emphasis>,allowoverwrite</emphasis> <emphasis role="bold">] [</emphasis>
-  <emphasis>,replicate</emphasis> <emphasis role="bold">] [</emphasis>
-  <emphasis>,asSuperfile</emphasis> <emphasis role="bold">]
-  [</emphasis><emphasis>,forcePush</emphasis> <emphasis role="bold">]
-  [</emphasis><emphasis>,transferBufferSize</emphasis> <emphasis role="bold">]
-  [</emphasis><emphasis>,wrap</emphasis> <emphasis role="bold">]
-  [</emphasis><emphasis>,compress</emphasis> <emphasis role="bold">]
-  [</emphasis> <emphasis>,noSplit</emphasis> <emphasis role="bold">]
-  [</emphasis> <emphasis>,expireDays</emphasis><emphasis
-  role="bold">])</emphasis> <emphasis/></para>
+    </indexterm>(</emphasis> <emphasis>remoteEspFsURL, sourceLogicalName, destinationGroup, destinationLogicalName, timeOut, maxConnections, allowOverwrite, replicate, asSuperfile, forcePush, transferBufferSize, wrap, compress, noSplit, expireDays, username, userPw</emphasis> <emphasis role="bold">)</emphasis></para>
 
   <para><emphasis>dfuwuid</emphasis> <emphasis role="bold"> :=
-  STD.File.RemotePull(</emphasis> <emphasis> remoteURL,
-  sourcelogicalname,</emphasis> <emphasis> destinationGroup </emphasis>
-  <emphasis role="bold">, </emphasis> <emphasis>destinationlogicalname,
-  </emphasis> <emphasis role="bold">[</emphasis> <emphasis>,timeout</emphasis>
-  <emphasis role="bold">]</emphasis> <emphasis role="bold"> [</emphasis>
-  <emphasis>,maxConnections</emphasis> <emphasis role="bold">] [</emphasis>
-  <emphasis>,allowoverwrite</emphasis> <emphasis role="bold">] [</emphasis>
-  <emphasis>,replicate</emphasis> <emphasis role="bold">]</emphasis> <emphasis
-  role="bold"> [</emphasis> <emphasis>,asSuperfile</emphasis> <emphasis
-  role="bold">] [</emphasis><emphasis>,forcePush</emphasis> <emphasis
-  role="bold">] [</emphasis><emphasis>,transferBufferSize</emphasis> <emphasis
-  role="bold">] [</emphasis><emphasis>,wrap</emphasis> <emphasis role="bold">]
-  [</emphasis><emphasis>,compress</emphasis> <emphasis role="bold">]
-  [</emphasis> <emphasis>,noSplit</emphasis> <emphasis role="bold">]
-  [</emphasis> <emphasis>,expireDays</emphasis><emphasis
-  role="bold">]);</emphasis></para>
+  STD.File.fRemotePull(</emphasis> <emphasis>remoteEspFsURL, sourceLogicalName, destinationGroup, destinationLogicalName, timeOut, maxConnections, allowOverwrite, replicate, asSuperfile, forcePush, transferBufferSize, wrap, compress, noSplit, expireDays, username, userPw</emphasis> <emphasis role="bold">)</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
-      <colspec colwidth="80.50pt"/>
+      <colspec colwidth="80.50pt" />
 
-      <colspec/>
+      <colspec />
 
       <tbody>
         <row>
-          <entry><emphasis>remoteURL</emphasis></entry>
+          <entry><emphasis>remoteEspFsURL</emphasis></entry>
 
-          <entry>Uma string terminada por nulo que contém o protocolo, o IP e
-          o diretório ou DNS equivalente do programa do servidor ESP remoto.
-          Normalmente são os mesmos IP e porta do ECL Watch, com "/FileSpray"
-          anexado.</entry>
+          <entry>Uma string terminada por nulo contendo o protocolo, IP, porta e
+          diretório, ou o equivalente DNS, do programa servidor ESP remoto.
+          Geralmente é o mesmo IP e porta do seu ECL Watch, com
+          "/FileSpray" acrescentado.</entry>
         </row>
 
         <row>
-          <entry><emphasis>sourcelogicalname</emphasis></entry>
+          <entry><emphasis>sourceLogicalName</emphasis></entry>
 
-          <entry>Uma string terminada por nulo que contém o nome lógico local
-          do arquivo.</entry>
+          <entry>Uma string terminada por nulo contendo o nome lógico local do
+          arquivo.</entry>
         </row>
 
         <row>
           <entry><emphasis>destinationGroup</emphasis></entry>
 
-          <entry>Uma string terminada por nulo que contém o nome do cluster de
+          <entry>Uma string terminada por nulo contendo o nome do cluster de
           destino.</entry>
         </row>
 
         <row>
-          <entry><emphasis>destinationlogicalname</emphasis></entry>
+          <entry><emphasis>destinationLogicalName</emphasis></entry>
 
-          <entry>Uma string terminada por nulo que contém o nome lógico do
-          arquivo no cluster remoto (deve ser especificado totalmente,
+          <entry>Uma string terminada por nulo contendo o nome lógico a ser dado
+          ao arquivo no cluster remoto (deve ser especificado por completo,
           incluindo o domínio).</entry>
         </row>
 
         <row>
-          <entry><emphasis>timeout</emphasis></entry>
+          <entry><emphasis>timeOut</emphasis></entry>
 
-          <entry>Opcional. Um valor inteiro que indica a configuração de tempo
-          limite. Se omitido, o padrão é -1. Se definido como (0), o controle
-          da execução retorna imediatamente à workunit ECL sem esperar a
+          <entry>Opcional. Um valor inteiro indicando a configuração de timeout.
+          Se omitido, o padrão é -1. Se definido como zero (0), o controle
+          de execução retorna imediatamente à workunit ECL sem aguardar a
           conclusão da workunit DFU.</entry>
         </row>
 
         <row>
           <entry><emphasis>maxConnections</emphasis></entry>
 
-          <entry>Opcional. Um inteiro que especifica o número máximo de
-          conexões. Se omitido, o padrão é -1, o que indica que o sistema
-          escolhe um padrão adequado de acordo com o tamanho do
-          cluster.</entry>
+          <entry>Opcional. Um inteiro que especifica o número máximo de conexões.
+          Se omitido, o padrão é -1, o que indica que o sistema escolhe um
+          padrão adequado com base no tamanho do cluster.</entry>
         </row>
 
         <row>
-          <entry><emphasis>allowoverwrite</emphasis></entry>
+          <entry><emphasis>allowOverwrite</emphasis></entry>
 
-          <entry>Opcional. Um indicador booleano TRUE ou FALSE que indica se o
-          novo arquivo pode sobrescrever um arquivo existente do mesmo nome.
-          Se omitido, o padrão é FALSE.</entry>
+          <entry>Opcional. Uma flag booleana TRUE ou FALSE indicando se o novo
+          arquivo pode sobrescrever um arquivo existente com o mesmo nome. Se
+          omitida, o padrão é FALSE.</entry>
         </row>
 
         <row>
           <entry><emphasis>replicate</emphasis></entry>
 
-          <entry>Opcional. Um indicador booleano TRUE ou FALSE que indica se o
-          novo arquivo deve ser replicado automaticamente. Se omitido, o
-          padrão é FALSE.</entry>
+          <entry>Opcional. Uma flag booleana TRUE ou FALSE indicando se o novo
+          arquivo deve ser replicado automaticamente. Se omitida, o padrão é
+          FALSE.</entry>
         </row>
 
         <row>
           <entry><emphasis>asSuperfile</emphasis></entry>
 
-          <entry>Opcional. Um indicador booleano TRUE ou FALSE que indica se o
-          arquivo deve ser tratado como superarquivo. Se omitido, o padrão é
-          FALSE. Se TRUE e o arquivo a ser copiado for um superarquivo, a
-          operação criará um superarquivo no destino, criando subarquivos
-          conforme a necessidade e sobrescrevendo apenas os subarquivos já
-          existentes cujo conteúdo tenha sido alterado. Se FALSE e o arquivo a
-          ser copiado for um superarquivo, a operação consolidará todo o
-          conteúdo do superarquivo em um único arquivo lógico (e não um
-          superarquivo) no destino.</entry>
+          <entry>Opcional. Uma flag booleana TRUE ou FALSE indicando se o
+          arquivo deve ser tratado como superfile. Se omitida, o padrão é
+          FALSE. Se TRUE e o arquivo a copiar for um superfile, a operação
+          cria um superfile no destino, criando subfiles conforme necessário
+          enquanto sobrescreve apenas os subfiles existentes cujo conteúdo
+          mudou. Se FALSE e o arquivo a copiar for um superfile, a operação
+          consolida todo o conteúdo do superfile em um único arquivo lógico no
+          destino, não em um superfile.</entry>
         </row>
 
         <row>
           <entry><emphasis>forcePush</emphasis></entry>
 
-          <entry>Opcional. Um indicador booleano TRUE ou FALSE que indica se o
-          processo de cópia deve ser executado nos nós de origem enviando para
-          os destinos, em vez de executado nos destinos e recebendo da origem.
-          Se omitido, o padrão é FALSE.</entry>
+          <entry>Opcional. Uma flag booleana TRUE ou FALSE indicando se o
+          processo de cópia deve ser executado nos nós de origem e fazer push
+          para os destinos, em vez de executar nos destinos e fazer pull da
+          origem. Se omitida, o padrão é FALSE.</entry>
         </row>
 
         <row>
           <entry><emphasis>transferBufferSize</emphasis></entry>
 
-          <entry>Opcional. Um inteiro que especifica o tamanho do buffer de
-          transferência em bytes. Algumas vezes, valores maiores podem
-          acelerar o processo. Se omitido, é usado o tamanho padrão do buffer,
-          64K.</entry>
+          <entry>Opcional. Um inteiro que especifica o tamanho, em bytes, do
+          buffer de transferência. Às vezes, usar valores maiores pode
+          acelerar o processo. Se omitido, é usado um tamanho de buffer padrão
+          de 64K.</entry>
         </row>
 
         <row>
           <entry><emphasis>wrap</emphasis></entry>
 
-          <entry>Opcional. Um indicador booleano TRUE ou FALSE que sinaliza se
-          as partes do arquivo devem ser aninhadas automaticamente durante a
-          cópia para clusters de menor tamanho. Por exemplo, na cópia de um
-          cluster de 6 nós para um de 3 nós, cada nó receberá duas partes de
-          arquivo. A diferença está entre o nó 1 receber as partes 1 e 2 ou as
-          partes 1 e 4. Se omitido, o padrão é FALSE.</entry>
+          <entry>Opcional. Uma flag booleana TRUE ou FALSE indicando se as partes
+          do arquivo devem sofrer wrap automaticamente ao copiar para
+          clusters menores. Por exemplo, ao copiar de um cluster de 6 nós para
+          um cluster de 3 nós, duas partes do arquivo terminarão em cada nó;
+          a diferença é se o nó 1 recebe as partes 1 e 2 ou as partes 1 e 4.
+          Se omitida, o padrão é FALSE.</entry>
         </row>
 
         <row>
           <entry><emphasis>compress</emphasis></entry>
 
-          <entry>Opcional. Um indicador booleano TRUE ou FALSE que indica se o
-          novo arquivo deve ser compactado automaticamente usando LZW. Se
-          omitido, o padrão é FALSE.</entry>
+          <entry>Opcional. Uma flag booleana TRUE ou FALSE indicando se o novo
+          arquivo deve ser compactado automaticamente com LZW. Se omitida, o
+          padrão é FALSE.</entry>
         </row>
 
         <row>
           <entry><emphasis>noSplit</emphasis></entry>
 
           <entry>Opcional. Uma flag booleana TRUE ou FALSE indicando para não
-                    dividir uma parte do arquivo em várias partes de destino.
-          O padrão é           FALSO</entry>
+          dividir uma parte do arquivo em várias partes de destino. O padrão
+          é FALSE.</entry>
         </row>
 
         <row>
           <entry><emphasis>expireDays </emphasis></entry>
 
-          <entry>Opcional. Um valor inteiro indicando o número de dias
-                    antes de remover automaticamente o arquivo. Se omitido, o
-          padrão é           -1 (nunca expira).</entry>
+          <entry>Opcional. Especifica que o arquivo é temporário e será excluído
+          automaticamente após o número especificado de dias desde que o
+          arquivo foi lido. Se omitido, o padrão é -1 (nunca expira). Se
+          definido como 0, o arquivo é excluído automaticamente quando atinge
+          o limite definido na configuração <emphasis
+          role="bold">expiryDefault</emphasis> do Sasha Server.</entry>
         </row>
 
         <row>
           <entry><emphasis>dfuwuid</emphasis></entry>
 
-          <entry>O nome da definição que receberá a string terminada por nulo
-          que contém o ID da workunit DFU (DFUWUID) gerado para a
-          workunit.</entry>
+          <entry>O nome da definição que recebe a string terminada por nulo
+          contendo o ID da workunit DFU (DFUWUID) gerado para o job.</entry>
         </row>
 
         <row>
-          <entry>Return:<emphasis> </emphasis></entry>
+          <entry>Retorno:<emphasis> </emphasis></entry>
 
-          <entry>fRemotePull retorna uma string terminada por nulo que contém
-          o ID da workunit DFU (DFUWUID).</entry>
+          <entry>fRemotePull retorna uma string terminada por nulo contendo o ID
+          da workunit DFU (DFUWUID).</entry>
         </row>
       </tbody>
     </tgroup>
   </informaltable>
 
-  <para>A função <emphasis role="bold">RemotePull </emphasis> executa no
+  <para>A função <emphasis role="bold">RemotePull </emphasis>é executada em
   <emphasis>remoteURL</emphasis>, copiando
   <emphasis>sourcelogicalname</emphasis> do ambiente local que instanciou a
-  operação para o cluster <emphasis>destinationGroup </emphasis> do ambiente
-  remoto e atribuindo o nome de <emphasis>destinationlogicalname</emphasis>.
-  Isso é bastante semelhante ao uso da função STD.File.Copy com a
-  especificação do parâmetro <emphasis>espserverIPport </emphasis>. Como a
-  workunit DFU executa no servidor remoto DFU, a autenticação do nome do
-  usuário deve ser a mesma nos dois sistemas, e o usuário deve ter permissão
-  para copiar arquivos nos dois sistemas.</para>
+  operação para o cluster <emphasis>destinationGroup</emphasis> do ambiente
+  remoto, dando-lhe o <emphasis>destinationlogicalname</emphasis>. Isso é
+  muito semelhante a usar a função STD.File.Copy e especificar seu parâmetro
+  <emphasis>espserverIPport
+  </emphasis>. Como a workunit DFU é executada no DFU Server remoto, a
+  autenticação de nome de usuário deve ser a mesma nos dois sistemas, e o
+  usuário deve ter direitos para copiar arquivos em ambos os sistemas.</para>
 
   <para>Exemplo:</para>
 

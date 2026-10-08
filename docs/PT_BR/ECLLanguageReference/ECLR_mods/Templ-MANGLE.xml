@@ -25,26 +25,28 @@
       </tgroup>
     </informaltable></para>
 
-  <para>A declaração #MANGLE recebe uma string como parâmetro de entrada e
-  retorna um rótulo de identificador ECL válido contendo apenas letras,
+  <para>A declaração <emphasis role="bold">#MANGLE </emphasis>recebe qualquer
+  <emphasis>string</emphasis> como parâmetro de entrada e retorna um rótulo de
+  identificador ECL válido contendo apenas letras,
   números e caracter sublinhado (_). #MANGLE substitui caracteres não
   alfanuméricos por um caractere de sublinhado (_), seguido pelo valor hexa do
   caractere que está sendo substituído.</para>
 
   <para>Exemplo:</para>
 
-  <programlisting>  #DECLARE (mstg)
-  #DECLARE (dmstg)
-  
-  #SET (mstg, #MANGLE('SECTION_STATES/AREACODES'));
-  export res1 := %'mstg'%;
-  res1;          //res1 = 'SECTION_5fSTATES_2fAREACODES'
-  
+  <programlisting lang="ECL_Runnable">#DECLARE (mstg);
+#DECLARE (dmstg);
+#SET (mstg, #MANGLE('SECTION_STATES/AREACODES'));
+EXPORT res1 := %'mstg'%;
+OUTPUT(res1);      //res1 = 'SECTION_5fSTATES_2fAREACODES'
+
   // Do some processing with ECL Valid Label name "mstg"
-  
-  #SET (dmstg, #DEMANGLE(%'mstg'%));
-  export res2 := %'dmstg'%;
-  res2;          //res2 = 'SECTION_STATES/AREACODES' </programlisting>
+#SET (dmstg, #DEMANGLE(%'mstg'%));
+EXPORT res2 := %'dmstg'%;
+OUTPUT(res2); //res2 = 'SECTION_STATES/AREACODES'
+</programlisting>
+
+  <para></para>
 
   <para>Ver também: <link linkend="_DEMANGLE">#DEMANGLE</link>, <link
   linkend="Attribute_Definition">Nomes do Atributo</link></para>

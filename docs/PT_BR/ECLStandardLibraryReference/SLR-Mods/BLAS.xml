@@ -126,8 +126,7 @@
     <para>Exemplo:</para>
 
     <programlisting format="linespecific">IMPORT STD;
-REAL8 my_func(STD.BLAS.Types.value_t v, STD.BLAS.Types.dimension_t x, 
-              STD.BLAS.Types.dimension_t y) 
+REAL8 my_func(STD.BLAS.Types.value_t v, STD.BLAS.Types.dimension_t x, STD.BLAS.Types.dimension_t y) 
               := 1/v; //set element to the reciprocal value
 </programlisting>
 
@@ -367,7 +366,6 @@ STD.BLAS.dasum(9, test_data, 1); //sums the absolute values of the matrix, and r
 STD.BLAS.Types.t_matrix term_1 := [1, 2, 3];
 STD.BLAS.Types.t_matrix term_2 := [3, 2, 1].
 STD.BLAS.daxpy(3, 2, term_1, 1, term_2, 1); // result is [5, 6, 7]
-
 
 </programlisting>
 
@@ -684,7 +682,7 @@ Lower_Triangle := BLAS.dpotf2(STD.BLAS.Types.Triangle.lower, 3, symmetric_pos_de
 
     <programlisting format="linespecific">IMPORT STD;
 STD.BLAS.Types.matrix_t test := [1, 1, 1, 2, 2, 2, 3, 3, 3];
-result := STD.BLAS.dscal(9, 2.0, test, 1); // multiply each element by 
+result := STD.BLAS.dscal(9, 2.0, test, 1); // multiply each element by 2
 </programlisting>
 
     <para/>
@@ -747,7 +745,7 @@ result := STD.BLAS.dscal(9, 2.0, test, 1); // multiply each element by
           </row>
 
           <row>
-            <entry><emphasis>A </emphasis></entry>
+            <entry><emphasis>A</emphasis></entry>
 
             <entry>matriz de atualização, NxK ou KxN</entry>
           </row>
@@ -790,8 +788,7 @@ result := STD.BLAS.dscal(9, 2.0, test, 1); // multiply each element by
     <programlisting format="linespecific">IMPORT STD;
 STD.BLAS.Types.matrix_t initC := [1, 1, 1, 2, 2, 2, 3, 3, 3];
 STD.BLAS.Types.matrix_t initA := [1, 1, 1];
-Test1_mat := STD.BLAS.dsyrk(
-             STD.BLAS.Types.Triangle.upper, FALSE, 3, 1, 1, initA, 1, initC, TRUE)
+Test1_mat := STD.BLAS.dsyrk(STD.BLAS.Types.Triangle.upper, FALSE, 3, 1, 1, initA, 1, initC, TRUE)
 
 </programlisting>
 
@@ -904,7 +901,7 @@ STD.BLAS.Types.matrix_t left_a0 := [2, 3, 4, 0, 2, 3, 0, 0, 2];
 STD.BLAS.Types.matrix_t mat_b := [4, 6, 8, 6, 13, 18, 8, 18, 29];
 
 Test1_mat := STD.BLAS.dtrsm(Side.Ax, Triangle.Lower, FALSE, Diagonal.NotUnitTri,
-                            3, 3, 3, 1.0, left_a0, mat_b)
+                            3, 3, 3, 1.0, left_a0, mat_b);
 </programlisting>
 
     <para/>
@@ -923,7 +920,7 @@ Test1_mat := STD.BLAS.dtrsm(Side.Ax, Triangle.Lower, FALSE, Diagonal.NotUnitTri,
         <primary>BLAS.extract_diag</primary>
       </indexterm><indexterm>
         <primary>extract_diag</primary>
-      </indexterm>(</emphasis> <emphasis>m.n.x);</emphasis> <emphasis/></para>
+      </indexterm>(</emphasis> <emphasis>m, n, x</emphasis> <emphasis role="bold">)</emphasis></para>
 
     <para/>
 

@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="ESDL_Attributes_ping_min_ver">
+  <title>ping_min_ver</title>
+
+  <para>Os serviços Dynamic ESDL adicionam automaticamente um método ping ao
+  seu serviço para monitorar a conectividade com o serviço. </para>
+
+  <para><indexterm>
+      <primary>ping_min_ver</primary>
+    </indexterm>O atributo ping_min_ver em um serviço permite definir a versão
+  mínima (mais antiga) na qual o método ping fica visível. O método ping não
+  fica visível para versões inferiores ao ping_min_ver </para>
+
+  <para></para>
+
+  <para><emphasis role="bold">Exemplo:</emphasis></para>
+
+  <programlisting> [ping_min_ver("1.03")] ;   </programlisting>
+</sect1>

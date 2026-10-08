@@ -3,7 +3,7 @@
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <book xml:base="../">
   <bookinfo>
-    <title>HPCC / Conector do Spark</title>
+    <title>HPCC / Conector Spark</title>
 
     <mediaobject>
       <imageobject>
@@ -17,15 +17,12 @@
 
     <legalnotice>
       <para>Sua opinião e comentários sobre este documento são muito
-      bem-vindos e podem ser enviados por e-mail para <email/></para>
-
-      <para role="syntax">
-        <email>docfeedback@hpccsystems.com</email>
-      </para>
+      bem-vindos e podem ser enviados por e-mail para
+      <email>docfeedback@hpccsystems.com</email></para>
 
       <para>Inclua a frase <emphasis role="bold">Feedback sobre
       documentação</emphasis> na linha de assunto e indique o nome do
-      documento, o número das páginas e número da versão atual no corpo da
+      documento, o número das páginas e o número da versão atual no texto da
       mensagem.</para>
 
       <para>LexisNexis e o logotipo Knowledge Burst são marcas comerciais
@@ -69,50 +66,25 @@
       <title>Visão geral</title>
 
       <para>O conector distribuído Spark-HPCCSystems é uma biblioteca Java que
-      facilita o acesso de um cluster do Spark aos dados armazenados em um
-      cluster do HPCC Systems. A biblioteca de conectores emprega o recurso de
-      leitura de arquivos remotos padrão do HPCC Systems para ler dados de
-      conjuntos de datasets sequenciais ou indexados do HPCC.</para>
+      facilita o acesso de um cluster Spark aos dados armazenados em um
+      cluster HPCC Systems. A biblioteca do conector emprega o recurso padrão
+      de leitura remota de arquivos do HPCC Systems para ler dados de datasets
+      HPCC sequenciais ou indexados.</para>
 
       <para>Os dados em um cluster HPCC são particionados horizontalmente, com
-      dados em cada nó do cluster. Depois de configurados, os dados do HPCC
-      estão disponíveis para acesso em paralelo pelo cluster do Spark.</para>
+      dados em cada nó do cluster. Depois de configurados, os dados HPCC ficam
+      disponíveis para leitura em paralelo pelo cluster Spark.</para>
 
-      <para>No repositório do GitHub (<ulink
-      url="https://github.com/hpcc-systems/Spark-HPCC">https://github.com/hpcc-systems/Spark-HPCC</ulink>)
-      você pode encontrar o código-fonte e exemplos. Existem vários artefatos
-      na pasta DataAccess/src/main/java de interesse primário. A classe
-      <emphasis>org.hpccsystems.spark.HpccFile</emphasis> é a fachada de um
-      arquivo em um cluster HPCC. O
-      <emphasis>org.hpccsystems.spark.HpccRDD</emphasis> é um dataset
-      distribuído resiliente derivado dos dados no cluster HPCC e é criado
-      pelo método
-      <emphasis>org.hpccsystems.spark.HpccFile.getRDD</emphasis>(…). A classe
-      <emphasis>HpccFile</emphasis> suporta o carregamento de dados para
-      construir um objeto <emphasis>Dataset &lt;Row&gt;</emphasis> para a
-      interface Spark . Isso primeiro carregará os dados em um RDD &lt;Row&gt;
-      e, em seguida, converterá esse RDD em um DataSet &lt;Row&gt; por meio
-      dos mecanismos internos do Spark.</para>
+      <para>No repositório GitHub (<ulink
+      url="https://github.com/hpcc-systems/hpcc4j">https://github.com/hpcc-systems/hpcc4j</ulink>)
+      você pode encontrar o código-fonte e exemplos.</para>
 
-      <para>Existem vários artefatos adicionais de algum interesse. A classe
-      <emphasis>org.hpccsystems.spark.ColumnPruner</emphasis> é fornecida para
-      permitir a recuperação somente das colunas de interesse do cluster HPCC.
-      O artefato <emphasis>targetCluster</emphasis> permite especificar o
-      cluster HPCC no qual o arquivo de destino existe. A classe
-      <emphasis>org.hpccsystems.spark.thor.FileFilter</emphasis> é fornecida
-      para facilitar a filtragem de registros de interesse do cluster
-      HPCC.</para>
+      <para>Um passo a passo dos exemplos é fornecido na seção Exemplos.</para>
 
-      <!--following-text-needs-better-translation-->
+      <para>O conector distribuído Spark-HPCCSystems também dá suporte ao
+      PySpark. Ele usa as mesmas classes/API que o Java usa.</para>
 
-      <para>O repositório git inclui dois exemplos na pasta Examples folder.
-      Um passo a passo dos exemplos é fornecido na seção Exemplos.</para>
-
-      <para>O conector distribuído Spark-HPCCSystems também suporta o PySpark.
-      Ele usa as mesmas classes/API que o Java.</para>
-
-      <para>
-        <informaltable colsep="1" frame="all" rowsep="1">
+      <para><informaltable colsep="1" frame="all" rowsep="1">
           <?dbfo keep-together="always"?>
 
           <tgroup cols="2">
@@ -122,155 +94,142 @@
 
             <tbody>
               <row>
-                <entry>
-                  <graphic fileref="images/tip.jpg"/>
-                </entry>
+                <entry><graphic fileref="images/tip.jpg"/></entry>
 
-                <entry>
-                  <para>Como é comum na comunicação do cliente Java por TLS,
-                  os conectores Spark-HPCC direcionados a um cluster HPCC por
-                  TLS precisarão importar os certificados apropriados para o
-                  keystore Java local.</para>
-
-                  <para/>
-
-                  <para>*Uma maneira de fazer isso é usar o keytool fornecido
-                  com as instalações Java. Consulte a documentação do keytool
-                  para uso.</para>
-                </entry>
+                <entry><para>Como é comum na comunicação de clientes Java por
+                TLS, os conectores Spark-HPCC direcionados a um cluster HPCC
+                por TLS precisarão importar os certificados apropriados para o
+                keystore Java local.</para><para> </para><para>*Uma maneira
+                de fazer isso é usar o keytool incluído nas instalações Java.
+                Consulte a documentação do keytool para uso. </para></entry>
               </row>
             </tbody>
           </tgroup>
-        </informaltable>
-      </para>
+        </informaltable></para>
 
       <sect2>
         <title>Integração Spark</title>
 
-        <para>O plug-in Spark integrado ao HPCC não é mais compatível a partir
-        da versão 9.0.0 em favor de clusters Spark autônomos gerenciados pelo
+        <para>O plugin Spark integrado ao HPCC não é mais compatível a partir
+        da versão 9.0.0, em favor de clusters Spark autônomos gerenciados pelo
         usuário vinculados à plataforma HPCC usando o conector
         Spark-HPCC.</para>
       </sect2>
 
       <sect2 role="brk">
-        <title>Considerações Especiais</title>
+        <title>Considerações especiais</title>
 
         <sect3>
-          <title>Estouro de valor não assinado</title>
+          <title>Estouro de valor sem sinal</title>
 
-          <para>Java não suporta um tipo de inteiro não assinado, portanto, a
-          leitura de valores UNSIGNED8 dos dados do HPCC pode causar um
-          estouro de inteiro em Java. Os valores de UNSIGNED8 são
-          frequentemente usados como identificadores exclusivos em datasets,
-          caso em que o overflow seria aceitável, pois o valor do
-          transbordamento ainda será exclusivo.</para>
+          <para>Java não dá suporte a um tipo de inteiro sem sinal, portanto a
+          leitura de valores UNSIGNED8 de dados HPCC pode causar estouro de
+          inteiro em Java. Valores UNSIGNED8 costumam ser usados como
+          identificadores exclusivos em datasets; nesse caso, o estouro seria
+          aceitável, pois o valor estourado ainda será exclusivo.</para>
 
-          <para>O conector Spark-HPCC permite que os valores não assinados
-          sejam excedidos em Java e não relatará uma exceção. O chamador é
-          responsável por interpretar o valor com base no sinalizador recef
-          <emphasis role="bold">isunsigned</emphasis>.</para>
+          <para>O conector Spark-HPCC permite que valores sem sinal estourem
+          em Java e não relatará uma exceção. O chamador é responsável por
+          interpretar o valor com base no sinalizador <emphasis
+          role="bold">isunsigned</emphasis> da recdef.</para>
         </sect3>
       </sect2>
     </sect1>
 
     <sect1 id="primary-classes">
-      <title>Classes Primárias</title>
+      <title>Classes principais</title>
 
       <para>A classe <emphasis>HpccFile</emphasis> e as classes
       <emphasis>HpccRDD</emphasis> são discutidas em mais detalhes abaixo.
       Essas são as classes principais usadas para acessar dados de um cluster
-      HPCC. A classe <emphasis>HpccFile</emphasis> suporta o carregamento de
-      dados para construir um objeto <emphasis>Dataset &lt;Row&gt;</emphasis>
-      para a interface Spark. Isso primeiro carregará os dados em um RDD
-      &lt;Row&gt; e, em seguida, converterá esse RDD em um DataSet &lt;Row&gt;
-      por meio dos mecanismos internos do Spark.</para>
+      HPCC. A classe <emphasis>HpccFile</emphasis> dá suporte ao carregamento
+      de dados para construir um objeto <emphasis>Dataset&lt;Row&gt;</emphasis>
+      para a interface Spark. Isso primeiro carregará os dados em um
+      RDD&lt;Row&gt; e, em seguida, converterá esse RDD em um Dataset&lt;Row&gt;
+      por meio de mecanismos internos do Spark.</para>
 
-      <para>A classe <emphasis>org.hpccsystems.spark.HpccFile</emphasis>
-      possui vários construtores. Todos os construtores recebem informações
-      sobre o cluster e o nome do dataset de interesse. As classes JAPI
-      WS-Client são usadas para acessar informações detalhadas do arquivo. Uma
-      definição usada para selecionar as colunas a serem retornadas e uma
-      definição para selecionar as linhas a serem retornadas também podem ser
-      fornecidas. Eles são discutidos na seção <emphasis>Classes Adicionais de
-      Interesse</emphasis> abaixo. A classe tem dois métodos de interesse
-      primário: o método <emphasis>getRDD(…)</emphasis> e o método
-      <emphasis>getDataframe(…)</emphasis> , que são ilustrados na seção
+      <para>A classe <emphasis>org.hpccsystems.spark.HpccFile</emphasis> tem
+      vários construtores. Todos os construtores recebem informações sobre o
+      cluster e o nome do dataset de interesse. As classes JAPI WS-Client são
+      usadas para acessar informações detalhadas do arquivo. Uma definição
+      usada para selecionar as colunas a serem retornadas e uma definição para
+      selecionar as linhas a serem retornadas também podem ser fornecidas.
+      Elas são discutidas na seção <emphasis>Classes adicionais de
+      interesse</emphasis> abaixo. A classe tem dois métodos de interesse
+      principal: o método <emphasis>getRDD(…)</emphasis> e o método
+      <emphasis>getDataframe(…)</emphasis>, ilustrados na seção
       <emphasis>Exemplo</emphasis>.</para>
 
       <para>O método <emphasis>getRecordDefinition()</emphasis> da classe
       <emphasis>HpccFile</emphasis> pode ser usado para recuperar uma
       definição do arquivo. O método <emphasis>getFileParts()</emphasis> pode
       ser usado para ver como o arquivo é particionado no cluster HPCC. Esses
-      métodos retornam as mesmas informações que podem ser encontradas na aba
-      DEF da página de detalhes do dataset do ECL Watch e na aba PARTS
+      métodos retornam as mesmas informações que podem ser encontradas na guia
+      DEF da página de detalhes do dataset no ECL Watch e na guia PARTS,
       respectivamente.</para>
 
       <para>A classe <emphasis>org.hpccsystems.spark.HpccRDD</emphasis>
-      estende a classe de modelo <emphasis>RDD&lt;Record&gt;</emphasis>. A
-      classe emprega a <emphasis>org.hpccsystems.spark.HpccPart</emphasis>
-      para as partições Spark. A classe
-      <emphasis>org.hpccsystems.spark.Record</emphasis> é usada como o
-      contêiner para os campos do cluster HPCC. A classe
-      <emphasis>Record</emphasis>pode criar uma instância
-      <emphasis>Row</emphasis> com um esquema.</para>
+      estende a classe parametrizada <emphasis>RDD&lt;Record&gt;</emphasis>. A
+      classe emprega a classe
+      <emphasis>org.hpccsystems.spark.HpccPart</emphasis> para as partições
+      Spark. A classe <emphasis>org.hpccsystems.spark.Record</emphasis> é
+      usada como o contêiner para os campos do cluster HPCC. A classe
+      <emphasis>Record</emphasis> pode criar uma instância <emphasis>Row</emphasis>
+      com um esquema.</para>
 
-      <para>Os objetos de partição <emphasis>HpccRDD</emphasis> HpccPart leem
-      cada um blocos de dados do cluster HPCC independentemente uns dos
-      outros. A leitura inicial busca o primeiro bloco de dados, solicita o
-      segundo bloco de dados e retorna o primeiro registro. Quando o bloco
-      estiver esgotado, o próximo bloco deverá estar disponível no soquete e
-      uma nova solicitação de leitura será emitida.</para>
+      <para>Os objetos de partição HpccPart do <emphasis>HpccRDD</emphasis>
+      leem blocos de dados do cluster HPCC independentemente uns dos outros. A
+      leitura inicial busca o primeiro bloco de dados, solicita o segundo
+      bloco de dados e retorna o primeiro registro. Quando o bloco se esgota,
+      o próximo bloco deve estar disponível no socket e uma nova solicitação
+      de leitura é emitida.</para>
 
-      <para>O <emphasis>HpccFileWriter</emphasis> é outra classe primária
-      usada para gravar dados em um cluster HPCC. Tem um único construtor com
-      a seguinte assinatura:</para>
+      <para>O <emphasis>HpccFileWriter</emphasis> é outra classe principal
+      usada para gravar dados em um cluster HPCC. Ele tem um único construtor
+      com a seguinte assinatura:</para>
 
-      <programlisting>public HpccFileWriter(String connectionString, String user, String pass) 
-throws Exception { </programlisting>
+      <programlisting>public HpccFileWriter(String connectionString, String user, String pass) throws Exception { </programlisting>
 
       <para>O primeiro parâmetro <emphasis>connectionString</emphasis> contém
-      as mesmas informações que o <emphasis>HpccFile</emphasis>. Deve estar no
-      seguinte formato: {http|https}://{ECLWATCHHOST}:{ECLWATCHPORT}</para>
+      as mesmas informações que <emphasis>HpccFile</emphasis>. Ele deve estar
+      no seguinte formato:
+      {http|https}://{ECLWATCHHOST}:{ECLWATCHPORT}</para>
 
-      <para>O construtor tentará se conectar ao HPCC. Esta conexão será então
-      usada para quaisquer chamadas subsequentes para o
-      <emphasis>saveToHPCC</emphasis>.</para>
+      <para>O construtor tentará se conectar ao HPCC. Essa conexão será usada
+      em quaisquer chamadas subsequentes a <emphasis>saveToHPCC</emphasis>.</para>
 
       <programlisting>public long saveToHPCC(SparkContext sc, RDD&lt;Row&gt; scalaRDD, String clusterName, 
                         String fileName) throws Exception {</programlisting>
 
-      <para>O método <emphasis>saveToHPCC</emphasis> suporta apenas os tipos
-      RDD&lt;row&gt;. Você pode precisar modificar sua representação de dados
+      <para>O método <emphasis>saveToHPCC</emphasis> dá suporte apenas a tipos
+      RDD&lt;row&gt;. Talvez você precise modificar sua representação de dados
       para usar essa funcionalidade. No entanto, essa representação de dados é
-      usada pelo Spark SQL e pelo HPCC. Isso só é suportado gravando em uma
-      configuração co-localizada. Assim, o Spark e o HPCC devem ser instalados
-      nos mesmos nós. A leitura suporta apenas a leitura de dados de um
-      cluster HPCC remoto.</para>
+      a usada pelo Spark SQL e pelo HPCC. Isso só é compatível com gravação em
+      uma configuração co-localizada. Portanto, Spark e HPCC devem estar
+      instalados nos mesmos nós. A leitura só dá suporte à leitura de dados de
+      um cluster HPCC remoto.</para>
 
       <para>O <emphasis>clusterName</emphasis>, conforme usado no caso acima,
-      é o cluster desejado para gravar dados, por exemplo, no cluster Thor
-      "mitor". Atualmente, há suporte apenas para gravação em clusters do
-      Thor. A gravação em um cluster Roxie não é suportada e retornará uma
-      exceção. O nome do arquivo usado no exemplo acima está no formato HPCC ,
-      por exemplo: "~example::text".</para>
+      é o cluster desejado para gravar dados, por exemplo, o cluster Thor
+      "mythor". Atualmente, há suporte apenas para gravação em clusters Thor.
+      A gravação em um cluster Roxie não é compatível e retornará uma exceção.
+      O nome de arquivo usado no exemplo acima está no formato HPCC, por
+      exemplo: "~example::text".</para>
 
-      <para>Internamente, o método saveToHPCC gerará múltiplos jobs do Spark.
-      Atualmente, isso gera dois jobs. O primeiro job mapeia o local das
-      partições no cluster do Spark para fornecer essas informações ao HPCC. O
-      segundo job faz a gravação real dos arquivos. Há também algumas chamadas
-      internamente ao ESP para lidar com coisas como iniciar o processo de
-      gravação amando <emphasis>DFUCreateFile</emphasis> e publicar o arquivo
-      depois de ter sido escrito chamando
-      <emphasis>DFUPublishFile</emphasis>.</para>
+      <para>Internamente, o método saveToHPCC gerará vários jobs Spark.
+      Atualmente, ele gera dois jobs. O primeiro job mapeia a localização das
+      partições no cluster Spark para fornecer essas informações ao HPCC. O
+      segundo job faz a gravação real dos arquivos. Também há algumas chamadas
+      internas ao ESP para lidar com ações como iniciar o processo de gravação
+      chamando <emphasis>DFUCreateFile</emphasis> e publicar o arquivo depois
+      de gravado chamando <emphasis>DFUPublishFile</emphasis>.</para>
 
       <sect2 role="brk">
-        <title>Using the Spark Datasource API to Read and Write</title>
+        <title>Usando a Spark Datasource API para ler e gravar</title>
 
-        <para>Example Python code:</para>
+        <para>Código Python de exemplo:</para>
 
-        <para>
-          <programlisting># Connect to HPCC and read a file
+        <para><programlisting># Connect to HPCC and read a file
 df = spark.read.load(format="hpcc",
                      host="127.0.0.1:8010",
                      password="",
@@ -289,13 +248,11 @@ df.write.save(format="hpcc",
               password="",
               username="",
               cluster="mythor",
-              path="example::file")</programlisting>
-        </para>
+              path="example::file")</programlisting></para>
 
-        <para>Exemplo de código Scala:</para>
+        <para>Código Scala de exemplo:</para>
 
-        <para>
-          <programlisting>// Read a file from HPCC
+        <para><programlisting>// Read a file from HPCC
 val dataframe = spark.read.format("hpcc")
                 .option("host","127.0.0.1:8010")
                 .option("password", "")
@@ -311,13 +268,11 @@ val dataframe = spark.read.format("hpcc")
                    .option("password", "")
                    .option("username", "")
                    .option("cluster","mythor")
-                   .save("example::file")</programlisting>
-        </para>
+                   .save("example::file")</programlisting></para>
 
-        <para>Exemplo de código R:</para>
+        <para>Código R de exemplo:</para>
 
-        <para>
-          <programlisting>df &lt;- read.df(source = "hpcc",
+        <para><programlisting>df &lt;- read.df(source = "hpcc",
               host = "127.0.0.1:8010",
               path = "example::file",
               password = "",
@@ -332,80 +287,153 @@ write.df(df, source = "hpcc",
              mode = "overwrite",
              password = "",
              username = "",
-             fileAccessTimeout = 240)</programlisting>
-        </para>
+             fileAccessTimeout = 240)</programlisting></para>
       </sect2>
     </sect1>
 
     <sect1 id="additional-classes-of-interest">
-      <title>Classes Adicionais de Interesse</title>
+      <title>Classes adicionais de interesse</title>
 
-      <para>As principais classes de interesse para esta seção são a remoção
-      de colunas e a filtragem de arquivos. Além disso, há uma classe auxiliar
-      para remapear informações de IP quando necessário, e isso também é
-      discutido abaixo.</para>
+      <para>As principais classes de interesse para esta seção são remoção de
+      colunas e filtragem de arquivos. Além disso, há uma classe auxiliar para
+      remapear informações de IP quando necessário, e isso também é discutido
+      abaixo.</para>
 
-      <para>As informações de seleção da coluna são fornecidas como uma string
-      para o objeto <emphasis>org.hpccsystems.spark.ColumnPruner</emphasis> A
-      string é uma lista de nomes de campos separados por vírgulas. Um campo
-      de interesse pode conter um conjunto de dados de linha ou filho e a
-      notação de nome pontilhada é usada para oferecer suporte à seleção de
-      campos filho individuais. O <emphasis>ColumnPruner</emphasis> analisa a
-      cadeia em uma instância da classe <emphasis>TargetColumn</emphasis> raiz
-      que contém as colunas de destino de nível superior. Um
-      <emphasis>TargetColumn</emphasis> pode ser um campo simples ou pode ser
-      um conjunto de dados filho e, portanto, ser um objeto raiz para o layout
-      do registro filho.</para>
+      <para>As informações de seleção de colunas são fornecidas como uma
+      string ao objeto <emphasis>org.hpccsystems.spark.ColumnPruner</emphasis>.
+      A string é uma lista de nomes de campos separados por vírgulas. Um campo
+      de interesse pode conter uma linha ou um dataset filho, e a notação de
+      nome pontilhado é usada para permitir a seleção de campos filhos
+      individuais. O <emphasis>ColumnPruner</emphasis> analisa a string em uma
+      instância da classe raiz <emphasis>TargetColumn</emphasis>, que contém
+      as colunas de destino de nível superior. Um
+      <emphasis>TargetColumn</emphasis> pode ser um campo simples ou um
+      dataset filho e, portanto, ser um objeto raiz para o layout de registro
+      filho.</para>
 
-      <para>O filtro de linha é implementado na classe
+      <para>O filtro de linhas é implementado na classe
       <emphasis>org.hpccsystems.spark.thor.FileFilter</emphasis>. Uma
-      instância de <emphasis>FileFilter</emphasis> é restrita a partir de uma
-      matriz de objetos
+      instância de <emphasis>FileFilter</emphasis> é construída a partir de um
+      array de objetos
       <emphasis>org.hpccsystems.spark.thor.FieldFilter</emphasis>. Cada
-      instância de <emphasis>FieldFilter</emphasis> é composta de um nome de
-      campo (em notação pontuada para nomes compostos) e uma matriz de objetos
-      <emphasis>org.hpccsystems.spark.thor.FieldFilterRange</emphasis> . Cada
+      instância de <emphasis>FieldFilter</emphasis> é composta por um nome de
+      campo (em notação pontilhada para nomes compostos) e um array de objetos
+      <emphasis>org.hpccsystems.spark.thor.FieldFilterRange</emphasis>. Cada
       instância de <emphasis>FieldFilterRange</emphasis> pode ser um intervalo
-      aberto, ou fechado ou um valor único. O registro é selecionado quando
+      aberto ou fechado, ou um único valor. O registro é selecionado quando
       pelo menos um <emphasis>FieldFilterRange</emphasis> corresponde para
-      cada uma das instâncias do <emphasis>FieldFilter</emphasis> na
-      matriz.</para>
+      cada uma das instâncias de <emphasis>FieldFilter</emphasis> no
+      array.</para>
 
-      <para>Os valores <emphasis>FieldFilterRange</emphasis> podem ser cadeias
-      ou números. Existem métodos fornecidos para construir os seguintes
-      testes de intervalo: igual, não igual, menor que, menor que ou igual a,
-      maior que, e maior que ou igual a. Além disso, um teste de inclusão de
-      conjunto é suportado para cadeias de caracteres. Se o arquivo for um
-      índice, os campos de filtro, que são campos-chave, são utilizados para
-      uma pesquisa de índice. Qualquer campo de filtro não mencionado é
-      tratado como desconhecido.</para>
+      <para>Os valores de <emphasis>FieldFilterRange</emphasis> podem ser
+      strings ou números. Há métodos fornecidos para construir os seguintes
+      testes de intervalo: igual, diferente, menor que, menor ou igual, maior
+      que e maior ou igual. Além disso, há suporte a um teste de inclusão em
+      conjunto para strings. Se o arquivo for um índice, os campos de filtro
+      que são campos-chave serão usados para uma pesquisa em índice. Qualquer
+      campo de filtro não mencionado é tratado como curinga.</para>
 
-      <para>A arquitetura de implantação usual para os Clusters HPCC consiste
-      em uma coleção de nós em uma rede. As informações de gerenciamento de
+      <para><emphasis role="bold">Detalhes de filtro de arquivo simples</emphasis></para>
+
+      <para>Há suporte a filtragem usando um subconjunto limitado de SQL. As
+      limitações são impostas no lado da plataforma HPCC. A maior limitação é
+      que você não pode usar uma instrução <emphasis role="bold">AND</emphasis>
+      no mesmo campo. Por exemplo, "AGE &gt; 21 AND AGE &lt; 65" não é válido.
+      Você pode usar <emphasis role="bold">IN</emphasis> como solução
+      alternativa, na maioria dos casos.</para>
+
+      <para><itemizedlist>
+          <listitem>
+            <para>Subconjunto de operadores compatíveis</para>
+
+            <itemizedlist>
+              <listitem>
+                <para><emphasis role="bold">=</emphasis> (Igual) e.g.,
+                AGE=33</para>
+              </listitem>
+
+              <listitem>
+                <para><emphasis role="bold">&lt;&gt;</emphasis> (Diferente)
+                e.g., AGE&lt;&gt;33</para>
+              </listitem>
+
+              <listitem>
+                <para><emphasis role="bold">&gt;</emphasis> (Maior que)
+                e.g., AGE&gt;33</para>
+              </listitem>
+
+              <listitem>
+                <para><emphasis role="bold">&lt;</emphasis> (Menor que) e.g.,
+                AGE&lt;33</para>
+              </listitem>
+
+              <listitem>
+                <para><emphasis role="bold">&gt;</emphasis>= (Maior ou igual
+                a) e.g., AGE&gt;=33</para>
+              </listitem>
+
+              <listitem>
+                <para><emphasis role="bold">&lt;=</emphasis> (Menor ou igual
+                a) e.g., AGE&lt;=33</para>
+              </listitem>
+
+              <listitem>
+                <para><emphasis role="bold">IN(value1, value2, ... ,
+                valueNN)</emphasis> (no conjunto especificado de valores
+                separados por vírgulas) e.g., IN ('US', 'France', 'UK')</para>
+              </listitem>
+
+              <listitem>
+                <para><emphasis role="bold">NOT IN(value1, value2, ... ,
+                valueNN)</emphasis> (Não está no conjunto especificado de
+                valores separados por vírgulas) e.g., NOT IN ('US', 'France',
+                'UK')</para>
+              </listitem>
+
+              <listitem>
+                <para><emphasis role="bold">AND</emphasis> (O operador AND
+                retorna um registro se todas as condições forem TRUE) e.g., AGE =
+                33 AND GENDER = 'M' . <emphasis role="bold">Observação:</emphasis>
+                Você não pode usar AND no mesmo campo.</para>
+              </listitem>
+
+              <listitem>
+                <para><emphasis role="bold">OR</emphasis> (O operador OR
+                retorna um registro se qualquer uma das condições for TRUE) e.g., AGE
+                = 33 OR GENDER = 'M' .</para>
+              </listitem>
+            </itemizedlist>
+          </listitem>
+        </itemizedlist></para>
+
+      <para>A arquitetura de implantação usual para clusters HPCC consiste em
+      uma coleção de nós em uma rede. As informações de gerenciamento de
       arquivos incluem os endereços IP dos nós que contêm as partições do
       arquivo. As classes do conector Spark-HPCC usam esses endereços IP para
-      estabelecer conexões de soquete para a leitura remota. Um cluster HPCC
+      estabelecer conexões de socket para a leitura remota. Um cluster HPCC
       pode ser implantado como um cluster virtual com endereços IP privados.
-      Isso funciona para os componentes do cluster porque eles estão todos na
-      mesma LAN privada. No entanto, os nós do cluster Spark podem não estar
-      na mesma LAN. Nesse caso, a classe
+      Isso funciona para os componentes do cluster porque todos estão na mesma
+      LAN privada. No entanto, os nós do cluster Spark podem não estar nessa
+      mesma LAN. Nesse caso, a classe
       <emphasis>org.hpccsystems.spark.RemapInfo</emphasis> é usada para
-      definir as informações necessárias para alterar o endereçamento. Existem
-      duas opções que podem ser usadas. A primeira opção é que cada nó de
-      trabalho do Thor pode receber um IP visível para o cluster do Spark.
-      Esses endereços devem ser um intervalo contíguo. A segunda opção é
-      atribuir um IP e um intervalo contíguo de números de porta. O objeto
-      <emphasis>RemapInfo</emphasis> é fornecido como um parâmetro.</para>
+      definir as informações necessárias para alterar o endereçamento. Há duas
+      opções que podem ser usadas. A primeira opção é que cada nó worker Thor
+      receba um IP visível para o cluster Spark. Esses endereços devem ser um
+      intervalo contíguo. A segunda opção é atribuir um IP e um intervalo
+      contíguo de números de porta. O objeto
+      <emphasis>RemapInfo</emphasis> é fornecido como parâmetro.</para>
     </sect1>
 
-    <para>Fornecemos alguns exemplos de utilização de um ambiente Spark. Os
-    exemplos fornecidos dependem do shell Spark..</para>
+    <sect1 id="examples">
+      <title>Exemplos</title>
 
-    <para>Você pode encontrar exemplos no repositório do Github:</para>
+      <para>Fornecemos alguns exemplos de uso de um ambiente Spark. Os
+      exemplos fornecidos dependem do shell Spark.</para>
 
-    <para>
-      <ulink
-      url="https://github.com/hpcc-systems/Spark-HPCC/tree/master/Examples">https://github.com/hpcc-systems/Spark-HPCC/tree/master/Examples</ulink>
-    </para>
+      <para>Você pode consultar os exemplos no repositório Github:</para>
+
+      <para><ulink
+      url="https://github.com/hpcc-systems/hpcc4j/tree/master/spark-hpcc/Examples">https://github.com/hpcc-systems/hpcc4j/tree/master/spark-hpcc/Examples</ulink></para>
+    </sect1>
   </chapter>
 </book>

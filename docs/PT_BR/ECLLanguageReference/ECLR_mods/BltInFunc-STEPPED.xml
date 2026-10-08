@@ -125,7 +125,7 @@
 
   <para>Exemplo:</para>
 
-  <programlisting>DataFile := '~RTTEST::TestStepped';
+  <programlisting lang="ECL" role="roxieonly">DataFile := '~RTTEST::TestStepped';
 KeyFile := '~RTTEST::TestSteppedKey';
 Rec := RECORD
 STRING2 state;
@@ -133,8 +133,8 @@ STRING20 city;
 STRING25 lname;
 STRING15 fname;
 END;
-ds := DATASET(DataFile,
-{Rec,UNSIGNED8 RecPos {virtual(fileposition)}},
+ds := DATASET(DataFile,s
+{Rec,UNSIGNED8 RecPos {VIRTUAL(fileposition)}},
 THOR);
 IDX := INDEX(ds,{state,city,lname,fname,RecPos},KeyFile);
 

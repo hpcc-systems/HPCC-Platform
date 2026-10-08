@@ -25,8 +25,7 @@
         <row>
           <entry colsep="0"><emphasis role="bold">Actions</emphasis></entry>
 
-          <entry><ns:textPlaceholder
-          xmlns:ns="http://www.xmlmind.com/xmleditor/namespace/clipboard"/></entry>
+          <entry/>
         </row>
 
         <row>
@@ -62,7 +61,7 @@
         </row>
 
         <row>
-          <entry>analisa a &lt;workunit&gt;</entry>
+          <entry>analyze &lt;workunit&gt;</entry>
 
           <entry>Analisa a workunit para destacar possíveis economias de
           custos.</entry>
@@ -80,7 +79,26 @@
         <row>
           <entry>restore &lt;filenames&gt;</entry>
 
-          <entry>Restaura de arquivo xml. [INCLUDEFILES=1]</entry>
+          <entry>Restaura de arquivos xml. [INCLUDEFILES=1]</entry>
+        </row>
+
+        <row>
+          <entry>importzap</entry>
+
+          <entry>Importa um relatório ZAP para permitir recriar uma workunit
+          e replicar o problema relatado. <para>Importzap exige os seguintes
+          parâmetros.
+          </para><para>&lt;zapreport-filename&gt;</para><para>&lt;output-helper-directory&gt;
+          diretório temporário para descompactar o relatório zap
+          em</para><para>&lt;zapreport-password&gt; [optional]
+          </para></entry>
+        </row>
+
+        <row>
+          <entry>postmortem &lt;workunit&gt;</entry>
+
+          <entry>&lt;workunit&gt; PMD=&lt;dir&gt; - Add post-mortem
+          info</entry>
         </row>
 
         <row>
@@ -96,7 +114,7 @@
         </row>
 
         <row>
-          <entry>validate</entry>
+          <entry>validate [FIX=1]</entry>
 
           <entry>Verifique o conteúdo do repositório da workunit quanto a
           erros. [FIX=1] irá reparar qualquer ocorrência encontrada.</entry>

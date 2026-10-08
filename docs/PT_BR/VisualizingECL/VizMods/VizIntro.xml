@@ -4,9 +4,9 @@
 <chapter id="VizIntro">
   <title><emphasis>Introdução a Visualização</emphasis></title>
 
-  <para>O pacote de Visualização é um complemento de código público à
-  plataforma do HPCC que permite criar visualizações dos resultados das
-  consultas gravadas no ECL.</para>
+  <para>O pacote de Visualização é um complemento de código aberto para a
+  plataforma HPCC Systems<superscript>®</superscript> que permite criar
+  visualizações dos resultados de queries escritas em ECL.</para>
 
   <para>As visualizações são um meio importante de transmissão das informações
   dos dados massivos Uma boa representação visual pode ajudar a gerar uma

@@ -60,31 +60,21 @@
   <para>A função <emphasis role="bold">REGEXREPLACE </emphasis> usa
   <emphasis>regex<indexterm>
       <primary>regex</primary>
-    </indexterm></emphasis> para analisar o <emphasis>texto</emphasis> e
-  localizar correspondências, a fim de em seguida substituí-las com a string
-  de <emphasis>substituição.</emphasis> A regex deve ser uma expressão regular
-  Perl padrão<indexterm>
+    </indexterm></emphasis> para analisar o <emphasis>text</emphasis> e
+  localizar correspondências e, em seguida, substituí-las pela string
+  <emphasis>replacement</emphasis>. A <emphasis>regex</emphasis> deve ser uma expressão regular Perl
+  padrão<indexterm>
       <primary>Perl regular expression</primary>
-    </indexterm>. Usamos bibliotecas de terceiros para suportar isso.
-  Portanto, para texto de código único consulte os documentos Boost em
-  <emphasis>text</emphasis> <ulink
-  url="http://www.boost.org/doc/libs/1_58_0/libs/regex/doc/html/index.html">http://www.boost.org/doc/libs/1_58_0/libs/regex/doc/html/index.html</ulink>.
-  Observe que a versão da biblioteca Boost pode variar de acordo com sua
-  distribuição. Para <emphasis>texto</emphasis> unicode, consulte os
-  documentos ICU nas seções “Regular Expression Metacharacters”
-  (Metacaracteres de expressão regular) e “Regular Expression Operators”
-  (Operadores de expressão regular) em <emphasis
-  role="underline">http://userguide.icu-project.org/strings/regexp</emphasis>
-  e os links indicados lá, especificamente a seção “UnicodeSet patterns”
-  (Padrões UnicodeSet) em http://userguide.icu-project.org/strings/unicodeset.
-  <emphasis
-  role="underline">http://userguide.icu-project.org/strings/unicodeset</emphasis>.
-  Nós usamos a versão 2.6, que deve suportar todos os recursos
-  listados.</para>
+    </indexterm>.</para>
+
+  <para>Usamos uma biblioteca de terceiros -- Perl-compatible Regular
+  Expressions (PCRE2) para oferecer suporte a isso. Consulte <ulink
+  url="https://www.pcre.org/current/doc/html/pcre2syntax.html">https://www.pcre.org/current/doc/html/pcre2syntax.html</ulink>
+  para obter detalhes sobre a sintaxe de padrões PCRE2.</para>
 
   <para>Exemplo:</para>
 
-  <programlisting>REGEXREPLACE('(.a)t', 'the cat sat on the mat', '$1p');
+  <programlisting lang="ECL_Runnable">REGEXREPLACE('(.a)t', 'the cat sat on the mat', '$1p');
         //ASCII
 REGEXREPLACE(u'(.a)t', u'the cat sat on the mat', u'$1p');
         //UNICODE
@@ -92,30 +82,29 @@ REGEXREPLACE(u'(.a)t', u'the cat sat on the mat', u'$1p');
 
 inrec := {STRING10 str, UNICODE10 ustr};
 inset := DATASET([{'She', u'Eins'}, {'Sells', u'Zwei'},
-{'Sea', u'Drei'}, {'Shells', u'Vier'}], inrec);
-outrec := {STRING10 orig, STRING10 withcase, STRING10
-        wocase,
-UNICODE10 uorig,UNICODE10 uwithcase,UNICODE10 uwocase};
+                  {'Sea', u'Drei'}, {'Shells', u'Vier'}], inrec);
+outrec := {STRING10 orig, STRING10 withcase, STRING10 
+           wocase,UNICODE10 uorig,UNICODE10 uwithcase,UNICODE10 uwocase};
 
 outrec trans(inrec l) := TRANSFORM
-SELF.orig := l.str;
-SELF.withcase := REGEXREPLACE('s', l.str, 'f');
-SELF.wocase := REGEXREPLACE('s', l.str, 'f', NOCASE);
-SELF.uorig := l.ustr;
-SELF.uwithcase := REGEXREPLACE(u'e', l.ustr, u'\u00EB');
-SELF.uwocase := REGEXREPLACE(u'e', l.ustr, u'\u00EB',
-        NOCASE);
+  SELF.orig := l.str;
+  SELF.withcase := REGEXREPLACE('s', l.str, 'f');
+  SELF.wocase := REGEXREPLACE('s', l.str, 'f', NOCASE);
+  SELF.uorig := l.ustr;
+  SELF.uwithcase := REGEXREPLACE(u'e', l.ustr, u'\u00EB');
+  SELF.uwocase := REGEXREPLACE(u'e', l.ustr, u'\u00EB',NOCASE);
 END;
 OUTPUT(PROJECT(inset, trans(LEFT)));
 
 /* the result set is:
-orig withcase wocase uorig uwithcase uwocase
-She She fhe Eins Eins \xc3\xabins
-Sells Sellf fellf Zwei Zw\xc3\xabi Zw\xc3\xabi
-Sea Sea fea Drei Dr\xc3\xabi Dr\xc3\xabi
-Shells Shellf fhellf Vier Vi\xc3\xabr Vi\xc3\xabr */
+orig    withcase wocase uorig uwithcase    uwocase
+She     She      fhe    Eins  Eins         \xc3\xabins
+Sells   Sellf    fellf  Zwei  Zw\xc3\xabi  Zw\xc3\xabi
+Sea     Sea      fea    Drei  Dr\xc3\xabi  Dr\xc3\xabi
+Shells  Shellf   fhellf Vier  Vi\xc3\xabr  Vi\xc3\xabr */
 </programlisting>
 
   <para>Ver também: <link linkend="PARSE">PARSE</link>, <link
+  linkend="REGEXEXTRACT">REGEXEXTRACT</link>, <link
   linkend="REGEXFIND">REGEXFIND</link></para>
 </sect1>

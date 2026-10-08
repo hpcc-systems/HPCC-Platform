@@ -25,7 +25,7 @@
 
   <para>Exemplo:</para>
 
-  <programlisting>Iname := INTERFACE
+  <programlisting lang="ECL" role="fragment">Iname := INTERFACE
 EXPORT STRING20 Name;
 EXPORT BOOLEAN KeepName := TRUE;
 END;

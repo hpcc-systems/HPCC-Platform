@@ -8,16 +8,14 @@
       <primary>COMBINE function</primary>
     </indexterm>(</emphasis><emphasis> leftrecset, rightrecset
   </emphasis><emphasis role="bold">[</emphasis>,<emphasis> transform
-  </emphasis><emphasis role="bold">]</emphasis><emphasis
-  role="bold">[,LOCAL])</emphasis></para>
+  </emphasis><emphasis role="bold">]</emphasis><emphasis role="bold">[,LOCAL])</emphasis></para>
 
   <para><emphasis role="bold">COMBINE<indexterm>
       <primary>COMBINE</primary>
     </indexterm>(</emphasis><emphasis> leftrecset, rightrecset,
   </emphasis><emphasis role="bold">GROUP<indexterm>
       <primary>GROUP</primary>
-    </indexterm> </emphasis>,<emphasis> transform </emphasis><emphasis
-  role="bold">[,LOCAL]<indexterm>
+    </indexterm> </emphasis>,<emphasis> transform </emphasis><emphasis role="bold">[,LOCAL]<indexterm>
       <primary>LOCAL</primary>
     </indexterm> </emphasis> <emphasis role="bold">[, UNORDERED |
   ORDERED(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [,
@@ -27,9 +25,9 @@
 
   <para><informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
-        <colspec colwidth="80.50pt"/>
+        <colspec colwidth="80.50pt" />
 
-        <colspec/>
+        <colspec />
 
         <tbody>
           <row>
@@ -145,8 +143,21 @@
   <emphasis>leftrecset</emphasis> e <emphasis>rightrecset</emphasis> em uma
   base de registro por registro na ordem em que aparecem em cada um.</para>
 
+  <note>
+    <para>No Thor, COMBINE só oferece suporte à forma LOCAL; não há implementação
+    global (não LOCAL) e nenhuma está planejada no momento. Isso significa que
+    <emphasis>leftrecset</emphasis> e <emphasis>rightrecset</emphasis> devem
+    conter o mesmo número de registros <emphasis>em cada nó</emphasis>, e não
+    apenas o mesmo número total de registros. Um erro "mismatched input row
+    count for Combine" indica que as contagens de registros por nó não
+    coincidem, mesmo que as contagens gerais sejam iguais. Essa restrição se
+    aplica às formas 1 e 2 de COMBINE. No hThor e no Roxie, LOCAL é ignorado
+    (pois esses engines sempre operam em um único nó), portanto as contagens
+    de registros precisam coincidir apenas no total.</para>
+  </note>
+
   <sect2 id="TRANSFORM_Function_Requirements">
-    <title>Requerimentos da Função COMBINE TRANSFORM</title>
+    <title>COMBINE TRANSFORM Function Requirements</title>
 
     <para>Para a forma 1 do COMBINE, a função transform deve adotar pelo menos
     dois parâmetros: um registro LEFT que deve estar no mesmo formato que o
@@ -164,7 +175,7 @@
   </sect2>
 
   <sect2 id="COMBINE_Form_1">
-    <title>Forma 1 do COMBINE</title>
+    <title>COMBINE Form 1</title>
 
     <para>A forma 1 do COMBINE gera seus resultados através da especificação
     de cada registro do <emphasis>leftrecset</emphasis> (juntamente com o
@@ -175,6 +186,18 @@
     <emphasis>leftrecset</emphasis> e <emphasis>rightrecset</emphasis> tiverem
     um número diferente de registros.2 d</para>
 
+    <para><emphasis role="bold">Importante:</emphasis> A forma 1 pareia os
+    registros estritamente pela posição ordinal. Coincidir apenas as contagens
+    globais de registros pode não ser suficiente em dados distribuídos. Para a
+    avaliação LOCAL, cada nó ou partição deve ter o mesmo número local de
+    linhas LEFT e RIGHT; caso contrário, COMBINE falha porque o pareamento
+    ordinal não pode ser concluído localmente.</para>
+
+    <para><emphasis role="bold">Solução de problemas:</emphasis> Se o
+    alinhamento ordinal local não puder ser garantido, remodele as entradas
+    antes de COMBINE para que as linhas correspondentes fiquem alinhadas por
+    partição. Uma refatoração baseada em JOIN é uma alternativa comum.</para>
+
     <para>Exemplo:</para>
 
     <programlisting lang="ECL_Runnable">inrec := RECORD
@@ -183,42 +206,42 @@ END;
 outrec := RECORD(inrec)
   STRING20  name;
   STRING11  ssn;
-  UNSIGNED8  dob;
+  UNSIGNED8 dob;
 END;
 ds := DATASET([1,2,3,4,5,6], inrec);
-i1 := DATASET([ {1, 'Kevin'}, 
-			 {2, 'Richard'}, 
-			 {5,'Nigel'}],
-              {UNSIGNED6 udid, STRING10 name });
+i1 := DATASET([ {1, 'Kevin'  }, 
+                {2, 'Richard'}, 
+                {5, 'Nigel'  }], 
+              {UNSIGNED6 uid, STRING10 name });
 i2 := DATASET([ {3, '000-12-3462'}, 
                 {5, '000-12-8723'}, 
-                {6, '000-10-1002'}],
-              {UNSIGNED6 udid, STRING10 ssn });
-i3 := DATASET([ {1, 19700117},
-			 {4, 19831212}, 
-                {6, 20010101}],
-    			{UNSIGNED6 udid, UNSIGNED8 dob}); 
-j1 := JOIN(ds, i1, LEFT.udid = RIGHT.udid, LEFT OUTER, LOOKUP);
-j2 := JOIN(ds, i2, LEFT.udid = RIGHT.udid, LEFT OUTER, LOOKUP);
-j3 := JOIN(ds, i3, LEFT.udid = RIGHT.udid, LEFT OUTER, LOOKUP);
-combined1 := COMBINE(j1, j2,   
-             TRANSFORM(outRec,
-      			   SELF := LEFT;
-      			   SELF := RIGHT;
-      			   SELF := []));
-		   LOCAL);
-combined2 := COMBINE(combined1, j3,
-             TRANSFORM(outRec,
-      			   SELF.dob := RIGHT.dob;
-            		   SELF := LEFT)),
-		   LOCAL);
+                {6, '000-10-1002'}], 
+              {UNSIGNED6 uid, STRING11 ssn });
+i3 := DATASET([ {1, 19700117}, 
+                {4, 19831212}, 
+                {6, 20010101}], 
+              {UNSIGNED6 uid, UNSIGNED8 dob}); 
+j1 := JOIN(ds, i1, LEFT.uid = RIGHT.uid, LEFT OUTER, LOOKUP);
+j2 := JOIN(ds, i2, LEFT.uid = RIGHT.uid, LEFT OUTER, LOOKUP);
+j3 := JOIN(ds, i3, LEFT.uid = RIGHT.uid, LEFT OUTER, LOOKUP);
+combined1 := COMBINE(j1, j2, 
+                     TRANSFORM(outRec, 
+                               SELF := LEFT;
+                               SELF := RIGHT;
+                               SELF := []),
+                     LOCAL);
+combined2 := COMBINE(combined1, j3, 
+                     TRANSFORM(outRec,
+                               SELF.dob := RIGHT.dob;
+                               SELF := LEFT),
+                     LOCAL);
 OUTPUT(combined1);
 OUTPUT(combined2);
 </programlisting>
   </sect2>
 
   <sect2 id="COMBINE_Form_2">
-    <title>Forma do COMBINE</title>
+    <title>COMBINE Form 2</title>
 
     <para>A forma 2 do COMBINE gera seus resultados através da especificação
     de cada registro do <emphasis> leftrecset</emphasis> (o grupo na mesma
@@ -229,9 +252,15 @@ OUTPUT(combined2);
     erro se o número de registros no <emphasis>leftrecset</emphasis> for
     distinto do número de grupos no <emphasis>rightrecset</emphasis>.</para>
 
+    <para><emphasis role="bold">Importante:</emphasis> A forma 2 também usa
+    pareamento ordinal, na granularidade de grupo. Cada registro LEFT é
+    pareado com o grupo RIGHT na mesma posição ordinal. Se a contagem de
+    registros LEFT e a contagem de grupos RIGHT não coincidirem, COMBINE
+    falhará.</para>
+
     <para>Exemplo:</para>
 
-    <programlisting lang="ECL_Runnable">inrec := {UNSIGNED6 udid};
+    <programlisting lang="ECL_Runnable">inrec := {UNSIGNED6 uid};
 outrec := RECORD(inrec)
   STRING20 name;
   UNSIGNED score;
@@ -266,36 +295,36 @@ j1 := JOIN(dsg,i1,
                      SELF := LEFT; 
                      SELF := RIGHT),
            LEFT OUTER, MANY LOOKUP);
-j2 := JOIN(dsg,i2,
+j2 := JOIN(dsg,i2, 
            LEFT.uid = RIGHT.uid,
            TRANSFORM(outrec, 
                      SELF := LEFT; 
                      SELF := RIGHT), 
            LEFT OUTER, MANY LOOKUP);
-j3 := JOIN(dsg,i3,
+j3 := JOIN(dsg, i3, 
            LEFT.uid = RIGHT.uid,
            TRANSFORM(outrec, 
                      SELF := LEFT; 
                      SELF := RIGHT), 
            LEFT OUTER, MANY LOOKUP);
 combined := REGROUP(j1, j2, j3);
-resultRec t(inrec l, DATASET(RECORDOF(combined)) r) := TRANSFORM
- SELF.names := PROJECT(r, TRANSFORM(nameRec, SELF := LEFT));
- SELF := l;
- END;
+resultRec t(inrec l,DATASET(RECORDOF(combined)) r) := TRANSFORM
+  SELF.names := PROJECT(r, TRANSFORM(nameRec, SELF := LEFT));
+  SELF := l; 
+END;
 res1 := COMBINE(dsg,combined,GROUP,t(LEFT, ROWS(RIGHT)(score != 0)),LOCAL);
 OUTPUT(res1);
 
 //A variation using rows in a child query.
 resultRec t2(inrec l, DATASET(RECORDOF(combined)) r) := TRANSFORM
- SELF.names := PROJECT(SORT(r, -score),
-        TRANSFORM(nameRec, SELF := LEFT));
- SELF := l;
- END;
+  SELF.names := PROJECT(SORT(r, -score), 
+                        TRANSFORM(nameRec, 
+                                  SELF := LEFT));
+                                  SELF := l;
+END;
 res2 := COMBINE(dsg,combined,GROUP,t2(LEFT,ROWS(RIGHT)(score != 0)),LOCAL);
 OUTPUT(res2);</programlisting>
 
-    <para>Ver também: <link linkend="GROUP">GROUP</link>, <link
-    linkend="REGROUP">REGROUP</link></para>
+    <para>Ver também: <link linkend="GROUP">GROUP</link>, <link linkend="REGROUP">REGROUP</link></para>
   </sect2>
 </sect1>

@@ -27,17 +27,19 @@
     </informaltable></para>
 
   <para>A função <emphasis role="bold">#GETDATATYPE </emphasis> retorna o tipo
-  de valor de <emphasis>field</emphasis>.</para>
+  de valor de <emphasis>field</emphasis>. O argumento <emphasis>field</emphasis>
+  deve ser um valor escalar ou um campo de um dataset (em vez de um campo de
+  uma definição de registro.)</para>
 
   <para>Exemplo:</para>
 
-  <programlisting>  person := DATASET([{D'6789ABCDE6789ABCDE'}],{DATA9 per_cid});
-  #DECLARE(fieldtype);
-  #DECLARE(field);
-  #SET(field, 'person.per_cid');
-  #SET(fieldtype, #GETDATATYPE(%field%));
-  res := %'fieldtype'%;
-  res; // Output: res = 'data9'</programlisting>
+  <programlisting lang="ECL" role="runnnable">person := DATASET([{D'6789ABCDE6789ABCDE'}],{DATA9 per_cid});
+#DECLARE(fieldtype);
+#DECLARE(field);
+#SET(field, 'person.per_cid');
+#SET(fieldtype, #GETDATATYPE(%field%));
+res := %'fieldtype'%;
+OUTPUT(res); //  'data9'</programlisting>
 
   <para>Ver também: <link linkend="Value_Types_Chapter">Tipos de
   valores</link></para>

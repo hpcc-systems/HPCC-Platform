@@ -61,13 +61,16 @@
 
   <para>Exemplo:</para>
 
-  <programlisting>  UNICODE1 x := u'a';
-  UNICODE1 y := u'b';
-  UNICODE1 z := u'a';
-  
-  a := UNICODEORDER(x , y, 'es'); // returns -1
-  b := UNICODEORDER(x , z, 'es'); // returns 0
-  c := UNICODEORDER(y , z, 'es'); // returns 1
+  <programlisting lang="ECL_Runnable">UNICODE1 x := u'a';
+UNICODE1 y := u'b';
+UNICODE1 z := u'a';
+a := UNICODEORDER(x , y, 'es'); // returns -1
+b := UNICODEORDER(x , z, 'es'); // returns 0
+c := UNICODEORDER(y , z, 'es'); // returns 1
+
+OUTPUT(a);
+OUTPUT(b);
+OUTPUT(c);
 </programlisting>
 
   <para>Ver também: <link linkend="FROMUNICODE">FROMUNICODE</link>, <link

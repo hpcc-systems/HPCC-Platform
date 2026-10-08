@@ -17,9 +17,8 @@
 
     <legalnotice>
       <para>Sua opinião e comentários sobre este documento são muito
-      bem-vindos e podem ser enviados por e-mail para </para>
-
-      <para role="syntax"><email>docfeedback@hpccsystems.com</email></para>
+      bem-vindos e podem ser enviados por e-mail para
+      <email>docfeedback@hpccsystems.com</email></para>
 
       <para>Inclua a frase <emphasis role="bold">Feedback sobre
       documentação</emphasis> na linha de assunto e indique o nome do
@@ -29,8 +28,8 @@
       <para>LexisNexis e o logotipo Knowledge Burst são marcas comerciais
       registradas da Reed Elsevier Properties Inc., usadas sob licença.</para>
 
-      <para>SSystems<superscript>®</superscript> HPCC Systems® é uma marca
-      registrada da LexisNexis Risk Data Management Inc.</para>
+      <para>HPCC Systems<superscript>®</superscript> é uma marca registrada
+      da LexisNexis Risk Data Management Inc.</para>
 
       <para>Os demais produtos, logotipos e serviços podem ser marcas
       comerciais ou registradas de suas respectivas empresas.</para>
@@ -50,7 +49,7 @@
                 xpointer="xpointer(//*[@id='DateVer'])"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <corpname>SSystems<superscript>®</superscript></corpname>
+    <corpname>HPCC Systems<superscript>®</superscript></corpname>
 
     <xi:include href="common/Version.xml"
                 xpointer="xpointer(//*[@id='Copyright'])"
@@ -505,6 +504,88 @@
         <para></para>
 
         <beginpage />
+      </sect2>
+
+      <sect2>
+        <title>Limites de tempo de queries Roxie</title>
+
+        <para>Há várias maneiras de gerenciar o limite de tempo de uma query
+        (em ordem de precedência):</para>
+
+        <itemizedlist>
+          <listitem>
+            <para>Especifique um valor no atributo <emphasis
+            role="bold">timeLimit</emphasis> na solicitação da query. Por
+            exemplo:</para>
+
+            <para><programlisting>&lt;myQuery timeLimit="2000"&gt;
+  ...
+&lt;/myQuery&gt;</programlisting></para>
+          </listitem>
+
+          <listitem>
+            <para>Especifique um valor no elemento <emphasis
+            role="bold">_timeLimit</emphasis> dentro da solicitação da query.
+            Por exemplo:</para>
+
+            <para><programlisting>&lt;myQuery&gt;
+  &lt;_timeLimit&gt;2000&lt;_timeLimit&gt;
+  ...
+&lt;/myQuery&gt;</programlisting></para>
+          </listitem>
+
+          <listitem>
+            <para>Especifique o valor do atributo <emphasis
+            role="bold">timeLimit</emphasis> na definição do package para a
+            query.</para>
+
+            <para><programlisting>&lt;RoxiePackages&gt;
+   &lt;!-- Begin Queries --&gt;
+     &lt;Package id="MyQuery" timeLimit="2000"&gt;
+     &lt;Base id="thor::MyData_Key"/&gt;
+    &lt;/Package&gt;
+  &lt;!-- End Queries --&gt;
+  ...
+&lt;/RoxiePackages&gt;</programlisting></para>
+          </listitem>
+
+          <listitem>
+            <para>Especifique um valor no código ECL da query usando <emphasis
+            role="bold">#OPTION</emphasis>. Por exemplo,</para>
+
+            <para><programlisting>#OPTION('timeLimit', 2000);
+</programlisting></para>
+          </listitem>
+
+          <listitem>
+            <para>Especifique um valor na linha de comando usando <emphasis
+            role="bold">eclcc </emphasis>por meio do argumento <emphasis
+            role="bold">-f</emphasis>. Por exemplo,</para>
+
+            <para><programlisting>eclcc MyQuery.ecl -ftimeLimit="2000" 
+</programlisting></para>
+          </listitem>
+
+          <listitem>
+            <para>Especifique um valor usando a interface de linha de comando
+            <emphasis role="bold">ecl </emphasis>por meio do argumento
+            <emphasis role="bold">--timeLimit=&lt;sec&gt;</emphasis>. Por
+            exemplo,</para>
+
+            <para><programlisting>ecl publish roxie MyQuery.ecl --name=MyQuery --timeLimit=2000 -A 
+ecl queries config roxie MyQuery --timeLimit=2000
+ecl queries recreate roxie MyQuery --timeLimit=2000
+</programlisting></para>
+          </listitem>
+
+          <listitem>
+            <para>Use a configuração padrão na configuração do seu cluster
+            Roxie. Há valores padrão separados para níveis de prioridade:
+            <emphasis role="bold">defaultLowPriorityTimeLimit</emphasis>,
+            <emphasis role="bold">defaultHighPriorityTimeLimit</emphasis> e
+            <emphasis role="bold">defaultSLAPriorityTimeLimit</emphasis>.</para>
+          </listitem>
+        </itemizedlist>
       </sect2>
     </sect1>
   </chapter>

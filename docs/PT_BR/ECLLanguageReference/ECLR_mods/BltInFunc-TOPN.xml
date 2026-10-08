@@ -168,7 +168,7 @@
 
   <para>Exemplo:</para>
 
-  <programlisting>y := TOPN(Person,1000,state,sex);     //first 1000 recs in state, sex order
+  <programlisting lang="ECL" role="notrunnable">y := TOPN(Person,1000,state,sex);     //first 1000 recs in state, sex order
 z := TOPN(Person,1000,sex,BEST('F')); //first 1000 females</programlisting>
 
   <para>Ver também: <link linkend="CHOOSEN">CHOOSEN</link>, <link

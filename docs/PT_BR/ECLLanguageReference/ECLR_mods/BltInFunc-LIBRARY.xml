@@ -94,7 +94,7 @@
 
   <para>Exemplo:</para>
 
-  <programlisting>NamesRec := RECORD
+  <programlisting lang="ECL" role="notrunnable">NamesRec := RECORD
     INTEGER1  NameID;
     STRING20  FName;
     STRING20  LName;
@@ -155,4 +155,10 @@ OUTPUT(lib3.others, NAMED('INTERNAL_nonmatches_interface_parms'));
 OUTPUT(lib4.matches,NAMED('EXTERNAL_matches_interface_parms'));
 OUTPUT(lib4.others, NAMED('EXTERNAL_nonmatches_interface_parms'));
 </programlisting>
+
+  <para></para>
+
+  <para>Ver também: <link linkend="MODULE_Structure">MODULE</link>, <link
+  linkend="INTERFACE_Structure">INTERFACE</link>, <link
+  linkend="BUILD">BUILD</link></para>
 </sect1>

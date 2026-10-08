@@ -1,0 +1,1485 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE chapter PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<chapter id="Store">
+  <title><emphasis>Suporte a Key/Value Store</emphasis></title>
+
+  <para>Esta seção oferece suporte para acessar a funcionalidade de key/value store em clusters HPCC Systems. O módulo Store permite criar stores, gerenciar namespaces e executar operações de chave/valor para persistir dados entre execuções de workunit.</para>
+
+  <sect1>
+    <title>Visão Geral do Key/Value Store</title>
+
+    <para>O módulo Store fornece um mecanismo persistente de armazenamento key/value que permite armazenar e recuperar dados entre várias execuções de workunit. O key/value store é organizado hierarquicamente:</para>
+
+    <itemizedlist>
+      <listitem>
+        <para><emphasis role="bold">Stores</emphasis>: Contêineres de nível superior que contêm namespaces. Os stores podem ser globais (acessíveis a todos os usuários) ou específicos do usuário (privados de um usuário individual).</para>
+      </listitem>
+
+      <listitem>
+        <para><emphasis role="bold">Namespaces</emphasis>: Partições lógicas dentro dos stores que agrupam chaves relacionadas.</para>
+      </listitem>
+
+      <listitem>
+        <para><emphasis role="bold">Keys</emphasis>: Identificadores nomeados que são mapeados para valores armazenados. As chaves podem ser globais ou específicas do usuário.</para>
+      </listitem>
+
+      <listitem>
+        <para><emphasis role="bold">Values</emphasis>: Dados de string associados às chaves.</para>
+      </listitem>
+    </itemizedlist>
+
+    <para>O módulo Store requer credenciais de autenticação e pode operar em uma URL ESP específica ou usar o processo ESP padrão no cluster.</para>
+  </sect1>
+
+  <sect1 id="Store_Module">
+    <title>Store Module</title>
+
+    <para><emphasis>myStoreModule</emphasis> :=<emphasis role="bold">
+    STD.System.Store(<indexterm>
+        <primary>STD.System.Store</primary>
+      </indexterm><indexterm>
+        <primary>System.Store</primary>
+      </indexterm><indexterm>
+        <primary>Store</primary>
+      </indexterm></emphasis><emphasis
+    role="bold">[</emphasis><emphasis>username</emphasis><emphasis
+    role="bold">],[ </emphasis><emphasis>userPW</emphasis><emphasis
+    role="bold">],[</emphasis><emphasis>espURL</emphasis><emphasis
+    role="bold">]);</emphasis></para>
+
+    <informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="120.50pt"/>
+
+        <colspec/>
+
+        <tbody>
+          <row>
+            <entry><emphasis>myStoreModule</emphasis></entry>
+
+            <entry>O nome da instância do módulo Store</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>username</emphasis></entry>
+
+            <entry>O username do usuário que solicita acesso ao key value store; normalmente é o mesmo username usado para fazer login no ECL Watch; defina como uma string vazia se a autenticação não for necessária; OPCIONAL, o padrão é uma string vazia</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>userPW</emphasis></entry>
+
+            <entry>A senha do usuário que solicita acesso ao key value store; normalmente é a mesma senha usada para fazer login no ECL Watch; defina como uma string vazia se a autenticação não for necessária; OPCIONAL, o padrão é uma string vazia</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>espURL</emphasis></entry>
+
+            <entry>A URL completa para acessar o processo esp em execução no cluster HPCC Systems (normalmente é a mesma URL usada para acessar o ECL Watch); defina como uma string vazia para usar a URL do processo esp atual, conforme encontrada via Std.File.GetEspURL(); OPCIONAL, o padrão é uma string vazia</entry>
+          </row>
+
+          <row>
+            <entry>Retorno:<emphasis/></entry>
+
+            <entry>Uma referência ao módulo, inicializada corretamente com os parâmetros de acesso fornecidos</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable>
+
+    <para>Uma instância do módulo Store é definida em ECL com as credenciais de autenticação e o endpoint ESP necessários. As chamadas de função subsequentes usam a instância do módulo para acessar o key/value store.</para>
+
+    <para>Exemplo:</para>
+
+    <programlisting format="linespecific">IMPORT STD;
+
+// Store module definition with credentials
+myStore := STD.System.Store('myusername', 'mypassword', 'http://localhost:8010');
+
+// Store module definition using default ESP URL
+myDefaultStore := STD.System.Store();</programlisting>
+  </sect1>
+
+  <sect1 id="CreateStore">
+    <title>CreateStore</title>
+
+    <para><emphasis>myStoreModule</emphasis><emphasis
+    role="bold">.CreateStore(<indexterm>
+        <primary>CreateStore</primary>
+      </indexterm></emphasis><emphasis>storeName</emphasis><emphasis
+    role="bold">[, </emphasis><emphasis>description</emphasis><emphasis
+    role="bold">][, </emphasis><emphasis>maxValueSize</emphasis><emphasis
+    role="bold">][, </emphasis><emphasis>isUserSpecific</emphasis><emphasis
+    role="bold">][, </emphasis><emphasis>timeoutInSeconds</emphasis><emphasis
+    role="bold">]);</emphasis></para>
+
+    <informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="120.50pt"/>
+
+        <colspec/>
+
+        <tbody>
+          <row>
+            <entry><emphasis>myStoreModule</emphasis></entry>
+
+            <entry>O nome da instância do módulo Store</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>storeName</emphasis></entry>
+
+            <entry>Uma STRING que nomeia o store a ser criado; não pode ser uma string vazia; OBRIGATÓRIO</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>description</emphasis></entry>
+
+            <entry>Uma STRING que descreve a finalidade do store; pode ser uma string vazia; OPCIONAL, o padrão é uma string vazia</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>maxValueSize</emphasis></entry>
+
+            <entry>O tamanho máximo de qualquer valor armazenado neste store, em bytes; use um valor zero para indicar um tamanho máximo ilimitado; OPCIONAL, o padrão é 1024</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>isUserSpecific</emphasis></entry>
+
+            <entry>Se TRUE, este store ficará visível apenas para o usuário indicado pelos argumentos (username, userPW) fornecidos quando o módulo foi definido; se FALSE, o store será global e visível para todos os usuários; OPCIONAL, o padrão é FALSE</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>timeoutInSeconds</emphasis></entry>
+
+            <entry>O número de segundos a aguardar até que o SOAPCALL subjacente seja concluído; defina como zero para aguardar indefinidamente; OPCIONAL, o padrão é zero</entry>
+          </row>
+
+          <row>
+            <entry>Retorno:<emphasis/></entry>
+
+            <entry>Um RECORD <emphasis>CreateStoreResponseRec</emphasis>. Se o store já existir, o resultado mostrará succeeded = FALSE e already_present = TRUE.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable>
+
+    <para>A função <emphasis role="bold">CreateStore</emphasis> cria um key/value store se ele ainda não tiver sido criado. Se o store já tiver sido criado, esta função não terá efeito.</para>
+
+    <para>Exemplo:</para>
+
+    <programlisting format="linespecific">IMPORT STD;
+
+myStore := STD.System.Store('myusername', 'mypassword');
+
+// Create a global store
+result := myStore.CreateStore('MyApplicationStore', 'Store for application data', 2048, FALSE);
+
+OUTPUT(result.succeeded);
+OUTPUT(result.already_present);
+
+// Create a user-specific store
+privateResult := myStore.CreateStore('MyPrivateStore', 'My private data', 4096, TRUE);
+
+OUTPUT(privateResult.succeeded);</programlisting>
+
+    <para>Ver também: <link
+    linkend="CreateStoreResponseRec">CreateStoreResponseRec</link></para>
+  </sect1>
+
+  <sect1 id="ListStores">
+    <title>ListStores</title>
+
+    <para><emphasis>myStoreModule</emphasis><emphasis
+    role="bold">.ListStores(<indexterm>
+        <primary>ListStores</primary>
+      </indexterm></emphasis><emphasis
+    role="bold">[</emphasis><emphasis>nameFilter</emphasis><emphasis
+    role="bold">][, </emphasis><emphasis>ownerFilter</emphasis><emphasis
+    role="bold">][, </emphasis><emphasis>timeoutInSeconds</emphasis><emphasis
+    role="bold">]);</emphasis></para>
+
+    <informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="120.50pt"/>
+
+        <colspec/>
+
+        <tbody>
+          <row>
+            <entry><emphasis>myStoreModule</emphasis></entry>
+
+            <entry>O nome da instância do módulo Store</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>nameFilter</emphasis></entry>
+
+            <entry>Uma STRING que define um filtro a ser aplicado ao nome do store; o filtro aceita o caractere curinga '*' para indicar 'corresponder a qualquer coisa' e '?' para corresponder a qualquer caractere único; as comparações de strings não fazem distinção entre maiúsculas e minúsculas; uma string vazia é equivalente a '*'; OPCIONAL, o padrão é '*'</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>ownerFilter</emphasis></entry>
+
+            <entry>Uma STRING que define um filtro a ser aplicado ao proprietário do store; o filtro aceita o caractere curinga '*' para indicar 'corresponder a qualquer coisa' e '?' para corresponder a qualquer caractere único; as comparações de strings não fazem distinção entre maiúsculas e minúsculas; uma string vazia é equivalente a '*'; OPCIONAL, o padrão é '*'</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>timeoutInSeconds</emphasis></entry>
+
+            <entry>O número de segundos a aguardar até que o SOAPCALL subjacente seja concluído; defina como zero para aguardar indefinidamente; OPCIONAL, o padrão é zero</entry>
+          </row>
+
+          <row>
+            <entry>Retorno:<emphasis/></entry>
+
+            <entry>Um RECORD <emphasis>ListStoresResponseRec</emphasis></entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable>
+
+    <para>A função <emphasis role="bold">ListStores</emphasis> obtém uma lista de stores disponíveis com base nos filtros fornecidos.</para>
+
+    <para>Exemplo:</para>
+
+    <programlisting format="linespecific">IMPORT STD;
+
+myStore := STD.System.Store();
+
+// List all stores
+allStores := myStore.ListStores();
+OUTPUT(allStores.stores);
+
+// List stores starting with 'App'
+appStores := myStore.ListStores('App*', '*');
+OUTPUT(appStores.stores);
+
+// List stores owned by specific user
+userStores := myStore.ListStores('*', 'myusername');
+OUTPUT(userStores.stores);</programlisting>
+
+    <para>Ver também: <link
+    linkend="ListStoresResponseRec">ListStoresResponseRec</link></para>
+  </sect1>
+
+  <sect1 id="ListNamespaces">
+    <title>ListNamespaces</title>
+
+    <para><emphasis>myStoreModule</emphasis><emphasis
+    role="bold">.ListNamespaces(<indexterm>
+        <primary>ListNamespaces</primary>
+      </indexterm></emphasis><emphasis>storeName</emphasis><emphasis
+    role="bold">[, </emphasis><emphasis>isUserSpecific</emphasis><emphasis
+    role="bold">][, </emphasis><emphasis>timeoutInSeconds</emphasis><emphasis
+    role="bold">]);</emphasis></para>
+
+    <informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="120.50pt"/>
+
+        <colspec/>
+
+        <tbody>
+          <row>
+            <entry><emphasis>myStoreModule</emphasis></entry>
+
+            <entry>O nome da instância do módulo Store</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>storeName</emphasis></entry>
+
+            <entry>Uma STRING que nomeia o store que contém os namespaces de seu interesse; defina como uma string vazia para referenciar o store padrão no cluster, caso um tenha sido definido; OBRIGATÓRIO</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>isUserSpecific</emphasis></entry>
+
+            <entry>Se TRUE, o sistema procurará apenas chaves privadas; se FALSE, o sistema procurará chaves globais; OPCIONAL, o padrão é FALSE</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>timeoutInSeconds</emphasis></entry>
+
+            <entry>O número de segundos a aguardar até que o SOAPCALL subjacente seja concluído; defina como zero para aguardar indefinidamente; OPCIONAL, o padrão é zero</entry>
+          </row>
+
+          <row>
+            <entry>Retorno:<emphasis/></entry>
+
+            <entry>Um RECORD <emphasis>ListNamespacesResponseRec</emphasis></entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable>
+
+    <para>A função <emphasis role="bold">ListNamespaces</emphasis> obtém uma lista de namespaces definidos no store especificado.</para>
+
+    <para>Exemplo:</para>
+
+    <programlisting format="linespecific">IMPORT STD;
+
+myStore := STD.System.Store();
+
+// List all namespaces in the default store
+namespaces := myStore.ListNamespaces('');
+OUTPUT(namespaces.namespaces);
+
+// List namespaces in a specific store
+appNamespaces := myStore.ListNamespaces('MyApplicationStore');
+OUTPUT(appNamespaces.namespaces);
+
+// List user-specific namespaces
+privateNamespaces := myStore.ListNamespaces('MyPrivateStore', TRUE);
+OUTPUT(privateNamespaces.namespaces);</programlisting>
+
+    <para>Ver também: <link
+    linkend="ListNamespacesResponseRec">ListNamespacesResponseRec</link></para>
+  </sect1>
+
+  <sect1 id="WithNamespace">
+    <title>WithNamespace Module</title>
+
+    <para><emphasis>myNamespaceModule</emphasis> :=<emphasis
+    role="bold"><emphasis>myStoreModule</emphasis>.WithNamespace(<indexterm>
+        <primary>WithNamespace</primary>
+      </indexterm></emphasis><emphasis>namespace</emphasis><emphasis
+    role="bold">[, </emphasis><emphasis>storeName</emphasis><emphasis
+    role="bold">]);</emphasis></para>
+
+    <informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="120.50pt"/>
+
+        <colspec/>
+
+        <tbody>
+          <row>
+            <entry><emphasis>myStoreModule</emphasis></entry>
+
+            <entry>O nome da instância do módulo Store pai</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>myNamespaceModule</emphasis></entry>
+
+            <entry>O nome da instância do módulo específico do namespace</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>namespace</emphasis></entry>
+
+            <entry>Uma STRING que nomeia a partição de namespace que será usada para este módulo; não pode ser uma string vazia; OBRIGATÓRIO</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>storeName</emphasis></entry>
+
+            <entry>Uma STRING que nomeia o store que este módulo acessará; defina como uma string vazia para referenciar o store padrão no cluster, caso um tenha sido definido; OPCIONAL, o padrão é uma string vazia</entry>
+          </row>
+
+          <row>
+            <entry>Retorno:<emphasis/></entry>
+
+            <entry>Uma referência ao módulo, inicializada corretamente com o namespace fornecido</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable>
+
+    <para>O submódulo <emphasis role="bold">WithNamespace</emphasis> fixa um namespace específico a ser acessado dentro de um key/value store no cluster. Todas as operações subsequentes ficarão restritas a esse namespace.</para>
+
+    <para>Exemplo:</para>
+
+    <programlisting format="linespecific">IMPORT STD;
+
+myStore := STD.System.Store();
+
+// Define a namespace module
+myNamespace := myStore.WithNamespace('ApplicationConfig', 'MyApplicationStore');
+
+// Use default store with a specific namespace
+defaultNamespace := myStore.WithNamespace('Settings', '');</programlisting>
+
+    <para/>
+  </sect1>
+
+  <sect1 id="SetKeyValue">
+    <title>SetKeyValue</title>
+
+    <para><emphasis>myNamespaceModule</emphasis><emphasis
+    role="bold">.SetKeyValue(<indexterm>
+        <primary>SetKeyValue</primary>
+      </indexterm></emphasis><emphasis>keyName</emphasis><emphasis
+    role="bold">, </emphasis><emphasis>keyValue</emphasis><emphasis
+    role="bold">[, </emphasis><emphasis>isUserSpecific</emphasis><emphasis
+    role="bold">][, </emphasis><emphasis>timeoutInSeconds</emphasis><emphasis
+    role="bold">]);</emphasis></para>
+
+    <informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="120.50pt"/>
+
+        <colspec/>
+
+        <tbody>
+          <row>
+            <entry><emphasis>myNamespaceModule</emphasis></entry>
+
+            <entry>O nome da instância do módulo específico do namespace</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>keyName</emphasis></entry>
+
+            <entry>Uma STRING que nomeia a chave; não pode ser uma string vazia; OBRIGATÓRIO</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>keyValue</emphasis></entry>
+
+            <entry>Uma STRING que representa o valor a armazenar para a chave; pode ser uma string vazia; OBRIGATÓRIO</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>isUserSpecific</emphasis></entry>
+
+            <entry>Se TRUE, esta chave ficará visível apenas para o usuário indicado pelos argumentos (username, userPW) fornecidos quando o módulo foi definido; se FALSE, a chave será global e visível para todos os usuários; OPCIONAL, o padrão é FALSE</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>timeoutInSeconds</emphasis></entry>
+
+            <entry>O número de segundos a aguardar até que o SOAPCALL subjacente seja concluído; defina como zero para aguardar indefinidamente; OPCIONAL, o padrão é zero</entry>
+          </row>
+
+          <row>
+            <entry>Retorno:<emphasis/></entry>
+
+            <entry>Um RECORD <emphasis>SetKeyValueResponseRec</emphasis></entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable>
+
+    <para>A função <emphasis role="bold">SetKeyValue</emphasis> define um valor para uma chave dentro de um namespace. Se a chave já existir, seu valor será substituído. O namespace será criado se ainda não tiver sido definido.</para>
+
+    <para>Exemplo:</para>
+
+    <programlisting format="linespecific">IMPORT STD;
+
+myStore := STD.System.Store();
+myNamespace := myStore.WithNamespace('Config', 'MyStore');
+
+// Set a global key
+result1 := myNamespace.SetKeyValue('ApiEndpoint', 'https://api.example.com/v1');
+OUTPUT(result1.succeeded);
+
+// Set a user-specific key
+result2 := myNamespace.SetKeyValue('UserPreference', 'darkmode', TRUE);
+OUTPUT(result2.succeeded);
+
+// Update an existing key
+result3 := myNamespace.SetKeyValue('ApiEndpoint', 'https://api.example.com/v2');
+OUTPUT(result3.succeeded);</programlisting>
+
+    <para>Ver também: <link
+    linkend="SetKeyValueResponseRec">SetKeyValueResponseRec</link></para>
+  </sect1>
+
+  <sect1 id="GetKeyValue">
+    <title>GetKeyValue</title>
+
+    <para><emphasis>myNamespaceModule</emphasis><emphasis
+    role="bold">.GetKeyValue(<indexterm>
+        <primary>GetKeyValue</primary>
+      </indexterm></emphasis><emphasis>keyName</emphasis><emphasis
+    role="bold">[, </emphasis><emphasis>isUserSpecific</emphasis><emphasis
+    role="bold">][, </emphasis><emphasis>timeoutInSeconds</emphasis><emphasis
+    role="bold">]);</emphasis></para>
+
+    <informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="120.50pt"/>
+
+        <colspec/>
+
+        <tbody>
+          <row>
+            <entry><emphasis>myNamespaceModule</emphasis></entry>
+
+            <entry>O nome da instância do módulo específico do namespace</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>keyName</emphasis></entry>
+
+            <entry>Uma STRING que nomeia a chave; não pode ser uma string vazia; OBRIGATÓRIO</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>isUserSpecific</emphasis></entry>
+
+            <entry>Se TRUE, o sistema procurará apenas chaves privadas; se FALSE, o sistema procurará chaves globais; OPCIONAL, o padrão é FALSE</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>timeoutInSeconds</emphasis></entry>
+
+            <entry>O número de segundos a aguardar até que o SOAPCALL subjacente seja concluído; defina como zero para aguardar indefinidamente; OPCIONAL, o padrão é zero</entry>
+          </row>
+
+          <row>
+            <entry>Retorno:<emphasis/></entry>
+
+            <entry>Um RECORD <emphasis>GetKeyValueResponseRec</emphasis>. Observe que o registro terá was_found definido como TRUE ou FALSE, dependendo de a chave ter sido realmente encontrada no key/value store.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable>
+
+    <para>A função <emphasis role="bold">GetKeyValue</emphasis> obtém um valor definido anteriormente para uma chave dentro de um namespace.</para>
+
+    <para>Exemplo:</para>
+
+    <programlisting format="linespecific">IMPORT STD;
+
+myStore := STD.System.Store();
+myNamespace := myStore.WithNamespace('Config', 'MyStore');
+
+// Get a global key
+result1 := myNamespace.GetKeyValue('ApiEndpoint');
+OUTPUT(result1.was_found);
+OUTPUT(result1.value);
+
+// Get a user-specific key
+result2 := myNamespace.GetKeyValue('UserPreference', TRUE);
+IF(result2.was_found,
+   OUTPUT(result2.value),
+   OUTPUT('Key not found'));
+
+// Check for non-existent key
+result3 := myNamespace.GetKeyValue('NonExistentKey');
+OUTPUT(result3.was_found);  // FALSE</programlisting>
+
+    <para>Ver também: <link
+    linkend="GetKeyValueResponseRec">GetKeyValueResponseRec</link></para>
+  </sect1>
+
+  <sect1 id="DeleteKeyValue">
+    <title>DeleteKeyValue</title>
+
+    <para><emphasis>myNamespaceModule</emphasis><emphasis
+    role="bold">.DeleteKeyValue(<indexterm>
+        <primary>DeleteKeyValue</primary>
+      </indexterm></emphasis><emphasis>keyName</emphasis><emphasis
+    role="bold">[, </emphasis><emphasis>isUserSpecific</emphasis><emphasis
+    role="bold">][, </emphasis><emphasis>timeoutInSeconds</emphasis><emphasis
+    role="bold">]);</emphasis></para>
+
+    <informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="120.50pt"/>
+
+        <colspec/>
+
+        <tbody>
+          <row>
+            <entry><emphasis>myNamespaceModule</emphasis></entry>
+
+            <entry>O nome da instância do módulo específico do namespace</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>keyName</emphasis></entry>
+
+            <entry>Uma STRING que nomeia a chave; não pode ser uma string vazia; OBRIGATÓRIO</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>isUserSpecific</emphasis></entry>
+
+            <entry>Se TRUE, o sistema procurará apenas chaves privadas; se FALSE, o sistema procurará chaves globais; OPCIONAL, o padrão é FALSE</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>timeoutInSeconds</emphasis></entry>
+
+            <entry>O número de segundos a aguardar até que o SOAPCALL subjacente seja concluído; defina como zero para aguardar indefinidamente; OPCIONAL, o padrão é zero</entry>
+          </row>
+
+          <row>
+            <entry>Retorno:<emphasis/></entry>
+
+            <entry>Um RECORD <emphasis>DeleteKeyValueResponseRec</emphasis></entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable>
+
+    <para>A função <emphasis role="bold">DeleteKeyValue</emphasis> exclui uma chave e um valor definidos anteriormente dentro de um namespace.</para>
+
+    <para>Exemplo:</para>
+
+    <programlisting format="linespecific">IMPORT STD;
+
+myStore := STD.System.Store();
+myNamespace := myStore.WithNamespace('Config', 'MyStore');
+
+// Delete a global key
+result1 := myNamespace.DeleteKeyValue('ApiEndpoint');
+OUTPUT(result1.succeeded);
+
+// Delete a user-specific key
+result2 := myNamespace.DeleteKeyValue('UserPreference', TRUE);
+OUTPUT(result2.succeeded);</programlisting>
+
+    <para>Ver também: <link
+    linkend="DeleteKeyValueResponseRec">DeleteKeyValueResponseRec</link></para>
+  </sect1>
+
+  <sect1 id="GetAllKeys">
+    <title>GetAllKeys</title>
+
+    <para><emphasis>myNamespaceModule</emphasis><emphasis
+    role="bold">.GetAllKeys(<indexterm>
+        <primary>GetAllKeys</primary>
+      </indexterm></emphasis><emphasis
+    role="bold">[</emphasis><emphasis>isUserSpecific</emphasis><emphasis
+    role="bold">][, </emphasis><emphasis>timeoutInSeconds</emphasis><emphasis
+    role="bold">]);</emphasis></para>
+
+    <informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="120.50pt"/>
+
+        <colspec/>
+
+        <tbody>
+          <row>
+            <entry><emphasis>myNamespaceModule</emphasis></entry>
+
+            <entry>O nome da instância do módulo específico do namespace</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>isUserSpecific</emphasis></entry>
+
+            <entry>Se TRUE, o sistema procurará apenas chaves privadas; se FALSE, o sistema procurará chaves globais; OPCIONAL, o padrão é FALSE</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>timeoutInSeconds</emphasis></entry>
+
+            <entry>O número de segundos a aguardar até que o SOAPCALL subjacente seja concluído; defina como zero para aguardar indefinidamente; OPCIONAL, o padrão é zero</entry>
+          </row>
+
+          <row>
+            <entry>Retorno:<emphasis/></entry>
+
+            <entry>Um RECORD <emphasis>GetAllKeysResponseRec</emphasis></entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable>
+
+    <para>A função <emphasis role="bold">GetAllKeys</emphasis> obtém uma lista de todas as chaves atualmente definidas dentro de um namespace.</para>
+
+    <para>Exemplo:</para>
+
+    <programlisting format="linespecific">IMPORT STD;
+
+myStore := STD.System.Store();
+myNamespace := myStore.WithNamespace('Config', 'MyStore');
+
+// Get all global keys
+result1 := myNamespace.GetAllKeys();
+OUTPUT(result1.namespace);
+OUTPUT(result1.keys);
+
+// Get all user-specific keys
+result2 := myNamespace.GetAllKeys(TRUE);
+OUTPUT(result2.keys);</programlisting>
+
+    <para>Ver também: <link
+    linkend="GetAllKeysResponseRec">GetAllKeysResponseRec</link></para>
+  </sect1>
+
+  <sect1 id="GetAllKeyValues">
+    <title>GetAllKeyValues</title>
+
+    <para><emphasis>myNamespaceModule</emphasis><emphasis
+    role="bold">.GetAllKeyValues(<indexterm>
+        <primary>GetAllKeyValues</primary>
+      </indexterm></emphasis><emphasis
+    role="bold">[</emphasis><emphasis>isUserSpecific</emphasis><emphasis
+    role="bold">][, </emphasis><emphasis>timeoutInSeconds</emphasis><emphasis
+    role="bold">]);</emphasis></para>
+
+    <informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="120.50pt"/>
+
+        <colspec/>
+
+        <tbody>
+          <row>
+            <entry><emphasis>myNamespaceModule</emphasis></entry>
+
+            <entry>O nome da instância do módulo específico do namespace</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>isUserSpecific</emphasis></entry>
+
+            <entry>Se TRUE, o sistema procurará apenas chaves privadas; se FALSE, o sistema procurará chaves globais; OPCIONAL, o padrão é FALSE</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>timeoutInSeconds</emphasis></entry>
+
+            <entry>O número de segundos a aguardar até que o SOAPCALL subjacente seja concluído; defina como zero para aguardar indefinidamente; OPCIONAL, o padrão é zero</entry>
+          </row>
+
+          <row>
+            <entry>Retorno:<emphasis/></entry>
+
+            <entry>Um RECORD <emphasis>GetAllKeyValuesResponseRec</emphasis></entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable>
+
+    <para>A função <emphasis role="bold">GetAllKeyValues</emphasis> obtém uma lista de todas as chaves e seus valores associados atualmente definidos dentro de um namespace.</para>
+
+    <para>Exemplo:</para>
+
+    <programlisting format="linespecific">IMPORT STD;
+
+myStore := STD.System.Store();
+myNamespace := myStore.WithNamespace('Config', 'MyStore');
+
+// Get all global key/value pairs
+result1 := myNamespace.GetAllKeyValues();
+OUTPUT(result1.namespace);
+OUTPUT(result1.key_values);
+
+// Get all user-specific key/value pairs
+result2 := myNamespace.GetAllKeyValues(TRUE);
+OUTPUT(result2.key_values);</programlisting>
+
+    <para>Ver também: <link
+    linkend="GetAllKeyValuesResponseRec">GetAllKeyValuesResponseRec</link></para>
+  </sect1>
+
+  <sect1 id="DeleteNamespace">
+    <title>DeleteNamespace</title>
+
+    <para><emphasis>myNamespaceModule</emphasis><emphasis
+    role="bold">.DeleteNamespace(<indexterm>
+        <primary>DeleteNamespace</primary>
+      </indexterm></emphasis><emphasis
+    role="bold">[</emphasis><emphasis>isUserSpecific</emphasis><emphasis
+    role="bold">][, </emphasis><emphasis>timeoutInSeconds</emphasis><emphasis
+    role="bold">]);</emphasis></para>
+
+    <informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="120.50pt"/>
+
+        <colspec/>
+
+        <tbody>
+          <row>
+            <entry><emphasis>myNamespaceModule</emphasis></entry>
+
+            <entry>O nome da instância do módulo específico do namespace</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>isUserSpecific</emphasis></entry>
+
+            <entry>Se TRUE, o sistema procurará apenas chaves privadas; se FALSE, o sistema procurará chaves globais; OPCIONAL, o padrão é FALSE</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>timeoutInSeconds</emphasis></entry>
+
+            <entry>O número de segundos a aguardar até que o SOAPCALL subjacente seja concluído; defina como zero para aguardar indefinidamente; OPCIONAL, o padrão é zero</entry>
+          </row>
+
+          <row>
+            <entry>Retorno:<emphasis/></entry>
+
+            <entry>Um RECORD <emphasis>DeleteNamespaceResponseRec</emphasis></entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable>
+
+    <para>A função <emphasis role="bold">DeleteNamespace</emphasis> exclui o namespace definido para este módulo e todas as chaves e valores definidos dentro dele.</para>
+
+    <para>Exemplo:</para>
+
+    <programlisting format="linespecific">IMPORT STD;
+
+myStore := STD.System.Store();
+myNamespace := myStore.WithNamespace('TempData', 'MyStore');
+
+// Delete the entire namespace and all its keys
+result := myNamespace.DeleteNamespace();
+OUTPUT(result.succeeded);
+
+// Delete a user-specific namespace
+privateNamespace := myStore.WithNamespace('PrivateTemp', 'MyPrivateStore');
+result2 := privateNamespace.DeleteNamespace(TRUE);
+OUTPUT(result2.succeeded);</programlisting>
+
+    <para>Ver também: <link
+    linkend="DeleteNamespaceResponseRec">DeleteNamespaceResponseRec</link></para>
+  </sect1>
+
+  <sect1 id="Store_Record_Definitions">
+    <title>Definições de Registro</title>
+
+    <para>O módulo Store exporta várias definições de RECORD que são usadas como tipos de retorno para as diversas funções. Esses registros fornecem acesso estruturado aos resultados e às informações de erro.</para>
+
+    <para>Todos os registros de resposta incluem campos de tratamento de exceções para fornecer informações detalhadas de erro quando as operações falham. Verifique o campo <emphasis>has_exceptions</emphasis> antes de acessar os resultados da operação.</para>
+
+    <sect2 id="ExceptionLayout">
+      <title>ExceptionLayout</title>
+
+      <para>Define a estrutura de uma única exceção ou mensagem de erro.</para>
+
+      <programlisting format="linespecific">EXPORT ExceptionLayout := RECORD
+  STRING    code;
+  STRING    audience;
+  STRING    source;
+  STRING    message;
+END;</programlisting>
+
+      <informaltable colsep="1" frame="all" rowsep="1">
+        <tgroup cols="2">
+          <colspec colwidth="120.50pt"/>
+
+          <colspec/>
+
+          <tbody>
+            <row>
+              <entry>
+                <emphasis>code</emphasis>
+              </entry>
+
+              <entry>Código de erro que identifica o tipo de exceção</entry>
+            </row>
+
+            <row>
+              <entry>
+                <emphasis>audience</emphasis>
+              </entry>
+
+              <entry>Público-alvo da mensagem de exceção</entry>
+            </row>
+
+            <row>
+              <entry>
+                <emphasis>source</emphasis>
+              </entry>
+
+              <entry>Componente de origem que gerou a exceção</entry>
+            </row>
+
+            <row>
+              <entry>
+                <emphasis>message</emphasis>
+              </entry>
+
+              <entry>Descrição legível por humanos da exceção</entry>
+            </row>
+          </tbody>
+        </tgroup>
+      </informaltable>
+    </sect2>
+
+    <sect2 id="ExceptionListLayout">
+      <title>ExceptionListLayout</title>
+
+      <para>Contém uma lista de exceções que ocorreram durante uma operação.</para>
+
+      <programlisting format="linespecific">EXPORT ExceptionListLayout := RECORD
+  STRING                       source;
+  DATASET(ExceptionLayout)     exceptions;
+END;</programlisting>
+
+      <informaltable colsep="1" frame="all" rowsep="1">
+        <tgroup cols="2">
+          <colspec colwidth="120.50pt"/>
+
+          <colspec/>
+
+          <tbody>
+            <row>
+              <entry>
+                <emphasis>source</emphasis>
+              </entry>
+
+              <entry>Componente de origem que gerou a exceçãos</entry>
+            </row>
+
+            <row>
+              <entry>
+                <emphasis>exceptions</emphasis>
+              </entry>
+
+              <entry>Dataset de registros ExceptionLayout contendo informações detalhadas de exceção</entry>
+            </row>
+          </tbody>
+        </tgroup>
+      </informaltable>
+    </sect2>
+
+    <sect2 id="StoreInfoRec">
+      <title>StoreInfoRec</title>
+
+      <para>Contém informações sobre um key/value store.</para>
+
+      <programlisting format="linespecific">EXPORT StoreInfoRec := RECORD
+  STRING        store_name;
+  STRING        description;
+  STRING        owner;
+  STRING        create_time;
+  UNSIGNED4     max_value_size;
+  BOOLEAN       is_default;
+END;</programlisting>
+
+      <informaltable colsep="1" frame="all" rowsep="1">
+        <tgroup cols="2">
+          <colspec colwidth="120.50pt"/>
+
+          <colspec/>
+
+          <tbody>
+            <row>
+              <entry>
+                <emphasis>store_name</emphasis>
+              </entry>
+
+              <entry>Nome do store</entry>
+            </row>
+
+            <row>
+              <entry>
+                <emphasis>description</emphasis>
+              </entry>
+
+              <entry>Descrição da finalidade do store</entry>
+            </row>
+
+            <row>
+              <entry>
+                <emphasis>owner</emphasis>
+              </entry>
+
+              <entry>Username do proprietário do store</entry>
+            </row>
+
+            <row>
+              <entry>
+                <emphasis>create_time</emphasis>
+              </entry>
+
+              <entry>Timestamp de quando o store foi criado</entry>
+            </row>
+
+            <row>
+              <entry>
+                <emphasis>max_value_size</emphasis>
+              </entry>
+
+              <entry>Tamanho máximo em bytes para valores armazenados neste store</entry>
+            </row>
+
+            <row>
+              <entry>
+                <emphasis>is_default</emphasis>
+              </entry>
+
+              <entry>TRUE se este for o store padrão do cluster</entry>
+            </row>
+          </tbody>
+        </tgroup>
+      </informaltable>
+    </sect2>
+
+    <sect2 id="ListStoresResponseRec">
+      <title>ListStoresResponseRec</title>
+
+      <para>Registro de resposta retornado pela função ListStores.</para>
+
+      <programlisting format="linespecific">EXPORT ListStoresResponseRec := RECORD
+  DATASET(StoreInfoRec)       stores;
+  BOOLEAN                     has_exceptions;
+  ExceptionListLayout         exceptions;
+END;</programlisting>
+
+      <informaltable colsep="1" frame="all" rowsep="1">
+        <tgroup cols="2">
+          <colspec colwidth="120.50pt"/>
+
+          <colspec/>
+
+          <tbody>
+            <row>
+              <entry>
+                <emphasis>stores</emphasis>
+              </entry>
+
+              <entry>Dataset de registros StoreInfoRec contendo informações sobre cada store correspondente</entry>
+            </row>
+
+            <row>
+              <entry>
+                <emphasis>has_exceptions</emphasis>
+              </entry>
+
+              <entry>TRUE se alguma exceção ocorreu durante a operação</entry>
+            </row>
+
+            <row>
+              <entry>
+                <emphasis>exceptions</emphasis>
+              </entry>
+
+              <entry>Registro ExceptionListLayout contendo quaisquer detalhes de erro</entry>
+            </row>
+          </tbody>
+        </tgroup>
+      </informaltable>
+    </sect2>
+
+    <sect2 id="CreateStoreResponseRec">
+      <title>CreateStoreResponseRec</title>
+
+      <para>Registro de resposta retornado pela função CreateStore.</para>
+
+      <programlisting format="linespecific">EXPORT CreateStoreResponseRec := RECORD
+  BOOLEAN                     succeeded;
+  BOOLEAN                     already_present;
+  STRING                      store_name;
+  STRING                      description;
+  BOOLEAN                     has_exceptions;
+  ExceptionListLayout         exceptions;
+END;</programlisting>
+
+      <informaltable colsep="1" frame="all" rowsep="1">
+        <tgroup cols="2">
+          <colspec colwidth="120.50pt"/>
+
+          <colspec/>
+
+          <tbody>
+            <row>
+              <entry>
+                <emphasis>succeeded</emphasis>
+              </entry>
+
+              <entry>TRUE se um novo store foi criado; FALSE se o store já existia ou se ocorreu um erro</entry>
+            </row>
+
+            <row>
+              <entry>
+                <emphasis>already_present</emphasis>
+              </entry>
+
+              <entry>TRUE se o store já existia</entry>
+            </row>
+
+            <row>
+              <entry>
+                <emphasis>store_name</emphasis>
+              </entry>
+
+              <entry>Nome do store</entry>
+            </row>
+
+            <row>
+              <entry>
+                <emphasis>description</emphasis>
+              </entry>
+
+              <entry>Descrição do store</entry>
+            </row>
+
+            <row>
+              <entry>
+                <emphasis>has_exceptions</emphasis>
+              </entry>
+
+              <entry>TRUE se alguma exceção ocorreu durante a operação</entry>
+            </row>
+
+            <row>
+              <entry>
+                <emphasis>exceptions</emphasis>
+              </entry>
+
+              <entry>Registro ExceptionListLayout contendo quaisquer detalhes de erro</entry>
+            </row>
+          </tbody>
+        </tgroup>
+      </informaltable>
+    </sect2>
+
+    <sect2 id="SetKeyValueResponseRec">
+      <title>SetKeyValueResponseRec</title>
+
+      <para>Registro de resposta retornado pela função SetKeyValue.</para>
+
+      <programlisting format="linespecific">EXPORT SetKeyValueResponseRec := RECORD
+  BOOLEAN                     succeeded;
+  BOOLEAN                     has_exceptions;
+  ExceptionListLayout         exceptions;
+END;</programlisting>
+
+      <informaltable colsep="1" frame="all" rowsep="1">
+        <tgroup cols="2">
+          <colspec colwidth="120.50pt"/>
+
+          <colspec/>
+
+          <tbody>
+            <row>
+              <entry>
+                <emphasis>succeeded</emphasis>
+              </entry>
+
+              <entry>TRUE se o key/value foi definido com sucesso</entry>
+            </row>
+
+            <row>
+              <entry>
+                <emphasis>has_exceptions</emphasis>
+              </entry>
+
+              <entry>TRUE se alguma exceção ocorreu durante a operação</entry>
+            </row>
+
+            <row>
+              <entry>
+                <emphasis>exceptions</emphasis>
+              </entry>
+
+              <entry>Registro ExceptionListLayout contendo quaisquer detalhes de erro</entry>
+            </row>
+          </tbody>
+        </tgroup>
+      </informaltable>
+    </sect2>
+
+    <sect2 id="GetKeyValueResponseRec">
+      <title>GetKeyValueResponseRec</title>
+
+      <para>Registro de resposta retornado pela função GetKeyValue.</para>
+
+      <programlisting format="linespecific">EXPORT GetKeyValueResponseRec := RECORD
+  BOOLEAN                     was_found;
+  STRING                      value;
+  BOOLEAN                     has_exceptions;
+  ExceptionListLayout         exceptions;
+END;</programlisting>
+
+      <informaltable colsep="1" frame="all" rowsep="1">
+        <tgroup cols="2">
+          <colspec colwidth="120.50pt"/>
+
+          <colspec/>
+
+          <tbody>
+            <row>
+              <entry>
+                <emphasis>was_found</emphasis>
+              </entry>
+
+              <entry>TRUE se a chave foi encontrada; FALSE se a chave não existe</entry>
+            </row>
+
+            <row>
+              <entry>
+                <emphasis>value</emphasis>
+              </entry>
+
+              <entry>O valor associado à chave, se encontrado</entry>
+            </row>
+
+            <row>
+              <entry>
+                <emphasis>has_exceptions</emphasis>
+              </entry>
+
+              <entry>TRUE se alguma exceção ocorreu durante a operação</entry>
+            </row>
+
+            <row>
+              <entry>
+                <emphasis>exceptions</emphasis>
+              </entry>
+
+              <entry>Registro ExceptionListLayout contendo quaisquer detalhes de erro</entry>
+            </row>
+          </tbody>
+        </tgroup>
+      </informaltable>
+    </sect2>
+
+    <sect2 id="DeleteKeyValueResponseRec">
+      <title>DeleteKeyValueResponseRec</title>
+
+      <para>Registro de resposta retornado pela função DeleteKeyValue.</para>
+
+      <programlisting format="linespecific">EXPORT DeleteKeyValueResponseRec := RECORD
+  BOOLEAN                     succeeded;
+  BOOLEAN                     has_exceptions;
+  ExceptionListLayout         exceptions;
+END;</programlisting>
+
+      <informaltable colsep="1" frame="all" rowsep="1">
+        <tgroup cols="2">
+          <colspec colwidth="120.50pt"/>
+
+          <colspec/>
+
+          <tbody>
+            <row>
+              <entry>
+                <emphasis>succeeded</emphasis>
+              </entry>
+
+              <entry>TRUE se o key/value foi excluído com sucesso</entry>
+            </row>
+
+            <row>
+              <entry>
+                <emphasis>has_exceptions</emphasis>
+              </entry>
+
+              <entry>TRUE se alguma exceção ocorreu durante a operação</entry>
+            </row>
+
+            <row>
+              <entry>
+                <emphasis>exceptions</emphasis>
+              </entry>
+
+              <entry>Registro ExceptionListLayout contendo quaisquer detalhes de erro</entry>
+            </row>
+          </tbody>
+        </tgroup>
+      </informaltable>
+    </sect2>
+
+    <sect2 id="GetAllKeysResponseRec">
+      <title>GetAllKeysResponseRec</title>
+
+      <para>Registro de resposta retornado pela função GetAllKeys.</para>
+
+      <programlisting format="linespecific">EXPORT GetAllKeysResponseRec := RECORD
+  STRING                      namespace;
+  DATASET(KeySetRec)          keys;
+  BOOLEAN                     has_exceptions;
+  ExceptionListLayout         exceptions;
+END;</programlisting>
+
+      <informaltable colsep="1" frame="all" rowsep="1">
+        <tgroup cols="2">
+          <colspec colwidth="120.50pt"/>
+
+          <colspec/>
+
+          <tbody>
+            <row>
+              <entry>
+                <emphasis>namespace</emphasis>
+              </entry>
+
+              <entry>Nome do namespace</entry>
+            </row>
+
+            <row>
+              <entry>
+                <emphasis>keys</emphasis>
+              </entry>
+
+              <entry>Dataset contendo todas as chaves definidas no namespace</entry>
+            </row>
+
+            <row>
+              <entry>
+                <emphasis>has_exceptions</emphasis>
+              </entry>
+
+              <entry>TRUE se alguma exceção ocorreu durante a operação</entry>
+            </row>
+
+            <row>
+              <entry>
+                <emphasis>exceptions</emphasis>
+              </entry>
+
+              <entry>Registro ExceptionListLayout contendo quaisquer detalhes de erro</entry>
+            </row>
+          </tbody>
+        </tgroup>
+      </informaltable>
+    </sect2>
+
+    <sect2 id="GetAllKeyValuesResponseRec">
+      <title>GetAllKeyValuesResponseRec</title>
+
+      <para>Registro de resposta retornado pela função GetAllKeyValues.</para>
+
+      <programlisting format="linespecific">EXPORT GetAllKeyValuesResponseRec := RECORD
+  STRING                      namespace;
+  DATASET(KeyValueRec)        key_values;
+  BOOLEAN                     has_exceptions;
+  ExceptionListLayout         exceptions;
+END;</programlisting>
+
+      <informaltable colsep="1" frame="all" rowsep="1">
+        <tgroup cols="2">
+          <colspec colwidth="120.50pt"/>
+
+          <colspec/>
+
+          <tbody>
+            <row>
+              <entry>
+                <emphasis>namespace</emphasis>
+              </entry>
+
+              <entry>Nome do namespace</entry>
+            </row>
+
+            <row>
+              <entry>
+                <emphasis>key_values</emphasis>
+              </entry>
+
+              <entry>Dataset contendo todos os pares key/value definidos no namespace</entry>
+            </row>
+
+            <row>
+              <entry>
+                <emphasis>has_exceptions</emphasis>
+              </entry>
+
+              <entry>TRUE se alguma exceção ocorreu durante a operação</entry>
+            </row>
+
+            <row>
+              <entry>
+                <emphasis>exceptions</emphasis>
+              </entry>
+
+              <entry>Registro ExceptionListLayout contendo quaisquer detalhes de erro</entry>
+            </row>
+          </tbody>
+        </tgroup>
+      </informaltable>
+    </sect2>
+
+    <sect2 id="ListNamespacesResponseRec">
+      <title>ListNamespacesResponseRec</title>
+
+      <para>Registro de resposta retornado pela função ListNamespaces.</para>
+
+      <programlisting format="linespecific">EXPORT ListNamespacesResponseRec := RECORD
+  DATASET(NamespaceLayout)    namespaces;
+  BOOLEAN                     has_exceptions;
+  ExceptionListLayout         exceptions;
+END;</programlisting>
+
+      <informaltable colsep="1" frame="all" rowsep="1">
+        <tgroup cols="2">
+          <colspec colwidth="120.50pt"/>
+
+          <colspec/>
+
+          <tbody>
+            <row>
+              <entry>
+                <emphasis>namespaces</emphasis>
+              </entry>
+
+              <entry>Dataset contendo todos os namespaces definidos no store</entry>
+            </row>
+
+            <row>
+              <entry>
+                <emphasis>has_exceptions</emphasis>
+              </entry>
+
+              <entry>TRUE se alguma exceção ocorreu durante a operação</entry>
+            </row>
+
+            <row>
+              <entry>
+                <emphasis>exceptions</emphasis>
+              </entry>
+
+              <entry>Registro ExceptionListLayout contendo quaisquer detalhes de erro</entry>
+            </row>
+          </tbody>
+        </tgroup>
+      </informaltable>
+    </sect2>
+
+    <sect2 id="DeleteNamespaceResponseRec">
+      <title>DeleteNamespaceResponseRec</title>
+
+      <para>Registro de resposta retornado pela função DeleteNamespace.</para>
+
+      <programlisting format="linespecific">EXPORT DeleteNamespaceResponseRec := RECORD
+  BOOLEAN                     succeeded;
+  BOOLEAN                     has_exceptions;
+  ExceptionListLayout         exceptions;
+END;</programlisting>
+
+      <informaltable colsep="1" frame="all" rowsep="1">
+        <tgroup cols="2">
+          <colspec colwidth="120.50pt"/>
+
+          <colspec/>
+
+          <tbody>
+            <row>
+              <entry>
+                <emphasis>succeeded</emphasis>
+              </entry>
+
+              <entry>TRUE se o namespace foi excluído com sucesso</entry>
+            </row>
+
+            <row>
+              <entry>
+                <emphasis>has_exceptions</emphasis>
+              </entry>
+
+              <entry>TRUE se alguma exceção ocorreu durante a operação</entry>
+            </row>
+
+            <row>
+              <entry>
+                <emphasis>exceptions</emphasis>
+              </entry>
+
+              <entry>Registro ExceptionListLayout contendo quaisquer detalhes de erro</entry>
+            </row>
+          </tbody>
+        </tgroup>
+      </informaltable>
+    </sect2>
+  </sect1>
+</chapter>

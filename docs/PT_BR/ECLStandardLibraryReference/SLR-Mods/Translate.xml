@@ -10,8 +10,15 @@
       <primary>Str.Translate</primary>
     </indexterm><indexterm>
       <primary>Translate</primary>
-    </indexterm>(</emphasis> <emphasis>source, search, replacement</emphasis>
-  <emphasis role="bold">)</emphasis> <emphasis role="bold"/></para>
+    </indexterm>(</emphasis> <emphasis>src, search, replacement</emphasis>
+  <emphasis role="bold">)</emphasis> <emphasis role="bold"></emphasis></para>
+
+  <para><emphasis role="bold">STD.Uni.Translate<indexterm>
+      <primary>STD.Uni.Translate</primary>
+    </indexterm><indexterm>
+      <primary>Uni.Translate</primary>
+    </indexterm>(</emphasis> <emphasis>text, search, replacement</emphasis>
+  <emphasis role="bold">)</emphasis> <emphasis role="bold"></emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -43,7 +50,7 @@
         </row>
 
         <row>
-          <entry>Return:<emphasis> </emphasis></entry>
+          <entry>Retorno:<emphasis> </emphasis></entry>
 
           <entry>Translate retorna um valor de STRING.</entry>
         </row>

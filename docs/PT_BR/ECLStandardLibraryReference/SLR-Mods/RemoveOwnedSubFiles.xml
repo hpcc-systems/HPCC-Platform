@@ -10,9 +10,7 @@
       <primary>File.RemoveOwnedSubFiles</primary>
     </indexterm><indexterm>
       <primary>RemoveOwnedSubFiles</primary>
-    </indexterm>(</emphasis> <emphasis> superfile</emphasis><emphasis
-  role="bold"> [</emphasis> <emphasis>, delete</emphasis> <emphasis
-  role="bold">])</emphasis></para>
+    </indexterm>(</emphasis> <emphasis>superName, del</emphasis> <emphasis role="bold">)</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -22,14 +20,14 @@
 
       <tbody>
         <row>
-          <entry><emphasis>superfile</emphasis></entry>
+          <entry><emphasis>superName</emphasis></entry>
 
           <entry>Uma string terminada por nulo que contém o nome lógico do
           superarquivo.</entry>
         </row>
 
         <row>
-          <entry><emphasis>delete</emphasis></entry>
+          <entry><emphasis>del</emphasis></entry>
 
           <entry>Um indicador booleano que especifica se os subarquivos serão
           excluídos do disco ou apenas removidos da lista de arquivos do

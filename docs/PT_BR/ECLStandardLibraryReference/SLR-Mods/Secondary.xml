@@ -2,7 +2,7 @@
 <!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="Secondary">
-  <title><emphasis role="bold">Secondary</emphasis></title>
+  <title>Secondary</title>
 
   <para><emphasis role="bold">STD.Metaphone.Secondary<indexterm>
       <primary>Std.Metaphone.Secondary</primary>
@@ -10,13 +10,13 @@
       <primary>Metaphone.Secondary</primary>
     </indexterm><indexterm>
       <primary>Secondary</primary>
-    </indexterm>(</emphasis> source <emphasis role="bold">) </emphasis></para>
+    </indexterm>(</emphasis> <emphasis>src</emphasis> <emphasis role="bold">)</emphasis></para>
 
   <para><emphasis role="bold">STD.Metaphone3.Secondary<indexterm>
       <primary>Std.Metaphone3.Secondary</primary>
-    </indexterm>(</emphasis> source <emphasis role="bold">) </emphasis></para>
+    </indexterm>(</emphasis> <emphasis>src, encodeVowels, encodeExact, maxLength</emphasis> <emphasis role="bold">)</emphasis></para>
 
-  <para/>
+  <para></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">

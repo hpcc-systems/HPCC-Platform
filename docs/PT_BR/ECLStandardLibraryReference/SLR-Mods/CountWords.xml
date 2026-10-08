@@ -10,8 +10,13 @@
       <primary>Str.CountWords</primary>
     </indexterm><indexterm>
       <primary>CountWords</primary>
-    </indexterm>(</emphasis> <emphasis>source, separator </emphasis><emphasis
-  role="bold">)</emphasis></para>
+    </indexterm>(</emphasis> <emphasis>src, separator, allow_blank</emphasis> <emphasis role="bold">)</emphasis></para>
+
+  <para><emphasis role="bold">STD.Uni.CountWords<indexterm>
+      <primary>STD.Uni.CountWords</primary>
+    </indexterm><indexterm>
+      <primary>Uni.CountWords</primary>
+    </indexterm>(</emphasis> <emphasis>src, separator, allow_blank</emphasis><emphasis role="bold">)</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -21,7 +26,7 @@
 
       <tbody>
         <row>
-          <entry><emphasis>source</emphasis></entry>
+          <entry><emphasis>src</emphasis></entry>
 
           <entry>Uma string que contém as palavras a serem contadas.</entry>
         </row>
@@ -32,9 +37,18 @@
           <entry>Uma string que contém o delimitador de palavras a ser
           usado.</entry>
         </row>
+        <row>
+          <entry><emphasis>allow_blank</emphasis></entry>
+
+          <entry>Opcional. Um valor BOOLEAN que indica se itens de string
+          vazios/em branco são incluídos nos resultados. O padrão é
+          FALSE</entry>
+        </row>
+
+
 
         <row>
-          <entry>Return:</entry>
+          <entry>Retorno:</entry>
 
           <entry>CountWords retorna um valor inteiro.</entry>
         </row>
@@ -45,6 +59,10 @@
   <para>A função <emphasis role="bold">CountWords </emphasis> retorna o número
   de palavras na string <emphasis>source</emphasis> baseado no separador
   <emphasis>especificado</emphasis>.</para>
+
+
+  <para>As palavras são separadas por uma ou mais strings separadoras. Nenhum
+  espaço é removido de qualquer string antes da correspondência.</para>
 
   <para>Exemplo:</para>
 

@@ -5,14 +5,12 @@
   <title>DeleteLogicalFile</title>
 
   <para><emphasis role="bold">STD.File.DeleteLogicalFile<indexterm>
-      <primary>STD.File.DeleteLogicalFiles</primary>
+      <primary>STD.File.DeleteLogicalFile</primary>
     </indexterm><indexterm>
-      <primary>File.DeleteLogicalFiles</primary>
+      <primary>File.DeleteLogicalFile</primary>
     </indexterm><indexterm>
-      <primary>DeleteLogicalFiles</primary>
-    </indexterm>(</emphasis> <emphasis> filename </emphasis> <emphasis
-  role="bold">[</emphasis> <emphasis>, ifexists </emphasis> <emphasis
-  role="bold">] )</emphasis></para>
+      <primary>DeleteLogicalFile</primary>
+    </indexterm>(</emphasis> <emphasis>lfn, allowMissing</emphasis> <emphasis role="bold">)</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -22,13 +20,13 @@
 
       <tbody>
         <row>
-          <entry><emphasis>filename</emphasis></entry>
+          <entry><emphasis>lfn</emphasis></entry>
 
           <entry>Uma string terminada por nulo que contém o nome lógico do arquivo.</entry>
         </row>
 
         <row>
-          <entry><emphasis>ifexists</emphasis></entry>
+          <entry><emphasis>allowMissing</emphasis></entry>
 
           <entry>Opcional. Um valor booleano que indica se um erro deverá ser publicado se o  <emphasis>filename</emphasis>  não existir. Se omitido, o padrão é FALSE.</entry>
         </row>

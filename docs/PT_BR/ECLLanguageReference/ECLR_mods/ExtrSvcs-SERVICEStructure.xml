@@ -2,13 +2,13 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="SERVICE_Structure" role="nobrk">
-  <title>Estrutura SERVICE<indexterm>
+  <title>SERVICE Structure<indexterm>
       <primary>SERVICE Structure</primary>
     </indexterm></title>
 
   <para><emphasis>servicename </emphasis><emphasis role="bold">:= SERVICE [ :
   </emphasis><emphasis>defaultkeywords</emphasis><emphasis role="bold">
-  ]</emphasis><emphasis role="bold"> </emphasis><emphasis/></para>
+  [,TIME[(</emphasis><emphasis>label<emphasis role="bold">)]]]</emphasis></emphasis></para>
 
   <para><emphasis> prototype </emphasis>:
   <emphasis>keywordlist</emphasis>;<emphasis role="bold"> </emphasis></para>
@@ -17,9 +17,9 @@
 
   <para><informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
-        <colspec colwidth="85.30pt"/>
+        <colspec colwidth="85.30pt" />
 
-        <colspec/>
+        <colspec />
 
         <tbody>
           <row>
@@ -34,6 +34,20 @@
             <entry>Opcional. Uma lista delimitada por vírgula das
             palavras-chave padrão e seus valores compartilhados por todos os
             protótipos no serviço externo.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">TIME</emphasis></entry>
+
+            <entry>Rastreia o tempo de todas as chamadas de função na estrutura SERVICE
+            e o informa de volta ao usuário como métricas.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>label</emphasis></entry>
+
+            <entry>Opcional. Uma constante de string que contém o nome a associar ao
+            temporizador. Se omitida, o padrão será usado.</entry>
           </row>
 
           <row>
@@ -62,13 +76,19 @@
 
   <para>Exemplo:</para>
 
-  <programlisting>  email := SERVICE
+  <programlisting>  email := SERVICE :TIME('MyTime')
     simpleSend( STRING address,
             STRING template,
             STRING subject) : LIBRARY='ecl2cw',
                  INITFUNCTION='initEcl2Cw';
     END;
-  MyAttr := COUNT(Trades): FAILURE(email.simpleSend('help@ln_risk.com',
+
+  display := SERVICE
+    echo(CONST STRING src)
+      : entrypoint='rtlEcho',DEPRECATED('Use function echoecho instead.');
+  END;
+<!--#synthpii-->
+  MyAttr := COUNT(Trades): FAILURE(email.simpleSend('help@example.com',
                           'FailTemplate',
                           'COUNT failure'));
   //An example of a SERVICE function returning a structured record
@@ -122,7 +142,6 @@
   END;
 </programlisting>
 
-  <para>Ver também: <link
-  linkend="External_Service_Implementation">Implementação de Serviços
+  <para>Ver também: <link linkend="External_Service_Implementation">Implementação de Serviços
   Externos</link>, <link linkend="CONST">CONST</link></para>
 </sect1>

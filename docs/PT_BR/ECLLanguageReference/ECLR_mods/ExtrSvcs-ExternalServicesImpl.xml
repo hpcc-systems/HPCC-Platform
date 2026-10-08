@@ -2,42 +2,40 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="External_Service_Implementation">
-  <title>Implementação de Serviços Externos</title>
+  <title>External Service Implementation</title>
 
-  <para>Os serviços de sistema externos da ECL <indexterm>
+  <para>ECL external system services<indexterm>
       <primary>external system services</primary>
     </indexterm><indexterm>
       <primary>External Service</primary>
-    </indexterm> são implementados como funções exportadas em um .SO (Shared
-  Object) <indexterm>
+    </indexterm> are implemented as exported functions in a .SO (Shared
+  Object)<indexterm>
       <primary>.SO</primary>
     </indexterm><indexterm>
       <primary>Shared Object</primary>
-    </indexterm>. Um serviço de sistema da ECL .SO pode conter um ou mais
-  serviços e (possivelmente) uma única rotina de inicialização de .SO. Todas
-  as bibliotecas de serviços de sistema devem ser codificadas como seguras
-  para linha de execução (thread).</para>
+    </indexterm>. An ECL system service .SO can contain one or more services
+  and (possibly) a single .SO initialization routine. All system service
+  libraries must be thread safe.</para>
 
-  <para>Todas as funções exportadas no .SO (denominadas neste documento como
-  "pontos de entrada") devem cumprir algumas convenções de chamada e
-  nomenclatura. Primeiro, os pontos de entrada devem usar a convenção de
-  nomenclatura "C". Ou seja, a decoração do nome da função (como a usada pelo
-  C++) não é permitida.</para>
+  <para>All exported functions in the .SO (hereafter referred to as "entry
+  points") must adhere to certain calling and naming conventions. First, entry
+  points must use the "C" naming convention. That is, function name decoration
+  (like that used by C++) is not allowed.</para>
 
-  <para>Segundo, a classe de armazenamento de __declspec(dllexport) e o tipo
-  de declaração _cdecl devem ser declarados para aplicativos Windows/Microsoft
-  C++. Normalmente, SERVICE_CALL é definido como _declspec(dllexport) e
-  SERVICE_API é definida como _cdecl para Windows e deixada como nulos para
-  Linux. Por exemplo:</para>
+  <para>Second, the storage class of __declspec(dllexport) and declaration
+  type _cdecl need to be declared for Windows/Microsoft C++ applications.
+  Typically, SERVICE_CALL is defined as _declspec(dllexport) and SERVICE_API
+  is defined as _cdecl for Windows, and left as nulls for Linux. For
+  example:</para>
 
   <programlisting>Extern "C" _declspec(dllexport) unsigned _cdecl Countchars(const unsigned len, const char *string)</programlisting>
 
-  <para><emphasis role="bold">Note</emphasis>: O uso de um SERVICE externo
-  pode estar limitado a módulos assinados. Consulte Assinatura do código no
-  Guia do programador da ECL.</para>
+  <para><emphasis role="bold">Note</emphasis>: The use of an external SERVICE
+  may be restricted to signed modules. See Code Signing in the ECL
+  Programmer's Guide.</para>
 
   <sect2 id="DLL_Initialization">
-    <title>Inicialização .SO</title>
+    <title>.SO Initialization</title>
 
     <para>Veja a seguir um exemplo de protótipo de uma rotina de inicialização
     de um serviço de sistema (.SO) da ECL:</para>
@@ -62,7 +60,7 @@
   </sect2>
 
   <sect2 id="Entry_Points">
-    <title>Pontos de Entrada</title>
+    <title>Entry Points</title>
 
     <para>Pontos de entrada têm os mesmos requisitos de definição que as
     rotinas de inicialização. No entanto, ao contrário das rotinas de
@@ -77,13 +75,12 @@
   </sect2>
 
   <sect2 id="SERVICE_Structure_external">
-    <title>Estrutura SERVICE - externa<indexterm>
-        <primary>Estrutura SERVICE</primary>
+    <title>SERVICE Structure - external<indexterm>
+        <primary>SERVICE Structure</primary>
       </indexterm></title>
 
     <para>Para cada serviço de sistema definido, um protótipo de função ECL
-    correspondente deve ser declarado (consulte <emphasis
-    role="bold">Estrutura SERVICE</emphasis>).</para>
+    correspondente deve ser declarado (consulte <emphasis role="bold">Estrutura SERVICE</emphasis>).</para>
 
     <programlisting>  servicename := SERVICE
     functionname(parameter list) [: keyword = value];
@@ -98,7 +95,7 @@
   </sect2>
 
   <sect2 id="Keywords">
-    <title>Palavras-Chave<indexterm>
+    <title>Keywords<indexterm>
         <primary>Service Function Keywords</primary>
       </indexterm></title>
 
@@ -107,9 +104,9 @@
 
     <para><informaltable colsep="1" frame="all" rowsep="1">
         <tgroup cols="2">
-          <colspec colwidth="115.95pt"/>
+          <colspec colwidth="115.95pt" />
 
-          <colspec/>
+          <colspec />
 
           <tbody>
             <row>
@@ -127,11 +124,20 @@
             </row>
 
             <row>
-              <entry><emphasis>INITFUNCTION</emphasis></entry>
+              <entry><emphasis>DEPRECATED</emphasis></entry>
 
               <entry>Especifica o nome da rotina de inicialização definido no
               módulo que contém o ponto de entrada. No momento, a função de
-              inicialização é chamada uma vez.</entry>
+              inicialização é chamada uma vez.<literal>DEPRECATED('Use NewFunction
+              instead.')</literal>. See <link linkend="DEPRECATED">DEPRECATED</link>.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>INITFUNCTION</emphasis></entry>
+
+              <entry>Specifies the name of the initialization routine defined
+              in the module containing the entry point. Currently, the
+              initialization function is called once.</entry>
             </row>
 
             <row>
@@ -216,13 +222,28 @@
             <row>
               <entry><emphasis>GLOBALCONTEXT</emphasis></entry>
 
+              <entry>Internal use, only. Same as CONTEXT, but there are
+              restrictions on where the function can be used (for example, not
+              in a TRANSFORM).</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>CTXMETHOD</emphasis></entry>
+
+              <entry>Internal use, only. Indicates the function is actually a
+              method of the internal code context.</entry>
+            </row>
+
+            <row>
+              <entry>TIME</entry>
+
               <entry>Somente para uso interno. O mesmo que CONTEXT, mas há
               restrições sobre onde a função pode ser usada (por exemplo, não
               pode ser usada em TRANSFORM).</entry>
             </row>
 
             <row>
-              <entry><emphasis>CTXMETHOD</emphasis></entry>
+              <entry><emphasis>label</emphasis></entry>
 
               <entry>Somente para uso interno. Indica que a função é na
               verdade um método do contexto de código interno.</entry>
@@ -233,19 +254,18 @@
   </sect2>
 
   <sect2 id="Data_Types">
-    <title>Tipo de Dados</title>
+    <title>Data Types</title>
 
-    <para><emphasis role="bold">Consulte a documentação de <link
-    linkend="ECL_to_Cplus_Mapping">mapeamento de ECL para C++ </link> para
+    <para><emphasis role="bold">Consulte a documentação de <link linkend="ECL_to_Cplus_Mapping">mapeamento de ECL para C++ </link> para
     obter informações sobre o mapeamento de tipos de dados.</emphasis></para>
   </sect2>
 
   <sect2 id="Passing_Set_Parameters_to_a_Service">
-    <title>Transferindo os Parâmetros Set <indexterm>
+    <title>Passing Set Parameters<indexterm>
         <primary>Passing Set Parameters</primary>
       </indexterm><indexterm>
         <primary>Set Parameters</primary>
-      </indexterm> para um Serviço</title>
+      </indexterm> to a Service</title>
 
     <para>Três tipos de parâmetros de conjunto são permitidos: INTEGER, REAL e
     STRING<emphasis>n</emphasis>.</para>
@@ -282,8 +302,7 @@
 </programlisting>
 
     <para>O primeiro parâmetro contém o comprimento do conjunto e o segundo é
-    uma matriz de int que mantêm os elementos do conjunto. <emphasis
-    role="bold">Observação:</emphasis> Na declaração da função na ECL, você
+    uma matriz de int que mantêm os elementos do conjunto. <emphasis role="bold">Observação:</emphasis> Na declaração da função na ECL, você
     também pode ter conjuntos de INTEGER4, INTEGER2 e INTEGER1, mas precisa
     também alterar o tipo do parâmetro da função C. A relação é:</para>
 
@@ -337,8 +356,7 @@
     declara a função na ECL como um conjunto de REAL4, mas precisa alterar o
     parâmetro da função C para float.</para>
 
-    <para><emphasis role="bold">STRING</emphasis><emphasis
-    role="bold">n<indexterm>
+    <para><emphasis role="bold">STRING</emphasis><emphasis role="bold">n<indexterm>
         <primary>STRINGn</primary>
       </indexterm></emphasis></para>
 
@@ -387,7 +405,7 @@
   </sect2>
 
   <sect2 id="PlugIn_Requirements">
-    <title>Requerimentos do Plugin</title>
+    <title>Plugin Requirements</title>
 
     <para>No Windows, os plugins exigem uma função exportada com a seguinte
     assinatura:</para>
@@ -423,7 +441,7 @@
        // Text describing version of plugin - used in debugging
     Const char *description;
        // Text describing plugin
-  }</programlisting>
+  } </programlisting>
 
     <para>Para inicializar as informações em um plugin, use uma variável ou
     classe global. Ela será construída/destruída adequadamente quando o plugin
@@ -431,7 +449,7 @@
   </sect2>
 
   <sect2 id="Deployment">
-    <title>Implantação</title>
+    <title>Deployment</title>
 
     <para>.SOs externos devem ser implantados no diretório
     /opt/HPCCSystems/plugins em cada nó do ambiente de destino. Se forem
@@ -443,7 +461,7 @@
   </sect2>
 
   <sect2 id="Constraints">
-    <title>Restrições</title>
+    <title>Constraints</title>
 
     <para>A Refinaria de dados e os Motores de entrega de dados
     (Thor/Roxie/Doxie) oferecem suporte ao conjunto completo de tipos de
@@ -451,18 +469,17 @@
   </sect2>
 
   <sect2 id="An_Example_Service">
-    <title>Um exemplo de serviço</title>
+    <title>An Example Service</title>
 
     <para>O código a seguir mostra um serviço de sistema (.SO) da ECL,
-    denominado examplelib, que contém um ponto de entrada (<emphasis
-    role="bold">stringfind</emphasis>). Esta é uma versão ligeiramente
+    denominado examplelib, que contém um ponto de entrada (<emphasis role="bold">stringfind</emphasis>). Esta é uma versão ligeiramente
     modificada da função Find encontrada na biblioteca padrão Str. Esta versão
     foi projetada para funcionar no supercomputador da Refinaria de
     dados.</para>
   </sect2>
 
   <sect2 id="ECL_definitions">
-    <title>Definições ECL</title>
+    <title>ECL definitions</title>
 
     <programlisting>  EXPORT ExampleLib := SERVICE
     UNSIGNED4 StringFind(CONST STRING src,
@@ -473,7 +490,7 @@
   </sect2>
 
   <sect2 id="DLL_code_module">
-    <title>Código Módulo .SO:</title>
+    <title>.SO code module:</title>
 
     <para><programlisting>//******************************************************
   // hqlplugins.hpp : Defines standard values included
@@ -535,9 +552,9 @@
   }
   
   #endif //EXAMPLELIB_INCL
- </programlisting>
+  </programlisting>
 
-    <para/>
+    <para />
 
     <programlisting>//******************************************************
 // examplelib.cpp : Defines the plugin code.
@@ -587,7 +604,7 @@ using namespace nsExamplelib;
 
 EXAMPLELIB_API void setPluginContext(IPluginContext * _ctx) { parentCtx = _ctx; }
 
-//-------------------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------------------------------------------------------------------
 
 EXAMPLELIB_API unsigned EXAMPLELIB_CALL elStringFind(unsigned srcLen,
  const char * src, unsigned hitLen, const char * hit,
@@ -596,7 +613,7 @@ EXAMPLELIB_API unsigned EXAMPLELIB_CALL elStringFind(unsigned srcLen,
     tgt = (char *)CTXMALLOC(parentCtx, srcLen);
     memcpy(tgt,src,srcLen);
     tgtLen = srcLen;
-
+}
 </programlisting>
   </sect2>
 </sect1>

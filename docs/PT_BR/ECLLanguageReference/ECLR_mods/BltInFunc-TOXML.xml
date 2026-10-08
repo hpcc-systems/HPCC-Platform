@@ -4,16 +4,16 @@
 <sect1 id="TOXML">
   <title>TOXML</title>
 
-  <para><emphasis role="bold">TOXML<indexterm>
+  <para><emphasis role="bold">TOXML(</emphasis><emphasis> record
+  </emphasis><emphasis role="bold">[,ALL])</emphasis><indexterm>
       <primary>TOXML</primary>
     </indexterm><indexterm>
       <primary>TOXML function</primary>
-    </indexterm>(</emphasis><emphasis> record </emphasis><emphasis
-  role="bold">)</emphasis></para>
+    </indexterm></para>
 
   <para><informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
-        <colspec colwidth="77.95pt"/>
+        <colspec colwidth="77.95pt" />
 
         <tbody>
           <row>
@@ -24,15 +24,21 @@
           </row>
 
           <row>
-            <entry>Return:</entry>
+            <entry><emphasis role="bold">ALL</emphasis></entry>
 
-            <entry>TOXML retorna uma STRING UTF8.</entry>
+            <entry>Especifica que campos com strings vazias são incluídos na saída.
+            Sem o sinalizador ALL, <emphasis role="bold">TOXML</emphasis>
+            omite campos que contêm apenas espaços em branco ou ficam vazios
+            após a remoção de espaços.</entry>
+          </row>
+        <row>
+            <entry>Retorno:</entry>
+
+            <entry>TOXML retorna UTF8.</entry>
           </row>
         </tbody>
       </tgroup>
     </informaltable></para>
-
-  <para/>
 
   <para>A função <emphasis role="bold">TOXML </emphasis>retorna uma única
   string UTF-8 com os dados no <emphasis>registro</emphasis> reformatados como
@@ -42,7 +48,7 @@
 
   <para>Exemplo:</para>
 
-  <programlisting>namesRec1 := RECORD
+  <programlisting lang="ECL_Runnable">namesRec1 := RECORD
   UNSIGNED2 EmployeeID{xpath('EmpID')};
   STRING10  Firstname{xpath('FName')};
   STRING10  Lastname{xpath('LName')};
@@ -64,6 +70,5 @@ OUTPUT(rec2);
 //'&lt;employeeid&gt;42&lt;/employeeid&gt;&lt;firstname&gt;Fred&lt;/firstname&gt;&lt;lastname&gt;Flintstone&lt;/lastname&gt;'
 </programlisting>
 
-  <para>Ver também: <link linkend="ROW">ROW</link>, <link
-  linkend="FROMXML">FROMXML</link></para>
+  <para>Ver também: <link linkend="ROW">ROW</link>, <link linkend="FROMXML">FROMXML</link></para>
 </sect1>

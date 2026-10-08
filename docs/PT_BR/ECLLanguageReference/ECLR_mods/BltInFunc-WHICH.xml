@@ -43,9 +43,8 @@
 
   <para>Exemplo:</para>
 
-  <programlisting>  Accept := WHICH(Person.per_first_name = 'Fred',
-  Person.per_first_name = 'Sue');
-  //Accept is 0 for everyone but those named Fred or Sue
+  <programlisting lang="ECL" role="fragment">Accept := WHICH(Person.per_first_name = 'Fred',Person.per_first_name = 'Sue');
+                 //Accept is 0 for everyone but those named Fred or Sue
 </programlisting>
 
   <para>Ver também: <link linkend="REJECTED">REJECTED</link>, <link

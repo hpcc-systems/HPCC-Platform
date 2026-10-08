@@ -4,16 +4,13 @@
 <sect1 id="IMPORT_function">
   <title>IMPORT</title>
 
-  <para><emphasis>resulttype funcname</emphasis> <emphasis
-  role="bold">(</emphasis> <emphasis>parameterlist</emphasis> <emphasis
-  role="bold">) := IMPORT(<indexterm>
-      <primary>IMPORT function</primary>
-    </indexterm></emphasis> <emphasis>language, function </emphasis><emphasis
-  role="bold">);</emphasis></para>
+  <para><emphasis>resulttype funcname</emphasis> <emphasis role="bold">(</emphasis> <emphasis>parameterlist</emphasis> <emphasis role="bold">) := IMPORT(</emphasis> <emphasis>language, function</emphasis>
+  <emphasis role="bold">[:TIME</emphasis>
+  [(<emphasis>label</emphasis>)]<emphasis role="bold"> ]</emphasis><emphasis role="bold">)</emphasis>;</para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
-      <colspec colwidth="110"/>
+      <colspec colwidth="110" />
 
       <tbody>
         <row>
@@ -56,33 +53,38 @@
           <entry>Uma constante da string que contém o nome da função a ser
           incluída.</entry>
         </row>
+      <row>
+          <entry><emphasis role="bold">TIME</emphasis></entry>
+
+          <entry>Rastreia o tempo de uma chamada de função externa ou de código-fonte
+          incorporado e o informa de volta ao usuário como métricas.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>label</emphasis></entry>
+
+          <entry>Opcional. Uma constante de string que contém o nome a associar ao
+          temporizador. Se omitida, o padrão será usado.</entry>
+        </row>
       </tbody>
     </tgroup>
   </informaltable>
 
-  <para>A declaração <emphasis role="bold">IMPORT</emphasis> permite acionar
-  códigos existentes gravados em <emphasis>linguagem</emphasis> externa. Pode
-  ser usada para acionar código Java ou Python, mas não é utilizável com
-  código Javascript ou R (para isso, use a estrutura EMBED ). O código Java
-  deve ser colocado em um arquivo .java e compilado da forma usual através do
-  compilador javac. Todas as classes de Java usadas devem ser seguras quanto
-  ao thread (linha de execução).</para>
+  <para>A declaração <emphasis role="bold">IMPORT</emphasis> permite chamar
+  código existente escrito na <emphasis>language</emphasis> externa. O código
+  Java deve ser colocado em um arquivo .java e compilado com o compilador
+  javac da maneira usual. Todas as classes Java usadas devem ser thread-safe.</para>
 
-  <para><emphasis role="bold">ATENÇÃO: Esse recurso pode gerar corrupção de
-  memória e/ou problemas de segurança. Portanto, recomendamos cautela e uma
-  consideração detalhada. Consulte o Suporte Técnico antes de
-  usar.</emphasis></para>
+  <para><emphasis role="bold">AVISO: Este recurso pode criar corrupção de
+  memória e/ou problemas de segurança; portanto, recomenda-se muito cuidado e
+  planejamento -- consulte o Suporte Técnico antes de usar.</emphasis></para>
 
   <para>Exemplo:</para>
 
-  <programlisting lang="mixed" role="NOTrunnable">IMPORT Python3 AS Python;
-// This example illustrates scalar parameters and resuls
-integer add1(integer val) := EMBED(Python)
-  val+1
-ENDEMBED;
-add1(27); //returns 28
+  <programlisting lang="mixed" role="NOTrunnable">IMPORT JAVA;
+INTEGER jadd(INTEGER a, INTEGER b) := IMPORT(java, 'JavaCat.add:(II)I': TIME('MyTime'));
+jadd (22,23);
 </programlisting>
 
-  <para>Ver também: <link linkend="IMPORT">IMPORT</link>, <link
-  linkend="EMBED_Structure">Estrutura EMBED</link></para>
+  <para>Ver também: <link linkend="IMPORT">IMPORT</link>, <link linkend="EMBED_Structure">EMBED Structure</link></para>
 </sect1>

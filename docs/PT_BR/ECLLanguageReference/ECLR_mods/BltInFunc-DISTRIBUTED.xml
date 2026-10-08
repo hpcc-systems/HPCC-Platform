@@ -10,7 +10,8 @@
       <primary>DISTRIBUTED function</primary>
     </indexterm>(</emphasis><emphasis>recordset </emphasis><emphasis
   role="bold">[</emphasis><emphasis>, expression </emphasis><emphasis
-  role="bold">] )</emphasis></para>
+  role="bold">[</emphasis><emphasis>, ASSERT</emphasis><emphasis role="bold">]
+  ] )</emphasis></para>
 
   <para><informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
@@ -33,6 +34,14 @@
           </row>
 
           <row>
+            <entry><emphasis>ASSERT</emphasis></entry>
+
+            <entry>Opcional. Cria uma atividade leve que garante que o
+            dataset realmente esteja distribuído conforme esperado; caso
+            contrário, a workunit falha com uma exceção.</entry>
+          </row>
+
+          <row>
             <entry>Return:</entry>
 
             <entry>DISTRIBUTED retorna um conjunto de registros.</entry>
@@ -51,10 +60,16 @@
   função simplesmente oculta um aviso que é às vezes gerado informando que o
   <emphasis>recordset</emphasis> não foi distribuído.</para>
 
+  <para>Se <emphasis role="bold">ASSERT</emphasis> for especificado, o
+  compilador cria uma atividade leve que valida que os dados estão
+  distribuídos como declarado pela <emphasis>expression</emphasis> e falha a
+  workunit caso não estejam.</para>
+
   <para>Exemplo:</para>
 
-  <programlisting lang="ECL">MySet := DISTRIBUTED(Person,HASH32(Person.per_ssn));
-        //all people with the same SSN are already on the same node</programlisting>
+  <programlisting lang="ECL">MySet := DISTRIBUTED(Person,HASH32(Person.per_ssn),ASSERT);
+        //all people with the same SSN are already on the same node
+        //and ASSERT verifies the claimed distribution</programlisting>
 
   <para>Ver também: <link linkend="HASH32">HASH32</link>, <link
   linkend="DISTRIBUTE">DISTRIBUTE</link></para>

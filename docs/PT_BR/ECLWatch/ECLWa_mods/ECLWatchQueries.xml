@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+<!DOCTYPE article PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <book>
   <title>Wrapper</title>
@@ -35,6 +35,8 @@
       <para/>
     </legalnotice>
 
+    <corpname>HPCC Systems<superscript>®</superscript></corpname>
+
     <mediaobject role="logo">
       <imageobject>
         <imagedata fileref="../../images/LN_Rightjustified.jpg"/>
@@ -45,7 +47,7 @@
   <chapter id="WrapperECLWatchQueries">
     <title>Wrapper</title>
 
-    <para/>
+    <para>wrapper</para>
 
     <sect1 id="Queries_Page" role="nobrk">
       <title>Página de Consultas no ECL Watch</title>

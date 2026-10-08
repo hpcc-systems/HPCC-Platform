@@ -489,7 +489,7 @@
 
       <para>Exemplo:</para>
 
-      <programlisting>MySet1 := SORT(Person,-last_name, first_name);
+      <programlisting lang="ECL" role="notrunnable">MySet1 := SORT(Person,-last_name, first_name);
 // descending last name, ascending first name
 
 MySet2 := SORT(Person,RECORD,EXCEPT per_sex,per_marital_status);

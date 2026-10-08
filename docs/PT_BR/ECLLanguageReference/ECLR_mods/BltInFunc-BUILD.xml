@@ -23,9 +23,11 @@
   );</emphasis></para>
 
   <para><emphasis role="bold">[</emphasis><emphasis>attrname</emphasis>
-  :=<emphasis role="bold"> ] BUILD(</emphasis><emphasis> indexdef
-  </emphasis><emphasis role="bold">[, </emphasis><emphasis>options
-  </emphasis><emphasis role="bold">] );</emphasis></para>
+  :=<emphasis role="bold"> ] BUILD(</emphasis><emphasis> indexdef</emphasis>
+  <emphasis role="bold">[,</emphasis><emphasis>indexfile</emphasis><emphasis
+  role="bold">]</emphasis> <emphasis role="bold">[,
+  </emphasis><emphasis>options </emphasis><emphasis role="bold">]
+  );</emphasis></para>
 
   <para><emphasis role="bold">[</emphasis><emphasis>attrname</emphasis>
   :=<emphasis role="bold"> ] BUILD(</emphasis><emphasis> indexdef, dataset,
@@ -301,7 +303,9 @@
 
       <emphasis>option, value</emphasis>
 
-      <emphasis role="bold">) ]</emphasis>
+      <emphasis role="bold">) ] [,TRIM<indexterm>
+          <primary>TRIM</primary>
+        </indexterm>]</emphasis>
     </para>
 
     <para>
@@ -551,16 +555,17 @@
                 <emphasis role="bold">COMPRESSED</emphasis>
               </entry>
 
-              <entry>Especifica o tipo de compactação usado. Se omitido, o
-              padrão usado é LZW, uma variante do algoritimo Lempel-Ziv-Welch.
-              A especificação de ROW compacta as entradas do índice com base
-              nas diferenças entre linhas contíguas (usadas apenas com
-              registros de comprimento fixo), e é recomendada para uso em
-              situações onde o tempo mais rápido de descompactação é mais
-              importante do que a quantidade de compactação alcançada. FIRST
-              compacta os elementos principais comuns da chave (recomendado
-              apenas para uso na comparação de cronometragem de
-              tempo).</entry>
+              <entry><para>Opcional. Especifica que o índice deve ser
+              compactado usando o tipo de compactação especificado. Se
+              omitido, o padrão é <emphasis role="bold">LZW</emphasis>, uma
+              variante do algoritmo Lempel-Ziv-Welch. </para></entry>
+            </row>
+
+            <row>
+              <entry><emphasis>option</emphasis></entry>
+
+              <entry>Consulte <link linkend="IDXCOMP2">Indexes and
+              Compression</link> para ver as opções.</entry>
             </row>
 
             <row>
@@ -795,12 +800,17 @@
               qualquer tipo de valor, dependendo do tipo esperado pela
               opção.</entry>
             </row>
+
+            <row>
+              <entry><emphasis role="bold">TRIM</emphasis></entry>
+
+              <entry>Opcional. Esta opção especifica aparar strings de
+              comprimento variável antes de criar o índice.</entry>
+            </row>
           </tbody>
         </tgroup>
       </informaltable>
     </para>
-
-    <para/>
   </sect2>
 
   <sect2 id="BUILD_an_Access_Index">
@@ -864,30 +874,6 @@ BUILD(Vehicles,{lname,filepos},'vkey::lname');
       STRING20 lname,
       UNSIGNED8 filepos{VIRTUAL(fileposition)}},
       FLAT);
-BUILD(Vehicles,{st,city},{lname},'vkey::st.city');
- //build key into Vehicles dataset on state and city
- //payload the last name</programlisting>
-  </sect2>
-
-  <sect2 id="BUILD_from_an_INDEX_Definition">
-    <title>BUILD a partir de uma definição INDEX</title>
-
-    <para><emphasis role="bold">[</emphasis><emphasis>attrname</emphasis>
-    :=<emphasis role="bold"> ] BUILD(</emphasis><emphasis> indexdef
-    </emphasis><emphasis role="bold">[, </emphasis><emphasis>options
-    </emphasis><emphasis role="bold">] );</emphasis></para>
-
-    <para>A forma 3 cria um arquivo de índice usando uma definição INDEX
-    previamente especificada.</para>
-
-    <para>Exemplo:</para>
-
-    <programlisting>Vehicles := DATASET('vehicles',
-     {STRING2 st,
-      STRING20 city,
-      STRING20 lname,
-      UNSIGNED8 filepos{VIRTUAL(fileposition)}},
-      FLAT);
 BUILD(Vehicles,{st,city},{lname},'vkey::st.city1');
 //build key into Vehicles dataset on state and city
 //payload the last name
@@ -905,41 +891,73 @@ BUILD(Vehicles,SearchTerms,Payload,'vkey::st.city2');
 </programlisting>
   </sect2>
 
-  <para><emphasis role="bold">[</emphasis><emphasis>attrname</emphasis>
-  :=<emphasis role="bold"> ] BUILD(</emphasis><emphasis> indexdef, dataset
-  </emphasis><emphasis role="bold">[, </emphasis><emphasis>options
-  </emphasis><emphasis role="bold">] );</emphasis></para>
+  <sect2 id="BUILD_from_an_INDEX_Definition">
+    <title>BUILD a partir de uma definição INDEX</title>
 
-  <para>O Formulário 4 permite separar o índice do dataset, tornando-o fácil
-  de usar o formulário INDEX que não requer um dataset primeiro.</para>
+    <para><emphasis role="bold">[</emphasis><emphasis>attrname</emphasis>
+    :=<emphasis role="bold"> ] BUILD(</emphasis><emphasis> indexdef</emphasis>
+    <emphasis role="bold">[,</emphasis><emphasis>indexfile</emphasis><emphasis
+    role="bold">]</emphasis> <emphasis role="bold">[,
+    </emphasis><emphasis>options </emphasis><emphasis role="bold">]
+    );</emphasis></para>
 
-  <para>A forma usual de definir e construir um INDEX em termos do dataset
-  usado para criá-lo, por meio de uma declaração INDEX onde o o dataset é
-  nomeado como o primeiro parâmetro do INDEX. Isso é bom quando o dataset é
-  relativamente simples, mas há desvantagens:</para>
+    <para>A forma 3 cria um arquivo de índice usando uma definição INDEX
+    previamente especificada.</para>
 
-  <itemizedlist>
-    <listitem>
-      <para>O INDEX não pode ser separado logicamente do dataset que estava
-      criado a partir de.</para>
-    </listitem>
+    <para>Você também pode usar esta forma para criar um índice baseado em
+    dois índices submetidos a MERGE. Para gravar um índice submetido a MERGE
+    em disco, você deve usar a ação BUILD e incluir o parâmetro opcional
+    <emphasis>indexfile</emphasis>.</para>
 
-    <listitem>
-      <para>Se o dataset for muito complexo (Mb de fonte), quando o índice é
-      posteriormente usado em uma consulta, todo o código para criá-lo é
-      também analisado.</para>
-    </listitem>
-  </itemizedlist>
+    <para>Exemplo:</para>
 
-  <para>Esta forma de BUILD permite que os dois sejam separados, então você
-  pode omitir o parâmetro do dataset base da definição INDEX e apenas
-  especifique o dataset a ser usado na ação BUILD. Os campos são mapeados
-  automaticamente (por nome de campo) do dataset para o índice.</para>
+    <programlisting lang="ECL" role="NOTrunnable">nameKey := INDEX(mainTable,{surname,forename,filepos},'name.idx');
+BUILD(nameKey); //gets all info from the INDEX definition
 
-  <para>Exemplo:</para>
+// BUILDing a MERGEd index
+BUILD(MERGE(idx1,idx2,'~idx::MergedIndex');
+</programlisting>
 
-  <para>
-    <programlisting>//usual way to BUILD an INDEX:
+    <para>Ver também: <link linkend="MERGE">MERGE</link></para>
+  </sect2>
+
+  <sect2 id="SepIndexFromDS" role="brk">
+    <title>Separando INDEX de DATASET</title>
+
+    <para><emphasis role="bold">[</emphasis><emphasis>attrname</emphasis>
+    :=<emphasis role="bold"> ] BUILD(</emphasis><emphasis> indexdef, dataset,
+    </emphasis><emphasis role="bold">[, </emphasis><emphasis>options
+    </emphasis><emphasis role="bold">] );</emphasis></para>
+
+    <para>A forma 4 permite separar o índice do dataset, facilitando o uso da
+    forma de INDEX que não exige um dataset como primeiro parâmetro.</para>
+
+    <para>A forma usual de definir e criar um INDEX é em termos do dataset
+    usado para criá-lo, usando uma declaração INDEX em que o dataset é nomeado
+    como o primeiro parâmetro do INDEX. Isso funciona bem quando o dataset é
+    relativamente simples, mas há desvantagens:</para>
+
+    <itemizedlist>
+      <listitem>
+        <para>O INDEX não pode ser separado logicamente do dataset a partir do
+        qual foi criado.</para>
+      </listitem>
+
+      <listitem>
+        <para>Se o dataset for muito complicado (Mb de fonte), quando o índice
+        for usado posteriormente em uma query, todo o código para criá-lo
+        também será analisado.</para>
+      </listitem>
+    </itemizedlist>
+
+    <para>Esta forma de BUILD permite separar os dois, para que você possa
+    omitir o parâmetro do dataset base da definição INDEX e especificar apenas
+    o dataset a ser usado na ação BUILD. Os campos são mapeados
+    automaticamente (por nome de campo) do dataset para o índice.</para>
+
+    <para>Exemplos:</para>
+
+    <para><programlisting>//usual way to BUILD an INDEX:
 ds1 = DATASET(100, TRANSFORM({ UNSIGNED id }, SELF.id := COUNTER));
 i1 := INDEX(ds1, { id }, 'myIndex'); //specifies the dataset to always use
 BUILD(i1);
@@ -948,49 +966,42 @@ BUILD(i1);
 ds2 = DATASET(100, TRANSFORM({ UNSIGNED id }, SELF.id := COUNTER));
 i2 := INDEX({ UNSIGNED id }, 'myIndex');
 BUILD(i2, ds2);       //builds the i2 INDEX from the ds2 dataset
-</programlisting>
-  </para>
+</programlisting></para>
+  </sect2>
 
   <sect2 id="BUILD_a_Query_Library">
-    <title>BUILD uma Biblioteca de Consulta</title>
+    <title>BUILD uma Query Library</title>
 
-    <para>
-      <emphasis role="bold">BUILD(</emphasis>
+    <para><emphasis role="bold">BUILD(</emphasis><emphasis> library
+    </emphasis><emphasis role="bold">);</emphasis></para>
 
-      <emphasis>library</emphasis>
+    <para>A forma 5 cria uma query library externa <emphasis role="bold">para
+    uso apenas em hthor ou Roxie</emphasis>.</para>
 
-      <emphasis role="bold">);</emphasis>
-    </para>
+    <para>Uma query library permite que um conjunto de atributos relacionados
+    seja empacotado como uma unidade autocontida, para que o código possa ser
+    compartilhado entre diferentes workunits. Isso reduz o tempo necessário
+    para implantar um conjunto de atributos e também reduz a área de memória
+    do conjunto de queries no Roxie que usam a <emphasis>library</emphasis>.
+    Além disso, a funcionalidade na <emphasis>library</emphasis> pode ser
+    atualizada sem precisar reimplantar todas as queries que usam essa
+    funcionalidade.</para>
 
-    <para>A forma 5 cria uma biblioteca de consulta externa <emphasis
-    role="bold">para ser usada apenas no Roxie</emphasis>.</para>
+    <para>Query libraries são adequadas para empacotar conjuntos de funções
+    estreitamente relacionadas. Elas não são adequadas para incluir atributos
+    definidos como MACROs--o significado de um macro só é conhecido depois que
+    seus parâmetros são substituídos.</para>
 
-    <para>Uma biblioteca de consulta permite que um conjunto de atributos
-    relacionados seja agrupado como uma unidade autocontida, para que o código
-    possa ser compartilhado entre diferentes workunits. Isso reduz o tempo
-    necessário para implementar um conjunto de atributos, podendo reduzir a
-    pegada de memória para o grupo de consultas no Roxie que usam a
-    <emphasis>biblioteca</emphasis>. Além disso, a funcionalidade na
-    <emphasis>biblioteca </emphasis> pode ser atualizada sem a necessidade de
-    reimplementar todas as consultas que utilizam essa funcionalidade.</para>
-
-    <para>As bibliotecas de consulta são adequadas para agrupar conjuntos de
-    funções próximas. Não são adequadas para a inclusão de atributos definidos
-    como MACROs – o significado de uma macro é desconhecido até que os seus
-    parâmetros sejam substituídos.</para>
-
-    <para>A forma do nome da #WORKUNIT<indexterm>
+    <para>A forma de nome de #WORKUNIT<indexterm>
         <primary>#WORKUNIT</primary>
-      </indexterm> nomeia a workunit que BUILD cria como biblioteca externa.
-    Este nome é o nome da biblioteca externa usada pela função LIBRARY
-    <indexterm>
-        <primary>function LIBRARY</primary>
-      </indexterm> (que fornece acesso à biblioteca a partir da consulta que
-    está usando a <emphasis>biblioteca</emphasis>). <emphasis role="bold">Uma
-    vez que a própria workunit é a biblioteca de consulta externa, BUILD
-    construir(</emphasis><emphasis role="bold">biblioteca)
-    </emphasis><emphasis role="bold">deve ser a única ação na
-    workunit.</emphasis></para>
+      </indexterm> nomeia a workunit que BUILD cria como a biblioteca externa.
+    Esse nome é o nome da biblioteca externa usado pela função LIBRARY<indexterm>
+        <primary>LIBRARY function</primary>
+      </indexterm> (que fornece acesso à biblioteca a partir da query que usa
+    a <emphasis>library</emphasis>). <emphasis role="bold">Como a própria
+    workunit é a query library externa, BUILD(</emphasis><emphasis
+    role="bold">library</emphasis><emphasis role="bold">) deve ser a única
+    ação na workunit.</emphasis></para>
 
     <para>Exemplo:</para>
 
@@ -1012,13 +1023,181 @@ END;
 #WORKUNIT('name','Ppass.FilterDsLib')
 BUILD(FilterDsLib1);
 </programlisting>
+  </sect2>
 
-    <para>Ver também: <link linkend="INDEX_record_structure">INDEX</link>,
-    <link linkend="JOIN">JOIN</link>, <link linkend="FETCH">FETCH</link>,
-    <link linkend="MODULE_Structure">MODULE</link>, <link
-    linkend="INTERFACE_Structure">INTERFACE</link>, <link
-    linkend="LIBRARY">LIBRARY</link>, <link
-    linkend="DISTRIBUTE">DISTRIBUTE</link>, <link
-    linkend="_WORKUNIT">#WORKUNIT</link></para>
+  <sect2 id="IDXCOMP2" role="brk">
+    <title>Índices e Compactação</title>
+
+    <para><emphasis role="bold">Opções de compactação:</emphasis></para>
+
+    <informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec align="left" colwidth="188*"/>
+
+        <colspec colwidth="812*"/>
+
+        <tbody>
+          <row>
+            <entry><emphasis role="bold">LZW</emphasis></entry>
+
+            <entry>A compactação padrão. Uma variante do algoritmo
+            Lempel-Ziv-Welch.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">ROW</emphasis></entry>
+
+            <entry>Compacta entradas de índice com base nas diferenças entre
+            linhas (<emphasis role="bold">somente para uso com registros de
+            comprimento fixo</emphasis>). Normalmente não compacta tão bem
+            quanto LZW, mas ocupa menos espaço na memória porque as linhas são
+            expandidas sob demanda.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">'inplace'</emphasis></entry>
+
+            <entry>Faz com que o índice seja criado usando o formato de
+            compactação inplace. O payload usa compactação lz4 por
+            padrão.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold"><emphasis
+            role="bold">'inplace:lz4hc'</emphasis> </emphasis></entry>
+
+            <entry>Faz compactação inplace nos campos-chave e compactação
+            lz4hc no payload. O índice resultante pode ser menor do que ao
+            usar lz4.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold"><emphasis
+            role="bold">'inplace:lz4s'</emphasis> </emphasis></entry>
+
+            <entry>Faz compactação inplace nos campos-chave e compactação
+            lz4s no payload. Isso usa a API de stream LZ4 para evitar
+            recomprimir os dados e reduzir os tempos de criação do
+            índice.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold"><emphasis
+            role="bold">'inplace:lz4shc'</emphasis> </emphasis></entry>
+
+            <entry>Faz compactação inplace nos campos-chave e compactação
+            lz4shc no payload. Isso usa a versão de alta compactação (HC) da
+            API de stream LZ4 para evitar recomprimir os dados e reduzir os
+            tempos de criação do índice. A compactação padrão para índices
+            inplace nas versões posteriores a 9.6.90, 9.8.66 e
+            9.10.12.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">'inplace:zstds'</emphasis></entry>
+
+            <entry>Faz compactação inplace usando o algoritmo Zstandard
+            (zstd), um algoritmo de compactação rápido que fornece altas taxas
+            de compactação.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable>
+
+    <para>O formato de compactação de índice inplace (introduzido na versão
+    9.2.0) melhora a compactação dos campos keyed e permite pesquisá-los sem
+    descompactação. A implementação original de compactação de índice
+    descompacta as linhas quando elas são lidas do disco.</para>
+
+    <para>Os formatos de compactação de índice inplace lz4s e lz4hc
+    (introduzidos nas versões 9.6.90, 9.8.66 e 9.10.12 9.2.0 ou posterior)
+    melhoram a compactação e reduzem o tempo de criação. Esses formatos
+    exigem um engine que os suporte. Em outras palavras, <emphasis
+    role="bold">se você criar um índice usando os formatos lz4s ou lz4shc,
+    deverá usar uma plataforma posterior a 9.6.90, 9.8.66 e 9.10.12 para ler
+    esses índices.</emphasis></para>
+
+    <para>O mesmo vale para índices criados usando o formato zstds. <emphasis
+    role="bold">Se você criar um índice usando o formato zstds, deverá usar
+    uma plataforma posterior a 9.10.40 ou 9.12.14 para ler esses
+    índices.</emphasis></para>
+
+    <para>Se você tentar ler um índice com o formato de compactação inplace em
+    um sistema que não oferece suporte a ele, receberá uma mensagem de
+    erro.</para>
+
+    <para>Como os nós de ramificação podem ser pesquisados sem descompactação,
+    mais nós de ramificação cabem na memória, o que pode melhorar o desempenho
+    da pesquisa. A compactação lz4 usada para o payload é significativamente
+    mais rápida ao descompactar páginas folha do que a compactação LZW
+    anterior. Se o desempenho é melhor com lz4hc (uma variante de alta
+    compactação de lz4) nos campos de payload depende das características de
+    acesso dos dados e de quanto do índice está em cache na memória.</para>
+
+    <para><emphasis role="bold">Níveis de compactação:</emphasis></para>
+
+    <informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec align="left" colwidth="240*"/>
+
+        <colspec colwidth="836*"/>
+
+        <tbody>
+          <row>
+            <entry><emphasis role="bold">hclevel</emphasis></entry>
+
+            <entry>Um inteiro entre 3 e 12 para especificar o nível de
+            compactação. O padrão é 3. Níveis mais altos aumentam a
+            compactação, mas também aumentam os tempos de compactação. Isso
+            pode ser vantajoso dependendo de por quanto tempo os dados são
+            armazenados e dos custos de armazenamento em comparação com os
+            custos de computação para criar o índice.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">maxcompression</emphasis></entry>
+
+            <entry>A taxa máxima de compactação desejada. Isso evita que os
+            nós folha fiquem grandes demais quando expandidos, mas aumenta o
+            tamanho de alguns índices. O padrão é 20.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">maxrecompress</emphasis></entry>
+
+            <entry>Especifica o número de vezes que todo o dataset de entrada
+            deve ser recomprimido para liberar espaço. Aumentar o número
+            diminui o tamanho dos índices e provavelmente reduzirá
+            ligeiramente o tempo de descompactação (porque há menos blocos de
+            stream), mas aumentará o tempo de criação. O padrão é 1.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable>
+
+    <para/>
+
+    <para>Exemplo:</para>
+
+    <programlisting>Vehicles := DATASET('vehicles',
+          {STRING2 st,STRING20 city,STRING20 lname},FLAT);
+
+SearchTerms := RECORD
+  Vehicles.st;
+  Vehicles.city;
+END; 
+Payload     := RECORD
+  Vehicles.lname;
+END; 
+VehicleKey := INDEX(Vehicles,SearchTerms,Payload,'vkey::st.city',
+                    COMPRESSED('inplace:lz4shc,compressopt(hclevel=9,
+                                                           maxcompression=25,
+                                                           maxrecompress=4)'));
+BUILD(VehicleKey);</programlisting>
+
+    <para>Ver também: <link linkend="DATASET">DATASET</link>, <link
+    linkend="BUILD">BUILDINDEX</link>, <link linkend="JOIN">JOIN</link>, <link
+    linkend="FETCH">FETCH</link>, <link
+    linkend="KEYED-WILD">KEYED/WILD</link></para>
   </sect2>
 </sect1>

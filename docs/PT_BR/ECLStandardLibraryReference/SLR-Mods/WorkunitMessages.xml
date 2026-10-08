@@ -30,7 +30,7 @@
         </row>
 
         <row>
-          <entry>Return:<emphasis> </emphasis></entry>
+          <entry>Retorno:<emphasis> </emphasis></entry>
 
           <entry>WorkunitMessages retorna um valor DATASET.</entry>
         </row>
@@ -38,28 +38,34 @@
     </tgroup>
   </informaltable>
 
-  <para>A função <emphasis role="bold">WorkunitTimeStamps </emphasis> retorna
-  um DATASET neste formato:</para>
+  <para>A função <emphasis role="bold">WorkunitMessages </emphasis> retorna
+  um DATASET com este formato:</para>
 
-  <programlisting>EXPORT WsMessage := RECORD
+  <programlisting lang="ECL" role="notrunnable">EXPORT WsMessage_v2 := RECORD
   UNSIGNED4 severity;
-  INTEGER4 code;
-  STRING32 location;
+  INTEGER4  code;
+  STRING32  location;
   UNSIGNED4 row;
   UNSIGNED4 col;
-  STRING16 source;
-  STRING20 time;
-  STRING message{MAXLENGTH(1024)};
+  STRING16  source;
+  STRING20  time;
+  UNSIGNED4 priority;
+  REAL8     cost;
+  STRING    message{MAXLENGTH(1024)};
 END;</programlisting>
 
-  <para>Esta função retorna todas as mensagens na workunit. Cada registro Each
-  record in the retornado no dataset específica a mensagem na workunit.</para>
+  <para>Esta função retorna todas as mensagens na workunit. Cada registro no
+  dataset retornado especifica uma mensagem na workunit.</para>
 
-  <para>O valor de <emphasis>severidade</emphasis> pode ser 1 para Alerta, 2
-  para Erro, ou 3 para informação.</para>
+  <para>O valor de <literal>severity</literal> pode ser 1 para Warning, 2 para
+  Error, ou 3 para Information.</para>
+
+  <para>Observação: A estrutura DATASET retornada por WorkunitMessages
+  adicionou dois campos (<literal>priority</literal> e <literal>cost</literal>)
+  na versão 9.10.0.</para>
 
   <para>Exemplo:</para>
 
-  <programlisting format="linespecific">IMPORT STD;
-OUTPUT(STD.System.Workunit.WorkunitMessages('W20210602-164946'));</programlisting>
+  <programlisting format="linespecific" lang="ECL" role="notrunnable">IMPORT STD;
+OUTPUT(STD.System.Workunit.WorkunitMessages('W20250602-164946'));</programlisting>
 </sect1>

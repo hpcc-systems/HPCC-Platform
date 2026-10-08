@@ -2,7 +2,7 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="Automated_ECL">
-  <title><emphasis role="bold">ECL Automatizado</emphasis></title>
+  <title>ECL Automatizado</title>
 
   <para>Após ter definido os processos ECL padrão que você precisará realizar
   regularmente, é possível começar a automatizar esses processos. A
@@ -58,8 +58,7 @@ PG.DeclareData.MAC_CountFieldValues(PG.DeclareData.Person.file,gender);
   comando e executar a mesma consulta da linha de comando da seguinte
   maneira:</para>
 
-  <programlisting>C:\eclplus&gt;eclplus 
-ecl=$ProgGuide.MAC_CountFieldValues(ProgrammersGuide.DeclareData.Person.File,gender)</programlisting>
+  <programlisting>C:\eclplus&gt;eclplus ecl=$ProgGuide.MAC_CountFieldValues(ProgrammersGuide.DeclareData.Person.File,gender)</programlisting>
 
   <para>Observe que você está usando a opção de linha de comando
   <emphasis>ecl= </emphasis> e não a opção
@@ -87,8 +86,8 @@ gender     cnt
   <emphasis>output="filename"</emphasis> na linha de comando da seguinte
   maneira:</para>
 
-  <programlisting>C:\eclplus&gt;eclplus ecl=$ProgGuide.MAC_CountFieldValues
-( ProgrammersGuide.DeclareData.Person.File, gender) output="MyFile.txt"</programlisting>
+  <programlisting>C:\eclplus&gt;eclplus ecl=$ProgGuide.MAC_CountFieldValues( ProgrammersGuide.DeclareData.Person.File, gender) 
+              output="MyFile.txt"</programlisting>
 
   <para>Para arquivos de resultados maiores, você deve deixar a ação OUTPUT em
   seu código ECL gravar o conjunto de resultado em disco no supercomputador, e

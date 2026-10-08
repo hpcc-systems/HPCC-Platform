@@ -42,7 +42,7 @@
   <para>A função <emphasis role="bold">WorkunitTimeStamps </emphasis> retorna
   um DATASET neste formato:</para>
 
-  <programlisting>EXPORT WsTimeStamp := RECORD
+  <programlisting>EXPORT TimeStampRecord := RECORD
   STRING32 application;
   STRING16 id;
   STRING20 time;
@@ -54,14 +54,15 @@ END;</programlisting>
 
   <para>Exemplo:</para>
 
-  <programlisting format="linespecific">OUTPUT(STD.System.Workunit.WorkunitTimeStamps('W20070308-164946'));
+  <programlisting format="linespecific">OUTPUT(STD.System.Workunit.WorkunitTimeStamps('W20240801-122755'));
+
 /* produces output like this:
-'workunit     ','Created ','2008-02-13T18:28:20Z','              '
-'workunit     ','Modified','2008-02-13T18:32:47Z','              '
-'EclServer    ','Compiled','2008-02-13T18:28:20Z','10.173.9.2:0  '
-'EclAgent     ','Started ','2008-02-13T18:32:35Z','training009003'
-'Thor - graph1','Finished','2008-02-13T18:32:47Z','training009004'
-'Thor - graph1','Started ','2008-02-13T18:32:13Z','training009004'
-'EclAgent     ','Finished','2008-02-13T18:33:09Z','training009003'
+'workunit     ','Created ','2024-08-01T16:28:20Z','              '
+'workunit     ','Modified','2024-08-01T16:32:47Z','              '
+'EclServer    ','Compiled','2024-08-01T16:28:20Z','172.31.4.17'
+'EclAgent     ','Started ','2024-08-01T16:32:35Z','172.31.4.17'
+'Thor - graph1','Finished','2024-08-01T16:32:47Z','172.31.4.17'
+'Thor - graph1','Started ','2024-08-01T16:32:13Z','172.31.4.17'
+'EclAgent     ','Finished','2024-08-01T16:33:09Z','172.31.4.17'
 */</programlisting>
 </sect1>

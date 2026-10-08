@@ -41,7 +41,7 @@
 
   <para>Exemplo:</para>
 
-  <programlisting>MySet := PULL(Person);
+  <programlisting lang="ECL" role="fragment">MySet := PULL(Person);
      //load Person into Data Refinery before continuing</programlisting>
 
   <para>Ver também:</para>

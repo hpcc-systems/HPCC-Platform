@@ -36,12 +36,14 @@
   <para>A função <emphasis role="bold">LOCAL </emphasis> especifica que todas
   as operações subsequentes nos <emphasis>dados</emphasis> são executadas
   localmente em cada nó (semelhante ao uso da opção LOCAL em uma função). Ela
-  é geralmente usada em uma operação ALLNODES . <emphasis role="bold">Essa
-  função está disponível para uso no cluster Roxie.</emphasis></para>
+  é geralmente usada em uma operação ALLNODES. <emphasis role="bold">Disponível
+  para uso somente no Roxie<indexterm>
+      <primary>Roxie</primary>
+    </indexterm>.</emphasis></para>
 
   <para>Exemplo:</para>
 
-  <programlisting>ds := JOIN(SomeData,LOCAL(SomeIndex), LEFT.ID = RIGHT.ID);</programlisting>
+  <programlisting lang="ECL" role="notrunnable">ds := JOIN(SomeData,LOCAL(SomeIndex), LEFT.ID = RIGHT.ID);</programlisting>
 
   <para>Ver também: <link linkend="ALLNODES">ALLNODES</link>, <link
   linkend="THISNODE">THISNODE</link>, <link

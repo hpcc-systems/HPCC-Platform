@@ -85,9 +85,16 @@ END;</programlisting>
 
   <para>A função <emphasis role="bold">RemoteDirectory </emphasis> retorna uma
   lista de arquivos como um dataset no formato listado acima para o
-  <emphasis>machineIP</emphasis> e o <emphasis>diretório</emphasis>
+  <emphasis>machineIP</emphasis> e o <emphasis>directory</emphasis>
   especificados. Se <emphasis>recurse</emphasis> for definido como TRUE, o
-  nome do campo conterá o caminho relativo para o arquivo especificado.</para>
+  campo de nome conterá o caminho relativo para o arquivo a partir do
+  <emphasis>directory</emphasis> especificado.</para>
+
+  <para>O argumento mask é uma string que pode incluir caracteres curinga.
+  Os caracteres curinga válidos são '*' (para corresponder a zero ou mais
+  caracteres) e '?' (para corresponder a exatamente um caractere). Caracteres
+  que não são curinga são correspondidos exatamente e diferenciam maiúsculas
+  de minúsculas.</para>
 
   <para>Exemplo:</para>
 

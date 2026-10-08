@@ -2,7 +2,7 @@
 <!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="Primary">
-  <title><emphasis role="bold">Primary</emphasis></title>
+  <title>Primary</title>
 
   <para><emphasis role="bold">STD.Metaphone.Primary<indexterm>
       <primary>Std.Metaphone.Primary</primary>
@@ -10,17 +10,17 @@
       <primary>Metaphone.Primary</primary>
     </indexterm><indexterm>
       <primary>Primary</primary>
-    </indexterm>( </emphasis>source<emphasis role="bold"> ) </emphasis></para>
+    </indexterm>( </emphasis> <emphasis>src</emphasis> <emphasis role="bold">)</emphasis></para>
 
   <para><emphasis role="bold">STD.Metaphone3.Primary<indexterm>
       <primary>Std.Metaphone.Primary</primary>
     </indexterm><indexterm>
       <primary>Metaphone3.Primary</primary>
     </indexterm><indexterm>
-      <primary/>
-    </indexterm>( </emphasis>source<emphasis role="bold"> ) </emphasis></para>
+      <primary></primary>
+    </indexterm>( </emphasis> <emphasis>src, encodeVowels, encodeExact, maxLength</emphasis> <emphasis role="bold">)</emphasis></para>
 
-  <para/>
+  <para></para>
 
   <para><informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
@@ -30,7 +30,7 @@
 
         <tbody>
           <row>
-            <entry><emphasis>source</emphasis></entry>
+            <entry><emphasis>src</emphasis></entry>
 
             <entry>A string a ser processada.</entry>
           </row>

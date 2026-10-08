@@ -229,7 +229,7 @@
 
     <para>Exemplo da forma 1:</para>
 
-    <programlisting>NormRec := RECORD
+    <programlisting lang="ECL_Runnable">NormRec := RECORD
   STRING20  thename;
   STRING20  addr;
 END;
@@ -266,7 +266,7 @@ OUTPUT(DeNormedRecs);
 
     <para>Exemplo da forma 2:</para>
 
-    <programlisting>NormRec := RECORD
+    <programlisting lang="ECL_Runnable">NormRec := RECORD
   STRING20  thename;
   STRING20  addr;
 END;
@@ -298,76 +298,6 @@ OUTPUT(DeNormedRecs);
 </programlisting>
 
     <para>Exemplo NOSORT:</para>
-
-    <programlisting lang="ECL_Runnable">NormRec := RECORD
-  STRING20  thename;
-  STRING20  addr;
-END;
-NamesRec := RECORD
-  UNSIGNED1  numRows;
-  STRING20  thename; 
-  STRING20  addr1 := '';
-  STRING20  addr2 := '';
-  STRING20  addr3 := '';
-  STRING20  addr4 := '';
-END;
-NamesTable := DATASET([ {0,'Kevin'},{0,'Liz'},{0,'Mr Nobody'},
-                        {0,'Anywhere'}], NamesRec);
-NormAddrs := DATASET([{'Kevin','10 Malt Lane'},
-                      {'Liz','10 Malt Lane'},
-                      {'Liz','3 The cottages'},
-                      {'Anywhere','Here'},
-                      {'Anywhere','There'},
-                      {'Anywhere','Near'},
-                      {'Anywhere','Far'}],NormRec);
-NamesRec DeNormThem(NamesRec L, NormRec R, INTEGER C) := TRANSFORM
-    SELF.NumRows := C;
-    SELF.addr1 := IF (C=1, R.addr, L.addr1);
-    SELF.addr2 := IF (C=2, R.addr, L.addr2);
-    SELF.addr3 := IF (C=3, R.addr, L.addr3);
-    SELF.addr4 := IF (C=4, R.addr, L.addr4);
-    SELF := L;
-END;
-DeNormedRecs := DENORMALIZE(NamesTable, NormAddrs,
-                            LEFT.thename = RIGHT.thename,
-                            DeNormThem(LEFT,RIGHT,COUNTER));
-OUTPUT(DeNormedRecs);
-</programlisting>
-
-    <para>Form 2 example:</para>
-
-    <programlisting lang="ECL_Runnable">NormRec := RECORD
-  STRING20  thename;
-  STRING20  addr;
-END;
-NamesRec := RECORD
-  UNSIGNED1  numRows;
-  STRING20  thename;
-  DATASET(NormRec) addresses;
-END;
-NamesTable := DATASET([ {0,'Kevin',[]},{0,'Liz',[]},
-                        {0,'Mr Nobody',[]},{0,'Anywhere',[]}],
-                      NamesRec);
-NormAddrs := DATASET([{'Kevin','10 Malt Lane'},
-                      {'Liz','10 Malt Lane'},
-                      {'Liz','3 The cottages'},
-                      {'Anywhere','Here'},
-                      {'Anywhere','There'},
-                      {'Anywhere','Near'},
-                      {'Anywhere','Far'}],NormRec);
-NamesRec DeNormThem(NamesRec L, DATASET(NormRec) R) := TRANSFORM
-    SELF.NumRows := COUNT(R);
-    SELF.addresses := R;
-    SELF := L;
-END;
-DeNormedRecs := DENORMALIZE(NamesTable, NormAddrs,
-                           LEFT.thename = RIGHT.thename,
-                           GROUP,
-                           DeNormThem(LEFT,ROWS(RIGHT)));
-OUTPUT(DeNormedRecs);
-</programlisting>
-
-    <para>NOSORT example:</para>
 
     <programlisting lang="ECL_Runnable">MyRec := RECORD
   STRING1 Value1;
@@ -401,8 +331,9 @@ OUTPUT(DeNormedRecs);
 </programlisting>
 
     <para>Ver também: <link linkend="JOIN">JOIN</link>, <link
-    linkend="TRANSFORM_Structure">Estrutura TRANSFORM</link>, <link
-    linkend="RECORD_Structure">Estrutura RECORD</link>, <link
+    linkend="TRANSFORM_Structure">TRANSFORM Structure</link>, <link
+    linkend="RECORD_Structure">RECORD Structure</link>, <link
     linkend="NORMALIZE">NORMALIZE</link></para>
+
   </sect2>
 </sect1>

@@ -10,29 +10,7 @@
       <primary>File.SprayFixed</primary>
     </indexterm><indexterm>
       <primary>SprayFixed</primary>
-    </indexterm>(</emphasis> <emphasis> sourceIP </emphasis> <emphasis
-  role="bold">, </emphasis> <emphasis>sourcepath, recordsize,
-  destinationgroup,</emphasis> <emphasis> destinationlogicalname </emphasis> ,
-  <emphasis role="bold">[</emphasis> <emphasis>timeout</emphasis> <emphasis
-  role="bold">] </emphasis> ,<emphasis role="bold"> [</emphasis> <emphasis>
-  espserverIPport </emphasis> <emphasis role="bold">]</emphasis> ,<emphasis
-  role="bold"> [</emphasis> <emphasis> maxConnections </emphasis> <emphasis
-  role="bold">]</emphasis> ,<emphasis role="bold"> [</emphasis> <emphasis>
-  allowoverwrite </emphasis> <emphasis role="bold">]</emphasis> ,<emphasis
-  role="bold"> [</emphasis> <emphasis> replicate </emphasis> <emphasis
-  role="bold">]</emphasis> ,<emphasis role="bold"> [</emphasis> <emphasis>
-  compress </emphasis> <emphasis role="bold">] </emphasis>, <emphasis
-  role="bold">[</emphasis><emphasis>failIfNoSourceFile</emphasis><emphasis
-  role="bold">] </emphasis>,<emphasis
-  role="bold">[</emphasis><emphasis>expireDays</emphasis><emphasis
-  role="bold">] , </emphasis><emphasis role="bold">[</emphasis>
-  <emphasis>dfuServerQueue</emphasis> <emphasis role="bold">] ,
-  </emphasis><emphasis role="bold">[</emphasis> <emphasis>noSplit</emphasis>
-  <emphasis role="bold">] , </emphasis><emphasis role="bold">[</emphasis>
-  <emphasis>noCommon</emphasis> <emphasis role="bold">],[</emphasis>
-  <emphasis>sourcePlane</emphasis> <emphasis role="bold">]<emphasis
-  role="bold">,[</emphasis> <emphasis>destinationNumParts</emphasis> <emphasis
-  role="bold">]</emphasis>)</emphasis></para>
+    </indexterm>(</emphasis> <emphasis>sourceIP, sourcePath, recordSize, destinationGroup, destinationLogicalName, timeOut, espServerIpPort, maxConnections, allowOverwrite, replicate, compress, failIfNoSourceFile, expireDays, dfuServerQueue, noSplit, sourcePlane, destinationNumParts, noCommon</emphasis> <emphasis role="bold">)</emphasis></para>
 
   <para><emphasis>dfuwuid</emphasis> <emphasis role="bold"> :=
   STD.File.fSprayFixed<indexterm>
@@ -41,201 +19,179 @@
       <primary>File.fSprayFixed</primary>
     </indexterm><indexterm>
       <primary>fSprayFixed</primary>
-    </indexterm>(</emphasis> <emphasis> sourceIP </emphasis> <emphasis
-  role="bold">, </emphasis> <emphasis>sourcepath, recordsize,</emphasis>
-  <emphasis> destinationgroup, destinationlogicalname </emphasis> , <emphasis
-  role="bold">[</emphasis> <emphasis>timeout</emphasis> <emphasis
-  role="bold">]</emphasis> , <emphasis role="bold"> [</emphasis> <emphasis>
-  espserverIPport </emphasis> <emphasis role="bold">]</emphasis> <emphasis>
-  </emphasis> , <emphasis role="bold">[</emphasis> <emphasis> maxConnections
-  </emphasis> <emphasis role="bold">]</emphasis> , <emphasis role="bold">
-  [</emphasis> <emphasis> allowoverwrite </emphasis> <emphasis role="bold">] ,
-  [</emphasis> <emphasis> replicate </emphasis> <emphasis role="bold">] ,
-  [</emphasis> <emphasis> compress </emphasis><emphasis role="bold">]
-  </emphasis>, <emphasis
-  role="bold">[</emphasis><emphasis>failIfNoSourceFile</emphasis><emphasis
-  role="bold">]</emphasis>, <emphasis
-  role="bold">[</emphasis><emphasis>expireDays</emphasis><emphasis
-  role="bold">] , </emphasis><emphasis role="bold">[</emphasis>
-  <emphasis>noSplit</emphasis><emphasis role="bold">] , </emphasis><emphasis
-  role="bold">[</emphasis> <emphasis>noCommon</emphasis> <emphasis
-  role="bold">],[</emphasis> <emphasis>sourcePlane</emphasis> <emphasis
-  role="bold">]<emphasis role="bold">,[</emphasis>
-  <emphasis>destinationNumParts</emphasis> <emphasis
-  role="bold">]</emphasis>)</emphasis></para>
+    </indexterm>(</emphasis> <emphasis>sourceIP, sourcePath, recordSize, destinationGroup, destinationLogicalName, timeOut, espServerIpPort, maxConnections, allowOverwrite, replicate, compress, failIfNoSourceFile, expireDays, dfuServerQueue, noSplit, sourcePlane, destinationNumParts</emphasis> <emphasis role="bold">)</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
-      <colspec colwidth="80.50pt"/>
+      <colspec colwidth="130.5 pt" />
 
-      <colspec/>
+      <colspec />
 
       <tbody>
         <row>
           <entry><emphasis>sourceIP</emphasis></entry>
 
-          <entry>Uma string terminada por nulo que contém o endereço IP do
+          <entry>Uma string terminada por nulo contendo o endereço IP ou o
+          hostname da Dropzone onde o arquivo está localizado.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>sourcePath</emphasis></entry>
+
+          <entry>Uma string terminada por nulo contendo o caminho e o nome do
           arquivo.</entry>
         </row>
 
         <row>
-          <entry><emphasis>sourcepath</emphasis></entry>
+          <entry><emphasis>recordSize</emphasis></entry>
 
-          <entry>Uma cadeia terminada por nulo contendo o endereço IP ou nome
-          do host da Dropzone em que o arquivo está localizado.</entry>
+          <entry>Um inteiro contendo o tamanho dos registros no arquivo.</entry>
         </row>
 
         <row>
-          <entry><emphasis>recordsize</emphasis></entry>
+          <entry><emphasis>destinationGroup</emphasis></entry>
 
-          <entry>Um inteiro que contém o tamanho dos registros no
+          <entry>Uma string terminada por nulo contendo o nome do supercomputador
+          específico dentro do cluster de destino.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>destinationLogicalName</emphasis></entry>
+
+          <entry>Uma string terminada por nulo contendo o nome lógico do
           arquivo.</entry>
         </row>
 
         <row>
-          <entry><emphasis>destinationgroup</emphasis></entry>
+          <entry><emphasis>timeOut</emphasis></entry>
 
-          <entry>Uma string terminada por nulo que contém o nome do
-          supercomputador específico dentro do cluster de destino.</entry>
-        </row>
-
-        <row>
-          <entry><emphasis>destinationlogicalname</emphasis></entry>
-
-          <entry>Uma string terminada em nulo contendo o nome lógico do
-          arquivo.</entry>
-        </row>
-
-        <row>
-          <entry><emphasis>timeout</emphasis></entry>
-
-          <entry>Opcional. Um valor inteiro que indica a configuração de tempo
-          limite. Se omitido, o padrão é -1. Se definido como (0), o controle
-          da execução retorna imediatamente à workunit ECL sem esperar a
+          <entry>Opcional. Um valor inteiro indicando a configuração de timeout.
+          Se omitido, o padrão é -1. Se definido como zero (0), o controle
+          de execução retorna imediatamente à workunit ECL sem aguardar a
           conclusão da workunit DFU.</entry>
         </row>
 
         <row>
-          <entry><emphasis>espserverIPport</emphasis></entry>
+          <entry><emphasis>espServerIpPort</emphasis></entry>
 
-          <entry>Opcional. Isso quase sempre deve ser omitido, o que, por
-          padrão, é o valor contido no atributo lib_system.ws_fs_server.
-          Quando não omitido, deve ser uma string terminada em nulo contendo o
-          protocolo, IP, porta e diretório, ou o DNS equivalente, do programa
-          do servidor ESP. Geralmente, é o mesmo IP e porta do ECL Watch, com
-          "/FileSpray" anexado.</entry>
+          <entry>Opcional. Quase sempre deve ser omitido; nesse caso, usa por
+          padrão o valor contido no atributo lib_system.ws_fs_server. Quando
+          não for omitido, deve ser uma string terminada por nulo contendo o
+          protocolo, IP, porta e diretório, ou o equivalente DNS, do programa
+          servidor ESP. Geralmente é o mesmo IP e porta do ECL Watch, com
+          "/FileSpray" acrescentado.</entry>
         </row>
 
         <row>
           <entry><emphasis>maxConnections</emphasis></entry>
 
-          <entry>Opcional. Um inteiro especificando o número máximo de
-          conexões. Se omitido, o padrão é -1, o que indica que o sistema
-          escolhe um padrão adequado com base no tamanho do cluster.</entry>
+          <entry>Opcional. Um inteiro que especifica o número máximo de conexões.
+          Se omitido, o padrão é -1, o que indica que o sistema escolhe um
+          padrão adequado com base no tamanho do cluster.</entry>
         </row>
 
         <row>
-          <entry><emphasis>allowoverwrite</emphasis></entry>
+          <entry><emphasis>allowOverwrite</emphasis></entry>
 
-          <entry>Opcional. Um indicador booleano TRUE ou FALSE que indica se o
-          novo arquivo pode sobrescrever um arquivo existente do mesmo nome.
-          Se omitido, o padrão é FALSE.</entry>
+          <entry>Opcional. Uma flag booleana TRUE ou FALSE indicando se o novo
+          arquivo pode sobrescrever um arquivo existente com o mesmo nome. Se
+          omitida, o padrão é FALSE.</entry>
         </row>
 
         <row>
           <entry><emphasis>replicate</emphasis></entry>
 
-          <entry>Opcional. Um indicador booleano TRUE ou FALSE que indica se o
-          novo arquivo deve ser replicado. Se omitido, o padrão é
-          FALSE.</entry>
+          <entry>Opcional. Uma flag booleana TRUE ou FALSE indicando se o novo
+          arquivo deve ser replicado. Se omitida, o padrão é FALSE.</entry>
         </row>
 
         <row>
           <entry><emphasis>compress</emphasis></entry>
 
-          <entry>Opcional. Um indicador booleano TRUE ou FALSE que indica se o
-          novo arquivo deve ser compactado. Se omitido, o padrão é
-          FALSE.</entry>
+          <entry>Opcional. Uma flag booleana TRUE ou FALSE indicando se o novo
+          arquivo deve ser compactado. Se omitida, o padrão é TRUE em uma
+          implantação conteinerizada e FALSE em uma implantação Bare-Metal.</entry>
         </row>
 
         <row>
           <entry><emphasis>failIfNoSourceFile</emphasis></entry>
 
-          <entry>Opcional. Um indicador booleano TRUE ou FALSE que indica se
-          um arquivo não encontrado gera uma falha. Se omitido, o padrão é
-          FALSE.</entry>
+          <entry>Opcional. Uma flag booleana TRUE ou FALSE indicando se um
+          arquivo ausente aciona uma falha. Se omitida, o padrão é FALSE.</entry>
         </row>
 
         <row>
           <entry><emphasis>expireDays</emphasis></entry>
 
-          <entry>Opcional. Um valor inteiro indicando o número de dias
-          restantes para o arquivo ser removido automaticamente. Se omitido, o
-          padrão é -1 (sem data de validade).</entry>
+          <entry>Opcional. Especifica que o arquivo é temporário e será excluído
+          automaticamente após o número especificado de dias desde que o
+          arquivo foi lido. Se omitido, o padrão é -1 (nunca expira). Se
+          definido como 0, o arquivo é excluído automaticamente quando atinge
+          o limite definido na configuração <emphasis
+          role="bold">expiryDefault</emphasis> do Sasha Server.</entry>
         </row>
 
         <row>
           <entry><emphasis>dfuServerQueue</emphasis></entry>
 
-          <entry>Nome do Servidor DFU de destino. O padrão é '' (empty) para o
-          primeiro na fila de DFU no ambiente.</entry>
+          <entry>Nome da fila de destino do DFU Server. O padrão é '' (vazio)
+          para a primeira fila DFU no ambiente.</entry>
         </row>
 
         <row>
           <entry><emphasis>noSplit</emphasis></entry>
 
           <entry>Opcional. Uma flag booleana TRUE ou FALSE indicando para não
-          dividir uma parte do arquivo em várias partes de destino. O padrão é
-          FALSO</entry>
+          dividir uma parte do arquivo em várias partes de destino. O padrão
+          é FALSE.</entry>
         </row>
 
         <row>
           <entry><emphasis>noCommon</emphasis></entry>
 
-          <entry>Opcional. Um sinalizador booleano True ou False para
-          "combinar" processos pull ou push no mesmo host. Defina como FALSE
-          para "comunizar" a operação no mesmo host. O padrão pode ser
-          definido na configuração. Use o <link linkend="GetNoCommonDefault">
-          GetNoCommonDefault</link> para recuperar a configuração padrão. O
-          valor desse parâmetro pode ter um impacto significativo no
-          desempenho.</entry>
+          <entry>Opcional. Uma flag booleana TRUE ou FALSE para "commoning up"
+          de processos pull ou push no mesmo host. Defina como FALSE para
+          "common up" a operação no mesmo host. O padrão pode ser definido na
+          configuração. Use
+          <link linkend="GetNoCommonDefault">GetNoCommonDefault</link> para
+          recuperar a configuração padrão. O valor desse parâmetro pode ter
+          um impacto significativo no desempenho.</entry>
         </row>
 
         <row>
           <entry><emphasis>sourcePlane</emphasis></entry>
 
-          <entry>O nome da landing zone que contêm o arquivo</entry>
+          <entry>O nome da landing zone que contém o arquivo</entry>
         </row>
 
         <row>
           <entry><emphasis>destinationNumParts</emphasis></entry>
 
-          <entry>Substitua o número de partes a serem criadas ao fazer o
-          spray. O padrão é 0, o que significa que ele criará o mesmo número
-          de peças que o cluster de destino.</entry>
+          <entry>Sobrepõe o número de partes a serem criadas ao fazer o spray. O
+          padrão é 0, o que significa que será criado o mesmo número de
+          partes que o cluster de destino.</entry>
         </row>
 
         <row>
           <entry><emphasis>dfuwuid</emphasis></entry>
 
-          <entry>O nome do atributo que receberá a string terminada por nulo
-          que contém o ID da workunit DFU (DFUWUID) gerada para a
-          workunit.</entry>
+          <entry>O nome do atributo que recebe a string terminada por nulo
+          contendo o ID da workunit DFU (DFUWUID) gerado para o job.</entry>
         </row>
 
         <row>
-          <entry>Return:<emphasis> </emphasis></entry>
+          <entry>Retorno:<emphasis> </emphasis></entry>
 
-          <entry>fSprayFixed retorna uma string terminada por nulo que contém
-          o ID da workunit DFU (DFUWUID).</entry>
+          <entry>fSprayFixed retorna uma string terminada por nulo contendo o ID
+          da workunit DFU (DFUWUID).</entry>
         </row>
       </tbody>
     </tgroup>
   </informaltable>
 
-  <para>A função <emphasis role="bold">SprayFixed </emphasis> recebe um
-  arquivo de formato fixo da zona de entrada de arquivos e o distribui entre
-  os nós do supercomputador de destino.</para>
+  <para>A função <emphasis role="bold">SprayFixed </emphasis>recebe um arquivo
+  de formato fixo da landing zone e o distribui entre os nós do
+  supercomputador de destino.</para>
 
   <para>Exemplo:</para>
 

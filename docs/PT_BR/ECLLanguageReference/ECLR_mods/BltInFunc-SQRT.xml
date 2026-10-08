@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="SQRT">
@@ -37,7 +37,9 @@
 
   <para>Exemplo:</para>
 
-  <programlisting>MyRoot := SQRT(16.0);</programlisting>
+  <programlisting lang="ECL_Runnable">MyRoot := SQRT(16.0);
+OUTPUT(MyRoot); // result is 4.0
+</programlisting>
 
   <para>Ver também: <link linkend="POWER">POWER</link>, <link linkend="EXP">EXP</link>, <link linkend="LN">LN</link>, <link linkend="LOG">LOG</link></para>
 </sect1>

@@ -10,8 +10,7 @@
       <primary>Str.ToHexPairs</primary>
     </indexterm><indexterm>
       <primary>ToHexPairs</primary>
-    </indexterm>(</emphasis> <emphasis>Source</emphasis> <emphasis
-  role="bold">)</emphasis> <emphasis role="bold"></emphasis></para>
+    </indexterm>(</emphasis> <emphasis>value</emphasis> <emphasis role="bold">)</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -21,7 +20,7 @@
 
       <tbody>
         <row>
-          <entry><emphasis>Source</emphasis></entry>
+          <entry><emphasis>value</emphasis></entry>
 
           <entry>O valor de dados que deve ser expandido como uma sequência de pares hexadecimais.</entry>
         </row>

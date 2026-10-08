@@ -17,27 +17,20 @@
 
   <para><informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
-        <colspec colwidth="78.60pt"/>
+        <colspec colwidth="78.60pt" />
 
-        <colspec/>
+        <colspec />
 
         <tbody>
           <row>
             <entry><emphasis>recordset</emphasis></entry>
-
-            <entry>O conjunto de registros do qual o SET de valores será
-            derivado.</entry>
-          </row>
-
-          <row>
-            <entry><emphasis>expression</emphasis></entry>
 
             <entry>A expressão da qual obter os valores, normalmente apenas um
             campo no recordset.</entry>
           </row>
 
           <row>
-            <entry><emphasis>field</emphasis></entry>
+            <entry><emphasis>expression</emphasis></entry>
 
             <entry>O campo no recordset do qual serão obtidos os
             valores.</entry>
@@ -126,7 +119,7 @@
   <para>Um problema comum é o uso da função SET em uma condição de filtro. Por
   exemplo:</para>
 
-  <programlisting>MyDS := myDataset(myField IN SET(anotherDataset, someField));</programlisting>
+  <programlisting lang="ECL" role="fragment">MyDS := myDataset(myField IN SET(anotherDataset, someField));</programlisting>
 
   <para>O código gerado para isso é ineficiente se "anotherDataset" contiver
   um grande número de elementos, podendo também causar o erro no qual o
@@ -134,7 +127,7 @@
   to output to workunit"). Uma maneira mais eficiente de regravar a expressão
   seria:</para>
 
-  <programlisting>MyDS := JOIN(myDataset, anotherDataset, LEFT.myField = RIGHT.someField, TRANSFORM(LEFT), LOOKUP) ;</programlisting>
+  <programlisting lang="ECL" role="fragment">MyDS := JOIN(myDataset, anotherDataset, LEFT.myField = RIGHT.someField, TRANSFORM(LEFT), LOOKUP) ;</programlisting>
 
   <para>O resultado final é o mesmo, o conjunto de registros "myDataset" no
   qual o valor "myField" é um dos valores "someField" de "anotherDataset", mas
@@ -142,7 +135,7 @@
 
   <para>Você pode construir um DATASET a partir de um SET.</para>
 
-  <programlisting>ds := DATASET([{'X',1},{'B',3},{'C',2},{'B',5},
+  <programlisting lang="ECL" role="fragment">ds := DATASET([{'X',1},{'B',3},{'C',2},{'B',5},
                {'C',4},{'D',6},{'E',2}],
               {STRING1 Ltr, INTEGER1 Val});
 s1 := SET(ds,Ltr);          //a SET of just the Ltr field values:
@@ -150,14 +143,14 @@ DATASET(s1,{STRING1 Ltr});  //a DATASET from the SET</programlisting>
 
   <para>Exemplo:</para>
 
-  <programlisting>ds := DATASET([{'X',1},{'B',3},{'C',2},{'B',5},
+  <programlisting lang="ECL_Runnable">ds := DATASET([{'X',1},{'B',3},{'C',2},{'B',5},
                {'C',4},{'D',6},{'E',2}],
               {STRING1 Ltr, INTEGER1 Val});
 
 //a SET of just the Ltr field values:
 s1 := SET(ds,Ltr);
 COUNT(s1);  //results in 7
-s1;         //results in ['X','B','C','B','C','D','E']
+OUTPUT(s1);         //results in ['X','B','C','B','C','D','E']
 
 //a simple way to get just the unique elements
 //is to use a crosstab TABLE:
@@ -165,19 +158,18 @@ t := TABLE(ds,{Ltr},Ltr); //order indeterminant
 
 s2 := SET(t,Ltr);
 COUNT(s2);  //results in 5
-s2;         //results in   ['D','X','C','E','B']
+OUTPUT(s2);         //results in   ['D','X','C','E','B']
 
 //sorted unique elements
 s3 := SET(SORT(t,Ltr),Ltr);
 COUNT(s3);  //results in 5
-s3;         //results in ['B','C','D','E','X']
+OUTPUT(s3);         //results in ['B','C','D','E','X']
 
 //a SET of expression values:
 s4 := SET(ds,Ltr+Val);
-s4; // results in ['X1','B3','C2','B5','C4','D6','E2']</programlisting>
+OUTPUT(s4); // results in ['X1','B3','C2','B5','C4','D6','E2']
+</programlisting>
 
   <para>Ver também: <link linkend="Recordset_Filtering">Conjuntos e
-  Filtros</link>, <link linkend="SET_OF">SET OF</link>, <link
-  linkend="Set_Operators">Operadores Set</link>, <link
-  linkend="IN_Operator">Operador IN</link></para>
+  Filtros</link>, <link linkend="SET_OF">SET OF</link>, <link linkend="Set_Operators">Operadores Set</link>, <link linkend="IN_Operator">Operador IN</link></para>
 </sect1>

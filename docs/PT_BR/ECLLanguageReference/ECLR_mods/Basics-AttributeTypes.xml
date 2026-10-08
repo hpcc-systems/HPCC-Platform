@@ -155,6 +155,14 @@ MySubString := MyString[2]; // MySubString is 'B'</programlisting>
 MySubString1 := MyString[2..4]; // MySubString1 is 'BCD'
 MySubString2 := MyString[ ..4]; // MySubString2 is 'ABCD'
 MySubString3 := MyString[2.. ]; // MySubString3 is 'BCDE'</programlisting>
+
+    <para>Quando uma operação de substring especifica um limite superior que
+    excede o comprimento real da string (por exemplo,
+    <literal>MyString[..100]</literal> quando <literal>MyString</literal>
+    contém <literal>'ABCDE'</literal>), o resultado é preenchido à direita com
+    espaços até o comprimento especificado. Isso equivale a atribuir a string
+    a um tipo de comprimento fixo: <literal>STRING100 foo :=
+    MyString;</literal>.</para>
   </sect2>
 
   <sect2 id="Record_Set_Attributes">
@@ -223,7 +231,7 @@ MyRec4 := Person[2..];   // all recs except the first</programlisting>
 
     <para>is simpler as:</para>
 
-    <programlisting>ds[1].x //note that this returns 0 if ds contains no records.
+    <programlisting>ds[1].x    //note that this returns 0 if ds contains no records.
 </programlisting>
 
     <para/>

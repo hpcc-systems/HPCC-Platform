@@ -4,7 +4,7 @@
 <sect1 id="APPLY">
   <title>APPLY</title>
 
-  <para><emphasis role="bold">[</emphasis><emphasis>attrname</emphasis>
+  <para role="syntax"><emphasis role="bold">[</emphasis><emphasis>attrname</emphasis>
   :=<emphasis role="bold"> ] APPLY<indexterm>
       <primary>APPLY</primary>
     </indexterm><indexterm>

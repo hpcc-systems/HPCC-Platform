@@ -52,7 +52,8 @@
             <entry><emphasis>name</emphasis></entry>
 
             <entry>Uma constante de string que contém o rótulo do
-            resultado.</entry>
+            resultado. Deve ser um rótulo válido (consulte <link linkend="Attribute_Name_Rules">Definition
+            Name Rules</link>)</entry>
           </row>
 
           <row>
@@ -131,23 +132,14 @@
   <para>Quando há um número excessivamente amplo de valores distintos, a ação
   retorna uma estimativa na seguinte forma:</para>
 
-  <para><programlisting>&lt;XML&gt;
- &lt;Field name="seqnum" estimate="4000000"/&gt; 
+  <para><programlisting lang="XML">&lt;XML&gt;
+  &lt;Field name="seqnum" estimate="4000000"/&gt;
 &lt;/XML&gt;</programlisting></para>
 
   <para>O tipo de dado DECIMAL não é suportado por esta ação.
   Alternativamente, você pode usar o tipo de dados REAL.</para>
 
   <para>Exemplo:</para>
-
-  <para><programlisting lang="XML">&lt;XML&gt;
-  &lt;Field name="seqnum" estimate="4000000"/&gt;
-&lt;/XML&gt;</programlisting></para>
-
-  <para>The DECIMAL data type is not supported by this action. You can use a
-  REAL data type instead.</para>
-
-  <para>Example:</para>
 
   <programlisting lang="ECL_Runnable">SomeFile := DATASET([{'C','G'},{'C','C'},{'A','X'},{'B','G'}],
      {STRING1 Value1,STRING1 Value2});

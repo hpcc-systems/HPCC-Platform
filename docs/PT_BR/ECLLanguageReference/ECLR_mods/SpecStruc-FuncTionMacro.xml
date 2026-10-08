@@ -88,15 +88,16 @@
   de FUNCTIONMACRO sobre a estrutura MACRO é que pode ser chamada no contexto
   de uma expressão, da mesma forma que FUNCTION.</para>
 
-  <para>Ao contrário da estrutura MACRO, não é necessário usar #UNIQUENAME
-  para evitar conflitos de nomes de definição internos quando FUNCTIONMACRO é
-  usada várias vezes dentro do mesmo escopo de visibilidade. No entanto, a
-  palavra-chave <emphasis role="bold">LOCAL</emphasis> deve ser usada
-  explicitamente dentro de FUNCTIONMACRO se um nome de definição em seu
-  <emphasis>code</emphasis> pode também ter sido definido fora de
-  FUNCTIONMACRO e dentro do mesmo escopo de visibilidade. LOCAL identifica
-  claramente que a definição é limitada ao <emphasis>code</emphasis> dentro de
-  FUNCTIONMACRO.</para>
+  <para>Ao contrário da estrutura MACRO, nem <link
+  linkend="_UNIQUENAME">#UNIQUENAME</link> nem <link
+  linkend="_DECLARE">#DECLARE</link> são necessários para evitar conflitos de
+  nomes de definição internos quando FUNCTIONMACRO é usada várias vezes dentro
+  do mesmo escopo de visibilidade. No entanto, a palavra-chave <emphasis
+  role="bold">LOCAL</emphasis> deve ser usada explicitamente dentro de
+  FUNCTIONMACRO se um nome de definição em seu <emphasis>code</emphasis> pode
+  também ter sido definido fora de FUNCTIONMACRO e dentro do mesmo escopo de
+  visibilidade. LOCAL identifica claramente que a definição é limitada ao
+  <emphasis>code</emphasis> dentro de FUNCTIONMACRO.</para>
 
   <para><emphasis role="bold">Exemplo:</emphasis></para>
 
@@ -140,5 +141,6 @@ AddTwo(8);</programlisting>
 
   <para>Ver também: <link linkend="FUNCTION_Structure">Estrutura
   FUNCTION</link>, <link linkend="MACRO_Structure">Estrutura
-  MACRO</link></para>
+  MACRO</link>, <link linkend="_DECLARE">#DECLARE</link>, <link
+  linkend="_UNIQUENAME">#UNIQUENAME</link></para>
 </sect1>

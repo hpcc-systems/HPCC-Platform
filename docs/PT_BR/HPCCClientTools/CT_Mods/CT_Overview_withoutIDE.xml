@@ -2,7 +2,7 @@
 <!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <chapter id="CT_Overview">
-  <title><emphasis role="bold">Visão geral</emphasis></title>
+  <title>Visão geral</title>
 
   <para>Este manual contém informações para o conjunto de Ferramentas do
   cliente a serem usadas no HPCC da LexisNexis. Essas ferramentas
@@ -15,12 +15,6 @@
       <colspec/>
 
       <tbody>
-        <row>
-          <entry><emphasis role="bold">ECLPlus</emphasis></entry>
-
-          <entry>Ferramenta de execução ECL da linha de comando para facilitar
-          a automação da execução do código ECL.</entry>
-        </row>
 
         <row>
           <entry><emphasis role="bold">ECL</emphasis></entry>
@@ -58,7 +52,7 @@
     <title>Convenções de documentação</title>
 
     <sect2 id="ECL_Language">
-      <title><emphasis>Linguagem ECL</emphasis></title>
+      <title><emphasis>ECL Language</emphasis></title>
 
       <para>Embora o ECL não faça distinção entre maiúsculas e minúsculas, as
       palavras-chave reservadas do ECL e as funções contidas neste documento
@@ -131,9 +125,10 @@
 
       <para><emphasis role="bold">Windows: </emphasis></para>
 
-      <para>Execute o arquivo executável, p.ex.:
-      hpccsystems-clienttools_community-7.X.X-XWindows-i386.exe em sua
-      máquina. Siga os comandos para concluir a instalação.</para>
+      <para>Execute o arquivo executável, por exemplo:
+      <emphasis>hpccsystems-clienttools-community_10.6.6-1Windows-x86_64.exe
+      </emphasis>em sua máquina. Siga os prompts para concluir a
+      instalação.</para>
 
       <para><emphasis role="bold">Sistemas baseados em RPM (CentOS/RedHat):
       </emphasis></para>
@@ -165,8 +160,13 @@
     <sect2 id="Other_Installs">
       <title>Instalações de Múltiplas Versões</title>
 
-      <para>Você pode instalar várias versões das ferramentas do cliente se
-      precisar trabalhar com várias versões da plataforma.</para>
+      <para>No Windows ou OSX, é possível instalar várias versões das
+      ferramentas do cliente se você precisar trabalhar com várias versões da
+      plataforma. Você pode então escolher manualmente a versão que deseja
+      usar ou permitir que o ECL IDE ou o VS Code escolha automaticamente a
+      melhor versão. <emphasis role="bold">Na maioria dos casos, permitir que
+      o IDE ou VS Code faça Auto Detect é melhor. </emphasis> Várias versões
+      não são compatíveis com instalações RPM ou DEB.</para>
 
       <para>Para instalar as ferramentas do cliente, você precisa ter o pacote
       de instalação adequado para seu sistema operacional e a versão
@@ -238,7 +238,7 @@
       <para>Para executar o DFUplus em uma versão antiga ou outra versão das
       Ferramentas do cliente, por exemplo a versão 7.0.x:</para>
 
-      <para><programlisting>/opt/HPCCSystems/7.0.x/clienttools/bin/dfuplus action=list server=http://127.0.0.1:8010</programlisting></para>
+      <para><programlisting>/opt/HPCCSystems/10.0.x/clienttools/bin/dfuplus action=list server=http://127.0.0.1:8010</programlisting></para>
 
       <para><emphasis role="bold">Windows</emphasis></para>
 

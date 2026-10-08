@@ -37,12 +37,14 @@
       </informaltable></para>
 
     <para>A função <emphasis role="bold">CRON</emphasis> determina um evento
-    temporal para uso no serviço WHEN <indexterm/> ou função WAIT. Essa função
-    é um sinônimo de EVENT('CRON', <emphasis>time</emphasis>).</para>
+    temporal para uso no serviço de workflow WHEN<indexterm>
+        <primary>WHEN workflow service</primary>
+      </indexterm> ou função WAIT. Essa função é um sinônimo de EVENT('CRON',
+    <emphasis>time</emphasis>).</para>
 
-    <para>O parâmetro de tempo segue o formato padrão de uma cron no unix,
-    expressado em UTC (também conhecido como Tempo Médio de Greenwich) como
-    uma string que contém os seguintes componentes de espaço
+    <para>O parâmetro <emphasis>time </emphasis>segue o formato padrão de uma
+    cron no unix, expressado em UTC (também conhecido como Tempo Médio de
+    Greenwich) como uma string que contém os seguintes componentes de espaço
     delimitado:</para>
 
     <para><emphasis>minute hour dom month dow</emphasis></para>

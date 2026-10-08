@@ -22,6 +22,18 @@
       </indexterm> são suportados para uso em expressões, listados aqui em sua
     avaliação:</para>
 
+    <para><variablelist>
+        <varlistentry>
+          <term>Note:</term>
+
+          <listitem>
+            <para>*, /, %, e DIV têm todos a mesma precedência e são
+            associativos à esquerda. + e - têm a mesma precedência e são
+            associativos à esquerda.</para>
+          </listitem>
+        </varlistentry>
+      </variablelist></para>
+
     <informaltable colsep="1" frame="all" rowsep="1">
       <tgroup align="left" cols="2">
         <colspec colwidth="194.80pt"/>

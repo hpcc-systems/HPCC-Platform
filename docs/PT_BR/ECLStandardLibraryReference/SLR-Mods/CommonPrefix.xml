@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="CommonPrefix">
+  <title>CommonPrefix</title>
+
+  <para><emphasis role="bold">STD.Str.CommonPrefix<indexterm>
+      <primary>STD.Str.CommonPrefix</primary>
+    </indexterm><indexterm>
+      <primary>Str.CommonPrefix</primary>
+    </indexterm><indexterm>
+      <primary>CommonPrefix</primary>
+    </indexterm>(</emphasis> <emphasis>s1, s2 </emphasis><emphasis
+  role="bold">[ </emphasis><emphasis>,nocase</emphasis><emphasis role="bold">
+  ] )</emphasis></para>
+
+  <para><emphasis role="bold">STD.Uni.CommonPrefix<indexterm>
+      <primary>STD.Uni.CommonPrefix</primary>
+    </indexterm><indexterm>
+      <primary>Uni.CommonPrefix</primary>
+    </indexterm><indexterm/>(</emphasis> <emphasis>s1, s2 </emphasis><emphasis
+  role="bold">[ </emphasis><emphasis>,nocase</emphasis><emphasis role="bold">
+  ] )</emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="85*"/>
+
+      <colspec colwidth="915*"/>
+
+      <tbody>
+        <row>
+          <entry><emphasis>s1</emphasis></entry>
+
+          <entry>Uma string a ser comparada.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>s2</emphasis></entry>
+
+          <entry>Uma string a ser comparada.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>nocase</emphasis></entry>
+
+          <entry>Opcional. Se TRUE, a comparação não faz distinção entre
+          maiúsculas e minúsculas. Se omitido, o padrão é FALSE.</entry>
+        </row>
+
+        <row>
+          <entry>Retorno:</entry>
+
+          <entry>CommonPrefix retorna um valor STRING ou UNICODE, conforme
+          apropriado. Contém o maior prefixo comum a ambas as strings, copiado
+          do primeiro argumento. O resultado será vazio se as strings não
+          tiverem prefixo comum ou se algum dos argumentos for vazio.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>A função <emphasis role="bold">CommonPrefix</emphasis> retorna o maior
+  prefixo comum a ambas as strings. Pode ser usada para identificar prefixos
+  compartilhados entre strings, o que é útil em tarefas de processamento de
+  texto como correspondência de padrões, normalização de dados ou análise
+  linguística.</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting format="linespecific">IMPORT Std;
+Std.Str.CommonPrefix('DANIEL', 'DANNY',nocase:=FALSE); // DAN
+Std.Str.CommonPrefix('DANIEL', 'Danny',FALSE);         // D
+Std.Str.CommonPrefix('DANIEL', 'Danny',TRUE);          // DAN
+Std.Str.CommonPrefix('APPLES', 'ORANGES',FALSE);       // empty </programlisting>
+
+  <para>Ver também: <link linkend="CommonSuffix">CommonSuffix</link></para>
+</sect1>

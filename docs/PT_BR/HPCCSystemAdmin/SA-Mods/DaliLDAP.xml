@@ -59,15 +59,6 @@
           especificado.</para>
         </listitem>
 
-        <listitem>
-          <para>As credenciais do FilesDefaultUser são injetadas se nenhuma
-          for fornecida. A <emphasis>filesDefaultUser</emphasis> é uma conta
-          do LDAP usada para acessar arquivos quando nenhuma credencial de
-          usuário tiver sido fornecida. Esta conta é semelhante a uma conta do
-          tipo “convidado”, por isso deve ter acesso bastante limitado caso
-          seja utilizada. Para desativar o acesso sem credenciais, deixe em
-          branco o atributo filesDefaultUser.</para>
-        </listitem>
 
         <listitem>
           <para>Como a configuração CheckScopeScans está desativada, os
@@ -157,6 +148,8 @@
 
         <member>DaliServer</member>
 
+        <member>DaliStop</member>
+
         <member>SashaServer</member>
 
         <member>DfuServer</member>
@@ -190,30 +183,28 @@
         <member>Monitoring</member>
       </simplelist></para>
 
-    <para><simplelist columns="3" type="vert">
-        <member/>
-      </simplelist></para>
 
     <para/>
 
-    <para>Uma entrada pode ter um ou mais nós especificados em uma lista
-    separada por vírgulas.</para>
+    <para>Uma entrada pode ter um ou mais nós (hosts que exigem acesso),
+    especificados em uma lista separada por vírgulas. Os nós podem ter uma ou
+    mais funções, especificadas em uma lista separada por vírgulas. As funções
+    diferenciam maiúsculas de minúsculas.</para>
 
-    <para>Os nós podem ter uma ou mais funções, especificadas em uma lista
-    separada por vírgulas.</para>
-
-    <para>Nunca deve ser necessário incluir explicitamente as seguintes
-    funções:</para>
+    <para>Nunca deve ser necessário adicionar explicitamente as seguintes
+    funções para nós dentro do mesmo ambiente:</para>
 
     <para><programlisting>AgentExec, DaliServer, EclAgent, EclCC, EclCCServer, EclServer, EspServer, 
 SashaServer, RoxieMaster, and ThorMaster </programlisting></para>
 
     <para>Essas funções correspondem a componentes no ambiente, que devem
-    estar sempre implicitamente na Allowlist (lista de permissões) pela
-    inclusão no ambiente.</para>
+    estar sempre implicitamente na Allowlist pela inclusão no ambiente. Se nós
+    em um ambiente externo precisarem se comunicar com o Dali, então esses nós
+    deverão ser adicionados explicitamente.</para>
 
-    <para>Além disso, o servidor Dali coloca na Whitlist (lista de permissões)
-    automaticamente essas funções:</para>
+    <para>Além disso, as seguintes funções de ferramentas administrativas são
+    automaticamente adicionadas à Allowlist para execução no nó do servidor
+    Dali:</para>
 
     <para><programlisting>Config, DaFsControl, DaliAdmin, DaliDiag, ScheduleAdmin, SwapNode, Testing, 
 TreeView, UpdateEnv, XRef, Monitoring</programlisting></para>
@@ -230,7 +221,7 @@ TreeView, UpdateEnv, XRef</programlisting></para>
     <para>Para desabilitar totalmente o recurso Allowlist (Lista de
     permissões), você pode adicionar:</para>
 
-    <para><programlisting>&lt;AllowList enabled="false"&gt;</programlisting><emphasis
+    <para><programlisting>&lt;AllowList enabled="false"/&gt;</programlisting><emphasis
     role="bold">Isso não é recomendado para ambientes de
     produção.</emphasis></para>
 
@@ -242,20 +233,25 @@ TreeView, UpdateEnv, XRef</programlisting></para>
     semelhantes para isso:</para>
 
     <para><programlisting>00000017 Operator 2019-11-20 16:58:39.617 17056 17074 
-         "AllowListing is disabled, ignoring: Access denied! 
-         [client ip=192.168.9.12, role=DaliDiag] not Allowlisted"</programlisting></para>
+         "AllowList is disabled, ignoring: Access denied! 
+         [client ip=192.168.9.12, role=DaliDiag] not AllowListed"</programlisting></para>
 
-    <para/>
+    <para>Para permitir que componentes legados que não fornecem uma função se
+    conectem, é possível especificar a opção allowAnonRoles. O componente
+    DEVE estar em um IP incluído na Allowlist.</para>
+
+    <para><programlisting>&lt;AllowList allowAnonRoles="false"/&gt;</programlisting></para>
 
     <sect3>
       <title>Recuperar a Allowlist (Lista de permissões)</title>
 
-      <para>Para recuperar toda a lista de desbloqueio (implícita e
-      explícita), use a linha de comando <emphasis
-      role="bold">dalidiag</emphasis> (encontrada em
-      /opt/HPCCSystems/bin/.)</para>
+      <para>Para recuperar toda a Allowlist (implícita e explícita), use a
+      ferramenta de linha de comando <emphasis
+      role="bold">dalidiag</emphasis></para>
 
-      <para><programlisting>dalidiag &lt;dali-ip&gt; -Allowlist</programlisting></para>
+      <para>(encontrada em /opt/HPCCSystems/bin/)</para>
+
+      <para><programlisting>dalidiag &lt;dali-ip&gt; -AllowList</programlisting></para>
     </sect3>
 
     <sect3>
@@ -282,12 +278,12 @@ TreeView, UpdateEnv, XRef</programlisting></para>
 
       <para><programlisting>{
     "name" : "AddAllowList",
-    "description" : "Add whilelist to environment",
+    "description" : "Add AllowList to environment",
     "type" : "modification",
     "operations" : [
         {
             "action" : "find",
-            "target_path" : "/Environment/Software/DaliServerProcess/Allowlist",
+            "target_path" : "/Environment/Software/DaliServerProcess/AllowList",
             "data" : {
                 "create_if_not_found" : true,
                 "save" : {
@@ -307,7 +303,7 @@ TreeView, UpdateEnv, XRef</programlisting></para>
                     },
                     {
                         "name" : "roles",
-                        "value" : "DaliDiag,DailAdmin"
+                        "value" : "DaliDiag,DaliAdmin"
                     }
                 ]
             }
@@ -339,10 +335,10 @@ TreeView, UpdateEnv, XRef</programlisting></para>
       <para>Exemplo de linha de comando:</para>
 
       <programlisting>sudo /opt/HPCCSystems/bin/envmod \
-     -t myAllowlistTemplate.json \
+     -t myAllowListTemplate.json \
      -e /etc/HPCCSystems/source/environment.xml \
      -d /opt/HPCCSystems/componentfiles/configschema/xsd \
-     -o /etc/HPCCSystems/source/environmentWithAllowlist.xml</programlisting>
+     -o /etc/HPCCSystems/source/environmentWithAllowList.xml</programlisting>
 
       <para>O parâmetro -t (ou --template) é o local do modelo.</para>
 
@@ -365,7 +361,7 @@ TreeView, UpdateEnv, XRef</programlisting></para>
 
       <para><programlisting>{
     “action” : “delete”,
-    “target_path” : “/Environment/Software/DaliServerProcess/Allowlist/Entry[@hosts=’adminnode3’]”
+    “target_path” : “/Environment/Software/DaliServerProcess/AllowList/Entry[@hosts=’node3’]”
 }
 </programlisting></para>
     </sect3>

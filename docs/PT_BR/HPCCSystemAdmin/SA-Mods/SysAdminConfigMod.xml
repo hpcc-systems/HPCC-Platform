@@ -6,7 +6,7 @@
     <title>Utilizando o Configuration Manager</title>
 
     <para id="cfgmgr_introP0">O Configuration Manager é o utilitário no qual
-    configuramos a plataforma HPCC. A configuração da plataforma HPCC é
+    configuramos a plataforma HPCC Systems<superscript>®</superscript>. A configuração da plataforma HPCC é
     armazenada em um arquivo XML de nome <emphasis
     role="bold">environment.xml</emphasis>. Depois de gerar um arquivo de
     ambiente (xml), ele é salvo em um diretório de origem (o padrão é
@@ -82,7 +82,7 @@
           <para>Usando um navegador de Internet, acesse a interface do
           Gerenciador de Configurações:</para>
 
-          <programlisting>http://&lt;<emphasis>ip de instalação do sistema</emphasis>&gt;:8015</programlisting>
+          <programlisting>http://&lt;<emphasis>ip of installed system</emphasis>&gt;:8015</programlisting>
 
           <para>O assistente de inicialização do Gerenciador de Configurações
           é exibido.</para>
@@ -279,10 +279,14 @@
 
               <para>Para o HPCC System.</para>
 
-              <para>Se estiver em execução, pare o HPCC System (em todos os
-              nós) usando um comando como este:</para>
-
-              <para><programlisting>sudo /sbin/service hpcc-init stop</programlisting></para>
+              <para>Se estiver em execução, pare a plataforma HPCC Systems
+              (em todos os nós) usando um comando como este:</para>
+ 
+ <programlisting> sudo systemctl stop hpccsystems-platform.target</programlisting> 			  
+	  <!--commentedOut-per-HPCC-20681-->
+		  <!--            <xi:include href="../common/SysDStop.xml"
+		                  xpointer="element(/1)"
+                          xmlns:xi="http://www.w3.org/2001/XInclude" />    -->
 
               <variablelist>
                 <varlistentry>
@@ -355,7 +359,7 @@ sudo -u hpcc cp /etc/HPCCSystems/environment.xml /etc/HPCCSystems/source/environ
               /etc/HPCCSystems e renomeie o arquivo para
               <emphasis>environment.xml.</emphasis></para>
 
-              <programlisting># for example 
+              <programlisting># for example
 sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/environment.xml</programlisting>
 
               <para/>

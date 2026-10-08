@@ -37,22 +37,93 @@
     e desprays do arquivo.</para>
   </sect1>
 
+
+  <sect1 id="FileMovement">
+    <title>Movimentação de Arquivos</title>
+
+    <para>O serviço de arquivos ESP pode solicitar se um comando de importação
+    (spray), despray ou cópia é um comando <emphasis
+    role="bold">push</emphasis> ou <emphasis role="bold">pull</emphasis>.</para>
+
+    <para>Esses processos são executados como workunits DFU e se comunicam com
+    componentes de serviço, seja executando como processos ftslave iniciados
+    dinamicamente (o comportamento padrão em implantações Bare-Metal), seja
+    como tarefas em execução em um serviço dafilesrv (a única opção em uma
+    implantação conteinerizada).</para>
+
+    <itemizedlist>
+      <listitem>
+        <para><emphasis role="bold">pull</emphasis> significa que os comandos
+        serão executados conceitualmente por parte de destino e farão pull a
+        partir da origem.</para>
+      </listitem>
+
+      <listitem>
+        <para><emphasis role="bold">push</emphasis> significa que os comandos
+        serão executados conceitualmente por parte de origem e farão push para
+        o destino.</para>
+      </listitem>
+    </itemizedlist>
+
+    <para>Em implantações Bare-Metal, nas quais a computação fica acoplada aos
+    dados, os processos ftslave são iniciados nos nós de origem ou de destino,
+    dependendo de a operação ser push ou pull.</para>
+
+    <para>Em um sistema conteinerizado, os comandos sempre são executados em um
+    spray-service dafilesrv dedicado, no qual nem a origem nem o destino são
+    locais.</para>
+
+    <para>A configuração padrão em um sistema Bare-Metal é useFtSlave=true, uma
+    opção do dfuserver, mas ela pode ser desativada para que o Bare-Metal
+    também use o dafilesrv como serviço.</para>
+
+    <para>Em geral, recomenda-se deixar a decisão de usar pull ou push a cargo
+    da plataforma. No Bare-Metal, ela pode decidir que precisa usar push porque
+    executar o ftslave no lado de destino não é suportado, como quando a
+    Landing Zone é um servidor Windows. Ela também pode optar por pull quando
+    concluir que isso é mais eficiente. Em um sistema conteinerizado, alguns
+    planes de destino podem não suportar vários processos gravando
+    simultaneamente e, portanto, pull é forçado. Se você solicitar
+    implicitamente pull ou push e a plataforma não puder atender à solicitação,
+    ela emitirá um aviso e continuará com o método suportado.</para>
+
+    <para>Além disso, a opção <emphasis role="bold">noCommon</emphasis> está
+    disponível. A opção noCommon impede que o job/dfuserver faça o
+    "agrupamento" (commoning up) dos comandos de partição individuais em uma
+    única solicitação. Commoning up significa que um único comando ftslave ou
+    de serviço processará várias partições sequencialmente. Não fazer o
+    agrupamento significa que várias partições simultâneas que, de outra forma,
+    seriam agrupadas, operarão em paralelo como ftslaves individuais ou
+    comandos individuais do serviço de spray.</para>
+
+    <para>No Bare-Metal, noCommon fica ativado por padrão e significa que
+    qualquer comando de partição destinado ao mesmo host que, de outra forma,
+    seria agrupado em um único comando, será mantido como vários comandos
+    simultâneos. Por exemplo, ao fazer spray de um arquivo para um cluster Thor
+    em Bare-Metal, se o grupo Thor tiver várias partições por nó (porque
+    slavesPerNode&gt;1), então, com o padrão noCommon=true e o modo pull, cada
+    um dos vários comandos pull de partição para cada nó será executado em
+    paralelo.</para>
+
+    <para>Em implantações conteinerizadas, noCommon não é suportado atualmente
+    e será ignorado.</para>
+  </sect1>
+
   <sect1 id="Working_with_a_data_file">
     <title>Trabalhando com arquivo de dados</title>
 
-    <para>Depois de começar a trabalhar com seu HPCC System, é recomendado
-    processar alguns dados reais; esta seção mostra como carregar dados no
-    HPCC System.</para>
+    <para>Depois de começar a trabalhar com sua plataforma HPCC Systems, você
+    vai querer processar alguns dados reais; esta seção mostra como carregar
+    dados na sua plataforma HPCC Systems.</para>
 
     <sect2 id="Cautions_and_Warnings">
-      <title>Antes de começarmos</title>
+      <title>Antes de começar</title>
 
-      <para>Depois de começar a trabalhar com seu HPCC System, é recomendado
-      processar alguns dados reais; esta seção mostra como carregar dados no
-      HPCC System. Um HPCC System de produção típico teria uma capacidade de
-      dados maior do que um sistema de desenvolvimento. O tamanho dos arquivos
-      com os quais você deseja trabalhar é limitado pelo tamanho do seu
-      sistema.</para>
+      <para>Primeiro, você deve considerar o tamanho dos dados e a capacidade
+      do seu sistema. Uma plataforma HPCC Systems de produção típica teria
+      muito mais capacidade de dados do que um sistema de desenvolvimento. O
+      tamanho dos arquivos com os quais você deseja trabalhar é limitado pelo
+      tamanho do seu sistema.</para>
     </sect2>
 
     <sect2 id="Uploading_a_file">
@@ -64,7 +135,7 @@
       <orderedlist>
         <listitem>
           <para>Em seu navegador, acesse o URL do <emphasis role="bold">ECL
-          Watch</emphasis> de exemplo exibido, http://nnn.nnn.nnn.nnn:8010,
+          Watch</emphasis> exibido no exemplo, http://nnn.nnn.nnn.nnn:8010,
           onde nnn.nnn.nnn.nnn é o endereço IP do servidor ESP.</para>
 
           <para><informaltable colsep="1" frame="all" rowsep="1">
@@ -91,9 +162,12 @@
         </listitem>
 
         <listitem>
-          <para>Na página do ECL Watch, clique no link <emphasis
-          role="bold">Upload/Download File </emphasis> localizado no menu ao
-          lado esquerdo.</para>
+          <para>Na página inicial do ECL Watch, clique no link do ícone
+          <emphasis role="bold">Files</emphasis> na parte superior, depois
+          clique no botão <emphasis role="bold">Landing Zones</emphasis> no
+          submenu e, em seguida, clique no botão de ação <emphasis
+          role="bold">Upload</emphasis>, conforme ilustrado na imagem a
+          seguir.</para>
 
           <para><figure>
               <title>Upload/download</title>
@@ -104,12 +178,9 @@
                              vendor="eclwatchSS"/>
                 </imageobject>
               </mediaobject>
-            </figure></para>
-
-          <para><phrase> </phrase>Após clicar no link Upload/Download File,
-          você será direcionado para a página de zona de entrada de arquivos;
-          lá é possível <emphasis role="bold">procurar</emphasis> em seu
-          computador o arquivo a ser enviado:</para>
+            </figure>Uma caixa de diálogo de arquivo do sistema é aberta.
+          Navegue e selecione o arquivo a ser enviado e pressione o botão
+          <emphasis role="bold">Open</emphasis>.</para>
 
           <para><figure>
               <title>Zonas de Entrada</title>
@@ -124,35 +195,31 @@
         </listitem>
 
         <listitem>
-          <para>Pressione o botão <emphasis role="bold">Browse</emphasis> para
-          navegar pelos arquivos em seu computador local, selecione o arquivo
-          a ser enviado e clique no botão <emphasis
-          role="bold">Open</emphasis> .</para>
-
-          <para>O arquivo selecionado deverá aparecer <emphasis role="bold">no
-          campo “Selecione um arquivo para enviar!”</emphasis> .</para>
+          <para>Depois de escolher o arquivo a ser enviado, você será levado à
+          caixa de diálogo <emphasis role="bold">File Uploader</emphasis>, na
+          qual poderá escolher a landing zone, a máquina e/ou a pasta para o
+          upload do arquivo.</para>
         </listitem>
 
         <listitem>
-          <para>Pressione o botão <emphasis role="bold">Upload Now</emphasis>
-          para concluir o envio do arquivo.</para>
+          <para>Pressione o botão <emphasis role="bold">Start</emphasis> para
+          concluir o upload do arquivo.</para>
         </listitem>
       </orderedlist>
     </sect2>
 
     <sect2 id="Uploading_files_w_secure_client">
-      <title>Enviando um arquivo com uma Cópia de Segurança</title>
+      <title>Enviando arquivos com um cliente Secure Copy</title>
 
-      <para>Para enviar um arquivo maior para processamento para sua máquina
-      virtual, será necessária uma ferramenta com suporte para o protocolo de
-      cópia de segurança. Nesta seção, abordaremos o uso do WinSCP. Há outras
-      ferramentas disponíveis, mas os passos são similares.</para>
+      <para>Para enviar um arquivo grande para processamento ao seu sistema,
+      você precisará de uma ferramenta que ofereça suporte ao protocolo secure
+      copy (SCP). Há várias ferramentas gratuitas disponíveis, e as etapas são
+      muito semelhantes.</para>
 
       <para><orderedlist>
           <listitem>
-            <para>Abra a ferramenta WinSCP e faça login no nó da zona de
-            entrada de arquivo usando o nome de usuário e senha
-            fornecidos.</para>
+            <para>Abra a ferramenta SCP e faça login no nó da Landing Zone
+            usando o nome de usuário e a senha fornecidos.</para>
 
             <para><informaltable colsep="1" rowsep="1">
                 <tgroup cols="2">
@@ -175,35 +242,24 @@
                   </tbody>
                 </tgroup>
               </informaltable></para>
+
+            <para>Certifique-se de estar usando o protocolo seguro, SFTP,
+            conectado ao IP ou hostname da sua Landing Zone por meio da porta
+            22 em sua ferramenta SCP.</para>
           </listitem>
 
           <listitem>
-            <para>Depois de fazer login, o sistema irá navegar automaticamente
-            até a pasta da zona de entrada de arquivo.
-            (/var/lib/LexisNexis/mydropzone)</para>
+            <para>Depois de fazer login, defina o destino como a pasta da
+            landing zone. (/var/lib/HPCCSystems/mydropzone)</para>
           </listitem>
 
           <listitem>
-            <?dbfo keep-together="always"?>
-
-            <para>Navegue onde seu arquivo local está na parte esquerda da
-            janela.</para>
-
-            <para><figure>
-                <title>WinSCP</title>
-
-                <mediaobject>
-                  <imageobject>
-                    <imagedata fileref="../../images/LZimg05.jpg"/>
-                  </imageobject>
-                </mediaobject>
-              </figure></para>
+            <para>Navegue até o local onde está seu arquivo local.</para>
           </listitem>
 
           <listitem>
-            <para>Selecione o arquivo de dados para envio e copie-o para a
-            zona de entrada de arquivos usando o recurso de arrastar e
-            soltar.</para>
+            <para>Selecione o arquivo de dados para envio e copie-o para sua
+            landing zone.</para>
           </listitem>
         </orderedlist></para>
     </sect2>
@@ -435,6 +491,15 @@
                   </row>
 
                   <row>
+                    <entry><emphasis role="bold">Expire in
+                    (days)</emphasis></entry>
+
+                    <entry>Um valor inteiro indicando o número de dias antes
+                    da remoção automática do arquivo. Se omitido, o padrão é
+                    -1 (nunca expira).</entry>
+                  </row>
+
+                  <row>
                     <entry><emphasis role="bold">No Split</emphasis></entry>
 
                     <entry>Marque esta caixa para impedir a divisão de partes
@@ -631,6 +696,15 @@
                   </row>
 
                   <row>
+                    <entry><emphasis role="bold">Expire in
+                    (days)</emphasis></entry>
+
+                    <entry>Um valor inteiro indicando o número de dias antes
+                    da remoção automática do arquivo. Se omitido, o padrão é
+                    -1 (nunca expira).</entry>
+                  </row>
+
+                  <row>
                     <entry><emphasis role="bold">Quoted
                     Terminator</emphasis></entry>
 
@@ -772,6 +846,15 @@
 
                     <entry>Marque esta caixa para impedir a divisão de partes
                     do arquivo em várias partes de destino.</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">Expire in
+                    (days)</emphasis></entry>
+
+                    <entry>Um valor inteiro indicando o número de dias antes
+                    da remoção automática do arquivo. Se omitido, o padrão é
+                    -1 (nunca expira).</entry>
                   </row>
 
                   <row>
@@ -946,6 +1029,15 @@
                   </row>
 
                   <row>
+                    <entry><emphasis role="bold">Expire in
+                    (days)</emphasis></entry>
+
+                    <entry>Um valor inteiro indicando o número de dias antes
+                    da remoção automática do arquivo. Se omitido, o padrão é
+                    -1 (nunca expira).</entry>
+                  </row>
+
+                  <row>
                     <entry><emphasis role="bold">Compress</emphasis></entry>
 
                     <entry>Marque esta caixa para compactar os
@@ -1087,6 +1179,15 @@
                   </row>
 
                   <row>
+                    <entry><emphasis role="bold">Expire in
+                    (days)</emphasis></entry>
+
+                    <entry>Um valor inteiro indicando o número de dias antes
+                    da remoção automática do arquivo. Se omitido, o padrão é
+                    -1 (nunca expira).</entry>
+                  </row>
+
+                  <row>
                     <entry><emphasis role="bold">Compress</emphasis></entry>
 
                     <entry>Marque esta caixa para compactar os
@@ -1224,6 +1325,15 @@
 
                     <entry>Marque esta caixa para compactar os
                     arquivos.</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">Expire in
+                    (days)</emphasis></entry>
+
+                    <entry>Um valor inteiro indicando o número de dias antes
+                    da remoção automática do arquivo. Se omitido, o padrão é
+                    -1 (nunca expira).</entry>
                   </row>
 
                   <row>

@@ -2,7 +2,7 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="Working_with_BLOBs">
-  <title><emphasis role="bold">Trabalhando com BLOBs</emphasis></title>
+  <title>Trabalhando com BLOBs</title>
 
   <para>O suporte BLOB (Objetos Binários Grandes) no ECL começa com o tipo de
   valor DATA. Ele pode conter qualquer tipo de dados, tornando a opção

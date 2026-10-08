@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="LOG">
@@ -37,7 +37,8 @@
 
   <para>Exemplo:</para>
 
-  <programlisting>MyLogPI := LOG(3.14159); //0.49715</programlisting>
+  <programlisting lang="ECL_Runnable">MyLogPI := LOG(3.14159); // 0.4971495058611233
+OUTPUT(MyLogPI);</programlisting>
 
   <para>Ver também: <link linkend="EXP">EXP</link>, <link linkend="SQRT">SQRT</link>, <link linkend="POWER">POWER</link>, <link linkend="LN">LN</link></para>
 </sect1>

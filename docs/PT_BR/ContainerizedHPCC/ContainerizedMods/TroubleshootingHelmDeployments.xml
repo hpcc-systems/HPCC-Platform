@@ -1,0 +1,572 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE chapter PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<chapter id="TroubleshootingContainerizedDeployments">
+  <title>Solução de Problemas em Implantações Conteinerizadas</title>
+
+  <sect1 id="introductionTroubleshooting">
+    <title>Introdução</title>
+
+    <para>O Helm é um poderoso gerenciador de pacotes para Kubernetes, que
+    simplifica a implantação e o gerenciamento de aplicações complexas. No
+    entanto, mesmo com o Helm, podem surgir problemas de implantação. Este
+    capítulo o guiará pelas etapas comuns de solução de problemas em
+    implantações com Helm. Ferramentas de linha de comando, como o
+    <emphasis>kubectl</emphasis> e o <emphasis>helm</emphasis>, estão
+    disponíveis tanto para implantações locais quanto em nuvem.</para>
+  </sect1>
+
+  <sect1 id="UsefulHelmCommands">
+    <title>Comandos Úteis do Helm</title>
+
+    <para>A seguir estão alguns comandos do Helm úteis para a solução de
+    problemas.</para>
+
+    <para><emphasis role="bold">Listar as implantações</emphasis> usando este
+    comando em uma janela de terminal:</para>
+
+    <para><programlisting>helm list</programlisting></para>
+
+    <para>Isso retorna todos os releases do Helm instalados.</para>
+
+    <para>Se você tiver vários namespaces, use este comando:</para>
+
+    <para><programlisting>helm list -A </programlisting></para>
+
+    <para>Retorna todos os releases do Helm instalados em todos os
+    namespaces.</para>
+
+    <para><emphasis role="bold">Obter o status</emphasis> de um release
+    específico usando este comando em uma janela de terminal:</para>
+
+    <para><programlisting>helm status &lt;release-name&gt;</programlisting></para>
+
+    <para>Isso retorna o status de um release específico.</para>
+
+    <para><emphasis role="bold">Obter os valores fornecidos pelo
+    usuário</emphasis> para um release usando este comando em uma janela de
+    terminal:</para>
+
+    <para><programlisting>helm get values &lt;release-name&gt;</programlisting></para>
+
+    <para>Usando esses comandos do Helm de forma eficaz, você pode identificar
+    e resolver rapidamente problemas nas suas implantações com Helm. Lembre-se
+    de consultar a documentação oficial do Helm para obter informações mais
+    detalhadas e casos de uso específicos.</para>
+  </sect1>
+
+  <sect1 id="checkthestatusofpods">
+    <title>Verificar o Status dos Pods</title>
+
+    <para>Os pods são as menores unidades computacionais implantáveis que
+    podem ser criadas e gerenciadas no Kubernetes. Verificar o status dos pods
+    é uma etapa fundamental na solução de problemas de implantações no
+    Kubernetes. Ao monitorar o status dos pods, você pode identificar e tratar
+    rapidamente possíveis problemas, garantindo a saúde e o desempenho das
+    suas aplicações.  </para>
+
+    <para>A plataforma HPCC Systems possui um ou mais pods para cada
+    componente de um sistema implantado.</para>
+
+    <para>Para obter uma visão geral rápida do status dos pods, use o seguinte
+    comando em uma janela de terminal:</para>
+
+    <para><programlisting>kubectl get pods</programlisting></para>
+
+    <para>Isso lista todos os pods do seu cluster, junto com o status deles, a
+    contagem de reinicializações e outros detalhes.</para>
+
+    <para>Se você tiver implantações em mais de um namespace, use este
+    comando:</para>
+
+    <para><programlisting>kubectl get pods -A</programlisting></para>
+
+    <para>Isso lista todos os pods de todos os namespaces.</para>
+
+    <para>Cada pod deve indicar o status <emphasis
+    role="bold">Running</emphasis> e exibir um número correspondente de pods
+    na coluna <emphasis role="bold">READY</emphasis>.</para>
+
+    <para>Verifique a coluna <emphasis role="bold">RESTARTS</emphasis>; um
+    número elevado de reinicializações pode indicar problemas.</para>
+
+    <sect2 id="IdentifyingIssues" role="brk">
+      <title>Identificando Outros Problemas e Sua Causa Raiz</title>
+
+      <para><emphasis role="bold">Status Pending:</emphasis> <variablelist>
+          <varlistentry>
+            <term>Recursos Insuficientes</term>
+
+            <listitem>
+              <para>O pod pode estar aguardando que recursos como CPU ou
+              memória fiquem disponíveis.</para>
+            </listitem>
+          </varlistentry>
+
+          <varlistentry>
+            <term>Falhas de Agendamento</term>
+
+            <listitem>
+              <para>Pode haver conflitos de agendamento ou problemas nos nós
+              impedindo que o pod seja agendado.</para>
+            </listitem>
+          </varlistentry>
+        </variablelist></para>
+
+      <para><emphasis role="bold">Status Running: </emphasis></para>
+
+      <variablelist>
+        <varlistentry>
+          <term>Contagem Alta de Reinicializações</term>
+
+          <listitem>
+            <para>Reinicializações frequentes podem indicar problemas na
+            configuração do pod, na imagem ou na infraestrutura
+            subjacente.</para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term>Restrições de Recursos</term>
+
+          <listitem>
+            <para>O pod pode estar enfrentando limitações de recursos,
+            levando à degradação de desempenho ou a falhas.</para>
+          </listitem>
+        </varlistentry>
+      </variablelist>
+
+      <para><emphasis role="bold">Status Failed: </emphasis></para>
+
+      <variablelist>
+        <varlistentry>
+          <term>Falhas de Contêiner</term>
+
+          <listitem>
+            <para>Um ou mais contêineres dentro do pod podem ter falhado
+            devido a erros ou travamentos.  </para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term>Sinais de Encerramento</term>
+
+          <listitem>
+            <para>O pod pode ter sido encerrado intencionalmente,
+            possivelmente devido a uma operação de implantação ou de
+            escalonamento.</para>
+          </listitem>
+        </varlistentry>
+      </variablelist>
+    </sect2>
+  </sect1>
+
+  <sect1 id="describe-a-pod" role="brk">
+    <title>Descrever um Pod</title>
+
+    <para>Use a ferramenta de linha de comando <emphasis
+    role="strong">kubectl</emphasis> para obter informações detalhadas sobre
+    os pods. Ao descrever um pod, você obtém informações valiosas sobre o
+    estado atual, a configuração e a utilização de recursos dele.</para>
+
+    <para>Para obter informações detalhadas sobre um pod, use o seguinte
+    comando em uma janela de terminal:</para>
+
+    <para><programlisting>kubectl describe pod &lt;pod-name&gt;</programlisting></para>
+
+    <para>A saída fornece informações detalhadas sobre o pod,
+    incluindo:</para>
+
+    <para><variablelist>
+        <varlistentry>
+          <term>Events</term>
+
+          <listitem>
+            <para>Uma linha do tempo dos eventos relacionados ao ciclo de vida
+            do pod. Se houver problemas com a implantação, eles normalmente
+            são encontrados nesta seção.</para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term>Containers</term>
+
+          <listitem>
+            <para>Informações sobre os contêineres em execução dentro do
+            pod.</para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term>Status</term>
+
+          <listitem>
+            <para>O status atual do pod.</para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term>Conditions</term>
+
+          <listitem>
+            <para>As condições que o pod deve atender para ser considerado em
+            execução.</para>
+          </listitem>
+        </varlistentry>
+      </variablelist></para>
+
+    <para>Se você tiver implantações em mais de um namespace, use este
+    comando:</para>
+
+    <para><programlisting>kubectl describe pod &lt;pod-name&gt;  -A</programlisting></para>
+
+    <para>Isso descreve o pod em todos os namespaces.</para>
+
+    <para>Analisando cuidadosamente essas informações, você pode:</para>
+
+    <para><variablelist>
+        <varlistentry>
+          <term>Identificar e solucionar problemas</term>
+
+          <listitem>
+            <para>Identificar com precisão a causa raiz dos problemas, como
+            restrições de recursos, erros de configuração ou problemas de
+            conectividade de rede.</para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term>Monitorar a saúde e o desempenho do pod</term>
+
+          <listitem>
+            <para>Acompanhar o status, o uso de recursos e o histórico de
+            eventos do pod para garantir que ele esteja operando conforme o
+            esperado.</para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term>Otimizar a alocação de recursos</term>
+
+          <listitem>
+            <para>Ajustar as solicitações e os limites de recursos para
+            melhorar o desempenho e a relação custo-benefício.</para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term>Obter informações sobre o agendamento e o gerenciamento de
+          recursos do Kubernetes</term>
+
+          <listitem>
+            <para>Aprender como o Kubernetes aloca recursos para os pods e
+            lida com falhas.</para>
+          </listitem>
+        </varlistentry>
+      </variablelist></para>
+
+    <para>Dominando a arte de descrever pods, você pode se tornar um
+    administrador de Kubernetes mais eficaz e solucionar problemas das suas
+    implantações com confiança.</para>
+  </sect1>
+
+  <sect1 id="check-the-status-of-services" role="brk">
+    <title>Verificar o Status dos Serviços</title>
+
+    <para>Os serviços expõem as aplicações em execução em um cluster.</para>
+
+    <para>O comando <emphasis>kubectl get services</emphasis> é uma
+    ferramenta poderosa para a solução de problemas em implantações no
+    Kubernetes. Ele fornece uma visão geral concisa dos serviços em execução
+    no seu cluster, ajudando a identificar possíveis problemas e suas causas
+    raiz.</para>
+
+    <para>Para obter uma visão geral rápida do status dos serviços, use o
+    seguinte comando em uma janela de terminal:</para>
+
+    <para><programlisting>kubectl get services</programlisting></para>
+
+    <para>Isso lista todos os serviços do seu cluster, junto com o tipo, os
+    endereços IP internos e externos, a porta e o tempo de atividade
+    (Age).</para>
+
+    <para>Se você tiver implantações em mais de um namespace, use este
+    comando:</para>
+
+    <para><programlisting>kubectl get service -A</programlisting></para>
+
+    <para>Isso lista todos os serviços de todos os namespaces.</para>
+
+    <para>Se um serviço que deveria ter um IP externo listado não exibir
+    nenhum, esse pod está com problema.</para>
+  </sect1>
+
+  <sect1 id="describe-a-service">
+    <title>Descrever um Serviço</title>
+
+    <para>Use a ferramenta de linha de comando <emphasis
+    role="strong">kubectl</emphasis> para obter informações detalhadas sobre
+    um serviço. Ao descrever um serviço no Kubernetes, você obtém informações
+    valiosas sobre a configuração, a saúde e a forma como ele interage com os
+    pods.</para>
+
+    <para>Para obter informações detalhadas sobre um serviço, use o seguinte
+    comando em uma janela de terminal:</para>
+
+    <para><programlisting>kubectl describe service &lt;service-name&gt;</programlisting></para>
+
+    <para>A saída fornece informações detalhadas sobre o serviço, incluindo o
+    endereço IP do serviço, a porta, os seletores e outros detalhes.</para>
+
+    <para>Se você tiver implantações em mais de um namespace, use este
+    comando:</para>
+
+    <para><programlisting>kubectl describe service &lt;service-name&gt;  -A</programlisting></para>
+
+    <para>Isso descreve o serviço em todos os namespaces.</para>
+  </sect1>
+
+  <sect1 id="ViewingPodLogs">
+    <title>Visualizando os Logs dos Pods</title>
+
+    <para>Visualizar os logs dos pods é uma etapa crucial na solução de
+    problemas de implantações com Helm, pois fornece informações em tempo real
+    sobre o comportamento e os erros que ocorrem dentro dos contêineres da sua
+    aplicação. Ao analisar esses logs, você pode identificar e tratar
+    rapidamente uma ampla variedade de problemas.</para>
+
+    <para>Para visualizar os logs de um pod específico, use o seguinte comando
+    em uma janela de terminal:</para>
+
+    <para><programlisting>kubectl logs &lt;pod-name&gt;</programlisting></para>
+
+    <para>Isso retorna todo o log de um pod.</para>
+
+    <para>Para acompanhar os logs e ver a saída em tempo real:</para>
+
+    <para><programlisting>kubectl logs -f &lt;pod-name&gt;</programlisting></para>
+
+    <para>Se o pod tiver mais de um contêiner, use este comando para obter os
+    logs de um contêiner específico:</para>
+
+    <para><programlisting>kubectl logs &lt;pod-name&gt; -c &lt;container-name&gt;</programlisting></para>
+  </sect1>
+  <sect1 id="CopyingFilesFromPod" role="brk">
+    <title>Copiando Arquivos de e para um Pod</title>
+
+    <para>O comando <emphasis role="strong">kubectl cp</emphasis> permite
+    copiar arquivos e diretórios entre o seu sistema de arquivos local e um
+    contêiner em execução em um pod. Isso é especialmente útil para recuperar
+    arquivos de log, core dumps ou arquivos de configuração de um pod para
+    uma análise mais aprofundada, ou para enviar arquivos de dados (como dados
+    de entrada) diretamente para a drop zone de um pod.</para>
+
+    <para>Para copiar um arquivo <emphasis>de</emphasis> um pod para a sua
+    máquina local, use o seguinte comando em uma janela de terminal:</para>
+
+    <para><programlisting>kubectl cp &lt;pod-name&gt;:&lt;path/to/remote/file&gt; &lt;path/to/local/destination&gt;</programlisting></para>
+
+    <para>Por exemplo, para copiar um arquivo de log de um pod chamado
+    <emphasis>myesp-6476c6659b-vqckq</emphasis>:</para>
+
+    <para><programlisting>kubectl cp myesp-6476c6659b-vqckq:/var/log/myapp.log ./myapp.log</programlisting></para>
+
+    <para>Para copiar um arquivo <emphasis>para</emphasis> um pod a partir da
+    sua máquina local, inverta os argumentos de origem e destino:</para>
+
+    <para><programlisting>kubectl cp &lt;path/to/local/file&gt; &lt;pod-name&gt;:&lt;path/to/remote/destination&gt;</programlisting></para>
+
+    <para>Por exemplo, para enviar um arquivo de dados para a drop zone de um
+    pod chamado <emphasis>mydropzone-7d9f8b6c4-xkp2t</emphasis>:</para>
+
+    <para><programlisting>kubectl cp mydata.csv mydropzone-7d9f8b6c4-xkp2t:/var/lib/HPCCSystems/dropzone/mydata.csv</programlisting></para>
+
+    <para>Se o pod executar vários contêineres, especifique o contêiner de
+    destino usando o sinalizador <emphasis>-c</emphasis>:</para>
+
+    <para><programlisting>kubectl cp &lt;pod-name&gt;:&lt;path/to/remote/file&gt; &lt;path/to/local/destination&gt; -c &lt;container-name&gt;</programlisting></para>
+
+    <para>Se você estiver trabalhando com vários namespaces, adicione o
+    namespace como prefixo do nome do pod:</para>
+
+    <para><programlisting>kubectl cp &lt;namespace&gt;/&lt;pod-name&gt;:&lt;path/to/remote/file&gt; &lt;path/to/local/destination&gt;</programlisting></para>
+
+    <note>
+      <para>O comando <emphasis>kubectl cp</emphasis> exige que o utilitário
+      <emphasis>tar</emphasis> esteja presente dentro do contêiner. A maioria
+      das imagens de contêiner do HPCC Systems o inclui por padrão.</para>
+    </note>
+  </sect1>
+
+  <sect1 id="ViewingServiceLogs">
+    <title>Visualizando os Logs dos Serviços</title>
+
+    <para>Embora os próprios serviços não produzam logs, você pode visualizar
+    os logs dos pods que estão executando o serviço.</para>
+
+    <para>Para isso, você precisará identificar os pods selecionados pelo
+    seletor do serviço. Você pode usar o comando describe para ver o
+    seletor:</para>
+
+    <para><programlisting>kubectl describe service &lt;service-name&gt; </programlisting></para>
+
+    <para>Depois de conhecer o seletor, você pode listar os pods que
+    correspondem a ele:</para>
+
+    <para><programlisting>kubectl get pods -l &lt;selector-label&gt; </programlisting></para>
+
+    <para>Em seguida, você pode visualizar os logs desses pods usando o
+    comando logs:</para>
+
+    <para><programlisting>kubectl logs &lt;pod-name&gt; </programlisting></para>
+  </sect1>
+
+  <sect1 id="EffectiveLogAnalysis">
+    <title>Análise Eficaz de Logs</title>
+
+    <para>A seguir estão algumas dicas adicionais para uma análise eficaz de
+    logs na solução de problemas.</para>
+
+    <variablelist>
+      <varlistentry>
+        <term>Filtrar e Pesquisar nos Logs</term>
+
+        <listitem>
+          <para>Use as opções do <emphasis>kubectl logs</emphasis> para
+          filtrar os logs por data e hora, nome do contêiner ou palavras-chave
+          específicas, a fim de focar nas informações relevantes.</para>
+
+          <para>Por exemplo:</para>
+
+          <para><programlisting>kubectl logs &lt;pod-name&gt; --since=10m</programlisting></para>
+
+          <para>Filtra os logs a partir de um determinado momento.</para>
+
+          <para>Embora o <emphasis>kubectl logs</emphasis> não tenha uma opção
+          direta de busca por palavra-chave, você pode usar ferramentas como o
+          <emphasis>grep</emphasis> para filtrar a saída.</para>
+
+          <para>Por exemplo:</para>
+
+          <para><programlisting>kubectl logs &lt;pod-name&gt; | grep "TLS"</programlisting></para>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry>
+        <term>Correlacionar Logs com Métricas</term>
+
+        <listitem>
+          <para>Combine a análise de logs com as métricas de monitoramento
+          para obter uma visão completa do desempenho da aplicação.</para>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry>
+        <term>Aproveitar Ferramentas de Log</term>
+
+        <listitem>
+          <para>Considere usar ferramentas avançadas de log, como
+          Elasticsearch, Logstash e Kibana (ELK Stack), para centralizar,
+          agregar e analisar os logs de vários pods e serviços.</para>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry>
+        <term>Definir Níveis de Log Apropriados</term>
+
+        <listitem>
+          <para>Configure sua aplicação para registrar logs no nível de
+          detalhe apropriado, equilibrando a necessidade de logs informativos
+          com o risco de verbosidade excessiva. Em seguida, você pode usar um
+          filtro para exibir apenas as entradas de log que atendam aos
+          critérios.</para>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry>
+        <term>Monitorar os logs em tempo real.</term>
+
+        <listitem>
+          <para>Monitorar os logs em tempo real pode ser útil para depurar
+          problemas em andamento. Use o seguinte comando:</para>
+
+          <para><programlisting>kubectl logs -f</programlisting></para>
+        </listitem>
+      </varlistentry>
+    </variablelist>
+  </sect1>
+
+  <sect1 id="AdditionalTroubleshootingTips">
+    <title>Dicas Adicionais para Solução de Problemas</title>
+
+    <para>A seguir estão algumas dicas adicionais para solucionar problemas
+    nas suas implantações.</para>
+
+    <variablelist>
+      <varlistentry>
+        <term>Verifique a configuração do seu chart Helm.</term>
+
+        <listitem>
+          <para>Certifique-se de que o(s) seu(s) chart(s) Helm esteja(m)
+          configurado(s) corretamente, com valores precisos para imagens,
+          recursos e variáveis de ambiente.</para>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry>
+        <term>Verifique a Disponibilidade das Imagens.</term>
+
+        <listitem>
+          <para>Certifique-se de que as imagens usadas no seu chart Helm
+          estejam acessíveis e possam ser baixadas pelo Kubernetes.</para>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry>
+        <term>Inspecione os Limites e as Solicitações de Recursos.</term>
+
+        <listitem>
+          <para>Revise os limites e as solicitações de recursos definidos para
+          os seus pods e serviços. Recursos insuficientes podem causar
+          problemas de desempenho ou falhas nos pods.</para>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry>
+        <term>Examine os Logs do Kubernetes.</term>
+
+        <listitem>
+          <para>Use o comando <emphasis>kubectl logs</emphasis> para
+          visualizar os logs de pods e contêineres específicos. Esses logs
+          podem fornecer informações valiosas sobre erros e comportamentos
+          inesperados.</para>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry>
+        <term>Revise a Conectividade de Rede.</term>
+
+        <listitem>
+          <para>Certifique-se de que o seu cluster Kubernetes tenha
+          conectividade de rede adequada, tanto interna quanto externamente.
+          Problemas de rede podem impedir que os pods se comuniquem entre si
+          ou com serviços externos.</para>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry>
+        <term>Considere os Persistent Volume Claims (PVCs).</term>
+
+        <listitem>
+          <para>Se a sua aplicação exigir armazenamento persistente, verifique
+          se os PVCs estão provisionados corretamente e se o armazenamento
+          subjacente está acessível.</para>
+        </listitem>
+      </varlistentry>
+    </variablelist>
+
+    <para>Seguindo essas etapas e dicas, você pode solucionar com eficácia os
+    problemas das suas implantações conteinerizadas e identificar rapidamente
+    a causa raiz dos problemas.</para>
+  </sect1>
+</chapter>

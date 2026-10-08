@@ -10,10 +10,7 @@
       <primary>File.WaitDfuWorkunit</primary>
     </indexterm><indexterm>
       <primary>WaitDfuWorkunit</primary>
-    </indexterm>(</emphasis> <emphasis> dfuwuid</emphasis> <emphasis
-  role="bold"> [</emphasis> <emphasis>,timeout</emphasis> <emphasis
-  role="bold">] [</emphasis> <emphasis>,espserverIPport </emphasis> <emphasis
-  role="bold">] )</emphasis></para>
+    </indexterm>(</emphasis> <emphasis>wuid, timeOut, espServerIpPort</emphasis> <emphasis role="bold">)</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -52,7 +49,7 @@
         </row>
 
         <row>
-          <entry>Return:<emphasis> </emphasis></entry>
+          <entry>Retorno:<emphasis> </emphasis></entry>
 
           <entry>WaitDfuWorkunit retorna uma string terminada por nulo que
           contém a string de status final da Workunit DFU (como: scheduled,

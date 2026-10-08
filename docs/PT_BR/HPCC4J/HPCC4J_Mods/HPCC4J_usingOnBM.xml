@@ -1,0 +1,199 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<chapter id="UsingHPCC4J_BM">
+  <title>Usando o HPCC4J com o HPCC em Bare Metal</title>
+
+  <sect1 id="configuring-rowservice-signing-keys-in-hpcc-systems" role="nobrk">
+    <title>Configurando Chaves de Assinatura do Rowservice no HPCC
+    Systems</title>
+
+    <para>Este guia apresenta as etapas para gerar e configurar as chaves de
+    assinatura do rowservice, permitindo a comunicação segura entre um cluster
+    HPCC Systems e clientes externos. Essas chaves de assinatura são
+    necessárias para a autenticação e para a leitura e gravação seguras de
+    dados entre clientes HPCC4J e clusters HPCC Systems, e devem estar
+    devidamente configuradas nos clusters HPCC Systems de destino.</para>
+
+    <sect2 id="step-1-generate-signing-keys">
+      <title>Etapa 1: Gerar as Chaves de Assinatura</title>
+
+      <para>Se as chaves de assinatura ainda não existirem, elas devem ser
+      geradas e colocadas em um diretório acessível ao usuário <emphasis
+      role="strong">hpcc</emphasis>. O diretório padrão <emphasis
+      role="strong">/home/hpcc/certificate</emphasis> será usado no exemplo de
+      configuração abaixo, mas em clusters com vários nós provavelmente faz
+      sentido alterar esse diretório.</para>
+
+      <sect3 id="generate-signing-keys">
+        <title>Gerar as Chaves de Assinatura</title>
+
+        <programlisting language="bash">sudo /opt/HPCCSystems/etc/init.d/setupPKI </programlisting>
+
+        <para>Esse comando gera um par de chaves de assinatura:</para>
+
+        <itemizedlist>
+          <listitem>
+            <para><emphasis role="strong">Chave Privada:</emphasis>
+            <literal>/home/hpcc/certificate/key.pem</literal></para>
+          </listitem>
+
+          <listitem>
+            <para><emphasis role="strong">Chave Pública:</emphasis>
+            <literal>/home/hpcc/certificate/public.key.pem</literal></para>
+          </listitem>
+        </itemizedlist>
+      </sect3>
+    </sect2>
+
+    <sect2 id="step-2-configure-signing-keys-in-the-hpcc-systems-environment">
+      <title>Etapa 2: Configurar as Chaves de Assinatura no Ambiente HPCC
+      Systems</title>
+
+      <para>Depois que as chaves forem geradas, elas precisam ser
+      referenciadas no arquivo de configuração environment.xml do HPCC
+      Systems.</para>
+
+      <sect3 id="add-keys-configuration-section">
+        <title>Adicionar a Seção de Configuração das Chaves</title>
+
+        <para>Modifique o arquivo <literal>environment.xml</literal>
+        localizado em <literal>/etc/HPCCSystems/environment.xml</literal> para
+        incluir o seguinte sob o nó
+        <literal>&lt;EnvSettings&gt;</literal>:</para>
+
+        <programlisting language="xml" role="font7">&lt;EnvSettings&gt; 
+  &lt;Keys&gt;
+    &lt;ClusterGroup keyPairName="mythor" name="thorcluster_1"/&gt;
+    &lt;ClusterGroup keyPairName="mythor" name="thorcluster_2"/&gt;
+    &lt;KeyPair name="mythor" privateKey="/home/hpcc/certificate/key.pem" publicKey="/home/hpcc/certificate/public.key.pem"/&gt; 
+  &lt;/Keys&gt;</programlisting>
+      </sect3>
+
+      <sect3 id="explanation">
+        <title>Explicação:</title>
+
+        <itemizedlist spacing="compact">
+          <listitem>
+            <para>As entradas <literal>&lt;ClusterGroup&gt;</literal> definem
+            quais clusters Thor usarão o par de chaves especificado.</para>
+          </listitem>
+
+          <listitem>
+            <para><literal>&lt;KeyPair&gt;</literal> define o par de chaves
+            usado para assinatura e deve referenciar os caminhos de arquivo
+            corretos.</para>
+          </listitem>
+
+          <listitem>
+            <para>Cada cluster Thor no sistema HPCC deve ter uma entrada
+            <literal>&lt;ClusterGroup&gt;</literal> associada especificando o
+            <literal>keyPairName</literal>.</para>
+          </listitem>
+        </itemizedlist>
+      </sect3>
+    </sect2>
+
+    <sect2 id="step-3-synchronize-configuration-and-keys-across-the-cluster">
+      <title>Etapa 3: Sincronizar a Configuração e as Chaves em Todo o
+      Cluster</title>
+
+      <para>Após atualizar a configuração, garanta que todos os nós do cluster
+      tenham o arquivo <literal>environment.xml</literal> atualizado e os
+      arquivos de chave necessários.</para>
+
+      <sect3 id="sync-environment.xml-to-all-nodes">
+        <title>Sincronizar o <literal>environment.xml</literal> com Todos os
+        Nós</title>
+
+        <programlisting language="bash">scp /etc/HPCCSystems/environment.xml hpccadmin@nodeX:/etc/HPCCSystems/environment.xml </programlisting>
+
+        <para>Repita essa etapa para cada nó do cluster HPCC.</para>
+      </sect3>
+
+      <sect3 id="sync-signing-keys-across-the-cluster">
+        <title>Sincronizar as Chaves de Assinatura em Todo o Cluster</title>
+
+        <programlisting language="bash">scp /home/hpcc/certificate/key.pem hpccadmin@nodeX:/home/hpcc/certificate/key.pem 
+scp /home/hpcc/certificate/public.key.pem hpccadmin@nodeX:/home/hpcc/certificate/public.key.pem </programlisting>
+      </sect3>
+    </sect2>
+
+    <sect2 id="step-4-verify-key-synchronization">
+      <title>Etapa 4: Verificar a Sincronização das Chaves</title>
+
+      <para>Para garantir que as chaves de assinatura foram corretamente
+      sincronizadas em todos os nós, calcule o hash MD5 dos arquivos de chave
+      e compare-os.</para>
+
+      <sect3 id="check-md5-hash-of-keys">
+        <title>Verificar o Hash MD5 das Chaves</title>
+
+        <para>Execute o seguinte comando em cada nó:</para>
+
+        <programlisting language="bash"> md5sum /home/hpcc/certificate/key.pem /home/hpcc/certificate/public.key.pem </programlisting>
+
+        <para>Compare a saída entre todos os nós. Se os valores de hash MD5
+        forem idênticos, as chaves foram sincronizadas corretamente. Se houver
+        divergências, sincronize novamente as chaves e verifique de
+        novo.</para>
+      </sect3>
+    </sect2>
+
+    <sect2 id="step-5-restart-hpcc-rowservice-and-esp">
+      <title>Etapa 5: Reiniciar o Rowservice do HPCC e o ESP</title>
+
+      <para>Depois que a configuração e as chaves forem atualizadas em todo o
+      cluster, os serviços ESP e Dafilesrv precisam ser reiniciados para que
+      essas alterações entrem em vigor.</para>
+
+      <programlisting language="bash">sudo /etc/init.d/dafilesrv restart 
+sudo /etc/init.d/hpcc-init -c myesp restart </programlisting>
+    </sect2>
+
+    <sect2 id="testing-configuration" role="brk">
+      <title>Testando a Configuração</title>
+
+      <para>A configuração acima pode ser testada usando o FileUtility da
+      biblioteca dfsclient do HPCC4j para tentar ler um arquivo do cluster
+      HPCC Systems configurado. A cópia mais recente do jar do dfsclient pode
+      ser encontrada aqui:
+      https://mvnrepository.com/artifact/org.hpccsystems/dfsclient</para>
+
+      <para>O comando a seguir tentará ler
+      <quote>example::hpccsystems::file</quote> de
+      <quote>http://your_cluster:8010</quote>; esses valores devem ser
+      atualizados para um arquivo já existente no seu cluster de destino e
+      para a URL do seu ESP do HPCC Systems, respectivamente.</para>
+
+      <programlisting language="bash"> java
+    -Dotel.service.name=DFSClient.FileUtility \ 
+    -cp dfsclient-9.10.1-0-jar-with-dependencies.jar \
+    org.hpccsystems.dfs.client.FileUtility \ 
+    -read_test example::hpccsystems::file \ 
+    -url http://your_cluster:8010
+    </programlisting>
+
+      <para>Se as chaves tiverem sido configuradas com sucesso, você verá um
+      resultado semelhante ao seguinte, indicando que o arquivo de exemplo foi
+      lido com sucesso.</para>
+
+      <programlisting language="json">[{ 
+  "bytesWritten": 0, "Read Bandwidth":
+  "6.70 MB/s", "Write Bandwidth": "0.00 MB/s", "warns": [],
+  "recordsWritten": 0, "recordsRead": 6250000, "bytesRead": 100000000,
+  "time": "14.92 s", "operation":
+  "FileUtility.ReadTest_example::hpccsystems::file", "errors": [],
+  "successful": true 
+}] </programlisting>
+    </sect2>
+
+    <sect2 id="conclusion">
+      <title>Conclusão</title>
+
+      <para>Seguir essas etapas garante que o HPCC Systems possa autenticar
+      com segurança os clientes HPCC4j e permitir que eles leiam e gravem
+      dados no cluster HPCC Systems de destino.</para>
+    </sect2>
+  </sect1>
+</chapter>

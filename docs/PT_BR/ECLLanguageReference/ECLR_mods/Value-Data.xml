@@ -26,6 +26,10 @@
 
   <para>O limite de tamanho máximo para qualquer valor DATA é 4GB.</para>
 
+  <para>Opcionalmente, os campos podem ter um atributo <emphasis role="bold">LENGTHSIZE</emphasis><indexterm>
+      <primary>LENGTHSIZE</primary>
+    </indexterm> para especificar o número de bytes (1, 2 ou 4) usado para armazenar o prefixo de tamanho de um campo de comprimento variável. O padrão é 4 bytes. Isso é útil para reduzir o uso de memória em pequenos blocos de dados de comprimento variável. Se um bloco de dados mais longo for atribuído, ele será truncado.</para>
+
   <para>Exemplo:</para>
 
   <programlisting lang="ECL_Runnable">DATA8 MyHexString := x'1234567890ABCDEF'; 

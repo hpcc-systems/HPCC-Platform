@@ -389,9 +389,44 @@
         faz uso de http. Em seguida, repita o processo para <emphasis
         role="bold">todas</emphasis> as outras conexões.</para>
       </sect3>
+
+      <sect3 id="ConvertingFromHTTPtoHTTPS">
+        <title><emphasis role="bold">Converter um cluster existente de HTTP para HTTPS</emphasis></title>
+
+        <para>Se o seu objetivo for converter um cluster existente sem
+        segurança em um cluster totalmente seguro (em vez de apenas adicionar
+        suporte a SSL junto com os serviços HTTP existentes), você pode
+        simplificar o processo convertendo os service bindings existentes em
+        vez de criar novos.</para>
+
+        <orderedlist numeration="arabic">
+          <listitem>
+            <para>Na aba ESP Service Bindings, localize cada service binding
+            HTTP existente.</para>
+          </listitem>
+
+          <listitem>
+            <para>Para cada service binding, altere o protocolo de <emphasis role="bold">http</emphasis> para <emphasis role="bold">https</emphasis> na lista suspensa de protocolos.</para>
+          </listitem>
+
+          <listitem>
+            <para>A porta será atualizada automaticamente para a porta HTTPS
+            padrão (por exemplo, 18002 para ws_ecl) caso não tenha sido
+            editada anteriormente.</para>
+          </listitem>
+
+          <listitem>
+            <para>Clique no ícone de disco para salvar cada alteração.</para>
+          </listitem>
+        </orderedlist>
+
+        <para>Essa abordagem é mais eficiente do que criar novos bindings
+        HTTPS e depois excluir os HTTP, especialmente ao converter vários
+        serviços em um ambiente de produção.</para>
+      </sect3>
     </sect2>
 
-    <sect2 id="DistributeEnvironmentConfigFileToAllNodes" role="brk">
+    <sect2 id="DistributeEnvironmentConfigFileToAllNodes">
       <title><emphasis role="bold">Distribuir o arquivo de configuração do
       ambiente para todos os nós, Reiniciar e Certificar</emphasis></title>
 
@@ -409,7 +444,8 @@
         <listitem>
           <para>Salve o arquivo environment.xml em um backup.</para>
 
-          <programlisting># for example sudo cp /etc/HPCCSystems/environment.xml /etc/HPCCSystems/environment.bak
+          <programlisting># for example
+sudo cp /etc/HPCCSystems/environment.xml /etc/HPCCSystems/environment.bak
 </programlisting>
 
           <para>Observação: o arquivo environment.xml do ambiente em execução
@@ -426,7 +462,8 @@
           para /etc/HPCCSystems e renomeie o arquivo para
           environment.xml</para>
 
-          <programlisting># for example sudo cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/environment.xml
+          <programlisting># for example
+sudo cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/environment.xml
 </programlisting>
         </listitem>
 

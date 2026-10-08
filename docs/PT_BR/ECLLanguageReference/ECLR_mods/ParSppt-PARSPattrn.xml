@@ -404,24 +404,23 @@
             <entry><emphasis role="bold">PATTERN</emphasis>('<emphasis>regular
             expression</emphasis></entry>
 
-            <entry><programlisting lang="text" role="tab">Define um padrão usando a <emphasis>expressão regular </emphasis>constituída a partir
-dos seguintes elementos de sintaxe suportados:
- (x)                Agrupamento (não deve ser usado para correpondência)
- x|y                Alterativos x ou y xy
- xy                 Concatenação de x e y.
- x* x*?             Zero ou mais. Greedy e versões mínimas.
- x+ x+?             Um ou mais. Greedy e versões mínimas.
- x? x??             Zero ou um. Greedy e versões mínimas
- x{m} x{m,} x{m,n}  Repetições delimitadas, também versões mínimas
- [0-9abcdef]        Um conjunto de caracteres
-                        (pode usar ^ para a lista de exclusão)
- (?=...) (?!...)     Declaração look-ahead
- (?&lt;=...) (?&lt;!...)   Declaração look-behind
+            <entry><programlisting lang="text" role="tab">Define a pattern using a <emphasis>regular expression </emphasis>built from
+the following supported syntax elements:
+ (x)                Grouping (not used for matching)
+ x|y                Alteratives x or y
+ xy                 Concatenation of x and y.
+ x* x*?           Zero or more. Greedy and minimal versions.
+ x+ x+?           One or more. Greedy and minimal versions.
+ x? x??            Zero or one. Greedy and minimal versions.
+ x{m} x{m,} x{m,n}   Bounded repeats, also minimal versions
+ [0-9abcdef]    A set of characters
+                        (may use ^ for exclusion list)
+ (?=...) (?!...)     Look ahead assertion
+ (?&lt;=...) (?&lt;!...)   Look behind assertion
 
-Sequências Escape de declaração look-behind podem ser 
-usadas para definir intervalos de caracteres UNICODE.
-A codificação é Big Endian UTF-16.  
-Por exemplo:
+Escape sequences can be used to define UNICODE Character ranges. 
+The encoding is UTF-16 Big Endian.  
+For example:
 PATTERN AnyChar    := PATTERN(U'[\u0001-\u7fff]');
 </programlisting><!--*** Note this and the following row entries have been monospace optimized for PDF/HTML*** --></entry>
           </row>
@@ -429,22 +428,23 @@ PATTERN AnyChar    := PATTERN(U'[\u0001-\u7fff]');
           <row>
             <entry/>
 
-            <entry><programlisting lang="text" role="tab">As seguintes expressões de classes de caractere são suportadas
-(dentro dos conjuntos): 
-[:alnum:] [:cntrl:] [:lower:] [:upper:] [:space:] 
-[:alpha:] [:digit:] [:print:] [:blank:] [:graph:] 
-[:punct:] [:xdigit:]</programlisting></entry>
+            <entry><programlisting lang="text" role="tab">The following character class expressions are supported
+(inside sets):
+[:alnum:]  [:cntrl:]  [:lower:]  [:upper:]  [:space:]
+[:alpha:]  [:digit:]  [:print:]  [:blank:]  [:graph:]
+[:punct:]  [:xdigit:]</programlisting></entry>
           </row>
 
           <row>
             <entry/>
 
-            <entry><programlisting lang="text" role="tab"><emphasis>Expressões regulares</emphasis> não suportam
-     ^ $ para marcar o início/fim dos símbolos
-     de agrupamento da string [.ch.]
-     Equivalence<indexterm>
+            <entry><programlisting lang="text" role="tab"><emphasis>Regular expressions</emphasis> do <emphasis
+                  role="underline">not</emphasis> support:
+    ^ $ to mark the beginning/end of the string 
+    Collating symbols      [.ch.] 
+    Equivalence<indexterm>
                   <primary>Equivalence</primary>
-                </indexterm> class [=e=]</programlisting></entry>
+                </indexterm> class       [=e=]</programlisting></entry>
           </row>
 
           <row>
@@ -479,7 +479,6 @@ PATTERN AnyChar    := PATTERN(U'[\u0001-\u7fff]');
 STRING100 line;
 END;
 ds := DATASET([{'the fox; and the hen'}], rs);
-
 
 PATTERN ws := PATTERN('[ \t\r\n]');
 PATTERN Alpha := PATTERN('[A-Za-z]');

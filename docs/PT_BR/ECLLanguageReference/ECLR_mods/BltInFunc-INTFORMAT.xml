@@ -13,9 +13,9 @@
 
   <para><informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
-        <colspec colwidth="80.00pt"/>
+        <colspec colwidth="80.00pt" />
 
-        <colspec colwidth="308.80pt"/>
+        <colspec />
 
         <tbody>
           <row>
@@ -29,7 +29,9 @@
             <entry><emphasis>width</emphasis></entry>
 
             <entry>O tamanho da string na qual o valor será alinhado à
-            direita.</entry>
+            direita. Se a largura da expressão for maior que esse
+            <emphasis>width</emphasis>, o resultado será preenchido com
+            asteriscos (*). </entry>
           </row>
 
           <row>
@@ -59,6 +61,8 @@ OUTPUT(INTFORMAT(val,20,1));
   //formats as '00000000000123456789'
 OUTPUT(INTFORMAT(val,20,0));
   //formats as '          123456789'
+OUTPUT(INTFORMAT(val,2,0));
+  //formats as '**'
 </programlisting>
 
   <para>Ver também: <link linkend="REALFORMAT">REALFORMAT</link></para>

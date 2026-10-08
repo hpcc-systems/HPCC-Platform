@@ -12,9 +12,9 @@
       <primary>Email.SendEmail</primary>
     </indexterm> <indexterm>
       <primary>SendEmail</primary>
-    </indexterm>( </emphasis> <emphasis>to, subject, body, attachment,
-  mimietype, filename, mailServer, port, sender, cc, bcc,
-  highPriority</emphasis> <emphasis role="bold"> )</emphasis></para>
+    </indexterm>( </emphasis> <emphasis>to, subject, body, mailServer, port,
+  sender, cc, bcc, highPriority, rptErrAsFail</emphasis> <emphasis
+  role="bold"> )</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -27,9 +27,9 @@
           <entry><emphasis>to</emphasis></entry>
 
           <entry>Uma string terminada por nulo que contém uma lista delimitada
-          por vírgulas dos endereços dos destinatários. A validade dos
-          endereços não é verificada. Portanto, é responsabilidade do
-          programador garantir essa validade.</entry>
+          por vírgulas dos endereços dos destinatários pretendidos. A validade
+          dos endereços não é verificada, portanto é responsabilidade do
+          programador garantir que todos sejam válidos.</entry>
         </row>
 
         <row>
@@ -43,18 +43,21 @@
           <entry><emphasis>body</emphasis></entry>
 
           <entry>Uma string terminada por nulo que contém o texto do e-mail a
-          ser enviado. Essa string deve ter a codificação de caracteres
+          ser enviado. Essa string deve usar a codificação de caracteres
           "ISO-8859-1 (latin1)" (o conjunto de caracteres padrão do ECL).
           Texto em qualquer outro conjunto de caracteres deve ser enviado como
-          anexo (consulte a função
-          STD.System.Email.SendEmailAttachText()).</entry>
+          anexo (consulte as funções <link
+          linkend="SendEmailAttachText">STD.System.Email.SendEmailAttachText()</link>
+          ou <link
+          linkend="SendEmailAttachData">STD.System.Email.SendEmailAttachData()
+          </link>).</entry>
         </row>
 
         <row>
-          <entry><emphasis>server</emphasis></entry>
+          <entry><emphasis>mailServer</emphasis></entry>
 
           <entry>Opcional. Uma string terminada por nulo que contém o nome do
-          servidor de e-mail. Se omitida, assume o valor padrão da variável de
+          servidor de e-mail. Se omitida, o padrão é o valor da variável de
           ambiente SMTPserver.</entry>
         </row>
 
@@ -62,7 +65,7 @@
           <entry><emphasis>port</emphasis></entry>
 
           <entry>Opcional. Um valor inteiro UNSIGNED4 que contém o número da
-          porta. Se omitido, assume o valor padrão da variável de ambiente
+          porta. Se omitido, o padrão é o valor da variável de ambiente
           SMTPport.</entry>
         </row>
 
@@ -70,29 +73,38 @@
           <entry><emphasis>sender</emphasis></entry>
 
           <entry>Opcional. Uma string terminada por nulo que contém o endereço
-          do remetente. Se omitida, assume o valor padrão da variável de
-          ambiente emailSenderAddress.</entry>
+          do remetente. Se omitida, o padrão é o valor da variável de ambiente
+          emailSenderAddress.</entry>
         </row>
 
         <row>
           <entry><emphasis>cc</emphasis></entry>
 
-          <entry>Optional. comma-delimited addresses of carbon-copy
-          recipients. Defaults to an empty string (none).</entry>
+          <entry>Opcional. Endereços delimitados por vírgulas de destinatários
+          de cópia. O padrão é uma string vazia (nenhum).</entry>
         </row>
 
         <row>
           <entry><emphasis>bcc</emphasis></entry>
 
-          <entry>Optional. comma-delimited addresses of blind-carbon-copy
-          recipients. Defaults to an empty string (none).</entry>
+          <entry>Opcional. Endereços delimitados por vírgulas de destinatários
+          de cópia oculta. O padrão é uma string vazia (nenhum).</entry>
         </row>
 
         <row>
           <entry><emphasis>highPriority</emphasis></entry>
 
-          <entry>Optional. If true, the message is sent with high priority.
-          Defaults to false (normal priority).</entry>
+          <entry>Opcional. Um indicador booleano TRUE/FALSE que, quando TRUE,
+          envia a mensagem com alta prioridade. O padrão é FALSE (prioridade
+          normal).</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>rptErrAsFail</emphasis></entry>
+
+          <entry>Opcional. Um indicador booleano TRUE/FALSE que, quando TRUE,
+          faz com que qualquer erro ao tentar enviar o e-mail resulte em um
+          erro/exceção. O padrão é TRUE.</entry>
         </row>
       </tbody>
     </tgroup>
@@ -103,5 +115,6 @@
 
   <para>Exemplo:</para>
 
-  <programlisting format="linespecific">STD.System.Email.SendEmail( 'me@mydomain.com', 'testing 1,2,3', 'this is a test message');</programlisting>
+  <programlisting format="linespecific">IMPORT STD;
+<!--#synthpii-->STD.System.Email.SendEmail( 'me@example.com', 'testing 1,2,3', 'this is a test message');</programlisting>
 </sect1>

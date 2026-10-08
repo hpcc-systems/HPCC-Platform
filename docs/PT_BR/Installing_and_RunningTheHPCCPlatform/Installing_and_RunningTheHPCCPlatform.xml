@@ -21,11 +21,8 @@
 
     <legalnotice>
       <para>Sua opinião e comentários sobre este documento são muito
-      bem-vindos e podem ser enviados por e-mail para <email/></para>
-
-      <para role="syntax">
-        <email>docfeedback@hpccsystems.com</email>
-      </para>
+      bem-vindos e podem ser enviados por e-mail para
+      <email>docfeedback@hpccsystems.com</email></para>
 
       <para>Inclua a frase <emphasis role="bold">Feedback sobre
       documentação</emphasis> na linha de assunto e indique o nome do
@@ -81,7 +78,7 @@
         url="http://hpccsystems.com/Why-HPCC/How-it-works"> o link
         http://hpccsystems.com/Why-HPCC/How-it-works</ulink> para obter mais
         detalhes.</para>
-      </footnote> Community Edition em um único nó para iniciar e, em seguida,
+      </footnote> Systems<superscript>®</superscript> Community Edition em um único nó para iniciar e, em seguida,
     opcionalmente, expandi-lo para um cluster maior de nós.</para>
 
     <para>A tecnologia Thor do HPCC System foi projetada para processar,
@@ -121,6 +118,11 @@
         </tgroup>
       </informaltable></para>
 
+    <para><emphasis role="bold">OBSERVAÇÃO</emphasis>: Este documento se
+    concentra principalmente na implementação Bare-Metal; para implantações em
+    cloud e conteinerizadas, consulte o documento <emphasis>Plataforma HPCC
+    Systems<superscript>®</superscript> conteinerizada </emphasis>.</para>
+
     <sect1 id="Quick_Start">
       <title>Guia de Introdução</title>
 
@@ -144,7 +146,7 @@
           <para><programlisting> sudo yum install hpccsystems-platform&lt;rpm_file_name&gt;</programlisting>No
           Ubuntu/Debian:</para>
 
-          <programlisting> sudo dpkg -i &lt;deb filename&gt; </programlisting>
+          <programlisting> sudo apt install &lt;filename&gt; </programlisting>
 
           <para>Então, atualize as dependências:</para>
 
@@ -285,25 +287,26 @@
         <sect3 id="Installing_CentOS-RedHat-Suse">
           <title>CentOS/Red Hat</title>
 
-          <para>Para instalar a plataforma, você precisa ter a permissão
-          adequada para a instalação de pacotes. Caso tenha perfil de
-          administrador, você poderá instalar as plataformas usando
-          yum.</para>
+          <para>Para instalar a plataforma HPCC Systems, você deve ter os
+          direitos e permissões apropriados para instalar pacotes no seu
+          sistema.</para>
 
-          <programlisting>sudo yum install &lt;hpccsystems platform rpm package&gt;</programlisting>
+          <para>Uma forma de instalar a plataforma é usando yum.</para>
 
-          <para>Opcionalmente você pode instalar o pacote com rpm
-          (recomendamos utlizar as opções -Uvh); porém, será necessário
-          negociar a instalação de quaisquer dependências adicionais.</para>
+          <programlisting lang="bash">sudo yum install -y epel-release 
+sudo yum install -y &lt;hpccsystems platform rpm package&gt;</programlisting>
+
+          <para>Opcionalmente, você pode instalar pacotes com rpm (recomendado
+          usar as opções -Uvh); porém, nesse caso, terá que resolver a
+          instalação de quaisquer dependências.</para>
         </sect3>
 
         <sect3 id="Installing_Ubuntu-Debian">
           <title>Ubuntu/Debian</title>
 
-          <para>Um pacote Debian é disponibilizado para instalações Ubuntu.
-          Você deve instalar o pacote, usando o comando:</para>
+          <para>Para instalações Ubuntu, para instalar o pacote, use:</para>
 
-          <programlisting>sudo dpkg -i &lt;deb filename&gt;</programlisting>
+          <programlisting>sudo apt install &lt;filename&gt;</programlisting>
 
           <para>Após instalar o pacote, execute o seguinte para atualizar
           quaisquer dependências.</para>
@@ -314,67 +317,10 @@
         <sect3 id="HPCC_Plug-Ins" role="brk">
           <title>Plugins</title>
 
-          <para>Há vários plugins opcionais que você pode escolher para
-          adicionar à sua instalação.</para>
+          <para>A partir da versão 9.10, os plugins são incluídos
+          automaticamente. Não é necessário instalá-los separadamente.</para>
 
-          <para>Para sistemas baseados em RPM, pode ser instalar utilizando
-          yum.</para>
-
-          <para><programlisting>sudo yum install &lt;hpccsystems plugin plugin_name&gt;  </programlisting></para>
-
-          <para>Para instalar plugins opcionais em um pacote Ubuntu/Debian,
-          use:</para>
-
-          <programlisting>sudo dpkg -i &lt;hpccsystems plugin plugin_name&gt;  </programlisting>
-
-          <para>Os plugins opcionais são:</para>
-
-          <para><informaltable>
-              <tgroup cols="2">
-                <tbody>
-                  <row>
-                    <entry><itemizedlist>
-                        <listitem>
-                          <para>JAVA : javaembed</para>
-                        </listitem>
-
-                        <listitem>
-                          <para>JavaScript : v8embed</para>
-                        </listitem>
-
-                        <listitem>
-                          <para>R : rembed</para>
-                        </listitem>
-
-                        <listitem>
-                          <para>MySql : mysqlembed</para>
-                        </listitem>
-                      </itemizedlist></entry>
-
-                    <entry><itemizedlist>
-                        <listitem>
-                          <para>Kafka : kafka</para>
-                        </listitem>
-
-                        <listitem>
-                          <para>MemCache : memcached</para>
-                        </listitem>
-
-                        <listitem>
-                          <para>Redis : redis</para>
-                        </listitem>
-
-                        <listitem>
-                          <para>SQL Lite : sqlite3embed</para>
-                        </listitem>
-                      </itemizedlist></entry>
-                  </row>
-                </tbody>
-              </tgroup>
-            </informaltable></para>
-
-          <para>Outras tecnologias, como suporte ao Cassandra e Python estão
-          incluídas no pacote da plataforma.</para>
+          <para/>
         </sect3>
       </sect2>
 
@@ -559,7 +505,7 @@
               <para>Você pode usar o editor de sua preferência ou a linha de
               comando digitando o seguinte</para>
 
-              <para><programlisting>echo "Output('Hello world');" &gt; hello.ecl</programlisting></para>
+              <para><programlisting>echo "OUTPUT('Hello world');" &gt; hello.ecl</programlisting></para>
             </listitem>
 
             <listitem>
@@ -629,7 +575,7 @@
           fonte, você pode usar o compilador eclcc localmente para criar um
           arquivo que será enviado para o eclccServer:</para>
 
-          <para><programlisting>eclcc hello.ecl -E | ecl run - --target=thor --server=&lt;Endereço IP do ESP&gt;:8010</programlisting></para>
+          <para><programlisting>eclcc hello.ecl hello2.ecl helloN.ecl -E | ecl run - --target=thor --server=&lt;IP Address of the ESP&gt;:8010</programlisting></para>
 
           <para>O parâmetro de destino precisa designar o nome do cluster de
           destino válido como listado na seção topologia do seu
@@ -1072,7 +1018,8 @@
             origem para /etc/HPCCSystems e renomeie o arquivo para
             environment.xml</para>
 
-            <programlisting># for example sudo cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/environment.xml</programlisting>
+            <programlisting># for example
+sudo cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/environment.xml</programlisting>
 
             <para><informaltable colsep="1" frame="all" rowsep="1">
                 <?dbfo keep-together="always"?>
@@ -1164,7 +1111,7 @@
                     comando para todos os nós. Um script de amostra é
                     fornecido com o HPCC Systems. Use o comando a seguir para
                     iniciar o HPCC em todos os
-                    nós:</para><para><programlisting>sudo /opt/HPCCSystems/sbin/hpcc-run.sh -a hpcc-init start</programlisting></para></entry>
+                    nós:</para><para><programlisting>sudo /opt/HPCCSystems/sbin/hpcc-run.sh start </programlisting></para></entry>
                   </row>
                 </tbody>
               </tgroup>
@@ -1324,7 +1271,7 @@ sudo /opt/HPCCSystems/sbin/hpcc-push.sh \
             <para>Usando um navegador de Internet, acesse a interface do
             Gerenciador de Configurações:</para>
 
-            <programlisting>http://&lt;<emphasis>ip de instalação do sistema</emphasis>&gt;:8015</programlisting>
+            <programlisting>http://&lt;<emphasis>ip of installed system</emphasis>&gt;:8015</programlisting>
           </listitem>
         </orderedlist>
       </sect2>
@@ -1603,7 +1550,7 @@ sudo /opt/HPCCSystems/sbin/hpcc-push.sh \
         <para>Este exemplo instala os pacotes da plataforma do HPCC e força o
         arquivo ativo environment.xml para 8 nós simultâneos:</para>
 
-        <para><programlisting>sudo /opt/HPCCSystems/sbin/install-cluster.sh -n 8 hpccsystems-platform-xxxx-n.n.nnnn<emphasis>n.n.nnnn</emphasis> 
+        <para><programlisting>sudo /opt/HPCCSystems/sbin/install-cluster.sh -n 8 hpccsystems-platform-xxxx-<emphasis>n.n.nnnn</emphasis> 
 </programlisting></para>
 
         <para>(onde <emphasis> n.n.nnnn</emphasis> o número da
@@ -1800,15 +1747,16 @@ sudo /opt/HPCCSystems/sbin/hpcc-push.sh \
 </programlisting>Por exemplo:</para>
 
         <para><programlisting>sudo /opt/HPCCSystems/sbin/hpcc-push.sh -x \
-     -s /etc/HPCCSystems/environment.xml -t /etc/HPCCSystems/environment.xml</programlisting></para>
+     -s /etc/HPCCSystems/environment.xml -t /etc/HPCCSystems/environment.xml
+</programlisting></para>
       </sect2>
 
       <sect2 id="ExampleScripts_hpcc-run.sh" role="brk">
         <title>hpcc-run.sh</title>
 
-        <para><emphasis role="bold">hpcc-run.sh</emphasis> <emphasis>
-        <emphasis>[-c component] [-n concurrent] [-s] [-S]
-        {start|stop|restart|status}</emphasis> </emphasis></para>
+        <para><emphasis role="bold">hpcc-run.sh
+        </emphasis><emphasis><emphasis>[-c component] [-n concurrent] [-s]
+        [-S] {start|stop|restart|status}</emphasis></emphasis></para>
 
         <para><informaltable colsep="0" frame="none" rowsep="0">
             <tgroup cols="2">
@@ -1818,70 +1766,67 @@ sudo /opt/HPCCSystems/sbin/hpcc-push.sh \
 
               <tbody>
                 <row>
-                  <entry>-c</entry>
+                  <entry>-c, --comp</entry>
 
-                  <entry>Componente do HPCC. Por exemplo, mydali, myroxie,
-                  mythor, etc.</entry>
+                  <entry>Componente HPCC Systems. Por exemplo,
+                  dali@mydali.service, roxie@myroxie.service etc.</entry>
                 </row>
 
                 <row>
                   <entry>-n, --concurrent</entry>
 
-                  <entry>Quando especificado, denota o número de instâncias
-                  simultâneas a serem executadas. O padrão é 5.
-                  Opcional.</entry>
+                  <entry>Quando especificado, indica o número de instâncias
+                  simultâneas a executar. O padrão é 5. Opcional.</entry>
                 </row>
 
                 <row>
                   <entry>-S, --sequentially</entry>
 
-                  <entry>Quando especificado, o comando é executado de maneira
-                  sequencial, um host por vez.</entry>
+                  <entry>Quando especificado, o comando é executado
+                  sequencialmente, um host por vez.</entry>
                 </row>
 
                 <row>
-                  <entry>-s</entry>
+                  <entry>-s, --save</entry>
 
                   <entry>Quando especificado, salva o resultado em um arquivo
-                  denominado &lt;ip address&gt;.</entry>
+                  chamado &lt;ip address&gt;.</entry>
                 </row>
               </tbody>
             </tgroup>
           </informaltable></para>
 
         <para>Para usar esse script, as chaves ssh precisam estar configuradas
-        de maneira adequada em todos os nós, sendo também necessário usar sudo
-        como usuário do hpcc.</para>
+        corretamente em todos os nós, e você deve usar sudo como usuário
+        hpcc.</para>
 
-        <para><emphasis role="bold">Esse script executa um comando em todos os
-        endereços IP no arquivo ativo environment.xml.</emphasis></para>
+        <para><emphasis role="bold">Esse script executa um comando em todos
+        os endereços IP no environment.xml ativo. </emphasis></para>
 
-        <para>Os endereços IP foram definidos no momento da edição do ambiente
-        no Gerenciador de Configurações. Esse script suporta todos os
-        parâmetros do hpcc-init e do dafilesrv.</para>
+        <para>Os endereços IP foram definidos ao editar o ambiente no
+        ConfigMgr. Esse script suporta todos os parâmetros de hpcc-init e
+        dafilesrv.</para>
 
         <para><emphasis role="bold">Exemplos:</emphasis></para>
 
         <para>Este exemplo inicia todos os componentes nos nós</para>
 
-        <para><programlisting>sudo /opt/HPCCSystems/sbin/hpcc-run.sh -a hpcc-init start
+        <para><programlisting>sudo /opt/HPCCSystems/sbin/hpcc-run.sh start 
 </programlisting></para>
 
-        <para>Este exemplo inicia todos os componentes em todos os nós usando
+        <para>Este exemplo inicia todos os componentes em todos os nós, usando
         8 execuções simultâneas</para>
 
-        <para><programlisting>sudo /opt/HPCCSystems/sbin/hpcc-run.sh -a hpcc-init start -n 8
-</programlisting>Este exemplo inicia todos os componentes do esp type nos
+        <para><programlisting>sudo /opt/HPCCSystems/sbin/hpcc-run.sh start -n 8
+</programlisting>Este exemplo inicia todos os componentes do tipo dali nos
         nós</para>
 
-        <para><programlisting>sudo /opt/HPCCSystems/sbin/hpcc-run.sh -c esp -a hpcc-init start 
-</programlisting>Este exemplo inicia todos os componentes com um nome de
-        componente myesp nos nós</para>
+        <para><programlisting>sudo /opt/HPCCSystems/sbin/hpcc-run.sh -c dali@mydali.service start 
+</programlisting></para>
 
-        <para><programlisting>sudo /opt/HPCCSystems/sbin/hpcc-run.sh -c myesp -a hpcc-init start 
-</programlisting>Este exemplo inicia a aplicação auxiliar dafilesrv</para>
+        <para>Este exemplo inicia a aplicação auxiliar dafilesrv</para>
 
-        <para><programlisting>sudo /opt/HPCCSystems/sbin/hpcc-run.sh -a dafilesrv start
+        <para><programlisting>sudo /opt/HPCCSystems/sbin/hpcc-run.sh -c dafilesrv@dafilesrv.service start 
 </programlisting></para>
       </sect2>
 
@@ -1988,6 +1933,10 @@ init_start_thor--> </property></para>
       </itemizedlist>
 
       <para><?hard-pagebreak ?></para>
+
+      <xi:include href="Installing_and_RunningTheHPCCPlatform/Inst-Mods/ZAP.xml"
+                  xpointer="xpointer(//*[@id='ZAP'])"
+                  xmlns:xi="http://www.w3.org/2001/XInclude"/>
     </sect1>
 
     <sect1 id="hpcc-init">
@@ -2115,10 +2064,11 @@ sudo /etc/init.d/hpcc-init -c esp start
         <title>Serviços do sistema HPCC Systems</title>
 
         <para>O HPCC Systems está estendendo o suporte e o desenvolvimento
-        para mais serviços systemd. Pretendemos continuar com o suporte ao
-        Cent OS 6 e outros sistemas baseados no System V através do hpcc-init.
-        O serviço do sistema hpcc-init suportará as opções "start", "stop" e
-        "restart".</para>
+        para mais serviços systemd. Pretendemos continuar com o suporte a
+        sistemas antigos baseados no System V através do hpcc-init. </para>
+
+        <para>O serviço do sistema hpcc-init suportará as opções "start",
+        "stop" e "restart".</para>
 
         <para>Os relatórios e registros do sistema HPCC Systems serão
         diferentes do tipo hpcc-init anterior. Os logs systemd não possuem
@@ -2153,64 +2103,6 @@ sudo /etc/init.d/hpcc-init -c esp start
       </sect2>
     </sect1>
 
-    <sect1 id="Running-HPCC-Tools-Under-WINE">
-      <title>Executando o ECL IDE pela primeira vez</title>
-
-      <para>Siga essas etapas para executar o ECL IDE sob WINE no
-      Linux.</para>
-
-      <orderedlist>
-        <listitem>
-          <para>Instale o wine1.2 (correspondente à versão 1.1.31 do Wine) e
-          suas dependências.</para>
-        </listitem>
-
-        <listitem>
-          <para>Faça o download do msxml3.msi da Microsoft (Pacote de Serviço
-          7 ou mais recente).</para>
-        </listitem>
-
-        <listitem>
-          <para>Instale o msxml3.msi no Wine (clique duas vezes no arquivo msi
-          e o Wine fará a instalação).</para>
-        </listitem>
-
-        <listitem>
-          <para>Abra “Configurar Wine” (Configure Wine)
-          (Applications/Wine/Configure Wine):</para>
-        </listitem>
-
-        <listitem>
-          <para>Selecione a aba Libraries.</para>
-        </listitem>
-
-        <listitem>
-          <para>Em “New override”, localizado na lista suspensa da biblioteca,
-          selecione <emphasis>msxml3</emphasis>, então pressione o botão
-          Add.</para>
-        </listitem>
-
-        <listitem>
-          <para>Selecione <emphasis> msxml3</emphasis> na lista de
-          Substituições existentes e pressione Edit.</para>
-        </listitem>
-
-        <listitem>
-          <para>Selecione a opção <emphasis>Native (Windows)</emphasis> e
-          pressione o botão OK .</para>
-        </listitem>
-
-        <listitem>
-          <para>Pressione o botão OK para fechar a janela de configurações do
-          Wine.</para>
-        </listitem>
-
-        <listitem>
-          <para>Instale o HPCC ECL IDE (clique duas vezes no arquivo setup.msi
-          e o Wine fará a instalação).</para>
-        </listitem>
-      </orderedlist>
-    </sect1>
 
     <sect1 id="ExternLang_Support">
       <title>Suporte a Linguagem Externa</title>
@@ -2259,15 +2151,7 @@ sudo /etc/init.d/hpcc-init -c esp start
         </listitem>
 
         <listitem>
-          <para>JavaScript</para>
-        </listitem>
-
-        <listitem>
           <para>Python (suporte completo já está incluso)</para>
-        </listitem>
-
-        <listitem>
-          <para>R</para>
         </listitem>
       </itemizedlist>
 
@@ -2276,8 +2160,8 @@ sudo /etc/init.d/hpcc-init -c esp start
 
       <para>Além destas linguagens, você pode adicionar suporte para outras
       linguagens criando seu próprio plugin. Isso não é muito difícil de
-      fazer. Por exemplo, o plugin JavaScript possui 500 linhas de código C++.
-      Você pode usar isso como um modelo para criar o seu próprio plugin e, se
+      fazer. Por exemplo, o plugin Java possui cerca de 500 linhas de código C++.
+      Você pode usá-lo como um modelo para criar o seu próprio plugin e, se
       desejar, poderá contribuir com a iniciativa de código aberto.</para>
 
       <sect2 id="Add_On_Java" role="brk">
@@ -2387,70 +2271,6 @@ add1(10);
         url="https://github.com/hpcc-systems/HPCC-Platform/tree/master/initfiles/examples/embed">https://github.com/hpcc-systems/HPCC-Platform/tree/master/initfiles/examples/embed</ulink></para>
       </sect2>
 
-      <sect2 id="Add_On_Javascript" role="brk">
-        <title>JavaScript</title>
-
-        <para>Para habilitar o suporte ao JavaScript na plataforma do HPCC
-        Systems<superscript>®</superscript> :</para>
-
-        <orderedlist>
-          <listitem>
-            <para>Instale as dependências apropriadas à sua plataforma.</para>
-
-            <para><emphasis role="bold">Sistemas baseados em
-            RPM:</emphasis></para>
-
-            <para>Em um sistema baseado em RPM (CentOS/Red Hat), instale o
-            <emphasis role="bold">v8embed.</emphasis></para>
-
-            <para><emphasis role="bold">Sistemas baseados em
-            Debian:</emphasis></para>
-
-            <para>Para sistemas baseados em Debian (Ubuntu), instale o pacote
-            <emphasis role="bold">libv8-dev</emphasis> .</para>
-          </listitem>
-
-          <listitem>
-            <para>Teste a integração do JavaScript.</para>
-
-            <para>O JavaScript realiza multitarefa e, como resultado, essa
-            pode ser a mais rápida de todas as linguagens incorporadas
-            atualmente suportadas.</para>
-
-            <para>Agora alguns códigos JavaScript podem ser executados no
-            ECLIDE ou no ECL Playground.</para>
-
-            <para>Por exemplo:</para>
-
-            <para><programlisting format="linespecific">//nothor
-
-IMPORT javascript;
-
-javascript.Language.syntaxcheck('1+2');
-
-integer add1(integer val) := EMBED(javascript) val+1; ENDEMBED;
-
-data testData(data val) := EMBED(javascript) val[0] = val[0] + 1; val; ENDEMBED;
-set of integer testSet(set of integer val) := EMBED(javascript)
-t = val [1];
-val[1] = val[2];
-val[2] = t;
-val;
-ENDEMBED;
-
-add1(10);
-</programlisting>Se o comando for executado com sucesso, significa que o
-            JavaScript foi configurado corretamente para funcionar na
-            plataforma do HPCC Systems</para>
-
-            <para>Outros exemplos de código HPCC podem ser encontrados
-            em:</para>
-
-            <para><ulink
-            url="https://github.com/hpcc-systems/HPCC-Platform/tree/master/initfiles/examples/embed">https://github.com/hpcc-systems/HPCC-Platform/tree/master/initfiles/examples/embed</ulink></para>
-          </listitem>
-        </orderedlist>
-      </sect2>
 
       <sect2 id="Add_Python_support" role="brk">
         <title>Python</title>
@@ -2458,14 +2278,13 @@ add1(10);
         <para>A plataforma HPCC Systems suporta Python3 e o plugin Python3
         está presente e habilitado. Python2 não é mais suportado.</para>
 
+        <para>Para habilitar o suporte a Python na plataforma HPCC
+        Systems<superscript>®</superscript>:</para>
+
         <orderedlist>
           <listitem>
-            <para>Instale o Python, caso ainda não o tenha feito. Várias
-            distribuições já têm o Python instalado.</para>
-
-            <para>Python 2.6, 2.7, ou Python3, dependendo da versão padrão da
-            sua distribuição e para coordenar com a entrada habilitada no
-            environment.conf.</para>
+            <para>Instale o Python, caso ainda não esteja instalado. Muitas
+            distribuições já vêm com o Python instalado.</para>
           </listitem>
 
           <listitem>
@@ -2509,7 +2328,7 @@ split_words('Once upon a time');
             em:</para>
 
             <para><ulink
-            url="https://github.com/hpcc-systems/HPCC-Platform/tree/master/testing/regress/ecl">https://github.com/hpcc-systems/HPCC-Platform/tree/master/testing/regress/ecl/</ulink></para>
+            url="https://github.com/hpcc-systems/HPCC-Platform/tree/master/testing/regress/ecl">https://github.com/hpcc-systems/HPCC-Platform/tree/master/initfiles/examples/embed</ulink></para>
           </listitem>
         </orderedlist>
 
@@ -2552,231 +2371,6 @@ split_words('Once upon a time');
         </sect3>
       </sect2>
 
-      <sect2 id="R" role="brk">
-        <title>R</title>
-
-        <para>A plataforma do HPCC suporta código R incorporado. Para
-        habilitar o suporte ao R na plataforma do HPCC
-        Systems<superscript>®</superscript> :</para>
-
-        <orderedlist>
-          <listitem>
-            <para>Faça o download do plugin <emphasis role="bold">R
-            Embed</emphasis> disponível no portal do HPCC Systems.</para>
-
-            <para><ulink
-            url="https://hpccsystems.com/download/hpcc-platform">https://hpccsystems.com/download/hpcc-platform</ulink></para>
-
-            <para>Selecione o plugin adequado para sua distribuição.</para>
-          </listitem>
-
-          <listitem>
-            <para>Instale o plugin.</para>
-
-            <para><emphasis role="bold">Sistemas baseados em RPM:
-            </emphasis>Instalar o usando <emphasis>yum
-            install</emphasis>.</para>
-
-            <para><emphasis role="bold">Sistemas baseados em Debian:
-            </emphasis>Instalar o utilizando <emphasis>dkpg -i</emphasis>
-            depois <emphasis>apt-get</emphasis> <emphasis>install
-            -f</emphasis></para>
-
-            <para>Se você usa esses métodos para instalar plugins, todas as
-            bibliotecas e dependências obrigatórias também serão
-            instaladas.</para>
-          </listitem>
-        </orderedlist>
-
-        <orderedlist continuation="continues">
-          <listitem>
-            <para>Teste a integração do R</para>
-
-            <para>R não tem ciência de multitarefa, assim o plugin precisa
-            agrupar todos os acionamentos do R para as seções críticas. Os
-            scripts são compilados com cada acionamento do R. Este ambiente
-            pode persistir entre os acionamentos incorporados do R em um mesmo
-            ambiente.</para>
-
-            <para>Agora alguns códigos R podem ser executados no ECLIDE ou no
-            ECL Playground.</para>
-
-            <para>Por exemplo:</para>
-
-            <para><programlisting>IMPORT R;
-
-integer add1(integer val) := EMBED(R)
-val+1
-ENDEMBED;
-
-string cat(varstring what, string who) := EMBED(R)
-paste(what,who)
-ENDEMBED;
-
-data testData(data val) := EMBED(R)
-val[1] = val[2];
-val;
-ENDEMBED;
-
-set of integer testSet(set of integer val) := EMBED(R)
-t = val [1];
-val[1] = val[2];
-val[2] = t;
-val;
-ENDEMBED;
-
-set of unsigned2 testSet0(set of unsigned2 val) := EMBED(R)
-sort(val);
-ENDEMBED;
-
-set of string testSet2(set of string val) := EMBED(R)
-t = val [1];
-val[1] = val[2];
-val[2] = t;
-val;
-ENDEMBED;
-
-set of string testSet3(set of string8 val) := EMBED(R)
-t = val [1];
-val[1] = val[2];
-val[2] = t;
-val;
-ENDEMBED;
-
-set of varstring testSet4(set of varstring val) := EMBED(R)
-t = val [1];
-val[1] = val[2];
-val[2] = t;
-val;
-ENDEMBED;
-
-set of varstring8 testSet5(set of varstring8 val) := EMBED(R)
-t = val [1];
-val[1] = val[2];
-val[2] = t;
-val;
-ENDEMBED;
-
-set of boolean testSet6(set of boolean val) := EMBED(R)
-t = val [1];
-val[1] = val[2];
-val[2] = t;
-val;
-ENDEMBED;
-
-set of real4 testSet7(set of real4 val) := EMBED(R)
-t = val [1];
-val[1] = val[2];
-val[2] = t;
-val;
-ENDEMBED;
-
-set of real8 testSet8(set of real8 val) := EMBED(R)
-t = val [1];
-val[1] = val[2];
-val[2] = t;
-val;
-ENDEMBED;
-
-set of integer2 testSet9(set of integer2 val) := EMBED(R)
-sort(val);
-ENDEMBED;
-
-add1(10);
-cat('Hello', 'World');
-testData(D'ab');
-testSet([1,2,3]);
-testSet0([30000,40000,50000]);
-testSet2(['one','two','three']);
-testSet3(['uno','dos','tre']);
-testSet4(['un','deux','trois']);
-testSet5(['ein','zwei','drei']);
-testSet6([false,true,false,true]);
-testSet7([1.1,2.2,3.3]);
-testSet8([1.2,2.3,3.4]);
-testSet9([-111,0,113]);
-
-s1 :=DATASET(250000, TRANSFORM({ integer a }, SELF.a := add1(COUNTER)));
-s2 :=DATASET(250000, TRANSFORM({ integer a }, SELF.a := add1(COUNTER/2)));
-SUM(NOFOLD(s1 + s2), a);
-
-s1b :=DATASET(250000, TRANSFORM({ integer a }, SELF.a := COUNTER+1));
-s2b :=DATASET(250000, TRANSFORM({ integer a }, SELF.a := (COUNTER/2)+1));
-SUM(NOFOLD(s1b + s2b), a); 
-</programlisting>Se o comando for executado com sucesso, significa que o R foi
-            configurado corretamente para funcionar na plataforma do HPCC
-            .</para>
-
-            <para>Outros exemplos de código HPCC podem ser encontrados
-            em:</para>
-
-            <para><ulink
-            url="https://github.com/hpcc-systems/HPCC-Platform/tree/master/initfiles/examples/embed">https://github.com/hpcc-systems/HPCC-Platform/tree/master/initfiles/examples/embed</ulink></para>
-          </listitem>
-        </orderedlist>
-
-        <para/>
-
-        <sect3 id="R_DataTypes">
-          <title>Mapeando Datatypes</title>
-
-          <para>Algumas considerações adicionais para o mapeamento dos tipos
-          de dados no R.</para>
-
-          <para>No HPCC, o ECL <emphasis role="bold">RECORD</emphasis> é
-          mapeado para um R <emphasis>list </emphasis></para>
-
-          <para><emphasis role="bold">Um DATASET</emphasis> incluindo um
-          dataset aninhado, é mapeado para um R
-          <emphasis>dataframe</emphasis>.</para>
-
-          <para>Um ECL <emphasis role="bold">SET</emphasis> é mapeado para um
-          R <emphasis>vecto</emphasis>r.</para>
-
-          <para>Esses princípios aplicam-se à transmissão de dados do HPCC
-          para o R ou do retorno de dados do R para o HPCC Os exemplos de uso
-          desses conceitos estão disponíveis em:</para>
-
-          <para><ulink
-          url="https://github.com/hpcc-systems/HPCC-Platform/tree/master/initfiles/examples/embed">https://github.com/hpcc-systems/HPCC-Platform/tree/master/initfiles/examples/embed</ulink></para>
-
-          <para/>
-        </sect3>
-
-        <sect3>
-          <title>Opções de Escopo R</title>
-
-          <para><emphasis role="bold">GLOBALSCOPE</emphasis> - Esta opção
-          permite que atributos EMBED independentes compartilhem globais entre
-          si caso especifiquem o mesmo nome para o parâmetro GLOBALSCOPE
-          .</para>
-
-          <para><emphasis role="bold">PERSIST</emphasis> - Esta opção controla
-          por quanto tempo um escopo global compartilhado persistirá e,
-          exatamente, por quanto tempo ele será compartilhado.</para>
-
-          <para>O valor especificado para GLOBALSCOPE pode ser qualquer string
-          desejada, permitindo compartilhar globais entre as seções EMBED
-          relacionadas, mantendo-as distintas das não relacionadas</para>
-
-          <para>PERSIST pode adotar um dos seguintes valores:</para>
-
-          <para><emphasis role="bold">Global</emphasis> - Os valores persistem
-          indefinidamente (até o processo terminar) e são compartilhados com
-          quaisquer outras incorporações que usam o mesmo valor GLOBALSCOPE,
-          até mesmo em outras tarefas.</para>
-
-          <para><emphasis role="bold">Query:</emphasis> - Os valores persistem
-          até que a consulta seja descarregada e compartilhada com outras
-          instâncias da consulta que possam estar sendo executadas ao mesmo
-          tempo no Roxie, porém não com outras consultas.</para>
-
-          <para><emphasis role="bold">Workunit</emphasis> - Os valores
-          persistem até o final da workunit, ou da instância atual de uma
-          consulta implementada pelo Roxie, e não são compartilhados com
-          outras instâncias.</para>
-        </sect3>
-      </sect2>
     </sect1>
   </chapter>
 </book>

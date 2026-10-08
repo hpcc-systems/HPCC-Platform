@@ -10,7 +10,7 @@
       <primary>File.GetLogicalFileAttribute</primary>
     </indexterm><indexterm>
       <primary>GetLogicalFileAttribute</primary>
-    </indexterm>(</emphasis> <emphasis> logicalfilename, attrname </emphasis>
+    </indexterm>(</emphasis> <emphasis>lfn, attrname</emphasis>
   <emphasis role="bold">)</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
@@ -21,7 +21,7 @@
 
       <tbody>
         <row>
-          <entry><emphasis>logicalfilename</emphasis></entry>
+          <entry><emphasis>lfn</emphasis></entry>
 
           <entry>Uma string terminada por nulo que contém o nome do arquivo
           lógico, como conhecido pelo DFU.</entry>
@@ -53,6 +53,10 @@
   <para>A função <emphasis role="bold">GetLogicalFileAttribute </emphasis>
   retorna o valor de <emphasis>attrname</emphasis> para o
   <emphasis>logicalfilename</emphasis> especificado.</para>
+
+  <para><emphasis role="bold">OBSERVAÇÃO:</emphasis> Se o argumento
+  <emphasis>logicalfilename</emphasis> referenciar um arquivo que não existe,
+  a workunit falhará com um erro de runtime.</para>
 
   <para>Exemplo:</para>
 

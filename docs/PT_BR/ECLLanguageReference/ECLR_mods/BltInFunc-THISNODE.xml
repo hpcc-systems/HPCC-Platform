@@ -42,7 +42,7 @@
 
   <para>Exemplo:</para>
 
-  <programlisting>ds := ALLNODES(JOIN(THISNODE(GetData(SomeData)),
+  <programlisting lang="ECL" role="roxieonly">ds := ALLNODES(JOIN(THISNODE(GetData(SomeData)),
       THISNODE(GetIDX(SomeIndex)),
       LEFT.ID = RIGHT.ID));</programlisting>
 

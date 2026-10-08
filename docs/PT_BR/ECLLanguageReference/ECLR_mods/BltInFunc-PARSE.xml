@@ -14,7 +14,7 @@
   MAXLENGTH<indexterm>
       <primary>MAXLENGTH</primary>
     </indexterm>( </emphasis><emphasis>length </emphasis><emphasis
-  role="bold">) ])</emphasis><emphasis role="bold"/></para>
+  role="bold">) ])</emphasis></para>
 
   <para><emphasis role="bold">PARSE(</emphasis><emphasis>dataset, data,
   result</emphasis><emphasis role="bold"> </emphasis><emphasis>,
@@ -432,7 +432,7 @@
 
     <para>Exemplo:</para>
 
-    <programlisting>rec := {STRING10000 line};
+    <programlisting lang="ECL_Runnable">rec := {STRING10000 line};
 datafile := DATASET([
     {'Ge 34:2 And when Shechem the son of Hamor the Hivite, prince of the country, saw her,'+
      ' he took her, and lay with her, and defiled her.'},
@@ -566,12 +566,12 @@ OUTPUT(textout);</programlisting>
     contendo apenas os números. O código de área ausente nos dados de entrada
     não processados resulta em três zeros iniciais no resultado.</para>
 
-    <programlisting>infile := DATASET([{'5619994581'},{'15619994581'},
-                   {'(561) 999-4581'},{'(561)999-4581'},
-                   {'561-999-4581'},{'561 999 4581'},
-                   {'561.999.4581'},{'561/999/4581'},
-                   {'561 999-4581'},{'9994581'},
-                   {'999-4581'}],{STRING20 rawnumber});
+    <programlisting>infile := DATASET([{'5615554581'},{'15615554581'},
+                   {'(561) 555-4581'},{'(561)555-4581'},
+                   {'561-555-4581'},{'561 555 4581'},
+                   {'561.555.4581'},{'561/555/4581'},
+                   {'561 555-4581'},{'5554581'},
+                   {'555-4581'}],{STRING20 rawnumber});
   
             
 PATTERN numbers := PATTERN('[0-9]')+;
