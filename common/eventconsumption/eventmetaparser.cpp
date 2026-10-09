@@ -97,29 +97,29 @@ void CMetaInfoState::CCollector::configure(const IPropertyTree& config)
 {
 }
 
-bool CMetaInfoState::CCollector::visitFile(const char* filename, uint32_t version)
+bool CMetaInfoState::CCollector::visitFile(const EventFileProperties& properties)
 {
-    metaState->onFile(filename, version);
+    metaState->onFile(properties.path.str(), properties.version);
     if (nextLink)
-        return nextLink->visitFile(filename, version);
+        return nextLink->visitFile(properties);
     return true;
 }
 
-bool CMetaInfoState::CCollector::visitEvent(CEvent& event)
+bool CMetaInfoState::CCollector::visitEvent(CEvent& event, const EventFileProperties& properties)
 {
     metaState->onEvent(event);
 
     // Always forward to next link in chain
     if (nextLink)
-        return nextLink->visitEvent(event);
+        return nextLink->visitEvent(event, properties);
     return true;
 }
 
-void CMetaInfoState::CCollector::departFile(uint32_t bytesRead)
+void CMetaInfoState::CCollector::departFile(const EventFileProperties& properties)
 {
     // Forward to next link in chain
     if (nextLink)
-        nextLink->departFile(bytesRead);
+        nextLink->departFile(properties);
 }
 
 CMetaInfoState::CCollector::CCollector(CMetaInfoState& _metaState)
@@ -625,7 +625,7 @@ public:
         queryStart.reset(EventQueryStart);
         queryStart.setValue(EvAttrEventTraceId, "trace-1");
         queryStart.setValue(EvAttrServiceName, "foobar");
-        CPPUNIT_ASSERT(collector->visitEvent(queryStart));
+        CPPUNIT_ASSERT(collector->visitEvent(queryStart, queryTestEventFileProperties()));
 
         __uint64 hash = 123;
         CPPUNIT_ASSERT(!state.queryFilePathHash(999, hash));
@@ -715,13 +715,13 @@ public:
         queryStartA.reset(EventQueryStart);
         queryStartA.setValue(EvAttrEventTraceId, "trace-a");
         queryStartA.setValue(EvAttrServiceName, "a");
-        CPPUNIT_ASSERT(collector->visitEvent(queryStartA));
+        CPPUNIT_ASSERT(collector->visitEvent(queryStartA, queryTestEventFileProperties()));
 
         CEvent queryStartFoobar;
         queryStartFoobar.reset(EventQueryStart);
         queryStartFoobar.setValue(EvAttrEventTraceId, "trace-foobar");
         queryStartFoobar.setValue(EvAttrServiceName, "foobar");
-        CPPUNIT_ASSERT(collector->visitEvent(queryStartFoobar));
+        CPPUNIT_ASSERT(collector->visitEvent(queryStartFoobar, queryTestEventFileProperties()));
 
         __uint64 hashA = 0;
         CPPUNIT_ASSERT(state.queryServiceNameHash("trace-a", hashA));

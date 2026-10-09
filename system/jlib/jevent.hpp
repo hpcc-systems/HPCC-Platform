@@ -695,6 +695,8 @@ constexpr byte AmbiguousChannelId = UINT8_MAX;
 constexpr byte AmbiguousReplicaId = UINT8_MAX;
 constexpr __uint64 AmbiguousInstanceId = UINT64_MAX;
 
+struct EventFileProperties;
+
 // Abstract interface for visiting the events in a previously recorded event data file.
 // An implementation will receive a sequence of calls:
 // - visitFile: signals the start of a file
@@ -703,11 +705,15 @@ constexpr __uint64 AmbiguousInstanceId = UINT64_MAX;
 //
 // Both visitFile and visitEvent return a Boolean value. True continues file parsing.
 // while false stops processing.
+//
+// EventFileProperties references identify the input file associated with each callback.
+// Properties are owned by the event consumer distributing events, and may be discarded after
+// the callback. Do not retain references to the properties or member variables within them.
 interface IEventVisitor : extends IInterface
 {
-    virtual bool visitFile(const char *filename, uint32_t version) = 0;
-    virtual bool visitEvent(CEvent& event) = 0;
-    virtual void departFile(uint32_t bytesRead) = 0;
+    virtual bool visitFile(const EventFileProperties& properties) = 0;
+    virtual bool visitEvent(CEvent& event, const EventFileProperties& properties) = 0;
+    virtual void departFile(const EventFileProperties& properties) = 0;
 };
 
 // Properties related to an event data file being read. It is a combination of static and

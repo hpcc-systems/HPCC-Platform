@@ -46,5 +46,5 @@ protected: \
     Linked<IEventVisitor> nextLink; \
 public: \
     virtual void setNextLink(IEventVisitor& visitor) override { nextLink.set(&visitor); } \
-    virtual bool visitFile(const char* filename, uint32_t version) override { if (!nextLink) return false; return nextLink->visitFile(filename, version); } \
-    virtual void departFile(uint32_t bytesRead) override { if (!nextLink) return; nextLink->departFile(bytesRead); }
+    virtual bool visitFile(const EventFileProperties& properties) override { if (!nextLink) return false; return nextLink->visitFile(properties); } \
+    virtual void departFile(const EventFileProperties& properties) override { if (!nextLink) return; nextLink->departFile(properties); }

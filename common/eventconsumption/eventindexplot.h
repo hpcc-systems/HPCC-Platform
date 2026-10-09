@@ -102,9 +102,9 @@ public:
     bool acceptModel(const IPropertyTree& config) { UNIMPLEMENTED; }
 
 protected:
-    virtual bool visitFile(const char* filename, uint32_t version) override;
-    virtual bool visitEvent(CEvent& event) override;
-    virtual void departFile(uint32_t bytesRead) override;
+    virtual bool visitFile(const EventFileProperties& properties) override;
+    virtual bool visitEvent(CEvent& event, const EventFileProperties& properties) override;
+    virtual void departFile(const EventFileProperties& properties) override;
 
 public:
     IMPLEMENT_IINTERFACE_USING(CEventConsumingOp);

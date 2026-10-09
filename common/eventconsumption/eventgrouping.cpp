@@ -753,19 +753,19 @@ public:
         planeInfo.setValue(EvAttrPlane, "myplane");
         planeInfo.setValue(EvAttrPath, "/var/lib/hpccsystems/hpcc-data/myplane/");
         planeInfo.setValue(EvAttrIsStriped, false);
-        CPPUNIT_ASSERT(collector->visitEvent(planeInfo));
+        CPPUNIT_ASSERT(collector->visitEvent(planeInfo, queryTestEventFileProperties()));
 
         CEvent fileInfo;
         fileInfo.reset(MetaFileInformation);
         fileInfo.setValue(EvAttrFileId, (__uint64)1);
         fileInfo.setValue(EvAttrPath, "/var/lib/hpccsystems/hpcc-data/myplane/some/logical/file::1");
-        CPPUNIT_ASSERT(collector->visitEvent(fileInfo));
+        CPPUNIT_ASSERT(collector->visitEvent(fileInfo, queryTestEventFileProperties()));
 
         CEvent queryStart;
         queryStart.reset(EventQueryStart);
         queryStart.setValue(EvAttrEventTraceId, "trace-1");
         queryStart.setValue(EvAttrServiceName, "service-1");
-        CPPUNIT_ASSERT(collector->visitEvent(queryStart));
+        CPPUNIT_ASSERT(collector->visitEvent(queryStart, queryTestEventFileProperties()));
 
         std::vector<GroupAttribute> attrs;
         attrs.push_back(GroupAttributeExtractor::parseAttribute("NodeKind"));

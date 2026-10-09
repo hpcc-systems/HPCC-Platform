@@ -2406,21 +2406,21 @@ private:
     bool traverseHeader()
     {
         readHeader();
-        return visitor->visitFile(properties.path.str(), properties.version);
+        return visitor->visitFile(properties);
     }
 
     bool traverseEvents()
     {
         while (readEvent(event))
         {
-            if (!visitor->visitEvent(event))
+            if (!visitor->visitEvent(event, properties))
                 return false;
         }
         return true;
     }
     bool traverseFooter()
     {
-        (void)visitor->departFile(properties.bytesRead);
+        visitor->departFile(properties);
         return true;
     }
 };

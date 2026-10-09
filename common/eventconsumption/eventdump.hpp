@@ -49,8 +49,8 @@ constexpr static const char* DUMP_STRUCTURE_FILE_BYTES_READ = "bytesRead";
 // format is determined by the subclass.
 //
 // Subclasses must implement:
-//  `virtual bool visitFile(const char* filename, uint32_t version) = 0;`
-//  `virtual void departFile(uint32_t bytesRead) = 0;`
+//  `virtual bool visitFile(const EventFileProperties& properties) = 0;`
+//  `virtual void departFile(const EventFileProperties& properties) = 0;`
 //  `virtual void recordAttribute(EventAttr id, const char* name, const char* value, bool quoted) = 0;`
 class CDumpEventVisitor : public CInterfaceOf<IEventVisitor>
 {
@@ -118,7 +118,7 @@ public:
     }
 
 public: // IEventVisitor
-    virtual bool visitEvent(CEvent& event) override
+    virtual bool visitEvent(CEvent& event, [[maybe_unused]] const EventFileProperties& properties) override
     {
         visitEvent(event.queryType());
         for (CEventAttribute& attr : event.assignedAttributes)

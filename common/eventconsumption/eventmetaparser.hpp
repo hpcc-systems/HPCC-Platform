@@ -104,9 +104,9 @@ private:
     class event_decl CCollector : public CInterfaceOf<IEventVisitationLink>
     {
     public: // IEventVisitor
-        virtual bool visitFile(const char* filename, uint32_t version) override;
-        virtual bool visitEvent(CEvent& event) override;
-        virtual void departFile(uint32_t bytesRead) override;
+        virtual bool visitFile(const EventFileProperties& properties) override;
+        virtual bool visitEvent(CEvent& event, const EventFileProperties& properties) override;
+        virtual void departFile(const EventFileProperties& properties) override;
     public: // IEventVisitationLink
         virtual void setNextLink(IEventVisitor& visitor) override;
         virtual void configure(const IPropertyTree& config) override;

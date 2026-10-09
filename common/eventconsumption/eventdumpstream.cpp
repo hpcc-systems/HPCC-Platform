@@ -69,12 +69,12 @@ inline CDumpEventVisitor* configureDumpEventVisitor(CDumpEventVisitor* visitor, 
 class CDumpTextEventVisitor : public CDumpStreamEventVisitor
 {
 public:
-    virtual bool visitFile(const char* filename, uint32_t version) override
+    virtual bool visitFile(const EventFileProperties& properties) override
     {
         if (!beginFileVisit())
             return true;
         state = State::Header;
-        doVisitHeader(filename, version);
+        doVisitHeader(properties.path.str(), properties.version);
         return true;
     }
 
@@ -94,14 +94,14 @@ public:
         closeElement();
     }
 
-    virtual void departFile(uint32_t bytesRead) override
+    virtual void departFile(const EventFileProperties& properties) override
     {
         if (!endFileVisit())
             return;
         if (inHeader())
             closeElement();
         state = State::Footer;
-        doVisitFooter(bytesRead);
+        doVisitFooter(properties.bytesRead);
         closeElement();
     }
 
@@ -144,14 +144,14 @@ IEventVisitor* createDumpTextEventVisitor(IBufferedSerialOutputStream& out, CMet
 class CDumpXMLEventVisitor : public CDumpStreamEventVisitor
 {
 public:
-    virtual bool visitFile(const char* filename, uint32_t version) override
+    virtual bool visitFile(const EventFileProperties& properties) override
     {
         if (!beginFileVisit())
             return true;
         state = State::Header;
         openElement(DUMP_STRUCTURE_ROOT, true);
         openElement(DUMP_STRUCTURE_HEADER);
-        doVisitHeader(filename, version);
+        doVisitHeader(properties.path.str(), properties.version);
         return true;
     }
 
@@ -171,7 +171,7 @@ public:
         closeElement();
     }
 
-    virtual void departFile(uint32_t bytesRead) override
+    virtual void departFile(const EventFileProperties& properties) override
     {
         if (!endFileVisit())
             return;
@@ -179,7 +179,7 @@ public:
             closeElement();
         state = State::Footer;
         openElement(DUMP_STRUCTURE_FOOTER);
-        doVisitFooter(bytesRead);
+        doVisitFooter(properties.bytesRead);
         closeElement();
         closeElement(DUMP_STRUCTURE_ROOT);
     }
@@ -230,14 +230,14 @@ IEventVisitor* createDumpXMLEventVisitor(IBufferedSerialOutputStream& out, CMeta
 class CDumpJSONEventVisitor : public CDumpStreamEventVisitor
 {
 public:
-    virtual bool visitFile(const char* filename, uint32_t version) override
+    virtual bool visitFile(const EventFileProperties& properties) override
     {
         if (!beginFileVisit())
             return true;
         state = State::Header;
         openElement();
         openElement(DUMP_STRUCTURE_HEADER);
-        doVisitHeader(filename, version);
+        doVisitHeader(properties.path.str(), properties.version);
         return true;
     }
 
@@ -264,7 +264,7 @@ public:
         closeElement();
     }
 
-    virtual void departFile(uint32_t bytesRead) override
+    virtual void departFile(const EventFileProperties& properties) override
     {
         if (!endFileVisit())
             return;
@@ -273,7 +273,7 @@ public:
         else if (inEvents())
             closeArray();
         openElement(DUMP_STRUCTURE_FOOTER);
-        doVisitFooter(bytesRead);
+        doVisitFooter(properties.bytesRead);
         closeElement();
         closeElement(true);
     }
@@ -366,13 +366,13 @@ IEventVisitor* createDumpJSONEventVisitor(IBufferedSerialOutputStream& out, CMet
 class CDumpYAMLEventVisitor : public CDumpStreamEventVisitor
 {
 public:
-    virtual bool visitFile(const char* filename, uint32_t version) override
+    virtual bool visitFile(const EventFileProperties& properties) override
     {
         if (!beginFileVisit())
             return true;
         state = State::Header;
         openElement(DUMP_STRUCTURE_HEADER);
-        doVisitHeader(filename, version);
+        doVisitHeader(properties.path.str(), properties.version);
         return true;
     }
 
@@ -394,7 +394,7 @@ public:
         closeElement();
     }
 
-    virtual void departFile(uint32_t bytesRead) override
+    virtual void departFile(const EventFileProperties& properties) override
     {
         if (!endFileVisit())
             return;
@@ -402,7 +402,7 @@ public:
             closeElement();
         state = State::Footer;
         openElement(DUMP_STRUCTURE_FOOTER);
-        doVisitFooter(bytesRead);
+        doVisitFooter(properties.bytesRead);
         closeElement();
     }
 
@@ -462,7 +462,7 @@ IEventVisitor* createDumpYAMLEventVisitor(IBufferedSerialOutputStream& out, CMet
 class CDumpCSVEventVisitor : public CDumpStreamEventVisitor
 {
 public:
-    virtual bool visitFile(const char* filename, uint32_t version) override
+    virtual bool visitFile([[maybe_unused]] const EventFileProperties& properties) override
     {
         if (!beginFileVisit())
             return true;
@@ -483,7 +483,7 @@ public:
         return true;
     }
 
-    virtual bool visitEvent(CEvent& event) override
+    virtual bool visitEvent(CEvent& event, [[maybe_unused]] const EventFileProperties& properties) override
     {
         if (inHeader())
             state = State::Events;
@@ -521,7 +521,7 @@ public:
         return true;
     }
 
-    virtual void departFile(uint32_t bytesRead) override
+    virtual void departFile([[maybe_unused]] const EventFileProperties& properties) override
     {
         if (!endFileVisit())
             return;
