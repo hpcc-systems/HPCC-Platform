@@ -14,12 +14,12 @@
 #    limitations under the License.
 ################################################################################
 project (tools)
+SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${STRICT_CXX_FLAGS}")
 HPCC_ADD_SUBDIRECTORY (esdlcomp)
 HPCC_ADD_SUBDIRECTORY (hidl)
 HPCC_ADD_SUBDIRECTORY (esdlcmd-xml)
 HPCC_ADD_SUBDIRECTORY (esdlcmd)
 HPCC_ADD_SUBDIRECTORY (esp-api)
-SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${STRICT_CXX_FLAGS}")
 HPCC_ADD_SUBDIRECTORY (backupnode "PLATFORM")
 HPCC_ADD_SUBDIRECTORY (swapnode "PLATFORM")
 IF (USE_OPENLDAP)

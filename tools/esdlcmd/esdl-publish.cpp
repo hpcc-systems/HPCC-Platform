@@ -163,7 +163,6 @@ public:
             return 1;
         }
 
-        bool validateMessages = false;
         if (resp->getExceptions().ordinality()>0)
         {
             EsdlCmdHelper::outputMultiExceptions(resp->getExceptions());
