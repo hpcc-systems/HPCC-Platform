@@ -7,7 +7,7 @@ import { formatCost } from "src/Session";
 import * as Utility from "src/Utility";
 import { getStateImageName, IFile } from "src/ESPLogicalFile";
 import { useConfirm } from "../hooks/confirm";
-import { useFile } from "../hooks/file";
+import { formatCompression, useFile } from "../hooks/file";
 import { useMyAccount } from "../hooks/user";
 import { ShortVerticalDivider } from "./Common";
 import { TableGroup } from "./forms/Groups";
@@ -218,11 +218,11 @@ export const LogicalFileSummary: React.FunctionComponent<LogicalFileSummaryProps
                 "ContentType": { label: nlsHPCC.ContentType, type: "string", value: file?.ContentType, readonly: true },
                 "KeyType": { label: nlsHPCC.KeyType, type: "string", value: file?.KeyType, readonly: true },
                 "Format": { label: nlsHPCC.Format, type: "string", value: file?.Format, readonly: true },
+                "Filesize": { label: nlsHPCC.FileSize, type: "string", value: file?.Filesize, readonly: true },
                 "IsCompressed": { label: nlsHPCC.IsCompressed, type: "checkbox", value: file?.IsCompressed, readonly: true },
                 "CompressedFileSizeString": { label: nlsHPCC.CompressedFileSize, type: "string", value: file?.CompressedFileSize ? Utility.safeFormatNum(file?.CompressedFileSize) : "", readonly: true },
                 "CompressionType": { label: nlsHPCC.CompressionType, type: "string", value: file?.CompressionType, readonly: true },
-                "Filesize": { label: nlsHPCC.FileSize, type: "string", value: file?.Filesize, readonly: true },
-                "PercentCompressed": { label: nlsHPCC.PercentCompressed, type: "string", value: file?.PercentCompressed, readonly: true },
+                "Compression": { label: nlsHPCC.Compression, type: "string", value: formatCompression(file), readonly: true },
                 "Modified": { label: nlsHPCC.Modified, type: "string", value: file?.Modified, readonly: true },
                 "ExpirationDate": { label: nlsHPCC.ExpirationDate, type: "string", value: file?.ExpirationDate, readonly: true },
                 "ExpireDays": { label: nlsHPCC.ExpireDays, type: "string", value: file?.ExpireDays ? file?.ExpireDays.toString() : "", readonly: true },
