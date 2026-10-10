@@ -1,0 +1,63 @@
+<Dataset name='ExactMatch'>
+ <Row><id>1</id><text>foo</text><category>exact</category></Row>
+</Dataset>
+<Dataset name='CaseInsensitiveMatch'>
+ <Row><id>1</id><text>foo</text><category>exact</category></Row>
+ <Row><id>2</id><text>FOO</text><category>uppercase</category></Row>
+ <Row><id>3</id><text>Foo</text><category>capitalized</category></Row>
+</Dataset>
+<Dataset name='ContainsMatch'>
+ <Row><id>1</id><text>foo</text><category>exact</category></Row>
+ <Row><id>4</id><text>foobar</text><category>prefix</category></Row>
+ <Row><id>5</id><text>barfoo</text><category>suffix</category></Row>
+ <Row><id>6</id><text>barfoobaz</text><category>middle</category></Row>
+ <Row><id>8</id><text>food for thought</text><category>contains</category></Row>
+ <Row><id>10</id><text>foolish</text><category>prefix</category></Row>
+ <Row><id>12</id><text>foofoo</text><category>double</category></Row>
+</Dataset>
+<Dataset name='ContainsMatchInsensitive'>
+ <Row><id>1</id><text>foo</text><category>exact</category></Row>
+ <Row><id>2</id><text>FOO</text><category>uppercase</category></Row>
+ <Row><id>3</id><text>Foo</text><category>capitalized</category></Row>
+ <Row><id>4</id><text>foobar</text><category>prefix</category></Row>
+ <Row><id>5</id><text>barfoo</text><category>suffix</category></Row>
+ <Row><id>6</id><text>barfoobaz</text><category>middle</category></Row>
+ <Row><id>8</id><text>food for thought</text><category>contains</category></Row>
+ <Row><id>10</id><text>foolish</text><category>prefix</category></Row>
+ <Row><id>12</id><text>foofoo</text><category>double</category></Row>
+</Dataset>
+<Dataset name='RegexMatch'>
+ <Row><id>1</id><text>foo</text><category>exact</category></Row>
+ <Row><id>4</id><text>foobar</text><category>prefix</category></Row>
+ <Row><id>5</id><text>barfoo</text><category>suffix</category></Row>
+ <Row><id>6</id><text>barfoobaz</text><category>middle</category></Row>
+ <Row><id>8</id><text>food for thought</text><category>contains</category></Row>
+ <Row><id>10</id><text>foolish</text><category>prefix</category></Row>
+ <Row><id>12</id><text>foofoo</text><category>double</category></Row>
+</Dataset>
+<Dataset name='StartsWithMatch'>
+ <Row><id>1</id><text>foo</text><category>exact</category></Row>
+ <Row><id>4</id><text>foobar</text><category>prefix</category></Row>
+ <Row><id>8</id><text>food for thought</text><category>contains</category></Row>
+ <Row><id>10</id><text>foolish</text><category>prefix</category></Row>
+ <Row><id>12</id><text>foofoo</text><category>double</category></Row>
+</Dataset>
+<Dataset name='EndsWithMatch'>
+ <Row><id>1</id><text>foo</text><category>exact</category></Row>
+ <Row><id>5</id><text>barfoo</text><category>suffix</category></Row>
+</Dataset>
+<Dataset name='WordBoundaryMatch'>
+ <Row><id>1</id><text>foo</text><category>exact</category></Row>
+</Dataset>
+<Dataset name='ExactMatchCount'>
+ <Row><Result_1>1</Result_1></Row>
+</Dataset>
+<Dataset name='ContainsMatchCount'>
+ <Row><Result_1>7</Result_1></Row>
+</Dataset>
+<Dataset name='RegexMatchCount'>
+ <Row><Result_1>7</Result_1></Row>
+</Dataset>
+<Dataset name='RegexContainsEqual'>
+ <Row><Result_1>true</Result_1></Row>
+</Dataset>
