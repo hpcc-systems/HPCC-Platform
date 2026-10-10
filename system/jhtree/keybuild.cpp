@@ -19,6 +19,7 @@
 #include "eclhelper.hpp"
 #include "bloom.hpp"
 #include "jmisc.hpp"
+#include "jstring.hpp"
 #include "jhinplace.hpp"
 #include "jhblockcompressed.hpp"
 

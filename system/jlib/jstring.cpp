@@ -2700,8 +2700,6 @@ void toLower(std::string & value)
     std::transform(value.cbegin(), value.cend(), value.begin(), func);
 }
 
-
-
 StringBuffer & ncnameEscape(char const * in, StringBuffer & out)
 {
     if(!isalpha(*in))
