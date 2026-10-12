@@ -63,7 +63,7 @@ data:
 {{- include "hpcc.generateTracingConfig" (dict "root" .root "me" .me) | indent 6 }}
 {{   include "hpcc.generateVaultConfig" . | indent 6 }}
     global:
-{{   include "hpcc.generateGlobalConfigMap" .root | indent 6 }}
+{{   include "hpcc.generateGlobalConfigMap" (dict "root" .root) | indent 6 }}
 {{- end -}}{{/*define "hpcc.roxieConfigMap"*/}}
 
 {{- define "hpcc.roxieTopoConfigMap" -}}
@@ -78,7 +78,7 @@ data:
 {{-  include "hpcc.generateLoggingConfig" (dict "root" .root "me" .toposerver) | indent 6 }}
 {{-  include "hpcc.generateTracingConfig" (dict "root" .root "me" .toposerver) | indent 6 }}
     global:
-{{   include "hpcc.generateGlobalConfigMap" .root | indent 6 }}
+{{   include "hpcc.generateGlobalConfigMap" (dict "root" .root) | indent 6 }}
 {{- end -}}{{/*define "hpcc.roxieConfigMap"*/}}
 
 {{  range $roxie := $.Values.roxie -}}

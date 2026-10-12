@@ -947,6 +947,15 @@ thor:
   #eclAgentResources:
   #  cpu: "1"
   #  memory: "2G"
+  #manager:
+  #  cost:
+  #    perCpu: 0.053
+  #worker:
+  #  cost:
+  #    perCpu: 0.113
+  #eclagent:
+  #  cost:
+  #    perCpu: 0.053
   #egress: engineEgress
   logging:
     detail: 50
