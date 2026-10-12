@@ -1146,19 +1146,34 @@ class CThreadPool: public CThreadPoolBase, implements IThreadPool, public CInter
     unsigned startsInPeriod = 0;
     cycle_t startDelayInPeriod = 0;
     CCycleTimer overAllTimer;
+    std::atomic<bool> waitAvailableInterrupted{false};
+
+    bool acquireSlot(unsigned timeout)
+    {
+        if (!availsem.wait(timeout))
+            return false;
+        if (waitAvailableInterrupted)
+        {
+            availsem.signal(); // never keep a slot once interrupted, so the interrupt wake-up is passed on and the pool limit is preserved
+            throw makeStringExceptionV(JLIBERR_SystemNoThreadsAvailableInPoolS, "Thread pool %s interrupted", poolname.get());
+        }
+        return true;
+    }
 
     PooledThreadHandle _start(void *param,const char *name, bool noBlock, unsigned timeout=0)
     {
+        if (waitAvailableInterrupted)
+            throw makeStringExceptionV(JLIBERR_SystemNoThreadsAvailableInPoolS, "Thread pool %s interrupted", poolname.get());
         CCycleTimer startTimer(traceStartDelayPeriod);
         bool waited = false;
         bool timedout = false;
         if (defaultmax)
         {
-            waited = !availsem.wait(0);
+            waited = !acquireSlot(0);
             if (noBlock)
                 timedout = waited;
             else if (waited)
-                timedout = !availsem.wait(timeout>0?timeout:delay);
+                timedout = !acquireSlot(timeout>0?timeout:delay);
         }
 
         CPooledThreadWrapper * t = nullptr;
@@ -1166,7 +1181,7 @@ class CThreadPool: public CThreadPoolBase, implements IThreadPool, public CInter
             CriticalBlock block(crit);
             if (timedout)
             {
-                if (!availsem.wait(0)) // make sure take allocated sem if has become available
+                if (!acquireSlot(0)) // make sure take allocated sem if has become available
                 {
                     if (noBlock || timeout > 0)
                         throw MakeStringException(JLIBERR_SystemNoThreadsAvailableInPoolS, "No threads available in pool %s", poolname.get());
@@ -1441,14 +1456,23 @@ public:
     }
     bool waitAvailable(unsigned timeout)
     {
+        if (waitAvailableInterrupted)
+            return false;
         if (!defaultmax)
             return true;
         if (availsem.wait(timeout))
         {
-            availsem.signal();
-            return true;
+            availsem.signal(); // NB: also passes an interrupt wake-up on to any other waiters
+            return !waitAvailableInterrupted;
         }
         return false;
+    }
+    virtual void stopAccepting() override
+    {
+        // Irreversible: the pool can no longer start threads (start*() throw, waitAvailable() returns false); running threads, stop/join/destruction are unaffected.
+        // The extra slot is never retained: every availsem consumer hands it back once interrupted
+        if (!waitAvailableInterrupted.exchange(true))
+            availsem.signal();
     }
     // setPoolSize allocates more 'slots' (availsem), or reduces the number of available slots
     // Due to the throttling mechanism, the number of running threads may exceed the defaultmax
@@ -1483,6 +1507,11 @@ public:
             {
                 if (!availsem.wait(0))
                     break; // none available
+                if (waitAvailableInterrupted)
+                {
+                    availsem.signal(); // don't swallow the interrupt wake-up
+                    break;
+                }
                 --slotsToConsume;
             }
             // NB: any unconsumed are now in effect 'burst' threads. Their lifetime (as before) is governed by targetpoolsize

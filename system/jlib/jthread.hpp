@@ -307,6 +307,7 @@ interface IThreadPool : extends IInterface
         virtual PooledThreadHandle start(void *param)=0;    // starts a new thread reuses stopped pool entries
         virtual PooledThreadHandle start(void *param,const char *name)=0;   // starts a new thread reuses stopped pool entries 
         virtual PooledThreadHandle start(void *param,const char *name,unsigned timeout)=0;  // starts a new thread reuses stopped pool entries, throws exception if can't start within timeout 
+        virtual void stopAccepting() = 0;                   // irreversible: waitAvailable() returns false and start*() throws thereafter; running threads, stop/join are unaffected
         virtual bool stop(PooledThreadHandle handle)=0;     // initiates stop on specified thread (may return false)
         virtual bool stopAll(bool tryall=false)=0;          // initiates stop on all threads, if tryall continues even if one or more fails
         virtual bool join(PooledThreadHandle handle,unsigned timeout=INFINITE)=0;
@@ -318,7 +319,7 @@ interface IThreadPool : extends IInterface
         virtual PooledThreadHandle startNoBlock(void *param)=0; // starts a new thread if it can do so without blocking, else throws exception
         virtual void setStartDelayTracing(unsigned secs) = 0;        // set start delay tracing period
         virtual void setNiceValue(int value) = 0;                    // set priority for thread
-        virtual bool waitAvailable(unsigned timeout) = 0;            // wait until a pool member is available
+        virtual bool waitAvailable(unsigned timeout) = 0;            // wait until a pool member is available (returns false on timeout or if interrupted)
         virtual void setPoolSize(unsigned newPoolSize, unsigned newTargetPoolSize) = 0;          // redefine the defaultmax size of the pool
 };
 
