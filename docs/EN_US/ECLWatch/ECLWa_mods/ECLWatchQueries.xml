@@ -680,7 +680,7 @@ depending on where they wind up.-->
 
               <listitem>
                 <para>Choose the <emphasis role="bold">Target </emphasis>to
-                associate the package map with.</para>
+                associate the package map with. This is the name of the Roxie target that owns or will own the package map.</para>
               </listitem>
 
               <listitem>
