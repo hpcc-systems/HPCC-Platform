@@ -61,6 +61,6 @@ WS_DFSCLIENT_API DistributedFileCompareResult fileCompare(const char *lfn1, cons
 } // end of namespace wsdfs
 
 interface ILocalOrDistributedFile;
-WS_DFSCLIENT_API ILocalOrDistributedFile* createLocalOrDistributedFile(const char *fname,IUserDescriptor *user,bool onlylocal,bool onlydfs,AccessMode accessMode, bool isPrivilegedUser, const StringArray *clusters, const DFSAuditContext &auditCtx = DFSAuditContext{});
+WS_DFSCLIENT_API ILocalOrDistributedFile* createLocalOrDistributedFile(const char *fname,IUserDescriptor *user,bool onlylocal,bool onlydfs,AccessMode accessMode, bool isPrivilegedUser, const StringArray *clusters, const DFSAuditContext &auditCtx = DFSAuditContext{}, IDistributedFileTransaction *transaction=nullptr);
 
 #endif // _WS_DFSCLIENT_HPP
