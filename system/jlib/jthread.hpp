@@ -176,6 +176,7 @@ public:
 interface IThreaded
 {
     virtual void threadmain() = 0;
+    virtual bool requestAbort() { return false; }
 protected:
     virtual ~IThreaded() {}
 };
@@ -191,22 +192,27 @@ public:
     virtual int run() override;
 };
 
-// Similar to above, but the underlying thread always remains running. This can make repeated start + join's significantly quicker
-class jlib_decl CPooledPersistent
+// A pooled worker that borrows a reusable thread for each start/join cycle.
+class jlib_decl CPooledPersistent : implements IThreaded
 {
     Owned<IException> exception;
     IThreaded *owner;
+    StringAttr name;
     PooledThreadHandle handle = 0;
     bool joined = true;
-    void threadmain();
+    virtual void threadmain() override;
+    virtual bool requestAbort() override;
 public:
     CPooledPersistent(const char *name, IThreaded *_owner);
     ~CPooledPersistent();
+    void setName(const char *_name) { name.set(_name); }
     void start(bool inheritThreadContext);
+    bool stop();
     bool join(unsigned timeout, bool throwException = true);
 };
 
 
+// A persistent worker with one dedicated thread that waits for repeated start/join cycles.
 class jlib_decl CThreadedPersistent
 {
     class CAThread : public Thread
@@ -291,7 +297,7 @@ interface IPooledThread: extends IInterface                 // base class for de
 public:
     virtual void init(void *param) = 0;                    // called before threadmain started (from within start)
     virtual void threadmain() = 0;                         // where threads code goes (param is passed from start)
-    virtual bool stop() = 0;                               // called to cause threadmain to return, returns false if request rejected
+    virtual bool stop() = 0;                               // non-blocking request to cause threadmain to return; may be called concurrently with threadmain
     virtual bool canReuse() const = 0;                     // return true if object can be re-used (after stopped), otherwise released
 };
 
@@ -306,6 +312,7 @@ interface IThreadPool : extends IInterface
 {
         virtual PooledThreadHandle start(void *param)=0;    // starts a new thread reuses stopped pool entries
         virtual PooledThreadHandle start(void *param,const char *name)=0;   // starts a new thread reuses stopped pool entries 
+        virtual PooledThreadHandle startWithContext(void *param,const char *name,bool inheritThreadContext)=0; // starts a thread with per-start context inheritance
         virtual PooledThreadHandle start(void *param,const char *name,unsigned timeout)=0;  // starts a new thread reuses stopped pool entries, throws exception if can't start within timeout 
         virtual void stopAccepting() = 0;                   // irreversible: waitAvailable() returns false and start*() throws thereafter; running threads, stop/join are unaffected
         virtual bool stop(PooledThreadHandle handle)=0;     // initiates stop on specified thread (may return false)
@@ -326,13 +333,13 @@ interface IThreadPool : extends IInterface
 extern jlib_decl IThreadPool *createThreadPool(
                                 const char *poolname,       // trace name of pool
                                 IThreadFactory *factory,    // factory for creating new thread instances
-                                bool inheritThreadContext,  // Are threads run independent of the calling context(false), or within the calling context(true)
+                                bool inheritThreadContext,  // Default context behavior; per-start overrides are available through IThreadPool::startWithContext
                                 IExceptionHandler *exceptionHandler, // optional exception handler
-                                unsigned defaultmax=50,     // maximum number of threads before starts blocking
-                                unsigned delay=1000,        // maximum delay on each block
+                                unsigned defaultmax=50,     // maximum number of threads; zero means unbounded
+                                unsigned delay=1000,        // maximum delay on each block when defaultmax is nonzero
                                 unsigned stacksize=0,       // stack size (bytes) 0 is default
                                 unsigned timeoutOnRelease=INFINITE, // maximum time waited for thread to terminate on releasing pool
-                                unsigned targetpoolsize=0           // target maximum size of pool (default same as defaultmax)   
+                                unsigned targetpoolsize=0           // target maximum size of a bounded pool; defaults to defaultmax
                              );
 
 extern jlib_decl unsigned getThreadCount();

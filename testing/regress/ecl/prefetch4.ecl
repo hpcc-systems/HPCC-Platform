@@ -20,6 +20,16 @@
 //nothor         - actions are run as separate child queries, and dependencies may be in separate sub graphs
 //nokey
 
+//version readaheadMode='thread',sinkMode='automatic'
+//version readaheadMode='pooled',sinkMode='pooled'
+
+import ^ as root;
+readaheadMode := #IFDEFINED(root.readaheadMode, 'thread');
+sinkMode := #IFDEFINED(root.sinkMode, 'automatic');
+
+#option('readaheadMode', readaheadMode);
+#option('sinkMode', sinkMode);
+
 rtl := SERVICE
  unsigned4 msTick() :       eclrtl,library='eclrtl',entrypoint='rtlTick',volatile;
  unsigned4 sleep(unsigned4 _delay) : eclrtl,action,library='eclrtl',entrypoint='rtlSleep';

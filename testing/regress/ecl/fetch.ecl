@@ -21,15 +21,18 @@
 //version multiPart=true
 //version multiPart=true,useLocal=true
 //version multiPart=true,useTranslation=true
+//version multiPart=false,readaheadMode='pooled'
 
 import ^ as root;
 multiPart := #IFDEFINED(root.multiPart, true);
 useLocal := #IFDEFINED(root.useLocal, false);
 useTranslation := #IFDEFINED(root.useTranslation, false);
+readaheadMode := #IFDEFINED(root.readaheadMode, 'thread');
 
 //--- end of version configuration ---
 
 #option ('layoutTranslation', useTranslation);
+#option('readaheadMode', readaheadMode);
 #onwarning (4523, ignore);
 #onwarning (5402, ignore);
 

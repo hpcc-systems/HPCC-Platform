@@ -2208,6 +2208,16 @@
           "default": 0,
           "description": "Specify an IONICE value for the background copy thread, if backgroundCopyClass set to best-effort."
         },
+        "sinkMode": {
+          "type": "string",
+          "enum": ["automatic", "parallelpersistent", "sequential", "parallel", "pooled", "automatic-parallel", "automatic-persistent"],
+          "description": "Controls how parallel Roxie sinks are executed"
+        },
+        "readaheadMode": {
+          "type": "string",
+          "enum": ["thread", "pooled"],
+          "description": "Controls whether Roxie readahead uses a dedicated or pooled thread"
+        },
         "blockedLocalAgent": {
           "type": "boolean",
           "default": true,

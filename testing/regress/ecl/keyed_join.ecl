@@ -24,6 +24,7 @@
 //version multiPart=false,forceRemoteKeyedLookup=true,forceRemoteKeyedFetch=true
 //version multiPart=true,forceRemoteKeyedLookup=true,forceRemoteKeyedFetch=true
 //version multiPart=true,useTranslation=true,forceRemoteKeyedLookup=true,forceRemoteKeyedFetch=true
+//version multiPart=false,forceRemoteKeyedLookup=true,forceRemoteKeyedFetch=true,readaheadMode='pooled'
 
 import ^ as root;
 multiPart := #IFDEFINED(root.multiPart, true);
@@ -31,9 +32,11 @@ useLocal := #IFDEFINED(root.useLocal, false);
 useTranslation := #IFDEFINED(root.useTranslation, false);
 forceRemoteKeyedLookup := #IFDEFINED(root.forceRemoteKeyedLookup, false);
 forceRemoteKeyedFetch := #IFDEFINED(root.forceRemoteKeyedLookup, false);
+readaheadMode := #IFDEFINED(root.readaheadMode, 'thread');
 
 #option('forceRemoteKeyedLookup', forceRemoteKeyedLookup);
 #option('forceRemoteKeyedFetch', forceRemoteKeyedFetch);
+#option('readaheadMode', readaheadMode);
 
 //--- end of version configuration ---
 

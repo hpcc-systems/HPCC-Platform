@@ -114,33 +114,7 @@ static const SmartStepExtra dummySmartStepExtra(SSEFreadAhead, NULL);
 
 //=================================================================================
 
-class PooledRestartableThread : public CInterface, public IThreaded
-{
-    CPooledPersistent thread;
-public:
-    PooledRestartableThread(const char *_name) : thread(_name, this)
-    {
-    }
-
-    virtual void start(const char *namePrefix, bool inheritThreadContext) final
-    {
-        thread.start(inheritThreadContext);
-    }
-
-    virtual void join() final
-    {
-        thread.join(INFINITE, false);
-    }
-
-    virtual void threadmain() override
-    {
-        run();
-    }
-
-    virtual int run() = 0;
-
-};
-class RestartableThread : public CInterface
+class RestartableThread : public CInterface, implements IThreaded
 {
     class MyThread : public Thread
     {
@@ -156,19 +130,33 @@ class RestartableThread : public CInterface
     };
     friend class MyThread;
     Owned<MyThread> thread;
-    CriticalSection crit{SYNC_LOCATION};
+    CPooledPersistent pooledThread;
+    bool usingPooledThread = false;
+    bool joining = false;
     StringAttr name;
 public:
-    RestartableThread(const char *_name) : name(_name)
+    RestartableThread(const char *_name) : pooledThread(_name, this), name(_name)
     {
     }
     virtual void start(const char *namePrefix, bool inheritThreadContext)
     {
+        start(namePrefix, inheritThreadContext, false);
+    }
+
+    void start(const char *namePrefix, bool inheritThreadContext, bool pooled)
+    {
         StringBuffer s(namePrefix);
         s.append(name);
+        // start() and join() must never be called concurrently on the same instance - no locking is used here, only an assert to catch misuse.
+        assertex(!thread && !usingPooledThread && !joining);
+        if (pooled)
         {
-            CriticalBlock b(crit);
-            assertex(!thread);
+            pooledThread.setName(s);
+            usingPooledThread = true;
+            pooledThread.start(inheritThreadContext);
+        }
+        else
+        {
             thread.setown(new MyThread(this, s));
             thread->start(inheritThreadContext);
         }
@@ -176,15 +164,36 @@ public:
 
     virtual void join()
     {
+        Owned<Thread> tthread = thread.getClear();
+        bool tpooled = usingPooledThread;
+        usingPooledThread = false;
+        if (tthread || tpooled)
         {
-            Owned<Thread> tthread;
+            joining = true;
+            try
             {
-                CriticalBlock b(crit);
-                tthread.setown(thread.getClear());
+                if (tthread)
+                    tthread->join();
+                else
+                    pooledThread.join(INFINITE);
             }
-            if (tthread)
-                tthread->join();
+            catch (...)
+            {
+                joining = false;
+                throw;
+            }
+            joining = false;
         }
+    }
+
+    virtual void threadmain() override
+    {
+        run();
+    }
+
+    virtual bool requestAbort() override
+    {
+        return false;
     }
 
     virtual int run() = 0;
@@ -588,6 +597,15 @@ extern SinkMode getSinkMode(const char *val)
             WARNLOG("Unsupported sinkmode %s - assuming automatic", val);
         return SinkMode::Automatic;
     }
+}
+
+extern ReadaheadMode getReadaheadMode(const char *val)
+{
+    if (strieq(val, "pooled"))
+        return ReadaheadMode::Pooled;
+    if (!strieq(val, "thread"))
+        WARNLOG("Unsupported readaheadMode %s - assuming thread", val);
+    return ReadaheadMode::Thread;
 }
 
 extern std::string getText(RoxieSourceCharacteristics flags)
@@ -2680,7 +2698,8 @@ public:
                     StringBuffer logPrefix("[");
                     if (ctx) ctx->getLogPrefix(logPrefix);
                     logPrefix.append("] ");
-                    RestartableThread::start(logPrefix, true);
+                    bool pooled = ctx && ctx->queryOptions().readaheadMode == ReadaheadMode::Pooled;
+                    RestartableThread::start(logPrefix, true, pooled);
                 }
             }
         }
@@ -2706,6 +2725,12 @@ public:
         //Reader thread is now guaranteed to have stopped, so it is safe to call stop()
         if (inputStream)
             inputStream->stop();
+    }
+
+    virtual bool requestAbort() override
+    {
+        eof = true;
+        return true;
     }
 
     void reset()
@@ -28392,7 +28417,7 @@ protected:
             catch (IException *E)
             {
                 parent.noteException(E);
-                throw;
+                E->Release();
             }
         }
         void start(unsigned _parentExtractSize, const byte * _parentExtract)
@@ -29455,10 +29480,58 @@ public:
 };
 extern "C" IHThorArg * splitActivityTestFactory() { return new SplitActivityTest; }
 
+class RestartableThreadTest : public RestartableThread
+{
+public:
+    RestartableThreadTest() : RestartableThread("RestartableThreadTest")
+    {
+    }
+
+    void cycle(bool pooled)
+    {
+        start("CcdServerTest: ", true, pooled);
+        started.wait();
+        requestAbort();
+        join();
+    }
+
+    unsigned queryAbortCount() const
+    {
+        return abortCount.load();
+    }
+
+    unsigned queryRunCount() const
+    {
+        return runCount.load();
+    }
+
+    virtual bool requestAbort() override
+    {
+        abortCount.fetch_add(1);
+        release.signal();
+        return true;
+    }
+
+    virtual int run() override
+    {
+        runCount.fetch_add(1);
+        started.signal();
+        release.wait();
+        return 0;
+    }
+
+private:
+    std::atomic<unsigned> abortCount{0};
+    std::atomic<unsigned> runCount{0};
+    Semaphore release{SYNC_LOCATION};
+    Semaphore started{SYNC_LOCATION};
+};
+
 class CcdServerTest : public CppUnit::TestFixture  
 {
     CPPUNIT_TEST_SUITE(CcdServerTest);
         CPPUNIT_TEST(testSetup);
+        CPPUNIT_TEST(testRestartableThread);
         CPPUNIT_TEST(testHeapSort);
         CPPUNIT_TEST(testQuickSort);
         CPPUNIT_TEST(testMerge);
@@ -29484,6 +29557,19 @@ protected:
     void testCleanup()
     {
         roxiemem::releaseRoxieHeap();
+    }
+
+    void testRestartableThread()
+    {
+        CPPUNIT_ASSERT(ReadaheadMode::Thread == getReadaheadMode("thread"));
+        CPPUNIT_ASSERT(ReadaheadMode::Pooled == getReadaheadMode("pooled"));
+
+        RestartableThreadTest test;
+        test.cycle(false);
+        test.cycle(true);
+        test.cycle(true);
+        CPPUNIT_ASSERT_EQUAL(3U, test.queryRunCount());
+        CPPUNIT_ASSERT_EQUAL(3U, test.queryAbortCount());
     }
 
     void init()

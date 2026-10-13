@@ -21,6 +21,7 @@
 //version childSinkOption='parallel'
 //version childSinkOption='parallelPersistent'
 //version childSinkOption='automatic'
+//version childSinkOption='pooled'
 
 import ^ as root;
 childSinkMode := #IFDEFINED(root.childSinkOption, 'parallel');

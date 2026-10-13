@@ -406,6 +406,7 @@ QueryOptions::QueryOptions()
     traceActivityCharacteristics = ::traceActivityCharacteristics;
     parallelWorkflow = false;
     sinkMode = defaultSinkMode;
+    readaheadMode = defaultReadaheadMode;
     numWorkflowThreads = 1;
 }
 
@@ -448,6 +449,7 @@ QueryOptions::QueryOptions(const QueryOptions &other)
 
     parallelWorkflow = other.parallelWorkflow;
     sinkMode = other.sinkMode;
+    readaheadMode = other.readaheadMode;
     numWorkflowThreads = other.numWorkflowThreads;
 }
 
@@ -519,6 +521,7 @@ void QueryOptions::setFromWorkUnit(IConstWorkUnit &wu, const IPropertyTree *stat
 
     updateFromWorkUnit(parallelWorkflow, wu, "parallelWorkflow");
     updateFromWorkUnit(sinkMode, wu, "sinkMode");
+    updateFromWorkUnit(readaheadMode, wu, "readaheadMode");
     updateFromWorkUnit(numWorkflowThreads, wu, "numWorkflowthreads");
 
     updateTraceFlags(wuLoadTraceFlags(&wu, roxieTraceOptions, queryTraceFlags()));
@@ -558,6 +561,14 @@ void QueryOptions::updateFromWorkUnit(SinkMode &value, IConstWorkUnit &wu, const
     wu.getDebugValue(name, val);
     if (val.length())
         value = ::getSinkMode(val.str());
+}
+
+void QueryOptions::updateFromWorkUnit(ReadaheadMode &value, IConstWorkUnit &wu, const char *name)
+{
+    SCMStringBuffer val;
+    wu.getDebugValue(name, val);
+    if (val.length())
+        value = ::getReadaheadMode(val.str());
 }
 
 void QueryOptions::setFromContext(const IPropertyTree *ctx)

@@ -587,7 +587,7 @@ private:
         }
         virtual bool stop()
         {
-            return false;
+            return callback->requestAbort();
         }
         virtual bool canReuse() const
         {
@@ -604,21 +604,26 @@ public:
         unsigned delay = 0;
         unsigned stacksize = 0; // i.e. default;
         unsigned timeoutOnRelease = 0;
-        unsigned targetpoolsize = 200; // Scale down to 200 if large numbers get opened at once
+        unsigned targetpoolsize = 200; // Used if the pool is later changed to a bounded size
         pool.setown(createThreadPool("GlobalThreadPool", this, false, exceptionHandler, defaultmax, delay, stacksize, timeoutOnRelease, targetpoolsize));
     }
 
 //interface IThreadFactory
     virtual IPooledThread *createNew() { return new GlobalThread; }
 
-    PooledThreadHandle start(IThreaded * callback)
+    PooledThreadHandle start(IThreaded *callback, const char *name, bool inheritThreadContext)
     {
-        return pool->start(callback);
+        return pool->startWithContext(callback, name, inheritThreadContext);
     }
 
     bool join(PooledThreadHandle handle, unsigned timeout)
     {
         return pool->join(handle, timeout);
+    }
+
+    bool stop(PooledThreadHandle handle)
+    {
+        return pool->stop(handle);
     }
 
 private:
@@ -628,7 +633,7 @@ private:
 
 static GlobalThreadPool globalThreadPool;
 
-CPooledPersistent::CPooledPersistent(const char *name, IThreaded *_owner) : owner(_owner)
+CPooledPersistent::CPooledPersistent(const char *_name, IThreaded *_owner) : owner(_owner), name(_name)
 {
 }
 
@@ -639,19 +644,53 @@ CPooledPersistent::~CPooledPersistent()
 
 void CPooledPersistent::start(bool inheritThreadContext)
 {
-    //MORE: inheritThreadContext is ignored
-    //MORE: Pass this instead of owner and catch exceptions in this class for later reporting?
-    handle = globalThreadPool.start(owner);
+    exception.clear();
+    handle = globalThreadPool.start(this, name, inheritThreadContext);
     joined = false;
 }
 
-bool CPooledPersistent::join(unsigned timeout, [[maybe_unused]] bool throwException)
+void CPooledPersistent::threadmain()
+{
+    try
+    {
+        owner->threadmain();
+    }
+    catch (IException *e)
+    {
+        exception.setown(e);
+    }
+#ifndef NO_CATCHALL
+    catch (...)
+    {
+        exception.setown(MakeStringException(JLIBERR_SystemUnknownExceptionInThreadFromPoolS, "Unknown exception in pooled persistent thread"));
+    }
+#endif
+}
+
+bool CPooledPersistent::requestAbort()
+{
+    return owner->requestAbort();
+}
+
+bool CPooledPersistent::stop()
+{
+    if (joined)
+        return true;
+    return globalThreadPool.stop(handle);
+}
+
+bool CPooledPersistent::join(unsigned timeout, bool throwException)
 {
     if (joined)
         return true;
 
     bool ok = globalThreadPool.join(handle, timeout);
-    joined = true;
+    if (ok)
+    {
+        joined = true;
+        if (throwException && exception)
+            throw exception.getClear();
+    }
     return ok;
 }
 
@@ -990,13 +1029,17 @@ class CPooledThreadWrapper: public Thread
     PooledThreadHandle handle;
     IPooledThread *thread;
     Semaphore sem{SYNC_LOCATION};
+    Semaphore stopDoneSem{SYNC_LOCATION};
     CThreadPoolBase &parent;
     StringAttr runningName;
+    bool inheritThreadContext;
+    bool stopInProgress = false;
+    bool waitingForStop = false;
 public:
     CPooledThreadWrapper(CThreadPoolBase &_parent,
                          PooledThreadHandle _handle,
                          IPooledThread *_thread) // takes ownership of thread
-        : Thread(StringBuffer("Member of thread pool: ").append(_parent.poolname).str(), true), parent(_parent)
+        : Thread(StringBuffer("Member of thread pool: ").append(_parent.poolname).str(), true), parent(_parent), inheritThreadContext(_parent.inheritThreadContext)
     {
         thread = _thread;
         handle = _handle;
@@ -1009,16 +1052,47 @@ public:
     }
 
     void setName(const char *name) { runningName.set(name); }
+    void setInheritThreadContext(bool inherit) { inheritThreadContext = inherit; }
     void setHandle(PooledThreadHandle _handle) { handle = _handle; }
     PooledThreadHandle queryHandle() { return handle; }
     IPooledThread &queryThread() { return *thread; }
     void setThread(IPooledThread *_thread) { thread = _thread; } // takes ownership
     bool isStopped() { return (handle==0); }
+    bool isAvailableForReuse() { return isStopped() && !stopInProgress; }
+    bool beginStop()
+    {
+        if (!handle || stopInProgress)
+            return false;
+        stopInProgress = true;
+        return true;
+    }
+    void finishStop()
+    {   // called in parent.crit
+        stopInProgress = false;
+        if (waitingForStop)
+        {
+            waitingForStop = false;
+            stopDoneSem.signal();
+        }
+    }
+    void waitForPendingStop()
+    {   // called in parent.crit - the stop callback may still reference job-owned state, so don't release joiners yet
+        while (stopInProgress)
+        {
+            waitingForStop = true;
+            CriticalUnblock unblock(parent.crit);
+            stopDoneSem.wait();
+        }
+    }
+    bool invokeStop()
+    {
+        return thread->stop();
+    }
     PooledThreadHandle markStopped()
     {
         PooledThreadHandle ret=handle;
         handle = 0;
-        if (ret) // JCSMORE - I can't see how handle can not be set if here..
+        if (ret) // The handle identifies the job that has just stopped.
             parent.numrunning--;
         return ret;
     }
@@ -1037,8 +1111,12 @@ public:
                 if (parent.stopall)
                     break;
             }
-            if (parent.inheritThreadContext)
+
+            if (inheritThreadContext)
                 restoreThreadContext(savedCtx);
+            else
+                restoreThreadContext(SavedThreadContext{}); // Reset in case a previous context was set
+
             parent.notifyStarted(this);
             try
             {
@@ -1075,13 +1153,6 @@ public:
     {
         thread->init(param);
         cycle();
-    }
-
-    bool stop()
-    {
-        if (handle)
-            return thread->stop();
-        return true;
     }
 
     void handleException(IException *e)
@@ -1160,7 +1231,7 @@ class CThreadPool: public CThreadPoolBase, implements IThreadPool, public CInter
         return true;
     }
 
-    PooledThreadHandle _start(void *param,const char *name, bool noBlock, unsigned timeout=0)
+    PooledThreadHandle _start(void *param,const char *name, bool noBlock, unsigned timeout=0, bool inheritContextOverride=false, bool hasInheritContextOverride=false)
     {
         if (waitAvailableInterrupted)
             throw makeStringExceptionV(JLIBERR_SystemNoThreadsAvailableInPoolS, "Thread pool %s interrupted", poolname.get());
@@ -1208,7 +1279,11 @@ class CThreadPool: public CThreadPoolBase, implements IThreadPool, public CInter
         }
         if (name)
             t->setName(name);
-        if (inheritThreadContext)
+        if (hasInheritContextOverride)
+            t->setInheritThreadContext(inheritContextOverride);
+        else
+            t->setInheritThreadContext(inheritThreadContext);
+        if (hasInheritContextOverride ? inheritContextOverride : inheritThreadContext)
             t->captureThreadLoggingInfo();
         t->go(param);
         Sleep(0); // Potentially yield so that the new thread has a chance to start processing.
@@ -1265,7 +1340,7 @@ public:
             newid=nextid++;
         ForEachItemIn(i,threadwrappers) {
             CPooledThreadWrapper &it = threadwrappers.item(i);
-            if (it.isStopped()) {
+            if (it.isAvailableForReuse()) {
                 it.setHandle(newid);
                 if (!it.queryThread().canReuse()) {
                     it.queryThread().Release();
@@ -1309,32 +1384,81 @@ public:
         return _start(param, name, false);
     }
 
+    PooledThreadHandle startWithContext(void *param,const char *name,bool inheritContext)
+    {
+        return _start(param, name, false, 0, inheritContext, true);
+    }
+
     PooledThreadHandle start(void *param,const char *name, unsigned timeout)
     {
         return _start(param, name, false, timeout);
     }
 
+    bool invokeAndFinishStop(CPooledThreadWrapper &t)
+    {   // called outside crit; must always finishStop() to release a worker blocked in notifyStopped()
+        bool ret;
+        try
+        {
+            ret = t.invokeStop();
+        }
+        catch (...)
+        {
+            //This should never occur - it should be a non blocking, non throwing call
+            CriticalBlock block(crit);
+            t.finishStop();
+            throw;
+        }
+        CriticalBlock block(crit);
+        t.finishStop();
+        return ret;
+    }
+
     bool stop(PooledThreadHandle handle)
     {
-        CriticalBlock block(crit);
-        CPooledThreadWrapper *t = findThread(handle);
-        if (t)
-            return t->stop();
-        return true;    // already stopped
+        Owned<CPooledThreadWrapper> t;
+        {
+            CriticalBlock block(crit);
+            CPooledThreadWrapper *found = findThread(handle);
+            if (!found)
+                return true;    // already stopped
+            if (!found->beginStop())
+                return true;    // stop already requested
+            t.set(found);
+        }
+        return invokeAndFinishStop(*t);
     }
 
     bool stopAll(bool tryall=false)
     {
         availsem.signal(1000);
         availsem.wait();
-        CriticalBlock block(crit);
         bool ret=true;
-        ForEachItemIn(i,threadwrappers) {
-            CPooledThreadWrapper &it = threadwrappers.item(i);
-            if (!it.stop()) {
-                ret = false;
-                if (!tryall)
-                    break;
+        IArrayOf<CPooledThreadWrapper> tostop;
+        {
+            CriticalBlock block(crit);
+            ForEachItemIn(i,threadwrappers)
+            {
+                CPooledThreadWrapper &it = threadwrappers.item(i);
+                if (!it.isStopped() && it.beginStop())
+                {
+                    it.Link();
+                    tostop.append(it);
+                }
+            }
+        }
+        ForEachItemIn(i,tostop)
+        {
+            CPooledThreadWrapper &it = tostop.item(i);
+            if (ret || tryall)
+            {
+                // This function is non blocking, and is not allow to throw an exception
+                if (!invokeAndFinishStop(it))
+                    ret = false;
+            }
+            else
+            {
+                CriticalBlock block(crit);
+                it.finishStop();
             }
         }
         return ret;
@@ -1423,6 +1547,7 @@ public:
     bool notifyStopped(CPooledThreadWrapper *item)
     {
         CriticalBlock block(crit);
+        item->waitForPendingStop();
         PooledThreadHandle myid = item->markStopped();
         ForEachItemIn(i1,waitingids) { // tell anyone waiting
             if (waitingids.item(i1)==myid)
@@ -1431,7 +1556,7 @@ public:
         bool ret = true;
         if (defaultmax) {
             unsigned n=threadwrappers.ordinality();
-            // JCSMORE - only considering those above targetpoolsize, means it could remain in excess if leading threads stop
+            // Only wrappers beyond targetpoolsize are candidates for removal.
             for (unsigned i2=targetpoolsize;i2<n;i2++) {        // only check excess for efficiency
                 if (item==&threadwrappers.item(i2)) {
                     threadwrappers.remove(i2);
