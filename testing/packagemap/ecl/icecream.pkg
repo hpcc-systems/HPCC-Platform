@@ -1,0 +1,8 @@
+<RoxiePackages>
+ <Package id="icecream" queries='icecream_query.*' compulsory="0">
+  <SuperFile id="thor::icecream::key::icecream_superkeyfile">
+   <SubFile value="thor::icecream::key::icecream_name_password"/>
+</SuperFile>
+</Package>
+</RoxiePackages>
+
