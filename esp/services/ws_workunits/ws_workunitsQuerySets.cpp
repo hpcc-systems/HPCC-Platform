@@ -2583,6 +2583,8 @@ IReferencedFile* CWsWorkunitsEx::getReferencedFileByName(const char* name, IRefe
 
 void CWsWorkunitsEx::readSuperFiles(IEspContext &context, IReferencedFile* rf, const char* fileName, IReferencedFileList* wufiles, IArrayOf<IEspQuerySuperFile>* files)
 {
+    if (isEmptyString(fileName))
+        return;
     double version = context.getClientVersion();
     StringArray subFiles;
     IArrayOf<IEspQuerySuperFile> superFiles;
