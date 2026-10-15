@@ -293,6 +293,12 @@ enum class SinkMode : byte
     AutomaticPooled = 6,    // Combine simple sinks into a single parallel sink, execute remaining sinks in parallel using pooled threads
 };
 
+enum class ReadaheadMode : byte
+{
+    Thread,
+    Pooled,
+};
+
 
 // Global configuration info
 extern std::atomic<bool> shuttingDown;
@@ -398,6 +404,7 @@ extern bool ignoreFileDateMismatches;
 extern bool ignoreFileSizeMismatches;
 extern int fileTimeFuzzySeconds;
 extern SinkMode defaultSinkMode;
+extern ReadaheadMode defaultReadaheadMode;
 extern bool limitWaitingWorkers;
 extern unsigned myChannel;
 

@@ -231,7 +231,7 @@ storage:
   planes:
   #   name: <required>
   #   prefix: <path>                        # Root directory for accessing the plane (if pvc defined), or url to access plane.
-  #   category: data|dali|lz|dll|spill|temp # What category of data is stored on this plane?
+  #   category: data|dali|lz|dll|spill|temp|git # What category of data is stored on this plane?
   #
   # For dynamic pvc creation:
   #   storageClass: ''
@@ -242,6 +242,10 @@ storage:
   #   forcePermissions: false
   #   hosts: [ <host-list> ]                 # Inline list of hosts
   #   hostGroup: <name>                     # Name of the host group for bare metal - must match the name of the storage plane..
+  #
+  # For storage private to each pod, discarded when the pod terminates (spill, temp, and git planes):
+  #   ephemeral: true
+  #   storageSize: 10Gi                     # Optional, informational only (no size limit is enforced)
   #
   # Other options:
   #   subPath: <relative-path>              # Optional sub directory within <prefix> to use as the root directory

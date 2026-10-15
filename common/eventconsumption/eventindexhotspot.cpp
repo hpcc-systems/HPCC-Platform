@@ -131,12 +131,12 @@ class CHotspotEventVisitor : public CInterfaceOf<IEventVisitor>
     };
 
 public: // IEventVisitor
-    virtual bool visitFile(const char* filename, uint32_t version) override
+    virtual bool visitFile([[maybe_unused]] const EventFileProperties& properties) override
     {
         return true;
     }
 
-    virtual bool visitEvent(CEvent& event) override
+    virtual bool visitEvent(CEvent& event, [[maybe_unused]] const EventFileProperties& properties) override
     {
         EventType type = event.queryType();
         if (MetaFileInformation == type)
@@ -150,7 +150,7 @@ public: // IEventVisitor
         return true;
     }
 
-    virtual void departFile(uint32_t) override
+    virtual void departFile([[maybe_unused]] const EventFileProperties& properties) override
     {
         // Intentionally empty.
     }

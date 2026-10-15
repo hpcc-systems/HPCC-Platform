@@ -22,13 +22,13 @@
 class CPTreeEventVisitor : public CDumpEventVisitor
 {
 public:
-    virtual bool visitFile(const char* filename, uint32_t version) override
+    virtual bool visitFile(const EventFileProperties& properties) override
     {
         if (!beginFileVisit())
             return true;
         tree.setown(createPTree(DUMP_STRUCTURE_ROOT));
         active = tree->addPropTree(DUMP_STRUCTURE_HEADER, createPTree());
-        doVisitHeader(filename, version);
+        doVisitHeader(properties.path.str(), properties.version);
         return true;
     }
 
@@ -43,12 +43,12 @@ public:
         active = tree.get();
     }
 
-    virtual void departFile(uint32_t bytesRead) override
+    virtual void departFile(const EventFileProperties& properties) override
     {
         if (!endFileVisit())
             return;
         active = tree->addPropTree(DUMP_STRUCTURE_FOOTER, createPTree());
-        doVisitFooter(bytesRead);
+        doVisitFooter(properties.bytesRead);
     }
 
 protected:

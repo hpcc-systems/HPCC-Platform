@@ -107,3 +107,20 @@
 * **Sub-Allocator Lock Contention**:
   * **Current State**: As multiple threads attempt to carve rows out of the same large page pool, they inevitably collide on central allocator locks (`heapletLock`) controlling that specific page manager map.
   * **Action - Strict TLABs**: Enforce strict **Thread-Local Allocation Buffers (TLABs)**. Assign entire large pages to specific threads. The thread sub-allocates from its private page completely lock-free until exhausted, only hitting the central spinlock to request a fresh page from the OS.
+
+## 9. THREADING: Eliminate per-instance OS thread creation for sinks and record pullers
+**Context**: See [threading-model.md](threading-model.md) for the full analysis. Both the default parallel-sink path and *every* `RecordPullerThread` create a brand new OS thread per activity instance per graph iteration. For child queries executed per-row this is thousands of `pthread_create`/`pthread_join` pairs per second, each costing ~2MB of reserved stack VA and a kernel round trip.
+
+* **Route every `RecordPullerThread` through an optionally pooled global pool**:
+  * **Implemented**: `RestartableThread` selects a raw or `CPooledPersistent` backend for every puller path. `readaheadMode` is available through topology and workunit debug configuration, with raw threads remaining the default.
+  * **Cancellation invariant**: existing owner-specific mechanisms remain responsible for interrupting semaphores or network waits before joining; `inputStream->stop()` remains post-join because it must not execute concurrently with `nextRow()`.
+* **Audit `AutomaticPooled` without changing the default `sinkMode`**:
+  * **Current State**: default is `Automatic`, which uses `CAsyncFor::For(n,n)` and spawns n-1 raw `Thread`s per `doExecute`. `SinkMode::AutomaticPooled` already exists and uses `CPooledPersistent`.
+  * **Action**: Preserve `Automatic` as the default, verify `AutomaticPooled` behavior and measure it separately. Changing the default is a later change.
+* **Preserve pooled execution context**:
+  * **Implemented**: pooled sinks and pooled pullers pass `inheritThreadContext=true`, preserving job ID, log context, trace flags, and active span without Roxie-specific copying.
+* **Fix the misleading `targetpoolsize` in `GlobalThreadPool`**:
+  * **Current State**: `targetpoolsize=200` only applies when the pool is bounded; with `defaultmax==0` the pool retains its high-water mark.
+  * **Action**: Leave trimming unchanged for this Roxie work and document the retention behavior. Idle-timeout trimming is a separate optimization.
+* **Longer term — strand/continuation redesign of readahead**:
+  * **Action**: `CRoxieServerReadAheadInput` is a bounded producer/consumer queue. It could be expressed as a `jtask` continuation on `queryIOTaskScheduler()` that reschedules itself when the buffer drains, instead of parking an OS thread on `space.wait()`. This removes blocking entirely and makes a bounded pool safe. Large change; only worth it after pooling proves the thread-creation cost is material.

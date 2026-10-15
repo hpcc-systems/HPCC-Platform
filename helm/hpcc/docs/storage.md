@@ -54,17 +54,17 @@ storage:
 
 So far we have seen the properties that describe how the HPCC application views the storage, but how does Kubernetes associate those definitions with physical storage?
 
-## Ephemeral storage: (storageClass, storageSize)
+## Dynamically provisioned storage: (storageClass, storageSize)
 
-Ephemeral storage is allocated when the HPCC cluster is installed and deleted when the chart is uninstalled.  It is useful for providing a clean system for testing and for a demonstration system to allow you to experiment with the system.  It is not so useful for production systems - for this reason the helm chart generates a warning if it is used.
+Storage backed by a `storageClass` is dynamically provisioned when the HPCC cluster is installed.  The resulting PVCs and their data remain until the PVCs are deleted; they are not pod-local storage.  This is useful for providing a clean system for testing and demonstrations, but production systems will generally use PVCs created and managed separately.
 
 * storageClass:  
 Which storage provisioner should be used to allocate the storage?  A blank storage class indicates it should use the default provisioner.
 
 * storageSize:  
-How much memory is required for this storage?
+The requested capacity for the PVC.
 
-E.g. An ephemeral data plane:
+E.g. a dynamically provisioned data plane:
 
 ```
   planes:
@@ -75,7 +75,7 @@ E.g. An ephemeral data plane:
     category: data
 ```
 
-And to add an ephemeral landing zone (which you can upload files to via eclwatch) you could use:
+And to add a dynamically provisioned landing zone (which you can upload files to via eclwatch) you could use:
 
 ```
   planes:
@@ -84,6 +84,23 @@ And to add an ephemeral landing zone (which you can upload files to via eclwatch
     storageSize: 1Gi
     prefix: "/var/lib/HPCCSystems/mylandingzone"
     category: lz
+```
+
+## Pod-local ephemeral storage (ephemeral)
+
+Set `ephemeral: true` to create storage that is private to each pod and discarded when the pod terminates.  This is backed by a Kubernetes `emptyDir` volume, but the chart uses the more general `ephemeral` name in values.  Ephemeral planes are currently limited to the `spill`, `temp`, and `git` categories.
+
+`storageSize` is optional on an ephemeral plane and is passed through as plane metadata for runtime use.  It does not create a PVC, set an `emptyDir.sizeLimit`, or add Kubernetes `ephemeral-storage` resource requests or limits.  The chart currently does not enforce this value.
+
+For example:
+
+```
+  planes:
+  - name: spill
+    ephemeral: true
+    storageSize: 10Gi
+    prefix: "/var/lib/HPCCSystems/spill"
+    category: spill
 ```
 
 ## Persistent storage (pvc)

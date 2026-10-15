@@ -598,7 +598,7 @@ public: // IEventVisitationLink
     IMPLEMENT_IEVENTVISITATIONLINK;
 
 public: // IEventVisitor
-    virtual bool visitEvent(CEvent& event) override
+    virtual bool visitEvent(CEvent& event, const EventFileProperties& properties) override
     {
         // Allow all filter terms the opportunity to see the event before it may be filtered.
         // Observation allows, for example, the relationship between file ID and path to be
@@ -643,7 +643,7 @@ public: // IEventVisitor
         }
 
         // Forward the event to the next linked visitor.
-        return nextLink->visitEvent(event);
+        return nextLink->visitEvent(event, properties);
     }
 
 public: // IEventFilter

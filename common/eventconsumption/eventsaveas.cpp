@@ -21,16 +21,16 @@
 class event_decl CEventSavingVisitor : public CInterfaceOf<IEventVisitor>
 {
 public:
-    virtual bool visitFile(const char* filename, uint32_t version) override
+    virtual bool visitFile([[maybe_unused]] const EventFileProperties& properties) override
     {
         return true;
     }
-    virtual bool visitEvent(CEvent& event) override
+    virtual bool visitEvent(CEvent& event, [[maybe_unused]] const EventFileProperties& properties) override
     {
         queryRecorder().recordEvent(event);
         return true;
     }
-    virtual void departFile(uint32_t bytesRead) override
+    virtual void departFile([[maybe_unused]] const EventFileProperties& properties) override
     {
     }
 

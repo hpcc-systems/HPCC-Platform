@@ -264,12 +264,12 @@ public:
     {
     }
 
-    virtual bool visitFile(const char* /*filename*/, uint32_t /*version*/) override
+    virtual bool visitFile([[maybe_unused]] const EventFileProperties& properties) override
     {
         return true;
     }
 
-    virtual bool visitEvent(CEvent& event) override
+    virtual bool visitEvent(CEvent& event, [[maybe_unused]] const EventFileProperties& properties) override
     {
         EventType type = event.queryType();
         assertex(type < counts.size());
@@ -277,7 +277,7 @@ public:
         return true;
     }
 
-    virtual void departFile(uint32_t bytesRead) override
+    virtual void departFile([[maybe_unused]] const EventFileProperties& properties) override
     {
     }
 

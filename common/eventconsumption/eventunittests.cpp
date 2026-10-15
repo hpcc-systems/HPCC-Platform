@@ -22,6 +22,24 @@
 #include "eventmodeling.h"
 #include "eventoperation.h"
 
+namespace
+{
+static EventFileProperties makeTestEventFileProperties()
+{
+    EventFileProperties props;
+    props.path.set("test-event.evt");
+    props.version = 1;
+    return props;
+}
+
+static const EventFileProperties testProperties = makeTestEventFileProperties();
+}
+
+const EventFileProperties& queryTestEventFileProperties()
+{
+    return testProperties;
+}
+
 static const char* queryEventAttributeStateName(CEventAttribute::State state)
 {
     switch (state)
@@ -33,13 +51,13 @@ static const char* queryEventAttributeStateName(CEventAttribute::State state)
     }
 }
 
-bool CEventVisitationLinkTester::visitFile(const char* filename, uint32_t version)
+bool CEventVisitationLinkTester::visitFile([[maybe_unused]] const EventFileProperties& properties)
 {
     fileVisitDepth++;
     return true;
 }
 
-bool CEventVisitationLinkTester::visitEvent(CEvent& actualEvent)
+bool CEventVisitationLinkTester::visitEvent(CEvent& actualEvent, [[maybe_unused]] const EventFileProperties& properties)
 {
     CEvent expectEvent;
     CPPUNIT_ASSERT(expect->nextEvent(expectEvent));
@@ -75,7 +93,7 @@ bool CEventVisitationLinkTester::visitEvent(CEvent& actualEvent)
     return true;
 }
 
-void CEventVisitationLinkTester::departFile(uint32_t bytesRead)
+void CEventVisitationLinkTester::departFile([[maybe_unused]] const EventFileProperties& properties)
 {
     assertex(fileVisitDepth != 0);
     if (0 == --fileVisitDepth)

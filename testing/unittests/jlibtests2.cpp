@@ -43,17 +43,17 @@ enum { NodeBranch, NodeLeaf };
 class CNoOpEventVisitorDecorator : public CInterfaceOf<IEventVisitor>
 {
 public:
-    virtual bool visitFile(const char* filename, uint32_t version) override
+    virtual bool visitFile(const EventFileProperties& properties) override
     {
-        return visitor->visitFile(filename, version);
+        return visitor->visitFile(properties);
     }
-    virtual bool visitEvent(CEvent& event) override
+    virtual bool visitEvent(CEvent& event, const EventFileProperties& properties) override
     {
-        return visitor->visitEvent(event);
+        return visitor->visitEvent(event, properties);
     }
-    virtual void departFile(uint32_t bytesRead) override
+    virtual void departFile(const EventFileProperties& properties) override
     {
-        return visitor->departFile(bytesRead);
+        visitor->departFile(properties);
     }
 protected:
     Linked<IEventVisitor> visitor;
@@ -64,7 +64,7 @@ public:
 class MockEventVisitor : public CNoOpEventVisitorDecorator
 {
 public:
-    virtual bool visitEvent(CEvent& event) override
+    virtual bool visitEvent(CEvent& event, const EventFileProperties& properties) override
     {
         // Timestamps and thread ID are not predictable. Hard code predictable values.
         if (event.hasAttribute(EvAttrEventTimestamp))
@@ -77,7 +77,7 @@ public:
             event.setValue(EvAttrEventThreadId, 100ULL);
         if (event.hasAttribute(EvAttrEventTraceId))
             event.setValue(EvAttrEventTraceId, "00000000000000000000000000000000");
-        return CNoOpEventVisitorDecorator::visitEvent(event);
+        return CNoOpEventVisitorDecorator::visitEvent(event, properties);
     }
 public:
     using CNoOpEventVisitorDecorator::CNoOpEventVisitorDecorator;
@@ -236,16 +236,16 @@ public:
         class EventCounter final : implements CInterfaceOf<IEventVisitor>
         {
         public:
-            virtual bool visitEvent(CEvent& event) override
+            virtual bool visitEvent(CEvent& event, [[maybe_unused]] const EventFileProperties& properties) override
             {
                 counts[event.queryType()]++;
                 return true;
             }
-            virtual bool visitFile(const char* filename, uint32_t version) override
+            virtual bool visitFile([[maybe_unused]] const EventFileProperties& properties) override
             {
                 return true;
             }
-            virtual void departFile(uint32_t bytesRead) override
+            virtual void departFile([[maybe_unused]] const EventFileProperties& properties) override
             {
             }
         public:
@@ -416,6 +416,8 @@ public:
         CPPUNIT_ASSERT(recorder.stopRecording(nullptr, false));
     }
 
+    static constexpr const char testFileName_pullevents[] = "pullevents.evt";
+
     void testCleanup()
     {
         if (cleanup)
@@ -430,7 +432,7 @@ public:
             removeFile("recordingsource_notfirst.evt");
             removeFile("recordingsource_multiple.evt");
             removeFile("recordingsource_recursion.evt");
-            removeFile("pullevents.evt");
+            removeFile(testFileName_pullevents);
             removeFile("context_baseline_include.evt");
             removeFile("context_baseline_exclude.evt");
         }
@@ -852,11 +854,11 @@ attribute: DataSize = 73
             class VerifyVisitor : public CInterfaceOf<IEventVisitor>
             {
             public:
-                virtual bool visitFile(const char* filename, uint32_t version) override
+                virtual bool visitFile([[maybe_unused]] const EventFileProperties& properties) override
                 {
                     return true;
                 }
-                virtual bool visitEvent(CEvent& event) override
+                virtual bool visitEvent(CEvent& event, [[maybe_unused]] const EventFileProperties& properties) override
                 {
                     eventCount++;
 
@@ -901,7 +903,7 @@ attribute: DataSize = 73
 
                     return true;
                 }
-                virtual void departFile(uint32_t bytesRead) override
+                virtual void departFile([[maybe_unused]] const EventFileProperties& properties) override
                 {
                 }
                 unsigned eventCount = 0;
@@ -954,13 +956,13 @@ attribute: DataSize = 73
             class CountingVisitor : public CInterfaceOf<IEventVisitor>
             {
             public:
-                virtual bool visitFile(const char* filename, uint32_t version) override { return true; }
-                virtual bool visitEvent(CEvent& event) override
+                virtual bool visitFile([[maybe_unused]] const EventFileProperties& properties) override { return true; }
+                virtual bool visitEvent(CEvent& event, [[maybe_unused]] const EventFileProperties& properties) override
                 {
                     eventCount++;
                     return true;
                 }
-                virtual void departFile(uint32_t bytesRead) override {}
+                virtual void departFile([[maybe_unused]] const EventFileProperties& properties) override {}
                 unsigned eventCount = 0;
             };
 
@@ -1004,9 +1006,9 @@ attribute: DataSize = 73
         class DummyVisitor : public CInterfaceOf<IEventVisitor>
         {
         public:
-            virtual bool visitFile(const char* filename, uint32_t version) override { return true; }
-            virtual bool visitEvent(CEvent& event) override { return true; }
-            virtual void departFile(uint32_t bytesRead) override {}
+            virtual bool visitFile([[maybe_unused]] const EventFileProperties& properties) override { return true; }
+            virtual bool visitEvent(CEvent& event, [[maybe_unused]] const EventFileProperties& properties) override { return true; }
+            virtual void departFile([[maybe_unused]] const EventFileProperties& properties) override {}
         };
 
         DummyVisitor visitor;
@@ -1032,9 +1034,9 @@ attribute: DataSize = 73
         class DummyVisitor : public CInterfaceOf<IEventVisitor>
         {
         public:
-            virtual bool visitFile(const char* filename, uint32_t version) override { return true; }
-            virtual bool visitEvent(CEvent& event) override { return true; }
-            virtual void departFile(uint32_t bytesRead) override {}
+            virtual bool visitFile([[maybe_unused]] const EventFileProperties& properties) override { return true; }
+            virtual bool visitEvent(CEvent& event, [[maybe_unused]] const EventFileProperties& properties) override { return true; }
+            virtual void departFile([[maybe_unused]] const EventFileProperties& properties) override {}
         };
 
         DummyVisitor visitor;
@@ -1252,7 +1254,7 @@ attribute: DataSize = 73
             EventRecordingSummary summary;
 
             // Record a variety of events to a test file
-            CPPUNIT_ASSERT(recorder.startRecording("traceid", "pullevents.evt", "testprocess", 1, 2, 3, false));
+            CPPUNIT_ASSERT(recorder.startRecording("traceid", testFileName_pullevents, "testprocess", 1, 2, 3, false));
             CPPUNIT_ASSERT(recorder.isRecording());
 
             // Record different event types with various attributes
@@ -1269,14 +1271,15 @@ attribute: DataSize = 73
             class CollectingVisitor : public CInterfaceOf<IEventVisitor>
             {
             public:
-                virtual bool visitFile(const char* filename, uint32_t version) override
+                virtual bool visitFile(const EventFileProperties& properties) override
                 {
                     fileVisited = true;
-                    visitedFilename.set(filename);
-                    visitedVersion = version;
+                    CPPUNIT_ASSERT(properties.path.get() != nullptr);
+                    CPPUNIT_ASSERT(streq(properties.path.get(), testFileName_pullevents));
+                    visitedVersion = properties.version;
                     return true;
                 }
-                virtual bool visitEvent(CEvent& event) override
+                virtual bool visitEvent(CEvent& event, [[maybe_unused]] const EventFileProperties& properties) override
                 {
                     eventsRead++;
                     // Store a copy of each event
@@ -1298,15 +1301,14 @@ attribute: DataSize = 73
                     }
                     return true;
                 }
-                virtual void departFile(uint32_t bytesRead) override
+                virtual void departFile(const EventFileProperties& properties) override
                 {
                     fileCompleted = true;
-                    visitedBytesRead = bytesRead;
+                    visitedBytesRead = properties.bytesRead;
                 }
 
                 bool fileVisited = false;
                 bool fileCompleted = false;
-                StringAttr visitedFilename;
                 uint32_t visitedVersion = 0;
                 uint32_t visitedBytesRead = 0;
                 uint32_t eventsRead = 0;
@@ -1314,20 +1316,18 @@ attribute: DataSize = 73
             };
 
             CollectingVisitor visitor;
-            CPPUNIT_ASSERT(readEvents("pullevents.evt", visitor));
+            CPPUNIT_ASSERT(readEvents(testFileName_pullevents, visitor));
             CPPUNIT_ASSERT(visitor.fileVisited);
             CPPUNIT_ASSERT(visitor.fileCompleted);
             CPPUNIT_ASSERT_EQUAL(4U, (unsigned)visitor.events.size());
 
             // Read events using pull API (IEventIterator)
-            Owned<IEventIterator> ei = createEventFileIterator("pullevents.evt");
+            Owned<IEventIterator> ei = createEventFileIterator(testFileName_pullevents);
             CPPUNIT_ASSERT(ei.get());
 
             const EventFileProperties& props = ei->queryFileProperties();
 
             // Verify file properties available immediately (from file header)
-            CPPUNIT_ASSERT(visitor.visitedFilename.get());
-            CPPUNIT_ASSERT_EQUAL_STR(visitor.visitedFilename.get(), props.path.get());
             CPPUNIT_ASSERT_EQUAL(visitor.visitedVersion, props.version);
 
             // Read all events using pull API and compare with visitor results
@@ -1488,7 +1488,7 @@ attribute: DataSize = 73
         EventRecordingSummary summary;
 
         // Record a variety of events to a test file
-        CPPUNIT_ASSERT(recorder.startRecording("all", "pullevents.evt", "testprocess", testChannelId, testReplicaId, testInstanceId, false));
+        CPPUNIT_ASSERT(recorder.startRecording("all", testFileName_pullevents, "testprocess", testChannelId, testReplicaId, testInstanceId, false));
         CPPUNIT_ASSERT(recorder.isRecording());
 
         // File information
@@ -1616,7 +1616,7 @@ attribute: DataSize = 73
         bool eventTypeSeen[EventMax] = { false };
 
         // Open the event file created by testAllRecordFunction
-        Owned<IEventIterator> ei = createEventFileIterator("pullevents.evt");
+        Owned<IEventIterator> ei = createEventFileIterator(testFileName_pullevents);
         CPPUNIT_ASSERT_MESSAGE("Should be able to create event iterator", ei.get());
 
         // Iterate through all events and mark them as seen
@@ -1652,7 +1652,7 @@ attribute: DataSize = 73
 
         // Log the result for informational purposes
         if (missingEvents.length() > 0)
-            CPPUNIT_FAIL(VStringBuffer("Event types not seen in pullevents.evt: %s\n", missingEvents.str()).str());
+            CPPUNIT_FAIL(VStringBuffer("Event types not seen in '%s': %s\n", testFileName_pullevents, missingEvents.str()).str());
 
         END_TEST
     }

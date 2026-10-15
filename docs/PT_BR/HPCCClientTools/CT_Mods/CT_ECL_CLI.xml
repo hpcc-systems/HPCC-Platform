@@ -3505,7 +3505,10 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
                 </row>
                 <row>
                   <entry>target</entry>
-                  <entry>O destino para associar o packagemap com</entry>
+                  <entry>O destino para associar o packagemap. Para os comandos
+                  de mapa de pacotes, <emphasis
+                  role="bold">&lt;target&gt;</emphasis> é o nome do destino
+                  Roxie que possui ou possuirá o mapa de pacotes.</entry>
                 </row>
                 <row>
                   <entry>filename</entry>
@@ -4347,7 +4350,9 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
                 <row>
                   <entry>target</entry>
                   <entry>Nome do destino a ser usado ao adicionar a parte do
-                  packagemap</entry>
+                  packagemap. Para os comandos de mapa de pacotes,
+                  <emphasis role="bold">&lt;target&gt;</emphasis> é o nome do
+                  destino Roxie que possui ou possuirá o mapa de pacotes.</entry>
                 </row>
                 <row>
                   <entry>pmid</entry>
@@ -5037,8 +5042,10 @@ ecl packagemap copy //192.168.0.100:8010/roxie/MyPkg roxie2
                 </row>
                 <row>
                   <entry>target</entry>
-                  <entry>O destino para copiar o packagemap do pacote
-                  para</entry>
+                  <entry>O destino para copiar o packagemap do pacote para.
+                  Para os comandos de mapa de pacotes, <emphasis
+                  role="bold">&lt;target&gt;</emphasis> é o nome do destino
+                  destino Roxie que possui ou possuirá o mapa de pacotes.</entry>
                 </row>
                 <row>
                   <entry>

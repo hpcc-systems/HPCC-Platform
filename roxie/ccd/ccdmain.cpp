@@ -157,6 +157,7 @@ bool ignoreFileDateMismatches = false;
 bool ignoreFileSizeMismatches = false;
 int fileTimeFuzzySeconds = 0;
 SinkMode defaultSinkMode = SinkMode::Automatic;
+ReadaheadMode defaultReadaheadMode = ReadaheadMode::Thread;
 unsigned continuationCompressThreshold = 1024;
 
 bool useOldTopology = false;
@@ -1447,6 +1448,9 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         const char *sinkModeText = topology->queryProp("@sinkMode");
         if (sinkModeText)
             defaultSinkMode = getSinkMode(sinkModeText);
+        const char *readaheadModeText = topology->queryProp("@readaheadMode");
+        if (readaheadModeText)
+            defaultReadaheadMode = getReadaheadMode(readaheadModeText);
         limitWaitingWorkers = topology->getPropBool("@limitWaitingWorkers", limitWaitingWorkers);
         setDynamicPayloadExpansion(topology->getPropBool("@compressPayloadInMemory", false));
 

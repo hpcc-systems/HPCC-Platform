@@ -695,7 +695,8 @@ depending on where they wind up.-->
 
               <listitem>
                 <para>Selecione o <emphasis role="bold">Target </emphasis>
-                para o qual deseja associar o mapeamento.</para>
+                para o qual deseja associar o mapeamento. Este é o nome do
+                destino Roxie que possui ou possuirá o mapa de pacotes.</para>
               </listitem>
 
               <listitem>

@@ -129,6 +129,7 @@ interface IFinalRoxieInput : extends IInputBase
 };
 
 extern SinkMode getSinkMode(const char *sinkModetext);
+extern ReadaheadMode getReadaheadMode(const char *readaheadModeText);
 
 extern IEngineRowStream *connectSingleStream(IRoxieAgentContext *ctx, IFinalRoxieInput *input, unsigned idx, Owned<IStrandJunction> &junction, bool consumerOrdered);
 

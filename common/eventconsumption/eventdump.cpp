@@ -108,7 +108,7 @@ void CDumpEventsOp::setMetaFlags(const char* value)
 
 #ifdef _USE_CPPUNIT
 
-#include "unittests.hpp"
+#include "eventunittests.hpp"
 
 class EventDumpTests : public CppUnit::TestFixture
 {
@@ -147,21 +147,21 @@ class EventDumpTests : public CppUnit::TestFixture
         planeInfo.reset(MetaPlaneInformation);
         planeInfo.setValue(EvAttrPlane, "myplane");
         planeInfo.setValue(EvAttrPath, "/var/lib/myplane");
-        collector->visitEvent(planeInfo);
+        collector->visitEvent(planeInfo, queryTestEventFileProperties());
 
         // Seed file ID -> path mapping
         CEvent fileInfo;
         fileInfo.reset(MetaFileInformation);
         fileInfo.setValue(EvAttrFileId, (unsigned)100);
         fileInfo.setValue(EvAttrPath, "/var/lib/myplane/somefile.dat");
-        collector->visitEvent(fileInfo);
+        collector->visitEvent(fileInfo, queryTestEventFileProperties());
 
         // Seed trace ID -> service name mapping
         CEvent queryStart;
         queryStart.reset(EventQueryStart);
         queryStart.setValue(EvAttrEventTraceId, "trace-123");
         queryStart.setValue(EvAttrServiceName, "myservice");
-        collector->visitEvent(queryStart);
+        collector->visitEvent(queryStart, queryTestEventFileProperties());
 
         StringBuffer out;
         Owned<IBufferedSerialOutputStream> stream = createBufferedSerialOutputStream(out);
@@ -170,7 +170,7 @@ class EventDumpTests : public CppUnit::TestFixture
         // 1. Test absence (missing attributes)
         CEvent eEmpty;
         eEmpty.reset(EventQueryStart);
-        vJSON->visitEvent(eEmpty);
+        vJSON->visitEvent(eEmpty, queryTestEventFileProperties());
         stream->flush();
 
         const char* resultEmpty = out.str();
@@ -192,7 +192,7 @@ class EventDumpTests : public CppUnit::TestFixture
         ePopulated.setValue(EvAttrEventTraceId, "trace-123");
         ePopulated.setValue(EvAttrFileId, (unsigned)100);
 
-        vJSON->visitEvent(ePopulated);
+        vJSON->visitEvent(ePopulated, queryTestEventFileProperties());
         stream->flush();
 
         const char* resultPopulated = out.str();

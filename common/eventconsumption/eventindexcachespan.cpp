@@ -495,12 +495,12 @@ public:
     {
     }
 
-    virtual bool visitFile(const char*, uint32_t) override
+    virtual bool visitFile([[maybe_unused]] const EventFileProperties& properties) override
     {
         return true;
     }
 
-    virtual bool visitEvent(CEvent& event) override
+    virtual bool visitEvent(CEvent& event, [[maybe_unused]] const EventFileProperties& properties) override
     {
         switch (event.queryType())
         {
@@ -519,7 +519,7 @@ public:
         return true;
     }
 
-    virtual void departFile(uint32_t) override
+    virtual void departFile([[maybe_unused]] const EventFileProperties& properties) override
     {
         for (const auto& item : liveNodes)
             emitOpenSpan(item.second);
@@ -755,7 +755,7 @@ CEvent makeIndexCacheEvent(EventType type, __uint64 timestamp, __uint64 fileId, 
 void visitIndexCacheEvent(IEventVisitor& visitor, EventType type, __uint64 timestamp, __uint64 fileId, offset_t offset, NodeKind nodeKind)
 {
     CEvent event = makeIndexCacheEvent(type, timestamp, fileId, offset, nodeKind);
-    visitor.visitEvent(event);
+    visitor.visitEvent(event, queryTestEventFileProperties());
 }
 
 } // namespace
@@ -871,7 +871,7 @@ public:
         CIndexCacheSpanVisitor visitor(sink);
 
         visitIndexCacheEvent(visitor, EventIndexLoad, 100, 1, 4096, LeafNode);
-        visitor.departFile(0);
+        visitor.departFile(queryTestEventFileProperties());
 
         CPPUNIT_ASSERT_EQUAL(size_t(1), sink.spans.size());
         CPPUNIT_ASSERT(CacheSpanState::Loaded == sink.spans[0].state);
@@ -996,7 +996,7 @@ public:
         visitIndexCacheEvent(visitor, EventIndexEviction, 180, 1, 4096, LeafNode);
         visitIndexCacheEvent(visitor, EventIndexLoad, 200, 2, 4096, LeafNode);
         visitIndexCacheEvent(visitor, EventIndexCacheHit, 250, 3, 4096, LeafNode);
-        visitor.departFile(0);
+        visitor.departFile(queryTestEventFileProperties());
 
         const CacheSpanAccumulator& totals = grouping.queryRoot().subTotal;
         CPPUNIT_ASSERT_EQUAL(__uint64(1), totals.states[6].spans);
@@ -1024,7 +1024,7 @@ public:
         visitIndexCacheEvent(visitor, EventIndexLoad, 100, 1, 4096, LeafNode);
         visitIndexCacheEvent(visitor, EventIndexEviction, 180, 1, 4096, LeafNode);
         visitIndexCacheEvent(visitor, EventIndexLoad, 200, 2, 4096, LeafNode);
-        visitor.departFile(0);
+        visitor.departFile(queryTestEventFileProperties());
 
         StringBuffer output;
         Owned<IBufferedSerialOutputStream> stream = createBufferedSerialOutputStream(output);

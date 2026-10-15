@@ -248,6 +248,7 @@ public:
     virtual IEngineRowStream &queryStream() { return *this; }
     virtual stat_type queryLocalCycles() const;
     virtual stat_type queryTotalCycles() const override;
+    IDistributedFileTransaction * queryReadFilesTransaction() const;
 
     inline const void *ungroupedNextRow() { return IEngineRowStream::ungroupedNextRow(); }
 
@@ -3129,7 +3130,7 @@ extern HTHOR_API IHThorActivity * create ## NAME ## Activity(IAgentContext &_age
 extern HTHOR_API IHThorActivity * create ## NAME ## Activity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThor ## NAME ## Arg &arg, ThorActivityKind kind, EclGraph & _graph, EXTRATYPE extra) \
 {   return new CHThor ## NAME ##Activity(_agent, _activityId, _subgraphId, arg, kind, _graph, extra); }
 
-extern ILocalOrDistributedFile *resolveLFNFlat(IAgentContext &agent, const char *logicalName, const char *errorTxt, bool optional, bool privilegedUser);
+extern ILocalOrDistributedFile *resolveLFNFlat(IAgentContext &agent, EclGraph &graph, const char *logicalName, const char *errorTxt, bool optional, bool privilegedUser);
 
 #endif // HTHOR_IPP_INCL
 

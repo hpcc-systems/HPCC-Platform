@@ -58,9 +58,12 @@
 
   <para>Informações de pacote são usadas logo que são adicionadas ao Dali e o
   pacote é ativado. Isso pode ser feito usando o comando <emphasis
-  role="bold">ecl packagemap add --activate</emphasis> (ou <emphasis
-  role="bold">ecl packagemap add</emphasis> &amp; <emphasis role="bold">ecl
-  packagemap activate</emphasis>).</para>
+  role="bold">ecl packagemap add &lt;target&gt; &lt;filename&gt;
+  --activate</emphasis> (ou <emphasis role="bold">ecl packagemap add
+  &lt;target&gt; &lt;filename&gt;</emphasis> &amp; <emphasis role="bold">ecl
+  packagemap activate &lt;target&gt; &lt;packagemap&gt;</emphasis>). O argumento
+  <emphasis role="bold">&lt;target&gt;</emphasis> é obrigatório e deve
+  identificar o destino Roxie que possui ou possuirá o mapa de pacotes.</para>
 
   <!--You should always validate or run the reporting step on the packages (NYI)-->
 
@@ -181,7 +184,7 @@
       </listitem>
     </itemizedlist>
 
-    <para><programlisting role="bold">ecl packagemap add --activate</programlisting></para>
+    <para><programlisting role="bold">ecl packagemap add &lt;target&gt; main.pkg --activate</programlisting></para>
 
     <para/>
 
@@ -225,7 +228,7 @@
       </listitem>
     </itemizedlist>
 
-    <para><programlisting role="bold">ecl packagemap add --activate</programlisting></para>
+    <para><programlisting role="bold">ecl packagemap add &lt;target&gt; main.pkg --activate</programlisting></para>
 
     <para/>
   </sect1>

@@ -49,12 +49,12 @@ bool CIndexPlotOp::doOp()
     return true;
 }
 
-bool CIndexPlotOp::visitFile(const char* filename, uint32_t version)
+bool CIndexPlotOp::visitFile([[maybe_unused]] const EventFileProperties& properties)
 {
     return true;
 }
 
-bool CIndexPlotOp::visitEvent(CEvent& event)
+bool CIndexPlotOp::visitEvent(CEvent& event, [[maybe_unused]] const EventFileProperties& properties)
 {
     switch (event.queryType())
     {
@@ -105,7 +105,7 @@ bool CIndexPlotOp::visitEvent(CEvent& event)
     return true;
 }
 
-void CIndexPlotOp::departFile(uint32_t bytesRead)
+void CIndexPlotOp::departFile([[maybe_unused]] const EventFileProperties& properties)
 {
 }
 

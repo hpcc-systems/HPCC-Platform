@@ -209,12 +209,12 @@ class CSummaryCollector : public CInterfaceOf<IEventVisitor>
 public:
     virtual void summarize() = 0;
 public: // IEventVisitor
-    virtual bool visitFile(const char *filename, uint32_t version) override
+    virtual bool visitFile([[maybe_unused]] const EventFileProperties& properties) override
     {
         return true;
     }
 
-    virtual void departFile(uint32_t bytesRead) override
+    virtual void departFile([[maybe_unused]] const EventFileProperties& properties) override
     {
     }
 public:
@@ -389,7 +389,7 @@ protected:
         __uint64 elapsedTime{0};
     };
 public: // IEventVisitor
-    virtual bool visitEvent(CEvent& event) override
+    virtual bool visitEvent(CEvent& event, [[maybe_unused]] const EventFileProperties& properties) override
     {
         // Implicit event filter applied unconditionally
         EventType type = event.queryType();
@@ -834,7 +834,7 @@ protected:
         }
     };
 public: // IEventVisitor
-    virtual bool visitEvent(CEvent& event) override
+    virtual bool visitEvent(CEvent& event, [[maybe_unused]] const EventFileProperties& properties) override
     {
         // Implicit filter applied unconditionally - only index events with FileId that aren't also FileInformation are relevant.
         if (!eventInAnyContext(event.queryType(), EventCtxIndex))
@@ -1218,7 +1218,7 @@ public:
     {
     }
 
-    virtual bool visitEvent(CEvent& event) override
+    virtual bool visitEvent(CEvent& event, [[maybe_unused]] const EventFileProperties& properties) override
     {
         switch (event.queryType())
         {
@@ -1298,7 +1298,7 @@ public:
         }
     }
 
-    virtual bool visitEvent(CEvent& event) override
+    virtual bool visitEvent(CEvent& event, [[maybe_unused]] const EventFileProperties& properties) override
     {
         // Implicit event filter applied unconditionally
         EventType type = event.queryType();

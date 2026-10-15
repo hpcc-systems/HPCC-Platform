@@ -228,7 +228,7 @@ storage:
 {{- range $plane := $planes }}
  {{- if not $plane.disabled }}
   - name: {{ $plane.name | quote }}
-  {{- $planeYaml := omit $plane "name" "pvc" "storageClass" "storageSize" "subPath" "numMounts" -}}
+  {{- $planeYaml := omit $plane "name" "pvc" "storageClass" "subPath" "numMounts" -}}
   {{- if $plane.subPath -}}
    {{- $_ := set $planeYaml "prefix" (printf "%s/%s" $planeYaml.prefix $plane.subPath) -}}
   {{- end -}}
@@ -541,6 +541,12 @@ to addVolumeMounts so that if a plane can be used for multiple purposes then dup
 - name: {{ lower $plane.name }}-volume
   mountPath: {{ $plane.prefix | quote }}
     {{- end }}
+   {{- else if $plane.ephemeral }}
+    {{- if not (hasKey $previousMounts $plane.prefix) }}
+- name: {{ lower $plane.name }}-volume
+  mountPath: {{ $plane.prefix | quote }}
+    {{- end }}
+    {{- $_ := set $previousMounts $plane.prefix true -}}
    {{- end }}
 
    {{- /*Generate entries for each alias of the plane*/ -}}
@@ -611,6 +617,12 @@ The plane will generate a volume if it matches either an includeLabel or an incl
   hostPath:
     path: {{ $plane.hostPath }}
     type: Directory
+    {{- end }}
+   {{- else if $plane.ephemeral }}
+    {{- if not (hasKey $previousMounts $plane.prefix) }}
+- name: {{ lower $plane.name }}-volume
+  emptyDir: {}
+     {{- $_ := set $previousMounts $plane.prefix true }}
     {{- end }}
    {{- end }}
 

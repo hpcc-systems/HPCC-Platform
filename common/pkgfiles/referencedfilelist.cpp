@@ -34,15 +34,28 @@
 
 #define WF_LOOKUP_TIMEOUT (1000*15)  // 15 seconds
 
-bool getIsOpt(const IPropertyTree &graphNode)
-{
-    if (graphNode.hasProp("att[@name='_isOpt']"))
-        return graphNode.getPropBool("att[@name='_isOpt']/@value", false);
-    else
-        return graphNode.getPropBool("att[@name='_isIndexOpt']/@value", false);
-}
+// Build reference file list:
+//   for each workunit file:
+//     add the logical name and its package flags to the list
+//   for each package-map Package or Part/Package:
+//     inherit the map scope (source cluster, foreign Dali, remote storage, prefix)
+//     override inherited scope with explicit package values
+//     add package files and declared superfiles using that effective scope
+//   for each listed file:
+//     apply any file-level scope or embedded remote/foreign qualifier
+//     if checkLocalFirst and a local copy exists, use it
+//     else resolve through foreign Dali, remote storage, or local DFS
+//     if superfile expansion is enabled, qualify children with their scope,
+//       add missing children to the list, and recursively resolve each new child
+//       (the list acts as the visited set, so duplicates and cycles stop)
+//   if cloning is requested:
+//     copy file metadata and recursively rebuild nested superfile relationships
+//     (mark each superfile cloned before visiting its children)
+//
+// NOTE: Packages are not traversed recursively.  The daliip/remoteStorage options only apply to
+//       that package, not to any Base packages it may reference.
 
-bool checkForeign(const char *lfn)
+static bool checkForeign(const char *lfn)
 {
     if (*lfn=='~')
         lfn++;
@@ -72,6 +85,7 @@ static const char *skipNextLfnScope(const char *lfn, StringBuffer *s)
     }
     return lfn;
 }
+
 const char *skipForeignOrRemote(const char *name, StringBuffer *ip, StringBuffer *remote)
 {
     unsigned maxTildas = 2;
@@ -145,7 +159,7 @@ void splitDerivedDfsLocationOrRemote(const char *address, StringBuffer &cluster,
     if (!isEmptyString(currentRemoteStorage))
     {
         effectiveRemoteStorage.append(currentRemoteStorage);
-        // Cluster and prefix aren't used if ip is empty, so they don't need to be cleared
+        // prefix must be blank on entry (callers pass a fresh buffer); it is used as the remote storage prefix
         ip.clear();
         return;
     }
@@ -156,6 +170,27 @@ void splitDerivedDfsLocationOrRemote(const char *address, StringBuffer &cluster,
     effectiveRemoteStorage.append(baseRemoteStorage);
 }
 
+
+static StringBuffer &makeRemoteLFN(StringBuffer &remoteLfn, const char *remoteStorageName, const char *remotePrefix, const char *lfn)
+{
+    if (isEmptyString(remoteStorageName))
+        return remoteLfn;
+    remoteLfn.append("remote::").append(remoteStorageName).append("::");
+    if (!isEmptyString(remotePrefix))
+        remoteLfn.append(remotePrefix).append("::");
+    return remoteLfn.append(lfn);
+}
+
+static StringBuffer &makeForeignLFN(StringBuffer &foreignLfn, const char *daliip, const char *prefix, const char *lfn)
+{
+    foreignLfn.append("foreign::").append(daliip).append("::");
+    if (!isEmptyString(prefix))
+        foreignLfn.append(prefix).append("::");
+    return foreignLfn.append(lfn);
+}
+
+//---------------------------------------------------------------------------------------------------------------------
+
 class ReferencedFileList;
 
 class ReferencedFile : implements IReferencedFile, public CInterface
@@ -163,7 +198,7 @@ class ReferencedFile : implements IReferencedFile, public CInterface
 public:
     IMPLEMENT_IINTERFACE;
     ReferencedFile(const char *lfn, const char *sourceIP, const char *srcCluster, const char *prefix, bool isSubFile, unsigned _flags, const char *_pkgid, bool noDfs, bool calcSize, const char *remoteStorageName)
-    : pkgid(_pkgid), fileSize(0), numParts(0), flags(_flags), noDfsResolution(noDfs), calcFileSize(calcSize), trackSubFiles(false)
+    : pkgid(_pkgid), fileSize(0), numParts(0), flags(_flags), noDfsResolution(noDfs), calcFileSize(calcSize)
     {
         {
             //Scope ensures strings are assigned
@@ -171,7 +206,10 @@ public:
             logicalNameText.set(skipForeignOrRemote(lfn, &daliipText, &remoteStorageText)).toLowerCase();
         }
         if (remoteStorage.length())
+        {
             flags |= RefFileLFNRemote;
+            hasExplicitRemoteLfn = true;
+        }
         else if (!isEmptyString(remoteStorageName))
         {
             // can be declared in packagemap at different scopes
@@ -194,6 +232,11 @@ public:
     void reset()
     {
         flags &= ~(RefFileNotOnCluster | RefFileNotFound | RefFileResolvedForeign | RefFileResolvedRemote | RefFileCopyInfoFailed | RefFileCloned | RefFileNotOnSource); //these flags are calculated during resolve
+        // Resolution scope belongs to one resolveFiles() pass and must not leak into the next one.
+        resolvedRemoteStorage.clear();
+        resolvedRemotePrefix.clear();
+        hasResolvedRemoteStorage = false;
+        hasResolvedRemotePrefix = false;
     }
 
     IPropertyTree *getRemoteStorageFileTree(IUserDescriptor *user, const char *remoteStorageName, const char *remotePrefix);
@@ -244,6 +287,40 @@ public:
         ForEachItemIn(i, names)
             subFileNames.append(names.item(i));
     };
+    const char *queryEffectiveRemoteStorage() const
+    {
+        return hasResolvedRemoteStorage ? resolvedRemoteStorage.str() : remoteStorage.str();
+    }
+    const char *queryEffectiveRemoteStorage(const char *fallback) const
+    {
+        if (hasResolvedRemoteStorage)
+            return resolvedRemoteStorage.str();
+        return hasRemoteStorageScope() ? remoteStorage.str() : fallback;
+    }
+    bool hasExplicitForeignLfn() const
+    {
+        return (flags & RefFileLFNForeign) != 0;
+    }
+    bool hasRemoteStorageScope() const
+    {
+        return (flags & RefFileLFNRemote) != 0;
+    }
+    const char *queryEffectivePrefix() const
+    {
+        if (hasResolvedRemotePrefix)
+            return resolvedRemotePrefix.str();
+        if (hasExplicitRemoteLfn || hasExplicitForeignLfn())
+            return nullptr;
+        return filePrefix.str();
+    }
+    const char *queryEffectivePrefix(const char *fallback) const
+    {
+        if (hasResolvedRemotePrefix)
+            return resolvedRemotePrefix.str();
+        if (hasExplicitRemoteLfn || hasExplicitForeignLfn())
+            return nullptr;
+        return filePrefix.isEmpty() ? fallback : filePrefix.str();
+    }
 public:
     StringArray subFileNames;
     StringAttr logicalName;
@@ -257,7 +334,12 @@ public:
     unsigned flags;
     bool noDfsResolution;
     bool calcFileSize;
-    bool trackSubFiles;
+    bool trackSubFiles = false;
+    bool hasExplicitRemoteLfn = false;
+    bool hasResolvedRemoteStorage = false;
+    bool hasResolvedRemotePrefix = false;
+    StringAttr resolvedRemoteStorage;
+    StringAttr resolvedRemotePrefix;
 };
 
 class ReferencedFileList : implements IReferencedFileList, public CInterface
@@ -330,7 +412,8 @@ public:
     bool allowSizeCalc;
 };
 
-bool fileExistsWithinLocations(IDistributedFile *df, const StringArray &locations)
+// Should probably move to dadfs as a global helper function
+static bool fileExistsWithinLocations(IDistributedFile *df, const StringArray &locations)
 {
     if (!df)
         return false;
@@ -402,11 +485,12 @@ void ReferencedFile::processForeignFileTree(const IPropertyTree *tree, const cha
             {
                 const char *lfn = it->query().queryProp("@name");
                 StringBuffer foreignLfn;
-                if (flags & RefFileLFNForeign)
-                    lfn = foreignLfn.append("foreign::").append(this->daliip).append("::").append(lfn).str();
+                // SubFile/@name is already the full logical name on the source dali, including any prefix
+                if (daliip.length())
+                    lfn = makeForeignLFN(foreignLfn, daliip, nullptr, lfn).str();
                 subfiles->append(lfn);
                 if (trackSubFiles)
-                    subFileNames.append(lfn);
+                    subFileNames.append(skipForeignOrRemote(lfn, nullptr, nullptr));
             }
         }
     }
@@ -419,16 +503,6 @@ void ReferencedFile::processForeignFileTree(const IPropertyTree *tree, const cha
         numParts = tree->getPropInt("@numparts", 0);
         fileSize = tree->getPropInt64("Attr/@size", 0);
     }
-}
-
-static StringBuffer &makeRemoteLFN(StringBuffer &remoteLfn, const char *remoteStorageName, const char *remotePrefix, const char *lfn)
-{
-    if (isEmptyString(remoteStorageName))
-        return remoteLfn;
-    remoteLfn.append("remote::").append(remoteStorageName).append("::");
-    if (!isEmptyString(remotePrefix))
-        remoteLfn.append(remotePrefix).append("::");
-    return remoteLfn.append(lfn);
 }
 
 void ReferencedFile::processRemoteFileTree(const IPropertyTree *tree, const char *srcCluster, StringArray *subfiles)
@@ -446,11 +520,14 @@ void ReferencedFile::processRemoteFileTree(const IPropertyTree *tree, const char
             {
                 const char *lfn = it->query().queryProp("@name");
                 StringBuffer remoteLfn;
-                if (flags & RefFileLFNForeign)
-                    lfn = makeRemoteLFN(remoteLfn, this->remoteStorage, nullptr, lfn).str();
+                // SubFile/@name is already the full logical name on the source dali, including any prefix
+                if (!isEmptyString(queryEffectiveRemoteStorage()))
+                    lfn = makeRemoteLFN(remoteLfn, queryEffectiveRemoteStorage(), nullptr, lfn).str();
+                // Recursive resolution needs the remote-qualified name, while subFileNames is
+                // exposed to callers that look up children by their logical name.
                 subfiles->append(lfn);
                 if (trackSubFiles)
-                    subFileNames.append(lfn);
+                    subFileNames.append(skipForeignOrRemote(lfn, nullptr, nullptr));
             }
         }
     }
@@ -512,7 +589,7 @@ IPropertyTree *ReferencedFile::getFileOrProvidedForeignFileTree(IUserDescriptor 
     {
         Owned<INode> fileDaliNode;
         fileDaliNode.setown(createINode(daliip));
-        return getForeignFileTree(user, fileDaliNode, filePrefix);
+        return getForeignFileTree(user, fileDaliNode, queryEffectivePrefix());
     }
     if (!providedDaliNode)
         return NULL;
@@ -522,7 +599,8 @@ IPropertyTree *ReferencedFile::getFileOrProvidedForeignFileTree(IUserDescriptor 
         return NULL;
     StringAttrBuilder daliipText(daliip);
     providedDaliNode->endpoint().getEndpointHostText(daliipText);
-    filePrefix.set(remotePrefix);
+    resolvedRemotePrefix.set(remotePrefix);
+    hasResolvedRemotePrefix = true;
     return fileTree.getClear();
 }
 
@@ -533,6 +611,7 @@ void ReferencedFile::resolveForeign(IUserDescriptor *user, INode *remote, const 
         locations.append(dstCluster);
     resolveForeign(user, remote, remotePrefix, locations, srcCluster, checkLocalFirst, subfiles, resolveLFNForeign);
 }
+
 void ReferencedFile::resolveForeign(IUserDescriptor *user, INode *remote, const char *remotePrefix, const StringArray &locations, const char *srcCluster, bool checkLocalFirst, StringArray *subfiles, bool resolveLFNForeign)
 {
     if ((flags & RefFileLFNForeign) && !resolveLFNForeign && !trackSubFiles)
@@ -589,7 +668,10 @@ IPropertyTree *ReferencedFile::getRemoteStorageFileTree(IUserDescriptor *user, c
         DBGLOG("RemoteStorage FileMetaTree not found %s [remoteStorage=%s, prefix=%s]", remoteLFN.str(), nullText(remoteStorageName), nullText(remotePrefix));
         return nullptr;
     }
-    tree = tree->getPropTree("File");
+    IPropertyTree *fileTree = tree->getPropTree(queryDfsXmlBranchName(DXB_File));
+    if (!fileTree)
+        fileTree = tree->getPropTree(queryDfsXmlBranchName(DXB_SuperFile));
+    tree = fileTree;
     if (!tree)
         DBGLOG("RemoteStorage FileTree not found %s [remoteStorage=%s, prefix=%s]", remoteLFN.str(), nullText(remoteStorageName), nullText(remotePrefix));
     return tree;
@@ -624,7 +706,11 @@ void ReferencedFile::resolveRemote(IUserDescriptor *user, const char *remoteStor
     Owned<IPropertyTree> tree = getRemoteStorageFileTree(user, remoteStorageName, remotePrefix);
     if (tree)
     {
-        remoteStorage.set(remoteStorageName);
+        // Keep request-level scope separate so a later resolveFiles() call can replace it.
+        resolvedRemoteStorage.set(remoteStorageName);
+        hasResolvedRemoteStorage = true;
+        resolvedRemotePrefix.set(remotePrefix);
+        hasResolvedRemotePrefix = true;
         processRemoteFileTree(tree, srcCluster, subfiles);
         return;
     }
@@ -827,17 +913,19 @@ void ReferencedFile::cloneInfo(IDFUWorkUnit *publisherWu, unsigned updateFlags, 
 
     try
     {
+        const char *effectivePrefix = queryEffectivePrefix();
+        const char *effectiveRemoteStorage = queryEffectiveRemoteStorage();
         StringBuffer srcLFN;
-        if (filePrefix.length())
-            srcLFN.append(filePrefix.str()).append("::");
+        if (!isEmptyString(effectivePrefix))
+            srcLFN.append(effectivePrefix).append("::");
         srcLFN.append(logicalName.str());
 
         bool dfucopy = (updateFlags & DFU_UPDATEF_COPY)!=0;
         if (!dfucopy)
             //Whether remote or on a local plane if we get here the file is not on a plane that roxie considers an direct access plane, so if we're in copy data mode the the file will be copied
-            helper->cloneRoxieSubFile(srcLFN, srcCluster, logicalName, dstCluster, filePrefix, redundancy, channelsPerNode, replicateOffset, defReplicateFolder, user, daliip, remoteStorage, updateFlags, false);
+            helper->cloneRoxieSubFile(srcLFN, srcCluster, logicalName, dstCluster, effectivePrefix, redundancy, channelsPerNode, replicateOffset, defReplicateFolder, user, daliip, effectiveRemoteStorage, updateFlags, false);
         else
-            dfuCopy(publisherWu, user, srcLFN, logicalName, dstCluster, remoteStorage.isEmpty() ? daliip : remoteStorage, false, (updateFlags & DFU_UPDATEF_OVERWRITE)!=0, true, false, !remoteStorage.isEmpty());
+            dfuCopy(publisherWu, user, srcLFN, logicalName, dstCluster, isEmptyString(effectiveRemoteStorage) ? daliip.str() : effectiveRemoteStorage, false, (updateFlags & DFU_UPDATEF_OVERWRITE)!=0, true, false, !isEmptyString(effectiveRemoteStorage));
 
         flags |= RefFileCloned;
     }
@@ -861,7 +949,11 @@ void ReferencedFile::cloneSuperInfo(IDFUWorkUnit *publisherWu, unsigned updateFl
 
     try
     {
-        Owned<IPropertyTree> tree = getFileOrProvidedForeignFileTree(user, remote, NULL);
+        Owned<IPropertyTree> tree;
+        if (flags & RefFileResolvedRemote)
+            tree.setown(getRemoteStorageFileTree(user, queryEffectiveRemoteStorage(), queryEffectivePrefix()));
+        else
+            tree.setown(getFileOrProvidedForeignFileTree(user, remote, nullptr));
         if (!tree)
             return;
 
@@ -883,15 +975,22 @@ void ReferencedFile::cloneSuperInfo(IDFUWorkUnit *publisherWu, unsigned updateFl
         ForEach(*subfiles)
         {
             const char *name = subfiles->query().queryProp("@name");
+            const char *childName = name;
             if (list)
             {
                 //ensure superfile in superfile is cloned, before add
-                ReferencedFile *subref = list->map.getValue(name);
+                // SubFile/@name is already the full logical name, matching the key used when the child was expanded
+                ReferencedFile *subref = nullptr;
+                if (!isEmptyString(name))
+                    subref = list->map.getValue(name);
                 if (subref)
+                {
                     subref->cloneSuperInfo(publisherWu, updateFlags, list, user, remote);
+                    childName = subref->getLogicalName();
+                }
             }
-            if (name && *name)
-                superfile->addSubFile(name, false, NULL, false);
+            if (childName && *childName)
+                superfile->addSubFile(childName, false, NULL, false);
         }
     }
     catch (IException *e)
@@ -1160,10 +1259,13 @@ void ReferencedFileList::resolveSubFiles(StringArray &subfiles, const StringArra
         Owned<ReferencedFile> file = new ReferencedFile(lfn, NULL, NULL, NULL, true, 0, NULL, false, allowSizeCalc);
         if (file->logicalName.length() && !map.getValue(file->getLogicalName()))
         {
-            if (remoteStorage.isEmpty())
-                file->resolveLocalOrForeign(locations, srcCluster, user, remote, remotePrefix, checkLocalFirst, &childSubFiles, trackSubFiles, resolveLFNForeign);
+            // Prefer per-file remoteStorage (extracted from embedded remote:: LFN); when used, the prefix is already baked into logicalName so suppress the list-level remotePrefix to avoid doubling it.
+            const char *effectiveRemoteStorage = file->remoteStorage.isEmpty() ? remoteStorage.str() : file->remoteStorage.str();
+            const char *effectiveRemotePrefix = file->remoteStorage.isEmpty() ? remotePrefix.str() : nullptr;
+            if (isEmptyString(effectiveRemoteStorage))
+                file->resolveLocalOrForeign(locations, srcCluster, user, remote, effectiveRemotePrefix, checkLocalFirst, &childSubFiles, trackSubFiles, resolveLFNForeign);
             else
-                file->resolveLocalOrRemote(locations, srcCluster, user, remoteStorage, remotePrefix, checkLocalFirst, &childSubFiles, trackSubFiles, resolveLFNForeign);
+                file->resolveLocalOrRemote(locations, srcCluster, user, effectiveRemoteStorage, effectiveRemotePrefix, checkLocalFirst, &childSubFiles, trackSubFiles, resolveLFNForeign);
             const char *ln = file->getLogicalName();
             // NOTE: setValue links its parameter
             map.setValue(ln, file);
@@ -1191,22 +1293,26 @@ void ReferencedFileList::resolveFiles(const StringArray &locations, const char *
 
     ReferencedFileIterator files(this);
 
-    // For use when expandSuperFiles=true
+    // remoteStorage is also used while expanding subfiles, so do not carry a remote scope into a later pass.
+    remoteStorage.clear();
     if (useRemoteStorage)
         remoteStorage.set(remoteLocation);
 
     ForEach(files)
     {
         ReferencedFile &file = files.queryObject();
-        if (file.daliip.isEmpty() && (!file.remoteStorage.isEmpty() || useRemoteStorage))
+        // Clear cached per-resolution scope before queryEffective...() selects the scope for this pass.
+        // Resetting each file here is sufficient; a separate pass over all files is unnecessary.
+        // The resolver resets again, but that is too late here; reset only clears derived state that this pass recomputes.
+        file.reset();
+        if (file.daliip.isEmpty() && (file.hasRemoteStorageScope() || useRemoteStorage))
         {
             if (!user)
                 user.setown(createUserDescriptor());
 
-            if (file.remoteStorage.isEmpty()) // Can be set at multiple levels in a packagemap
-                file.remoteStorage.set(remoteLocation); // Top-level remoteLocation has lowest precedence, used if nothing set in packagemap
-
-            file.resolveLocalOrRemote(locations, srcCluster, user, file.remoteStorage, remotePrefix, checkLocalFirst, expandSuperFiles ? &subfiles : NULL, trackSubFiles, resolveLFNForeign);
+            const char *effectiveRemoteStorage = file.queryEffectiveRemoteStorage(remoteLocation);
+            const char *effectivePrefix = file.queryEffectivePrefix(remotePrefix);
+            file.resolveLocalOrRemote(locations, srcCluster, user, effectiveRemoteStorage, effectivePrefix, checkLocalFirst, expandSuperFiles ? &subfiles : NULL, trackSubFiles, resolveLFNForeign);
         }
         else
         {

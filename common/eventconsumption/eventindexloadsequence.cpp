@@ -135,12 +135,12 @@ public:
     {
     }
 
-    virtual bool visitFile(const char*, uint32_t) override
+    virtual bool visitFile([[maybe_unused]] const EventFileProperties& properties) override
     {
         return true;
     }
 
-    virtual bool visitEvent(CEvent& event) override
+    virtual bool visitEvent(CEvent& event, [[maybe_unused]] const EventFileProperties& properties) override
     {
         switch (event.queryType())
         {
@@ -161,7 +161,7 @@ public:
         return true;
     }
 
-    virtual void departFile(uint32_t) override
+    virtual void departFile([[maybe_unused]] const EventFileProperties& properties) override
     {
         for (auto& item : runs)
             flush(item.second);
@@ -390,7 +390,7 @@ void addIndexLoad(IEventVisitor& visitor, __uint64 tid, __uint64 fileId, __uint6
         event.setValue(EvAttrEventTraceId, traceId);
     if (searchFlags >= 0)
         event.setValue(EvAttrSearchFlags, __uint64(searchFlags));
-    visitor.visitEvent(event);
+    visitor.visitEvent(event, queryTestEventFileProperties());
 }
 
 void addWorkerBoundary(IEventVisitor& visitor, EventType type, __uint64 tid)
@@ -398,7 +398,7 @@ void addWorkerBoundary(IEventVisitor& visitor, EventType type, __uint64 tid)
     CEvent event;
     event.reset(type);
     event.setValue(EvAttrEventThreadId, tid);
-    visitor.visitEvent(event);
+    visitor.visitEvent(event, queryTestEventFileProperties());
 }
 
 void addTaskBoundary(IEventVisitor& visitor, EventType type, __uint64 tid, EventTask task)
@@ -407,7 +407,7 @@ void addTaskBoundary(IEventVisitor& visitor, EventType type, __uint64 tid, Event
     event.reset(type);
     event.setValue(EvAttrEventThreadId, tid);
     event.setValue(EvAttrTask, __uint64(task));
-    visitor.visitEvent(event);
+    visitor.visitEvent(event, queryTestEventFileProperties());
 }
 
 } // namespace
@@ -720,9 +720,9 @@ public:
         event.setValue(EvAttrFileOffset, __uint64(0));
         event.setValue(EvAttrNodeKind, __uint64(LeafNode));
         // No EvAttrEventThreadId assigned.
-        CPPUNIT_ASSERT(f.visitor.visitEvent(event));
+        CPPUNIT_ASSERT(f.visitor.visitEvent(event, queryTestEventFileProperties()));
 
-        f.visitor.departFile(0);
+        f.visitor.departFile(queryTestEventFileProperties());
         CPPUNIT_ASSERT(f.sink.rows.empty());
         END_TEST
     }
@@ -739,9 +739,9 @@ public:
         event.setValue(EvAttrFileOffset, __uint64(0));
         event.setValue(EvAttrNodeKind, __uint64(LeafNode));
         CPPUNIT_ASSERT(!event.isComplete());
-        CPPUNIT_ASSERT(f.visitor.visitEvent(event));
+        CPPUNIT_ASSERT(f.visitor.visitEvent(event, queryTestEventFileProperties()));
 
-        f.visitor.departFile(0);
+        f.visitor.departFile(queryTestEventFileProperties());
         CPPUNIT_ASSERT(f.sink.rows.empty());
         END_TEST
     }

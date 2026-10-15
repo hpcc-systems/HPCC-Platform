@@ -978,6 +978,12 @@ bool DeleteAce(PACL pAcl, DWORD dwAceIndex)
         return false;
     }
 
+    if(dwAceIndex >= pAcl->AceCount)
+    {
+        DBGLOG("DeleteAce : dwAceIndex is out of range");
+        return false;
+    }
+
     unsigned char* ptr = (unsigned char*)pAcl + sizeof(ACL);
     unsigned char* delptr = ptr;
     int total_size = sizeof(ACL);

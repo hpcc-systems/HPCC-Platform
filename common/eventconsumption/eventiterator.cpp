@@ -322,7 +322,7 @@ void CEventMultiplexer::addSource(IEventIterator& source)
     else
         return; // Reject instances that are duplicates or already contained
     if (onAddSource(source) && metaStateCollector)
-        metaStateCollector->visitFile(sourceProps.path.str(), sourceProps.version);
+        metaStateCollector->visitFile(sourceProps);
 }
 
 CEventMultiplexer::CEventMultiplexer(CMetaInfoState& _metaState, bool _bypassMetaCollector)
@@ -409,7 +409,7 @@ bool CChronologicalEventMultiplexer::nextEventImpl(CEvent& event, EventIteration
         beginSource(*best->iterator, best->visited, transition);
         event = best->nextEvent;
         if (metaStateCollector)
-            (void)metaStateCollector->visitEvent(event);
+            (void)metaStateCollector->visitEvent(event, *transition.properties);
         else if (bypassMetaCollector)
             (void)metaState.tryRemapFileId(event);
         properties.eventsRead++;
@@ -503,7 +503,7 @@ bool CSerialEventMultiplexer::nextEventImpl(CEvent& event, EventIterationTransit
                 currentSourceIndex++;
             }
             if (metaStateCollector)
-                (void)metaStateCollector->visitEvent(event);
+                (void)metaStateCollector->visitEvent(event, *transition.properties);
             else if (bypassMetaCollector)
                 (void)metaState.tryRemapFileId(event);
             properties.eventsRead++;
@@ -555,7 +555,7 @@ void visitIterableEvents(IEventIterator& iter, IEventVisitor& visitor)
 {
     CEvent event;
     const EventFileProperties& props = iter.queryFileProperties();
-    visitor.visitFile(props.path, props.version);
+    visitor.visitFile(props);
     IEventMultiplexer* multiplexer = dynamic_cast<IEventMultiplexer*>(&iter);
     if (multiplexer)
     {
@@ -563,18 +563,18 @@ void visitIterableEvents(IEventIterator& iter, IEventVisitor& visitor)
         while (multiplexer->nextEvent(event, transition))
         {
             if (transition.firstVisit)
-                visitor.visitFile(transition.properties->path, transition.properties->version);
-            visitor.visitEvent(event);
+                visitor.visitFile(*transition.properties);
+            visitor.visitEvent(event, *transition.properties);
             if (transition.lastVisit)
-                visitor.departFile(transition.properties->bytesRead);
+                visitor.departFile(*transition.properties);
         }
     }
     else
     {
         while (iter.nextEvent(event))
-            visitor.visitEvent(event);
+            visitor.visitEvent(event, props);
     }
-    visitor.departFile(props.bytesRead);
+    visitor.departFile(props);
 }
 
 #ifdef _USE_CPPUNIT
@@ -606,29 +606,30 @@ public:
     class BoundaryVisitor : public CInterfaceOf<IEventVisitor>
     {
     public:
-        virtual bool visitFile(const char* filename, uint32_t) override
+        virtual bool visitFile(const EventFileProperties& properties) override
         {
-            files.emplace_back(filename ? filename : "");
-            sequence.emplace_back(std::string("visit:") + (filename ? filename : ""));
+            const char* filename = properties.path.str();
+            sequence.emplace_back(filename ? filename : "", "");
             return true;
         }
 
-        virtual bool visitEvent(CEvent& event) override
+        virtual bool visitEvent(CEvent& event, [[maybe_unused]] const EventFileProperties& properties) override
         {
             events++;
-            sequence.emplace_back(std::string("event:") + queryEventName(event.queryType()));
+            const char* filename = properties.path.str();
+            sequence.emplace_back(filename ? filename : "", queryEventName(event.queryType()));
             return true;
         }
 
-        virtual void departFile(uint32_t bytesRead) override
+        virtual void departFile(const EventFileProperties& properties) override
         {
             departures++;
-            departBytes.push_back(bytesRead);
-            sequence.emplace_back("depart");
+            departBytes.push_back(properties.bytesRead);
+            const char* filename = properties.path.str();
+            sequence.emplace_back(filename ? filename : "", "");
         }
 
-        std::vector<std::string> files;
-        std::vector<std::string> sequence;
+        std::vector<std::pair<std::string, std::string>> sequence;
         std::vector<uint32_t> departBytes;
         unsigned events{0};
         unsigned departures{0};
@@ -651,23 +652,19 @@ public:
         BoundaryVisitor visitor;
         visitIterableEvents(*multiplexer, visitor);
 
-        CPPUNIT_ASSERT_EQUAL(size_t(3), visitor.files.size());
-        CPPUNIT_ASSERT_EQUAL(std::string("multiplexed"), visitor.files[0]);
-        CPPUNIT_ASSERT_EQUAL(std::string("first.evt"), visitor.files[1]);
-        CPPUNIT_ASSERT_EQUAL(std::string("second.evt"), visitor.files[2]);
         CPPUNIT_ASSERT_EQUAL(unsigned(4), visitor.events);
         CPPUNIT_ASSERT_EQUAL(unsigned(3), visitor.departures);
-        const std::vector<std::string> expectedSequence{
-            "visit:multiplexed",
-            "visit:first.evt",
-            "event:IndexCacheMiss",
-            "visit:second.evt",
-            "event:IndexCacheMiss",
-            "depart",
-            "event:IndexCacheMiss",
-            "event:IndexCacheMiss",
-            "depart",
-            "depart",
+        const std::vector<std::pair<std::string, std::string>> expectedSequence{
+            {"multiplexed", ""},
+            {"first.evt", ""},
+            {"first.evt", "IndexCacheMiss"},
+            {"second.evt", ""},
+            {"second.evt", "IndexCacheMiss"},
+            {"second.evt", ""},
+            {"first.evt", "IndexCacheMiss"},
+            {"first.evt", "IndexCacheMiss"},
+            {"first.evt", ""},
+            {"multiplexed", ""},
         };
         CPPUNIT_ASSERT(expectedSequence == visitor.sequence);
     }
@@ -689,16 +686,16 @@ public:
         BoundaryVisitor visitor;
         visitIterableEvents(*multiplexer, visitor);
 
-        const std::vector<std::string> expectedSequence{
-            "visit:multiplexed",
-            "visit:first.evt",
-            "event:IndexCacheMiss",
-            "depart",
-            "visit:second.evt",
-            "event:IndexCacheMiss",
-            "event:IndexCacheMiss",
-            "depart",
-            "depart",
+        const std::vector<std::pair<std::string, std::string>> expectedSequence{
+            {"multiplexed", ""},
+            {"first.evt", ""},
+            {"first.evt", "IndexCacheMiss"},
+            {"first.evt", ""},
+            {"second.evt", ""},
+            {"second.evt", "IndexCacheMiss"},
+            {"second.evt", "IndexCacheMiss"},
+            {"second.evt", ""},
+            {"multiplexed", ""},
         };
         CPPUNIT_ASSERT(expectedSequence == visitor.sequence);
         const std::vector<uint32_t> expectedDepartBytes{11, 22, 33};

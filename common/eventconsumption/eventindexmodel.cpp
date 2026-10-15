@@ -124,7 +124,7 @@ public: // IEventVisitationLink
     }
 
 public: // IEventModel
-    virtual bool visitEvent(CEvent& event) override
+    virtual bool visitEvent(CEvent& event, const EventFileProperties& properties) override
     {
         if (!nextLink)
             return false;
@@ -159,7 +159,7 @@ public: // IEventModel
         // Propagate each collected event until complete or aborted.
         for (CEvent &e : events)
         {
-            if (!nextLink->visitEvent(e))
+            if (!nextLink->visitEvent(e, properties))
                 return false;
         }
         // Visitation is never aborted by the model.

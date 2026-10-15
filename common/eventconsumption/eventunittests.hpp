@@ -24,6 +24,9 @@
 #include "eventiterator.h"
 #include "unittests.hpp"
 
+struct EventFileProperties;
+extern const EventFileProperties& queryTestEventFileProperties();
+
 // Event visiting endpoint used by unit tests to verify that visitation links processing known
 // input produce expected results.
 //
@@ -34,9 +37,9 @@
 class CEventVisitationLinkTester : public CInterfaceOf<IEventVisitor>
 {
 public:
-    virtual bool visitFile(const char* filename, uint32_t version) override;
-    virtual bool visitEvent(CEvent& actualEvent) override;
-    virtual void departFile(uint32_t bytesRead) override;
+    virtual bool visitFile(const EventFileProperties& properties) override;
+    virtual bool visitEvent(CEvent& actualEvent, const EventFileProperties& properties) override;
+    virtual void departFile(const EventFileProperties& properties) override;
     CEventVisitationLinkTester(interface IEventIterator& expect);
 private:
     bool hasNoRemainingEvents();
