@@ -73,6 +73,15 @@ do
                    assert_not_contains results.txt "name: $configmap_name" "$file unexpectedly rendered $configmap_name for $service disabled"
                 fi
              fi
+             if [[ "$base" == "ephemeralplanes" ]]; then
+                assert_contains results.txt "ephemeral: true" "$file did not pass ephemeral through to the plane config"
+                assert_contains results.txt "storageSize: 10Gi" "$file did not pass storageSize through to the plane config"
+                assert_contains results.txt "mountPath: \"/var/lib/HPCCSystems/spill\"" "$file did not mount the ephemeral spill plane"
+                assert_contains results.txt "The configuration contains ephemeral planes: \\[spill temp\\]" "$file did not warn about the explicit ephemeral planes"
+                assert_contains results.txt "The configuration contains dynamically provisioned planes:" "$file did not describe dynamic storageClass planes"
+                assert_not_contains results.txt "The configuration contains dynamically provisioned planes: \[dali" "$file incorrectly described the static dali plane as dynamically provisioned"
+                assert_not_contains results.txt "sizeLimit" "$file unexpectedly generated an emptyDir sizeLimit"
+             fi
       fi
    fi
 done

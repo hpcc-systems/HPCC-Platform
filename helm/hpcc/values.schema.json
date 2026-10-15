@@ -708,6 +708,11 @@
               "type": "array",
               "items": { "$ref": "#/definitions/storagePlaneAlias" }
             },
+            "ephemeral": {
+              "description": "Storage is private to each pod and discarded when the pod terminates (spill, temp, and git planes only)",
+              "type": "boolean",
+              "default": false
+            },
             "storageSize": {
               "type": "string"
             },
@@ -784,6 +789,39 @@
             "storageapi": {}
           },
           "additionalProperties": false
+        },
+        {
+          "if": {
+            "properties": { "ephemeral": { "const": true } },
+            "required": [ "ephemeral" ]
+          },
+          "then": {
+            "properties": {
+              "category": { "enum": [ "spill", "temp", "git" ] },
+              "numDevices": false,
+              "pvc": false,
+              "storageClass": false,
+              "storageMode": false,
+              "hostPath": false,
+              "hostGroup": false,
+              "hosts": false,
+              "storageapi": false,
+              "secret": false,
+              "aliases": false,
+              "numMounts": false,
+              "includeDeviceInPath": false,
+              "replication": false,
+              "forcePermissions": false,
+              "waitForMount": false,
+              "defaultSprayParts": false,
+              "protectGroup": false,
+              "subDirPerFilePart": false,
+              "compressLogicalFiles": false,
+              "umask": false,
+              "writeSyncMarginMs": false,
+              "cost": false
+            }
+          }
         }
       ],
       "required": [ "name", "prefix", "category" ]
