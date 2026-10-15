@@ -1,0 +1,39 @@
+name: PR Branch Name Check
+
+on:
+  pull_request:
+    types: [opened, edited, reopened, synchronize]
+    branches:
+      - "master"
+      - "candidate-*"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  validate-branch-name:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check branch name prefix
+        env:
+          PR_AUTHOR_LOGIN: ${{ github.event.pull_request.user.login }}
+          PR_BRANCH_NAME: ${{ github.event.pull_request.head.ref }}
+        run: |
+          echo "Validating PR branch name: $PR_BRANCH_NAME"
+
+          expected_prefix="${PR_AUTHOR_LOGIN}/"
+          base_author_login="${PR_AUTHOR_LOGIN%_*}"
+          base_expected_prefix="${base_author_login}/"
+
+          if { [[ "${PR_BRANCH_NAME:0:${#expected_prefix}}" != "$expected_prefix" ]] && [[ "${PR_BRANCH_NAME:0:${#base_expected_prefix}}" != "$base_expected_prefix" ]]; } || [[ "$PR_BRANCH_NAME" == "$expected_prefix" ]] || [[ "$PR_BRANCH_NAME" == "$base_expected_prefix" ]]; then
+            echo "✗ PR branch name must start with '${PR_AUTHOR_LOGIN}/' or '${base_author_login}/'"
+            echo "  Current branch: $PR_BRANCH_NAME"
+            echo "  Expected form: <github-user-id>[_<domain>]/<slug>"
+            exit 1
+          fi
+
+          echo "✓ PR branch name matches '${PR_AUTHOR_LOGIN}/<slug>' or '${base_author_login}/<slug>'"
