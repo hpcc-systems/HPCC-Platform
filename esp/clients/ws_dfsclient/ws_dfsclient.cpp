@@ -986,7 +986,7 @@ public:
         return dfile.get(); 
     }
 
-    bool init(const char *fname,IUserDescriptor *user,bool onlylocal,bool onlydfs, AccessMode accessMode, bool isPrivilegedUser, const StringArray *clusters, const DFSAuditContext &auditCtx)
+    bool init(const char *fname,IUserDescriptor *user,bool onlylocal,bool onlydfs, AccessMode accessMode, bool isPrivilegedUser, const StringArray *clusters, const DFSAuditContext &auditCtx, IDistributedFileTransaction *transaction)
     {
         fileExists = false;
         if (!onlydfs)
@@ -1010,7 +1010,7 @@ public:
             if (gotlocal)
             {
                 if (!write && !onlylocal) // MORE - this means the dali access checks not happening... maybe that's ok?
-                    dfile.setown(wsdfs::lookup(lfn, user, accessMode, false, false, nullptr, isPrivilegedUser, INFINITE, auditCtx));
+                    dfile.setown(wsdfs::lookup(lfn, user, accessMode, false, false, transaction, isPrivilegedUser, INFINITE, auditCtx));
                 Owned<IFile> file = getPartFile(0,0);
                 if (file.get())
                 {
@@ -1034,7 +1034,7 @@ public:
             }
             else
             {
-                dfile.setown(wsdfs::lookup(lfn, user, accessMode, false, false, nullptr, isPrivilegedUser, INFINITE, auditCtx));
+                dfile.setown(wsdfs::lookup(lfn, user, accessMode, false, false, transaction, isPrivilegedUser, INFINITE, auditCtx));
                 if (dfile.get())
                     return true;
             }
@@ -1235,10 +1235,10 @@ public:
 };
 
 
-ILocalOrDistributedFile* createLocalOrDistributedFile(const char *fname,IUserDescriptor *user,bool onlylocal,bool onlydfs, AccessMode accessMode, bool isPrivilegedUser, const StringArray *clusters, const DFSAuditContext &auditCtx)
+ILocalOrDistributedFile* createLocalOrDistributedFile(const char *fname,IUserDescriptor *user,bool onlylocal,bool onlydfs, AccessMode accessMode, bool isPrivilegedUser, const StringArray *clusters, const DFSAuditContext &auditCtx, IDistributedFileTransaction *transaction)
 {
     Owned<CLocalOrDistributedFile> ret = new CLocalOrDistributedFile();
-    if (ret->init(fname,user,onlylocal,onlydfs,accessMode,isPrivilegedUser,clusters,auditCtx))
+    if (ret->init(fname,user,onlylocal,onlydfs,accessMode,isPrivilegedUser,clusters,auditCtx,transaction))
         return ret.getClear();
     return NULL;
 }

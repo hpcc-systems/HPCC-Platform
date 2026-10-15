@@ -1398,7 +1398,7 @@ bool EclAgent::expandLogicalName(StringBuffer & fullname, const char * logicalNa
     return useScope;
 }
 
-ILocalOrDistributedFile *EclAgent::resolveLFN(const char *fname, const char *errorTxt, bool optional, bool noteRead, AccessMode accessMode, StringBuffer * expandedlfn, bool isPrivilegedUser)
+ILocalOrDistributedFile *EclAgent::resolveLFN(const char *fname, const char *errorTxt, bool optional, bool noteRead, AccessMode accessMode, StringBuffer * expandedlfn, bool isPrivilegedUser, IDistributedFileTransaction * transaction)
 {
     StringBuffer lfn;
     expandLogicalFilename(lfn, fname, queryWorkUnit(), resolveFilesLocally, false);
@@ -1423,7 +1423,7 @@ ILocalOrDistributedFile *EclAgent::resolveLFN(const char *fname, const char *err
      * hthor doesn't use it to write, but instead uses createClusterWriteHandler to handle cluster writing.
      * See code in e.g.: CHThorDiskWriteActivity::resolve
      */
-    Owned<ILocalOrDistributedFile> ldFile = createLocalOrDistributedFile(lfn.str(), queryUserDescriptor(), resolveFilesLocally, !resolveFilesLocally, accessMode, isPrivilegedUser, nullptr, baseAuditContext);
+    Owned<ILocalOrDistributedFile> ldFile = createLocalOrDistributedFile(lfn.str(), queryUserDescriptor(), resolveFilesLocally, !resolveFilesLocally, accessMode, isPrivilegedUser, nullptr, baseAuditContext, transaction);
     if (ldFile)
     {
         IDistributedFile * dFile = ldFile->queryDistributedFile();

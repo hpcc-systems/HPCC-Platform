@@ -4508,8 +4508,6 @@ ecl packagemap add roxie mypackagemap.pkg --overwrite
 ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
 </programlisting>
 
-        <para/>
-
         <para><informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
               <colspec align="left" colwidth="125.55pt"/>
@@ -4540,7 +4538,10 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
                 <row>
                   <entry>target</entry>
 
-                  <entry>The target to associate the package map with</entry>
+                  <entry>The target to associate the package map with. For
+                  package map commands, <emphasis
+                  role="bold">&lt;target&gt;</emphasis> is the name of the
+                  Roxie target that owns or will own the package map.</entry>
                 </row>
 
                 <row>
@@ -5631,8 +5632,10 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
                 <row>
                   <entry>target</entry>
 
-                  <entry>Name of target to use when adding package map
-                  part</entry>
+                  <entry>Name of target to use when adding package map part.
+                  For package map commands, <emphasis
+                  role="bold">&lt;target&gt;</emphasis> is the name of the
+                  Roxie target that owns or will own the package map.</entry>
                 </row>
 
                 <row>
@@ -6531,7 +6534,10 @@ ecl packagemap copy //192.168.0.100:8010/roxie/MyPkg roxie2
                 <row>
                   <entry>target</entry>
 
-                  <entry>The target to copy the package map to</entry>
+                  <entry>The target to copy the package map to. For package
+                  map commands, <emphasis
+                  role="bold">&lt;target&gt;</emphasis> is the name of the
+                  Roxie target that owns or will own the package map.</entry>
                 </row>
 
                 <row>

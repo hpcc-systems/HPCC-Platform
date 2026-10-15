@@ -42,6 +42,7 @@
 #include <list>
 #include <string>
 #include <algorithm>
+#include <exception>
 
 using roxiemem::OwnedRoxieString;
 
@@ -1306,8 +1307,7 @@ void EclGraph::execute(const byte * parentExtract)
             wu->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSTgraph, scope, StCostExecute, NULL, cost, 1, 0, StatsMergeReplace);
     }
 
-    if (fileReadPropsUpdater.query())
-        fileReadPropsUpdater.query()->publish();
+    publishFileReadProperties(exception != nullptr);
 
     if (exception)
     {
@@ -1324,7 +1324,19 @@ void EclGraph::executeLibrary(const byte * parentExtract, IHThorGraphResults * r
 {
     assertex(graphs.ordinality() == 1);
     EclSubGraph & cur = graphs.item(0);
-    cur.executeLibrary(parentExtract, results);
+    Owned<IException> exception;
+    try
+    {
+        cur.executeLibrary(parentExtract, results);
+    }
+    catch (IException *e)
+    {
+        exception.setown(e);
+    }
+
+    publishFileReadProperties(exception != nullptr);
+    if (exception)
+        throw exception.getClear();
 }
 
 void EclGraph::abort()
@@ -1387,6 +1399,48 @@ void EclGraph::updateLibraryProgress()
 IFileReadPropertiesUpdater * EclGraph::queryFileReadPropsUpdater()
 {
     return fileReadPropsUpdater.query([this] { return createFileReadPropertiesUpdater(this->agent->queryCodeContext()->queryUserDescriptor()); }, fileReadPropsUpdaterCrit);
+}
+
+IDistributedFileTransaction * EclGraph::queryReadFilesTransaction()
+{
+    return readFilesTransaction.query([this] { return createDistributedFileTransaction(this->agent->queryCodeContext()->queryUserDescriptor()); }, readFilesTransactionCrit);
+}
+
+void EclGraph::publishFileReadProperties(bool ignoreExceptions)
+{
+    COnScopeExit clearTransaction([this]
+    {
+        readFilesTransaction.clear();
+    });
+
+    Owned<IException> exception;
+    try
+    {
+        if (fileReadPropsUpdater.query())
+        {
+            // ensure reuse of the read files transaction to avoid repeating expensive DFS calls, particularly for superfiles
+            fileReadPropsUpdater.query()->publish(queryReadFilesTransaction());
+        }
+    }
+    catch (IException *e)
+    {
+        exception.setown(e);
+    }
+    catch (const std::exception &e)
+    {
+        exception.setown(makeStringExceptionV(0, "%s", e.what()));
+    }
+
+    if (exception)
+    {
+        fileReadPropsUpdater.clear();
+        if (ignoreExceptions)
+        {
+            IERRLOG(exception, "Failed to publish file-read properties");
+            return;
+        }
+        throw exception.getClear();
+    }
 }
 
 //---------------------------------------------------------------------------

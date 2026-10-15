@@ -168,9 +168,9 @@ const void * CRowBuffer::next()
 }
 
 
-ILocalOrDistributedFile *resolveLFNFlat(IAgentContext &agent, const char *logicalName, const char *errorTxt, bool optional, bool isPrivilegedUser)
+ILocalOrDistributedFile *resolveLFNFlat(IAgentContext &agent, EclGraph &graph, const char *logicalName, const char *errorTxt, bool optional, bool isPrivilegedUser)
 {
-    Owned<ILocalOrDistributedFile> ldFile = agent.resolveLFN(logicalName, errorTxt, optional, true, AccessMode::readSequential, nullptr, isPrivilegedUser);
+    Owned<ILocalOrDistributedFile> ldFile = agent.resolveLFN(logicalName, errorTxt, optional, true, AccessMode::readSequential, nullptr, isPrivilegedUser, graph.queryReadFilesTransaction());
     if (!ldFile)
         return nullptr;
     IDistributedFile *dFile = ldFile->queryDistributedFile();
@@ -336,6 +336,11 @@ stat_type CHThorActivityBase::queryLocalCycles() const
 unsigned __int64 CHThorActivityBase::queryTotalCycles() const
 {
     return activityStats.totalCycles;
+}
+
+IDistributedFileTransaction * CHThorActivityBase::queryReadFilesTransaction() const
+{
+    return graph.queryReadFilesTransaction();
 }
 
 //=====================================================================================================
@@ -8601,7 +8606,7 @@ void CHThorDiskReadBaseActivity::resolve()
     }
     else
     {
-        ldFile.setown(resolveLFNFlat(agent, mangledHelperFileName.str(), "Read", 0 != (helper.getFlags() & TDRoptional), isCodeSigned));
+        ldFile.setown(resolveLFNFlat(agent, graph, mangledHelperFileName.str(), "Read", 0 != (helper.getFlags() & TDRoptional), isCodeSigned));
         if ( mangledHelperFileName.charAt(0) == '~')
             logicalFileName.set(mangledHelperFileName.str()+1);
         else
@@ -11097,7 +11102,7 @@ void CHThorNewDiskReadBaseActivity::resolveFile()
     }
     else
     {
-        ldFile.setown(resolveLFNFlat(agent, mangledHelperFileName.str(), "Read", 0 != (helperFlags & TDRoptional), isCodeSigned));
+        ldFile.setown(resolveLFNFlat(agent, graph, mangledHelperFileName.str(), "Read", 0 != (helperFlags & TDRoptional), isCodeSigned));
         if ( mangledHelperFileName.charAt(0) == '~')
             logicalFileName = mangledHelperFileName.str()+1;
         else

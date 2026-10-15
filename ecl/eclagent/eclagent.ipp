@@ -166,9 +166,9 @@ public:
     {
         return ctx->updateWorkUnit();
     }
-    virtual ILocalOrDistributedFile *resolveLFN(const char *logicalName, const char *errorTxt, bool optional, bool noteRead, AccessMode accessMode, StringBuffer * expandedlfn, bool isPrivilegedUser)
+    virtual ILocalOrDistributedFile *resolveLFN(const char *logicalName, const char *errorTxt, bool optional, bool noteRead, AccessMode accessMode, StringBuffer * expandedlfn, bool isPrivilegedUser, IDistributedFileTransaction * transaction=nullptr)
     {
-        return ctx->resolveLFN(logicalName, errorTxt, optional, noteRead, accessMode, expandedlfn, isPrivilegedUser);
+        return ctx->resolveLFN(logicalName, errorTxt, optional, noteRead, accessMode, expandedlfn, isPrivilegedUser, transaction);
     }
     virtual StringBuffer & getTempfileBase(StringBuffer & buff)
     {
@@ -607,7 +607,7 @@ public:
     //virtual void logException(IEclException *e);
     virtual char *resolveName(const char *in, char *out, unsigned outlen);
     virtual const DFSAuditContext & queryBaseAuditContext() const;
-    virtual ILocalOrDistributedFile  *resolveLFN(const char *logicalName, const char *errorTxt, bool optional, bool noteRead, AccessMode accessMode, StringBuffer * expandedlfn, bool isPrivilegedUser);
+    virtual ILocalOrDistributedFile  *resolveLFN(const char *logicalName, const char *errorTxt, bool optional, bool noteRead, AccessMode accessMode, StringBuffer * expandedlfn, bool isPrivilegedUser, IDistributedFileTransaction * transaction=nullptr);
 
     virtual void executeGraph(const char * graphName, bool realThor, size32_t parentExtractSize, const void * parentExtract);
     virtual IHThorGraphResults * executeLibraryGraph(const char * libraryName, unsigned expectedInterfaceHash, unsigned activityId, const char * embeddedGraphName, const byte * parentExtract);
@@ -1055,6 +1055,10 @@ class EclGraph : public CInterface
 {
     AtomicShared<IFileReadPropertiesUpdater> fileReadPropsUpdater;
     CriticalSection fileReadPropsUpdaterCrit{SYNC_LOCATION};
+    AtomicShared<IDistributedFileTransaction> readFilesTransaction;
+    CriticalSection readFilesTransactionCrit{SYNC_LOCATION};
+
+    void publishFileReadProperties(bool ignoreExceptions);
 
     RedirectedAgentContext graphAgentContext;
     class SubGraphCodeContext : public IndirectCodeContextEx
@@ -1121,6 +1125,7 @@ public:
     inline bool queryLibrary() const { return isLibrary; }
     inline unsigned queryWfid() const { return wfid; }
     IFileReadPropertiesUpdater * queryFileReadPropsUpdater();
+    IDistributedFileTransaction * queryReadFilesTransaction();
 protected:
     IAgentContext * agent;
     CIArrayOf<EclSubGraph> graphs;

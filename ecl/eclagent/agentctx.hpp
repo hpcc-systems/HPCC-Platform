@@ -80,6 +80,7 @@ interface IOrderedOutputSerializer;
 
 typedef enum { ofSTD, ofXML, ofRAW } outputFmts;
 enum class AccessMode : unsigned;
+interface IDistributedFileTransaction;
 
 interface ITempFileHandler
 {
@@ -104,7 +105,7 @@ struct IAgentContext : extends IGlobalCodeContext, extends ITempFileHandler
     virtual IConstWorkUnit *queryWorkUnit() const = 0;
     virtual IWorkUnit *updateWorkUnit() const = 0;
 
-    virtual ILocalOrDistributedFile *resolveLFN(const char *logicalName, const char *errorTxt, bool optional, bool noteRead, AccessMode accessMode, StringBuffer * expandedlfn, bool isPrivilegedUser) = 0;
+    virtual ILocalOrDistributedFile *resolveLFN(const char *logicalName, const char *errorTxt, bool optional, bool noteRead, AccessMode accessMode, StringBuffer * expandedlfn, bool isPrivilegedUser, IDistributedFileTransaction * transaction=nullptr) = 0;
     virtual StringBuffer & getTempfileBase(StringBuffer & buff) = 0;
     virtual void reloadWorkUnit() = 0;
 

@@ -71,9 +71,9 @@ protected:
 
 //-------------------------------------------------------------------------------------------------------------
 
-static ILocalOrDistributedFile *resolveLFNIndex(IAgentContext &agent, const char *logicalName, const char *errorTxt, bool optional, bool noteRead, AccessMode accessMode, bool isPrivilegedUser)
+static ILocalOrDistributedFile *resolveLFNIndex(IAgentContext &agent, IDistributedFileTransaction *transaction, const char *logicalName, const char *errorTxt, bool optional, bool noteRead, AccessMode accessMode, bool isPrivilegedUser)
 {
-    Owned<ILocalOrDistributedFile> ldFile = agent.resolveLFN(logicalName, errorTxt, optional, noteRead, accessMode, nullptr, isPrivilegedUser);
+    Owned<ILocalOrDistributedFile> ldFile = agent.resolveLFN(logicalName, errorTxt, optional, noteRead, accessMode, nullptr, isPrivilegedUser, transaction);
     if (!ldFile)
         return nullptr;
     IDistributedFile *dFile = ldFile->queryDistributedFile();
@@ -335,7 +335,7 @@ void CHThorIndexReadActivityBase::resolveIndexFilename()
     CDfsLogicalFileName dlfn;
     dlfn.set(lfn);
     foreignBlockedIOSize = dlfn.isForeign() ? getForeignBlockedIOSize(helper.hasSegmentMonitors()) : (size32_t)-1;
-    Owned<ILocalOrDistributedFile> ldFile = resolveLFNIndex(agent, lfn, "IndexRead", 0 != (helper.getFlags() & TIRoptional),true, AccessMode::readRandom, defaultPrivilegedUser);
+    Owned<ILocalOrDistributedFile> ldFile = resolveLFNIndex(agent, queryReadFilesTransaction(), lfn, "IndexRead", 0 != (helper.getFlags() & TIRoptional),true, AccessMode::readRandom, defaultPrivilegedUser);
     df.set(ldFile ? ldFile->queryDistributedFile() : NULL);
     if (!df)
     {
@@ -2220,7 +2220,7 @@ public:
         OwnedRoxieString lfn(fetch.getFileName());
         if (lfn.get())
         {
-            Owned<ILocalOrDistributedFile> ldFile = resolveLFNFlat(agent, lfn, "Fetch", 0 != (fetch.getFetchFlags() & FFdatafileoptional), isCodeSigned);
+            Owned<ILocalOrDistributedFile> ldFile = resolveLFNFlat(agent, graph, lfn, "Fetch", 0 != (fetch.getFetchFlags() & FFdatafileoptional), isCodeSigned);
             IDistributedFile * dFile = ldFile ? ldFile->queryDistributedFile() : NULL;
             if(dFile)
             {
@@ -2537,7 +2537,7 @@ public:
         ICsvParameters * csvInfo = _arg.queryCsvParameters();
 
         OwnedRoxieString lfn(fetch.getFileName());
-        Owned<ILocalOrDistributedFile> ldFile = resolveLFNFlat(agent, lfn, "CsvFetch", 0 != (_arg.getFetchFlags() & FFdatafileoptional), isCodeSigned);
+        Owned<ILocalOrDistributedFile> ldFile = resolveLFNFlat(agent, graph, lfn, "CsvFetch", 0 != (_arg.getFetchFlags() & FFdatafileoptional), isCodeSigned);
         IDistributedFile * dFile = ldFile ? ldFile->queryDistributedFile() : NULL;
         const char * quotes = NULL;
         const char * separators = NULL;
@@ -3986,7 +3986,7 @@ public:
     virtual void start()
     {
         OwnedRoxieString lfn(helper.getIndexFileName());
-        Owned<ILocalOrDistributedFile> ldFile = resolveLFNIndex(agent, lfn, "KeyedJoin", 0 != (helper.getJoinFlags() & JFindexoptional), true, AccessMode::readRandom, isCodeSigned);
+        Owned<ILocalOrDistributedFile> ldFile = resolveLFNIndex(agent, queryReadFilesTransaction(), lfn, "KeyedJoin", 0 != (helper.getJoinFlags() & JFindexoptional), true, AccessMode::readRandom, isCodeSigned);
         dFile = ldFile ? ldFile->queryDistributedFile() : NULL;
         if (dFile)
         {

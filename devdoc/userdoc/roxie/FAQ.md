@@ -47,8 +47,11 @@ If you did not set up the containerized instance, then you need to ask your Syst
 **Answer**:
 ```
 Same way as bare metal.
-To add a new package file: ecl packagemap add or
-To copy exisitng package file : ecl packagemap copy
+To add a new package file, specify the Roxie target and package file:
+ecl packagemap add <target> <filename> --activate
+To copy an existing package file, specify the source path and Roxie target:
+ecl packagemap copy <source-path> <target>
+The <target> argument is required and must identify the Roxie target.
 ```
 
 7. **How do I check the logs?**
@@ -66,7 +69,8 @@ Optionally, you may have implemented a log-processing solution such as the Elast
 
 **Answer**:
 ```
-Use the copy query command and copy or add the Packagemap.
+Use the copy query command and copy or add the Packagemap, specifying the
+required Roxie target with the package-map command.
 With data copy start in the logs…copy from remote location specified if data doesn’t exist on the local system.
 The remote location is the remote Dali (use the --daliip=<daliIP> parameter to specify the remote Dali)
 You can also use ECL Watch.

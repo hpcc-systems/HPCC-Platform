@@ -4,7 +4,13 @@ This document outlines the best practices for deploying a roxie that uses remote
 
 There should be a "File Roxie" for each copy of the data that is being kept.  The recommendation is to use a single-copy of the data using azure file ZRS storage.  This means that the data is automatically available from any availability zone, and can be shared by all clusters that use that data.
 
-Data is deployed to the roxie system by deploying a package map with the --dfu-copy option to use dfuserver to copy the data.
+Data is deployed to the roxie system by deploying a package map with the --dfu-copy option to use dfuserver to copy the data. The package-map command requires the Roxie target name:
+
+```text
+ecl packagemap add <target> <filename> --dfu-copy
+```
+
+Here, `<target>` is the Roxie target that owns or will own the package map.
 
 It is strongly recommended to configure the system to use the azure api to copy the files
 * You do not need to configure and run dafilesrv instances (either on demand or up all the time)
