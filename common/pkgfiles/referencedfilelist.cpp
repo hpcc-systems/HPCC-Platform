@@ -32,6 +32,11 @@
 
 #include "ws_dfsclient.hpp"
 
+#ifdef _USE_CPPUNIT
+#include "unittests.hpp"
+#include <vector>
+#endif
+
 #define WF_LOOKUP_TIMEOUT (1000*15)  // 15 seconds
 
 // Build reference file list:
@@ -159,7 +164,7 @@ void splitDerivedDfsLocationOrRemote(const char *address, StringBuffer &cluster,
     if (!isEmptyString(currentRemoteStorage))
     {
         effectiveRemoteStorage.append(currentRemoteStorage);
-        // prefix must be blank on entry (callers pass a fresh buffer); it is used as the remote storage prefix
+        cluster.append(baseCluster);
         ip.clear();
         return;
     }
@@ -193,13 +198,120 @@ static StringBuffer &makeForeignLFN(StringBuffer &foreignLfn, const char *daliip
 
 class ReferencedFileList;
 
+// Exposes only the local metadata used here, avoiding a mock of the broad Dali file interface.
+interface IRefLocalFile : extends IInterface
+{
+    virtual bool isSuperFile() const = 0;
+    virtual void appendSubFileNames(StringArray &names) const = 0;
+    virtual unsigned findCluster(const char *name) const = 0;
+    virtual __int64 getFileSize(bool calcSize) const = 0;
+    virtual unsigned numParts() const = 0;
+};
+
+// Centralizes external file lookups so resolution can be tested without contacting Dali or remote storage.
+interface IRefFileResolver : extends IInterface
+{
+    // Lookup results are returned with one owned reference.
+    virtual IRefLocalFile *lookupLocal(const char *logicalName, IUserDescriptor *user, bool calcSize) = 0;
+    virtual IPropertyTree *lookupForeign(const char *logicalName, IUserDescriptor *user, INode *daliNode, const char *prefix) = 0;
+    virtual IPropertyTree *lookupRemoteStorage(const char *remoteLfn, IUserDescriptor *user) = 0;
+};
+
+class CDistributedRefLocalFile : implements IRefLocalFile, public CInterface
+{
+public:
+    IMPLEMENT_IINTERFACE;
+    CDistributedRefLocalFile(IDistributedFile *_file)
+    {
+        file.setown(_file);
+    }
+
+    virtual bool isSuperFile() const override
+    {
+        return file->querySuperFile() != nullptr;
+    }
+
+    virtual void appendSubFileNames(StringArray &names) const override
+    {
+        IDistributedSuperFile *super = file->querySuperFile();
+        if (!super)
+            return;
+        Owned<IDistributedFileIterator> it = super->getSubFileIterator(true);
+        ForEach(*it)
+        {
+            StringBuffer name;
+            it->query().getLogicalName(name);
+            names.append(name);
+        }
+    }
+
+    virtual unsigned findCluster(const char *name) const override
+    {
+        return file->findCluster(name);
+    }
+
+    virtual __int64 getFileSize(bool calcSize) const override
+    {
+        return file->getFileSize(calcSize, false);
+    }
+
+    virtual unsigned numParts() const override
+    {
+        return file->numParts();
+    }
+
+private:
+    Owned<IDistributedFile> file;
+};
+
+class CDistributedRefFileResolver : implements IRefFileResolver, public CInterface
+{
+public:
+    IMPLEMENT_IINTERFACE;
+
+    virtual IRefLocalFile *lookupLocal(const char *logicalName, IUserDescriptor *user, bool calcSize) override
+    {
+        AccessMode accessMode = AccessMode::meta;
+        if (calcSize)
+            accessMode |= AccessMode::readPhysicalMeta;
+        Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup(logicalName, user, accessMode, false, false, nullptr, defaultPrivilegedUser);
+        if (!file)
+            return nullptr;
+        return new CDistributedRefLocalFile(file.getClear());
+    }
+
+    virtual IPropertyTree *lookupForeign(const char *logicalName, IUserDescriptor *user, INode *daliNode, const char *prefix) override
+    {
+        if (!daliNode)
+            return nullptr;
+        StringBuffer remoteLfn;
+        if (!isEmptyString(prefix))
+            remoteLfn.append(prefix).append("::");
+        remoteLfn.append(logicalName);
+        return queryDistributedFileDirectory().getFileTree(remoteLfn.str(), user, AccessMode::readLogicalMeta, daliNode, WF_LOOKUP_TIMEOUT, GetFileTreeOpts::none);
+    }
+
+    virtual IPropertyTree *lookupRemoteStorage(const char *remoteLfn, IUserDescriptor *user) override
+    {
+        Owned<wsdfs::IDFSFile> dfsFile = wsdfs::lookupDFSFile(remoteLfn, AccessMode::readLogicalMeta, INFINITE, wsdfs::keepAliveExpiryFrequency, user);
+        IPropertyTree *meta = dfsFile ? dfsFile->queryFileMeta() : nullptr;
+        return meta ? LINK(meta) : nullptr;
+    }
+};
+
+static IRefFileResolver *createRefFileResolver()
+{
+    return new CDistributedRefFileResolver;
+}
+
 class ReferencedFile : implements IReferencedFile, public CInterface
 {
 public:
     IMPLEMENT_IINTERFACE;
-    ReferencedFile(const char *lfn, const char *sourceIP, const char *srcCluster, const char *prefix, bool isSubFile, unsigned _flags, const char *_pkgid, bool noDfs, bool calcSize, const char *remoteStorageName)
+    ReferencedFile(const char *lfn, const char *sourceIP, const char *srcCluster, const char *prefix, bool isSubFile, unsigned _flags, const char *_pkgid, bool noDfs, bool calcSize, const char *remoteStorageName, IRefFileResolver *_fileResolver)
     : pkgid(_pkgid), fileSize(0), numParts(0), flags(_flags), noDfsResolution(noDfs), calcFileSize(calcSize)
     {
+        fileResolver.set(_fileResolver);
         {
             //Scope ensures strings are assigned
             StringAttrBuilder logicalNameText(logicalName), daliipText(daliip), remoteStorageText(remoteStorage);
@@ -210,14 +322,14 @@ public:
             flags |= RefFileLFNRemote;
             hasExplicitRemoteLfn = true;
         }
+        else if (daliip.length())
+            flags |= RefFileLFNForeign;
         else if (!isEmptyString(remoteStorageName))
         {
             // can be declared in packagemap at different scopes
             remoteStorage.set(remoteStorageName);
             flags |= RefFileLFNRemote;
         }
-        else if (daliip.length())
-            flags |= RefFileLFNForeign;
         else
             daliip.set(sourceIP); // can be declared in packagemap at different scopes
         fileSrcCluster.set(srcCluster);
@@ -225,9 +337,6 @@ public:
         if (isSubFile)
             flags |= RefSubFile;
     }
-
-    ReferencedFile(const char *lfn, const char *sourceIP, const char *srcCluster, const char *prefix, bool isSubFile, unsigned _flags, const char *_pkgid, bool noDfs, bool calcSize)
-    : ReferencedFile(lfn, sourceIP, srcCluster, prefix, isSubFile, _flags, _pkgid, noDfs, calcSize, nullptr) {    }
 
     void reset()
     {
@@ -243,8 +352,7 @@ public:
     IPropertyTree *getForeignFileTree(IUserDescriptor *user, INode *remote, const char *remotePrefix);
     IPropertyTree *getFileOrProvidedForeignFileTree(IUserDescriptor *user, INode *remote, const char *remotePrefix);
 
-    void processLocalFileInfo(IDistributedFile *df, const StringArray &locations, const char *srcCluster, StringArray *subfiles);
-    void processLocalFileInfo(IDistributedFile *df, const char *dstCluster, const char *srcCluster, StringArray *subfiles);
+    void processLocalFileInfo(IRefLocalFile *file, const StringArray &locations, const char *srcCluster, StringArray *subfiles);
     void processForeignFileTree(const IPropertyTree *tree, const char *srcCluster, StringArray *subfiles);
     void processRemoteFileTree(const IPropertyTree *tree, const char *srcCluster, StringArray *subfiles);
 
@@ -323,6 +431,7 @@ public:
     }
 public:
     StringArray subFileNames;
+    Linked<IRefFileResolver> fileResolver;
     StringAttr logicalName;
     StringAttr pkgid;
     StringAttr daliip;
@@ -349,6 +458,7 @@ public:
     ReferencedFileList(const char *username, const char *pw, bool allowForeignFiles, bool allowFileSizeCalc, const char *_jobname)
         : jobName(_jobname), allowForeign(allowForeignFiles), allowSizeCalc(allowFileSizeCalc)
     {
+        fileResolver.setown(createRefFileResolver());
         if (username)
         {
             user.setown(createUserDescriptor());
@@ -359,8 +469,15 @@ public:
     ReferencedFileList(IUserDescriptor *userDesc, bool allowForeignFiles, bool allowFileSizeCalc, const char *_jobname)
         : jobName(_jobname), allowForeign(allowForeignFiles), allowSizeCalc(allowFileSizeCalc)
     {
+        fileResolver.setown(createRefFileResolver());
         if (userDesc)
             user.set(userDesc);
+    }
+
+    ReferencedFileList(IRefFileResolver *resolver, bool allowForeignFiles, bool allowFileSizeCalc, const char *_jobname)
+        : jobName(_jobname), allowForeign(allowForeignFiles), allowSizeCalc(allowFileSizeCalc)
+    {
+        fileResolver.set(resolver);
     }
 
     void ensureFile(const char *ln, unsigned flags, const char *pkgid, bool noDfsResolution, const StringArray *subfileNames, const char *daliip=nullptr, const char *srcCluster=nullptr, const char *remotePrefix=nullptr, const char* remoteStorage=nullptr);
@@ -400,6 +517,7 @@ public:
 
 public:
     Owned<IUserDescriptor> user;
+    Owned<IRefFileResolver> fileResolver;
     Owned<INode> remote;
     MapStringToMyClass<ReferencedFile> map;
     StringAttr remoteStorage;
@@ -413,36 +531,33 @@ public:
 };
 
 // Should probably move to dadfs as a global helper function
-static bool fileExistsWithinLocations(IDistributedFile *df, const StringArray &locations)
+static bool fileExistsWithinLocations(IRefLocalFile *file, const StringArray &locations)
 {
-    if (!df)
+    if (!file)
         return false;
     ForEachItemIn(i, locations)
     {
         const char *name = locations.item(i);
-        if (df->findCluster(name)!=NotFound)
+        if (file->findCluster(name)!=NotFound)
             return true;
     }
     return false;
 }
 
-void ReferencedFile::processLocalFileInfo(IDistributedFile *df, const StringArray &locations, const char *srcCluster, StringArray *subfiles)
+void ReferencedFile::processLocalFileInfo(IRefLocalFile *file, const StringArray &locations, const char *srcCluster, StringArray *subfiles)
 {
-    IDistributedSuperFile *super = df->querySuperFile();
-    if (super)
+    if (file->isSuperFile())
     {
         flags |= RefFileSuper;
         if (subfiles)
         {
-            Owned<IDistributedFileIterator> it = super->getSubFileIterator(true); //supersub = true, no need to deal with LOCAL supersubs
-            ForEach(*it)
+            StringArray names;
+            file->appendSubFileNames(names);
+            ForEachItemIn(i, names)
             {
-                IDistributedFile &sub = it->query();
-                StringBuffer name;
-                sub.getLogicalName(name);
-                subfiles->append(name.str());
+                subfiles->append(names.item(i));
                 if (trackSubFiles)
-                    subFileNames.append(name.str());
+                    subFileNames.append(names.item(i));
             }
         }
     }
@@ -451,23 +566,16 @@ void ReferencedFile::processLocalFileInfo(IDistributedFile *df, const StringArra
         flags |= RefSubFile;
         if (!locations.length())
             return;
-        if (!fileExistsWithinLocations(df, locations))
+        if (!fileExistsWithinLocations(file, locations))
             flags |= RefFileNotOnCluster;
         if (fileSrcCluster.length())
             srcCluster=fileSrcCluster;
         if (srcCluster && *srcCluster)
-            if (NotFound == df->findCluster(srcCluster))
+            if (NotFound == file->findCluster(srcCluster))
                 flags |= RefFileNotOnSource;
-        fileSize = df->getFileSize(calcFileSize, false);
-        numParts = df->numParts();
+        fileSize = file->getFileSize(calcFileSize);
+        numParts = file->numParts();
     }
-}
-
-void ReferencedFile::processLocalFileInfo(IDistributedFile *df, const char *dstCluster, const char *srcCluster, StringArray *subfiles)
-{
-    StringArray locations;
-    locations.append(dstCluster);
-    processLocalFileInfo(df, locations, srcCluster, subfiles);
 }
 
 void ReferencedFile::processForeignFileTree(const IPropertyTree *tree, const char *srcCluster, StringArray *subfiles)
@@ -551,12 +659,9 @@ void ReferencedFile::resolveLocal(const StringArray &locations, const char *srcC
         return;
     }
     reset();
-    AccessMode accessMode = AccessMode::meta;
-    if (calcFileSize) // physical parts are only inspected (getFileSize) when calculating the size
-        accessMode |= AccessMode::readPhysicalMeta;
-    Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(logicalName.str(), user, accessMode, false, false, nullptr, defaultPrivilegedUser);
-    if(df)
-        processLocalFileInfo(df, locations, srcCluster, subfiles);
+    Owned<IRefLocalFile> file = fileResolver->lookupLocal(logicalName, user, calcFileSize);
+    if(file)
+        processLocalFileInfo(file, locations, srcCluster, subfiles);
     else
     {
         flags |= RefFileNotFound;
@@ -574,13 +679,7 @@ void ReferencedFile::resolveLocal(const char *dstCluster, const char *srcCluster
 
 IPropertyTree *ReferencedFile::getForeignFileTree(IUserDescriptor *user, INode *daliNode, const char *remotePrefix)
 {
-    if (!daliNode)
-        return NULL;
-    StringBuffer remoteLFN;
-    if (remotePrefix && *remotePrefix)
-        remoteLFN.append(remotePrefix).append("::").append(logicalName);
-    // Only the file metadata tree is fetched here (no contents are read).
-    return queryDistributedFileDirectory().getFileTree(remoteLFN.length() ? remoteLFN.str() : logicalName.str(), user, AccessMode::readLogicalMeta, daliNode, WF_LOOKUP_TIMEOUT, GetFileTreeOpts::none);
+    return fileResolver->lookupForeign(logicalName, user, daliNode, remotePrefix);
 }
 
 IPropertyTree *ReferencedFile::getFileOrProvidedForeignFileTree(IUserDescriptor *user, INode *providedDaliNode, const char *remotePrefix)
@@ -593,7 +692,6 @@ IPropertyTree *ReferencedFile::getFileOrProvidedForeignFileTree(IUserDescriptor 
     }
     if (!providedDaliNode)
         return NULL;
-    StringBuffer remoteLFN;
     Owned<IPropertyTree> fileTree = getForeignFileTree(user, providedDaliNode, remotePrefix);
     if (!fileTree)
         return NULL;
@@ -626,13 +724,10 @@ void ReferencedFile::resolveForeign(IUserDescriptor *user, INode *remote, const 
     reset();
     if (checkLocalFirst) //usually means we don't want to overwrite existing file info
     {
-        AccessMode accessMode = AccessMode::meta;
-        if (calcFileSize) // physical parts are only inspected (getFileSize) when calculating the size
-            accessMode |= AccessMode::readPhysicalMeta;
-        Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(logicalName.str(), user, accessMode, false, false, nullptr, defaultPrivilegedUser);
-        if(df)
+        Owned<IRefLocalFile> file = fileResolver->lookupLocal(logicalName, user, calcFileSize);
+        if(file)
         {
-            processLocalFileInfo(df, locations, NULL, subfiles);
+            processLocalFileInfo(file, locations, NULL, subfiles);
             return;
         }
     }
@@ -660,21 +755,18 @@ IPropertyTree *ReferencedFile::getRemoteStorageFileTree(IUserDescriptor *user, c
     StringBuffer remoteLFN;
     makeRemoteLFN(remoteLFN, remoteStorageName, remotePrefix, logicalName);
 
-    // Only the file metadata tree is fetched here (no contents are read).
-    Owned<wsdfs::IDFSFile> dfsFile = wsdfs::lookupDFSFile(remoteLFN.str(), AccessMode::readLogicalMeta, INFINITE, wsdfs::keepAliveExpiryFrequency, user);
-    IPropertyTree *tree = (dfsFile) ? dfsFile->queryFileMeta() : nullptr;
-    if (!tree)
+    Owned<IPropertyTree> metadata = fileResolver->lookupRemoteStorage(remoteLFN, user);
+    if (!metadata)
     {
         DBGLOG("RemoteStorage FileMetaTree not found %s [remoteStorage=%s, prefix=%s]", remoteLFN.str(), nullText(remoteStorageName), nullText(remotePrefix));
         return nullptr;
     }
-    IPropertyTree *fileTree = tree->getPropTree(queryDfsXmlBranchName(DXB_File));
+    Owned<IPropertyTree> fileTree = metadata->getPropTree(queryDfsXmlBranchName(DXB_File));
     if (!fileTree)
-        fileTree = tree->getPropTree(queryDfsXmlBranchName(DXB_SuperFile));
-    tree = fileTree;
-    if (!tree)
+        fileTree.setown(metadata->getPropTree(queryDfsXmlBranchName(DXB_SuperFile)));
+    if (!fileTree)
         DBGLOG("RemoteStorage FileTree not found %s [remoteStorage=%s, prefix=%s]", remoteLFN.str(), nullText(remoteStorageName), nullText(remotePrefix));
-    return tree;
+    return fileTree.getClear();
 }
 
 void ReferencedFile::resolveRemote(IUserDescriptor *user, const char *remoteStorageName, const char *remotePrefix, const StringArray &locations, const char *srcCluster, bool checkLocalFirst, StringArray *subfiles, bool resolveLFNForeign)
@@ -693,13 +785,10 @@ void ReferencedFile::resolveRemote(IUserDescriptor *user, const char *remoteStor
     reset();
     if (checkLocalFirst) //usually means we don't want to overwrite existing file info
     {
-        AccessMode accessMode = AccessMode::meta;
-        if (calcFileSize) // physical parts are only inspected (getFileSize) when calculating the size
-            accessMode |= AccessMode::readPhysicalMeta;
-        Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(logicalName.str(), user, accessMode, false, false, nullptr, defaultPrivilegedUser);
-        if(df)
+        Owned<IRefLocalFile> file = fileResolver->lookupLocal(logicalName, user, calcFileSize);
+        if(file)
         {
-            processLocalFileInfo(df, locations, NULL, subfiles);
+            processLocalFileInfo(file, locations, NULL, subfiles);
             return;
         }
     }
@@ -1052,7 +1141,7 @@ void ReferencedFileList::ensureFile(const char *ln, unsigned flags, const char *
     if (!allowForeign && checkForeign(ln))
         throw MakeStringException(-1, "Foreign file not allowed%s: %s", (flags & RefFileInPackage) ? " (declared in package)" : "", ln);
 
-    Owned<ReferencedFile> file = new ReferencedFile(ln, daliip, srcCluster, prefix, false, flags, pkgid, noDfsResolution, allowSizeCalc, remoteStorageName);
+    Owned<ReferencedFile> file = new ReferencedFile(ln, daliip, srcCluster, prefix, false, flags, pkgid, noDfsResolution, allowSizeCalc, remoteStorageName, fileResolver);
     if (!file->logicalName.length())
         return;
     if (subfileNames)
@@ -1256,7 +1345,7 @@ void ReferencedFileList::resolveSubFiles(StringArray &subfiles, const StringArra
         if (!allowForeign && checkForeign(lfn))
             throw MakeStringException(-1, "Foreign sub file not allowed: %s", lfn);
 
-        Owned<ReferencedFile> file = new ReferencedFile(lfn, NULL, NULL, NULL, true, 0, NULL, false, allowSizeCalc);
+        Owned<ReferencedFile> file = new ReferencedFile(lfn, NULL, NULL, NULL, true, 0, NULL, false, allowSizeCalc, nullptr, fileResolver);
         if (file->logicalName.length() && !map.getValue(file->getLogicalName()))
         {
             // Prefer per-file remoteStorage (extracted from embedded remote:: LFN); when used, the prefix is already baked into logicalName so suppress the list-level remotePrefix to avoid doubling it.
@@ -1291,16 +1380,22 @@ void ReferencedFileList::resolveFiles(const StringArray &locations, const char *
     srcCluster.set(_srcCluster);
     remotePrefix.set(_remotePrefix);
 
-    ReferencedFileIterator files(this);
+    // Superfile expansion inserts into the map, so snapshot files to avoid invalidating its iterator or resolving children twice.
+    CIArrayOf<ReferencedFile> filesToResolve;
+    {
+        ReferencedFileIterator files(this);
+        ForEach(files)
+            filesToResolve.append(*LINK(&files.queryObject()));
+    }
 
     // remoteStorage is also used while expanding subfiles, so do not carry a remote scope into a later pass.
     remoteStorage.clear();
     if (useRemoteStorage)
         remoteStorage.set(remoteLocation);
 
-    ForEach(files)
+    ForEachItemIn(fileIndex, filesToResolve)
     {
-        ReferencedFile &file = files.queryObject();
+        ReferencedFile &file = filesToResolve.item(fileIndex);
         // Clear cached per-resolution scope before queryEffective...() selects the scope for this pass.
         // Resetting each file here is sufficient; a separate pass over all files is unnecessary.
         // The resolver resets again, but that is too late here; reset only clears derived state that this pass recomputes.
@@ -1488,3 +1583,784 @@ IReferencedFileList *createReferencedFileList(IUserDescriptor *user, bool allowF
 {
     return new ReferencedFileList(user, allowForeignFiles, allowFileSizeCalc, jobname);
 }
+
+#ifdef _USE_CPPUNIT
+class CXmlRefLocalFile : implements IRefLocalFile, public CInterface
+{
+public:
+    IMPLEMENT_IINTERFACE;
+    CXmlRefLocalFile(IPropertyTree *_tree)
+    {
+        tree.setown(_tree);
+    }
+
+    virtual bool isSuperFile() const override
+    {
+        return streq(tree->queryName(), queryDfsXmlBranchName(DXB_SuperFile));
+    }
+
+    virtual void appendSubFileNames(StringArray &names) const override
+    {
+        Owned<IPropertyTreeIterator> subfiles = tree->getElements("SubFile");
+        ForEach(*subfiles)
+            names.append(subfiles->query().queryProp("@name"));
+    }
+
+    virtual unsigned findCluster(const char *name) const override
+    {
+        VStringBuffer xpath("Cluster[@name='%s']", name);
+        return tree->hasProp(xpath) ? 0 : NotFound;
+    }
+
+    virtual __int64 getFileSize(bool) const override
+    {
+        return tree->getPropInt64("Attr/@size", 0);
+    }
+
+    virtual unsigned numParts() const override
+    {
+        return tree->getPropInt("@numparts", 0);
+    }
+
+private:
+    Owned<IPropertyTree> tree;
+};
+
+class CXmlRefFileResolver : implements IRefFileResolver, public CInterface
+{
+public:
+    IMPLEMENT_IINTERFACE;
+    CXmlRefFileResolver(const char *xml)
+    {
+        files.setown(createPTreeFromXMLString(xml));
+    }
+
+    virtual IRefLocalFile *lookupLocal(const char *logicalName, IUserDescriptor *, bool) override
+    {
+        localLookups++;
+        VStringBuffer filePath("Local/File[@lfn='%s']", logicalName);
+        Owned<IPropertyTree> file = files->getPropTree(filePath);
+        if (!file)
+        {
+            VStringBuffer superPath("Local/SuperFile[@lfn='%s']", logicalName);
+            file.setown(files->getPropTree(superPath));
+        }
+        return file ? new CXmlRefLocalFile(file.getClear()) : nullptr;
+    }
+
+    virtual IPropertyTree *lookupForeign(const char *logicalName, IUserDescriptor *, INode *daliNode, const char *prefix) override
+    {
+        foreignLookups++;
+        StringBuffer host;
+        if (daliNode)
+            daliNode->endpoint().getHostText(host);
+        VStringBuffer lfn("%s%s%s", isEmptyString(prefix) ? "" : prefix, isEmptyString(prefix) ? "" : "::", logicalName);
+        VStringBuffer xpath("Foreign[@dali='%s']/File[@lfn='%s']", host.str(), lfn.str());
+        Owned<IPropertyTree> file = files->getPropTree(xpath);
+        if (!file)
+        {
+            VStringBuffer superPath("Foreign[@dali='%s']/SuperFile[@lfn='%s']", host.str(), lfn.str());
+            file.setown(files->getPropTree(superPath));
+        }
+        return file.getClear();
+    }
+
+    virtual IPropertyTree *lookupRemoteStorage(const char *remoteLfn, IUserDescriptor *) override
+    {
+        remoteLookups++;
+        VStringBuffer xpath("Remote[@lfn='%s']", remoteLfn);
+        Owned<IPropertyTree> metadata = files->getPropTree(xpath);
+        return metadata.getClear();
+    }
+
+    unsigned localLookups = 0;
+    unsigned foreignLookups = 0;
+    unsigned remoteLookups = 0;
+
+private:
+    Owned<IPropertyTree> files;
+};
+
+class ReferencedFileListTests : public CppUnit::TestFixture
+{
+public:
+    CPPUNIT_TEST_SUITE(ReferencedFileListTests);
+        CPPUNIT_TEST(testResolveCases);
+        CPPUNIT_TEST(testConflictingScopesRejected);
+        CPPUNIT_TEST(testPackageAndSuperfileScopeConflictsRejected);
+        CPPUNIT_TEST(testForeignQualifierRejectedWhenDisabled);
+        CPPUNIT_TEST(testForeignSuperfileChildRejectedWhenDisabled);
+        CPPUNIT_TEST(testResolutionEarlyReturns);
+    CPPUNIT_TEST_SUITE_END();
+
+protected:
+    struct ExpectedFile
+    {
+        const char *name;
+        unsigned flags;
+        __int64 size;
+        unsigned flagsToExclude = 0;
+    };
+
+    struct ResolveCase
+    {
+        const char *name;
+        const char *packageMapXml;
+        const char *logicalName;
+        const char *daliip;
+        const char *remotePrefix;
+        const char *remoteStorage;
+        const char *srcCluster;
+        bool expandSuperFiles;
+        bool trackSubFiles;
+        bool resolveLFNForeign;
+        bool useRemoteStorage;
+        unsigned minimumLocalLookups;
+        unsigned expectedForeignLookups;
+        unsigned minimumRemoteLookups;
+        std::vector<ExpectedFile> expectedFiles;
+        bool allowForeignFiles = true;
+        bool checkLocalFirst = false;
+        const char *remoteLocation = nullptr;
+        unsigned maximumRemoteLookups = 0xffffffffu;
+        unsigned maximumLocalLookups = 0xffffffffu;
+    };
+
+    static const char *queryFixtureXml()
+    {
+        return "<Files>"
+            "<Local>"
+                "<SuperFile lfn='local::super'><SubFile name='local::leaf'/></SuperFile>"
+                "<File lfn='local::leaf' numparts='2'><Cluster name='thor'/><Attr size='34'/></File>"
+                "<File lfn='precedence' numparts='1'><Cluster name='thor'/><Attr size='81'/></File>"
+                "<File lfn='fallback' numparts='1'><Cluster name='thor'/><Attr size='82'/></File>"
+                "<File lfn='remotefallback' numparts='1'><Cluster name='thor'/><Attr size='83'/></File>"
+                "<File lfn='localofftarget' numparts='1'><Cluster name='archive'/><Attr size='87'/></File>"
+            "</Local>"
+            "<Foreign dali='127.0.0.1'>"
+                "<File lfn='item' numparts='1'><Cluster name='thor'/><Attr size='19'/></File>"
+                "<File lfn='mapfile'><Cluster name='mapPlane'/><Attr size='21'/></File>"
+                "<File lfn='partfile'><Cluster name='mapPlane'/><Attr size='22'/></File>"
+                "<File lfn='map::prefixchild'><Cluster name='mapPlane'/><Attr size='23'/></File>"
+            "</Foreign>"
+            "<Foreign dali='127.0.0.2'>"
+                "<File lfn='pkgfile'><Cluster name='pkgPlane'/><Attr size='31'/></File>"
+            "</Foreign>"
+            "<Foreign dali='127.0.0.3'>"
+                "<File lfn='superchild'><Cluster name='superPlane'/><Attr size='41'/></File>"
+            "</Foreign>"
+            "<Foreign dali='127.0.0.4'>"
+                "<File lfn='scope::embedded'><Cluster name='foreignPlane'/><Attr size='71'/></File>"
+            "</Foreign>"
+            "<Foreign dali='127.0.0.5'>"
+                "<SuperFile lfn='foreignsuper'><SubFile name='scope::child'/></SuperFile>"
+            "</Foreign>"
+            "<Foreign dali='127.0.0.6'>"
+                "<File lfn='precedence'><Cluster name='foreignPlane'/><Attr size='80'/></File>"
+            "</Foreign>"
+            "<Foreign dali='127.0.0.7'>"
+                "<File lfn='scope::inheritedforeign'><Cluster name='foreignPlane'/><Attr size='75'/></File>"
+            "</Foreign>"
+            "<Foreign dali='127.0.0.8'>"
+                "<File lfn='foreignlocalmiss'><Cluster name='foreignPlane'/><Attr size='85'/></File>"
+            "</Foreign>"
+            "<Foreign dali='127.0.0.9'>"
+                "<File lfn='requestprefix::requestdali'><Cluster name='requestPlane'/><Attr size='88'/></File>"
+            "</Foreign>"
+            "<Foreign dali='127.0.0.10'>"
+                "<File lfn='foreignoffsource'><Cluster name='archive'/><Attr size='89'/></File>"
+            "</Foreign>"
+            "<Foreign dali='127.0.0.11'>"
+                "<SuperFile lfn='scope::foreignroot'><SubFile name='scope::foreignleaf'/></SuperFile>"
+                "<File lfn='scope::foreignleaf'><Cluster name='foreignPlane'/><Attr size='95'/></File>"
+            "</Foreign>"
+            "<Foreign dali='127.0.0.12'>"
+                "<File lfn='mapPrefix::addressfile'><Cluster name='mapPlane'/><Attr size='96'/></File>"
+            "</Foreign>"
+            "<Remote lfn='remote::mapStore::mapremote'><File><Cluster name='mapPlane'/><Attr size='61'/></File></Remote>"
+            "<Remote lfn='remote::pkgStore::pkgremote'><File><Cluster name='pkgPlane'/><Attr size='62'/></File></Remote>"
+            "<Remote lfn='remote::superStore::superremote'><File><Cluster name='superPlane'/><Attr size='63'/></File></Remote>"
+            "<Remote lfn='remote::qualStore::scope::upperremote'><File><Cluster name='remotePlane'/><Attr size='72'/></File></Remote>"
+            "<Remote lfn='remote::store::precedence'><File><Cluster name='remotePlane'/><Attr size='80'/></File></Remote>"
+            "<Remote lfn='remote::requestStore::requestfile'><File><Cluster name='remotePlane'/><Attr size='84'/></File></Remote>"
+            "<Remote lfn='remote::inheritedstore::scope::inheritedforeign'><File><Cluster name='remotePlane'/><Attr size='76'/></File></Remote>"
+            "<Remote lfn='remote::localmissstore::remotelocalmiss'><File><Cluster name='remotePlane'/><Attr size='86'/></File></Remote>"
+            "<Remote lfn='remote::mismatchstore::remoteoffsource'><File><Cluster name='archive'/><Attr size='90'/></File></Remote>"
+            "<Remote lfn='remote::store::scope::super'>"
+                "<SuperFile><SubFile name='scope::child'/></SuperFile>"
+            "</Remote>"
+            "<Remote lfn='remote::store::scope::child'>"
+                "<File numparts='3'><Cluster name='thor'/><Attr size='51'/></File>"
+            "</Remote>"
+            "<Remote lfn='remote::nestedstore::scope::tree'>"
+                "<SuperFile><SubFile name='scope::branch'/></SuperFile>"
+            "</Remote>"
+            "<Remote lfn='remote::nestedstore::scope::branch'>"
+                "<SuperFile><SubFile name='scope::leaf'/></SuperFile>"
+            "</Remote>"
+            "<Remote lfn='remote::nestedstore::scope::leaf'>"
+                "<File><Cluster name='remotePlane'/><Attr size='91'/></File>"
+            "</Remote>"
+            "<Remote lfn='remote::sharedstore::scope::root'>"
+                "<SuperFile><SubFile name='scope::shared'/><SubFile name='scope::shared'/></SuperFile>"
+            "</Remote>"
+            "<Remote lfn='remote::sharedstore::scope::shared'>"
+                "<File><Cluster name='remotePlane'/><Attr size='92'/></File>"
+            "</Remote>"
+            "<Remote lfn='remote::missingstore::scope::root'>"
+                "<SuperFile><SubFile name='scope::absent'/></SuperFile>"
+            "</Remote>"
+            "<Remote lfn='remote::disabledstore::scope::root'>"
+                "<SuperFile><SubFile name='scope::child'/></SuperFile>"
+            "</Remote>"
+            "</Files>";
+    }
+
+    static void assertFiles(ReferencedFileList &list, const ResolveCase &testCase)
+    {
+        unsigned actualCount = 0;
+        Owned<IReferencedFileIterator> actualFiles = list.getFiles();
+        ForEach(*actualFiles)
+            actualCount++;
+        CPPUNIT_ASSERT_MESSAGE(testCase.name, actualCount == testCase.expectedFiles.size());
+
+        for (const ExpectedFile &expected : testCase.expectedFiles)
+        {
+            bool found = false;
+            Owned<IReferencedFileIterator> files = list.getFiles();
+            ForEach(*files)
+            {
+                IReferencedFile &file = files->query();
+                if (!streq(file.getLogicalName(), expected.name))
+                    continue;
+                CPPUNIT_ASSERT_EQUAL_MESSAGE(testCase.name, expected.flags, file.getFlags() & expected.flags);
+                CPPUNIT_ASSERT_MESSAGE(testCase.name, (file.getFlags() & expected.flagsToExclude) == 0);
+                if (expected.size)
+                    CPPUNIT_ASSERT_MESSAGE(testCase.name, file.getFileSize() == expected.size);
+                found = true;
+                break;
+            }
+            CPPUNIT_ASSERT_MESSAGE(testCase.name, found);
+        }
+    }
+
+    void testResolveCases()
+    {
+        static const ResolveCase cases[] =
+        {
+            {
+                "package map local superfile expansion",
+                "<PackageMap><Package><File value='local::super'/></Package></PackageMap>",
+                nullptr, nullptr, nullptr, nullptr, nullptr,
+                true, true, false, false,
+                2, 0, 0,
+                {
+                    { "local::super", RefFileSuper, 0 },
+                    { "local::leaf", RefSubFile, 34 }
+                }
+            },
+            {
+                "foreign Dali lookup",
+                nullptr, "item", "127.0.0.1", nullptr, nullptr, "thor",
+                false, false, true, false,
+                0, 1, 0,
+                {
+                    { "item", RefFileResolvedForeign, 19 }
+                }
+            },
+            {
+                "foreign superfile recursively resolves its child",
+                nullptr, "~FOREIGN::127.0.0.11::scope::foreignroot", nullptr, nullptr, nullptr, "foreignPlane",
+                true, true, true, false,
+                0, 2, 0,
+                {
+                    { "scope::foreignroot", RefFileLFNForeign | RefFileResolvedForeign | RefFileSuper, 0 },
+                    { "scope::foreignleaf", RefFileLFNForeign | RefFileResolvedForeign | RefSubFile, 95 }
+                }
+            },
+            {
+                "remote storage superfile expansion",
+                nullptr, "super", nullptr, "scope", "store", "thor",
+                true, true, false, false,
+                0, 0, 2,
+                {
+                    { "super", RefFileResolvedRemote | RefFileSuper, 0 },
+                    { "scope::child", RefFileResolvedRemote | RefSubFile, 51 }
+                }
+            },
+            {
+                "package map scope inherited through package and superfile",
+                "<PackageMap daliip='127.0.0.1' sourceCluster='mapPlane'><Package><SuperFile><SubFile value='mapfile'/></SuperFile></Package></PackageMap>",
+                nullptr, nullptr, nullptr, nullptr, nullptr,
+                false, false, false, false,
+                0, 1, 0,
+                {
+                    { "mapfile", RefFileResolvedForeign, 21, RefFileNotFound | RefFileNotOnSource }
+                }
+            },
+            {
+                "package Dali and source cluster override map scope",
+                "<PackageMap daliip='127.0.0.1' sourceCluster='mapPlane'><Package daliip='127.0.0.2' sourceCluster='pkgPlane'><File value='pkgfile'/></Package></PackageMap>",
+                nullptr, nullptr, nullptr, nullptr, nullptr,
+                false, false, false, false,
+                0, 1, 0,
+                {
+                    { "pkgfile", RefFileResolvedForeign, 31, RefFileNotFound | RefFileNotOnSource }
+                }
+            },
+            {
+                "superfile Dali and source cluster override package scope",
+                "<PackageMap daliip='127.0.0.1' sourceCluster='mapPlane'><Package daliip='127.0.0.2' sourceCluster='pkgPlane'><SuperFile daliip='127.0.0.3' sourceCluster='superPlane'><SubFile value='superchild'/></SuperFile></Package></PackageMap>",
+                nullptr, nullptr, nullptr, nullptr, nullptr,
+                false, false, false, false,
+                0, 1, 0,
+                {
+                    { "superchild", RefFileResolvedForeign, 41, RefFileNotFound | RefFileNotOnSource }
+                }
+            },
+            {
+                "Part Package inherits package map scope",
+                "<PackageMap daliip='127.0.0.1' sourceCluster='mapPlane'><Part><Package><File value='partfile'/></Package></Part></PackageMap>",
+                nullptr, nullptr, nullptr, nullptr, nullptr,
+                false, false, false, false,
+                0, 1, 0,
+                {
+                    { "partfile", RefFileResolvedForeign, 22, RefFileNotFound | RefFileNotOnSource }
+                }
+            },
+            {
+                "package map remote storage inherited through package and superfile",
+                "<PackageMap remoteStorage='mapStore' sourceCluster='mapPlane'><Package><SuperFile><SubFile value='mapremote'/></SuperFile></Package></PackageMap>",
+                nullptr, nullptr, nullptr, nullptr, nullptr,
+                false, false, false, false,
+                0, 0, 1,
+                {
+                    { "mapremote", RefFileResolvedRemote, 61, RefFileNotFound | RefFileNotOnSource }
+                }
+            },
+            {
+                "package remote storage overrides map scope",
+                "<PackageMap remoteStorage='mapStore' sourceCluster='mapPlane'><Package remoteStorage='pkgStore' sourceCluster='pkgPlane'><File value='pkgremote'/></Package></PackageMap>",
+                nullptr, nullptr, nullptr, nullptr, nullptr,
+                false, false, false, false,
+                0, 0, 1,
+                {
+                    { "pkgremote", RefFileResolvedRemote, 62, RefFileNotFound | RefFileNotOnSource }
+                }
+            },
+            {
+                "superfile remote storage overrides package scope",
+                "<PackageMap remoteStorage='mapStore' sourceCluster='mapPlane'><Package remoteStorage='pkgStore' sourceCluster='pkgPlane'><SuperFile remoteStorage='superStore' sourceCluster='superPlane'><SubFile value='superremote'/></SuperFile></Package></PackageMap>",
+                nullptr, nullptr, nullptr, nullptr, nullptr,
+                false, false, false, false,
+                0, 0, 1,
+                {
+                    { "superremote", RefFileResolvedRemote, 63, RefFileNotFound | RefFileNotOnSource }
+                }
+            },
+            {
+                "Dali prefix inherited from package map",
+                "<PackageMap daliip='127.0.0.1/map' sourceCluster='mapPlane'><Package><SuperFile><SubFile value='prefixchild'/></SuperFile></Package></PackageMap>",
+                nullptr, nullptr, nullptr, nullptr, nullptr,
+                false, false, false, false,
+                0, 1, 0,
+                {
+                    { "prefixchild", RefFileResolvedForeign, 23, RefFileNotFound | RefFileNotOnSource }
+                }
+            },
+            {
+                "cluster at IP and prefix Dali location is split correctly",
+                "<PackageMap daliip='mapPlane@127.0.0.12/mapPrefix'><Package><File value='addressfile'/></Package></PackageMap>",
+                nullptr, nullptr, nullptr, nullptr, nullptr,
+                false, false, false, false,
+                0, 1, 0,
+                {
+                    { "addressfile", RefFileResolvedForeign, 96, RefFileNotFound | RefFileNotOnSource }
+                }
+            },
+            {
+                "foreign LFN remains unresolved when resolution is disabled",
+                nullptr, "~FOREIGN::127.0.0.4::Scope::Embedded", nullptr, nullptr, nullptr, nullptr,
+                false, false, false, false,
+                0, 0, 0,
+                {
+                    { "scope::embedded", RefFileLFNForeign, 0, RefFileResolvedForeign | RefFileNotFound }
+                }
+            },
+            {
+                "foreign LFN resolves case-insensitively with embedded prefix",
+                nullptr, "~FOREIGN::127.0.0.4::Scope::Embedded", nullptr, nullptr, nullptr, "foreignPlane",
+                false, false, true, false,
+                0, 1, 0,
+                {
+                    { "scope::embedded", RefFileLFNForeign | RefFileResolvedForeign, 71, RefFileNotFound | RefFileNotOnSource }
+                }
+            },
+            {
+                "remote LFN skips two tildes, lowercases name, and is allowed without foreign access",
+                nullptr, "~~REMOTE::qualStore::Scope::UpperRemote", nullptr, nullptr, nullptr, "remotePlane",
+                false, false, false, false,
+                0, 0, 1,
+                {
+                    { "scope::upperremote", RefFileLFNRemote | RefFileResolvedRemote, 72, RefFileNotFound | RefFileNotOnSource }
+                },
+                false
+            },
+            {
+                "embedded foreign LFN overrides inherited remote storage",
+                "<PackageMap remoteStorage='inheritedstore' sourceCluster='foreignPlane'><Package><File value='foreign::127.0.0.7::scope::inheritedforeign'/></Package></PackageMap>",
+                nullptr, nullptr, nullptr, nullptr, nullptr,
+                false, false, true, false,
+                0, 1, 0,
+                {
+                    { "scope::inheritedforeign", RefFileLFNForeign | RefFileResolvedForeign, 75, RefFileLFNRemote | RefFileNotFound | RefFileNotOnSource }
+                }
+            },
+            {
+                "local copy takes precedence over foreign Dali",
+                nullptr, "precedence", "127.0.0.6", nullptr, nullptr, nullptr,
+                false, false, false, false,
+                1, 0, 0,
+                {
+                    { "precedence", RefSubFile, 81, RefFileResolvedForeign | RefFileResolvedRemote | RefFileNotFound }
+                },
+                true, true
+            },
+            {
+                "local copy takes precedence over remote storage",
+                nullptr, "precedence", nullptr, nullptr, "store", nullptr,
+                false, false, false, false,
+                1, 0, 0,
+                {
+                    { "precedence", RefSubFile, 81, RefFileResolvedForeign | RefFileResolvedRemote | RefFileNotFound }
+                },
+                true, true, nullptr, 0
+            },
+            {
+                "local-first foreign lookup proceeds after local miss",
+                nullptr, "foreignlocalmiss", "127.0.0.8", nullptr, nullptr, "foreignPlane",
+                false, false, false, false,
+                1, 1, 0,
+                {
+                    { "foreignlocalmiss", RefFileResolvedForeign, 85, RefFileNotFound }
+                },
+                true, true, nullptr, 0, 1
+            },
+            {
+                "local-first foreign miss does not retry local",
+                nullptr, "foreignlocalmissblocked", "127.0.0.99", nullptr, nullptr, nullptr,
+                false, false, false, false,
+                1, 1, 0,
+                {
+                    { "foreignlocalmissblocked", RefFileNotFound, 0, RefFileResolvedForeign | RefFileResolvedRemote }
+                },
+                true, true, nullptr, 0, 1
+            },
+            {
+                "local-first remote lookup proceeds after local miss",
+                nullptr, "remotelocalmiss", nullptr, nullptr, "localmissstore", "remotePlane",
+                false, false, false, false,
+                1, 0, 1,
+                {
+                    { "remotelocalmiss", RefFileResolvedRemote, 86, RefFileNotFound }
+                },
+                true, true, nullptr, 1, 1
+            },
+            {
+                "local-first remote miss does not retry local",
+                nullptr, "remotelocalmissblocked", nullptr, nullptr, "missingStore", nullptr,
+                false, false, false, false,
+                1, 0, 1,
+                {
+                    { "remotelocalmissblocked", RefFileNotFound, 0, RefFileResolvedForeign | RefFileResolvedRemote }
+                },
+                true, true, nullptr, 1, 1
+            },
+            {
+                "foreign miss falls back to local when source cluster is unspecified",
+                nullptr, "fallback", "127.0.0.99", nullptr, nullptr, nullptr,
+                false, false, false, false,
+                1, 1, 0,
+                {
+                    { "fallback", RefSubFile, 82, RefFileNotFound | RefFileResolvedForeign | RefFileResolvedRemote }
+                }
+            },
+            {
+                "foreign miss does not fall back when source cluster is specified",
+                nullptr, "foreignblocked", "127.0.0.99", nullptr, nullptr, "thor",
+                false, false, false, false,
+                0, 1, 0,
+                {
+                    { "foreignblocked", RefFileNotFound, 0, RefFileResolvedForeign }
+                }
+            },
+            {
+                "remote miss falls back to local when source cluster is unspecified",
+                nullptr, "remotefallback", nullptr, nullptr, "missingStore", nullptr,
+                false, false, false, false,
+                1, 0, 1,
+                {
+                    { "remotefallback", RefSubFile, 83, RefFileNotFound | RefFileResolvedRemote }
+                }
+            },
+            {
+                "remote miss does not fall back when source cluster is specified",
+                nullptr, "remoteblocked", nullptr, nullptr, "missingStore", "thor",
+                false, false, false, false,
+                0, 0, 1,
+                {
+                    { "remoteblocked", RefFileNotFound, 0, RefFileResolvedRemote }
+                }
+            },
+            {
+                "request-level remote storage resolves an unqualified file",
+                nullptr, "requestfile", nullptr, nullptr, nullptr, "remotePlane",
+                false, false, false, true,
+                0, 0, 1,
+                {
+                    { "requestfile", RefFileResolvedRemote, 84, RefFileNotFound | RefFileNotOnSource }
+                },
+                true, false, "requestStore"
+            },
+            {
+                "request-level Dali and prefix resolve an unqualified file",
+                nullptr, "requestdali", nullptr, "requestprefix", nullptr, "requestPlane",
+                false, false, false, false,
+                0, 1, 0,
+                {
+                    { "requestdali", RefFileResolvedForeign, 88, RefFileNotFound | RefFileNotOnSource }
+                },
+                true, false, "127.0.0.9"
+            },
+            {
+                "local file outside target locations is marked not on cluster",
+                nullptr, "localofftarget", nullptr, nullptr, nullptr, nullptr,
+                false, false, false, false,
+                1, 0, 0,
+                {
+                    { "localofftarget", RefSubFile | RefFileNotOnCluster, 87, RefFileNotFound }
+                }
+            },
+            {
+                "foreign file outside source cluster is marked not on source",
+                nullptr, "foreignoffsource", "127.0.0.10", nullptr, nullptr, "requestedPlane",
+                false, false, false, false,
+                0, 1, 0,
+                {
+                    { "foreignoffsource", RefFileResolvedForeign | RefFileNotOnSource, 89, RefFileNotFound }
+                }
+            },
+            {
+                "remote file outside source cluster is marked not on source",
+                nullptr, "remoteoffsource", nullptr, nullptr, "mismatchstore", "requestedPlane",
+                false, false, false, false,
+                0, 0, 1,
+                {
+                    { "remoteoffsource", RefFileResolvedRemote | RefFileNotOnSource, 90, RefFileNotFound }
+                }
+            },
+            {
+                "nested remote superfiles expand recursively",
+                nullptr, "tree", nullptr, "scope", "nestedstore", "remotePlane",
+                true, true, false, false,
+                0, 0, 3,
+                {
+                    { "tree", RefFileResolvedRemote | RefFileSuper, 0 },
+                    { "scope::branch", RefFileResolvedRemote | RefFileSuper | RefSubFile, 0 },
+                    { "scope::leaf", RefFileResolvedRemote | RefSubFile, 91 }
+                }
+            },
+            {
+                "shared remote child is resolved and listed once",
+                nullptr, "root", nullptr, "scope", "sharedstore", "remotePlane",
+                true, true, false, false,
+                0, 0, 2,
+                {
+                    { "root", RefFileResolvedRemote | RefFileSuper, 0 },
+                    { "scope::shared", RefFileResolvedRemote | RefSubFile, 92 }
+                },
+                true, false, nullptr, 2
+            },
+            {
+                "missing remote superfile child is retained as not found",
+                nullptr, "root", nullptr, "scope", "missingstore", "remotePlane",
+                true, true, false, false,
+                0, 0, 2,
+                {
+                    { "root", RefFileResolvedRemote | RefFileSuper, 0 },
+                    { "scope::absent", RefFileNotFound | RefSubFile, 0 }
+                }
+            },
+            {
+                "disabled remote superfile expansion does not add children",
+                nullptr, "root", nullptr, "scope", "disabledstore", "remotePlane",
+                false, false, false, false,
+                0, 0, 1,
+                {
+                    { "root", RefFileResolvedRemote | RefFileSuper, 0 }
+                }
+            }
+        };
+
+        StringArray locations;
+        locations.append("thor");
+        constexpr unsigned numCases = sizeof(cases) / sizeof(cases[0]);
+        for (unsigned caseIndex = 0; caseIndex < numCases; caseIndex++)
+        {
+            const ResolveCase &testCase = cases[caseIndex];
+            Owned<CXmlRefFileResolver> resolver = new CXmlRefFileResolver(queryFixtureXml());
+            ReferencedFileList list(resolver, testCase.allowForeignFiles, false, testCase.name);
+            if (testCase.packageMapXml)
+            {
+                Owned<IPropertyTree> packageMap = createPTreeFromXMLString(testCase.packageMapXml);
+                list.addFilesFromPackageMap(packageMap);
+            }
+            else
+                list.addFile(testCase.logicalName, testCase.daliip, nullptr, testCase.remotePrefix, testCase.remoteStorage);
+
+            list.resolveFiles(locations, testCase.remoteLocation, testCase.remotePrefix, testCase.srcCluster, testCase.checkLocalFirst,
+                testCase.expandSuperFiles, testCase.trackSubFiles, testCase.resolveLFNForeign, testCase.useRemoteStorage);
+
+            assertFiles(list, testCase);
+            CPPUNIT_ASSERT_MESSAGE(testCase.name, resolver->localLookups >= testCase.minimumLocalLookups);
+            CPPUNIT_ASSERT_MESSAGE(testCase.name, resolver->localLookups <= testCase.maximumLocalLookups);
+            CPPUNIT_ASSERT_EQUAL_MESSAGE(testCase.name, testCase.expectedForeignLookups, resolver->foreignLookups);
+            CPPUNIT_ASSERT_MESSAGE(testCase.name, resolver->remoteLookups >= testCase.minimumRemoteLookups);
+            CPPUNIT_ASSERT_MESSAGE(testCase.name, resolver->remoteLookups <= testCase.maximumRemoteLookups);
+        }
+    }
+
+    void testConflictingScopesRejected()
+    {
+        Owned<CXmlRefFileResolver> resolver = new CXmlRefFileResolver(queryFixtureXml());
+        ReferencedFileList list(resolver, true, false, "conflicting scope test");
+        Owned<IPropertyTree> packageMap = createPTreeFromXMLString(
+            "<PackageMap daliip='127.0.0.1' remoteStorage='store'><Package><File value='file'/></Package></PackageMap>");
+        bool rejected = false;
+        try
+        {
+            list.addFilesFromPackageMap(packageMap);
+        }
+        catch (IException *e)
+        {
+            StringBuffer message;
+            e->errorMessage(message);
+            rejected = strstr(message.str(), "Cannot specify both") != nullptr;
+            e->Release();
+        }
+        CPPUNIT_ASSERT(rejected);
+    }
+
+    void testPackageAndSuperfileScopeConflictsRejected()
+    {
+        static const char *invalidPackageMaps[] =
+        {
+            "<PackageMap><Package daliip='127.0.0.1' remoteStorage='store'><File value='file'/></Package></PackageMap>",
+            "<PackageMap><Package><SuperFile daliip='127.0.0.1' remoteStorage='store'><SubFile value='file'/></SuperFile></Package></PackageMap>"
+        };
+        constexpr unsigned numCases = sizeof(invalidPackageMaps) / sizeof(invalidPackageMaps[0]);
+        for (unsigned caseIndex = 0; caseIndex < numCases; caseIndex++)
+        {
+            Owned<CXmlRefFileResolver> resolver = new CXmlRefFileResolver(queryFixtureXml());
+            ReferencedFileList list(resolver, true, false, "conflicting nested scope test");
+            Owned<IPropertyTree> packageMap = createPTreeFromXMLString(invalidPackageMaps[caseIndex]);
+            bool rejected = false;
+            try
+            {
+                list.addFilesFromPackageMap(packageMap);
+            }
+            catch (IException *e)
+            {
+                StringBuffer message;
+                e->errorMessage(message);
+                rejected = strstr(message.str(), "Cannot specify both") != nullptr;
+                e->Release();
+            }
+            CPPUNIT_ASSERT(rejected);
+        }
+    }
+
+    void testForeignQualifierRejectedWhenDisabled()
+    {
+        Owned<CXmlRefFileResolver> resolver = new CXmlRefFileResolver(queryFixtureXml());
+        ReferencedFileList list(resolver, false, false, "foreign LFN policy test");
+        bool rejected = false;
+        try
+        {
+            list.addFile("~FOREIGN::127.0.0.4::scope::embedded");
+        }
+        catch (IException *e)
+        {
+            StringBuffer message;
+            e->errorMessage(message);
+            rejected = strstr(message.str(), "Foreign file not allowed") != nullptr;
+            e->Release();
+        }
+        CPPUNIT_ASSERT(rejected);
+    }
+
+    void testForeignSuperfileChildRejectedWhenDisabled()
+    {
+        Owned<CXmlRefFileResolver> resolver = new CXmlRefFileResolver(queryFixtureXml());
+        ReferencedFileList list(resolver, false, false, "foreign subfile policy test");
+        list.addFile("foreignsuper", "127.0.0.5");
+
+        StringArray locations;
+        locations.append("thor");
+        bool rejected = false;
+        try
+        {
+            list.resolveFiles(locations, nullptr, nullptr, nullptr, false, true, false, true, false);
+        }
+        catch (IException *e)
+        {
+            StringBuffer message;
+            e->errorMessage(message);
+            rejected = strstr(message.str(), "Foreign sub file not allowed") != nullptr;
+            e->Release();
+        }
+        CPPUNIT_ASSERT(rejected);
+    }
+
+    void testResolutionEarlyReturns()
+    {
+        Owned<CXmlRefFileResolver> resolver = new CXmlRefFileResolver(queryFixtureXml());
+        StringArray locations;
+        locations.append("thor");
+
+        ReferencedFile noDfsLocal("noDfsLocal", nullptr, nullptr, nullptr, false, RefFileNone, nullptr, true, false, nullptr, resolver);
+        noDfsLocal.resolveLocal(locations, nullptr, nullptr, nullptr);
+        CPPUNIT_ASSERT(noDfsLocal.getFlags() & RefFileNotFound);
+
+        ReferencedFile noDfsForeign("noDfsForeign", nullptr, nullptr, nullptr, false, RefFileNone, nullptr, true, false, nullptr, resolver);
+        noDfsForeign.resolveForeign(nullptr, nullptr, nullptr, locations, nullptr, false, nullptr, true);
+        CPPUNIT_ASSERT(noDfsForeign.getFlags() & RefFileNotFound);
+
+        ReferencedFile noDfsRemote("noDfsRemote", nullptr, nullptr, nullptr, false, RefFileNone, nullptr, true, false, nullptr, resolver);
+        noDfsRemote.resolveRemote(nullptr, "store", nullptr, locations, nullptr, false, nullptr, true);
+        CPPUNIT_ASSERT(noDfsRemote.getFlags() & RefFileNotFound);
+
+        ReferencedFile packageLocal("packageLocal", nullptr, nullptr, nullptr, false, RefFileInPackage, nullptr, false, false, nullptr, resolver);
+        packageLocal.resolveLocal(locations, nullptr, nullptr, nullptr);
+        CPPUNIT_ASSERT(packageLocal.getFlags() & RefFileInPackage);
+        CPPUNIT_ASSERT(!(packageLocal.getFlags() & RefFileNotFound));
+
+        ReferencedFile packageForeign("packageForeign", nullptr, nullptr, nullptr, false, RefFileInPackage, nullptr, false, false, nullptr, resolver);
+        packageForeign.resolveForeign(nullptr, nullptr, nullptr, locations, nullptr, false, nullptr, true);
+        CPPUNIT_ASSERT(packageForeign.getFlags() & RefFileInPackage);
+        CPPUNIT_ASSERT(!(packageForeign.getFlags() & RefFileNotFound));
+
+        ReferencedFile packageRemote("packageRemote", nullptr, nullptr, nullptr, false, RefFileInPackage, nullptr, false, false, nullptr, resolver);
+        packageRemote.resolveRemote(nullptr, "store", nullptr, locations, nullptr, false, nullptr, true);
+        CPPUNIT_ASSERT(packageRemote.getFlags() & RefFileInPackage);
+        CPPUNIT_ASSERT(!(packageRemote.getFlags() & RefFileNotFound));
+
+        CPPUNIT_ASSERT_EQUAL(0U, resolver->localLookups);
+        CPPUNIT_ASSERT_EQUAL(0U, resolver->foreignLookups);
+        CPPUNIT_ASSERT_EQUAL(0U, resolver->remoteLookups);
+    }
+};
+
+CPPUNIT_TEST_SUITE_REGISTRATION(ReferencedFileListTests);
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(ReferencedFileListTests, "ReferencedFileListTests");
+#endif
