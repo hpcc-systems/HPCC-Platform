@@ -1059,12 +1059,12 @@ unsigned EclRepositoryManager::runGitCommand(StringBuffer * output, const char *
 
     Owned<IFile> extractedKey;
     EnvironmentVector env;
+    bool useScript = false;
     //If fetching from git and the username is specified then use the script file to provide the username/password
     //NB: This code should be kept in sync with readLfsContents() in gitfile.cpp (and ideally combined)
     if (needCredentials)
     {
         //If the username is supplied, then get the secret and write it to a temporary location.
-        bool useScript = false;
         if (options.gitUser.length())
         {
             env.emplace_back("HPCC_GIT_USERNAME", options.gitUser.str());
@@ -1113,7 +1113,8 @@ unsigned EclRepositoryManager::runGitCommand(StringBuffer * output, const char *
 
     GitFetchTracker gitFetchBlock;
     const char * cmd = "git";
-    VStringBuffer runcmd("%s %s", cmd, args);
+    //proactiveAuth (git 2.46+, ignored by older versions) avoids an initial unauthenticated request that fails with 401
+    VStringBuffer runcmd("%s %s%s", cmd, useScript ? "-c http.proactiveAuth=basic " : "", args);
     StringBuffer error;
     unsigned ret = runExternalCommand(cmd, *output, error, runcmd, nullptr, cwd, &env);
     if (extractedKey)
