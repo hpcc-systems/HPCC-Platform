@@ -378,8 +378,8 @@ public:
             ep.set(NULL);
         return ep;
     }
-    virtual void cloneInfo(IDFUWorkUnit *publisherWu, unsigned updateFlags, IDFUhelper *helper, IUserDescriptor *user, const char *dstCluster, const char *srcCluster, bool cloneForeign, unsigned redundancy, unsigned channelsPerNode, int replicateOffset, const char *defReplicateFolder, const char *dfu_queue);
-    void cloneSuperInfo(IDFUWorkUnit *publisherWu, unsigned updateFlags, ReferencedFileList *list, IUserDescriptor *user, INode *remote);
+    virtual void cloneInfo(IDFUWorkUnit *publisherWu, StringArray &subtaskWuids, unsigned updateFlags, IDFUhelper *helper, IUserDescriptor *user, const char *dstCluster, const char *srcCluster, bool cloneForeign, unsigned redundancy, unsigned channelsPerNode, int replicateOffset, const char *defReplicateFolder, const char *dfu_queue);
+    void cloneSuperInfo(unsigned updateFlags, ReferencedFileList *list, IUserDescriptor *user, INode *remote, IPropertyTree *deferredSuperFiles);
     virtual const char *queryPackageId() const {return pkgid.get();}
     virtual __int64 getFileSize()
     {
@@ -872,7 +872,7 @@ static void getDefaultDFUName(StringBuffer &dfuQueueName)
 #endif
 }
 
-static void dfuCopy(IDFUWorkUnit *publisherWu, IUserDescriptor *user, const char *sourceLogicalName, const char *destLogicalName, const char *destPlane, const char *srcLocation, bool supercopy, bool overwrite, bool preserveCompression, bool nosplit, bool useRemoteStorage)
+static void dfuCopy(IDFUWorkUnit *publisherWu, StringArray &subtaskWuids, IUserDescriptor *user, const char *sourceLogicalName, const char *destLogicalName, const char *destPlane, const char *srcLocation, bool supercopy, bool overwrite, bool preserveCompression, bool nosplit, bool useRemoteStorage)
 {
     if(!publisherWu)
         throw makeStringException(-1, "Failed to create Publisher DFU Workunit.");
@@ -979,7 +979,8 @@ static void dfuCopy(IDFUWorkUnit *publisherWu, IUserDescriptor *user, const char
     if (!supercopy)
         wuOptions->setSuppressNonKeyRepeats(true); // **** only repeat last part when src kind = key
 
-    submitDFUWorkUnit(wu.getClear());
+    wu->commit();
+    subtaskWuids.append(wu->queryId());
 }
 
 bool ReferencedFile::needsCopying(bool cloneForeign) const
@@ -993,7 +994,7 @@ bool ReferencedFile::needsCopying(bool cloneForeign) const
     return true;
 }
 
-void ReferencedFile::cloneInfo(IDFUWorkUnit *publisherWu, unsigned updateFlags, IDFUhelper *helper, IUserDescriptor *user, const char *dstCluster, const char *srcCluster, bool cloneForeign, unsigned redundancy, unsigned channelsPerNode, int replicateOffset, const char *defReplicateFolder, const char *dfu_queue)
+void ReferencedFile::cloneInfo(IDFUWorkUnit *publisherWu, StringArray &subtaskWuids, unsigned updateFlags, IDFUhelper *helper, IUserDescriptor *user, const char *dstCluster, const char *srcCluster, bool cloneForeign, unsigned redundancy, unsigned channelsPerNode, int replicateOffset, const char *defReplicateFolder, const char *dfu_queue)
 {
     if (!needsCopying(cloneForeign))
         return;
@@ -1014,7 +1015,7 @@ void ReferencedFile::cloneInfo(IDFUWorkUnit *publisherWu, unsigned updateFlags, 
             //Whether remote or on a local plane if we get here the file is not on a plane that roxie considers an direct access plane, so if we're in copy data mode the the file will be copied
             helper->cloneRoxieSubFile(srcLFN, srcCluster, logicalName, dstCluster, effectivePrefix, redundancy, channelsPerNode, replicateOffset, defReplicateFolder, user, daliip, effectiveRemoteStorage, updateFlags, false);
         else
-            dfuCopy(publisherWu, user, srcLFN, logicalName, dstCluster, isEmptyString(effectiveRemoteStorage) ? daliip.str() : effectiveRemoteStorage, false, (updateFlags & DFU_UPDATEF_OVERWRITE)!=0, true, false, !isEmptyString(effectiveRemoteStorage));
+            dfuCopy(publisherWu, subtaskWuids, user, srcLFN, logicalName, dstCluster, isEmptyString(effectiveRemoteStorage) ? daliip.str() : effectiveRemoteStorage, false, (updateFlags & DFU_UPDATEF_OVERWRITE)!=0, true, false, !isEmptyString(effectiveRemoteStorage));
 
         flags |= RefFileCloned;
     }
@@ -1031,7 +1032,7 @@ void ReferencedFile::cloneInfo(IDFUWorkUnit *publisherWu, unsigned updateFlags, 
     }
 }
 
-void ReferencedFile::cloneSuperInfo(IDFUWorkUnit *publisherWu, unsigned updateFlags, ReferencedFileList *list, IUserDescriptor *user, INode *remote)
+void ReferencedFile::cloneSuperInfo(unsigned updateFlags, ReferencedFileList *list, IUserDescriptor *user, INode *remote, IPropertyTree *deferredSuperFiles)
 {
     if ((flags & RefFileCloned) || (flags & RefFileInPackage) || !(flags & RefFileSuper) || !(flags & (RefFileResolvedForeign | RefFileResolvedRemote)))
         return;
@@ -1046,20 +1047,16 @@ void ReferencedFile::cloneSuperInfo(IDFUWorkUnit *publisherWu, unsigned updateFl
         if (!tree)
             return;
 
-        IDistributedFileDirectory &dir = queryDistributedFileDirectory();
-        // This path only runs for superfiles (early-returned above unless RefFileSuper). df->detach()
-        // removes the existing superfile - a metadata-only delete (no physical parts) - so use writeMeta.
-        Owned<IDistributedFile> df = dir.lookup(logicalName.str(), user, AccessMode::writeLogicalMeta, false, false, nullptr, defaultPrivilegedUser);
-        if(df)
+        if (!(updateFlags & DALI_UPDATEF_SUPERFILES))
         {
-            if (!(updateFlags & DALI_UPDATEF_SUPERFILES))
+            Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(logicalName.str(), user, AccessMode::readLogicalMeta, false, false, nullptr, defaultPrivilegedUser);
+            if (df)
                 return;
-            df->detach();
-            df.clear();
         }
 
-        Owned<IDistributedSuperFile> superfile = dir.createSuperFile(logicalName.str(),user, true, false);
         flags |= RefFileCloned;
+        Owned<IPropertyTree> superFile = createPTree("SuperFile");
+        superFile->setProp("@name", logicalName.str());
         Owned<IPropertyTreeIterator> subfiles = tree->getElements("SubFile");
         ForEach(*subfiles)
         {
@@ -1074,13 +1071,15 @@ void ReferencedFile::cloneSuperInfo(IDFUWorkUnit *publisherWu, unsigned updateFl
                     subref = list->map.getValue(name);
                 if (subref)
                 {
-                    subref->cloneSuperInfo(publisherWu, updateFlags, list, user, remote);
+                    subref->cloneSuperInfo(updateFlags, list, user, remote, deferredSuperFiles);
                     childName = subref->getLogicalName();
                 }
             }
-            if (childName && *childName)
-                superfile->addSubFile(childName, false, NULL, false);
+            if (!isEmptyString(childName))
+                superFile->addPropTree("SubFile")->setProp("@name", childName);
         }
+        // Added after the recursion above so nested superfiles are created before this one
+        deferredSuperFiles->addPropTree("SuperFile", superFile.getClear());
     }
     catch (IException *e)
     {
@@ -1092,6 +1091,30 @@ void ReferencedFile::cloneSuperInfo(IDFUWorkUnit *publisherWu, unsigned updateFl
     {
         flags |= RefFileCopyInfoFailed;
         DBGLOG("ReferencedFile Unknown error copying superfile info for %s", logicalName.str());
+    }
+}
+
+static void markDFUSubmissionFailed(const char *wuid)
+{
+    try
+    {
+        Owned<IDFUWorkUnitFactory> factory = getDFUWorkUnitFactory();
+        Owned<IDFUWorkUnit> wu = factory->updateWorkUnit(wuid, true);
+        if (!wu)
+        {
+            PROGLOG("ReferencedFile failed to reopen child DFU workunit %s after submission failure", wuid);
+            return;
+        }
+        wu->queryUpdateProgress()->setState(DFUstate_failed, "Failed to submit child DFU workunit");
+    }
+    catch (IException *e)
+    {
+        DBGLOG(e, "ReferencedFile failed to record child DFU submission failure");
+        e->Release();
+    }
+    catch (...)
+    {
+        DBGLOG("ReferencedFile failed to record child DFU submission failure for %s", wuid);
     }
 }
 
@@ -1516,6 +1539,11 @@ void ReferencedFileList::cloneFileInfo(StringBuffer &publisherWuid, const char *
 
             publisher->setQueue(dfuQueueName);
             publisher->setJobName(jobName.isEmpty() ? "copy published files" : jobName);
+            if (user)
+            {
+                StringBuffer username;
+                publisher->setUser(user->getUserName(username).str());
+            }
             publisherWuid.set(publisher->queryId());
 
             if (keyCompression)
@@ -1524,14 +1552,60 @@ void ReferencedFileList::cloneFileInfo(StringBuffer &publisherWuid, const char *
     }
 
     ReferencedFileIterator files(this);
+    StringArray subtaskWuids;
     if (needToCopyPhysicalFiles)
     {
         ForEach(files)
-            files.queryObject().cloneInfo(publisher, updateFlags, helper, user, dstCluster, srcCluster, cloneForeign, redundancy, channelsPerNode, replicateOffset, defReplicateFolder, dfu_queue);
+            files.queryObject().cloneInfo(publisher, subtaskWuids, updateFlags, helper, user, dstCluster, srcCluster, cloneForeign, redundancy, channelsPerNode, replicateOffset, defReplicateFolder, dfu_queue);
     }
+    Owned<IPropertyTree> deferredSuperFiles = createPTree("DeferredSuperFiles");
+    deferredSuperFiles->setPropBool("@allowReplace", (updateFlags & DALI_UPDATEF_SUPERFILES) != 0);
     if (cloneSuperInfo)
         ForEach(files)
-            files.queryObject().cloneSuperInfo(publisher, updateFlags, this, user, remote);
+            files.queryObject().cloneSuperInfo(updateFlags, this, user, remote, deferredSuperFiles);
+    if (deferredSuperFiles->hasProp("SuperFile"))
+    {
+        // Subfiles being copied do not exist yet, so the publisher creates the superfiles once all copies have finished
+        if (publisher && subtaskWuids.ordinality())
+            publisher->setDeferredSuperFiles(deferredSuperFiles);
+        else if (!createDeferredSuperFiles(*deferredSuperFiles, user))
+        {
+            Owned<IPropertyTreeIterator> failed = deferredSuperFiles->getElements("SuperFile[@state=\"failed\"]");
+            ForEach(*failed)
+            {
+                ReferencedFile *file = map.getValue(failed->query().queryProp("@name"));
+                if (file)
+                    file->flags |= RefFileCopyInfoFailed;
+            }
+        }
+    }
+    if (publisher)
+    {
+        publisher->commit();
+        // Released first: a failed submission can finalize the publisher on this thread, which needs its lock
+        publisher.clear();
+        // Wait until the full task count is committed before a fast child can mark the publisher complete.
+        ForEachItemIn(i, subtaskWuids)
+        {
+            const char *subtaskWuid = subtaskWuids.item(i);
+            try
+            {
+                submitDFUWorkUnit(subtaskWuid);
+            }
+            catch (IException *e)
+            {
+                PROGLOG("ReferencedFile failed to submit child DFU workunit %s", subtaskWuid);
+                DBGLOG(e, "ReferencedFile ");
+                e->Release();
+                markDFUSubmissionFailed(subtaskWuid);
+            }
+            catch (...)
+            {
+                DBGLOG("ReferencedFile unknown error submitting child DFU workunit %s", subtaskWuid);
+                markDFUSubmissionFailed(subtaskWuid);
+            }
+        }
+    }
 }
 
 void ReferencedFileList::cloneRelationships()
