@@ -63,6 +63,7 @@ extern jlib_decl size32_t roundIndexBlockedIOSize(size32_t blockedIOSize, size32
 extern jlib_decl bool getRenameSupportedFromPath(const char *filePath);
 
 constexpr int noWriteSyncMarginDeltaMs = (std::numeric_limits<int>::min)();
+constexpr int forceWriteSyncWaitDeltaMs = 1; // stop-gap: safeStat (checkSize callers) waits out the full remaining write-sync margin for tracked parts
 extern jlib_decl void setWriteSyncMarginDeltaMs(int deltaMs); // A value of noWriteSyncMarginDeltaMs means "not set".
 extern jlib_decl void setJobWriteSyncMarginDeltaMs(int deltaMs); // Overrides the configured value until reset to noWriteSyncMarginDeltaMs.
 extern jlib_decl bool getWriteSyncMarginDeltaMs(int &deltaMs); // Returns true if a delta is set, and fills deltaMs with its value (which may be 0).
@@ -85,6 +86,7 @@ struct WriteSyncFileInfo
     bool compressed = false;              // part is compressed - affects how an empty (size 0) part is validated
 };
 extern jlib_decl void noteWriteSyncFiles(const std::vector<WriteSyncFileInfo> &files, time_t deadline);
+// Returns 0 if the path was never mapped, or if its mapping has expired (past its write-sync deadline).
 extern jlib_decl unsigned getPathWriteSyncDelayRemainingMs(const char *physicalPath, offset_t &expectedSize, bool &compressed);
 #ifdef _USE_CPPUNIT
 extern jlib_decl void resetWriteSyncStateForTest();
