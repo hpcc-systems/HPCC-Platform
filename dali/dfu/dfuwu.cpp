@@ -358,6 +358,146 @@ static bool isSubTaskWuid(const char *subtaskWuid)
     return (!isEmptyString(subtaskWuid) && 'P'==*subtaskWuid && strchr(subtaskWuid, 'T')!=nullptr);
 }
 
+static bool createDeferredSuperFile(IPropertyTree &superFile, IUserDescriptor *user, bool allowReplace)
+{
+    const char *name = superFile.queryProp("@name");
+    // Protection against an internal error.  Slight overkill.
+    if (isEmptyString(name))
+    {
+        superFile.setProp("@state", "failed");
+        superFile.setProp("@error", "Deferred superfile has no name");
+        return false;
+    }
+
+    try
+    {
+        // A single transaction, so a missing subfile fails the whole superfile and leaves any existing one unchanged
+        Owned<IDistributedFileTransaction> transaction = createDistributedFileTransaction(user);
+        transaction->start();
+        Owned<IDistributedSuperFile> created = queryDistributedFileDirectory().createSuperFile(name, user, true, allowReplace, transaction);
+        created->removeSubFile(nullptr, false, false, transaction);
+        Owned<IPropertyTreeIterator> subFiles = superFile.getElements("SubFile");
+        ForEach(*subFiles)
+            created->addSubFile(subFiles->query().queryProp("@name"), false, nullptr, false, transaction);
+        created.clear();
+        transaction->commit();
+    }
+    catch (IException *e)
+    {
+        StringBuffer msg;
+        e->errorMessage(msg);
+        e->Release();
+        UERRLOG("DFUWU: Failed to create superfile %s: %s", name, msg.str());
+        superFile.setProp("@state", "failed");
+        superFile.setProp("@error", msg);
+        return false;
+    }
+    superFile.setProp("@state", "complete");
+    superFile.removeProp("@error");
+    return true;
+}
+
+extern dfuwu_decl bool createDeferredSuperFiles(IPropertyTree &superFiles, IUserDescriptor *user)
+{
+    bool allCreated = true;
+    bool allowReplace = superFiles.getPropBool("@allowReplace", true);
+    StringArray failedNames;
+    Owned<IPropertyTreeIterator> iter = superFiles.getElements("SuperFile");
+    ForEach(*iter)
+    {
+        IPropertyTree &superFile = iter->query();
+        if (strsame(superFile.queryProp("@state"), "complete"))
+            continue;
+
+        // Nested superfiles come first; a failed one would leave its old contents, so do not reference it
+        const char *failedNested = nullptr;
+        if (failedNames.ordinality())
+        {
+            Owned<IPropertyTreeIterator> subFiles = superFile.getElements("SubFile");
+            ForEach(*subFiles)
+            {
+                const char *subName = subFiles->query().queryProp("@name");
+                if (subName && failedNames.contains(subName))
+                {
+                    failedNested = subName;
+                    break;
+                }
+            }
+        }
+
+        if (failedNested)
+        {
+            VStringBuffer msg("Nested superfile %s was not created", failedNested);
+            UERRLOG("DFUWU: Failed to create superfile %s: %s", superFile.queryProp("@name"), msg.str());
+            superFile.setProp("@state", "failed");
+            superFile.setProp("@error", msg);
+        }
+        else if (createDeferredSuperFile(superFile, user, allowReplace))
+            continue;
+
+        allCreated = false;
+        const char *name = superFile.queryProp("@name");
+        if (name)
+            failedNames.append(name);
+    }
+    if (allCreated)
+        superFiles.setProp("@state", "complete");
+    return allCreated;
+}
+
+static bool finalizePublisherSuperFiles(const char *publisherWuid)
+{
+    Owned<IDFUWorkUnitFactory> factory = getDFUWorkUnitFactory();
+    Owned<IDFUWorkUnit> publisher = factory->updateWorkUnit(publisherWuid, true);
+    if (!publisher)
+        throw makeStringExceptionV(-1, "DFUWU: Could not open publisher workunit %s to finalize superfiles", publisherWuid);
+
+    Owned<IPropertyTree> superFiles = publisher->getDeferredSuperFiles();
+    if (!superFiles || strsame(superFiles->queryProp("@state"), "complete"))
+        return true;
+
+    StringBuffer username;
+    publisher->getUser(username);
+    Owned<IUserDescriptor> user;
+    if (username.length())
+    {
+        user.setown(createUserDescriptor());
+        user->set(username.str(), "");
+    }
+
+    bool allCreated = createDeferredSuperFiles(*superFiles, user);
+    publisher->setDeferredSuperFiles(superFiles);
+    publisher->commit();
+    return allCreated;
+}
+
+static void completePublisherSuperFileFinalization(const char *publisherWuid, IPropertyTree *progress)
+{
+    bool success = false;
+    try
+    {
+        success = finalizePublisherSuperFiles(publisherWuid);
+    }
+    catch (IException *e)
+    {
+        DBGLOG(e, "DFUWU failed to finalize publisher superfiles");
+        e->Release();
+    }
+    catch (...)
+    {
+        DBGLOG("DFUWU unknown error finalizing publisher superfiles for %s", publisherWuid);
+    }
+
+    bool copiesFailed = progress->getPropInt("@tasksfailed", 0) > 0;
+    progress->setProp("@state", (success && !copiesFailed) ? "finished" : "failed");
+    if (!success)
+        progress->setProp("@stateReason", "Failed to create one or more superfiles");
+    else
+        progress->removeProp("@stateReason");
+    unsigned edition = (unsigned) progress->getPropInt("Edition", 0);
+    progress->setPropInt("Edition", ++edition);
+}
+
 static bool notePublisherSubTaskState(const char *subtaskWuid, DFUstate state)
 {
     if (!isSubTaskWuid(subtaskWuid))
@@ -374,6 +514,10 @@ static bool notePublisherSubTaskState(const char *subtaskWuid, DFUstate state)
     StringBuffer publisherRoot;
     getSubTaskParentXPath(publisherRoot, subtaskWuid);
 
+    StringBuffer publisherWuid;
+    const char *task = strchr(subtaskWuid, 'T');
+    publisherWuid.append(task - subtaskWuid, subtaskWuid);
+
     //Only lock the Progress section to avoid parent child lock issues
     publisherRoot.append("/Progress");
     Owned<IRemoteConnection> conn = querySDS().connect(publisherRoot.str(), myProcessSession(), RTM_LOCK_WRITE, NOTE_SUBTASK_SDS_LOCK_TIMEOUT);
@@ -387,15 +531,26 @@ static bool notePublisherSubTaskState(const char *subtaskWuid, DFUstate state)
         root->setPropInt("@tasksfinished", ++finished);
     else
         root->setPropInt("@tasksfailed", ++failed);
+    int completed = finished + failed;
+    bool finalizeSuperFiles = false;
     if (count>0)
-        root->setPropInt("@percentdone", (finished * 100) / count);
-    if (count==finished)
-        root->setProp("@state", "finished");
-    else if (count==(finished+failed))
-        root->setProp("@state", "failed");
+        root->setPropInt("@percentdone", (completed * 100) / count);
+    if (count==completed)
+    {
+        // Finalize even if copies failed: production files are never overwritten, so a failed copy leaves its subfile missing and only that superfile fails
+        root->setProp("@state", "started");
+        finalizeSuperFiles = true;
+    }
     unsigned edition = (unsigned) root->getPropInt("Edition",0);
     root->setPropInt("Edition", ++edition);
     conn->commit();
+
+    if (finalizeSuperFiles)
+    {
+        // The counts are committed with the lock still held, so a resubmission only sees them complete with state started if this finalizer died
+        completePublisherSuperFileFinalization(publisherWuid.str(), root);
+        conn->commit();
+    }
     return true;
 }
 
@@ -407,16 +562,24 @@ static bool prepareToResubmitFailedPublisherTasks(const char *publisherWuid, Str
     StringBuffer publisherRoot;
     getXPath(publisherRoot, publisherWuid);
 
-    Owned<IRemoteConnection> conn = querySDS().connect(publisherRoot.str(), myProcessSession(), RTM_LOCK_WRITE, NOTE_SUBTASK_SDS_LOCK_TIMEOUT);
+    // Only lock Progress, as notePublisherSubTaskState does, so locks are always taken Progress first, then publisher
+    VStringBuffer progressPath("%s/Progress", publisherRoot.str());
+    Owned<IRemoteConnection> progressConn = querySDS().connect(progressPath.str(), myProcessSession(), RTM_LOCK_WRITE, NOTE_SUBTASK_SDS_LOCK_TIMEOUT);
+    if (!progressConn)
+       throw MakeStringException(-1,"DFUWU: Could not open progress section of publisher workunit %s", publisherWuid);
+    IPropertyTree *progress = progressConn->queryRoot();
+    DFUstate state = decodeDFUstate(progress->queryProp("@state"));
+    // Counts only reach the task count under this lock immediately before finalizing, so seeing that with state started means a finalizer died
+    int recordedTaskCount = progress->getPropInt("@taskcount", 0);
+    bool finalizationInterrupted = (state==DFUstate_started) && (recordedTaskCount > 0) &&
+        (progress->getPropInt("@tasksfinished", 0) + progress->getPropInt("@tasksfailed", 0) == recordedTaskCount);
+    if (state!=DFUstate_aborted && state!=DFUstate_failed && state!=DFUstate_unknown && !finalizationInterrupted)
+       throw MakeStringException(-1,"DFUWU: Can only resubmit publisher workunits that are in a failed, unknown, or aborted state %s", publisherWuid);
+
+    Owned<IRemoteConnection> conn = querySDS().connect(publisherRoot.str(), myProcessSession(), 0, SDS_LOCK_TIMEOUT);
     if (!conn)
        throw MakeStringException(-1,"DFUWU: Could not connect to publisher workunit %s", publisherWuid);
     IPropertyTree *root = conn->queryRoot();
-    IPropertyTree *progress = root->queryPropTree("Progress");
-    if (!progress)
-       throw MakeStringException(-1,"DFUWU: Could not open progress section of publisher workunit %s", publisherWuid);
-    DFUstate state = decodeDFUstate(progress->queryProp("@state"));
-    if (state!=DFUstate_aborted && state!=DFUstate_failed && state!=DFUstate_unknown)
-       throw MakeStringException(-1,"DFUWU: Can only resubmit publisher workunits that are in a failed, unknown, or aborted state %s", publisherWuid);
 
     unsigned taskCount = 0;
     unsigned tasksFinished = 0;
@@ -458,15 +621,24 @@ static bool prepareToResubmitFailedPublisherTasks(const char *publisherWuid, Str
         }
     }
 
+    bool pendingSuperFileFinalization = root->hasProp("DeferredSuperFiles") && !strsame(root->queryProp("DeferredSuperFiles/@state"), "complete");
+    bool finalizeOnly = (taskCount == tasksFinished) && pendingSuperFileFinalization;
+    conn.clear();
+
     progress->setPropInt("@taskcount", taskCount);
     progress->setPropInt("@tasksfinished", tasksFinished);
     progress->setPropInt("@tasksfailed", 0); //reset
     if (taskCount>0)
-        root->setPropInt("@percentdone", (tasksFinished * 100) / taskCount);
-    progress->setProp("@state", (taskCount==tasksFinished) ? "finished" : "started");
+        progress->setPropInt("@percentdone", (tasksFinished * 100) / taskCount);
+    progress->setProp("@state", (taskCount==tasksFinished && !finalizeOnly) ? "finished" : "started");
     unsigned edition = (unsigned) progress->getPropInt("Edition", 0);
     progress->setPropInt("Edition", ++edition);
-    conn->commit();
+    progressConn->commit();
+    if (finalizeOnly)
+    {
+        completePublisherSuperFileFinalization(publisherWuid, progress);
+        progressConn->commit();
+    }
     return true;
 }
 
@@ -704,47 +876,51 @@ public:
     }
     void setState(DFUstate state, const char *reason = nullptr)
     {
-        CriticalBlock block(parent->crit);
-        CDateTime dt;
-        bool noted = queryRoot()->getPropBool("@noted", false);
-        bool subtask = isSubTaskWuid(parent->queryId());
-        switch (state) {
-        case DFUstate_started:
-            if (!queryRoot()->hasProp("@timestarted"))
-            {
+        bool shouldNotePublisher = false;
+        {
+            CriticalBlock block(parent->crit);
+            CDateTime dt;
+            bool noted = queryRoot()->getPropBool("@noted", false);
+            bool subtask = isSubTaskWuid(parent->queryId());
+            switch (state) {
+            case DFUstate_started:
+                if (!queryRoot()->hasProp("@timestarted"))
+                {
+                    dt.setTimeStamp(getTimeStampNowValue());
+                    setTimeStarted(dt);
+                }
+                break;
+            case DFUstate_aborting:
+                {
+                    DFUstate oldstate = getState();
+                    if ((oldstate==DFUstate_aborted)||(oldstate==DFUstate_failed)||(oldstate==DFUstate_finished))
+                        state = oldstate;
+                }
+                // fall through
+            case DFUstate_aborted:
+            case DFUstate_failed:
+            case DFUstate_finished:
+                if (parent->removeQueue()&&(state==DFUstate_aborting))
+                    state = DFUstate_aborted;
                 dt.setTimeStamp(getTimeStampNowValue());
-                setTimeStarted(dt);
+                setTimeStopped(dt);
+                if (subtask && !noted)
+                    queryRoot()->setPropBool("@noted", true);
+                break;
             }
-            break;
-        case DFUstate_aborting:
-            {
-                DFUstate oldstate = getState();
-                if ((oldstate==DFUstate_aborted)||(oldstate==DFUstate_failed)||(oldstate==DFUstate_finished))
-                    state = oldstate;
-            }
-            // fall through
-        case DFUstate_aborted:
-        case DFUstate_failed:
-        case DFUstate_finished:
-            if (parent->removeQueue()&&(state==DFUstate_aborting))
-                state = DFUstate_aborted;
-            dt.setTimeStamp(getTimeStampNowValue());
-            setTimeStopped(dt);
-            if (subtask && !noted)
-                queryRoot()->setPropBool("@noted", true);
-            break;
+            StringBuffer s;
+            encodeDFUstate(state,s);
+            queryRoot()->setProp("@state",s.str());
+
+            if (!isEmptyString(reason))
+                queryRoot()->setProp("@stateReason", reason);
+            else
+                queryRoot()->removeProp("@stateReason");
+
+            parent->commit();
+            shouldNotePublisher = subtask && !noted;
         }
-        StringBuffer s;
-        encodeDFUstate(state,s);
-        queryRoot()->setProp("@state",s.str());
-
-        if (!isEmptyString(reason))
-            queryRoot()->setProp("@stateReason", reason);
-        else
-            queryRoot()->removeProp("@stateReason");
-
-        parent->commit();
-        if (subtask && !noted)
+        if (shouldNotePublisher)
             notePublisherSubTaskState(parent->queryId(), state);
     }
     void setTimeStarted(const CDateTime &val)
@@ -2970,6 +3146,17 @@ public:
     void clearExceptions()
     {
         removeTree(root,"Exceptions");
+    }
+
+    IPropertyTree *getDeferredSuperFiles() const override
+    {
+        IPropertyTree *superFiles = root->queryPropTree("DeferredSuperFiles");
+        return superFiles ? createPTreeFromIPT(superFiles) : nullptr;
+    }
+
+    void setDeferredSuperFiles(IPropertyTree *superFiles) override
+    {
+        root->setPropTree("DeferredSuperFiles", createPTreeFromIPT(superFiles));
     }
 
     StringBuffer& getApplicationValue(const char *app, const char *propname, StringBuffer &str) const

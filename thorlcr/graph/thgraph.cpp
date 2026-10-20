@@ -2876,10 +2876,7 @@ void CJobBase::startJob()
         std::numeric_limits<int>::min(), std::numeric_limits<int>::max());
 
     if (noWriteSyncMarginDeltaMs != writeSyncMarginDelta)
-    {
         setJobWriteSyncMarginDeltaMs(writeSyncMarginDelta);
-        WARNLOG("Thor write-sync margin delta active: writeSyncMarginDeltaMs=%d", writeSyncMarginDelta);
-    }
 }
 
 void CJobBase::endJob()
