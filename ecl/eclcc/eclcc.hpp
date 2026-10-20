@@ -100,6 +100,8 @@ const char * const helpText[] = {
     "!   --gitlock=key The dali key (e.g. plane name) that should be used to protect updates to git repositories",
     "!   --gitrequesttime=us Request time used when deciding whether a git cache is fresh",
     "!   --gitfetchtolerance=seconds Tolerance used when deciding whether a git cache is fresh",
+    "!   --gitlsremote Use git ls-remote to resolve a branch/tag, and avoid fetching if the commit is cached",
+    "!   --gitapi      Use the GitHub REST api to resolve a branch/tag, and avoid fetching if the commit is cached",
     "    -help, --help Display this message",
     "    -help -v      Display verbose help message",
     "!   --ignoresimplified Do not use simplified expressions when syntax checking",

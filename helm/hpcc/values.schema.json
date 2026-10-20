@@ -1794,6 +1794,14 @@
           "description": "Number of seconds a successful or failed git fetch remains fresh for subsequent compilations. Negative values disable fetch skipping",
           "type": "integer"
         },
+        "gitLsRemote": {
+          "description": "Use git ls-remote to resolve a branch or tag, and skip the fetch if the commit is already cached",
+          "type": "boolean"
+        },
+        "gitApi": {
+          "description": "Use the GitHub REST api to resolve a branch or tag, and skip the fetch if the commit is already cached",
+          "type": "boolean"
+        },
         "image": {
           "$ref": "#/definitions/image"
         },

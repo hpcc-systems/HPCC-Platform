@@ -849,6 +849,10 @@ class EclccCompiler : implements IErrorReporter
             eclccCmd.appendf(" --gitrequesttime=%llu", (unsigned long long)requestTimeStamp);
         if (config->hasProp("@gitFetchTolerance"))
             eclccCmd.appendf(" --gitfetchtolerance=%s", config->queryProp("@gitFetchTolerance"));
+        if (config->getPropBool("@gitLsRemote", false))
+            eclccCmd.append(" --gitlsremote");
+        if (config->getPropBool("@gitApi", false))
+            eclccCmd.append(" --gitapi");
 
         if (config->queryProp("@defaultRepo"))
             eclccCmd.appendf(" --defaultrepo=%s", config->queryProp("@defaultRepo"));

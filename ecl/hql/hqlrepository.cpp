@@ -36,13 +36,14 @@ enum class GitFetchAction
     skipRecentFailure
 };
 
-static GitFetchAction decideGitFetch(unsigned __int64 requestTimeStamp, __int64 fetchToleranceMicroseconds, unsigned __int64 lastFetchTimestamp, unsigned __int64 lastFailedFetchTimestamp)
+static GitFetchAction decideGitFetch(unsigned __int64 requestTimeStamp, __int64 fetchToleranceMicroseconds, unsigned __int64 lastFetchTimestamp, unsigned __int64 lastFailedFetchTimestamp, bool knownShaMissing)
 {
     if (fetchToleranceMicroseconds < 0)
         return GitFetchAction::fetch;
 
     unsigned __int64 toleranceValue = (unsigned __int64)fetchToleranceMicroseconds;
-    if (lastFetchTimestamp && requestTimeStamp <= lastFetchTimestamp + toleranceValue)
+    //A recent fetch is irrelevant if it did not retrieve a commit that is known to exist
+    if (!knownShaMissing && lastFetchTimestamp && requestTimeStamp <= lastFetchTimestamp + toleranceValue)
         return GitFetchAction::skipFresh;
     if (lastFailedFetchTimestamp && lastFailedFetchTimestamp >= lastFetchTimestamp && requestTimeStamp <= lastFailedFetchTimestamp + toleranceValue)
         return GitFetchAction::skipRecentFailure;
@@ -59,6 +60,59 @@ static bool isFullCommitSha(const char * version)
         if (!isxdigit((unsigned char)version[i]))
             return false;
     }
+    return true;
+}
+
+//Reject versions that are not valid git refs, or could inject extra arguments into a git command line
+static bool isSafeGitVersion(const char * version)
+{
+    if (isEmptyString(version) || (*version == '-'))
+        return false;
+    for (const char * cur = version; *cur; cur++)
+    {
+        unsigned char next = (unsigned char)*cur;
+        if ((next <= ' ') || (next == 0x7f) || strchr("\"'~^:?*[\\", next))
+            return false;
+    }
+    return true;
+}
+
+//Find the sha for version in the output of git ls-remote, preferring a branch, then a peeled (annotated) tag, then a tag.
+static bool extractRemoteSha(StringBuffer & sha, const char * lsRemoteOutput, const char * version)
+{
+    VStringBuffer branchRef("refs/heads/%s", version);
+    VStringBuffer tagRef("refs/tags/%s", version);
+    VStringBuffer peeledTagRef("refs/tags/%s^{}", version);
+    StringBuffer branchSha, tagSha, peeledTagSha;
+    const char * cur = lsRemoteOutput;
+    while (*cur)
+    {
+        const char * eol = strchr(cur, '\n');
+        size_t lineLen = eol ? (size_t)(eol - cur) : strlen(cur);
+        const char * tab = (const char *)memchr(cur, '\t', lineLen);
+        if (tab)
+        {
+            StringBuffer ref;
+            ref.append(lineLen - (tab + 1 - cur), tab + 1).clip();
+            StringBuffer * target = nullptr;
+            if (streq(ref, branchRef))
+                target = &branchSha;
+            else if (streq(ref, peeledTagRef))
+                target = &peeledTagSha;
+            else if (streq(ref, tagRef))
+                target = &tagSha;
+            if (target)
+                target->clear().append(tab - cur, cur);
+        }
+        if (!eol)
+            break;
+        cur = eol + 1;
+    }
+
+    const StringBuffer & match = branchSha.length() ? branchSha : peeledTagSha.length() ? peeledTagSha : tagSha;
+    if (!isFullCommitSha(match.str()))
+        return false;
+    sha.set(match);
     return true;
 }
 
@@ -857,108 +911,142 @@ IEclSourceCollection * EclRepositoryManager::resolveGitCollection(const char * r
     if (!splitRepoVersion(repoUrn, repo, version, defaultUrl, options.defaultGitPrefix))
         throw makeStringExceptionV(99, "Unsupported repository link format '%s'", defaultUrl);
 
-    bool alreadyExists = false;
-    bool skipFetch = false;
+    if (startsWith(version, "semver:"))
+        throw makeStringExceptionV(ERR_CANNOT_RESOLVE_BRANCH, "Semantic versioning not yet supported for dependency '%s'.", defaultUrl);
 
-    if (!options.cleanRepos && checkGitDirIsValid(repoPath) && isFullCommitSha(version.str()))
+    if (!isSafeGitVersion(version))
+        throw makeStringExceptionV(ERR_CANNOT_RESOLVE_BRANCH, "Invalid version '%s' for dependency '%s'.", version.str(), defaultUrl);
+
+    auto isCommitCached = [&](const char * commitSha)
     {
-        VStringBuffer params("cat-file -e %s^{commit}", version.str());
-        if (runGitCommand(nullptr, params, repoPath, false) == 0)
-        {
-            DBGLOG("Skipping git fetch for '%s': full commit SHA '%s' is already cached", repoPath, version.str());
-            skipFetch = true;
-            alreadyExists = true;
-        }
-    }
+        VStringBuffer params("cat-file -e %s^{commit}", commitSha);
+        return runGitCommand(nullptr, params, repoPath, false) == 0;
+    };
 
     CCycleTimer gitDownloadTimer;
-    Owned<IGitUpdateLock> gitUpdateLock(skipFetch ? nullptr : getGitUpdateLock(repoPath));
-    cycle_t blockedCycles = gitDownloadTimer.elapsedCycles();
-    gitDownloadBlockedCycles += blockedCycles;
+    cycle_t blockedCycles = 0;
+    StringBuffer sha;
+    const char * shaSource = nullptr;
+    bool shaIsLocal = false;
+    bool useExistingCache = !options.cleanRepos && checkGitDirIsValid(repoPath);
 
-    if (!skipFetch && checkDirExists(repoPath))
+    if (isFullCommitSha(version.str()))
     {
-        if (options.cleanRepos)
-        {
-            PROGLOG("Forced removal of git repository cache at '%s' (--cleanrepos)", repoPath);
-            recursiveRemoveDirectory(repoPath);
-        }
-        if (checkGitDirIsValid(repoPath))
-        {
-            alreadyExists = true;
-        }
-        else
-        {
-            if (!isEmptyDirectory(repoPath))
-            {
-                if (options.cleanInvalidRepos)
-                {
-                    PROGLOG("Removing incomplete cache of git repository at '%s' (--cleaninvalidrepos)", repoPath);
-                    recursiveRemoveDirectory(repoPath);
-                }
-
-                if (!isEmptyDirectory(repoPath))
-                    throw makeStringExceptionV(99, "Cache of git repository %s exists, but is not valid", repoPath);
-            }
-        }
+        sha.set(version);
+        shaSource = "version";
+    }
+    else if (useExistingCache && options.updateRepos && options.resolveRefsWithLsRemote)
+    {
+        //ls-remote only retrieves the ref advertisement, and avoids a fetch if the commit is already cached
+        VStringBuffer params("ls-remote origin \"refs/heads/%s\" \"refs/tags/%s\" \"refs/tags/%s^{}\"", version.str(), version.str(), version.str());
+        StringBuffer output;
+        if ((runGitCommand(&output, params, repoPath, true) == 0) && extractRemoteSha(sha, output, version))
+            shaSource = "ls-remote";
     }
 
-    bool ok = false;
-    Owned<IError> error;
-    if (alreadyExists)
+    if (useExistingCache && shaSource && isCommitCached(sha))
     {
-        if (options.updateRepos && !skipFetch)
+        DBGLOG("Skipping git fetch for '%s': '%s' commit SHA '%s' (from %s) is already cached", repoPath, version.str(), sha.str(), shaSource);
+        shaIsLocal = true;
+    }
+
+    Owned<IError> error;
+    if (!shaIsLocal)
+    {
+        CCycleTimer lockTimer;
+        Owned<IGitUpdateLock> gitUpdateLock(getGitUpdateLock(repoPath));
+        blockedCycles = lockTimer.elapsedCycles();
+        gitDownloadBlockedCycles += blockedCycles;
+
+        bool alreadyExists = false;
+        if (checkDirExists(repoPath))
         {
-            unsigned __int64 fetchStartTimestamp = getTimeStampNowValue();
-            GitFetchAction action = gitUpdateLock ? decideGitFetch(options.requestTimeStamp, options.fetchToleranceSeconds * 1000000, gitUpdateLock->getLastFetchTimestamp(), gitUpdateLock->getLastFailedFetchTimestamp()) : GitFetchAction::fetch;
-            unsigned retCode = 0;
-            if (action == GitFetchAction::fetch)
+            if (options.cleanRepos)
             {
-                retCode = runGitCommand(nullptr, "fetch origin --prune", repoPath, true);
-                if (gitUpdateLock)
-                    gitUpdateLock->noteFetchResult(fetchStartTimestamp, retCode == 0);
+                PROGLOG("Forced removal of git repository cache at '%s' (--cleanrepos)", repoPath);
+                recursiveRemoveDirectory(repoPath);
+            }
+            if (checkGitDirIsValid(repoPath))
+            {
+                alreadyExists = true;
             }
             else
             {
-                  unsigned __int64 storedTimestamp = action == GitFetchAction::skipFresh ? gitUpdateLock->getLastFetchTimestamp() : gitUpdateLock->getLastFailedFetchTimestamp();
-                  DBGLOG("Skipping git fetch for '%s': request timestamp %llu, last %s fetch timestamp %llu", repoPath, options.requestTimeStamp,
-                      action == GitFetchAction::skipFresh ? "successful" : "failed", storedTimestamp);
-                if (action == GitFetchAction::skipRecentFailure)
-                    retCode = 1;
-            }
-            if (retCode != 0)
-            {
-                VStringBuffer msg("Failed to download the latest version of '%s' error code (%u)", defaultUrl, retCode);
-                error.setown(createError(CategoryError, SeverityWarning, ERR_FAIL_UPDATE_REPO, msg.str(), nullptr, 0, 0, 0));
+                if (!isEmptyDirectory(repoPath))
+                {
+                    if (options.cleanInvalidRepos)
+                    {
+                        PROGLOG("Removing incomplete cache of git repository at '%s' (--cleaninvalidrepos)", repoPath);
+                        recursiveRemoveDirectory(repoPath);
+                    }
+
+                    if (!isEmptyDirectory(repoPath))
+                        throw makeStringExceptionV(99, "Cache of git repository %s exists, but is not valid", repoPath);
+                }
             }
         }
 
-        ok = true;
-    }
-    else
-    {
-        if (options.fetchRepos)
+        //Another process may have fetched the commit while this process was waiting for the lock
+        if (alreadyExists && shaSource && isCommitCached(sha))
         {
-            // Ensure the ~/.HPCCSystems/repos directory exists.
-            if (!recursiveCreateDirectory(options.eclRepoPath) && !checkDirExists(options.eclRepoPath))
-                throw makeStringExceptionV(99, "Failed to create directory %s'", options.eclRepoPath.str());
-
-            VStringBuffer params("clone %s \"%s\" --no-checkout", repoUrn.str(), repo.str());
-            unsigned __int64 fetchStartTimestamp = getTimeStampNowValue();
-            unsigned retCode = runGitCommand(nullptr, params, options.eclRepoPath, true);
-            if (gitUpdateLock && retCode == 0)
-                gitUpdateLock->noteFetchResult(fetchStartTimestamp, true);
-            if (retCode != 0)
-            {
-                VStringBuffer msg("Failed to clone dependency '%s' error code (%u)", defaultUrl, retCode);
-                error.setown(createError(CategoryError, SeverityError, ERR_FAIL_CLONE_REPO, msg.str(), nullptr, 0, 0, 0));
-            }
-            ok = true;
+            DBGLOG("Skipping git fetch for '%s': '%s' commit SHA '%s' (from %s) was cached while waiting for lock", repoPath, version.str(), sha.str(), shaSource);
+            shaIsLocal = true;
         }
+
+        if (!shaIsLocal)
+        {
+            if (alreadyExists)
+            {
+                if (options.updateRepos)
+                {
+                    unsigned __int64 fetchStartTimestamp = getTimeStampNowValue();
+                    GitFetchAction action = gitUpdateLock ? decideGitFetch(options.requestTimeStamp, options.fetchToleranceSeconds * 1000000, gitUpdateLock->getLastFetchTimestamp(), gitUpdateLock->getLastFailedFetchTimestamp(), shaSource != nullptr) : GitFetchAction::fetch;
+                    unsigned retCode = 0;
+                    if (action == GitFetchAction::fetch)
+                    {
+                        DBGLOG("Fetching git repository '%s' to resolve '%s'", repoPath, version.str());
+                        retCode = runGitCommand(nullptr, "fetch origin --prune", repoPath, true);
+                        if (gitUpdateLock)
+                            gitUpdateLock->noteFetchResult(fetchStartTimestamp, retCode == 0);
+                    }
+                    else
+                    {
+                        unsigned __int64 storedTimestamp = action == GitFetchAction::skipFresh ? gitUpdateLock->getLastFetchTimestamp() : gitUpdateLock->getLastFailedFetchTimestamp();
+                        DBGLOG("Skipping git fetch for '%s': request timestamp %llu, last %s fetch timestamp %llu", repoPath, options.requestTimeStamp,
+                            action == GitFetchAction::skipFresh ? "successful" : "failed", storedTimestamp);
+                        if (action == GitFetchAction::skipRecentFailure)
+                            retCode = 1;
+                    }
+                    if (retCode != 0)
+                    {
+                        VStringBuffer msg("Failed to download the latest version of '%s' error code (%u)", defaultUrl, retCode);
+                        error.setown(createError(CategoryError, SeverityWarning, ERR_FAIL_UPDATE_REPO, msg.str(), nullptr, 0, 0, 0));
+                    }
+                }
+            }
+            else if (options.fetchRepos)
+            {
+                // Ensure the ~/.HPCCSystems/repos directory exists.
+                if (!recursiveCreateDirectory(options.eclRepoPath) && !checkDirExists(options.eclRepoPath))
+                    throw makeStringExceptionV(99, "Failed to create directory %s'", options.eclRepoPath.str());
+
+                DBGLOG("Cloning git repository '%s' to resolve '%s'", repoPath, version.str());
+                VStringBuffer params("clone %s \"%s\" --no-checkout", repoUrn.str(), repo.str());
+                unsigned __int64 fetchStartTimestamp = getTimeStampNowValue();
+                unsigned retCode = runGitCommand(nullptr, params, options.eclRepoPath, true);
+                if (gitUpdateLock)
+                    gitUpdateLock->noteFetchResult(fetchStartTimestamp, retCode == 0);
+                if (retCode != 0)
+                {
+                    VStringBuffer msg("Failed to clone dependency '%s' error code (%u)", defaultUrl, retCode);
+                    error.setown(createError(CategoryError, SeverityError, ERR_FAIL_CLONE_REPO, msg.str(), nullptr, 0, 0, 0));
+                }
+            }
+            else
+                throw makeStringExceptionV(99, "Cannot locate the source code for dependency '%s'.  --fetchrepos not enabled", defaultUrl);
+        }
+        //All following operations are read-only so the lock is released
     }
-    //All following operations are read-only and should not be affected if the git repo is updated behind the scenes
-    //this could become a read/write lock if that proved to be an issue.
-    gitUpdateLock.clear();
 
     gitDownloadCycles += (gitDownloadTimer.elapsedCycles() - blockedCycles);
 
@@ -973,36 +1061,27 @@ IEclSourceCollection * EclRepositoryManager::resolveGitCollection(const char * r
             throw error.getClear();
     }
 
-    if (!ok)
-        throw makeStringExceptionV(99, "Cannot locate the source code for dependency '%s'.  --fetchrepos not enabled", defaultUrl);
-
-    if (startsWith(version, "semver:"))
-        throw makeStringExceptionV(ERR_CANNOT_RESOLVE_BRANCH, "Semantic versioning not yet supported for dependency '%s'.", defaultUrl);
-
-    // Really the version should be a SHA, but for flexibility version could be a sha, a tag or a branch (on origin).
-    // Check for a remote branch first - because it appears that when git clones a repo, it creates a local branch for
-    // remote head.  That never gets updated, and if it matches the branch being resolved it causes problems.
-
-    // Check for a remote branch "origin/<version>"
-    VStringBuffer params("rev-parse --short origin/%s", version.str());
-    StringBuffer sha;
-    unsigned retCode = runGitCommand(&sha, params, repoPath, false);
-    if (retCode != 0)
+    if (!shaSource)
     {
-        //Check for a tag (or local sha)
-        params.clear().appendf("rev-parse --short %s", version.str());
-        unsigned retCode = runGitCommand(&sha.clear(), params, repoPath, false);
-        if (retCode != 0)
-            sha.clear();
-    }
+        // version could be a branch, a tag or a short sha.  Check for a remote branch first - because when git clones a repo,
+        // it creates a local branch for the remote head that never gets updated.
+        VStringBuffer params("rev-parse --verify --quiet \"origin/%s^{commit}\"", version.str());
+        if (runGitCommand(&sha.clear(), params, repoPath, false) != 0)
+        {
+            params.clear().appendf("rev-parse --verify --quiet \"%s^{commit}\"", version.str());
+            if (runGitCommand(&sha.clear(), params, repoPath, false) != 0)
+                sha.clear();
+        }
+        sha.clip();
 
-    //Strip any trailing newlines and spaces.
-    sha.clip();
+        if (sha.isEmpty())
+            throw makeStringExceptionV(ERR_CANNOT_RESOLVE_BRANCH, "Branch/tag '%s' could not be found for dependency '%s'.", version.str(), defaultUrl);
+    }
+    else if (!shaIsLocal && !isCommitCached(sha))
+        throw makeStringExceptionV(ERR_CANNOT_RESOLVE_BRANCH, "Commit '%s' (from %s) for dependency '%s' is not available locally - resubmit to retry.", sha.str(), shaSource, defaultUrl);
+
     if (options.optVerbose)
         DBGLOG("Version '%s' resolved to sha '%s'", version.str(), sha.str());
-
-    if (sha.isEmpty())
-        throw makeStringExceptionV(ERR_CANNOT_RESOLVE_BRANCH, "Branch/tag '%s' could not be found for dependency '%s'.", version.str(), defaultUrl);
 
     path.append(repoPath).appendf("/.git/{%s", sha.str());
     if (options.gitUser)
@@ -1059,12 +1138,12 @@ unsigned EclRepositoryManager::runGitCommand(StringBuffer * output, const char *
 
     Owned<IFile> extractedKey;
     EnvironmentVector env;
+    bool useScript = false;
     //If fetching from git and the username is specified then use the script file to provide the username/password
     //NB: This code should be kept in sync with readLfsContents() in gitfile.cpp (and ideally combined)
     if (needCredentials)
     {
         //If the username is supplied, then get the secret and write it to a temporary location.
-        bool useScript = false;
         if (options.gitUser.length())
         {
             env.emplace_back("HPCC_GIT_USERNAME", options.gitUser.str());
@@ -1092,7 +1171,8 @@ unsigned EclRepositoryManager::runGitCommand(StringBuffer * output, const char *
 
     GitFetchTracker gitFetchBlock;
     const char * cmd = "git";
-    VStringBuffer runcmd("%s %s", cmd, args);
+    //proactiveAuth (git 2.46+, ignored by older versions) avoids an initial unauthenticated request that fails with 401
+    VStringBuffer runcmd("%s %s%s", cmd, useScript ? "-c http.proactiveAuth=basic " : "", args);
     StringBuffer error;
     unsigned ret = runExternalCommand(cmd, *output, error, runcmd, nullptr, cwd, &env);
     if (extractedKey)
@@ -1121,17 +1201,24 @@ class GitRepositoryTests : public CppUnit::TestFixture
     CPPUNIT_TEST_SUITE(GitRepositoryTests);
         CPPUNIT_TEST(testFetchDecision);
         CPPUNIT_TEST(testFullCommitSha);
+        CPPUNIT_TEST(testSafeGitVersion);
+        CPPUNIT_TEST(testExtractRemoteSha);
     CPPUNIT_TEST_SUITE_END();
 
 public:
     void testFetchDecision()
     {
-        CPPUNIT_ASSERT_EQUAL(GitFetchAction::fetch, decideGitFetch(100, 10, 0, 0));
-        CPPUNIT_ASSERT_EQUAL(GitFetchAction::skipFresh, decideGitFetch(100, 10, 95, 0));
-        CPPUNIT_ASSERT_EQUAL(GitFetchAction::fetch, decideGitFetch(100, 10, 89, 0));
-        CPPUNIT_ASSERT_EQUAL(GitFetchAction::skipRecentFailure, decideGitFetch(100, 10, 80, 95));
-        CPPUNIT_ASSERT_EQUAL(GitFetchAction::fetch, decideGitFetch(110, 10, 95, 90));
-        CPPUNIT_ASSERT_EQUAL(GitFetchAction::fetch, decideGitFetch(100, -1, 95, 95));
+        CPPUNIT_ASSERT_EQUAL(GitFetchAction::fetch, decideGitFetch(100, 10, 0, 0, false));
+        CPPUNIT_ASSERT_EQUAL(GitFetchAction::skipFresh, decideGitFetch(100, 10, 95, 0, false));
+        CPPUNIT_ASSERT_EQUAL(GitFetchAction::fetch, decideGitFetch(100, 10, 89, 0, false));
+        CPPUNIT_ASSERT_EQUAL(GitFetchAction::skipRecentFailure, decideGitFetch(100, 10, 80, 95, false));
+        CPPUNIT_ASSERT_EQUAL(GitFetchAction::fetch, decideGitFetch(110, 10, 95, 90, false));
+        CPPUNIT_ASSERT_EQUAL(GitFetchAction::fetch, decideGitFetch(100, -1, 95, 95, false));
+
+        //A known but missing sha ignores a recent successful fetch, but not a recent failure
+        CPPUNIT_ASSERT_EQUAL(GitFetchAction::fetch, decideGitFetch(100, 10, 95, 0, true));
+        CPPUNIT_ASSERT_EQUAL(GitFetchAction::skipRecentFailure, decideGitFetch(100, 10, 80, 95, true));
+        CPPUNIT_ASSERT_EQUAL(GitFetchAction::fetch, decideGitFetch(100, 10, 95, 80, true));
     }
 
     void testFullCommitSha()
@@ -1141,6 +1228,43 @@ public:
         CPPUNIT_ASSERT(!isFullCommitSha("0123456789abcdef0123456789abcdef0123456"));
         CPPUNIT_ASSERT(!isFullCommitSha("0123456789abcdef0123456789abcdef0123456z"));
         CPPUNIT_ASSERT(!isFullCommitSha("refs/heads/main"));
+    }
+
+    void testSafeGitVersion()
+    {
+        CPPUNIT_ASSERT(isSafeGitVersion("main"));
+        CPPUNIT_ASSERT(isSafeGitVersion("feature/v1.2-rc_3"));
+        CPPUNIT_ASSERT(isSafeGitVersion("0123456789abcdef0123456789abcdef01234567"));
+        CPPUNIT_ASSERT(!isSafeGitVersion(""));
+        CPPUNIT_ASSERT(!isSafeGitVersion("-main"));
+        CPPUNIT_ASSERT(!isSafeGitVersion("main\" \"--upload-pack=x"));
+        CPPUNIT_ASSERT(!isSafeGitVersion("main'"));
+        CPPUNIT_ASSERT(!isSafeGitVersion("main --upload-pack=x"));
+        CPPUNIT_ASSERT(!isSafeGitVersion("main\ttab"));
+        CPPUNIT_ASSERT(!isSafeGitVersion("v1^{}"));
+        CPPUNIT_ASSERT(!isSafeGitVersion("a\\b"));
+    }
+
+    void testExtractRemoteSha()
+    {
+        const char * branchSha = "1111111111111111111111111111111111111111";
+        const char * tagSha = "2222222222222222222222222222222222222222";
+        const char * peeledSha = "3333333333333333333333333333333333333333";
+        VStringBuffer output("%s\trefs/heads/feature/v1\n%s\trefs/tags/v1\n%s\trefs/tags/v1^{}\n", branchSha, tagSha, peeledSha);
+        StringBuffer sha;
+        CPPUNIT_ASSERT(extractRemoteSha(sha, output, "v1"));
+        CPPUNIT_ASSERT_EQUAL(std::string(peeledSha), std::string(sha.str()));
+
+        output.appendf("%s\trefs/heads/v1\r\n", branchSha);
+        CPPUNIT_ASSERT(extractRemoteSha(sha.clear(), output, "v1"));
+        CPPUNIT_ASSERT_EQUAL(std::string(branchSha), std::string(sha.str()));
+
+        VStringBuffer lightweight("%s\trefs/tags/v2", tagSha);
+        CPPUNIT_ASSERT(extractRemoteSha(sha.clear(), lightweight, "v2"));
+        CPPUNIT_ASSERT_EQUAL(std::string(tagSha), std::string(sha.str()));
+
+        CPPUNIT_ASSERT(!extractRemoteSha(sha.clear(), output, "main"));
+        CPPUNIT_ASSERT(!extractRemoteSha(sha.clear(), "", "main"));
     }
 };
 
