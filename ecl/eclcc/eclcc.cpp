@@ -505,6 +505,8 @@ protected:
     bool optUpdateRepos = true;
     bool optCleanInvalidRepos = true;
     bool optCleanRepos = false;
+    bool optGitLsRemote = false;
+    bool optGitApi = false;
 
     mutable bool daliConnected = false;
     mutable bool disconnectReported = false;
@@ -2232,7 +2234,7 @@ bool EclCC::processFiles()
         //Set up the default repository information.  This could be simplified to not use a localRepositoryManager later
         //if eclcc did not have a strange mode for running multiple queries as part of the regression suite testing on windows.
         repositoryManager.setOptions(eclRepoPath, optGitUser, optDefaultGitPrefix, optFetchRepos, optUpdateRepos, optCleanRepos, optCleanInvalidRepos, logVerbose);
-        repositoryManager.setGitOptions(optGitRequestTimeStamp ? optGitRequestTimeStamp : processStartTimestamp, optGitFetchToleranceSeconds);
+        repositoryManager.setGitOptions(optGitRequestTimeStamp ? optGitRequestTimeStamp : processStartTimestamp, optGitFetchToleranceSeconds, optGitLsRemote, optGitApi);
         ForEachItemIn(iMapping, repoMappings)
         {
             const char * cur = repoMappings.item(iMapping);
@@ -2911,6 +2913,12 @@ int EclCC::parseCommandLineOptions(int argc, const char* argv[])
         else if (iter.matchOption(tempArg, "--gitfetchtolerance"))
         {
             optGitFetchToleranceSeconds = strtoll(tempArg, nullptr, 10);
+        }
+        else if (iter.matchFlag(optGitLsRemote, "--gitlsremote"))
+        {
+        }
+        else if (iter.matchFlag(optGitApi, "--gitapi"))
+        {
         }
         else if (iter.matchOption(optGitUser, "--gituser"))
         {

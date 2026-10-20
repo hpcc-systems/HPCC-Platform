@@ -66,6 +66,10 @@ if(NOT PLUGIN)
         dfuwu
         ws_dfsclient
         )
+    if (USE_CPPUNIT)
+        include_directories(${HPCC_SOURCE_DIR}/testing/unittests)
+        target_link_libraries(pkgfiles PRIVATE ${CppUnit_LIBRARIES})
+    endif()
     if (NOT CONTAINERIZED)
         target_link_libraries(pkgfiles PRIVATE environment)
     endif()

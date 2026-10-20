@@ -302,33 +302,75 @@ static inline bool physicalSizeMatchesMeta(const struct stat &info, offset_t exp
 static bool safeStat(const char *filename, struct stat &info, bool checkSize)
 {
     bool exists = safeStatOnce(filename, info); // a single stat establishes both existence and size
-    if (exists && !checkSize)
+    bool needWriteSyncCheck = !exists || checkSize;
+    int marginDeltaMs;
+    bool trace = getWriteSyncMarginDeltaMs(marginDeltaMs);
+    if (!needWriteSyncCheck && !trace)
         return true; // file exists and caller only needs metadata - skip write-sync cache check entirely
 
+    CCycleTimer timer(trace); // only read the cycle counter when tracing is enabled
     offset_t expectedSize = (offset_t)-1;
     bool compressed = false;
     // Lock-free fast path when nothing is being tracked, so this adds negligible cost to the common stat.
+    // 0 means the path was either never mapped (not a recently published part) or its mapping has expired.
     unsigned remainingMs = getPathWriteSyncDelayRemainingMs(filename, expectedSize, compressed);
-    if (0 == remainingMs)
-        return exists; // not a recently published part - normal behaviour (single stat)
-
-    // The part is being tracked for write-sync visibility. As well as waiting for it to appear, wait for its
-    // on-disk size to reach the published size - cross-AZ propagation can briefly expose a partial file. Each
-    // attempt is a single stat yielding both existence and size, so this adds no extra file operations.
-    auto settled = [&]() -> bool
+    bool sizeMismatch = false;
+    if (remainingMs)
     {
-        exists = safeStatOnce(filename, info);
-        return exists && physicalSizeMatchesMeta(info, expectedSize, compressed);
-    };
+        // The part is being tracked for write-sync visibility.
+        // As well as waiting for it to appear, wait for its on-disk size to reach the published size -
+        // cross-AZ propagation can briefly expose a file before its size has fully propagated.
+        // Each attempt is a single stat yielding both existence and size, so this adds no extra file operations.
+        // NB: only wait for the size to settle if checkSize was requested - metadata-only callers
+        // (checkSize=false) only need to wait for existence, and must never throw on a size mismatch.
+        auto sizeOk = [&]() { return !checkSize || physicalSizeMatchesMeta(info, expectedSize, compressed); };
+        auto settled = [&]() -> bool
+        {
+            exists = safeStatOnce(filename, info);
+            return exists && sizeOk();
+        };
 
-    if (!(exists && physicalSizeMatchesMeta(info, expectedSize, compressed)))
-        waitForWriteSync(filename, remainingMs, settled);
+        bool isSettled = true; // metadata-only caller and file exists - nothing to settle
+        if (needWriteSyncCheck)
+        {
+            isSettled = exists && sizeOk();
+            if (!isSettled)
+                isSettled = waitForWriteSync(filename, remainingMs, settled);
 
-    // After the wait, if the part exists but its physical size still does not match the published size, the
-    // part has not fully/correctly propagated within its write-sync margin. Mirror doesPhysicalMatchMeta and
-    // treat this as a hard error rather than letting a reader consume a truncated/stale part. A part that is
-    // simply still missing is reported as not-found (return false), never as a size mismatch.
-    if (exists && !physicalSizeMatchesMeta(info, expectedSize, compressed))
+            // After the wait, isSettled false with exists true means the size never matched the published
+            // size within the margin. Only computed when size validation was actually requested - size was
+            // never waited on to settle otherwise, so it would be misleading to report a mismatch.
+            sizeMismatch = !isSettled && checkSize && exists;
+        }
+
+        if (trace)
+        {
+            unsigned forcedWaitMs = 0;
+            if (checkSize && (forceWriteSyncWaitDeltaMs == marginDeltaMs)) // metadata-only callers cannot read truncated content
+            {
+                unsigned elapsedMs = timer.elapsedMs();
+                if (elapsedMs < remainingMs)
+                {
+                    forcedWaitMs = remainingMs - elapsedMs;
+                    MilliSleep(forcedWaitMs);
+                    // refresh so callers and trace see post-wait metadata (isSettled kept as the pre-wait verdict)
+                    sizeMismatch = !settled() && exists;
+                }
+            }
+
+            // sizeMismatch is only ever computed when checkSize validation was actually requested; otherwise
+            // its on-disk size was never checked/waited on, so report it as not-applicable.
+            const char *sizeMismatchStr = checkSize ? (sizeMismatch ? "true" : "false") : "n/a";
+            const char *sizeValidationStr = !checkSize ? "not-requested" : ((offset_t)-1 == expectedSize) ? "unknown" : "enabled";
+            WARNLOG("safeStat: '%s' write-sync check: remainingMs=%u, exists=%s, size=%lld, expectedSize=%lld, compressed=%s, sizeValidation=%s, sizeMismatch=%s, checkSize=%s, settled=%s, forcedWaitMs=%u, elapsed=%.3fms",
+                filename, remainingMs, exists ? "true" : "false", exists ? (long long)info.st_size : -1LL, (long long)expectedSize,
+                compressed ? "true" : "false", sizeValidationStr, sizeMismatchStr, checkSize ? "true" : "false", isSettled ? "true" : "false", forcedWaitMs, (double)timer.elapsedNs() / 1000000.0);
+        }
+    }
+
+    // A part that is simply still missing is reported as not-found (return false), never as a size mismatch -
+    // sizeMismatch can only be true here for a tracked, currently-existing part whose size never settled.
+    if (sizeMismatch)
         throw makeStringExceptionV(JLIBERR_FileWriteSyncPhysicalSizeMismatch, "File '%s' physical size (%" I64F "u) does not match the published size (%" I64F "u) after waiting for write sync", filename, (offset_t)info.st_size, expectedSize);
 
     // Report the true current existence regardless: a missing file must remain not-found, and size() and

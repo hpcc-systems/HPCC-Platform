@@ -409,6 +409,7 @@ interface IConstDFUWorkUnit : extends IInterface
     virtual StringBuffer &getDebugValue(const char *propname, StringBuffer &str) const = 0;
     virtual StringBuffer &toXML(StringBuffer &buf) = 0;
     virtual DFUstate pollForCompletion(unsigned timeout) = 0;
+    virtual IPropertyTree *getDeferredSuperFiles() const = 0; // linked copy, or nullptr if none
 };
 
 
@@ -441,6 +442,7 @@ interface IDFUWorkUnit : extends IConstDFUWorkUnit
     virtual void setDebugValue(const char *propname, const char *value, bool overwrite) = 0;
     virtual bool removeQueue() = 0;
     virtual void clearExceptions() = 0;
+    virtual void setDeferredSuperFiles(IPropertyTree *superFiles) = 0;
 };
 
 
@@ -479,9 +481,12 @@ interface IDFUWorkUnitFactory : extends IInterface
 };
 
 
+interface IUserDescriptor;
+
 extern dfuwu_decl IDFUWorkUnitFactory * getDFUWorkUnitFactory();
 extern dfuwu_decl void submitDFUWorkUnit(IDFUWorkUnit *wu);
 extern dfuwu_decl void submitDFUWorkUnit(const char *wuid);
+extern dfuwu_decl bool createDeferredSuperFiles(IPropertyTree &superFiles, IUserDescriptor *user); // records @state/@error on each SuperFile; false if any failed
 
 extern dfuwu_decl DFUcmd decodeDFUcommand(const char * str);
 extern dfuwu_decl StringBuffer &encodeDFUcommand(DFUcmd cmd,StringBuffer &str);

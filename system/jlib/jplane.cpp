@@ -29,6 +29,7 @@
 #include "jsecrets.hpp"
 #include "jlog.hpp"
 #include "jerror.hpp"
+#include "jtime.hpp"
 
 //------------------------------------------------------------------------------------------------------------
 
@@ -982,6 +983,13 @@ void noteWriteSyncFiles(const std::vector<WriteSyncFileInfo> &files, time_t dead
 
     int marginDeltaMs = 0;
     bool forceTrace = getWriteSyncMarginDeltaMs(marginDeltaMs);
+    StringBuffer deadlineStr;
+    if (forceTrace)
+    {
+        CDateTime deadlineDt;
+        deadlineDt.set(deadline);
+        deadlineDt.getString(deadlineStr, true); // local time, to match log timestamps
+    }
 
     CriticalBlock b(writeSyncWriteCrit); // serialize writers; readers are unaffected by this lock
 
@@ -1006,8 +1014,8 @@ void noteWriteSyncFiles(const std::vector<WriteSyncFileInfo> &files, time_t dead
         existing.compressed = file.compressed;
         if (forceTrace)
         {
-            WARNLOG("noteWriteSyncFiles: %s write-sync entry (marginDeltaMs=%d): path=%s, deadline=%lld, expectedSize=%lld, compressed=%s",
-                isNewEntry ? "added" : "updated", marginDeltaMs, file.path.c_str(), (long long)deadline, (long long)file.expectedSize, file.compressed ? "true" : "false");
+            WARNLOG("noteWriteSyncFiles: %s write-sync entry (marginDeltaMs=%d): path=%s, deadline=%lld (%s), expectedSize=%lld, compressed=%s",
+                isNewEntry ? "added" : "updated", marginDeltaMs, file.path.c_str(), (long long)deadline, deadlineStr.str(), (long long)file.expectedSize, file.compressed ? "true" : "false");
         }
     }
     publishWriteSyncSnapshot();
