@@ -75,10 +75,12 @@ public:
         options.optVerbose = _verbose;
     }
 
-    void setGitOptions(unsigned __int64 _requestTimeStamp, __int64 _fetchToleranceSeconds)
+    void setGitOptions(unsigned __int64 _requestTimeStamp, __int64 _fetchToleranceSeconds, bool _resolveRefsWithLsRemote, bool _resolveRefsWithApi)
     {
         options.requestTimeStamp = _requestTimeStamp;
         options.fetchToleranceSeconds = _fetchToleranceSeconds;
+        options.resolveRefsWithLsRemote = _resolveRefsWithLsRemote;
+        options.resolveRefsWithApi = _resolveRefsWithApi;
     }
 
     IEclSourceCollection * resolveGitCollection(const char * repoPath, const char * defaultUrl);
@@ -124,6 +126,8 @@ private:
         bool cleanRepos = false;
         bool cleanInvalidRepos = false;
         bool optVerbose = false;
+        bool resolveRefsWithLsRemote = false;
+        bool resolveRefsWithApi = false;
         unsigned __int64 requestTimeStamp = getTimeStampNowValue();
         __int64 fetchToleranceSeconds = 5;
     } options;
