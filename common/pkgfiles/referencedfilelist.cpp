@@ -444,6 +444,7 @@ public:
     bool noDfsResolution;
     bool calcFileSize;
     bool trackSubFiles = false;
+    bool skipDfuCopy = false;
     bool hasExplicitRemoteLfn = false;
     bool hasResolvedRemoteStorage = false;
     bool hasResolvedRemotePrefix = false;
@@ -494,12 +495,12 @@ public:
     void addFilesFromPackage(IPropertyTree &package, const char *_daliip, const char *srcCluster, const char *_remotePrefix, const char *_remoteStorageName);
 
     virtual IReferencedFileIterator *getFiles();
-    virtual void cloneFileInfo(StringBuffer &publisherWuid, const char *dstCluster, unsigned updateFlags, IDFUhelper *helper, bool cloneSuperInfo, bool cloneForeign, unsigned redundancy, unsigned channelsPerNode, int replicateOffset, const char *defReplicateFolder);
+    virtual void cloneFileInfo(StringBuffer &publisherWuid, const char *dstCluster, unsigned updateFlags, IDFUhelper *helper, bool cloneSuperInfo, bool cloneForeign, unsigned redundancy, unsigned channelsPerNode, int replicateOffset, const char *defReplicateFolder, bool targetPlaneSpecified) override;
 
     virtual void cloneRelationships();
-    virtual void cloneAllInfo(StringBuffer &publisherWuid, const char *dstCluster, unsigned updateFlags, IDFUhelper *helper, bool cloneSuperInfo, bool cloneForeign, unsigned redundancy, unsigned channelsPerNode, int replicateOffset, const char *defReplicateFolder)
+    virtual void cloneAllInfo(StringBuffer &publisherWuid, const char *dstCluster, unsigned updateFlags, IDFUhelper *helper, bool cloneSuperInfo, bool cloneForeign, unsigned redundancy, unsigned channelsPerNode, int replicateOffset, const char *defReplicateFolder, bool targetPlaneSpecified) override
     {
-        cloneFileInfo(publisherWuid, dstCluster, updateFlags, helper, cloneSuperInfo, cloneForeign, redundancy, channelsPerNode, replicateOffset, defReplicateFolder);
+        cloneFileInfo(publisherWuid, dstCluster, updateFlags, helper, cloneSuperInfo, cloneForeign, redundancy, channelsPerNode, replicateOffset, defReplicateFolder, targetPlaneSpecified);
         cloneRelationships();
     }
     virtual void resolveFiles(const StringArray &locations, const char *remoteIP, const char *_remotePrefix, const char *srcCluster, bool checkLocalFirst, bool addSubFiles, bool trackSubFiles, bool resolveLFNForeign, bool useRemoteStorage) override;
@@ -996,7 +997,7 @@ bool ReferencedFile::needsCopying(bool cloneForeign) const
 
 void ReferencedFile::cloneInfo(IDFUWorkUnit *publisherWu, StringArray &subtaskWuids, unsigned updateFlags, IDFUhelper *helper, IUserDescriptor *user, const char *dstCluster, const char *srcCluster, bool cloneForeign, unsigned redundancy, unsigned channelsPerNode, int replicateOffset, const char *defReplicateFolder, const char *dfu_queue)
 {
-    if (!needsCopying(cloneForeign))
+    if (!needsCopying(cloneForeign) || skipDfuCopy)
         return;
     if (fileSrcCluster.length())
         srcCluster = fileSrcCluster;
@@ -1494,11 +1495,31 @@ bool ReferencedFileList::filesNeedCopying(bool cloneForeign)
     return false;
 }
 
-void ReferencedFileList::cloneFileInfo(StringBuffer &publisherWuid, const char *dstCluster, unsigned updateFlags, IDFUhelper *helper, bool cloneSuperInfo, bool cloneForeign, unsigned redundancy, unsigned channelsPerNode, int replicateOffset, const char *defReplicateFolder)
+void ReferencedFileList::cloneFileInfo(StringBuffer &publisherWuid, const char *dstCluster, unsigned updateFlags, IDFUhelper *helper, bool cloneSuperInfo, bool cloneForeign, unsigned redundancy, unsigned channelsPerNode, int replicateOffset, const char *defReplicateFolder, bool targetPlaneSpecified)
 {
     Owned<IDFUWorkUnit> publisher;
     bool dfucopy = 0 != (updateFlags & DFU_UPDATEF_COPY);
-    bool needToCopyPhysicalFiles = filesNeedCopying(cloneForeign);
+    bool overwrite = (updateFlags & DFU_UPDATEF_OVERWRITE) != 0;
+    bool needToCopyPhysicalFiles = false;
+
+    ReferencedFileIterator files(this);
+    ForEach(files)
+    {
+        ReferencedFile &file = files.queryObject();
+        file.skipDfuCopy = false;
+        if (!file.needsCopying(cloneForeign))
+            continue;
+
+        if (dfucopy && !overwrite)
+        {
+            Owned<IDistributedFile> destination = queryDistributedFileDirectory().lookup(file.logicalName, user, AccessMode::meta, false, false, nullptr, defaultPrivilegedUser);
+            // A specified target (including a bare-metal Roxie cluster) must already host the file; otherwise any existing plane is acceptable.
+            if (destination)
+                file.skipDfuCopy = !targetPlaneSpecified || destination->findCluster(dstCluster) != NotFound;
+        }
+        if (!file.skipDfuCopy)
+            needToCopyPhysicalFiles = true;
+    }
 
     if (dfucopy)
     {
@@ -1551,7 +1572,6 @@ void ReferencedFileList::cloneFileInfo(StringBuffer &publisherWuid, const char *
         }
     }
 
-    ReferencedFileIterator files(this);
     StringArray subtaskWuids;
     if (needToCopyPhysicalFiles)
     {
