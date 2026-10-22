@@ -44,6 +44,9 @@
 #include <string>
 #include <memory>
 
+// Ensures no XXE (external entity/DTD resolution) to prevent that attack surface.
+constexpr int hpccXpathParseOptions = XML_PARSE_NO_XXE;
+
 static inline char *skipWS(char *s)
 {
     while (isspace(*s)) s++;
@@ -635,7 +638,7 @@ public:
         if (!location)
             return;
 
-        xmlDocPtr contentDoc = xmlReadMemory(xml, strlen(xml), "addXmlContent", nullptr, 0);
+        xmlDocPtr contentDoc = xmlReadMemory(xml, strlen(xml), "addXmlContent", nullptr, hpccXpathParseOptions);
         if (!contentDoc)
             throw makeStringExceptionV(-1, "XpathContext:addXmlContent: Unable to parse %s XML content", xml);
 
@@ -1852,7 +1855,7 @@ private:
         if (xml==nullptr) //means delete content
             return;
 
-        xmlDocPtr contentDoc = xmlReadMemory(xml, strlen(xml), section, nullptr, 0);
+        xmlDocPtr contentDoc = xmlReadMemory(xml, strlen(xml), section, nullptr, hpccXpathParseOptions);
         if (!contentDoc)
             throw MakeStringException(-1, "CSectionalXmlDocModel:setContent xml string: Unable to parse %s XML content", section);
 
@@ -2057,9 +2060,39 @@ class LibXml2XPathProcessorTests : public CppUnit::TestFixture
         CPPUNIT_TEST(testWriteUTF8);
         CPPUNIT_TEST(testAddXmlContentWellFormed);
         CPPUNIT_TEST(testAddXmlContentMalformed);
+        CPPUNIT_TEST(testAddXmlContentBlocksExternalEntity);
+        CPPUNIT_TEST(testSetContentBlocksExternalEntity);
     CPPUNIT_TEST_SUITE_END();
 
+    static constexpr const char * xxeCanaryFilename = "xmllib_xpath_xxe_canary.txt";
+    static constexpr const char * xxeCanaryContent  = "XPATH_XXE_CANARY";
+
+    static void removeIfExists(const char * filename)
+    {
+        Owned<IFile> f = createIFile(filename);
+        if (f->exists())
+            f->remove();
+    }
+
+    static void writeFile(const char * filename, const char * content)
+    {
+        Owned<IFile> f = createIFile(filename);
+        Owned<IFileIO> io = f->open(IFOcreate);
+        CPPUNIT_ASSERT_MESSAGE("Failed to create file for XXE tests", io != nullptr);
+        io->write(0, strlen(content), content);
+    }
+
 public:
+    void setUp() override
+    {
+        writeFile(xxeCanaryFilename, xxeCanaryContent);
+    }
+
+    void tearDown() override
+    {
+        removeIfExists(xxeCanaryFilename);
+    }
+
     void testWriteUTF8()
     {
         bool failed = false;
@@ -2104,6 +2137,51 @@ public:
 
         // Note: libxml2 reports an error for this test directly to stderr, but it is not a failure
         CPPUNIT_ASSERT_THROWS_IEXCEPTION(xpathCtx->addXmlContent("<child>unclosed"), "addXmlContent: expected exception for malformed XML was not thrown");
+    }
+
+    // Regression tests: addXmlContent and setContent previously parsed with
+    // options=0, which happened to be safe only because entity substitution was never
+    // requested. They now explicitly pass XML_PARSE_NO_XXE. These tests confirm external
+    // SYSTEM entities are never resolved (no canary file content leaks into the tree),
+    // protecting this security invariant against future regression.
+    //
+    // Both tests share this helper, differing only in how the entity-bearing XML reaches
+    // the context (addXmlContent() vs. createScriptContext()'s initial content).
+    void assertExternalEntityBlocked(const char * elementName, const char * xpath, bool viaAddXmlContent)
+    {
+        StringBuffer canaryPath;
+        makeAbsolutePath(xxeCanaryFilename, canaryPath);
+
+        VStringBuffer xml(
+            "<?xml version=\"1.0\"?>"
+            "<!DOCTYPE %s ["
+            "  <!ENTITY xxe SYSTEM \"file://%s\">"
+            "]>"
+            "<%s>&xxe;</%s>",
+            elementName, canaryPath.str(), elementName, elementName);
+
+        static constexpr const char* section = "content";
+        Owned<ISectionalXmlDocModel> scriptCtx(createScriptContext(section, viaAddXmlContent ? "<root/>" : xml.str()));
+        Owned<IXpathContext> xpathCtx(createXPathContext(scriptCtx, section));
+
+        if (viaAddXmlContent)
+            xpathCtx->addXmlContent(xml.str());
+
+        StringBuffer result;
+        xpathCtx->evaluateAsString(xpath, result);
+        CPPUNIT_ASSERT_MESSAGE(
+            "external SYSTEM entity must not be resolved: canary content must be absent",
+            strstr(result.str(), xxeCanaryContent) == nullptr);
+    }
+
+    void testAddXmlContentBlocksExternalEntity()
+    {
+        assertExternalEntityBlocked("child", "child", true);
+    }
+
+    void testSetContentBlocksExternalEntity()
+    {
+        assertExternalEntityBlocked("root", ".", false);
     }
 
 private:
