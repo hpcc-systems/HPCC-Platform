@@ -1122,7 +1122,7 @@ A kludge to ensure mounted storage (e.g. for nfs, minikube or docker for desktop
              "{{ $permCmd }}"
            ]
   volumeMounts:
-{{ include "hpcc.addVolumeMounts" (dict "root" .root "component" $component "includeNames" $volumeNames) | indent 2 }}
+{{ include "hpcc.addVolumeMounts" (dict "root" .root "me" $component "includeNames" $volumeNames) | indent 2 }}
 {{- end }}
 
 
