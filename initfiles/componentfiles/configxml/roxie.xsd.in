@@ -250,6 +250,19 @@
             </xs:attribute>
           </xs:complexType>
         </xs:element>
+        <xs:element name="directAccessPlanes" type="xs:string" minOccurs="0" maxOccurs="unbounded">
+          <xs:annotation>
+            <xs:appinfo>
+              <tooltip>Storage plane Roxie can access directly without copying files to its default plane</tooltip>
+            </xs:appinfo>
+          </xs:annotation>
+        </xs:element>
+        <xs:element name="preferredPlanes" minOccurs="0" maxOccurs="unbounded">
+          <xs:complexType>
+            <xs:attribute name="name" type="xs:string" use="required"/>
+            <xs:attribute name="priority" type="xs:integer" use="optional"/>
+          </xs:complexType>
+        </xs:element>
         <xs:element name="PreferredCluster" maxOccurs="unbounded">
           <xs:annotation>
             <xs:appinfo>

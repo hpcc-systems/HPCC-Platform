@@ -2296,7 +2296,24 @@ StringArray & getRoxieDirectAccessPlanes(StringArray & planes, StringBuffer &def
 {
     getRoxieDefaultPlane(defaultPlane, roxieName);
     if (defaultPlane.length() && includeDefaultPlane)
-        planes.append(defaultPlane);
+        planes.appendUniq(defaultPlane);
+
+    Owned<IEnvironmentFactory> factory = getEnvironmentFactory(false);
+    Owned<IConstEnvironment> env = factory->openEnvironment();
+    Owned<IPropertyTree> environmentRoot = &env->getPTree();
+
+    VStringBuffer xpath("Software/RoxieCluster[@name=\"%s\"]", defaultPlane.str());
+    IPropertyTree *cluster = environmentRoot->queryPropTree(xpath.str());
+    if (!cluster)
+        throw makeStringExceptionV(ECLWATCH_INVALID_CLUSTER_NAME, "RoxieCluster %s not found.", roxieName);
+
+    Owned<IPropertyTreeIterator> iter = cluster->getElements("directAccessPlanes");
+    ForEach(*iter)
+    {
+        const char *plane = iter->query().queryProp("");
+        if (!isEmptyString(plane))
+            planes.appendUniq(plane);
+    }
     return planes;
 }
 

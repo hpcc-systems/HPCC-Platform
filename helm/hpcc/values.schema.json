@@ -2199,6 +2199,23 @@
           "type": "array",
           "items": { "type": "string" }
         },
+        "preferredPlanes": {
+          "description": "A list of storage planes to prefer when multiple physical copies are available",
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "priority": {
+                "type": "integer"
+              }
+            },
+            "required": [ "name" ],
+            "additionalProperties": false
+          }
+        },
         "dataPlane": {
           "$ref": "#/definitions/dataPlane"
         },

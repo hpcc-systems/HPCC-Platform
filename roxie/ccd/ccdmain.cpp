@@ -744,6 +744,7 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
     if (argc>=2 && (stricmp(argv[1], "-selftest")==0 || stricmp(argv[1], "--selftest")==0))
     {
         selfTestMode = true;
+        initNullConfiguration();
         queryStderrLogMsgHandler()->setMessageFields(MSGFIELD_time | MSGFIELD_milliTime | MSGFIELD_prefix);
         CppUnit::TextUi::TestRunner runner;
         if (argc==2)
@@ -863,17 +864,28 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         if (topos)
             topoValues.appendList(topos, ",", true);
 
-        if (topology->hasProp("PreferredCluster"))
+        Owned<IPropertyTreeIterator> preferredPlanes;
+        if (topology->hasProp("preferredPlanes"))
+            preferredPlanes.setown(topology->getElements("preferredPlanes"));
+        else if (topology->hasProp("PreferredCluster"))
+            preferredPlanes.setown(topology->getElements("PreferredCluster"));
+
+        if (preferredPlanes)
         {
             preferredClusters = new MapStringTo<int>(true);
-            Owned<IPropertyTreeIterator> clusters = topology->getElements("PreferredCluster");
-            ForEach(*clusters)
+            // Choose a high priority, so that these entries take precedence over default priorities (of 100)
+            int defaultPriority = 1000;
+            ForEach(*preferredPlanes)
             {
-                IPropertyTree &child = clusters->query();
+                IPropertyTree &child = preferredPlanes->query();
                 const char *name = child.queryProp("@name");
-                int priority = child.getPropInt("@priority", 100);
+                int priority = child.getPropInt("@priority", defaultPriority);
                 if (name && *name)
                     preferredClusters->setValue(name, priority);
+
+                // If priorities are not specified, earlier items in the list have higher priority.
+                if (priority > 0)
+                    defaultPriority = priority - 1;
             }
         }
         topology->getProp("@name", roxieName);

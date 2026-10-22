@@ -576,6 +576,20 @@
                                           <!--hpcc:autoGenerateValue="ACL"/>-->
                         <!--</xs:complexType>-->
                     <!--</xs:element>-->
+                    <xs:element name="directAccessPlanes" type="xs:string" hpcc:displayName="Direct Access Planes"
+                                minOccurs="0" maxOccurs="unbounded"
+                                hpcc:tooltip="Storage planes Roxie can access directly without copying files to its default plane"/>
+                    <xs:element name="preferredPlanes" hpcc:displayName="Preferred Planes"
+                                minOccurs="0" maxOccurs="unbounded">
+                        <xs:complexType>
+                            <xs:attribute name="name" type="xs:string" use="required" hpcc:autoGenerateType="prefix_"
+                                          hpcc:autoGenerateValue="PreferredPlane"
+                                          hpcc:uniqueKey="roxiepreferredplane_name"
+                                          hpcc:tooltip="Name of the preferred storage plane"/>
+                            <xs:attribute name="priority" type="xs:integer" use="optional"
+                                          hpcc:tooltip="Priority (negative to disable)"/>
+                        </xs:complexType>
+                    </xs:element>
                     <xs:element name="PreferredCluster" hpcc:displayName="Preferred Clusters" maxOccurs="unbounded">
                         <xs:complexType>
                             <xs:attribute name="name" type="xs:string" use="required" hpcc:autoGenerateType="prefix_"

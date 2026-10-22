@@ -1360,7 +1360,10 @@ Generate instance queue names
   ldapUser: {{ .ldapUser }}
   dataPlane: {{ .dataPlane | default (include "hpcc.getDefaultDataPlane" $) }}
   {{- if hasKey . "directAccessPlanes" }}
-  directAccessPlanes: {{ .directAccessPlanes }}
+  directAccessPlanes: {{- toYaml .directAccessPlanes | nindent 4 }}
+  {{- end }}
+  {{- if hasKey . "preferredPlanes" }}
+  preferredPlanes: {{- toYaml .preferredPlanes | nindent 4 }}
   {{- end }}
  {{- end }}
 {{ end -}}
