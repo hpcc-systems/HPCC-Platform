@@ -120,7 +120,7 @@ void CTpWrapper::getClusterMachineList(double clientVersion,
             getMachineList(clientVersion, eqHoleStandbyProcess, path.str(), "", ClusterDirectory, MachineList);
         }
     }
-    catch(IException* e){   
+    catch(IException* e){
         StringBuffer msg;
         e->errorMessage(msg);
         IWARNLOG("%s", msg.str());
@@ -132,7 +132,7 @@ void CTpWrapper::getClusterMachineList(double clientVersion,
 }
 
 
-void CTpWrapper::fetchInstances(const char* ServiceType, IPropertyTree& service, 
+void CTpWrapper::fetchInstances(const char* ServiceType, IPropertyTree& service,
                                 IArrayOf<IEspTpMachine>& tpMachines)
 {
     Owned<IPropertyTreeIterator> instances = service.getElements("Instance");
@@ -628,7 +628,7 @@ void CTpWrapper::getTargetClusterList(IArrayOf<IEspTpLogicalCluster>& clusters, 
         throw MakeStringExceptionDirect(ECLWATCH_CANNOT_GET_ENV_INFO, MSG_FAILED_GET_ENVIRONMENT_INFO);
 
     Owned<IPropertyTreeIterator> clusterIterator = root->getElements("Topology/Cluster");
-    if (clusterIterator->first()) 
+    if (clusterIterator->first())
     {
         do {
             IPropertyTree &cluster0 = clusterIterator->query();
@@ -645,11 +645,11 @@ void CTpWrapper::getTargetClusterList(IArrayOf<IEspTpLogicalCluster>& clusters, 
             else
             {
                 Owned<IPropertyTreeIterator> clusters0= cluster0.getElements(clusterType);
-                if (clusters0->first()) 
+                if (clusters0->first())
                 {
                     if (!clusterName || !*clusterName)
                     {
-                        IPropertyTree &cluster = clusters0->query();                    
+                        IPropertyTree &cluster = clusters0->query();
                         const char* name = cluster.queryProp("@process");
                         if (name && *name)
                             processName.append(name);
@@ -659,7 +659,7 @@ void CTpWrapper::getTargetClusterList(IArrayOf<IEspTpLogicalCluster>& clusters, 
                     else
                     {
                         do {
-                            IPropertyTree &cluster = clusters0->query();                    
+                            IPropertyTree &cluster = clusters0->query();
                             const char* name = cluster.queryProp("@process");
                             if (!name||!*name)
                                 continue;
@@ -701,8 +701,8 @@ void CTpWrapper::queryTargetClusterProcess(double version, const char* processNa
         throw MakeStringExceptionDirect(ECLWATCH_CANNOT_GET_ENV_INFO, MSG_FAILED_GET_ENVIRONMENT_INFO);
 
     const char* queueName = NULL;
-    if (processName&&(stricmp(clusterType,eqThorCluster)==0)) 
-    {   
+    if (processName&&(stricmp(clusterType,eqThorCluster)==0))
+    {
         // only for multi-thor
         // only list first thor cluster on queue
         queueName = pClusterTree->queryProp("@queueName");
@@ -710,7 +710,7 @@ void CTpWrapper::queryTargetClusterProcess(double version, const char* processNa
             queueName = processName;
     }
 
-    IEspTpCluster* clusterInfo = createTpCluster("","");    
+    IEspTpCluster* clusterInfo = createTpCluster("","");
     clusterInfo->setName(processName);
     if (queueName && *queueName)
         clusterInfo->setQueueName(queueName);
@@ -827,7 +827,7 @@ void CTpWrapper::queryTargetClusters(double version, const char* clusterType, co
             return;
 
         do {
-            IPropertyTree &cluster = clusters->query();                 
+            IPropertyTree &cluster = clusters->query();
             const char* name = cluster.queryProp("@name");
             if (!name||!*name)
                 continue;
@@ -853,7 +853,7 @@ void CTpWrapper::queryTargetClusters(double version, const char* clusterType, co
             if (clusterType && !stricmp(clusterType, eqHoleCluster) && (roxieClusters->first() || thorClusters->first()))
                 continue;
 
-            IEspTpTargetCluster* clusterInfo = createTpTargetCluster("","");                    
+            IEspTpTargetCluster* clusterInfo = createTpTargetCluster("","");
             clusterInfo->setName(name);
             if (prefix && *prefix)
                 clusterInfo->setPrefix(prefix);
@@ -865,7 +865,7 @@ void CTpWrapper::queryTargetClusters(double version, const char* clusterType, co
             {
                 clusterInfo->setType(eqThorCluster);
                 do {
-                    IPropertyTree &thorCluster = thorClusters->query();                 
+                    IPropertyTree &thorCluster = thorClusters->query();
                     const char* process = thorCluster.queryProp("@process");
                     if (process && *process)
                     {
@@ -878,7 +878,7 @@ void CTpWrapper::queryTargetClusters(double version, const char* clusterType, co
             {
                 clusterInfo->setType(eqRoxieCluster);
                 do {
-                    IPropertyTree &roxieCluster = roxieClusters->query();                   
+                    IPropertyTree &roxieCluster = roxieClusters->query();
                     const char* process = roxieCluster.queryProp("@process");
                     if (process && *process)
                     {
@@ -891,7 +891,7 @@ void CTpWrapper::queryTargetClusters(double version, const char* clusterType, co
             IArrayOf<IConstTpEclServer>& eclCCServerList = clusterInfo->getTpEclCCServers();
             if (eclCCServerProcesses->first())
             {
-                IPropertyTree &eclCCServerProcess = eclCCServerProcesses->query();                  
+                IPropertyTree &eclCCServerProcess = eclCCServerProcesses->query();
                 const char* process = eclCCServerProcess.queryProp("@process");
                 if (process && *process)
                 {
@@ -915,7 +915,7 @@ void CTpWrapper::queryTargetClusters(double version, const char* clusterType, co
             IArrayOf<IConstTpEclAgent>& eclAgentList = clusterInfo->getTpEclAgents();
             if (eclAgentProcesses->first())
             {
-                IPropertyTree &eclAgentProcess = eclAgentProcesses->query();                    
+                IPropertyTree &eclAgentProcess = eclAgentProcesses->query();
                 const char* process = eclAgentProcess.queryProp("@process");
                 if (process && *process)
                 {
@@ -927,7 +927,7 @@ void CTpWrapper::queryTargetClusters(double version, const char* clusterType, co
             IArrayOf<IConstTpEclScheduler>& eclSchedulerList = clusterInfo->getTpEclSchedulers();
             if (eclSchedulerProcesses->first())
             {
-                IPropertyTree &eclSchedulerProcess = eclSchedulerProcesses->query();                    
+                IPropertyTree &eclSchedulerProcess = eclSchedulerProcesses->query();
                 const char* process = eclSchedulerProcess.queryProp("@process");
                 if (process && *process)
                 {
@@ -938,7 +938,7 @@ void CTpWrapper::queryTargetClusters(double version, const char* clusterType, co
             targetClusterList.append(*clusterInfo);
         } while (clusters->next());
     }
-    catch(IException* e){   
+    catch(IException* e){
         StringBuffer msg;
         e->errorMessage(msg);
         IWARNLOG("%s", msg.str());
@@ -1098,7 +1098,7 @@ void CTpWrapper::getClusterProcessList(const char* ClusterType, IArrayOf<IEspTpC
             } while (clusters->next());
         }
     }
-    catch(IException* e){   
+    catch(IException* e){
         StringBuffer msg;
         e->errorMessage(msg);
         IWARNLOG("%s", msg.str());
@@ -1193,7 +1193,7 @@ void CTpWrapper::getHthorClusterList(IArrayOf<IEspTpCluster>& clusterList)
             }
         }
     }
-    catch(IException* e){   
+    catch(IException* e){
         StringBuffer msg;
         e->errorMessage(msg);
         IWARNLOG("%s", msg.str());
@@ -1209,6 +1209,17 @@ void CTpWrapper::getGroupList(double espVersion, const char* kindReq, IArrayOf<I
 {
     try
     {
+        // Dali does not tag storage-plane-derived groups with @kind (see initClusterAndStoragePlaneGroups),
+        // so identify them by matching against the configured data plane names instead.
+        StringArray dataPlaneNames;
+        Owned<IPropertyTreeIterator> dataPlanes = getGlobalConfigSP()->getElements("storage/planes[@category='data']");
+        ForEach(*dataPlanes)
+        {
+            const char* name = dataPlanes->query().queryProp("@name");
+            if (!isEmptyString(name))
+                dataPlaneNames.append(name);
+        }
+
         Owned<IRemoteConnection> conn = querySDS().connect("/Groups", myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT);
         Owned<IPropertyTreeIterator> groups= conn->queryRoot()->getElements("Group");
         if (groups->first())
@@ -1216,17 +1227,20 @@ void CTpWrapper::getGroupList(double espVersion, const char* kindReq, IArrayOf<I
             do
             {
                 IPropertyTree &group = groups->query();
+                const char* name = group.queryProp("@name");
                 const char* kind = group.queryProp("@kind");
+                bool isDataPlane = isEmptyString(kind) && dataPlaneNames.contains(name, true);
+                if (isDataPlane)
+                    kind = "Plane";
                 if (!isEmptyString(kindReq) && !strisame(kindReq, kind))
                     continue;
 
                 IEspTpGroup* pGroup = createTpGroup("","");
-                const char* name = group.queryProp("@name");
                 pGroup->setName(name);
-                if (kind && *kind && (espVersion >= 1.21))
+                if (!isEmptyString(kind) && (espVersion >= 1.21))
                 {
                     pGroup->setKind(kind);
-                    pGroup->setReplicateOutputs(checkGroupReplicateOutputs(name, kind));
+                    pGroup->setReplicateOutputs(isDataPlane ? false : checkGroupReplicateOutputs(name, kind));
                 }
                 GroupList.append(*pGroup);
             } while (groups->next());
@@ -1473,7 +1487,7 @@ void CTpWrapper::getMachineList(double clientVersion, const char* MachineType, c
         Owned<IEnvironmentFactory> envFactory = getEnvironmentFactory(true);
         Owned<IConstEnvironment> constEnv = envFactory->openEnvironment();
         Owned<IPropertyTree> root0 = &constEnv->getPTree();
-    
+
         char* xpath = (char*)ParentPath;
         if (!strnicmp(xpath, "/Environment/", 13))
             xpath += 13;
@@ -1502,8 +1516,8 @@ void CTpWrapper::getMachineList(double clientVersion, const char* MachineType, c
 
                 //load up the machines of which we do not care what status is set or we have a matching status
                 const char* state = machine.queryProp("@state");
-            if ((Status==NULL || *Status=='\0')  || 
-                (state && strcmp(Status, state)==0)) 
+            if ((Status==NULL || *Status=='\0')  ||
+                (state && strcmp(Status, state)==0))
                 {
                     IEspTpMachine & machineInfo = *(createTpMachine("",""));
                     getMachineInfo(machineInfo,machine,ParentPath,MachineType,nodenametag);
@@ -1518,7 +1532,7 @@ void CTpWrapper::getMachineList(double clientVersion, const char* MachineType, c
             } while (machines->next());
         }
     }
-    catch(IException* e){   
+    catch(IException* e){
       StringBuffer msg;
       e->errorMessage(msg);
         IWARNLOG("%s", msg.str());
@@ -1767,7 +1781,7 @@ void CTpWrapper::setMachineInfo(const char* name,const char* type,IEspTpMachine&
             machine.setNetaddress(ep.str());
             machine.setConfigNetaddress(ep.str());
             machine.setOS(pMachineInfo->getOS());
-            
+
             switch(pMachineInfo->getState())
             {
                 case MachineStateAvailable:
@@ -1790,7 +1804,7 @@ void CTpWrapper::setMachineInfo(const char* name,const char* type,IEspTpMachine&
         machine.setName(name);
         machine.setType(type);
     }
-    catch(IException* e){   
+    catch(IException* e){
         StringBuffer msg;
         e->errorMessage(msg);
         IWARNLOG("%s", msg.str());
