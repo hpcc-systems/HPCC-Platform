@@ -889,7 +889,6 @@ TransferServer::TransferServer(ISocket * _masterSocket)
     updateFrequency = (unsigned int) -1;
     throttleNicSpeed = 0;
     compressedInput = false;
-    compressOutput = false;
     transferBufferSize = DEFAULT_STD_BUFFER_SIZE;
     fileUmask = -1;
 }
@@ -920,7 +919,7 @@ void TransferServer::appendTransformed(unsigned chunkIndex, ITransformer * input
 
     // If compressing, only flush when the job is completed - to prevent compressed output creating
     // extra blocks.  Also disable when containerized, to prevent too many blob parts ...
-    bool flushOutputPeriodically = !compressOutput && !isContainerized();
+    bool flushOutputPeriodically = !compressOutput() && !isContainerized();
     for (;;)
     {
         unsigned gotLength = input->getBlock(out);
@@ -1035,7 +1034,14 @@ void TransferServer::deserializeAction(MemoryBuffer & msg, unsigned action)
     if (msg.remaining())
         msg.read(throttleNicSpeed);
     if (msg.remaining())
-        msg.read(compressedInput).read(compressOutput);
+    {
+        byte outputFormat;
+        msg.read(compressedInput).read(outputFormat);
+        //Older masters sent a boolean - map 'true' to whatever the current default compression is.
+        if (outputFormat == unspecifiedSprayCompression)
+            outputFormat = defaultSprayCompression;
+        compressOutputFormat = (CompressionMethod)outputFormat;
+    }
     if (msg.remaining())
         msg.read(copyCompressed);
     if (msg.remaining())
@@ -1166,7 +1172,7 @@ bool TransferServer::pull()
         if (startProgress.status == OutputProgress::StatusBegin)
             break;
 
-        assertex(!compressOutput);
+        assertex(!compressOutput());
         RemoteFilename localTempFilename;
         getDfuTempName(localTempFilename, startPartition.outputName);
         OwnedIFile outFile = createIFile(localTempFilename);
@@ -1271,19 +1277,19 @@ processedProgress:
             OwnedIFileIO outio = outFile->openShared(IFOcreate,IFSHnone,IFEnocache);
             if (!outio)
                 throwError1(DFTERR_CouldNotCreateOutput, localFilename.str());
-            if (compressOutput) {
+            if (compressOutput()) {
                 Owned<ICompressor> compressor;
                 if (!encryptKey.isEmpty()) {
                     StringBuffer key;
                     decrypt(key,encryptKey);
                     compressor.setown(createAESCompressor256(key.length(),key.str()));
                 }
-                outio.setown(createCompressedFileWriter(outio, false, true, compressor, COMPRESS_METHOD_LZ4));
+                outio.setown(createCompressedFileWriter(outio, false, true, compressor, compressOutputFormat));
             }
 
             //Find the last partition entry that refers to the same file.
             const auto & fsProperties = outputFilename.queryFileSystemProperties();
-            if (!compressOutput && fsProperties.preExtendOutput)
+            if (!compressOutput() && fsProperties.preExtendOutput)
             {
                 PartitionPoint & lastChunk = partition.item(queryLastOutput(curOutput));
                 if (lastChunk.outputLength)
@@ -1361,7 +1367,7 @@ processedProgress:
                     else
                         output->getTime(NULL, &curProgress.resultTime, NULL);
 
-                    if (compressOutput)
+                    if (compressOutput())
                     {
                         curProgress.compressedPartSize = output->size();
                         curProgress.hasCompressed = true;
@@ -1400,30 +1406,30 @@ bool TransferServer::push()
             getDfuTempName(outFilename, curPartition.outputName);
 
             OwnedIFile output = createIFile(outFilename);
-            OwnedIFileIO outio = output->openShared(compressOutput?IFOreadwrite:IFOwrite,IFSHfull);
+            OwnedIFileIO outio = output->openShared(compressOutput()?IFOreadwrite:IFOwrite,IFSHfull);
             if (!outio)
             {
                 StringBuffer outputPath;
                 outFilename.getRemotePath(outputPath);
                 throwError1(DFTERR_CouldNotCreateOutput, outputPath.str());
             }
-            if (compressOutput) {
+            if (compressOutput()) {
                 Owned<ICompressor> compressor;
                 if (!encryptKey.isEmpty()) {
                     StringBuffer key;
                     decrypt(key,encryptKey);
                     compressor.setown(createAESCompressor256(key.length(),key.str()));
                 }
-                outio.setown(createCompressedFileWriter(outio, false, true, compressor, COMPRESS_METHOD_LZ4));
+                outio.setown(createCompressedFileWriter(outio, false, true, compressor, compressOutputFormat));
             }
 
             createOutputStream(outio);
-            if (!compressOutput)
+            if (!compressOutput())
                 out->seek(curPartition.outputOffset + curProgress.outputLength, IFSbegin);
             wrapOutInCRC(curProgress.outputCRC);
 
             transferChunk(idx);
-            if (compressOutput)
+            if (compressOutput())
             {
                 //Notify the master that the file compressed and its new size
                 curProgress.compressedPartSize = output->size();

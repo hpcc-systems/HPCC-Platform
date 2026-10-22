@@ -22,8 +22,16 @@
 #include "rmtfile.hpp"
 #include "daft.hpp"
 #include "ftbase.hpp"
+#include "jlzw.hpp"
 
 #define DEFAULT_MAX_CSV_SIZE     8096
+
+//The compression used for a compressed target when nothing else determines it.
+constexpr CompressionMethod defaultSprayCompression = isContainerized() ? COMPRESS_METHOD_ZSTD : COMPRESS_METHOD_LZ4;
+
+//The output compression is serialized as a byte, which was previously a boolean.  A value of 1 (the old
+//'true') therefore means "compressed, format unspecified" and is mapped to the current default.
+constexpr byte unspecifiedSprayCompression = 1;
 
 //Use hash defines for properties so I can't mis-spell them....
 #define ANinput             "@input"
