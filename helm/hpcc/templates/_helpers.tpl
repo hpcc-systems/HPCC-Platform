@@ -566,9 +566,9 @@ to addVolumeMounts so that if a plane can be used for multiple purposes then dup
   mountPath: {{ printf "%s/d%d" $mountPath $elem | quote }}
        {{- end }}
       {{- end }}
+      {{- $_ := set $previousMounts $alias.prefix true }}
+      {{- $_ := set $curAlias "num" (add $curAlias.num 1) }}
      {{- end }}
-     {{- $_ := set $previousMounts $plane.prefix true -}}
-     {{- $_ := set $curAlias "num" (add $curAlias.num 1) }}
     {{- end }}
    {{- end }}
 

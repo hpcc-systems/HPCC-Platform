@@ -59,6 +59,11 @@ do
          failed=1
       else
              base=$(basename "$file" .yaml)
+             if [[ "$base" == "aliasprefixcollision" ]]; then
+                # skipped alias must not consume an alias number; mounts must match volumes
+                assert_contains results.txt "name: data-volume-alias-1" "$file did not render data-volume-alias-1"
+                assert_not_contains results.txt "name: data-volume-alias-2" "$file unexpectedly rendered data-volume-alias-2"
+             fi
              if [[ "$base" =~ ^component-config-sasha-([^-]+)-(enabled|disabled)$ ]]; then
                 service="${BASH_REMATCH[1]}"
                 state="${BASH_REMATCH[2]}"
