@@ -41,6 +41,7 @@
 #include "jlog.hpp"
 #include "ftbase.ipp"
 #include "dautils.hpp"
+#include "jplane.hpp"
 
 #ifndef _CONTAINERIZED
 #include "dalienv.hpp"
@@ -335,7 +336,7 @@ void FileTransferThread::prepareCmd(MemoryBuffer &msg, unsigned version)
 
     msg.append(sprayer.throttleNicSpeed);
     msg.append(sprayer.compressedInput);
-    msg.append(sprayer.compressOutput);
+    msg.append((byte)sprayer.queryCompressOutputFormat());
     msg.append(sprayer.copyCompressed);
     msg.append(sprayer.transferBufferSize);
     msg.append(sprayer.encryptKey);
@@ -1115,6 +1116,37 @@ void FileSprayer::saveTransferOptions(bool usedApi)
 bool FileSprayer::calcCRC()
 {
     return options->getPropBool(ANcrc, true) && !compressOutput && !copyCompressed;
+}
+
+//Determine which compression to use for a compressed target - the format recorded on the target file,
+//otherwise the default for the target plane, otherwise the system default.
+void FileSprayer::calcCompressOutputFormat(const IPropertyTree * targetProps)
+{
+    StringBuffer compression;
+    if (targetProps)
+        targetProps->getProp("@compressionType", compression);
+
+    if (compression.isEmpty() && !targetPlane.isEmpty())
+    {
+        Owned<const IStoragePlane> plane = getStoragePlaneByName(targetPlane, false);
+        if (plane)
+        {
+            const char * planeCompression = plane->queryCompression();
+            if (!isEmptyString(planeCompression))
+                compression.append(planeCompression);
+        }
+    }
+
+    compressOutputFormat = translateToCompMethod(compression, defaultSprayCompression);
+}
+
+CompressionMethod FileSprayer::queryCompressOutputFormat() const
+{
+    if (!compressOutput)
+        return COMPRESS_METHOD_NONE;
+    if (compressOutputFormat == COMPRESS_METHOD_NONE)
+        return defaultSprayCompression;
+    return compressOutputFormat;
 }
 
 bool FileSprayer::calcInputCRC()
@@ -3237,6 +3269,8 @@ void FileSprayer::setTarget(IDistributedFile * target)
     }
     target->getClusterGroupName(0, targetPlane.clear());
 
+    calcCompressOutputFormat(&target->queryAttributes());
+
     checkSprayOptions();
 }
 
@@ -3258,6 +3292,8 @@ void FileSprayer::setTarget(IFileDescriptor * target, unsigned copy)
         targets.append(*new TargetLocation(filename, idx));
     }
     target->getClusterGroupName(0, targetPlane.clear());
+
+    calcCompressOutputFormat(&target->queryProperties());
 
     checkSprayOptions();
 }
@@ -3891,6 +3927,12 @@ cost_type FileSprayer::updateTargetProperties()
 
         if (keyCompression)
             curProps.setProp("@compressionType", keyCompression.get());
+        else if (compressOutput && encryptKey.isEmpty())
+        {
+            const char * compressionType = translateFromCompMethod(queryCompressOutputFormat());
+            if (!isEmptyString(compressionType))
+                curProps.setProp("@compressionType", compressionType);
+        }
 
         if (srcAttr.get() && !mirroring) {
             StringBuffer s;

@@ -2110,7 +2110,8 @@ public:
             properties.options.includeThreadIds = EventFileOption::Enabled;
         if (options & ERFstacktrace)
             properties.options.includeStackTraces = EventFileOption::Enabled;
-        readToken(baseTimestamp);
+        readToken(properties.startTimestamp);
+        properties.endTimestamp = properties.startTimestamp;
     }
 
     bool readEvent(CEvent& event)
@@ -2201,7 +2202,10 @@ public:
             EventAttr attr;
             readToken(attr);
             if (EvAttrNone == attr)
+            {
+                properties.endTimestamp = event.queryNumericValue(EvAttrEventTimestamp);
                 return true;
+            }
             if (attr >= EvAttrMax)
                 throw makeStringExceptionV(JLIBERR_SystemInvalidAttributeTypeU, "invalid attribute type %u", attr);
             switch (attrInformation[attr].type)
@@ -2342,7 +2346,7 @@ protected:
 #pragma warning(push)
 #pragma warning(disable: 4804)
 #endif
-            value += baseTimestamp;
+            value += properties.startTimestamp;
 #ifdef _MSC_VER
 #pragma warning(pop)
 #endif
@@ -2381,7 +2385,6 @@ protected:
     Owned<IBufferedSerialInputStream> stream;
     Owned<IFile> file;
     EventFileProperties properties;
-    __uint64 baseTimestamp{0};
     bool haveRecordingSource{false};
     StringBuffer scratchText;
     MemoryBuffer scratchBinary;

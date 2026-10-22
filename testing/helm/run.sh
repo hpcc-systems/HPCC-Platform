@@ -9,7 +9,7 @@ assert_contains() {
    local pattern=$2
    local message=$3
 
-   if ! grep -q "$pattern" "$file"
+   if ! grep -q -- "$pattern" "$file"
    then
       echo "$message"
       failed=1
@@ -21,7 +21,7 @@ assert_not_contains() {
    local pattern=$2
    local message=$3
 
-   if grep -q "$pattern" "$file"
+   if grep -q -- "$pattern" "$file"
    then
       echo "$message"
       failed=1
@@ -59,6 +59,11 @@ do
          failed=1
       else
              base=$(basename "$file" .yaml)
+             if [[ "$base" == "aliasprefixcollision" ]]; then
+                # skipped alias must not consume an alias number; mounts must match volumes
+                assert_contains results.txt "name: data-volume-alias-1" "$file did not render data-volume-alias-1"
+                assert_not_contains results.txt "name: data-volume-alias-2" "$file unexpectedly rendered data-volume-alias-2"
+             fi
              if [[ "$base" =~ ^component-config-sasha-([^-]+)-(enabled|disabled)$ ]]; then
                 service="${BASH_REMATCH[1]}"
                 state="${BASH_REMATCH[2]}"
@@ -72,6 +77,14 @@ do
                    assert_not_contains results.txt "$mount_path" "$file unexpectedly mounted $mount_path for $service disabled"
                    assert_not_contains results.txt "name: $configmap_name" "$file unexpectedly rendered $configmap_name for $service disabled"
                 fi
+             elif [[ "$base" == "roxie-storage-planes" ]]; then
+                assert_contains results.txt "directAccessPlanes:" "$file did not render directAccessPlanes"
+                assert_contains results.txt "- direct-plane-alpha" "$file did not render the first direct-access plane"
+                assert_contains results.txt "- direct-plane-beta" "$file did not render the second direct-access plane"
+                assert_contains results.txt "preferredPlanes:" "$file did not render preferredPlanes"
+                assert_contains results.txt "- name: preferred-plane-alpha" "$file did not render the first preferred plane as an object"
+                assert_contains results.txt "- name: preferred-plane-beta" "$file did not render the second preferred plane as an object"
+                assert_contains results.txt "priority: 25" "$file did not render the preferred-plane priority"
              fi
              if [[ "$base" == "ephemeralplanes" ]]; then
                 assert_contains results.txt "ephemeral: true" "$file did not pass ephemeral through to the plane config"

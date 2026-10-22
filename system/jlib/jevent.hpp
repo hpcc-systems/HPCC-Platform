@@ -722,15 +722,18 @@ interface IEventVisitor : extends IInterface
 // Static properties are set as the file is read:
 // - path is set when the file is successfully opened
 // - version and options are set when the file header is parsed
+// - startTimestamp is set from the file header; endTimestamp starts at the same value
 // - processDescriptor, channelId, replicaId, instanceId are set when the first RecordingSource
 //   event is encountered; values remain unchanged if no such event is present; a second such
 //   event is an error yielding an exception
 //
-// Runtime properties are updated as events are read.
+// Runtime properties, including endTimestamp, are updated as events are read.
 struct jlib_decl EventFileProperties
 {
     StringAttr path;              // location of the event data file
     uint32_t version{0};          // event file version number (AmbiguousVersion if sources conflict)
+    __uint64 startTimestamp{0};   // recording start time from the file header
+    __uint64 endTimestamp{0};     // timestamp of the last observed event, or startTimestamp if none
     struct {
         EventFileOption includeTraceIds{EventFileOption::Disabled};
         EventFileOption includeThreadIds{EventFileOption::Disabled};

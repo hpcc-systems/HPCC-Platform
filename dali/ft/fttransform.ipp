@@ -220,6 +220,7 @@ protected:
     void sendProgress(OutputProgress & curProgress);
     void transferChunk(unsigned chunkIndex);
     void wrapOutInCRC(unsigned startCRC);
+    bool compressOutput() const { return compressOutputFormat != COMPRESS_METHOD_NONE; }
 
 protected:
     PartitionPointArray     partition;
@@ -241,7 +242,7 @@ protected:
     unsigned                throttleNicSpeed;
     unsigned                numParallelSlaves;
     bool                    compressedInput;
-    bool                    compressOutput;
+    CompressionMethod       compressOutputFormat = COMPRESS_METHOD_NONE;
     bool                    copyCompressed;
     size32_t                transferBufferSize;
     StringAttr              encryptKey;

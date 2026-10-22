@@ -52,6 +52,11 @@ constexpr int hpccXsltStylesheetParseOptions = XML_PARSE_NOENT | XML_PARSE_NO_XX
 // text nodes, preserving text() matching behavior.
 constexpr int hpccXsltDocumentParseOptions = XML_PARSE_NOENT | XML_PARSE_NOCDATA | XML_PARSE_NO_XXE;
 
+// No entity substitution (preserves prior options=0 behavior); explicit defense-in-depth
+// block on external entity/DTD resolution so a future addition of XML_PARSE_NOENT alone
+// cannot silently reintroduce XXE.
+constexpr int hpccXmlSourceParseOptions = XML_PARSE_NO_XXE;
+
 xmlDocPtr readXmlMemoryWithOptions(const char *buffer, int size, const char *url, xmlDictPtr dict, int options)
 {
     xmlParserCtxtPtr context = xmlNewParserCtxt();
@@ -278,9 +283,9 @@ xmlDocPtr CLibXmlSource::getParsedXml()
         try
         {
             if (srcType == IO_TYPE_FILE)
-                parsedXml = xmlReadFile(filename.get(), NULL, 0);
+                parsedXml = xmlReadFile(filename.get(), NULL, hpccXmlSourceParseOptions);
             else if (srcType == IO_TYPE_BUFFER)
-                parsedXml = xmlReadMemory(text.get(), text.length(), "source.xml", NULL, 0);
+                parsedXml = xmlReadMemory(text.get(), text.length(), "source.xml", NULL, hpccXmlSourceParseOptions);
         }
         catch(...)
         {
@@ -945,12 +950,15 @@ class LibXsltXXESecurityTests : public CppUnit::TestFixture
         CPPUNIT_TEST(testXXE_StylesheetFromBuffer);
         CPPUNIT_TEST(testXXE_StylesheetFromFile);
         CPPUNIT_TEST(testXXE_DocumentFunction);
+        CPPUNIT_TEST(testXXE_XmlSourceFromBuffer);
+        CPPUNIT_TEST(testXXE_XmlSourceFromFile);
     CPPUNIT_TEST_SUITE_END();
 
     static constexpr const char * canaryFilename  = "xmllib_xxe_canary.txt";
     static constexpr const char * canaryContent   = "XXECANARY";
     static constexpr const char * xsltFilename    = "xmllib_xxe_stylesheet.xslt";
     static constexpr const char * extDocFilename  = "xmllib_xxe_external.xml";
+    static constexpr const char * xmlSourceFilename = "xmllib_xxe_xmlsource.xml";
 
     static void removeIfExists(const char * filename)
     {
@@ -973,6 +981,7 @@ public:
         removeIfExists(canaryFilename);
         removeIfExists(xsltFilename);
         removeIfExists(extDocFilename);
+        removeIfExists(xmlSourceFilename);
     }
 
     // Test 1: XSLT loaded from an in-memory buffer (covers the setXslSource / WuWebView path).
@@ -1108,6 +1117,71 @@ public:
         CPPUNIT_ASSERT_MESSAGE(
             "XXE vulnerability (document() function): canary content appeared in transform output - XML_PARSE_DTDLOAD must be removed from xsltSetCtxtParseOptions",
             strstr(output.str(), canaryContent) == nullptr);
+    }
+
+    // Tests 4 & 5: XML source (document being transformed, not the stylesheet) via
+    // setXmlSource(buffer)/setXmlSource(filename), covering CLibXmlSource::getParsedXml()'s
+    // IO_TYPE_BUFFER and IO_TYPE_FILE paths. Both share this helper, differing only in how
+    // the XML reaches CLibXmlSource, so drift risk is low.
+    void assertXmlSourceXxeBlocked(bool viaFile)
+    {
+        StringBuffer canaryPath;
+        makeAbsolutePath(canaryFilename, canaryPath);
+
+        VStringBuffer xml(
+            "<?xml version=\"1.0\"?>"
+            "<!DOCTYPE root ["
+            "  <!ENTITY xxe SYSTEM \"file://%s\">"
+            "]>"
+            "<root>&xxe;</root>",
+            canaryPath.str());
+
+        // Identity-style stylesheet that emits the full text content of the source document.
+        constexpr const char * xslt =
+            "<?xml version=\"1.0\"?>"
+            "<xsl:stylesheet version=\"1.0\" xmlns:xsl=\"http://www.w3.org/1999/XSL/Transform\">"
+            "  <xsl:output method=\"text\"/>"
+            "  <xsl:template match=\"/\"><xsl:value-of select=\".\"/></xsl:template>"
+            "</xsl:stylesheet>";
+
+        Owned<IXslProcessor> proc = getXslProcessor();
+        Owned<IXslTransform> trans = proc->createXslTransform();
+        if (viaFile)
+        {
+            {
+                Owned<IFile> xmlFile = createIFile(xmlSourceFilename);
+                Owned<IFileIO> io = xmlFile->open(IFOcreate);
+                CPPUNIT_ASSERT_MESSAGE("Failed to create XML source file for XXE tests", io != nullptr);
+                io->write(0, xml.length(), xml.str());
+            }
+
+            StringBuffer xmlSourcePath;
+            makeAbsolutePath(xmlSourceFilename, xmlSourcePath);
+            trans->setXmlSource(xmlSourcePath.str());
+            trans->setXslSource(xslt, strlen(xslt), "xxe_test_xmlsource_file", ".");
+        }
+        else
+        {
+            trans->setXmlSource(xml.str(), xml.length());
+            trans->setXslSource(xslt, strlen(xslt), "xxe_test_xmlsource_buffer", ".");
+        }
+
+        StringBuffer output;
+        trans->transform(output);
+
+        CPPUNIT_ASSERT_MESSAGE(
+            "XXE vulnerability (XML source): canary content appeared in transform output - hpccXmlSourceParseOptions must block external SYSTEM entities",
+            strstr(output.str(), canaryContent) == nullptr);
+    }
+
+    void testXXE_XmlSourceFromBuffer()
+    {
+        assertXmlSourceXxeBlocked(false);
+    }
+
+    void testXXE_XmlSourceFromFile()
+    {
+        assertXmlSourceXxeBlocked(true);
     }
 
 };

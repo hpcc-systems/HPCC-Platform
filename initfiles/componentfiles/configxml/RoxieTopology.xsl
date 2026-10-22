@@ -125,6 +125,8 @@
             <xsl:copy-of select="./expert"/>
             <xsl:copy-of select="./pageCache"/>
             <xsl:call-template name="copyVaultsConfig"/>
+            <xsl:copy-of select="./directAccessPlanes"/>
+            <xsl:copy-of select="./preferredPlanes"/>
             <xsl:copy-of select="/Environment/Software/Directories"/>
             <xsl:copy-of select="./protrace"/>
             <xsl:choose>

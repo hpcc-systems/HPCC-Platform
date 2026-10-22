@@ -1,0 +1,9 @@
+roxie:
+  - name: roxie-storage-test
+    directAccessPlanes:
+      - direct-plane-alpha
+      - direct-plane-beta
+    preferredPlanes:
+      - name: preferred-plane-alpha
+      - name: preferred-plane-beta
+        priority: 25

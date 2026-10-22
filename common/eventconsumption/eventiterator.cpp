@@ -177,6 +177,15 @@ bool CPropertyTreeEvents::nextEvent(CEvent& event)
     // advance to the next matching node
     (void)eventsIt->next();
 
+    if (event.hasAttribute(EvAttrEventTimestamp))
+    {
+        __uint64 eventTimestamp = event.queryNumericValue(EvAttrEventTimestamp);
+        if (!properties.startTimestamp || eventTimestamp < properties.startTimestamp)
+            properties.startTimestamp = eventTimestamp;
+        if (properties.endTimestamp < eventTimestamp)
+            properties.endTimestamp = eventTimestamp;
+    }
+
     // the requested event was found
     return true;
 }
@@ -229,6 +238,8 @@ protected:
     virtual bool onAddSource(IEventIterator& source) = 0;
     // Subclass-specific implementation of event retrieval logic following common preparation steps.
     virtual bool nextEventImpl(CEvent& event, EventIterationTransition& transition) = 0;
+    void updateTimestampBounds(const CEvent& event);
+    void updateSourceTimestamps(const EventFileProperties& sourceProperties);
 
     CMetaInfoState& metaState;
     Owned<IEventVisitor> metaStateCollector;
@@ -269,6 +280,26 @@ const EventFileProperties& CEventMultiplexer::queryFileProperties() const
     return properties;
 }
 
+void CEventMultiplexer::updateTimestampBounds(const CEvent& event)
+{
+    if (event.hasAttribute(EvAttrEventTimestamp))
+    {
+        __uint64 eventTimestamp = event.queryNumericValue(EvAttrEventTimestamp);
+        if (!properties.startTimestamp || eventTimestamp < properties.startTimestamp)
+            properties.startTimestamp = eventTimestamp;
+        if (properties.endTimestamp < eventTimestamp)
+            properties.endTimestamp = eventTimestamp;
+    }
+}
+
+void CEventMultiplexer::updateSourceTimestamps(const EventFileProperties& sourceProperties)
+{
+    if (sourceProperties.startTimestamp && (!properties.startTimestamp || sourceProperties.startTimestamp < properties.startTimestamp))
+        properties.startTimestamp = sourceProperties.startTimestamp;
+    if (properties.endTimestamp < sourceProperties.endTimestamp)
+        properties.endTimestamp = sourceProperties.endTimestamp;
+}
+
 void CEventMultiplexer::addSource(IEventIterator& source)
 {
     if (!acceptSources)
@@ -283,6 +314,8 @@ void CEventMultiplexer::addSource(IEventIterator& source)
         // First source - initialize properties
         properties.processDescriptor.set(sourceProps.processDescriptor.get());
         properties.version = sourceProps.version;
+        properties.startTimestamp = sourceProps.startTimestamp;
+        properties.endTimestamp = sourceProps.endTimestamp;
         properties.channelId = sourceProps.channelId;
         properties.replicaId = sourceProps.replicaId;
         properties.instanceId = sourceProps.instanceId;
@@ -321,8 +354,12 @@ void CEventMultiplexer::addSource(IEventIterator& source)
     }
     else
         return; // Reject instances that are duplicates or already contained
-    if (onAddSource(source) && metaStateCollector)
-        metaStateCollector->visitFile(sourceProps);
+    if (onAddSource(source))
+    {
+        updateSourceTimestamps(source.queryFileProperties());
+        if (metaStateCollector)
+            metaStateCollector->visitFile(sourceProps);
+    }
 }
 
 CEventMultiplexer::CEventMultiplexer(CMetaInfoState& _metaState, bool _bypassMetaCollector)
@@ -412,6 +449,7 @@ bool CChronologicalEventMultiplexer::nextEventImpl(CEvent& event, EventIteration
             (void)metaStateCollector->visitEvent(event, *transition.properties);
         else if (bypassMetaCollector)
             (void)metaState.tryRemapFileId(event);
+        updateTimestampBounds(event);
         properties.eventsRead++;
         acceptSources = false;
 
@@ -506,6 +544,7 @@ bool CSerialEventMultiplexer::nextEventImpl(CEvent& event, EventIterationTransit
                 (void)metaStateCollector->visitEvent(event, *transition.properties);
             else if (bypassMetaCollector)
                 (void)metaState.tryRemapFileId(event);
+            updateTimestampBounds(event);
             properties.eventsRead++;
             acceptSources = false;
             return true;
@@ -672,8 +711,8 @@ public:
     void testSerialMultiplexerVisitsNonemptySourcesLazily()
     {
         Owned<IPropertyTree> emptyTree = createPTreeFromXMLString("<events filename='empty.evt' version='1' bytesRead='0'/>");
-        Owned<IPropertyTree> firstTree = createPTreeFromXMLString("<events filename='first.evt' version='1' bytesRead='11'><event type='IndexCacheMiss'/></events>");
-        Owned<IPropertyTree> secondTree = createPTreeFromXMLString("<events filename='second.evt' version='1' bytesRead='22'><event type='IndexCacheMiss'/><event type='IndexCacheMiss'/></events>");
+        Owned<IPropertyTree> firstTree = createPTreeFromXMLString("<events filename='first.evt' version='1' bytesRead='11'><event type='IndexCacheMiss' EventTimestamp='200'/><event type='IndexCacheMiss' EventTimestamp='50'/></events>");
+        Owned<IPropertyTree> secondTree = createPTreeFromXMLString("<events filename='second.evt' version='1' bytesRead='22'><event type='IndexCacheMiss' EventTimestamp='100'/></events>");
         Owned<IEventIterator> empty = createPropertyTreeEvents(*emptyTree, PTEFlenientParsing);
         Owned<IEventIterator> first = createPropertyTreeEvents(*firstTree, PTEFlenientParsing);
         Owned<IEventIterator> second = createPropertyTreeEvents(*secondTree, PTEFlenientParsing);
@@ -690,9 +729,9 @@ public:
             {"multiplexed", ""},
             {"first.evt", ""},
             {"first.evt", "IndexCacheMiss"},
+            {"first.evt", "IndexCacheMiss"},
             {"first.evt", ""},
             {"second.evt", ""},
-            {"second.evt", "IndexCacheMiss"},
             {"second.evt", "IndexCacheMiss"},
             {"second.evt", ""},
             {"multiplexed", ""},
@@ -700,6 +739,9 @@ public:
         CPPUNIT_ASSERT(expectedSequence == visitor.sequence);
         const std::vector<uint32_t> expectedDepartBytes{11, 22, 33};
         CPPUNIT_ASSERT(expectedDepartBytes == visitor.departBytes);
+        const EventFileProperties& properties = multiplexer->queryFileProperties();
+        CPPUNIT_ASSERT_EQUAL(__uint64(50), properties.startTimestamp);
+        CPPUNIT_ASSERT_EQUAL(__uint64(200), properties.endTimestamp);
     }
 
     void testStrictEventParsingUnknownEvent()

@@ -1143,11 +1143,11 @@ public:
         Owned<IDFUhelper> helper = createIDFUhelper();
         files->setDfuQueue(dfu_queue);
 #ifdef _CONTAINERIZED
-        files->cloneAllInfo(publisherWuid, targetPlaneOrGroup, updateFlags, helper, true, true, 0, 1, 0, nullptr);
+        files->cloneAllInfo(publisherWuid, targetPlaneOrGroup, updateFlags, helper, true, true, 0, 1, 0, nullptr, !isEmptyString(dfuTargetPlane));
 #else
         StringBuffer defReplicateFolder;
         getConfigurationDirectory(NULL, "data2", "roxie", process.str(), defReplicateFolder);
-        files->cloneAllInfo(publisherWuid, targetPlaneOrGroup, updateFlags, helper, true, true, clusterInfo->getRoxieRedundancy(), clusterInfo->getChannelsPerNode(), clusterInfo->getRoxieReplicateOffset(), defReplicateFolder);
+        files->cloneAllInfo(publisherWuid, targetPlaneOrGroup, updateFlags, helper, true, true, clusterInfo->getRoxieRedundancy(), clusterInfo->getChannelsPerNode(), clusterInfo->getRoxieReplicateOffset(), defReplicateFolder, !isEmptyString(dfuTargetPlane));
 #endif
     }
 
@@ -3814,12 +3814,12 @@ public:
             {
                 wufiles->setDfuQueue(dfu_queue);
 #ifdef _CONTAINERIZED
-                wufiles->cloneAllInfo(publisherWuid, process.str(), updateFlags, helper, true, true, 0, 1, 0, nullptr);
+                wufiles->cloneAllInfo(publisherWuid, process.str(), updateFlags, helper, true, true, 0, 1, 0, nullptr, false);
 #else
                 SCMStringBuffer process;
                 StringBuffer defReplicateFolder;
                 getConfigurationDirectory(NULL, "data2", "roxie", cl->getRoxieProcess(process).str(), defReplicateFolder);
-                wufiles->cloneAllInfo(publisherWuid, process.str(), updateFlags, helper, true, true, cl->getRoxieRedundancy(), cl->getChannelsPerNode(), cl->getRoxieReplicateOffset(), defReplicateFolder);
+                wufiles->cloneAllInfo(publisherWuid, process.str(), updateFlags, helper, true, true, cl->getRoxieRedundancy(), cl->getChannelsPerNode(), cl->getRoxieReplicateOffset(), defReplicateFolder, false);
 #endif
             }
         }

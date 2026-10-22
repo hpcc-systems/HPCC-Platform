@@ -566,9 +566,9 @@ to addVolumeMounts so that if a plane can be used for multiple purposes then dup
   mountPath: {{ printf "%s/d%d" $mountPath $elem | quote }}
        {{- end }}
       {{- end }}
+      {{- $_ := set $previousMounts $alias.prefix true }}
+      {{- $_ := set $curAlias "num" (add $curAlias.num 1) }}
      {{- end }}
-     {{- $_ := set $previousMounts $plane.prefix true -}}
-     {{- $_ := set $curAlias "num" (add $curAlias.num 1) }}
     {{- end }}
    {{- end }}
 
@@ -1122,7 +1122,7 @@ A kludge to ensure mounted storage (e.g. for nfs, minikube or docker for desktop
              "{{ $permCmd }}"
            ]
   volumeMounts:
-{{ include "hpcc.addVolumeMounts" (dict "root" .root "component" $component "includeNames" $volumeNames) | indent 2 }}
+{{ include "hpcc.addVolumeMounts" (dict "root" .root "me" $component "includeNames" $volumeNames) | indent 2 }}
 {{- end }}
 
 
@@ -1360,7 +1360,10 @@ Generate instance queue names
   ldapUser: {{ .ldapUser }}
   dataPlane: {{ .dataPlane | default (include "hpcc.getDefaultDataPlane" $) }}
   {{- if hasKey . "directAccessPlanes" }}
-  directAccessPlanes: {{ .directAccessPlanes }}
+  directAccessPlanes: {{- toYaml .directAccessPlanes | nindent 4 }}
+  {{- end }}
+  {{- if hasKey . "preferredPlanes" }}
+  preferredPlanes: {{- toYaml .preferredPlanes | nindent 4 }}
   {{- end }}
  {{- end }}
 {{ end -}}

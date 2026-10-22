@@ -229,6 +229,8 @@ protected:
     void beforeTransfer();
     bool calcCRC();
     bool calcInputCRC();
+    void calcCompressOutputFormat(const IPropertyTree * targetProps);
+    CompressionMethod queryCompressOutputFormat() const;
     unsigned __int64 calcSizeReadAlready();
     void calcNumConcurrentTransfers();
     void calculateOne2OnePartition();
@@ -349,6 +351,7 @@ protected:
     bool                    aborting;
     bool                    compressedInput;
     bool                    compressOutput;
+    CompressionMethod       compressOutputFormat = COMPRESS_METHOD_NONE;
     bool                    copyCompressed;
     bool                    useFtSlave;
     bool                    copyKey = false;

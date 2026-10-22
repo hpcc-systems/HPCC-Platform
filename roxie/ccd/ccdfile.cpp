@@ -1099,15 +1099,20 @@ class CRoxieFileCache : implements IRoxieFileCache, implements ICopyFileProgress
                            offset_t size, const CDateTime &modified)
     {
         Owned<CRoxieLazyFileIO> ret = new CRoxieLazyFileIO();
-        doOpenFile(ret, lfn, partNo, channel, localLocation, pdesc, localEnoughLocationInfo, remoteLocationInfo, size, modified);
+        doOpenFile(ret, lfn, partNo, channel, localLocation, pdesc, localEnoughLocationInfo, remoteLocationInfo, 0, false, size, modified);
         return ret.getClear();
     }
 
     // Static to clarify that this does not use any member variables
+    // localEnoughLocationInfo - locations that the file can be found that are "local enough" to be used directly without copying
+    // remoteLocationInfo - locations that the file can be found remotely
+    // localLocation - the local file path.  This is checked first - so the local directory does not need to be in the localEnoughLocationInfo
     static void doOpenFile( CRoxieLazyFileIO *ret, const char *lfn, unsigned partNo, unsigned channel, const char *localLocation,
                            IPartDescriptor *pdesc,
                            const StringArray &localEnoughLocationInfo,
                            const StringArray &remoteLocationInfo,
+                           unsigned alwaysRemoteSourceCount,
+                           bool forceRemoteSources,
                            offset_t size, const CDateTime &modified)
     {
         Owned<IFile> local = createIFile(localLocation);
@@ -1128,149 +1133,116 @@ class CRoxieFileCache : implements IRoxieFileCache, implements ICopyFileProgress
 
         ret->init(local, size, modified, isCompressed, isKey, crc);
 
+        // Simple case - is the file on the local filesystem and up to date?
         RoxieFileStatus fileStatus = checkFileUpToDate(local, size, modified, isCompressed, true);
         if (fileStatus == FileIsValid)
         {
             ret->addSource(local.getLink());
             ret->setRemote(false);
+            return;
         }
-        else if (local->exists() && !ignoreOrphans)  // Implies local dali and local file out of sync
-            throw MakeStringException(ROXIE_FILE_ERROR, "Local file %s does not match DFS information", localLocation);
-        else
-        {
-            bool addedOne = false;
 
-#ifdef _CONTAINERIZED
-            // put the localEnoughLocations next in the list
-            ForEachItemIn(plane_idx, localEnoughLocationInfo)
+        bool localExists = fileStatus != FileNotFound;
+        if (localExists && !ignoreOrphans)  // Implies local dali and local file out of sync
+            throw MakeStringException(ROXIE_FILE_ERROR, "Local file %s does not match DFS information", localLocation);
+
+        bool addedOne = false;
+        bool missingLocalEnough = false;
+
+        // Explicit direct-access locations are local-enough: use them in place and do not copy them.
+        ForEachItemIn(plane_idx, localEnoughLocationInfo)
+        {
+            try
             {
-                try
+                const char *localEnoughName = localEnoughLocationInfo.item(plane_idx);
+                Owned<IFile> localEnoughFile = createIFile(localEnoughName);
+                RoxieFileStatus status = checkFileUpToDate(localEnoughFile, size, modified, isCompressed, true);
+                if (status==FileIsValid)
                 {
-                    const char *localEnoughName = localEnoughLocationInfo.item(plane_idx);
-                    Owned<IFile> localEnoughFile = createIFile(localEnoughName);
-                    RoxieFileStatus status = checkFileUpToDate(localEnoughFile, size, modified, isCompressed, true);
-                    if (status==FileIsValid)
-                    {
-                        if (miscDebugTraceLevel > 5)
-                            DBGLOG("adding local enough location %s", localEnoughName);
-                        ret->addSource(localEnoughFile.getClear());
-                        addedOne = true;
-                        //do not set ret->setRemote(true) these locations are treated as if found locally, and not copied to the default plane
-                    }
-                    else if (localEnoughFile->exists() && !ignoreOrphans)  // Implies local dali and local enough file out of sync
-                        throw MakeStringException(ROXIE_FILE_ERROR, "Direct access (local enough) file %s does not match DFS information", localEnoughName);
-                    else if (miscDebugTraceLevel > 10)
-                        DBGLOG("Checked local enough data plane location %s, status=%d", localEnoughName, (int) status);
+                    if (miscDebugTraceLevel > 5)
+                        DBGLOG("adding local enough location %s", localEnoughName);
+                    ret->addSource(localEnoughFile.getClear());
+                    addedOne = true;
+                    //do not set ret->setRemote(true) these locations are treated as if found locally, and not copied to the default plane
                 }
-                catch (IException *E)
+                else if ((status==FileNotFound) && !isContainerized())
                 {
-                    EXCLOG(MCoperatorError, E, "While creating local enough file reference");
-                    E->Release();
+                    // Even though it's not on the buddy (yet), add it to the locations since it may well be there
+                    // by the time we come to copy (and if it is, we want to copy from there)
+                    if (miscDebugTraceLevel > 5)
+                        DBGLOG("adding missing peer location %s", localEnoughName);
+                    ret->addSource(localEnoughFile.getClear());
+                    missingLocalEnough = true;
+                    // Don't set addedOne - we need to go to remote too
                 }
+                else if ((status != FileNotFound) && !ignoreOrphans)  // Implies local dali and local enough file out of sync
+                    throw MakeStringException(ROXIE_FILE_ERROR, "Direct access (local enough) file %s does not match DFS information", localEnoughName);
+                else if (miscDebugTraceLevel > 10)
+                    DBGLOG("Checked local enough data plane location %s, status=%d", localEnoughName, (int) status);
             }
-#else
-            // put the peerRoxieLocations next in the list
-            StringArray localLocations;
-            if (selfTestMode)
-                localLocations.append("test.buddy");
-            else
-                appendRemoteLocations(pdesc, localLocations, localLocation, roxieName, true);  // Adds all locations on the same cluster
-            ForEachItemIn(roxie_idx, localLocations)
+            catch (IException *E)
+            {
+                EXCLOG(MCoperatorError, E, "While creating local enough file reference");
+                E->Release();
+            }
+        }
+
+        // A missing bare-metal direct-access location remains a source candidate, but a valid
+        // remote fallback must still be copied locally so the preferred location can be restored.
+        if (!addedOne && (!isContainerized() || copyResources || useRemoteResources || selfTestMode))  // If no peer locations available, go to remote
+        {
+            ForEachItemIn(idx, remoteLocationInfo)
             {
                 try
                 {
-                    const char *remoteName = localLocations.item(roxie_idx);
+                    const char *remoteName = remoteLocationInfo.item(idx);
                     Owned<IFile> remote = createIFile(remoteName);
+                    if (doTrace(traceRoxieFiles))
+                        DBGLOG("checking remote location %s", remoteName);
                     RoxieFileStatus status = checkFileUpToDate(remote, size, modified, isCompressed, true);
                     if (status==FileIsValid)
                     {
                         if (miscDebugTraceLevel > 5)
-                            DBGLOG("adding peer location %s", remoteName);
+                            DBGLOG("adding remote location %s", remoteName);
+                        RemoteFilename rfn;
+                        rfn.setRemotePath(remoteName);
+                        // The prefix contains sources that must be copied even when their paths are locally accessible.
+                        bool remoteSource = forceRemoteSources || idx < alwaysRemoteSourceCount || !rfn.isLocal();
                         ret->addSource(remote.getClear());
+                        if (!addedOne)
+                            ret->setRemote(remoteSource || missingLocalEnough);
                         addedOne = true;
                     }
-                    else if (status==FileNotFound)
-                    {
-                        // Even though it's not on the buddy (yet), add it to the locations since it may well be there
-                        // by the time we come to copy (and if it is, we want to copy from there)
-                        if (miscDebugTraceLevel > 5)
-                            DBGLOG("adding missing peer location %s", remoteName);
-                        ret->addSource(remote.getClear());
-                        // Don't set addedOne - we need to go to remote too
-                    }
                     else if (miscDebugTraceLevel > 10)
-                        DBGLOG("Checked peer roxie location %s, status=%d", remoteName, (int) status);
+                        DBGLOG("Checked remote file location %s, status=%d", remoteName, (int) status);
                 }
                 catch (IException *E)
                 {
                     EXCLOG(MCoperatorError, E, "While creating remote file reference");
                     E->Release();
                 }
-                ret->setRemote(true);
             }
-#endif
-            if (!addedOne && (copyResources || useRemoteResources || selfTestMode))  // If no peer locations available, go to remote
-            {
-                ForEachItemIn(idx, remoteLocationInfo)
-                {
-                    try
-                    {
-                        const char *remoteName = remoteLocationInfo.item(idx);
-                        Owned<IFile> remote = createIFile(remoteName);
-                        if (doTrace(traceRoxieFiles))
-                            DBGLOG("checking remote location %s", remoteName);
-                        RoxieFileStatus status = checkFileUpToDate(remote, size, modified, isCompressed, true);
-                        if (status==FileIsValid)
-                        {
-                            if (miscDebugTraceLevel > 5)
-                                DBGLOG("adding remote location %s", remoteName);
-                            RemoteFilename rfn;
-                            rfn.setRemotePath(remoteName);
-#ifndef _CONTAINERIZED
-                            // MORE - may want to change this to mark some other locations as "local enough"
-                            if (!rfn.isLocal())    // MORE - may still want to copy files even if they are on a posix-accessible path, for local caching? Probably really want to know if hooked or not...
-#endif
-                                ret->setRemote(true);
-                            ret->addSource(remote.getClear());
-                            addedOne = true;
-                        }
-                        else if (miscDebugTraceLevel > 10)
-                            DBGLOG("Checked remote file location %s, status=%d", remoteName, (int) status);
-                    }
-                    catch (IException *E)
-                    {
-                        EXCLOG(MCoperatorError, E, "While creating remote file reference");
-                        E->Release();
-                    }
-                }
-            }
+        }
 
-            if (!addedOne)
+        if (!addedOne)
+        {
+            if (localExists)  // Implies local dali and local file out of sync
+                throw MakeStringException(ROXIE_FILE_ERROR, "Local file %s does not match DFS information", localLocation);
+
+            if (doTrace(TraceFlags::Always, TraceFlags::Standard))
             {
-                if (local->exists())  // Implies local dali and local file out of sync
-                    throw MakeStringException(ROXIE_FILE_ERROR, "Local file %s does not match DFS information", localLocation);
-                else
+                DBGLOG("Failed to open file at any of the following %d local locations:", localEnoughLocationInfo.length());
+                ForEachItemIn(local_idx, localEnoughLocationInfo)
                 {
-                    if (doTrace(TraceFlags::Always, TraceFlags::Standard))
-                    {
-#ifndef _CONTAINERIZED
-                        DBGLOG("Failed to open file at any of the following %d local locations:", localLocations.length());
-                        ForEachItemIn(local_idx, localLocations)
-                        {
-                            DBGLOG("%d: %s", local_idx+1, localLocations.item(local_idx));
-                        }
-                        DBGLOG("Or at any of the following %d remote locations:", remoteLocationInfo.length());
-#else
-                        DBGLOG("Failed to open file at any of the following %d remote locations:", remoteLocationInfo.length());
-#endif
-                        ForEachItemIn(remote_idx, remoteLocationInfo)
-                        {
-                            DBGLOG("%d: %s", remote_idx+1, remoteLocationInfo.item(remote_idx));
-                        }
-                    }
-                    throw MakeStringException(ROXIE_FILE_OPEN_FAIL, "Could not open file %s", localLocation);
+                    DBGLOG("%d: %s", local_idx+1, localEnoughLocationInfo.item(local_idx));
+                }
+                DBGLOG("Or at any of the following %d remote locations:", remoteLocationInfo.length());
+                ForEachItemIn(remote_idx, remoteLocationInfo)
+                {
+                    DBGLOG("%d: %s", remote_idx+1, remoteLocationInfo.item(remote_idx));
                 }
             }
+            throw MakeStringException(ROXIE_FILE_OPEN_FAIL, "Could not open file %s", localLocation);
         }
     }
 
@@ -1942,33 +1914,50 @@ public:
         {
             StringArray localEnoughLocations; //files from these locations won't be copied to the default plane
             StringArray remoteLocations;
+            // Keep the local, local-enough, and remote source classes separate. Bare-metal peers
+            // remain remote by default; only explicit direct-access planes are local-enough.
+            unsigned alwaysRemoteSourceCount = 0;
+            bool forceRemoteSources = false;
             const char *peerCluster = pdesc->queryOwner().queryProperties().queryProp("@cloneFromPeerCluster");
             if (peerCluster)
             {
                 if (*peerCluster!='-') // a remote cluster was specified explicitly
+                {
                     appendRemoteLocations(pdesc, remoteLocations, NULL, peerCluster, true);  // Add only from specified cluster
+                    alwaysRemoteSourceCount = remoteLocations.length();
+                }
             }
             else
             {
+                const char * myCluster = roxieName.str();
                 if (isContainerized())
+                    myCluster = (ROXIE_KEY == fileType) ? defaultIndexBuildPlane.str() : defaultPlane.str();
+
+                StringArray localEnoughPlanes;
+                bool hasDirectAccessPlanes = getDirectAccessStoragePlanes(localEnoughPlanes);
+                forceRemoteSources = isContainerized() || hasDirectAccessPlanes;
+                appendRemoteLocations(pdesc, localEnoughLocations, localLocation, localEnoughPlanes, true);
+
+                if (!localEnoughPlanes.contains(myCluster) && !isContainerized())
                 {
-                    const char *myCluster = (ROXIE_KEY == fileType) ? defaultIndexBuildPlane.str() : defaultPlane.str();
-                    StringArray localEnoughPlanes;
-                    if (getDirectAccessStoragePlanes(localEnoughPlanes))
-                        appendRemoteLocations(pdesc, localEnoughLocations, NULL, localEnoughPlanes, true);
-                    localEnoughPlanes.append(myCluster);
-                    appendRemoteLocations(pdesc, remoteLocations, NULL, localEnoughPlanes, false);      // Add from any plane on same dali, other than default or local enough
+                    appendRemoteLocations(pdesc, remoteLocations, localLocation, myCluster, true);  // Bare-metal peer copies remain remote
+                    if (hasDirectAccessPlanes)
+                        alwaysRemoteSourceCount = remoteLocations.length();
                 }
-                else
+                if (isContainerized() || copyResources || useRemoteResources || selfTestMode)
                 {
-                    const char *myCluster = roxieName.str();
-                    appendRemoteLocations(pdesc, remoteLocations, NULL, myCluster, false);      // Add from any cluster on same dali, other than mine
+                    StringArray remoteExcludedPlanes;
+                    ForEachItemIn(plane_idx, localEnoughPlanes)
+                        remoteExcludedPlanes.append(localEnoughPlanes.item(plane_idx));
+                    if (!remoteExcludedPlanes.contains(myCluster))
+                        remoteExcludedPlanes.append(myCluster);
+                    appendRemoteLocations(pdesc, remoteLocations, localLocation, remoteExcludedPlanes, false);      // Add from any plane on same dali, other than default or local enough
                 }
             }
-            if (remotePDesc)
-                appendRemoteLocations(remotePDesc, remoteLocations, NULL, NULL, false);    // Then any remote on remote dali
+            if (remotePDesc && (isContainerized() || copyResources || useRemoteResources || selfTestMode))
+                appendRemoteLocations(remotePDesc, remoteLocations, localLocation, NULL, false);    // Then any remote on remote dali
 
-            doOpenFile(ret, lfn, partNo, channel, localLocation, pdesc, localEnoughLocations, remoteLocations, dfsSize, dfsDate);
+            doOpenFile(ret, lfn, partNo, channel, localLocation, pdesc, localEnoughLocations, remoteLocations, alwaysRemoteSourceCount, forceRemoteSources, dfsSize, dfsDate);
 
             if (startFileCopy)
             {
@@ -4137,6 +4126,7 @@ protected:
         StringArray remotes;
         DummyPartDescriptor pdesc;
         CDateTime dummy;
+        localEnough.append("test.buddy");
         remotes.append("test.remote");
 
         int f = open("test.remote", _O_WRONLY | _O_CREAT | _O_TRUNC, _S_IREAD | _S_IWRITE);
