@@ -985,6 +985,7 @@ export = {
         SourcePath: "Source Path (Wildcard Enabled)",
         SourceProcess: "Source Process",
         Span: "Span",
+        Spare: "Spare",
         SparkThor: "SparkThor",
         Spill: "Spill",
         SplitPrefix: "Split Prefix",

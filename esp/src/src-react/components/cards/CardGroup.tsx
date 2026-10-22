@@ -7,7 +7,6 @@ const useStyles = makeStyles({
         alignItems: "start",
         alignContent: "start",
         justifyContent: "start",
-        placeContent: "start",
         width: "100%",
         boxSizing: "border-box",
     },

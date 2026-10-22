@@ -649,7 +649,7 @@ export const QueueCards: React.FunctionComponent<QueueCardsProps> = ({
         window.location.href = url;
     }, []);
 
-    return <CardGroup listMode={listMode}>
+    return <CardGroup listMode={listMode} style={!listMode ? { gridTemplateColumns: "repeat(auto-fit, 280px)", justifyContent: "center" } : undefined}>
         {queues.length === 0 ? (
             <Text>{nlsHPCC.FetchingData}</Text>
         ) : (
