@@ -1277,11 +1277,17 @@ attribute: DataSize = 73
                     CPPUNIT_ASSERT(properties.path.get() != nullptr);
                     CPPUNIT_ASSERT(streq(properties.path.get(), testFileName_pullevents));
                     visitedVersion = properties.version;
+                    startTimestamp = properties.startTimestamp;
                     return true;
                 }
-                virtual bool visitEvent(CEvent& event, [[maybe_unused]] const EventFileProperties& properties) override
+                virtual bool visitEvent(CEvent& event, const EventFileProperties& properties) override
                 {
                     eventsRead++;
+                    if (0 == firstEventTimestamp)
+                        firstEventTimestamp = event.queryNumericValue(EvAttrEventTimestamp);
+                    lastEventTimestamp = event.queryNumericValue(EvAttrEventTimestamp);
+                    CPPUNIT_ASSERT(properties.startTimestamp <= firstEventTimestamp);
+                    CPPUNIT_ASSERT_EQUAL(lastEventTimestamp, properties.endTimestamp);
                     // Store a copy of each event
                     events.emplace_back();
                     CEvent& copy = events.back();
@@ -1305,6 +1311,7 @@ attribute: DataSize = 73
                 {
                     fileCompleted = true;
                     visitedBytesRead = properties.bytesRead;
+                    endTimestamp = properties.endTimestamp;
                 }
 
                 bool fileVisited = false;
@@ -1312,6 +1319,10 @@ attribute: DataSize = 73
                 uint32_t visitedVersion = 0;
                 uint32_t visitedBytesRead = 0;
                 uint32_t eventsRead = 0;
+                __uint64 startTimestamp = 0;
+                __uint64 endTimestamp = 0;
+                __uint64 firstEventTimestamp = 0;
+                __uint64 lastEventTimestamp = 0;
                 std::vector<CEvent> events;
             };
 
@@ -1320,6 +1331,8 @@ attribute: DataSize = 73
             CPPUNIT_ASSERT(visitor.fileVisited);
             CPPUNIT_ASSERT(visitor.fileCompleted);
             CPPUNIT_ASSERT_EQUAL(4U, (unsigned)visitor.events.size());
+            CPPUNIT_ASSERT(visitor.startTimestamp <= visitor.firstEventTimestamp);
+            CPPUNIT_ASSERT_EQUAL(visitor.lastEventTimestamp, visitor.endTimestamp);
 
             // Read events using pull API (IEventIterator)
             Owned<IEventIterator> ei = createEventFileIterator(testFileName_pullevents);
@@ -1329,10 +1342,12 @@ attribute: DataSize = 73
 
             // Verify file properties available immediately (from file header)
             CPPUNIT_ASSERT_EQUAL(visitor.visitedVersion, props.version);
+            CPPUNIT_ASSERT_EQUAL(visitor.startTimestamp, props.startTimestamp);
 
             // Read all events using pull API and compare with visitor results
             CEvent iterEvent;
             unsigned eventIndex = 0;
+            __uint64 lastIteratorTimestamp = 0;
             while (ei->nextEvent(iterEvent))
             {
                 CPPUNIT_ASSERT(eventIndex < visitor.events.size());
@@ -1378,6 +1393,8 @@ attribute: DataSize = 73
                     }
                 }
 
+                lastIteratorTimestamp = iterEvent.queryNumericValue(EvAttrEventTimestamp);
+                CPPUNIT_ASSERT_EQUAL(lastIteratorTimestamp, props.endTimestamp);
                 eventIndex++;
             }
 
@@ -1392,6 +1409,8 @@ attribute: DataSize = 73
             // Note: props.eventsRead only includes events passed to visitors - RecordingSource is consumed internally
             CPPUNIT_ASSERT_EQUAL(4U, props.eventsRead);
             CPPUNIT_ASSERT_EQUAL(4U, visitor.eventsRead);
+            CPPUNIT_ASSERT(props.startTimestamp <= visitor.firstEventTimestamp);
+            CPPUNIT_ASSERT_EQUAL(visitor.lastEventTimestamp, props.endTimestamp);
 
             // Verify recording source attributes from the RecordingSource event were captured in properties
             CPPUNIT_ASSERT(props.processDescriptor.get());
