@@ -155,7 +155,7 @@ void cloneFileInfoToDali(StringBuffer &publisherWuid, unsigned updateFlags, Stri
         throw makeStringExceptionV(PKG_INVALID_DFU_TARGET_PLANE, "DFU Target Plane '%s' must be one of the Roxie direct access planes", dfuTargetPlane);
 
     const char *destPlane = !isEmptyString(dfuTargetPlane) ? dfuTargetPlane : targetPlane.str();
-    wufiles->cloneAllInfo(publisherWuid, destPlane, updateFlags, helper, true, false, 0, 1, 0, nullptr);
+    wufiles->cloneAllInfo(publisherWuid, destPlane, updateFlags, helper, true, false, 0, 1, 0, nullptr, !isEmptyString(dfuTargetPlane));
 #else
     StringArray locations;
     SCMStringBuffer processName;
@@ -169,7 +169,7 @@ void cloneFileInfoToDali(StringBuffer &publisherWuid, unsigned updateFlags, Stri
     StringBuffer defReplicateFolder;
     defReplicateFolder.set(plane->queryMirrorPrefix());
 
-    wufiles->cloneAllInfo(publisherWuid, destPlane, updateFlags, helper, true, false, dstInfo->getRoxieRedundancy(), dstInfo->getChannelsPerNode(), dstInfo->getRoxieReplicateOffset(), defReplicateFolder);
+    wufiles->cloneAllInfo(publisherWuid, destPlane, updateFlags, helper, true, false, dstInfo->getRoxieRedundancy(), dstInfo->getChannelsPerNode(), dstInfo->getRoxieReplicateOffset(), defReplicateFolder, !isEmptyString(dfuTargetPlane));
 #endif
 
     Owned<IReferencedFileIterator> iter = wufiles->getFiles();
