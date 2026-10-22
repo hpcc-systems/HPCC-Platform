@@ -250,16 +250,18 @@ class ClusterProcessesList extends ESPRequest.Store {
     }
 
     preProcessRow(row) {
+        const isSpare = row.Type === "ThorSpareProcess";
         lang.mixin(row, {
             Platform: this.getOS(row.OS),
-            hpcc_id: `${row.Name}_${row.Netaddress}_${row.Directory}_${row.ProcessNumber}`,
+            hpcc_id: `${row.Name}_${row.Netaddress}_${row.Directory}_${row.ProcessNumber}${isSpare ? "_spare" : ""}`,
             displayName: row.Name,
             type: "machine",
             Component: row.Type,
             Channel: row.Channels,
             Domain: row.Domain,
             Directory: "",
-            Parent: this.parent
+            Parent: this.parent,
+            Spare: isSpare
         });
     }
 

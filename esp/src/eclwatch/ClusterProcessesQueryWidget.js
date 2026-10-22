@@ -152,7 +152,11 @@ define([
                                 name = row.Type + " - " + _name;
                             } if (row.type === "machine") {
                                 img = Utility.getImageHTML("machine.png");
-                                name = "<a href='#' onClick='return false;' class='dgrid-row-url'>" + row.Netaddress + " - " + _name + "</a>";
+                                var label = row.Netaddress + " - " + _name;
+                                if (row.Spare) {
+                                    label += " (" + context.i18n.Spare + ")";
+                                }
+                                name = "<a href='#' onClick='return false;' class='dgrid-row-url'>" + label + "</a>";
                             }
                             return img + "&nbsp;" + name;
                         },
