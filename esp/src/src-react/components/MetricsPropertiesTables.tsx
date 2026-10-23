@@ -186,7 +186,7 @@ export const MetricsPropertiesTables: React.FunctionComponent<MetricsPropertiesT
                     if (row.SkewMax !== undefined) parts.push(`⤒${row.SkewMax}`);
                     rowValue = parts.join(" ");
                 }
-                scopeProps.push([row.Key, rowValue, row.Avg, row.Min, row.Max, row.Delta, row.StdDev === undefined ? "" : `${row.StdDev} (${formatDecimal(row.StdDevs)}σ)`, row.SkewMin, row.SkewMax, row.NodeMin, row.NodeMax, row.StdDevs]);
+                scopeProps.push([row.Key, rowValue, row.Avg, row.Min, row.Max, row.Delta, row.StdDev === undefined ? "" : `${row.StdDev} ${formatDecimal(row.StdDevs, "(", "σ)")}`, row.SkewMin, row.SkewMax, row.NodeMin, row.NodeMax, row.StdDevs]);
             }
             scopeProps.sort((l, r) => {
                 const lIdx = sortByColumns.indexOf(l[0]);

@@ -197,6 +197,26 @@ bool WsDFUHelpers::addToLogicalFileList(IPropertyTree& file, const char* nodeGro
             lFile->setMinSkewPart(file.getPropInt64(getDFUQResultFieldName(DFUQResultField::minSkewPart)));
         }
 
+        if (version >= 1.68)
+        {
+            if (file.hasProp(getDFUQResultFieldName(DFUQResultField::size)))
+                lFile->setFileSize(file.getPropInt64(getDFUQResultFieldName(DFUQResultField::size)));
+            else
+            {
+                 if (isFileCompressed)
+                 {
+                     if (file.hasProp(getDFUQResultFieldName(DFUQResultField::compressedsize)))
+                         lFile->setFileSize(file.getPropInt64(getDFUQResultFieldName(DFUQResultField::compressedsize)));
+                     else if (isKeyFile)
+                         lFile->setFileSize(size);
+                 }
+                 else
+                 {
+                     lFile->setFileSize(size);
+                 }
+            }
+        }
+
         logicalFiles.append(*lFile.getClear());
     }
     catch(IException* e)
