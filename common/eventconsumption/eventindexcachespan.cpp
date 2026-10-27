@@ -236,8 +236,10 @@ public:
 
         if (!children.empty() || isRoot)
         {
-            formatter.outputClassified(isRoot ? std::vector<std::string>{} : allValues, subTotal, includeComplete, includeIncomplete);
-            formatter.outputAll(isRoot ? std::vector<std::string>{} : allValues, subTotal);
+            const std::vector<std::string> emptyValues;
+            const std::vector<std::string>& subtotalValues = isRoot ? emptyValues : allValues;
+            formatter.outputClassified(subtotalValues, subTotal, includeComplete, includeIncomplete);
+            formatter.outputAll(subtotalValues, subTotal);
         }
     }
 };
