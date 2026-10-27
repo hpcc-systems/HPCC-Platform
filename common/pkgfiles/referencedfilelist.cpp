@@ -97,11 +97,11 @@ const char *skipForeignOrRemote(const char *name, StringBuffer *ip, StringBuffer
     while (maxTildas-- && *name=='~')
         name++;
     const char *sep = strstr(name, "::");
-     if (sep)
-     {
-        if (strnicmp("remote", name, sep-name)==0)
+    if (sep)
+    {
+        if ((sep-name == 6) && strnicmp("remote", name, 6)==0)
             return skipNextLfnScope(sep+2, remote);
-        else if (strnicmp("foreign", name, sep-name)==0)
+        else if ((sep-name == 7) && strnicmp("foreign", name, 7)==0)
             return skipNextLfnScope(sep+2, ip);
     }
     return name;
@@ -308,32 +308,35 @@ class ReferencedFile : implements IReferencedFile, public CInterface
 {
 public:
     IMPLEMENT_IINTERFACE;
-    ReferencedFile(const char *lfn, const char *sourceIP, const char *srcCluster, const char *prefix, bool isSubFile, unsigned _flags, const char *_pkgid, bool noDfs, bool calcSize, const char *remoteStorageName, IRefFileResolver *_fileResolver)
+    ReferencedFile(const char *lfn, const char *sourceIP, const char *srcCluster, const char *prefix, bool isSubFile, unsigned _flags, const char *_pkgid, bool noDfs, bool calcSize, const char *remoteStorageName, IRefFileResolver *_fileResolver, bool ignorePackageMapSources=false)
     : pkgid(_pkgid), fileSize(0), numParts(0), flags(_flags), noDfsResolution(noDfs), calcFileSize(calcSize)
     {
         fileResolver.set(_fileResolver);
         {
             //Scope ensures strings are assigned
             StringAttrBuilder logicalNameText(logicalName), daliipText(daliip), remoteStorageText(remoteStorage);
-            logicalNameText.set(skipForeignOrRemote(lfn, &daliipText, &remoteStorageText)).toLowerCase();
+            logicalNameText.set(skipForeignOrRemote(lfn, ignorePackageMapSources ? nullptr : &daliipText, ignorePackageMapSources ? nullptr : &remoteStorageText)).toLowerCase();
         }
-        if (remoteStorage.length())
+        if (!ignorePackageMapSources && remoteStorage.length())
         {
             flags |= RefFileLFNRemote;
             hasExplicitRemoteLfn = true;
         }
-        else if (daliip.length())
+        else if (!ignorePackageMapSources && daliip.length())
             flags |= RefFileLFNForeign;
-        else if (!isEmptyString(remoteStorageName))
+        else if (!ignorePackageMapSources && !isEmptyString(remoteStorageName))
         {
             // can be declared in packagemap at different scopes
             remoteStorage.set(remoteStorageName);
             flags |= RefFileLFNRemote;
         }
-        else
+        else if (!ignorePackageMapSources)
             daliip.set(sourceIP); // can be declared in packagemap at different scopes
-        fileSrcCluster.set(srcCluster);
-        filePrefix.set(prefix);
+        if (!ignorePackageMapSources)
+        {
+            fileSrcCluster.set(srcCluster);
+            filePrefix.set(prefix);
+        }
         if (isSubFile)
             flags |= RefSubFile;
     }
@@ -481,18 +484,18 @@ public:
         fileResolver.set(resolver);
     }
 
-    void ensureFile(const char *ln, unsigned flags, const char *pkgid, bool noDfsResolution, const StringArray *subfileNames, const char *daliip=nullptr, const char *srcCluster=nullptr, const char *remotePrefix=nullptr, const char* remoteStorage=nullptr);
+    void ensureFile(const char *ln, unsigned flags, const char *pkgid, bool noDfsResolution, const StringArray *subfileNames, const char *daliip=nullptr, const char *srcCluster=nullptr, const char *remotePrefix=nullptr, const char* remoteStorage=nullptr, bool ignorePackageMapSources=false);
 
     virtual void addFile(const char *ln, const char *daliip=nullptr, const char *srcCluster=nullptr, const char *remotePrefix=nullptr, const char *remoteStorageName=nullptr);
     virtual void addFiles(StringArray &files);
     virtual void addFilesFromWorkUnit(IConstWorkUnit *cw);
     virtual bool addFilesFromQuery(IConstWorkUnit *cw, const IHpccPackageMap *pm, const char *queryid);
     virtual bool addFilesFromQuery(IConstWorkUnit *cw, const IHpccPackage *pkg);
-    virtual void addFilesFromPackageMap(IPropertyTree *pm);
+    virtual void addFilesFromPackageMap(IPropertyTree *pm, bool ignorePackageMapSources=false) override;
 
-    void addFileFromSubFile(IPropertyTree &subFile, const char *_daliip, const char *srcCluster, const char *_remotePrefix, const char *_remoteStorageName);
-    void addFilesFromSuperFile(IPropertyTree &superFile, const char *_daliip, const char *srcCluster, const char *_remotePrefix, const char *_remoteStorageName);
-    void addFilesFromPackage(IPropertyTree &package, const char *_daliip, const char *srcCluster, const char *_remotePrefix, const char *_remoteStorageName);
+    void addFileFromSubFile(IPropertyTree &subFile, const char *_daliip, const char *srcCluster, const char *_remotePrefix, const char *_remoteStorageName, bool ignorePackageMapSources);
+    void addFilesFromSuperFile(IPropertyTree &superFile, const char *_daliip, const char *srcCluster, const char *_remotePrefix, const char *_remoteStorageName, bool ignorePackageMapSources);
+    void addFilesFromPackage(IPropertyTree &package, const char *_daliip, const char *srcCluster, const char *_remotePrefix, const char *_remoteStorageName, bool ignorePackageMapSources);
 
     virtual IReferencedFileIterator *getFiles();
     virtual void cloneFileInfo(StringBuffer &publisherWuid, const char *dstCluster, unsigned updateFlags, IDFUhelper *helper, bool cloneSuperInfo, bool cloneForeign, unsigned redundancy, unsigned channelsPerNode, int replicateOffset, const char *defReplicateFolder, bool targetPlaneSpecified) override;
@@ -1157,15 +1160,15 @@ public:
     Owned<HashIterator> iter;
 };
 
-void ReferencedFileList::ensureFile(const char *ln, unsigned flags, const char *pkgid, bool noDfsResolution, const StringArray *subfileNames, const char *daliip, const char *srcCluster, const char *prefix, const char *remoteStorageName)
+void ReferencedFileList::ensureFile(const char *ln, unsigned flags, const char *pkgid, bool noDfsResolution, const StringArray *subfileNames, const char *daliip, const char *srcCluster, const char *prefix, const char *remoteStorageName, bool ignorePackageMapSources)
 {
     if (isEmptyString(ln))
         return;
 
-    if (!allowForeign && checkForeign(ln))
+    if (!ignorePackageMapSources && !allowForeign && checkForeign(ln))
         throw MakeStringException(-1, "Foreign file not allowed%s: %s", (flags & RefFileInPackage) ? " (declared in package)" : "", ln);
 
-    Owned<ReferencedFile> file = new ReferencedFile(ln, daliip, srcCluster, prefix, false, flags, pkgid, noDfsResolution, allowSizeCalc, remoteStorageName, fileResolver);
+    Owned<ReferencedFile> file = new ReferencedFile(ln, daliip, srcCluster, prefix, false, flags, pkgid, noDfsResolution, allowSizeCalc, remoteStorageName, fileResolver, ignorePackageMapSources);
     if (!file->logicalName.length())
         return;
     if (subfileNames)
@@ -1192,62 +1195,71 @@ void ReferencedFileList::addFiles(StringArray &files)
         addFile(files.item(i));
 }
 
-void ReferencedFileList::addFileFromSubFile(IPropertyTree &subFile, const char *ip, const char *cluster, const char *prefix, const char *remoteStorageName)
+void ReferencedFileList::addFileFromSubFile(IPropertyTree &subFile, const char *ip, const char *cluster, const char *prefix, const char *remoteStorageName, bool ignorePackageMapSources)
 {
-    addFile(subFile.queryProp("@value"), ip, cluster, prefix, remoteStorageName);
+    ensureFile(subFile.queryProp("@value"), 0, nullptr, false, nullptr, ip, cluster, prefix, remoteStorageName, ignorePackageMapSources);
 }
 
-void ReferencedFileList::addFilesFromSuperFile(IPropertyTree &superFile, const char *_ip, const char *_cluster, const char *_prefix, const char *ancestorRemoteStorage)
+void ReferencedFileList::addFilesFromSuperFile(IPropertyTree &superFile, const char *_ip, const char *_cluster, const char *_prefix, const char *ancestorRemoteStorage, bool ignorePackageMapSources)
 {
     StringBuffer ip;
     StringBuffer cluster;
     StringBuffer prefix;
     StringBuffer effectiveRemoteStorage;
-    splitDerivedDfsLocationOrRemote(superFile.queryProp("@daliip"), cluster, ip, prefix, nullptr, _cluster, _ip, _prefix,
-                                    superFile.queryProp("@remoteStorage"), effectiveRemoteStorage, ancestorRemoteStorage);
-    if (superFile.hasProp("@sourceCluster"))
-        cluster.set(superFile.queryProp("@sourceCluster"));
+    if (!ignorePackageMapSources)
+    {
+        splitDerivedDfsLocationOrRemote(superFile.queryProp("@daliip"), cluster, ip, prefix, nullptr, _cluster, _ip, _prefix,
+                                        superFile.queryProp("@remoteStorage"), effectiveRemoteStorage, ancestorRemoteStorage);
+        if (superFile.hasProp("@sourceCluster"))
+            cluster.set(superFile.queryProp("@sourceCluster"));
+    }
 
     Owned<IPropertyTreeIterator> subFiles = superFile.getElements("SubFile[@value]");
     ForEach(*subFiles)
-        addFileFromSubFile(subFiles->query(), ip, cluster, prefix, effectiveRemoteStorage);
+        addFileFromSubFile(subFiles->query(), ip, cluster, prefix, effectiveRemoteStorage, ignorePackageMapSources);
 }
 
-void ReferencedFileList::addFilesFromPackage(IPropertyTree &package, const char *_ip, const char *_cluster, const char *_prefix, const char *ancestorRemoteStorage)
+void ReferencedFileList::addFilesFromPackage(IPropertyTree &package, const char *_ip, const char *_cluster, const char *_prefix, const char *ancestorRemoteStorage, bool ignorePackageMapSources)
 {
     StringBuffer ip;
     StringBuffer cluster;
     StringBuffer prefix;
     StringBuffer effectiveRemoteStorage;
-    splitDerivedDfsLocationOrRemote(package.queryProp("@daliip"), cluster, ip, prefix, nullptr, _cluster, _ip, _prefix,
-                                    package.queryProp("@remoteStorage"), effectiveRemoteStorage, ancestorRemoteStorage);
-    if (package.hasProp("@sourceCluster"))
-        cluster.set(package.queryProp("@sourceCluster"));
+    if (!ignorePackageMapSources)
+    {
+        splitDerivedDfsLocationOrRemote(package.queryProp("@daliip"), cluster, ip, prefix, nullptr, _cluster, _ip, _prefix,
+                                        package.queryProp("@remoteStorage"), effectiveRemoteStorage, ancestorRemoteStorage);
+        if (package.hasProp("@sourceCluster"))
+            cluster.set(package.queryProp("@sourceCluster"));
+    }
 
     Owned<IPropertyTreeIterator> supers = package.getElements("SuperFile");
     ForEach(*supers)
-        addFilesFromSuperFile(supers->query(), ip, cluster, prefix, effectiveRemoteStorage);
+        addFilesFromSuperFile(supers->query(), ip, cluster, prefix, effectiveRemoteStorage, ignorePackageMapSources);
 
     Owned<IPropertyTreeIterator> files = package.getElements("File");
     ForEach(*files)
-        addFile(files->query().queryProp("@value"), ip, cluster, prefix, effectiveRemoteStorage);
+        ensureFile(files->query().queryProp("@value"), 0, nullptr, false, nullptr, ip, cluster, prefix, effectiveRemoteStorage, ignorePackageMapSources);
 }
 
-void ReferencedFileList::addFilesFromPackageMap(IPropertyTree *pm)
+void ReferencedFileList::addFilesFromPackageMap(IPropertyTree *pm, bool ignorePackageMapSources)
 {
     StringBuffer ip;
     StringBuffer cluster;
     StringBuffer prefix;
     StringBuffer remoteStorageName;
-    const char *srcCluster = pm->queryProp("@sourceCluster");
-    splitDerivedDfsLocationOrRemote(pm->queryProp("@daliip"), cluster, ip, prefix, srcCluster, srcCluster, nullptr, nullptr,
-                                    pm->queryProp("@remoteStorage"), remoteStorageName, nullptr);
+    if (!ignorePackageMapSources)
+    {
+        const char *srcCluster = pm->queryProp("@sourceCluster");
+        splitDerivedDfsLocationOrRemote(pm->queryProp("@daliip"), cluster, ip, prefix, srcCluster, srcCluster, nullptr, nullptr,
+                                        pm->queryProp("@remoteStorage"), remoteStorageName, nullptr);
+    }
     Owned<IPropertyTreeIterator> packages = pm->getElements("Package");
     ForEach(*packages)
-        addFilesFromPackage(packages->query(), ip, cluster, prefix, remoteStorageName);
+        addFilesFromPackage(packages->query(), ip, cluster, prefix, remoteStorageName, ignorePackageMapSources);
     packages.setown(pm->getElements("Part/Package"));
     ForEach(*packages)
-        addFilesFromPackage(packages->query(), ip, cluster, prefix, remoteStorageName);
+        addFilesFromPackage(packages->query(), ip, cluster, prefix, remoteStorageName, ignorePackageMapSources);
 }
 
 bool ReferencedFileList::addFilesFromQuery(IConstWorkUnit *cw, const IHpccPackage *pkg)
@@ -1779,7 +1791,9 @@ class ReferencedFileListTests : public CppUnit::TestFixture
 {
 public:
     CPPUNIT_TEST_SUITE(ReferencedFileListTests);
+        CPPUNIT_TEST(testSkipForeignOrRemote);
         CPPUNIT_TEST(testResolveCases);
+        CPPUNIT_TEST(testIgnorePackageMapSources);
         CPPUNIT_TEST(testConflictingScopesRejected);
         CPPUNIT_TEST(testPackageAndSuperfileScopeConflictsRejected);
         CPPUNIT_TEST(testForeignQualifierRejectedWhenDisabled);
@@ -1935,6 +1949,39 @@ protected:
                 break;
             }
             CPPUNIT_ASSERT_MESSAGE(testCase.name, found);
+        }
+    }
+
+    void testSkipForeignOrRemote()
+    {
+        static const struct
+        {
+            const char *input;
+            const char *name;
+            const char *ip;
+            const char *remote;
+        } cases[] =
+        {
+            { "~r::scope::leaf", "r::scope::leaf", "", "" },
+            { "~remot::scope::leaf", "remot::scope::leaf", "", "" },
+            { "~for::scope::leaf", "for::scope::leaf", "", "" },
+            { "~foreig::scope::leaf", "foreig::scope::leaf", "", "" },
+            { "~remotely::scope::leaf", "remotely::scope::leaf", "", "" },
+            { "~foreigner::scope::leaf", "foreigner::scope::leaf", "", "" },
+            { "scope::leaf", "scope::leaf", "", "" },
+            { "leaf", "leaf", "", "" },
+            { "", "", "", "" },
+            { "~ReMoTe::store::scope::leaf", "scope::leaf", "", "store" },
+            { "~~FoReIgN::127.0.0.1::scope::leaf", "scope::leaf", "127.0.0.1", "" }
+        };
+        for (const auto &testCase : cases)
+        {
+            StringBuffer ip;
+            StringBuffer remote;
+            CPPUNIT_ASSERT_MESSAGE(testCase.input, streq(skipForeignOrRemote(testCase.input, &ip, &remote), testCase.name));
+            CPPUNIT_ASSERT_MESSAGE(testCase.input, streq(ip, testCase.ip));
+            CPPUNIT_ASSERT_MESSAGE(testCase.input, streq(remote, testCase.remote));
+            CPPUNIT_ASSERT_MESSAGE(testCase.input, streq(skipForeignOrRemote(testCase.input), testCase.name));
         }
     }
 
@@ -2343,6 +2390,58 @@ protected:
             e->Release();
         }
         CPPUNIT_ASSERT(rejected);
+    }
+
+    void testIgnorePackageMapSources()
+    {
+        StringArray locations;
+        locations.append("thor");
+
+        {
+            Owned<CXmlRefFileResolver> resolver = new CXmlRefFileResolver(queryFixtureXml());
+            ReferencedFileList list(resolver, false, false, "ignore package-map foreign sources test");
+            Owned<IPropertyTree> packageMap = createPTreeFromXMLString(
+                "<PackageMap daliip='127.0.0.1' sourceCluster='mapPlane'>"
+                    "<Package daliip='127.0.0.2' sourceCluster='pkgPlane'>"
+                        "<SuperFile daliip='127.0.0.3' sourceCluster='superPlane'>"
+                            "<SubFile value='~FOREIGN::127.0.0.1::scope::inheritedforeign'/>"
+                        "</SuperFile>"
+                    "</Package>"
+                "</PackageMap>");
+            list.addFilesFromPackageMap(packageMap, true);
+            list.resolveFiles(locations, "127.0.0.7", nullptr, "foreignPlane", false, false, false, true, false);
+
+            CPPUNIT_ASSERT_EQUAL(1U, resolver->foreignLookups);
+            Owned<IReferencedFileIterator> files = list.getFiles();
+            CPPUNIT_ASSERT(files->first());
+            IReferencedFile &file = files->query();
+            CPPUNIT_ASSERT(streq(file.getLogicalName(), "scope::inheritedforeign"));
+            CPPUNIT_ASSERT(file.getFlags() & RefFileResolvedForeign);
+            CPPUNIT_ASSERT(!(file.getFlags() & RefFileLFNForeign));
+            CPPUNIT_ASSERT(!(file.getFlags() & RefFileNotOnSource));
+        }
+
+        {
+            Owned<CXmlRefFileResolver> resolver = new CXmlRefFileResolver(queryFixtureXml());
+            ReferencedFileList list(resolver, true, false, "ignore package-map remote sources test");
+            Owned<IPropertyTree> packageMap = createPTreeFromXMLString(
+                "<PackageMap remoteStorage='ignoredMapStore' sourceCluster='mapPlane'>"
+                    "<Package remoteStorage='ignoredPackageStore' sourceCluster='pkgPlane'>"
+                        "<File value='~REMOTE::ignoredLfnStore::scope::shared'/>"
+                    "</Package>"
+                "</PackageMap>");
+            list.addFilesFromPackageMap(packageMap, true);
+            list.resolveFiles(locations, "sharedstore", nullptr, "remotePlane", false, false, false, false, true);
+
+            CPPUNIT_ASSERT_EQUAL(1U, resolver->remoteLookups);
+            Owned<IReferencedFileIterator> files = list.getFiles();
+            CPPUNIT_ASSERT(files->first());
+            IReferencedFile &file = files->query();
+            CPPUNIT_ASSERT(streq(file.getLogicalName(), "scope::shared"));
+            CPPUNIT_ASSERT(file.getFlags() & RefFileResolvedRemote);
+            CPPUNIT_ASSERT(!(file.getFlags() & RefFileLFNRemote));
+            CPPUNIT_ASSERT(!(file.getFlags() & RefFileNotOnSource));
+        }
     }
 
     void testPackageAndSuperfileScopeConflictsRejected()

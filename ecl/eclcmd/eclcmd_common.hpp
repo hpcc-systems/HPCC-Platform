@@ -120,6 +120,7 @@ typedef IEclCommand *(*EclCommandFactory)(const char *cmdname);
 #define ECLOPT_DFU_WAIT "--dfu-wait"
 #define ECLOPT_KEY_COMPRESSION "--key-compression"
 #define ECLOPT_DFU_TARGETPLANE "--target-plane"
+#define ECLOPT_IGNORE_PACKAGEMAP_SOURCES "--ignore-packagemap-sources"
 
 #define ECLOPT_ACTIVE "--active"
 #define ECLOPT_ACTIVE_ONLY "--active-only"

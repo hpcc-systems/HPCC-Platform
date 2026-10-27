@@ -518,6 +518,8 @@ public:
                 continue;
             if (iter.matchFlag(optPreloadAll, ECLOPT_PRELOAD_ALL_PACKAGES))
                 continue;
+            if (iter.matchFlag(optIgnorePackageMapSources, ECLOPT_IGNORE_PACKAGEMAP_SOURCES))
+                continue;
             if (dfuOptions.match(iter))
                 continue;
             eclCmdOptionMatchIndicator ind = EclCmdCommon::matchCommandLineOption(iter, true);
@@ -592,6 +594,7 @@ public:
         request->setAppendCluster(!optDontAppendCluster);
 
         dfuOptions.updateRequest(request.get());
+        request->setIgnorePackageMapSources(optIgnorePackageMapSources);
 
         Owned<IClientAddPackageResponse> resp = packageProcessClient->AddPackage(request);
         int ret = outputMultiExceptionsEx(resp->getExceptions());
@@ -632,7 +635,8 @@ public:
                     "   --replace                Replace existing packagemap\n"
                     "   --update-super-files     Update local DFS super-files if remote DALI has changed\n"
                     "   --update-clone-from      Update local clone from location if remote DALI has changed\n"
-                    "   --dont-append-cluster    Only use to avoid locking issues due to adding cluster to file\n",
+                    "   --dont-append-cluster    Only use to avoid locking issues due to adding cluster to file\n"
+                    "   --ignore-packagemap-sources Ignore source locations and LFN qualifiers declared in the package map\n",
                     stdout);
         dfuOptions.usage();
         EclCmdCommon::usage();
@@ -657,6 +661,7 @@ private:
     bool optGlobalScope;
     bool optAllowForeign;
     bool optPreloadAll;
+    bool optIgnorePackageMapSources = false;
 };
 
 class EclCmdPackageMapCopy : public EclCmdCommon
@@ -703,6 +708,8 @@ public:
             if (iter.matchFlag(optDontAppendCluster, ECLOPT_DONT_APPEND_CLUSTER))
                 continue;
             if (iter.matchFlag(optPreloadAll, ECLOPT_PRELOAD_ALL_PACKAGES))
+                continue;
+            if (iter.matchFlag(optIgnorePackageMapSources, ECLOPT_IGNORE_PACKAGEMAP_SOURCES))
                 continue;
             if (dfuOptions.match(iter))
                 continue;
@@ -763,6 +770,7 @@ public:
         request->setAppendCluster(!optDontAppendCluster);
 
         dfuOptions.updateRequest(request.get());
+        request->setIgnorePackageMapSources(optIgnorePackageMapSources);
 
         Owned<IClientCopyPackageMapResponse> resp = packageProcessClient->CopyPackageMap(request);
         int ret = outputMultiExceptionsEx(resp->getExceptions());
@@ -803,7 +811,8 @@ public:
                     "   --replace              Replace existing packagemap\n"
                     "   --update-super-files   Update local DFS super-files if remote DALI has changed\n"
                     "   --update-clone-from    Update local clone from location if remote DALI has changed\n"
-                    "   --dont-append-cluster  Only use to avoid locking issues due to adding cluster to file\n",
+                    "   --dont-append-cluster  Only use to avoid locking issues due to adding cluster to file\n"
+                    "   --ignore-packagemap-sources Ignore source locations and LFN qualifiers declared in the package map\n",
                     stdout);
         dfuOptions.usage();
         EclCmdCommon::usage();
@@ -823,6 +832,7 @@ private:
     bool optUpdateCloneFrom = false;
     bool optDontAppendCluster = false; //Undesirable but here temporarily because DALI may have locking issues
     bool optPreloadAll = false;
+    bool optIgnorePackageMapSources = false;
 };
 
 class EclCmdPackageValidate : public EclCmdCommon
@@ -1278,6 +1288,8 @@ public:
                 continue;
             if (iter.matchFlag(optDontAppendCluster, ECLOPT_DONT_APPEND_CLUSTER))
                 continue;
+            if (iter.matchFlag(optIgnorePackageMapSources, ECLOPT_IGNORE_PACKAGEMAP_SOURCES))
+                continue;
             if (dfuOptions.match(iter))
                 continue;
             eclCmdOptionMatchIndicator ind = EclCmdCommon::matchCommandLineOption(iter, true);
@@ -1349,6 +1361,7 @@ public:
         request->setAppendCluster(!optDontAppendCluster);
 
         dfuOptions.updateRequest(request.get());
+        request->setIgnorePackageMapSources(optIgnorePackageMapSources);
 
         Owned<IClientAddPartToPackageMapResponse> resp = packageProcessClient->AddPartToPackageMap(request);
         int ret = outputMultiExceptionsEx(resp->getExceptions());
@@ -1388,7 +1401,8 @@ public:
                     "   --preload-all               Set preload files option for all packages\n"
                     "   --update-super-files        Update local DFS super-files if remote DALI has changed\n"
                     "   --update-clone-from         Update local clone from location if remote DALI has changed\n"
-                    "   --dont-append-cluster       Only use to avoid locking issues due to adding cluster to file\n",
+                    "   --dont-append-cluster       Only use to avoid locking issues due to adding cluster to file\n"
+                    "   --ignore-packagemap-sources Ignore source locations and LFN qualifiers declared in the package map\n",
                     stdout);
         dfuOptions.usage();
         EclCmdCommon::usage();
@@ -1410,6 +1424,7 @@ private:
     bool optUpdateSuperfiles;
     bool optUpdateCloneFrom;
     bool optDontAppendCluster;
+    bool optIgnorePackageMapSources = false;
 };
 
 class EclCmdPackageRemovePart : public EclCmdCommon
