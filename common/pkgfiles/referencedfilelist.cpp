@@ -341,16 +341,6 @@ public:
             flags |= RefSubFile;
     }
 
-    void reset()
-    {
-        flags &= ~(RefFileNotOnCluster | RefFileNotFound | RefFileResolvedForeign | RefFileResolvedRemote | RefFileCopyInfoFailed | RefFileCloned | RefFileNotOnSource); //these flags are calculated during resolve
-        // Resolution scope belongs to one resolveFiles() pass and must not leak into the next one.
-        resolvedRemoteStorage.clear();
-        resolvedRemotePrefix.clear();
-        hasResolvedRemoteStorage = false;
-        hasResolvedRemotePrefix = false;
-    }
-
     IPropertyTree *getRemoteStorageFileTree(IUserDescriptor *user, const char *remoteStorageName, const char *remotePrefix);
     IPropertyTree *getForeignFileTree(IUserDescriptor *user, INode *remote, const char *remotePrefix);
     IPropertyTree *getFileOrProvidedForeignFileTree(IUserDescriptor *user, INode *remote, const char *remotePrefix);
@@ -532,6 +522,7 @@ public:
     StringAttr keyCompression;
     bool allowForeign;
     bool allowSizeCalc;
+    bool filesResolved = false;
 };
 
 // Should probably move to dadfs as a global helper function
@@ -662,7 +653,6 @@ void ReferencedFile::resolveLocal(const StringArray &locations, const char *srcC
         flags |= RefFileNotFound;
         return;
     }
-    reset();
     Owned<IRefLocalFile> file = fileResolver->lookupLocal(logicalName, user, calcFileSize);
     if(file)
         processLocalFileInfo(file, locations, srcCluster, subfiles);
@@ -725,7 +715,6 @@ void ReferencedFile::resolveForeign(IUserDescriptor *user, INode *remote, const 
         flags |= RefFileNotFound;
         return;
     }
-    reset();
     if (checkLocalFirst) //usually means we don't want to overwrite existing file info
     {
         Owned<IRefLocalFile> file = fileResolver->lookupLocal(logicalName, user, calcFileSize);
@@ -786,7 +775,6 @@ void ReferencedFile::resolveRemote(IUserDescriptor *user, const char *remoteStor
         flags |= RefFileNotFound;
         return;
     }
-    reset();
     if (checkLocalFirst) //usually means we don't want to overwrite existing file info
     {
         Owned<IRefLocalFile> file = fileResolver->lookupLocal(logicalName, user, calcFileSize);
@@ -799,7 +787,7 @@ void ReferencedFile::resolveRemote(IUserDescriptor *user, const char *remoteStor
     Owned<IPropertyTree> tree = getRemoteStorageFileTree(user, remoteStorageName, remotePrefix);
     if (tree)
     {
-        // Keep request-level scope separate so a later resolveFiles() call can replace it.
+        // Record the scope that found the file, which may be the request-level scope rather than the declared one.
         resolvedRemoteStorage.set(remoteStorageName);
         hasResolvedRemoteStorage = true;
         resolvedRemotePrefix.set(remotePrefix);
@@ -1162,6 +1150,8 @@ public:
 
 void ReferencedFileList::ensureFile(const char *ln, unsigned flags, const char *pkgid, bool noDfsResolution, const StringArray *subfileNames, const char *daliip, const char *srcCluster, const char *prefix, const char *remoteStorageName, bool ignorePackageMapSources)
 {
+    if (filesResolved)
+        throwUnexpectedX("ReferencedFileList: cannot add files after resolveFiles");
     if (isEmptyString(ln))
         return;
 
@@ -1402,11 +1392,14 @@ void ReferencedFileList::resolveSubFiles(StringArray &subfiles, const StringArra
 
 void ReferencedFileList::resolveFiles(const StringArray &locations, const char *remoteLocation, const char *_remotePrefix, const char *_srcCluster, bool checkLocalFirst, bool expandSuperFiles, bool trackSubFiles, bool resolveLFNForeign, bool useRemoteStorage)
 {
+    if (filesResolved)
+        throwUnexpectedX("ReferencedFileList: resolveFiles called more than once");
+    filesResolved = true;
+
     StringArray subfiles;
     StringArray unresolved;
-    // Avoid flooding the log with a line per file (and per resolveFiles call, which can be for
-    // thousands of files each time a packagemap is added). Only the first few unresolved names are
-    // kept for the summary line below; the rest are just counted.
+    // Avoid flooding the log with a line per file (there can be thousands each time a packagemap is
+    // added). Only the first few unresolved names are kept for the summary line below; the rest are just counted.
     constexpr unsigned maxNamedFiles = 3;
     unsigned numResolved = 0;
     unsigned numUnresolved = 0;
@@ -1424,18 +1417,13 @@ void ReferencedFileList::resolveFiles(const StringArray &locations, const char *
             filesToResolve.append(*LINK(&files.queryObject()));
     }
 
-    // remoteStorage is also used while expanding subfiles, so do not carry a remote scope into a later pass.
-    remoteStorage.clear();
+    // remoteStorage is also used while expanding subfiles.
     if (useRemoteStorage)
         remoteStorage.set(remoteLocation);
 
     ForEachItemIn(fileIndex, filesToResolve)
     {
         ReferencedFile &file = filesToResolve.item(fileIndex);
-        // Clear cached per-resolution scope before queryEffective...() selects the scope for this pass.
-        // Resetting each file here is sufficient; a separate pass over all files is unnecessary.
-        // The resolver resets again, but that is too late here; reset only clears derived state that this pass recomputes.
-        file.reset();
         if (file.daliip.isEmpty() && (file.hasRemoteStorageScope() || useRemoteStorage))
         {
             if (!user)
@@ -1509,6 +1497,8 @@ bool ReferencedFileList::filesNeedCopying(bool cloneForeign)
 
 void ReferencedFileList::cloneFileInfo(StringBuffer &publisherWuid, const char *dstCluster, unsigned updateFlags, IDFUhelper *helper, bool cloneSuperInfo, bool cloneForeign, unsigned redundancy, unsigned channelsPerNode, int replicateOffset, const char *defReplicateFolder, bool targetPlaneSpecified)
 {
+    if (!filesResolved)
+        throwUnexpectedX("ReferencedFileList: cloneFileInfo called before resolveFiles");
     Owned<IDFUWorkUnit> publisher;
     bool dfucopy = 0 != (updateFlags & DFU_UPDATEF_COPY);
     bool overwrite = (updateFlags & DFU_UPDATEF_OVERWRITE) != 0;
@@ -1799,6 +1789,7 @@ public:
         CPPUNIT_TEST(testForeignQualifierRejectedWhenDisabled);
         CPPUNIT_TEST(testForeignSuperfileChildRejectedWhenDisabled);
         CPPUNIT_TEST(testResolutionEarlyReturns);
+        CPPUNIT_TEST(testResolveLifecycleEnforced);
     CPPUNIT_TEST_SUITE_END();
 
 protected:
@@ -2551,6 +2542,32 @@ protected:
         CPPUNIT_ASSERT_EQUAL(0U, resolver->localLookups);
         CPPUNIT_ASSERT_EQUAL(0U, resolver->foreignLookups);
         CPPUNIT_ASSERT_EQUAL(0U, resolver->remoteLookups);
+    }
+
+    void testResolveLifecycleEnforced()
+    {
+        Owned<CXmlRefFileResolver> resolver = new CXmlRefFileResolver(queryFixtureXml());
+        ReferencedFileList list(resolver, true, false, "resolve lifecycle test");
+        list.addFile("item", "127.0.0.1");
+
+        StringBuffer publisherWuid;
+        CPPUNIT_ASSERT_THROWS_IEXCEPTION(list.cloneFileInfo(publisherWuid, "thor", 0, nullptr, false, false, 0, 1, 0, nullptr),
+            "cloneFileInfo before resolveFiles should throw");
+
+        StringArray locations;
+        locations.append("thor");
+        list.resolveFiles(locations, nullptr, nullptr, "thor", false, false, false, true, false);
+        CPPUNIT_ASSERT_EQUAL(1U, resolver->foreignLookups);
+
+        CPPUNIT_ASSERT_THROWS_IEXCEPTION(list.resolveFiles(locations, nullptr, nullptr, "thor", false, false, false, true, false),
+            "second resolveFiles should throw");
+        CPPUNIT_ASSERT_THROWS_IEXCEPTION(list.addFile("another"), "addFile after resolveFiles should throw");
+
+        CPPUNIT_ASSERT_EQUAL(1U, resolver->foreignLookups);
+        ReferencedFile *item = list.map.getValue("item");
+        CPPUNIT_ASSERT(item);
+        CPPUNIT_ASSERT(item->getFlags() & RefFileResolvedForeign);
+        CPPUNIT_ASSERT(!list.map.getValue("another"));
     }
 };
 
