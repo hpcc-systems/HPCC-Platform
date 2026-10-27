@@ -23,6 +23,7 @@
 #include "jutil.hpp"
 #include <map>
 #include <set>
+#include <string_view>
 #include <unordered_map>
 #include <unordered_set>
 
@@ -161,6 +162,10 @@ protected:
         FilterTerm(CMetaInfoState& _metaInfoState) : metaInfoState(_metaInfoState) {}
         virtual void observe(const CEvent& event) const {}
         virtual bool matches(const CEvent& event, const CEventAttribute& attribute) const { return true; }
+        virtual bool matches(const char*) const
+        {
+            throw makeStringException(-1, "filter term does not support text matching");
+        }
         virtual bool accept(const char* values)
         {
             StringArray tokens;
@@ -186,28 +191,52 @@ protected:
 
     struct StringFilterTerm : public FilterTerm
     {
+        struct StringViewLess
+        {
+            using is_transparent = void;
+
+            bool operator()(const std::string& lhs, const std::string& rhs) const { return lhs < rhs; }
+            bool operator()(const std::string& lhs, std::string_view rhs) const { return std::string_view(lhs) < rhs; }
+            bool operator()(std::string_view lhs, const std::string& rhs) const { return lhs < std::string_view(rhs); }
+            bool operator()(std::string_view lhs, std::string_view rhs) const { return lhs < rhs; }
+        };
+
         StringMatchHelper helper;
 
         // Cache of previously evaluated values used to avoid potentially redundant pattern
-        // matching. The contents persist for the lifetime of the filter term. For values known
-        // to have a shorter lifetime, e.g., TraceId, a subclass may manage the cache differently.
+        // matching. The transparent comparator allows string_view probes without allocating on
+        // cache hits. A map is used because C++17 does not provide portable heterogeneous lookup
+        // for unordered_map; the O(log N) lookup is the tradeoff for this allocation-free probe.
+        // The contents persist for the lifetime of the filter term. For values known to have a
+        // shorter lifetime, e.g., TraceId, a subclass may manage the cache differently.
         //
         // The map is mutable because it is used exclusively within a const method. The method is
         // const because the base class requires it to be so. Concurrent access is not a concern
         // because event traversal and iteration are not multi-threaded activities. Synchronization
         // is not required.
-        mutable std::unordered_map<std::string, bool> knownValues;
+        mutable std::map<std::string, bool, StringViewLess> knownValues;
 
         using FilterTerm::FilterTerm;
 
         bool matches(const CEvent&, const CEventAttribute& attribute) const override
         {
-            std::string value = attribute.queryTextValue();
-            auto knownIt = knownValues.find(value);
+            return matchesValue(attribute.queryTextValue());
+        }
+
+        bool matches(const char* value) const override
+        {
+            return matchesValue(value);
+        }
+
+        bool matchesValue(const char* value) const
+        {
+            std::string_view valueView(value ? value : "");
+            auto knownIt = knownValues.find(valueView);
             if (knownIt != knownValues.end())
                 return knownIt->second;
-            bool match = helper.matches(value.c_str());
-            knownValues.emplace(std::move(value), match);
+            std::string cachedValue(valueView);
+            bool match = helper.matches(cachedValue.c_str());
+            knownValues.emplace(std::move(cachedValue), match);
             return match;
         }
 
@@ -609,6 +638,10 @@ public: // IEventVisitor
                 terms[termIdx]->observe(event);
         }
 
+        if (terms[EvExtAttrInputFileName] &&
+            !terms[EvExtAttrInputFileName]->matches(queryInputFileName(properties)))
+            return true;
+
         // Apply event type filters. Event filters cannot cause the remainder of the file to be
         // skipped, so non-acceptance implies coninuation.
         if (!acceptedEvents.empty() && !acceptedEvents.count(event.queryType()))
@@ -677,10 +710,19 @@ public: // IEventFilter
                 else
                 {
                     EventAttr id = queryEventAttribute(idName);
-                    if (EvAttrNone == id)
-                        throw makeStringExceptionV(-1, "unknown event attribute filter id '%s' (use meta.* names for derived attributes)", idName);
-                    if (!acceptAttribute(id, values))
-                        throw makeStringExceptionV(-1, "event filter attribute '%s' term '%s' not accepted", queryEventAttributeName(id), values);
+                    if (EvAttrNone != id)
+                    {
+                        if (!acceptAttribute(id, values))
+                            throw makeStringExceptionV(-1, "event filter attribute '%s' term '%s' not accepted", queryEventAttributeName(id), values);
+                    }
+                    else
+                    {
+                        unsigned extendedId = queryExtendedEventAttribute(idName);
+                        if (EvExtAttrMax == extendedId)
+                            throw makeStringExceptionV(-1, "unknown event or extended attribute filter id '%s'. Use 'evtool describe' to view recognized attribute names.", idName);
+                        if (!acceptExtendedAttribute(extendedId, values))
+                            throw makeStringExceptionV(-1, "extended attribute filter '%s' term '%s' not accepted", idName, values);
+                    }
                 }
             }
             else if (streq(termName, "event"))
@@ -838,6 +880,14 @@ public: // IEventFilter
 
     virtual bool acceptExtendedAttribute(unsigned id, const char* values) override
     {
+        if (id == EvExtAttrLogicalFileName)
+            return acceptMetaAttribute(EVENT_META_LOGICAL_FILE_NAME, values);
+        if (id == EvExtAttrInputFileName)
+        {
+            if (!terms[id])
+                terms[id].setown(new StringFilterTerm(metaState));
+            return static_cast<StringFilterTerm*>(terms[id].get())->accept(values);
+        }
         const IndexSearchFlagInfo* flag = queryIndexSearchFlagInfo(id);
         if (!flag)
             return false;
@@ -975,6 +1025,10 @@ class EventFilterTests : public CppUnit::TestFixture
     CPPUNIT_TEST(testFilterByEventByBadContextAttribute);
     CPPUNIT_TEST(testFilterByEventByBadComparison);
     CPPUNIT_TEST(testFilterByAttributeByFileId);
+    CPPUNIT_TEST(testFilterByAttributeByInputFileName);
+    CPPUNIT_TEST(testFilterByAttributeByInputFileNameNonMatch);
+    CPPUNIT_TEST(testFilterByAttributeByInputFileNameWindowsPath);
+    CPPUNIT_TEST(testFilterByAttributeByInputFileNameTrailingSeparator);
     CPPUNIT_TEST(testFilterByAttributeByFileIdLogicalFilename);
     CPPUNIT_TEST(testFilterByAttributeByFileIdLogicalFilenamePathMatch);
     CPPUNIT_TEST(testFilterByAttributeByPath1);
@@ -1616,6 +1670,74 @@ public:
                     <event type="IndexCacheMiss" FileId="6"/>
                     <event type="IndexCacheMiss" FileId="8"/>
                 </expect>
+            </test>
+        )!!!";
+        testEventVisitationLinks(testData, PTEFlenientParsing);
+    }
+
+    void testFilterByAttributeByInputFileName()
+    {
+        constexpr const char* testData = R"!!!(
+            <test>
+                <link kind="event-filter">
+                    <attribute id="InputFileName" values="selected.evt"/>
+                </link>
+                <input filename="/tmp/selected.evt">
+                    <event type="IndexCacheMiss"/>
+                </input>
+                <expect>
+                    <event type="IndexCacheMiss"/>
+                </expect>
+            </test>
+        )!!!";
+        testEventVisitationLinks(testData, PTEFlenientParsing);
+    }
+
+    void testFilterByAttributeByInputFileNameNonMatch()
+    {
+        constexpr const char* testData = R"!!!(
+            <test>
+                <link kind="event-filter">
+                    <attribute id="InputFileName" values="selected.evt"/>
+                </link>
+                <input filename="/tmp/other.evt">
+                    <event type="IndexCacheMiss"/>
+                </input>
+                <expect/>
+            </test>
+        )!!!";
+        testEventVisitationLinks(testData, PTEFlenientParsing);
+    }
+
+    void testFilterByAttributeByInputFileNameWindowsPath()
+    {
+        constexpr const char* testData = R"!!!(
+            <test>
+                <link kind="event-filter">
+                    <attribute id="InputFileName" values="selected.evt"/>
+                </link>
+                <input filename="C:\\dir\\selected.evt">
+                    <event type="IndexCacheMiss"/>
+                </input>
+                <expect>
+                    <event type="IndexCacheMiss"/>
+                </expect>
+            </test>
+        )!!!";
+        testEventVisitationLinks(testData, PTEFlenientParsing);
+    }
+
+    void testFilterByAttributeByInputFileNameTrailingSeparator()
+    {
+        constexpr const char* testData = R"!!!(
+            <test>
+                <link kind="event-filter">
+                    <attribute id="InputFileName" values="selected.evt"/>
+                </link>
+                <input filename="C:\\dir\\">
+                    <event type="IndexCacheMiss"/>
+                </input>
+                <expect/>
             </test>
         )!!!";
         testEventVisitationLinks(testData, PTEFlenientParsing);

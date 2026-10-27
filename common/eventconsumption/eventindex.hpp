@@ -60,8 +60,24 @@ enum ExtendedEventAttr : unsigned
     EvExtAttrSearchUnfiltered,
     EvExtAttrSearchCount,
     EvExtAttrLogicalFileName,
+    EvExtAttrInputFileName,
     EvExtAttrMax,
 };
+
+constexpr const char* EVENT_EXT_INPUT_FILE_NAME = "InputFileName";
+
+// Returns the canonical, case-insensitive user-facing name for an extended attribute, or nullptr
+// when attrId is not a known extended attribute. Legacy aliases are accepted only by their
+// documented call sites and are not returned here.
+event_decl const char* queryExtendedEventAttributeName(unsigned attrId);
+
+// Resolves a canonical extended attribute name case-insensitively and returns EvExtAttrMax when
+// the name is unknown. Callers should use queryExtendedEventAttributeName() for output names.
+event_decl unsigned queryExtendedEventAttribute(const char* name);
+
+// Returns the basename after the last '/' or '\\' in properties.path, or an empty string for an
+// empty path or a path ending in a separator.
+event_decl const char* queryInputFileName(const EventFileProperties& properties);
 
 struct IndexSearchFlagInfo
 {
