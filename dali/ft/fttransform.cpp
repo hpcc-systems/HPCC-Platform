@@ -533,7 +533,7 @@ void CIndexTransformer::initializeTransform(IFileIOStream * out)
     const char * keyName = inputFile->queryFilename();
 
     //read with a buffer size of 4MB - for optimal speed, and minimize azure read costs
-    index.setown(createKeyIndex(keyName, 0, *inputIO, -1, false, 0x400000));
+    index.setown(createKeyIndex(keyName, 0, *inputIO, -1, false, { 0x400000, 0x400000 }));
     size32_t key_size = index->keySize();  // NOTE - in variable size case, this may be 32767 + sizeof(offset_t)
     size32_t keyedSize = index->keyedSize();
     unsigned nodeSize = index->getNodeSize();

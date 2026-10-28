@@ -51,6 +51,12 @@ enum PlaneAttributeType // remember to update planeAttributeInfo in jplane.cpp
     PlaneAttributeCount
 };
 
+struct IndexReadOptions
+{
+    size32_t randomReadSize = 0;
+    size32_t sequentialReadSize = 0;
+};
+
 extern jlib_decl const char *getPlaneAttributeString(PlaneAttributeType attr);
 extern jlib_decl unsigned __int64 getPlaneAttributeValue(const char *planeName, PlaneAttributeType planeAttrType, unsigned __int64 defaultValue);
 extern jlib_decl const char *findPlaneFromPath(const char *filePath, StringBuffer &result);
@@ -58,9 +64,8 @@ extern jlib_decl const char *findPlaneFromPath(const char *filePath, StringBuffe
 extern jlib_decl bool findPlaneAttrFromPath(const char *filePath, PlaneAttributeType planeAttrType, unsigned __int64 defaultValue, unsigned __int64 &resultValue);
 extern jlib_decl size32_t getBlockedFileIOSize(const char *planeName, size32_t defaultSize=0);
 extern jlib_decl size32_t getBlockedRandomIOSize(const char *planeName, size32_t defaultSize=0);
-extern jlib_decl size32_t getForeignBlockedIOSize(bool isFiltered);
-extern jlib_decl size32_t getIndexBlockedIOSize(const char *planeName, bool isFiltered);
-extern jlib_decl size32_t roundIndexBlockedIOSize(size32_t blockedIOSize, size32_t pageSize);
+extern jlib_decl IndexReadOptions getForeignIndexReadOptions();
+extern jlib_decl IndexReadOptions getIndexReadOptions(const char *planeName);
 extern jlib_decl bool getRenameSupportedFromPath(const char *filePath);
 
 constexpr int noWriteSyncMarginDeltaMs = (std::numeric_limits<int>::min)();

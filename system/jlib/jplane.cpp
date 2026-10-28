@@ -747,7 +747,7 @@ size32_t getBlockedRandomIOSize(const char *planeName, size32_t defaultSize)
     return (size32_t)getPlaneAttributeValue(planeName, BlockedRandomIO, defaultSize);
 }
 
-size32_t getForeignBlockedIOSize(bool isFiltered)
+static size32_t getForeignBlockedIOSize(bool isFiltered)
 {
     unsigned foreignBlockedIOSizeK = (unsigned)getExpertOptInt64("foreignSequentialBlockedIOSizeK", (unsigned)-1);
     if (isFiltered)
@@ -766,7 +766,7 @@ size32_t getForeignBlockedIOSize(bool isFiltered)
 }
 
 // This is the block size to use for index reads, conditional on whether reading with/without filtered. If filtered, use the random IO size, otherwise the sequential IO size.
-size32_t getIndexBlockedIOSize(const char *planeName, bool isFiltered)
+static size32_t getIndexBlockedIOSize(const char *planeName, bool isFiltered)
 {
     static CriticalSection missingBlockedIOWarnCrit(SYNC_LOCATION);
     static std::unordered_map<std::string, unsigned> warnedMissingBlockedIOByPlane;
@@ -805,6 +805,16 @@ size32_t getIndexBlockedIOSize(const char *planeName, bool isFiltered)
             blockedIOSize = 0; // caller should interpret as use default
     }
     return blockedIOSize;
+}
+
+IndexReadOptions getForeignIndexReadOptions()
+{
+    return { getForeignBlockedIOSize(true), getForeignBlockedIOSize(false) };
+}
+
+IndexReadOptions getIndexReadOptions(const char *planeName)
+{
+    return { getIndexBlockedIOSize(planeName, true), getIndexBlockedIOSize(planeName, false) };
 }
 
 //------------------------------------------------------------------------------------------------------------
@@ -1054,13 +1064,6 @@ unsigned getPathWriteSyncDelayRemainingMs(const char *physicalPath, offset_t &ex
         }
     }
     return snapshot->getDelayRemainingMs(physicalPath, now, expectedSize, compressed);
-}
-
-size32_t roundIndexBlockedIOSize(size32_t blockedIOSize, size32_t pageSize)
-{
-    if (pageSize && (blockedIOSize > pageSize))
-        return (blockedIOSize / pageSize) * pageSize;
-    return blockedIOSize;
 }
 
 static std::atomic<int> avoidRename{-1};

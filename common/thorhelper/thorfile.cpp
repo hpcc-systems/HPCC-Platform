@@ -109,7 +109,7 @@ IHThorDiskReadArg * createWorkUnitReadArg(const char * filename, IHThorWorkunitR
 
 #define MAX_FILE_READ_FAIL_COUNT 3
 
-IKeyIndex *openKeyFile(IDistributedFilePart & keyFile, size32_t blockedIndexIOSize)
+IKeyIndex *openKeyFile(IDistributedFilePart & keyFile, IndexReadOptions readOptions)
 {
     unsigned failcount = 0;
     unsigned numCopies = keyFile.numCopies();
@@ -132,7 +132,7 @@ IKeyIndex *openKeyFile(IDistributedFilePart & keyFile, size32_t blockedIndexIOSi
                 Owned<IFileIO> iFileIO = iFile->open(IFOread);
                 if (nullptr == iFileIO)
                     throw makeStringExceptionV(0, "Failed to open index file %s", remotePath.str());
-                return createKeyIndex(remotePath.str(), crc, *iFileIO, (unsigned) -1, false, blockedIndexIOSize);
+                return createKeyIndex(remotePath.str(), crc, *iFileIO, (unsigned) -1, false, readOptions);
             }
         }
         catch (IException *E)
@@ -151,6 +151,12 @@ IKeyIndex *openKeyFile(IDistributedFilePart & keyFile, size32_t blockedIndexIOSi
     RemoteFilename rfn;
     keyFile.getFilename(rfn).getRemotePath(url);
     throw MakeStringException(1001, "Could not open key file at %s%s", url.str(), (numCopies > 1) ? " or any alternate location." : ".");
+}
+
+// FUTURE: Remove this overload and ensure that all callers provide explicit IndexReadOptions
+IKeyIndex *openKeyFile(IDistributedFilePart &keyFile)
+{
+    return openKeyFile(keyFile, {});
 }
 
 

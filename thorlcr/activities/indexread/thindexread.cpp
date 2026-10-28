@@ -181,8 +181,8 @@ protected:
                         rfn.getPath(remotePath);
                         unsigned crc = 0;
                         lastPart->getCrc(crc);
-                        unsigned __int64 blockedIOSize = getPlaneAttributeValue(planeName, BlockedRandomIO, 0);
-                        keyIndex.setown(createKeyIndex(remotePath.str(), crc, false, (size32_t)blockedIOSize));
+                        IndexReadOptions readOptions = getIndexReadOptions(planeName);
+                        keyIndex.setown(createKeyIndex(remotePath.str(), crc, false, readOptions));
                         break;
                     }
                 }

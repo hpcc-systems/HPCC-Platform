@@ -81,7 +81,7 @@ protected:
     mutable CriticalSection keyManagersCS{SYNC_LOCATION};  // CS for any updates to keyManagers
     unsigned fileTableStart = NotFound;
     std::vector<Owned<CStatsContextLogger>> contextLoggers;
-    size32_t foreignBlockedIOSize = (size32_t)-1;
+    IndexReadOptions foreignReadOptions{ (size32_t)-1, (size32_t)-1 };
 
 
     class TransformCallback : implements IThorIndexCallback , public CSimpleInterface
@@ -297,18 +297,17 @@ public:
                 StringBuffer path;
                 rfn.getPath(path); // NB: use for tracing only, IDelayedFile uses IPartDescriptor and any copy
 
-                size32_t blockedIOSize = 0;
-                if (foreignBlockedIOSize != (size32_t)-1) // set in init if foreign
-                    blockedIOSize = foreignBlockedIOSize;
+                IndexReadOptions readOptions;
+                if (foreignReadOptions.randomReadSize != (size32_t)-1) // set in init if foreign
+                    readOptions = foreignReadOptions;
                 else
                 {
                     StringBuffer planeName;
                     part.queryOwner().getClusterLabel(0, planeName);
-                    blockedIOSize = getIndexBlockedIOSize(planeName, helper->hasSegmentMonitors());
+                    readOptions = getIndexReadOptions(planeName);
                 }
-                blockedIOSize = roundIndexBlockedIOSize(blockedIOSize, getPageCachePageSize());
 
-                Owned<IKeyIndex> keyIndex = createKeyIndex(path, crc, *lazyIFileIO, (unsigned) -1, false, blockedIOSize);
+                Owned<IKeyIndex> keyIndex = createKeyIndex(path, crc, *lazyIFileIO, (unsigned) -1, false, readOptions);
                 IContextLogger * contextLogger = isSuperFile?contextLoggers[p]:contextLoggers[0];
                 Owned<IKeyManager> klManager = createLocalKeyManager(helper->queryDiskRecordSize()->queryRecordAccessor(true), keyIndex, contextLogger, helper->hasNewSegmentMonitors(), false);
                 if (localMerge)
@@ -570,11 +569,11 @@ public:
         CDfsLogicalFileName dlfn;
         dlfn.set(logicalFilename);
 
-        foreignBlockedIOSize = (size32_t)-1; // unset
+        foreignReadOptions = { (size32_t)-1, (size32_t)-1 };
         if (dlfn.isForeign())
         {
             // all other logical files will map to a plane (inc. ~remote files), for foreign files we look for an expert setting which defines sequential and random block size
-            foreignBlockedIOSize = getForeignBlockedIOSize(helper->hasSegmentMonitors()); // defaults to sensible sizes in containerized
+            foreignReadOptions = getForeignIndexReadOptions(); // defaults to sensible sizes in containerized
         }
 
         if (!container.queryLocalOrGrouped())

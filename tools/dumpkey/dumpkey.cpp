@@ -275,7 +275,7 @@ int main(int argc, const char **argv)
                 throw MakeStringException(999, "Failed to open file %s", keyName);
 
             //read with a buffer size of 4MB - for optimal speed, and minimize azure read costs
-            Owned <IKeyIndex> index(createKeyIndex(keyName, 0, *io, 1, false, 0x400000));
+            Owned <IKeyIndex> index(createKeyIndex(keyName, 0, *io, 1, false, { 0x400000, 0x400000 }));
             size32_t key_size = index->keySize();  // NOTE - in variable size case, this may be 32767 + sizeof(offset_t)
             size32_t keyedSize = index->keyedSize();
             unsigned nodeSize = index->getNodeSize();

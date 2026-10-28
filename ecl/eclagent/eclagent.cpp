@@ -3200,7 +3200,7 @@ char * EclAgent::queryIndexMetaData(char const * lfn, char const * xpath)
                 rfn.getPath(remotePath);
                 unsigned crc;
                 part->getCrc(crc);
-                key.setown(createKeyIndex(remotePath.str(), crc, false, 0));
+                key.setown(createKeyIndex(remotePath.str(), crc, false, {}));
                 break;
             }
         }
