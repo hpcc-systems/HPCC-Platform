@@ -49,7 +49,8 @@
 byte * CCachedIndexRead::getBufferForUpdate(offset_t offset, size32_t writeSize)
 {
     baseOffset = offset;
-    size = writeSize;
+    size = 0;
+    bufferSize = writeSize;
 #ifndef __linux__
     void * base = data.ensure(writeSize);
     return static_cast<byte *>(base);
@@ -520,6 +521,7 @@ public:
         bool ret = readCacheFile(cacheFileOffset, readSize, data);
         if (ret)
         {
+            nodeData.adjustSize(readSize);
             curCacheSet.delegateIndexToMostRecentlyUsed(setIndex);
             if (statsEnabled)
             {
@@ -569,7 +571,14 @@ public:
 
         CacheEntry & curCacheSet = cache[cacheKey];
 
-        uint8_t setIndex = curCacheSet.getLeastRecentlyUsedIndex();
+        uint8_t setIndex = curCacheSet.findInCacheSet(cacheVal);
+        if (setIndex != numSets)
+        {
+            curCacheSet.delegateIndexToMostRecentlyUsed(setIndex);
+            return;
+        }
+
+        setIndex = curCacheSet.getLeastRecentlyUsedIndex();
         bool wasEmpty = curCacheSet.isEmpty(setIndex);
 
         offset_t cacheFileOffset = (setIndex * setSize) + ((offset_t)cacheKey * pageSize);
@@ -954,6 +963,7 @@ public:
 
         byte * data = nodeData.getBufferForUpdate(cache.offset + offsetInPage, sizeToRead);
         memcpy(data, cache.data.bytes() + offsetInPage, sizeToRead);
+        nodeData.adjustSize(sizeToRead);
         DBGLOG("CDemoPageCache::read(%u, %llu, %u) - cache hit", fileId, offset, size);
         return true;
     }

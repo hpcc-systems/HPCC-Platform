@@ -2173,8 +2173,6 @@ const CJHTreeNode *CDiskKeyIndex::loadNode(cycle_t * fetchCycles, offset_t pos, 
             // Ensure that we read one or more page cache pages - ensure that large reads are a multiple of the page size
             if (readSize < pageCachePageSize)
                 readSize = pageCachePageSize;
-            else
-                assertex((readSize & (pageCachePageSize - 1))== 0);
         }
 
         {
@@ -2198,8 +2196,11 @@ const CJHTreeNode *CDiskKeyIndex::loadNode(cycle_t * fetchCycles, offset_t pos, 
             if (activePageCache && readState.usePageCache)
             {
                 //Insert the pages into the page cache - if more than one page was read they may already exist.
-                for (size32_t delta = 0; delta < readSize; delta += pageCachePageSize)
+                for (size32_t delta = 0; delta < sizeRead; delta += pageCachePageSize)
                 {
+                    size32_t bytesRead = std::min(pageCachePageSize, sizeRead - delta);
+                    if (bytesRead < pageCachePageSize)
+                        memset(buffer + delta + bytesRead, 0, pageCachePageSize - bytesRead);
                     activePageCache->write(iD, alignedPos + delta, buffer + delta);
                 }
             }
@@ -4521,13 +4522,74 @@ public:
     }
 };
 
-class IKeyedManagerTest : public CppUnit::TestFixture
+class IKeyManagerTest : public CppUnit::TestFixture
 {
-    CPPUNIT_TEST_SUITE(IKeyedManagerTest);
+    CPPUNIT_TEST_SUITE(IKeyManagerTest);
         CPPUNIT_TEST(testResumeReadSize);
+        CPPUNIT_TEST(testDemoCacheRewrite);
+        CPPUNIT_TEST(testDiskCacheRewrite);
     CPPUNIT_TEST_SUITE_END();
 
     StringBuffer filename;
+
+    class ScopedTestPageCache
+    {
+    public:
+        ScopedTestPageCache(IPageCache *_cache, size32_t _pageSize)
+            : previousCache(activePageCache), previousPageSize(pageCachePageSize)
+        {
+            activePageCache = _cache;
+            pageCachePageSize = _pageSize;
+        }
+
+        ~ScopedTestPageCache()
+        {
+            activePageCache = previousCache;
+            pageCachePageSize = previousPageSize;
+        }
+
+    private:
+        IPageCache *previousCache;
+        size32_t previousPageSize;
+    };
+
+    class TestCacheInfoRecorder : public ICacheInfoRecorder
+    {
+    public:
+        virtual void noteWarm(unsigned _fileIdx, offset_t _page, size32_t, NodeType) override
+        {
+            fileIdx = _fileIdx;
+            page = _page;
+            recorded = true;
+        }
+
+        unsigned fileIdx = 0;
+        offset_t page = 0;
+        bool recorded = false;
+    };
+
+    void testPageCacheDuplicateWrite(IPageCache &cache)
+    {
+        size32_t pageSize = cache.queryPageSize();
+        ScopedTestPageCache useDemoPageCache(&cache, pageSize);
+
+        constexpr unsigned testFileId = 0x00ffffff; // maximum valid file id.
+        MemoryAttr original;
+        MemoryAttr replacement;
+        original.allocate(pageSize);
+        replacement.allocate(pageSize);
+        memset(original.mem(), 0x11, pageSize);
+        memset(replacement.mem(), 0x22, pageSize);
+
+        cache.write(testFileId, 0, static_cast<const byte *>(original.get()));
+        //Loop many times to ensure the first page would be evicted if now checking is occuring
+        for (unsigned iter = 0; iter < 32; iter++)
+            cache.write(testFileId, 0, static_cast<const byte *>(replacement.get()));
+
+        CCachedIndexRead readCache;
+        ASSERT(cache.read(testFileId, 0, 1, readCache));
+        ASSERT(readCache.queryBuffer(0, 1)[0] == 0x11);
+    }
 
 public:
     virtual void tearDown() override
@@ -4549,7 +4611,7 @@ private:
                            "\"fields\": [ { \"name\": \"f1\", \"type\": \"ty1\", \"flags\": 4 } ] }";
         Owned<IOutputMetaData> meta = createTypeInfoOutputMetaData(json, false);
         const RtlRecord &recInfo = meta->queryRecordAccessor(true);
-        Owned<IFileIO> io = createUniqueFile(nullptr, "IKeyedManagerTest", "tmp", filename, IFOcreaterw);
+        Owned<IFileIO> io = createUniqueFile(nullptr, "IKeyManagerTest", "tmp", filename, IFOcreaterw);
         {
             TestIndexWriteArg helper(filename, nullptr, meta);
             Owned<IFileIOStream> out = createIOStream(io);
@@ -4581,10 +4643,39 @@ private:
             CPPUNIT_ASSERT_EQUAL(readOptions.sequentialReadSize, resumed->queryReadSize());
         }
     }
+
+    void testDemoCacheRewrite()
+    {
+        START_TEST;
+
+        Owned<IPropertyTree> pageCacheConfig = createPTree("pageCache");
+        pageCacheConfig->setProp("@type", "demo");
+        pageCacheConfig->setPropInt64("@sizeMB", 1);
+        Owned<IPageCache> demoPageCache = createDemoPageCache(pageCacheConfig);
+
+        testPageCacheDuplicateWrite(*demoPageCache);
+        END_TEST;
+    }
+
+    void testDiskCacheRewrite()
+    {
+        START_TEST;
+
+        Owned<IPropertyTree> pageCacheConfig = createPTree("pageCache");
+        Owned<IFileIO> cacheFile = createUniqueFile(nullptr, "IKeyManagerCacheTest", "tmp", filename, IFOcreaterw);
+        cacheFile.clear();
+        pageCacheConfig->setProp("@file", filename.str());
+        pageCacheConfig->setProp("@type", "disk");
+        Owned<IPageCache> diskPageCache = createDiskPageCache(pageCacheConfig);
+        if (diskPageCache)
+            testPageCacheDuplicateWrite(*diskPageCache);
+
+        END_TEST;
+    }
 };
 
-CPPUNIT_TEST_SUITE_REGISTRATION(IKeyedManagerTest);
-CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(IKeyedManagerTest, "IKeyedManagerTest");
+CPPUNIT_TEST_SUITE_REGISTRATION(IKeyManagerTest);
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(IKeyManagerTest, "IKeyManagerTest");
 
 class IKeyManagerSlowTest : public CppUnit::TestFixture
 {
@@ -4598,9 +4689,9 @@ class IKeyManagerSlowTest : public CppUnit::TestFixture
         buildTestKeys(false, true, false, false, nullptr, nullptr);
         {
             // We are going to treat as a 7-byte field then a 3-byte field, and request the datasorted by the 3-byte...
-            Owned <IKeyIndex> index1 = createKeyIndex("keyfile1.$$$", 0, false, { 0x10000, 0x40000 });
+            Owned <IKeyIndex> index1 = createKeyIndex("keyfile1.$$$", 0, false, { 0x10001, 0x40003 });
             Owned <IKeyIndex> sameIndex = createKeyIndex("keyfile1.$$$", 0, false, { 0x20000, 0x80000 });
-            Owned <IKeyIndex> index2 = createKeyIndex("keyfile2.$$$", 0, false, { 0x10000, 0x40000 });
+            Owned <IKeyIndex> index2 = createKeyIndex("keyfile2.$$$", 0, false, { 0x10001, 0x40003 });
             CPPUNIT_ASSERT(index1->queryId() == sameIndex->queryId());
             Owned<IKeyIndexSet> keyset = createKeyIndexSet();
             keyset->addIndex(index1.getClear());
@@ -4698,7 +4789,6 @@ class IKeyManagerSlowTest : public CppUnit::TestFixture
             ASSERT(tlk4->lookup(true)); ASSERT(memcmp(tlk4->queryKeyBuffer(), "0000006999", 10)==0);
             ASSERT(!tlk4->lookup(true)); 
             ASSERT(!tlk4->lookup(true)); 
-
         }
         clearKeyStoreCache(true);
         removeTestKeys();
@@ -4801,6 +4891,7 @@ class IKeyManagerSlowTest : public CppUnit::TestFixture
         }
         key->releaseBlobs();
     }
+
 protected:
     void testKeys(bool variable, bool useTrailingHeader, bool noSeek, bool quickCompressed, const char * compression)
     {
