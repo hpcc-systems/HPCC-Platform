@@ -1616,7 +1616,7 @@ Generate vault info
 {{- define "hpcc.generateEclccSecurity" -}}
 {{- with .Values.security -}}
 {{- if not (empty .eclSecurity) -}}
-{{- toYaml (deepCopy .) }}
+{{- toYaml (dict "eclSecurity" .eclSecurity) }}
 {{- end -}}
 {{- end -}}
 {{- end -}}
