@@ -2551,7 +2551,7 @@ protected:
         list.addFile("item", "127.0.0.1");
 
         StringBuffer publisherWuid;
-        CPPUNIT_ASSERT_THROWS_IEXCEPTION(list.cloneFileInfo(publisherWuid, "thor", 0, nullptr, false, false, 0, 1, 0, nullptr),
+        CPPUNIT_ASSERT_THROWS_IEXCEPTION(list.cloneFileInfo(publisherWuid, "thor", 0, nullptr, false, false, 0, 1, 0, nullptr, false),
             "cloneFileInfo before resolveFiles should throw");
 
         StringArray locations;
