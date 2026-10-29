@@ -1,16 +1,20 @@
 import * as React from "react";
-import { Sticky, StickyPositionType } from "./controls/ScrollablePane";
+import { ScrollablePane, ScrollbarVisibility } from "./controls/ScrollablePane";
 import { CommandBar, ContextualMenuItemType, ICommandBarItemProps } from "./CommandBarV9";
-import { Button, MessageBar, MessageBarActions, MessageBarBody, SelectTabData, SelectTabEvent, Tab, TabList, makeStyles } from "@fluentui/react-components";
-import { DismissRegular } from "@fluentui/react-icons";
+import { Button, Card, Link, MessageBar, MessageBarActions, MessageBarBody, MessageBarIntent, SelectTabData, SelectTabEvent, Tab, TabList, makeStyles, tokens } from "@fluentui/react-components";
+import { DismissRegular, PersonRegular } from "@fluentui/react-icons";
 import { FileSprayStates, SashaService, WsSasha } from "@hpcc-js/comms";
 import { scopedLogger } from "@hpcc-js/util";
 import { SizeMe } from "../layouts/SizeMe";
 import nlsHPCC from "src/nlsHPCC";
 import { formatCost } from "src/Session";
+import { copyToClipboard } from "src/Utility";
+import { WorkunitPersona } from "./controls/StateIcon";
 import { CommandMessages, FormatMessages, lfEncode } from "../comms/fileSpray";
 import { useConfirm } from "../hooks/confirm";
 import { useDfuWorkunit } from "../hooks/workunit";
+import { HolyGrail } from "../layouts/HolyGrail";
+import { DockPanel, DockPanelItem } from "../layouts/DockPanel";
 import { pivotItemStyle } from "../layouts/pivot";
 import { pushUrl, replaceUrl } from "../util/history";
 import { Fields } from "./forms/Fields";
@@ -20,11 +24,100 @@ import { XMLSourceEditor } from "./SourceEditor";
 const logger = scopedLogger("../components/DFUWorkunitDetails.tsx");
 const sashaService = new SashaService({ baseUrl: "" });
 
+interface MessageBarContent {
+    type: MessageBarIntent;
+    message: string;
+}
+
 const useStyles = makeStyles({
     container: {
         height: "100%",
-        position: "relative"
-    }
+        position: "relative",
+    },
+    dfuWrapper: {
+        containerType: "inline-size"
+    },
+    summaryHeader: {
+        display: "flex",
+        flexDirection: "row",
+        flexWrap: "wrap",
+        alignItems: "center",
+        containerType: "inline-size",
+        background: tokens.colorNeutralBackground1,
+        borderBottom: `1px solid ${tokens.colorNeutralBackground1Pressed}`,
+        marginBottom: "8px"
+    },
+    wuPersona: {
+        marginBottom: "6px",
+        "@container (max-width: 900px)": {
+            flexBasis: "100%"
+        }
+    },
+    linkWrapper: {
+        margin: "0 10px 0 14px",
+        "@container (max-width: 1020px)": {
+            marginTop: "0"
+        }
+    },
+    linkSeparator: {
+        color: tokens.colorNeutralForeground3,
+        margin: "0 6px"
+    },
+    jobNameLink: {
+        alignItems: "center",
+        display: "inline-flex",
+        gap: "4px",
+        lineHeight: "20px",
+        verticalAlign: "middle"
+    },
+    ownerIcon: {
+        fontSize: "16px",
+        lineHeight: 1,
+        transform: "translateY(1px)"
+    },
+    ownerLink: {
+        alignItems: "center",
+        display: "inline-flex",
+        gap: "4px",
+        lineHeight: "20px",
+        verticalAlign: "middle"
+    },
+    cardsWrapper: {
+        display: "grid",
+        gridTemplateColumns: "2fr 1fr",
+        gap: "12px",
+        margin: "0 4px 4px 4px",
+        containerType: "inline-size",
+        "@container (max-width: 1100px)": {
+            gridTemplateColumns: "2fr 2fr"
+        },
+        "@container (max-width: 700px)": {
+            gridTemplateColumns: "1fr"
+        }
+    },
+    detailsPanel: {
+        alignSelf: "flex-start",
+        flexGrow: 1,
+        overflowX: "auto",
+        "@container (max-width: 700px)": {
+            maxWidth: "100%",
+            flexBasis: "100%"
+        }
+    },
+    rightCardsGrid: {
+        display: "grid",
+        gridTemplateColumns: "1fr",
+        gap: "12px",
+        "@container (max-width: 1100px)": {
+            gridTemplateColumns: "1fr",
+        },
+        "& h4": {
+            margin: 0
+        },
+        "& .fui-Card": {
+            gap: 0
+        }
+    },
 });
 
 type FieldMap = { key: string, label: string };
@@ -73,8 +166,15 @@ export const DFUWorkunitDetails: React.FunctionComponent<DFUWorkunitDetailsProps
     const [targetFields, setTargetFields] = React.useState<Fields>();
     const [_protected, setProtected] = React.useState(false);
 
-    const [showMessageBar, setShowMessageBar] = React.useState(false);
-    const dismissMessageBar = React.useCallback(() => setShowMessageBar(false), []);
+    const [messageBarContent, setMessageBarContent] = React.useState<MessageBarContent | undefined>();
+    const dismissMessageBar = React.useCallback(() => setMessageBarContent(undefined), []);
+    const showMessageBar = React.useCallback((content: MessageBarContent) => {
+        setMessageBarContent(content);
+        const t = window.setTimeout(function () {
+            dismissMessageBar();
+            window.clearTimeout(t);
+        }, 2400);
+    }, [dismissMessageBar]);
 
     const [DeleteConfirm, setShowDeleteConfirm] = useConfirm({
         title: nlsHPCC.Delete,
@@ -162,24 +262,16 @@ export const DFUWorkunitDetails: React.FunctionComponent<DFUWorkunitDetailsProps
     const saveWorkunit = React.useCallback(() => {
         workunit?.update({ wu: { JobName: jobname, isProtected: _protected } })
             .then(_ => {
-                setShowMessageBar(true);
                 workunit.refresh();
-                const t = window.setTimeout(function () {
-                    setShowMessageBar(false);
-                    window.clearTimeout(t);
-                }, 2400);
+                showMessageBar({ type: "success", message: nlsHPCC.SuccessfullySaved });
             })
             .catch(err => logger.error(err));
-    }, [jobname, _protected, workunit]);
+    }, [jobname, _protected, workunit, showMessageBar]);
 
     const buttons = React.useMemo((): ICommandBarItemProps[] => [
         {
             key: "refresh", text: nlsHPCC.Refresh, iconProps: { iconName: "Refresh" },
-            onClick: () => refresh()
-        },
-        {
-            key: "copy", text: nlsHPCC.CopyWUID, iconProps: { iconName: "Copy" },
-            onClick: () => { navigator?.clipboard?.writeText(wuid); }
+            onClick: () => { refresh(true); }
         },
         { key: "divider_1", itemType: ContextualMenuItemType.Divider },
         {
@@ -231,58 +323,96 @@ export const DFUWorkunitDetails: React.FunctionComponent<DFUWorkunitDetailsProps
                 </TabList>
                 {tab === "summary" &&
                     <div style={pivotItemStyle(size)}>
-                        <Sticky stickyPosition={StickyPositionType.Header}>
-                            <CommandBar items={buttons} />
-                            {showMessageBar &&
-                                <MessageBar intent="success">
-                                    <MessageBarBody>{nlsHPCC.SuccessfullySaved}</MessageBarBody>
-                                    <MessageBarActions containerAction={<Button onClick={dismissMessageBar} aria-label={nlsHPCC.Close} appearance="transparent" icon={<DismissRegular />} />} />
-                                </MessageBar>
+                        <HolyGrail
+                            header={<>
+                                <CommandBar items={buttons} />
+                                {messageBarContent &&
+                                    <MessageBar intent={messageBarContent.type}>
+                                        <MessageBarBody>{messageBarContent.message}</MessageBarBody>
+                                        <MessageBarActions containerAction={<Button onClick={dismissMessageBar} aria-label={nlsHPCC.Close} appearance="transparent" icon={<DismissRegular />} />} />
+                                    </MessageBar>
+                                }
+                            </>}
+                            main={
+                                <DockPanel hideSingleTabs>
+                                    <DockPanelItem key="summary" title="Summary">
+                                        <ScrollablePane scrollbarVisibility={ScrollbarVisibility.auto}>
+                                            <div className={`${styles.dfuWrapper} pane-content`}>
+                                                <div className={styles.summaryHeader}>
+                                                    <div className={styles.wuPersona}>
+                                                        <WorkunitPersona wuid={wuid} />
+                                                    </div>
+                                                    {(jobname || workunit?.User) &&
+                                                        <div className={styles.linkWrapper}>
+                                                            {jobname &&
+                                                                <Link as="a" className={styles.jobNameLink} title={nlsHPCC.ViewWUsWithSimilarName} href={`#/dfuworkunits?Jobname=${encodeURIComponent(jobname)}`}>{jobname}</Link>
+                                                            }
+                                                            {jobname && workunit?.User &&
+                                                                <span className={styles.linkSeparator}>-</span>
+                                                            }
+                                                            {workunit?.User &&
+                                                                <Link as="a" className={styles.ownerLink} title={nlsHPCC.ViewWUsByOwner} href={`#/dfuworkunits?Owner=${encodeURIComponent(workunit?.User)}`}><PersonRegular className={styles.ownerIcon} />{workunit?.User}</Link>
+                                                            }
+                                                        </div>
+                                                    }
+                                                </div>
+                                                <div className={styles.cardsWrapper}>
+                                                    <Card className={styles.detailsPanel}>
+                                                        <TableGroup fields={{
+                                                            "clusterName": { label: nlsHPCC.ClusterName, type: "string", value: workunit?.ClusterName, readonly: true },
+                                                            "jobname": { label: nlsHPCC.JobName, type: "string", value: jobname, onCopy: () => copyToClipboard(jobname) },
+                                                            "dfuServerName": { label: nlsHPCC.DFUServerName, type: "string", value: workunit?.DFUServerName, readonly: true },
+                                                            "queue": { label: nlsHPCC.Queue, type: "string", value: workunit?.Queue, readonly: true },
+                                                            "user": { label: nlsHPCC.User, type: "string", value: workunit?.User, readonly: true, onCopy: () => copyToClipboard(workunit?.User) },
+                                                            "protected": { label: nlsHPCC.Protected, type: "checkbox", value: _protected },
+                                                            "command": { label: nlsHPCC.Command, type: "string", value: CommandMessages[workunit?.Command], readonly: true },
+                                                            "state": { label: nlsHPCC.State, type: "string", value: workunit?.StateReason ? `${FileSprayStates[workunit?.State]} - ${workunit?.StateReason}` : FileSprayStates[workunit?.State], readonly: true },
+                                                            "fileAccessCost": { label: nlsHPCC.FileAccessCost, type: "string", value: `${formatCost(workunit?.FileAccessCost ?? 0)}`, readonly: true },
+                                                            "timeStarted": { label: nlsHPCC.TimeStarted, type: "string", value: workunit?.TimeStarted, readonly: true },
+                                                            "secondsLeft": { label: nlsHPCC.SecondsRemaining, type: "number", value: workunit?.SecsLeft, readonly: true },
+                                                            "timeStopped": { label: nlsHPCC.TimeStopped, type: "string", value: workunit?.TimeStopped, readonly: true },
+                                                            "percentDone": { label: nlsHPCC.PercentDone, type: "progress", value: workunit?.PercentDone?.toString(), readonly: true },
+                                                            "progressMessage": { label: nlsHPCC.ProgressMessage, type: "string", value: workunit?.ProgressMessage, readonly: true },
+                                                            "summaryMessage": { label: nlsHPCC.SummaryMessage, type: "string", value: workunit?.SummaryMessage, readonly: true },
+                                                        }} onChange={(id, value) => {
+                                                            switch (id) {
+                                                                case "jobname":
+                                                                    setJobname(value);
+                                                                    break;
+                                                                case "protected":
+                                                                    setProtected(value);
+                                                                    break;
+                                                                default:
+                                                                    logger.debug(`${id}:  ${value}`);
+                                                            }
+                                                        }} />
+                                                    </Card>
+                                                    <div className={styles.rightCardsGrid}>
+                                                        <Card>
+                                                            <h4>{nlsHPCC.Source} {sourceFormatMessage}</h4>
+                                                            <TableGroup fields={sourceFields} />
+                                                        </Card>
+                                                        <Card>
+                                                            <h4>{nlsHPCC.Target} {targetFormatMessage}</h4>
+                                                            <TableGroup fields={targetFields} />
+                                                        </Card>
+                                                        <Card>
+                                                            <h4>{nlsHPCC.Other}</h4>
+                                                            <TableGroup fields={{
+                                                                "monitorSub": { label: nlsHPCC.MonitorSub, type: "string", value: workunit?.MonitorSub ? "true" : "false", readonly: true },
+                                                                "overwrite": { label: nlsHPCC.Overwrite, type: "string", value: workunit?.Overwrite ? "true" : "false", readonly: true },
+                                                                "replicate": { label: nlsHPCC.Replicate, type: "string", value: workunit?.Replicate ? "true" : "false", readonly: true },
+                                                                "compress": { label: nlsHPCC.Compress, type: "string", value: workunit?.Compress ? "true" : "false", readonly: true },
+                                                            }} />
+                                                        </Card>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </ScrollablePane>
+                                    </DockPanelItem>
+                                </DockPanel>
                             }
-                        </Sticky>
-                        <TableGroup fields={{
-                            "id": { label: nlsHPCC.ID, type: "string", value: wuid, readonly: true },
-                            "clusterName": { label: nlsHPCC.ClusterName, type: "string", value: workunit?.ClusterName, readonly: true },
-                            "jobname": { label: nlsHPCC.JobName, type: "string", value: jobname },
-                            "dfuServerName": { label: nlsHPCC.DFUServerName, type: "string", value: workunit?.DFUServerName, readonly: true },
-                            "queue": { label: nlsHPCC.Queue, type: "string", value: workunit?.Queue, readonly: true },
-                            "user": { label: nlsHPCC.User, type: "string", value: workunit?.User, readonly: true },
-                            "protected": { label: nlsHPCC.Protected, type: "checkbox", value: _protected },
-                            "command": { label: nlsHPCC.Command, type: "string", value: CommandMessages[workunit?.Command], readonly: true },
-                            "state": { label: nlsHPCC.State, type: "string", value: workunit?.StateReason ? `${FileSprayStates[workunit?.State]} - ${workunit?.StateReason}` : FileSprayStates[workunit?.State], readonly: true },
-                            "accessCost": { label: nlsHPCC.FileAccessCost, type: "string", value: `${formatCost(workunit?.FileAccessCost ?? 0)}`, readonly: true },
-                            "timeStarted": { label: nlsHPCC.TimeStarted, type: "string", value: workunit?.TimeStarted, readonly: true },
-                            "secondsLeft": { label: nlsHPCC.SecondsRemaining, type: "number", value: workunit?.SecsLeft, readonly: true },
-                            "timeStopped": { label: nlsHPCC.TimeStopped, type: "string", value: workunit?.TimeStopped, readonly: true },
-                            "percentDone": { label: nlsHPCC.PercentDone, type: "progress", value: workunit?.PercentDone?.toString(), readonly: true },
-                            "progressMessage": { label: nlsHPCC.ProgressMessage, type: "string", value: workunit?.ProgressMessage, readonly: true },
-                            "summaryMessage": { label: nlsHPCC.SummaryMessage, type: "string", value: workunit?.SummaryMessage, readonly: true },
-                        }} onChange={(id, value) => {
-                            switch (id) {
-                                case "jobname":
-                                    setJobname(value);
-                                    break;
-                                case "protected":
-                                    setProtected(value);
-                                    break;
-                                default:
-                                    logger.debug(`${id}:  ${value}`);
-                            }
-                        }} />
-                        <hr />
-                        <h2>{nlsHPCC.Source} {sourceFormatMessage}</h2>
-                        <TableGroup fields={sourceFields} />
-                        <hr />
-                        <h2>{nlsHPCC.Target} {targetFormatMessage}</h2>
-                        <TableGroup fields={targetFields} />
-                        <hr />
-                        <h2>{nlsHPCC.Other}</h2>
-                        <TableGroup fields={{
-                            "monitorSub": { label: nlsHPCC.MonitorSub, type: "string", value: workunit?.MonitorSub ? "true" : "false", readonly: true },
-                            "overwrite": { label: nlsHPCC.Overwrite, type: "string", value: workunit?.Overwrite ? "true" : "false", readonly: true },
-                            "replicate": { label: nlsHPCC.Replicate, type: "string", value: workunit?.Replicate ? "true" : "false", readonly: true },
-                            "compress": { label: nlsHPCC.Compress, type: "string", value: workunit?.Compress ? "true" : "false", readonly: true },
-                        }} />
+                        />
                     </div>
                 }
                 {tab === "xml" &&
