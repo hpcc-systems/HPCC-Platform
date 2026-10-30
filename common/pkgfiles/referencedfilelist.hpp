@@ -66,12 +66,13 @@ interface IReferencedFileList : extends IInterface
     virtual void addFilesFromWorkUnit(IConstWorkUnit *cw)=0;
     virtual bool addFilesFromQuery(IConstWorkUnit *cw, const IHpccPackageMap *pm, const char *queryid)=0;
     virtual bool addFilesFromQuery(IConstWorkUnit *cw, const IHpccPackage *pkg)=0;
-    virtual void addFilesFromPackageMap(IPropertyTree *pm)=0;
+    virtual void addFilesFromPackageMap(IPropertyTree *pm, bool ignorePackageMapSources=false)=0;
 
     virtual void addFile(const char *ln, const char *daliip=nullptr, const char *sourceProcessCluster=nullptr, const char *remotePrefix=nullptr, const char *remoteStorageName=nullptr)=0;
     virtual void addFiles(StringArray &files)=0;
 
     virtual IReferencedFileIterator *getFiles()=0;
+    // May only be called once per list, after all files have been added and before cloning.
     virtual void resolveFiles(const StringArray &locations, const char *remoteIP, const char * remotePrefix, const char *srcCluster, bool checkLocalFirst, bool addSubFiles, bool trackSubFiles, bool resolveLFNForeign, bool useRemoteStorage)=0;
     virtual void cloneAllInfo(StringBuffer &publisherWuid, const char *dstCluster, unsigned updateFlags, IDFUhelper *helper, bool cloneSuperInfo, bool cloneForeign, unsigned redundancy, unsigned channelsPerNode, int replicateOffset, const char *defRepFolder, bool targetPlaneSpecified=false)=0;
     virtual void cloneFileInfo(StringBuffer &publisherWuid, const char *dstCluster, unsigned updateFlags, IDFUhelper *helper, bool cloneSuperInfo, bool cloneForeign, unsigned redundancy, unsigned channelsPerNode, int replicateOffset, const char *defRepFolder, bool targetPlaneSpecified=false)=0;

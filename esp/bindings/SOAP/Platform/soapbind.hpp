@@ -258,7 +258,7 @@ inline void setRpcRequestTimeouts(IEspClientRpcSettings &rpc, unsigned waitMs, u
     if (waitConnectMs || waitMs)
         rpc.setConnectTimeOutMs(waitConnectMs ? waitConnectMs : waitMs);
     if (waitReadSec || waitMs)
-        rpc.setReadTimeOutSecs(waitReadSec ? waitReadSec : (waitMs / 1000));
+        rpc.setReadTimeOutSecs(waitReadSec ? waitReadSec : ((waitMs+999) / 1000));
 }
 
 class esp_http_decl CSoapBinding : public CEspBinding

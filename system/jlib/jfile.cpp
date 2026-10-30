@@ -62,6 +62,7 @@
 #include "jfile.ipp"
 #include "jevent.hpp"
 #include "jplane.hpp"
+#include "jutil.hpp"
 
 #include <limits.h>
 #include "jexcept.hpp"
@@ -227,6 +228,7 @@ enum class SafeStatBehaviour : unsigned {
 static constexpr SafeStatBehaviour defaultSafeStatBehaviour{SafeStatBehaviour::Standard};
 static std::atomic<SafeStatBehaviour> safeStatBehaviour{defaultSafeStatBehaviour};
 
+#ifndef _WIN32
 // If a physical file access fails because the file is not yet visible, and the file was recently published
 // on a storage plane that has a write-sync margin configured (e.g. cross-AZ blobnfs propagation lag), retry
 // the access until the file's write-sync deadline. This is a no-op (returns false immediately) when the file
@@ -294,6 +296,63 @@ static inline bool physicalSizeMatchesMeta(const struct stat &info, offset_t exp
     return (offset_t)info.st_size == expectedSize;
 }
 
+// For a part tracked for write-sync visibility, wait for it to appear and (if checkSize) to reach its published
+// size - cross-AZ propagation can briefly expose a file before its size has fully propagated.
+// exists/info hold the caller's first attempt; probe refreshes the supplied stat and returns existence.
+// NB: metadata-only callers (checkSize=false) only wait for existence, and must never see a size mismatch.
+// Returns the final verdict: false with exists true means the size never matched within the margin.
+static bool settleWriteSync(const char *context, const char *filename, const WriteSyncDetails &writeSync, bool checkSize, const std::function<bool(struct stat &)> &probe, struct stat &info, bool &exists)
+{
+    int marginDeltaMs;
+    bool trace = getWriteSyncMarginDeltaMs(marginDeltaMs);
+    CCycleTimer timer(trace); // only read the cycle counter when tracing is enabled
+    auto settled = [&]() { return exists && (!checkSize || physicalSizeMatchesMeta(info, writeSync.expectedSize, writeSync.compressed)); };
+    auto reprobe = [&]()
+    {
+        exists = probe(info);
+        return settled();
+    };
+    unsigned remainingMs = writeSync.queryRemainingMs();
+    bool isSettled = settled() || (remainingMs && waitForWriteSync(filename, remainingMs, reprobe));
+
+    if (trace)
+    {
+        unsigned forcedWaitMs = 0;
+        if (checkSize && (forceWriteSyncWaitDeltaMs == marginDeltaMs)) // metadata-only callers cannot read truncated content
+        {
+            forcedWaitMs = writeSync.queryRemainingMs();
+            if (forcedWaitMs)
+            {
+                MilliSleep(forcedWaitMs);
+                // refresh so callers and trace see post-wait metadata (isSettled kept as the pre-wait verdict)
+                exists = probe(info);
+            }
+        }
+
+        // size is only checked/waited on when checkSize was requested, otherwise report a mismatch as not-applicable
+        const char *sizeMismatchStr = checkSize ? ((exists && !settled()) ? "true" : "false") : "n/a";
+        const char *sizeValidationStr = !checkSize ? "not-requested" : ((offset_t)-1 == writeSync.expectedSize) ? "unknown" : "enabled";
+        WARNLOG("%s: '%s' write-sync check: remainingMs=%u, exists=%s, size=%lld, expectedSize=%lld, compressed=%s, sizeValidation=%s, sizeMismatch=%s, checkSize=%s, settled=%s, forcedWaitMs=%u, elapsed=%.3fms"
+#if defined(__linux__)
+            ", mtime=%lld.%09ld, ctime=%lld.%09ld"
+#endif
+            ,
+            context, filename, remainingMs, boolToStr(exists), exists ? (long long)info.st_size : -1LL, (long long)writeSync.expectedSize,
+            boolToStr(writeSync.compressed), sizeValidationStr, sizeMismatchStr, boolToStr(checkSize), boolToStr(isSettled), forcedWaitMs, (double)timer.elapsedNs() / 1000000.0
+#if defined(__linux__)
+            , exists ? (long long)info.st_mtim.tv_sec : -1LL, exists ? info.st_mtim.tv_nsec : 0L,
+            exists ? (long long)info.st_ctim.tv_sec : -1LL, exists ? info.st_ctim.tv_nsec : 0L
+#endif
+            );
+    }
+    return settled();
+}
+
+static void throwWriteSyncSizeMismatch(const char *filename, const struct stat &info, offset_t expectedSize)
+{
+    throw makeStringExceptionV(JLIBERR_FileWriteSyncPhysicalSizeMismatch, "File '%s' physical size (%" I64F "u) does not match the published size (%" I64F "u) after waiting for write sync", filename, (offset_t)info.st_size, expectedSize);
+}
+
 // checkSize: if true, also validate physical size against the published size for write-sync tracked
 //            parts - needed by callers that will read file content (size(), getInfo(), etc.).
 //            if false, skip size validation; the write-sync cache is still consulted when the file does not
@@ -302,81 +361,26 @@ static inline bool physicalSizeMatchesMeta(const struct stat &info, offset_t exp
 static bool safeStat(const char *filename, struct stat &info, bool checkSize)
 {
     bool exists = safeStatOnce(filename, info); // a single stat establishes both existence and size
-    bool needWriteSyncCheck = !exists || checkSize;
     int marginDeltaMs;
-    bool trace = getWriteSyncMarginDeltaMs(marginDeltaMs);
-    if (!needWriteSyncCheck && !trace)
+    if (exists && !checkSize && !getWriteSyncMarginDeltaMs(marginDeltaMs)) // getWriteSyncMarginDeltaMs used as a log gate only here
         return true; // file exists and caller only needs metadata - skip write-sync cache check entirely
 
-    CCycleTimer timer(trace); // only read the cycle counter when tracing is enabled
-    offset_t expectedSize = (offset_t)-1;
-    bool compressed = false;
     // Lock-free fast path when nothing is being tracked, so this adds negligible cost to the common stat.
-    // 0 means the path was either never mapped (not a recently published part) or its mapping has expired.
-    unsigned remainingMs = getPathWriteSyncDelayRemainingMs(filename, expectedSize, compressed);
-    bool sizeMismatch = false;
-    if (remainingMs)
-    {
-        // The part is being tracked for write-sync visibility.
-        // As well as waiting for it to appear, wait for its on-disk size to reach the published size -
-        // cross-AZ propagation can briefly expose a file before its size has fully propagated.
-        // Each attempt is a single stat yielding both existence and size, so this adds no extra file operations.
-        // NB: only wait for the size to settle if checkSize was requested - metadata-only callers
-        // (checkSize=false) only need to wait for existence, and must never throw on a size mismatch.
-        auto sizeOk = [&]() { return !checkSize || physicalSizeMatchesMeta(info, expectedSize, compressed); };
-        auto settled = [&]() -> bool
-        {
-            exists = safeStatOnce(filename, info);
-            return exists && sizeOk();
-        };
+    // Untracked means the path was either never mapped (not a recently published part) or its mapping has expired.
+    WriteSyncDetails writeSync;
+    getFileWriteSyncDetails(filename, writeSync);
+    if (!writeSync.isTracked())
+        return exists;
 
-        bool isSettled = true; // metadata-only caller and file exists - nothing to settle
-        if (needWriteSyncCheck)
-        {
-            isSettled = exists && sizeOk();
-            if (!isSettled)
-                isSettled = waitForWriteSync(filename, remainingMs, settled);
-
-            // After the wait, isSettled false with exists true means the size never matched the published
-            // size within the margin. Only computed when size validation was actually requested - size was
-            // never waited on to settle otherwise, so it would be misleading to report a mismatch.
-            sizeMismatch = !isSettled && checkSize && exists;
-        }
-
-        if (trace)
-        {
-            unsigned forcedWaitMs = 0;
-            if (checkSize && (forceWriteSyncWaitDeltaMs == marginDeltaMs)) // metadata-only callers cannot read truncated content
-            {
-                unsigned elapsedMs = timer.elapsedMs();
-                if (elapsedMs < remainingMs)
-                {
-                    forcedWaitMs = remainingMs - elapsedMs;
-                    MilliSleep(forcedWaitMs);
-                    // refresh so callers and trace see post-wait metadata (isSettled kept as the pre-wait verdict)
-                    sizeMismatch = !settled() && exists;
-                }
-            }
-
-            // sizeMismatch is only ever computed when checkSize validation was actually requested; otherwise
-            // its on-disk size was never checked/waited on, so report it as not-applicable.
-            const char *sizeMismatchStr = checkSize ? (sizeMismatch ? "true" : "false") : "n/a";
-            const char *sizeValidationStr = !checkSize ? "not-requested" : ((offset_t)-1 == expectedSize) ? "unknown" : "enabled";
-            WARNLOG("safeStat: '%s' write-sync check: remainingMs=%u, exists=%s, size=%lld, expectedSize=%lld, compressed=%s, sizeValidation=%s, sizeMismatch=%s, checkSize=%s, settled=%s, forcedWaitMs=%u, elapsed=%.3fms",
-                filename, remainingMs, exists ? "true" : "false", exists ? (long long)info.st_size : -1LL, (long long)expectedSize,
-                compressed ? "true" : "false", sizeValidationStr, sizeMismatchStr, checkSize ? "true" : "false", isSettled ? "true" : "false", forcedWaitMs, (double)timer.elapsedNs() / 1000000.0);
-        }
-    }
-
-    // A part that is simply still missing is reported as not-found (return false), never as a size mismatch -
-    // sizeMismatch can only be true here for a tracked, currently-existing part whose size never settled.
-    if (sizeMismatch)
-        throw makeStringExceptionV(JLIBERR_FileWriteSyncPhysicalSizeMismatch, "File '%s' physical size (%" I64F "u) does not match the published size (%" I64F "u) after waiting for write sync", filename, (offset_t)info.st_size, expectedSize);
+    // A part that is simply still missing is reported as not-found (return false), never as a size mismatch.
+    if (!settleWriteSync("safeStat", filename, writeSync, checkSize, [&](struct stat &st) { return safeStatOnce(filename, st); }, info, exists) && exists)
+        throwWriteSyncSizeMismatch(filename, info, writeSync.expectedSize);
 
     // Report the true current existence regardless: a missing file must remain not-found, and size() and
     // friends must still return the real size at/after the deadline.
     return exists;
 }
+#endif
 
 bool checkFileExists(const char * filename)
 {
@@ -752,35 +756,34 @@ static bool setShareLock(int fd,IFSHmode share)
 
 #endif
 
-HANDLE CFile::openHandle(IFOmode mode, IFSHmode sharemode, bool async, int stdh)
+HANDLE CFile::openHandle(IFOmode mode, IFSHmode sharemode, bool async)
 {
-    // For a read open of a part that is being tracked for write-sync visibility, wait for the part both to
-    // appear and to reach its published on-disk size before opening it. Otherwise a part that is still
-    // propagating (e.g. cross-AZ blobnfs lag) could be opened while truncated and the reader would consume a
-    // partial part - retrying only on a missing file (NULLFILE) does not guard against this. safeStat(checkSize
-    // =true) performs the bounded retry and throws if the size never settles within the margin. The
-    // getPathWriteSyncDelayRemainingMs() gate is a lock-free atomic check, so a normal open of an untracked
-    // file pays only that and no extra stat.
-    if ((IFOread == mode) && (stdh < 0))
-    {
-        offset_t expectedSize = (offset_t)-1;
-        bool compressed = false;
-        if (getPathWriteSyncDelayRemainingMs(filename, expectedSize, compressed))
-        {
-            struct stat info;
-            safeStat(filename, info, true);
-        }
-    }
-    return openHandleOnce(mode, sharemode, async, stdh);
+    WriteSyncDetails writeSync;
+    return openHandle(mode, sharemode, async, -1, writeSync);
 }
 
-HANDLE CFile::openHandleOnce(IFOmode mode, IFSHmode sharemode, bool async, int stdh)
+HANDLE CFile::openHandle(IFOmode mode, IFSHmode sharemode, bool async, int stdh, WriteSyncDetails &writeSync)
+{
+    // For a read open of a part that is being tracked for write-sync visibility, wait for the part both to
+    // appear and to reach its published on-disk size. Otherwise a part that is still propagating (e.g. cross-AZ
+    // blobnfs lag) could be opened while truncated and the reader would consume a partial part - retrying only
+    // on a missing file (NULLFILE) does not guard against this. openHandleOnce() performs the bounded retry and
+    // throws if the size never settles within the margin. The getFileWriteSyncDetails() gate is a
+    // lock-free atomic check, so a normal open of an untracked file pays only that.
+    if ((IFOread == mode) && (stdh < 0))
+        getFileWriteSyncDetails(filename, writeSync);
+    return openHandleOnce(mode, sharemode, async, stdh, writeSync);
+}
+
+HANDLE CFile::openHandleOnce(IFOmode mode, IFSHmode sharemode, bool async, int stdh, [[maybe_unused]] const WriteSyncDetails &writeSync)
 {
     HANDLE handle = NULLFILE;
 #ifdef _WIN32
-    if (stdh>=0) {
+    if (stdh>=0)
+    {
         DWORD mode;
-        switch (stdh) {
+        switch (stdh)
+        {
         case 0: mode = STD_INPUT_HANDLE; break;
         case 1: mode = STD_OUTPUT_HANDLE; break;
         case 2: mode = STD_ERROR_HANDLE; break;
@@ -792,7 +795,8 @@ HANDLE CFile::openHandleOnce(IFOmode mode, IFSHmode sharemode, bool async, int s
     }
 
     DWORD share = 0;
-    switch (sharemode) {
+    switch (sharemode)
+    {
     case (IFSHfull|IFSHread):
     case IFSHfull:
         share |= FILE_SHARE_WRITE;
@@ -803,7 +807,8 @@ HANDLE CFile::openHandleOnce(IFOmode mode, IFSHmode sharemode, bool async, int s
     DWORD fflags = async?FILE_FLAG_OVERLAPPED:0;
     if (async&&(mode==IFOread))
         fflags |= FILE_FLAG_SEQUENTIAL_SCAN;
-    switch (mode) {
+    switch (mode)
+    {
     case IFOcreate:
         handle = CreateFile(filename, GENERIC_WRITE, share, NULL, CREATE_ALWAYS, fflags, NULL);
         break;
@@ -833,7 +838,8 @@ HANDLE CFile::openHandleOnce(IFOmode mode, IFSHmode sharemode, bool async, int s
 
     unsigned fileflags = (flags>>16) &  (S_IRUSR|S_IWUSR|S_IXUSR|S_IRGRP|S_IWGRP|S_IXGRP|S_IROTH|S_IWOTH|S_IXOTH);
     unsigned openflags;
-    switch (mode) {
+    switch (mode)
+    {
     case IFOcreate:
         openflags = O_WRONLY | O_CREAT | O_TRUNC;
         break;
@@ -856,23 +862,51 @@ HANDLE CFile::openHandleOnce(IFOmode mode, IFSHmode sharemode, bool async, int s
     //       and then not have to fdatasync() at close(), flush(), write() ?
     //Prevent the file from being inherited by a child process;
     openflags |= O_CLOEXEC;
-    handle = _lopen(filename.get(), openflags, fileflags);
-    if (handle == -1)
-    {
-        if ((IFOread!=mode) || (errno != ENOENT))
-            throw makeErrnoExceptionV(errno, "CFile::open %s", filename.get());
-        return NULLFILE;
-    }
-    // check not a directory (compatible with windows)
 
     struct stat info;
-    if (fstat(handle, &info) == -1) {
-        int err = errno;
-        close(handle);
-        handle = NULLFILE;
-        throw makeErrnoExceptionV(err, "CFile::open fstat %s", filename.get());
+    auto refresh = [&](struct stat &st)
+    {
+        if (fstat(handle, &st) == -1)
+        {
+            int err = errno;
+            close(handle);
+            handle = NULLFILE;
+            throw makeErrnoExceptionV(err, "CFile::open fstat %s", filename.get());
+        }
+        return true;
+    };
+    // reopen on each attempt - open() revalidates NFS attributes, whereas fstat() on a held handle may be cached
+    auto probe = [&](struct stat &st)
+    {
+        if (handle != NULLFILE)
+        {
+            close(handle);
+            handle = NULLFILE;
+        }
+        handle = _lopen(filename.get(), openflags, fileflags);
+        if (handle == -1)
+        {
+            if ((IFOread!=mode) || (errno != ENOENT))
+                throw makeErrnoExceptionV(errno, "CFile::open %s", filename.get());
+            return false;
+        }
+        return refresh(st);
+    };
+    bool exists = probe(info);
+    if ((IFOread == mode) && writeSync.isTracked())
+    {
+        if (!settleWriteSync("CFile::openHandleOnce", filename, writeSync, true, probe, info, exists) && exists)
+        {
+            close(handle);
+            handle = NULLFILE;
+            throwWriteSyncSizeMismatch(filename, info, writeSync.expectedSize);
+        }
     }
-    if (S_ISDIR(info.st_mode)) {
+    if (!exists)
+        return NULLFILE;
+    // check not a directory (compatible with windows)
+    if (S_ISDIR(info.st_mode))
+    {
         close(handle);
         handle = NULLFILE;
         throw makeErrnoExceptionV(EISDIR, "CFile::open %s", filename.get());
@@ -2005,7 +2039,8 @@ public:
 IFileIO * CFile::openShared(IFOmode mode,IFSHmode share,IFEflags extraFlags)
 {
     int stdh = stdIoHandle(filename);
-    HANDLE handle = openHandle(mode,share,false, stdh);
+    WriteSyncDetails writeSync;
+    HANDLE handle = openHandle(mode,share,false, stdh, writeSync);
     if (handle==NULLFILE)
         return NULL;
     // MCK - if (extraFlags & IFEnocache) and mode is not WRONLY perhaps turn off read-ahead ?
@@ -2014,7 +2049,7 @@ IFileIO * CFile::openShared(IFOmode mode,IFSHmode share,IFEflags extraFlags)
     if (stdh>=0)
         return new CSequentialFileIO(this, handle,mode,share,extraFlags);
 
-    Owned<IFileIO> io = new CFileIO(this,handle,mode,share,extraFlags);
+    Owned<IFileIO> io = new CFileIO(this,handle,mode,share,extraFlags,writeSync);
 #ifdef CHECK_FILE_IO
     return new CCheckingFileIO(filename, io);
 #else
@@ -2066,11 +2101,16 @@ unsigned __int64 CFileIO::getStatistic(StatisticKind kind)
     return stats.getStatistic(kind);
 }
 
+CFileIO::CFileIO(IFile * _creator, HANDLE handle, IFOmode _openmode, IFSHmode _sharemode, IFEflags _extraFlags)
+    : CFileIO(_creator, handle, _openmode, _sharemode, _extraFlags, WriteSyncDetails())
+{
+}
+
 #ifdef _WIN32
 
 //-- Windows implementation -------------------------------------------------
 
-CFileIO::CFileIO(IFile * _creator, HANDLE handle, IFOmode _openmode, IFSHmode _sharemode, IFEflags _extraFlags)
+CFileIO::CFileIO(IFile * _creator, HANDLE handle, IFOmode _openmode, IFSHmode _sharemode, IFEflags _extraFlags, const WriteSyncDetails &_writeSync)
     : creator(_creator), unflushedReadBytes(0), unflushedWriteBytes(0)
 {
     assertex(handle != NULLFILE);
@@ -2079,6 +2119,7 @@ CFileIO::CFileIO(IFile * _creator, HANDLE handle, IFOmode _openmode, IFSHmode _s
     sharemode = _sharemode;
     openmode = _openmode;
     extraFlags = _extraFlags; // page cache flush option silently ignored on Windows for now
+    writeSync = _writeSync;
     if (extraFlags & IFEnocache)
         if (!isPCFlushAllowed())
             extraFlags = static_cast<IFEflags>(extraFlags & ~IFEnocache);
@@ -2236,7 +2277,7 @@ static void syncFileData(const CFileIO &fileIO, int fd, bool notReadOnly, IFEfla
 
 
 // More errorno checking TBD
-CFileIO::CFileIO(IFile * _creator, HANDLE handle, IFOmode _openmode, IFSHmode _sharemode, IFEflags _extraFlags)
+CFileIO::CFileIO(IFile * _creator, HANDLE handle, IFOmode _openmode, IFSHmode _sharemode, IFEflags _extraFlags, const WriteSyncDetails &_writeSync)
     : creator(_creator), unflushedReadBytes(0), unflushedWriteBytes(0)
 {
     assertex(handle != NULLFILE);
@@ -2245,6 +2286,7 @@ CFileIO::CFileIO(IFile * _creator, HANDLE handle, IFOmode _openmode, IFSHmode _s
     sharemode = _sharemode;
     openmode = _openmode;
     extraFlags = _extraFlags;
+    writeSync = _writeSync;
 
     // leave for compatibility
     if (extraFlags & IFEnocache)
@@ -2330,20 +2372,27 @@ void CFileIO::flush()
 
 offset_t CFileIO::size()
 {
-#ifndef _WIN32
     //MORE: The current implementation of openHandle() calls fstat() to check the file is not a directory
     //If the file hasn't been modified since open() the size could be cached and returned.
     struct stat info;
-    if (fstat(file, &info) >= 0)
-        return info.st_size;
-    return 0;
-#else
-    CriticalBlock procedure(cs);
-    offset_t savedPos = lseek(file,0,SEEK_CUR);
-    offset_t length = lseek(file,0,SEEK_END);
-    setPos(savedPos);
-    return length;
-#endif
+    auto refresh = [&](struct stat &st)
+    {
+        if (fstat(file, &st) < 0)
+            throw makeErrnoExceptionV(errno, "CFileIO::size fstat %s", querySafeFilename());
+        return true;
+    };
+
+    refresh(info);
+
+    // Retries fstat() on the held handle (it may be shared, so cannot be reopened); NFS may serve cached attributes.
+    // Once the deadline has passed the real size is returned, even if it does not match the published size.
+    if ((IFOread == openmode) && ((offset_t)-1 != writeSync.expectedSize) && writeSync.queryRemainingMs())
+    {
+        bool exists = true;
+        if (!settleWriteSync("CFileIO::size", querySafeFilename(), writeSync, true, refresh, info, exists))
+            throwWriteSyncSizeMismatch(querySafeFilename(), info, writeSync.expectedSize);
+    }
+    return info.st_size;
 }
 
 size32_t CFileIO::read(offset_t pos, size32_t len, void * data)
@@ -2357,6 +2406,29 @@ size32_t CFileIO::read(offset_t pos, size32_t len, void * data)
     stats.ioReadCycles.fetch_add(timer.elapsedCycles());
     stats.ioReadBytes.fetch_add(ret);
     ++stats.ioReads;
+
+    // checked_pread only returns short at EOF; within the write-sync deadline (as size()) a short read before the
+    // published size is a premature EOF. Once the deadline has passed, short reads are returned as-is.
+    if (((offset_t)-1 != writeSync.expectedSize) &&
+        (ret < len) && (pos + ret < writeSync.expectedSize) && writeSync.queryRemainingMs())
+    {
+        StringBuffer statDetails;
+        struct stat info;
+        if (fstat(file, &info) == 0)
+            statDetails.appendf("fstat: size=%" I64F "d, device=%" I64F "u, inode=%" I64F "u, mode=%o, nlink=%" I64F "u, uid=%u, gid=%u, atime=%" I64F "d, mtime=%" I64F "d, ctime=%" I64F "d",
+                (__int64)info.st_size, (unsigned __int64)info.st_dev, (unsigned __int64)info.st_ino,
+                (unsigned)info.st_mode, (unsigned __int64)info.st_nlink, (unsigned)info.st_uid, (unsigned)info.st_gid,
+                (__int64)info.st_atime, (__int64)info.st_mtime, (__int64)info.st_ctime);
+        else
+        {
+            int statError = errno;
+            statDetails.appendf("fstat failed: errno=%d (%s)", statError, strerror(statError));
+        }
+        throwStringExceptionV(JLIBERR_FileWriteSyncPrematureEOF,
+            "CFileIO::read premature EOF: file='%s', handle=%d, offset=%" I64F "u, requested=%u, returned=%u, expectedSize=%" I64F "u, missingBeforeExpectedEOF=%" I64F "u, openMode=%u, compressed=%s, remainingMs=%u, elapsedMs=%" I64F "d, %s",
+            querySafeFilename(), file, pos, len, ret, writeSync.expectedSize, writeSync.expectedSize - pos - ret,
+            (unsigned)openmode, boolToStr(writeSync.compressed), writeSync.queryRemainingMs(), cycle_to_millisec(timer.elapsedCycles()), statDetails.str());
+    }
 
     if ( (extraFlags & IFEnocache) && (ret > 0) )
     {

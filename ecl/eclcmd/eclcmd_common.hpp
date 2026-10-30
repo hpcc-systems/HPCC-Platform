@@ -120,6 +120,7 @@ typedef IEclCommand *(*EclCommandFactory)(const char *cmdname);
 #define ECLOPT_DFU_WAIT "--dfu-wait"
 #define ECLOPT_KEY_COMPRESSION "--key-compression"
 #define ECLOPT_DFU_TARGETPLANE "--target-plane"
+#define ECLOPT_IGNORE_PACKAGEMAP_SOURCES "--ignore-packagemap-sources"
 
 #define ECLOPT_ACTIVE "--active"
 #define ECLOPT_ACTIVE_ONLY "--active-only"
@@ -316,6 +317,17 @@ public:
         setRpcRequestTimeouts(rpc, waitMS, optWaitConnectMs, optWaitReadSec);
         setRpcSSLOptions(rpc, optSSL, optClientCert, optClientPrivateKey, optCACert, optAcceptSelfSigned);
     }
+    // The read timeout must outlast the server-side wait, otherwise the client gives up before the server responds
+    inline void setRpcOptionsForServerWait(IEspClientRpcSettings &rpc, int serverWaitMs)
+    {
+        const unsigned serverWaitMarginSecs = 30;
+        unsigned readSecs = optWaitReadSec;
+        // Over-estimating is harmless: the server enforces the wait, so this only delays detecting a dead connection
+        if (!readSecs && serverWaitMs >= 0)
+            readSecs = ((unsigned)serverWaitMs + 999) / 1000 + serverWaitMarginSecs;
+        setRpcRequestTimeouts(rpc, 0, optWaitConnectMs, readSecs);
+        setRpcSSLOptions(rpc, optSSL, optClientCert, optClientPrivateKey, optCACert, optAcceptSelfSigned);
+    }
     void checkFeatures(IClientWsWorkunits *client, bool &useCompression, int &major, int &minor, int &point, unsigned waitMs, unsigned waitConnectMs, unsigned waitReadSec);
 
     virtual void usage()
@@ -373,7 +385,7 @@ public:
     bool getFullAttributePath(StringBuffer & result);
     bool setTarget(const char *target);
     bool setParam(const char *in, bool final);
-    bool doDeploy(IClientWsWorkunits *client, unsigned waitMs, const char *cluster, const char *name, StringBuffer *wuid, StringBuffer *wucluster, bool noarchive, bool displayWuid, bool compress, bool protect);
+    bool doDeploy(IClientWsWorkunits *client, const char *cluster, const char *name, StringBuffer *wuid, StringBuffer *wucluster, bool noarchive, bool displayWuid, bool compress, bool protect);
 
     virtual void usage()
     {
@@ -427,6 +439,20 @@ protected:
         if (!optPoll)
             return optWaitTime;
         return (optWaitTime < 10000) ? optWaitTime : 10000; //stay connected for the first 10 seconds even if polling
+    }
+
+    // --wait only limits compilation for compile-only commands, otherwise run/publish would give up before submitting
+    virtual unsigned getCompileWaitLimit() const { return (unsigned)-1; }
+
+    int getInitialCompileWait()
+    {
+        if (!optPoll)
+            return (int)getCompileWaitLimit();
+        unsigned waitLimit = getCompileWaitLimit();
+        unsigned initialWait = getInitialRunWait();
+        if (waitLimit != (unsigned)-1 && waitLimit < initialWait)
+            return (int)waitLimit;
+        return (int)initialWait;
     }
 
 public:
