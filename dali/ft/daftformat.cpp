@@ -152,7 +152,7 @@ void CPartitioner::commonCalcPartitions()
         }
 
         if (isAborting())
-            throwAbortException();
+            throwProcessAbortRequestedException();
     }
 
     assertex(startInputOffset != endOffset || splitAfterPoint());

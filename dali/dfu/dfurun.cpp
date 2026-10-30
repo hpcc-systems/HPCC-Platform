@@ -287,7 +287,7 @@ class CDFUengine: public CInterface, implements IDFUengine
                             mode = DFUservermode_run;
                     }
                     else {
-                        if (cancelling||(timeout==WAIT_FOREVER)||isAborting())
+                        if (cancelling||(timeout==WAIT_FOREVER)||hasReceivedAbortSignal())
                             mode = DFUservermode_stop;
                         else
                             mode = DFUservermode_cycle;

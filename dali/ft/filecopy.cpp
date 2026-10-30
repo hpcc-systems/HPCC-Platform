@@ -256,7 +256,7 @@ void FileTransferThread::go(Semaphore & _sem)
 
 bool FileTransferThread::isAborting()
 {
-    return sprayer.isAborting() || ::isAborting();
+    return sprayer.isAborting() || ::hasReceivedAbortSignal();
 }
 
 void FileTransferThread::logIfRunning(StringBuffer &list)

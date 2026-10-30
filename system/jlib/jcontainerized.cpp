@@ -109,8 +109,10 @@ bool checkExitCodes(StringBuffer &output, const char *podStatuses)
 
 static void throwIfAbortRequested(IAbortRequestCallback *abortCheck)
 {
-    if ((abortCheck && abortCheck->abortRequested()) || isAborting())
-        throwAbortException();
+    if (abortCheck && abortCheck->abortRequested())
+        throwProcessAbortRequestedException();
+    if (hasReceivedAbortSignal())
+        throwAbortSignalException();
 }
 
 static void delayWithAbortCheck(unsigned delayMs, IAbortRequestCallback *abortCheck)
@@ -223,7 +225,7 @@ void waitJob(const char *componentName, const char *resourceType, const char *jo
     }
     catch (IException *e)
     {
-        if (e->errorCode() != JLIBERR_UserAbort)
+        if (e->errorCode() != JLIBERR_ProcessAbortRequest)
             EXCLOG(e, nullptr);
         exception.setown(e);
     }
@@ -347,7 +349,7 @@ void runJob(const char *componentName, const char *wuid, const char *jobName, co
     }
     catch (IException *e)
     {
-        if (e->errorCode() != JLIBERR_UserAbort)
+        if (e->errorCode() != JLIBERR_ProcessAbortRequest)
             EXCLOG(e, nullptr);
         exception.setown(e);
     }
@@ -473,7 +475,7 @@ void runKubectlCommand(const char *title, const char *cmd, const char *input, St
         }
         catch (IException *e)
         {
-            if ((e->errorCode() == JLIBERR_UserAbort) ||
+            if ((e->errorCode() == JLIBERR_ProcessAbortRequest) ||
                 0 == retrySecs ||
                 tm.timedout(&remainingMs) ||
                 strstr(error.str(), "NotFound")) // "NotFound" means the job is already gone; don't retry. Using k8s API would provide a specific code.

@@ -286,7 +286,8 @@ interface IAbortHandler : public IInterface
     virtual bool onAbort() = 0;
 };
 
-static constexpr int JLIBERR_UserAbort = -256; // 0xffffff00
+static constexpr int JLIBERR_ReceivedAbortSignal = -256; // 0xffffff00 - an OS abort signal was received
+static constexpr int JLIBERR_ProcessAbortRequest = -257; // 0xfffffeff - an IAbortRequestCallback requested cancellation
 
 extern jlib_decl void addAbortHandler(AbortHandler handler=NULL);               // no parameter means just set the flag for later testing.
 extern jlib_decl void addAbortHandler(SimpleAbortHandler handler=NULL);
@@ -296,8 +297,9 @@ extern jlib_decl void setPostAbortSignalHandler(PostAbortSignalHandler handler);
 extern jlib_decl void removeAbortHandler(AbortHandler handler);
 extern jlib_decl void removeAbortHandler(SimpleAbortHandler handler);
 extern jlib_decl void removeAbortHandler(IAbortHandler & handler);
-extern jlib_decl bool isAborting();
-extern jlib_decl void throwAbortException();
+extern jlib_decl bool hasReceivedAbortSignal();
+extern jlib_decl void throwAbortSignalException();
+extern jlib_decl void throwProcessAbortRequestedException();
 extern jlib_decl void throwExceptionIfAborting();
 
 interface IAbortRequestCallback

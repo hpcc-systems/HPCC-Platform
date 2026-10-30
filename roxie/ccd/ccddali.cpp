@@ -219,7 +219,7 @@ private:
                 }
                 catch (IException *E)
                 {
-                    if (aborted || shuttingDown || isAborting())
+                    if (aborted || shuttingDown || hasReceivedAbortSignal())
                     {
                         E->Release();
                         break;
@@ -229,7 +229,7 @@ private:
                 }
                 catch (...)
                 {
-                    if (aborted || shuttingDown || isAborting())
+                    if (aborted || shuttingDown || hasReceivedAbortSignal())
                         break;
                     IERRLOG("Unknown exception in CRoxieDaliConnectWatcher");
                 }

@@ -541,7 +541,7 @@ void checkForRemoteAbort(ICommunicator * communicator, mptag_t tag)
         msg.setEndian(__BIG_ENDIAN);
         msg.read(aborting);
         if (aborting)
-            throwAbortException();
+            throwAbortSignalException();
     }
 }
 
@@ -565,13 +565,13 @@ void checkForRemoteAbort(ISocket * socket)
         msg.setEndian(__BIG_ENDIAN);
         msg.read(aborting);
         if (aborting)
-            throwAbortException();
+            throwProcessAbortRequestedException();
     }
 }
 
 bool sendRemoteAbort(ISocket * socket)
 {
-    LOG(MCdebugInfo, "Send abort to remote slave (%d)", isAborting());
+    LOG(MCdebugInfo, "Send abort to remote slave (%d)", hasReceivedAbortSignal());
 
     MemoryBuffer msg;
     msg.append(true);
