@@ -24,11 +24,13 @@
 #include <memory>
 #include <chrono>
 #include <algorithm>
+#include <functional>
 #include <random>
 #include <thread>
 
 #include "jsem.hpp"
 #include "jfile.hpp"
+#include "jerror.hpp"
 #include "jplane.hpp"
 #include "jdebug.hpp"
 #include "jset.hpp"
@@ -302,6 +304,7 @@ public:
 CPPUNIT_TEST_SUITE_REGISTRATION( JlibFileTest );
 CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( JlibFileTest, "JlibFileTest" );
 
+#ifndef _WIN32
 class JlibWriteSyncCacheTest : public CppUnit::TestFixture
 {
 public:
@@ -309,57 +312,278 @@ public:
         CPPUNIT_TEST(testSnapshotExpiryAndRepublish);
         CPPUNIT_TEST(testMultiEntrySelectiveExpiry);
         CPPUNIT_TEST(testConcurrentStress);
+        CPPUNIT_TEST(testPrematureReadEOF);
+        CPPUNIT_TEST(testOpenSettlesMissingPart);
+        CPPUNIT_TEST(testOpenSettlesTruncatedPart);
+        CPPUNIT_TEST(testOpenTimesOut);
+        CPPUNIT_TEST(testSizeMismatchAndCapturedExpiry);
     CPPUNIT_TEST_SUITE_END();
 
 public:
-    // Deadlines are second-granularity wall-clock. 'short' entries are the ones we deliberately let
-    // expire (large enough that the immediate "live" read cannot race a second rollover); 'long' entries
-    // must stay live for the whole test. The wide gap keeps both robust on slow single-core containers,
-    // and waitUntilExpired only ever waits, so it cannot report a premature expiry.
+    // 'short' entries are the ones we deliberately let expire; 'long' entries must stay live for the whole
+    // test. The wide gap keeps both robust on slow single-core containers, and waitUntilExpired waits on the
+    // same cycle deadline the cache uses, so it cannot report a premature expiry.
     static constexpr unsigned shortMarginSecs = 3;
     static constexpr unsigned longMarginSecs = 600;
+    // recoveryMarginMs only bounds a regression (the open would otherwise wait it out); recovery takes recoveryDelayMs.
+    static constexpr unsigned recoveryMarginMs = 10000;
+    static constexpr unsigned recoveryDelayMs = 300;
+    static constexpr unsigned timeoutMarginMs = 1000;
 
     void setUp() { resetWriteSyncStateForTest(); }
     void tearDown() { resetWriteSyncStateForTest(); }
 
-    // Note a single part, returning its deadline.
-    time_t note(const char * path, offset_t size, bool compressed, unsigned marginSecs)
+    // Runs fn on a background thread after delayMs, joining on destruction.
+    class DelayedAction
     {
-        time_t deadline = time(nullptr) + marginSecs;
+    public:
+        DelayedAction(unsigned delayMs, std::function<void()> fn)
+            : thread([this, delayMs, fn]() { std::this_thread::sleep_for(std::chrono::milliseconds(delayMs)); started = true; fn(); })
+        {
+        }
+        ~DelayedAction() { thread.join(); }
+        bool hasStarted() const { return started; }
+    private:
+        std::atomic<bool> started{false};
+        std::thread thread;
+    };
+
+    // Note a single part, returning its deadline.
+    cycle_t noteMs(const char * path, offset_t size, bool compressed, unsigned marginMs)
+    {
+        cycle_t deadline = get_cycles_now() + millisec_to_cycle(marginMs);
         noteWriteSyncFiles({ WriteSyncFileInfo{path, size, compressed} }, deadline);
         return deadline;
+    }
+    cycle_t note(const char * path, offset_t size, bool compressed, unsigned marginSecs)
+    {
+        return noteMs(path, size, compressed, marginSecs * 1000);
+    }
+
+    void assertWriteSyncError(int expectedCode, const std::function<void()> &op)
+    {
+        int errorCode = 0;
+        try
+        {
+            op();
+        }
+        catch (IException *exception)
+        {
+            errorCode = exception->errorCode();
+            exception->Release();
+        }
+        CPPUNIT_ASSERT_EQUAL(expectedCode, errorCode);
     }
 
     // Assert a part is live and reports exactly the metadata it was noted with.
     void assertLive(const char * path, offset_t size, bool compressed)
     {
-        offset_t gotSize = (offset_t)-1;
-        bool gotCompressed = false;
-        CPPUNIT_ASSERT(getPathWriteSyncDelayRemainingMs(path, gotSize, gotCompressed) > 0);
-        CPPUNIT_ASSERT_EQUAL(size, gotSize);
-        CPPUNIT_ASSERT_EQUAL(compressed, gotCompressed);
+        WriteSyncDetails writeSync;
+        getFileWriteSyncDetails(path, writeSync);
+        CPPUNIT_ASSERT(writeSync.queryRemainingMs() > 0);
+        CPPUNIT_ASSERT_EQUAL(size, writeSync.expectedSize);
+        CPPUNIT_ASSERT_EQUAL(compressed, writeSync.compressed);
     }
 
     // Assert a part reports no remaining delay (expired or absent).
     void assertNoDelay(const char * path)
     {
-        offset_t gotSize = (offset_t)-1;
-        bool gotCompressed = false;
-        CPPUNIT_ASSERT_EQUAL(0U, getPathWriteSyncDelayRemainingMs(path, gotSize, gotCompressed));
+        WriteSyncDetails writeSync;
+        getFileWriteSyncDetails(path, writeSync);
+        CPPUNIT_ASSERT(!writeSync.isTracked());
     }
 
-    void waitUntilExpired(time_t deadline)
+    // A reader opened on a tracked part captures the published size and deadline at open, and uses them to
+    // detect a short read (premature EOF) within the deadline:
+    //  - the file is complete at open, so a full read returns all 8 bytes, and reads at/after the published
+    //    EOF (offsets 8 and 9) return 0 without error - reaching the real end is not a premature EOF.
+    //  - the file is then truncated to 4 bytes and the cache is reset, proving the open handle relies on the
+    //    details it captured rather than on a live cache lookup.
+    //  - short reads that end before the published size (2+8 and 4+1) throw JLIBERR_FileWriteSyncPrematureEOF.
+    //  - reads that are fully satisfied (2+2) or are zero length are returned as normal.
+    //  - a fresh open after the reset is untracked, so it simply reads the 4 bytes that are present.
+    void testPrematureReadEOF()
     {
-        while (time(nullptr) < deadline)
+        StringBuffer filename;
+        Owned<IFileIO> writer = createUniqueFile(nullptr, "unittests_writeSyncEOF", "tmp", filename);
+        Owned<IFile> file = createIFile(filename);
+        writer->write(0, 8, "abcdefgh");
+        note(filename, 8, false, longMarginSecs);
+        Owned<IFileIO> reader = file->open(IFOread);
+        char buffer[16];
+        CPPUNIT_ASSERT_EQUAL((size32_t)8, reader->read(0, sizeof(buffer), buffer));
+        CPPUNIT_ASSERT_EQUAL((size32_t)0, reader->read(8, sizeof(buffer), buffer));
+        CPPUNIT_ASSERT_EQUAL((size32_t)0, reader->read(9, sizeof(buffer), buffer));
+        writer->setSize(4);
+        resetWriteSyncStateForTest();
+
+        auto assertPrematureEOF = [&](offset_t pos, size32_t len)
+        {
+            assertWriteSyncError(JLIBERR_FileWriteSyncPrematureEOF, [&]() { reader->read(pos, len, buffer); });
+        };
+        assertPrematureEOF(2, 8);
+        assertPrematureEOF(4, 1);
+        CPPUNIT_ASSERT_EQUAL((size32_t)2, reader->read(2, 2, buffer));
+        CPPUNIT_ASSERT_EQUAL((size32_t)0, reader->read(4, 0, buffer));
+
+        Owned<IFileIO> untrackedReader = file->open(IFOread);
+        CPPUNIT_ASSERT_EQUAL((size32_t)4, untrackedReader->read(0, sizeof(buffer), buffer));
+        untrackedReader->close();
+        reader->close();
+        writer->close();
+        file->remove();
+    }
+
+    // A tracked part that is missing at open must be waited for, rather than reported as not found:
+    //  - the file is deleted and then noted as tracked with a published size of 8.
+    //  - a background thread creates the file with 8 bytes after recoveryDelayMs.
+    //  - open(IFOread) must block until the file appears at its full size, then return a valid reader.
+    //  - recoveredAtOpen proves the open itself waited (the recovery had started before open returned), so a
+    //    later size() call that settles on its own cannot mask a missing open-time wait.
+    //  - the reader then reports the full published size.
+    void testOpenSettlesMissingPart()
+    {
+        StringBuffer filename;
+        Owned<IFileIO> writer = createUniqueFile(nullptr, "unittests_writeSyncMissing", "tmp", filename);
+        writer->close();
+        writer.clear();
+        Owned<IFile> file = createIFile(filename);
+        file->remove();
+        noteMs(filename, 8, false, recoveryMarginMs);
+
+        Owned<IFileIO> reader;
+        bool recoveredAtOpen = false;
+        {
+            DelayedAction recover(recoveryDelayMs, [&]()
+            {
+                Owned<IFile> lateFile = createIFile(filename);
+                Owned<IFileIO> late = lateFile->open(IFOcreate);
+                late->write(0, 8, "abcdefgh");
+                late->close();
+            });
+            reader.setown(file->open(IFOread));
+            recoveredAtOpen = recover.hasStarted();
+        }
+        CPPUNIT_ASSERT(reader);
+        CPPUNIT_ASSERT(recoveredAtOpen);
+        CPPUNIT_ASSERT_EQUAL((offset_t)8, reader->size());
+        reader->close();
+        file->remove();
+    }
+
+    // A tracked part that is shorter than its published size at open must be waited for until it is complete:
+    //  - the file holds only 4 bytes, but is noted as tracked with a published size of 8.
+    //  - a background thread appends the remaining 4 bytes after recoveryDelayMs.
+    //  - open(IFOread) must block until the file reaches its published size, rather than returning a handle
+    //    to the partial file.
+    //  - recoveredAtOpen proves the open itself waited, independently of any later size()/read() checks.
+    //  - the reader then returns the complete content and reports the full published size.
+    void testOpenSettlesTruncatedPart()
+    {
+        StringBuffer filename;
+        Owned<IFileIO> writer = createUniqueFile(nullptr, "unittests_writeSyncTruncated", "tmp", filename);
+        Owned<IFile> file = createIFile(filename);
+        writer->write(0, 4, "abcd");
+        noteMs(filename, 8, false, recoveryMarginMs);
+
+        Owned<IFileIO> reader;
+        bool recoveredAtOpen = false;
+        {
+            DelayedAction recover(recoveryDelayMs, [&]() { writer->write(4, 4, "efgh"); });
+            reader.setown(file->open(IFOread));
+            recoveredAtOpen = recover.hasStarted();
+        }
+        CPPUNIT_ASSERT(reader);
+        CPPUNIT_ASSERT(recoveredAtOpen);
+        char buffer[16];
+        CPPUNIT_ASSERT_EQUAL((size32_t)8, reader->read(0, sizeof(buffer), buffer));
+        CPPUNIT_ASSERT(memcmp(buffer, "abcdefgh", 8) == 0);
+        CPPUNIT_ASSERT_EQUAL((offset_t)8, reader->size());
+        reader->close();
+        writer->close();
+        file->remove();
+    }
+
+    // A tracked part that never settles within its deadline must fail in the right way:
+    //  - truncated: the file holds 4 bytes but is published as 8 and never grows. open(IFOread) waits out the
+    //    deadline and then throws JLIBERR_FileWriteSyncPhysicalSizeMismatch, rather than returning a handle
+    //    to the partial file.
+    //  - missing: the file is removed, noted again, and never reappears. open(IFOread) waits out the deadline
+    //    and then returns null (not found), never a size mismatch.
+    //  - the elapsed time check proves the missing case actually waited, rather than failing immediately.
+    void testOpenTimesOut()
+    {
+        StringBuffer filename;
+        Owned<IFileIO> writer = createUniqueFile(nullptr, "unittests_writeSyncTimeout", "tmp", filename);
+        Owned<IFile> file = createIFile(filename);
+        writer->write(0, 4, "abcd");
+        noteMs(filename, 8, false, timeoutMarginMs);
+        assertWriteSyncError(JLIBERR_FileWriteSyncPhysicalSizeMismatch, [&]() { Owned<IFileIO> reader = file->open(IFOread); });
+        writer->close();
+        file->remove();
+
+        noteMs(filename, 8, false, timeoutMarginMs);
+        CCycleTimer timer;
+        Owned<IFileIO> missing = file->open(IFOread);
+        CPPUNIT_ASSERT(!missing);
+        CPPUNIT_ASSERT(timer.elapsedMs() >= timeoutMarginMs / 2);
+    }
+
+    // size() on a tracked handle validates against the published size until the deadline captured at open
+    // expires; afterwards size() and read() report the real (short) file:
+    //  - the file is complete (8 bytes) at open, so the open succeeds immediately.
+    //  - the file is then truncated to 4 bytes, so size() waits out the remaining deadline and throws
+    //    JLIBERR_FileWriteSyncPhysicalSizeMismatch.
+    //  - once the captured deadline has passed, the path is noted again with a long deadline. The open handle
+    //    must ignore this, because it uses the deadline it captured at open rather than a live cache lookup.
+    //  - so size() now returns the real size (4), a read returns the 4 bytes present, and a read at the real
+    //    EOF returns 0, all without throwing.
+    void testSizeMismatchAndCapturedExpiry()
+    {
+        StringBuffer filename;
+        Owned<IFileIO> writer = createUniqueFile(nullptr, "unittests_writeSyncSize", "tmp", filename);
+        Owned<IFile> file = createIFile(filename);
+        writer->write(0, 8, "abcdefgh");
+        cycle_t deadline = noteMs(filename, 8, false, timeoutMarginMs);
+        Owned<IFileIO> reader = file->open(IFOread);
+        CPPUNIT_ASSERT(reader);
+        writer->setSize(4);
+        assertWriteSyncError(JLIBERR_FileWriteSyncPhysicalSizeMismatch, [&]() { reader->size(); });
+
+        waitUntilExpired(deadline);
+        note(filename, 8, false, longMarginSecs);
+        char buffer[16];
+        CPPUNIT_ASSERT_EQUAL((offset_t)4, reader->size());
+        CPPUNIT_ASSERT_EQUAL((size32_t)4, reader->read(0, sizeof(buffer), buffer));
+        CPPUNIT_ASSERT_EQUAL((size32_t)0, reader->read(4, 1, buffer));
+
+        resetWriteSyncStateForTest();
+        reader->close();
+        writer->close();
+        file->remove();
+    }
+
+    void waitUntilExpired(cycle_t deadline)
+    {
+        // Wait until the cache itself would treat 'deadline' as passed.
+        // Only the cycle counter decides when we are done: the loop exits on the same get_cycles_now() check
+        // the cache uses, so the wait can never end early from the cache's point of view.
+        //
+        // (A single sleep_for(deadline - now) is not used because sleep_for runs on the OS clock, which drifts
+        // slightly from the cycle counter, so it could wake just before the cache sees the deadline as passed.)
+        while (get_cycles_now() < deadline)
             std::this_thread::sleep_for(std::chrono::milliseconds(20));
     }
 
-    // A noted part is live and carries its metadata; once its deadline passes it reports no delay;
-    // re-noting publishes a fresh snapshot carrying the new metadata.
+    // A single cache entry goes through its full lifecycle:
+    //  - a noted part is live and reports exactly the size and compressed flag it was noted with.
+    //  - once its deadline passes, the lookup reports it as untracked (no remaining delay).
+    //  - noting the same path again publishes a fresh snapshot, and the entry is live again with the new
+    //    size and compressed flag, rather than any stale metadata from the expired entry.
     void testSnapshotExpiryAndRepublish()
     {
         static constexpr const char * path = "/var/lib/HPCCSystems/test/writeSync/single";
-        time_t deadline = note(path, 1234, true, shortMarginSecs);
+        cycle_t deadline = note(path, 1234, true, shortMarginSecs);
         assertLive(path, 1234, true);
 
         waitUntilExpired(deadline);
@@ -371,12 +595,12 @@ public:
 
     // With several keys in the snapshot, each is looked up independently and expires on its own per-entry
     // deadline: the short entry expires while the long entry (which also sets the snapshot-wide
-    // latestDeadline, still in the future) stays live - proving neither gate short-circuits the other.
+    // latestDeadlineCycles, still in the future) stays live - proving neither gate short-circuits the other.
     void testMultiEntrySelectiveExpiry()
     {
         static constexpr const char * shortPath = "/var/lib/HPCCSystems/test/writeSync/multiShort";
         static constexpr const char * longPath = "/var/lib/HPCCSystems/test/writeSync/multiLong";
-        time_t shortDeadline = note(shortPath, 100, false, shortMarginSecs);
+        cycle_t shortDeadline = note(shortPath, 100, false, shortMarginSecs);
         note(longPath, 200, true, longMarginSecs);
 
         assertLive(shortPath, 100, false);
@@ -416,11 +640,11 @@ public:
             while (!stop.load(std::memory_order_relaxed))
             {
                 unsigned i = rng() % numPaths;
-                offset_t gotSize = (offset_t)-1;
-                bool gotCompressed = false;
-                if (getPathWriteSyncDelayRemainingMs(paths[i].c_str(), gotSize, gotCompressed) > 0)
+                WriteSyncDetails writeSync;
+                getFileWriteSyncDetails(paths[i].c_str(), writeSync);
+                if (writeSync.isTracked())
                 {
-                    if (gotSize != sizeFor(i) || gotCompressed != compressedFor(i))
+                    if (writeSync.expectedSize != sizeFor(i) || writeSync.compressed != compressedFor(i))
                     {
                         failed.store(true, std::memory_order_relaxed);
                         stop.store(true, std::memory_order_relaxed);
@@ -443,7 +667,7 @@ public:
                 }
                 // Mix short deadlines (which expire and get pruned mid-run) with longer-lived ones.
                 unsigned marginSecs = (0 == (rng() % 4)) ? 1 : 30;
-                noteWriteSyncFiles(batch, time(nullptr) + marginSecs);
+                noteWriteSyncFiles(batch, get_cycles_now() + millisec_to_cycle(marginSecs * 1000));
                 // Brief yield so the writer does not busy-spin and inflate CPU/log churn on shared CI runners,
                 // while still exercising concurrent publish/read against the (hammered) lock-free reader.
                 std::this_thread::sleep_for(std::chrono::milliseconds(1));
@@ -467,6 +691,7 @@ public:
 
 CPPUNIT_TEST_SUITE_REGISTRATION( JlibWriteSyncCacheTest );
 CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( JlibWriteSyncCacheTest, "JlibWriteSyncCacheTest" );
+#endif
 
 class JlibAzureAPIConfigTest : public CppUnit::TestFixture
 {
