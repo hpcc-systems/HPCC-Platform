@@ -17,6 +17,7 @@
 #include "sautil.hpp"
 #include "saarch.hpp"
 #include "workunitservices.ipp"
+#include "wuarchivepublisher.hpp"
 
 
 #define DEFAULT_INTERVAL                6       // hours
@@ -37,10 +38,100 @@
 static CriticalSection archivingSect{SYNC_LOCATION};
 static const bool keepOldVersions=true;
 
+static bool isArchivableWorkUnitState(WUState state)
+{
+    return state == WUStateCompleted || state == WUStateFailed || state == WUStateAborted || state == WUStateSubmitted || state == WUStateCompiled;
+}
+
+// Build the internal archived metadata representation from a Dali workunit.
+// Text fields are normalized to lowercase for consistent, case-insensitive lookup.
+static void buildArchivedWuRecord(ArchivedWuRecord & record, const IConstWorkUnit & wu, const CDateTime * time)
+{
+    record.wuid.set(wu.queryWuid());
+    StringBuffer tmp;
+
+    tmp.clear().append(wu.queryClusterName()).toLowerCase();
+    record.clusterLc.set(tmp);
+
+    tmp.clear().append(wu.queryUser()).toLowerCase();
+    record.ownerLc.set(tmp);
+
+    tmp.clear().append(wu.queryJobName()).toLowerCase();
+    record.jobNameLc.set(tmp);
+
+    tmp.clear().append(wu.queryStateDesc()).toLowerCase();
+    record.state.set(tmp);
+    record.isProtected = wu.isProtected();
+    record.isPausing = wu.isPausing();
+    record.WUAction = wu.getAction();
+    record.executeCost = wu.getExecuteCost();
+    record.fileAccessCost = wu.getFileAccessCost();
+    record.compileCost = wu.getCompileCost();
+    record.costSavingPotential = wu.getCostSavingPotential();
+    record.totalClusterTime = wu.getTotalThorTime();
+    record.failureDesc.set(wu.queryFailMessage());
+
+    Owned<IConstWUAppValueIterator> appValues = &wu.getApplicationValues();
+    ForEach(*appValues)
+    {
+        IConstWUAppValue & value = appValues->query();
+        ArchivedWuApplicationValueRecord archivedValue;
+        const char * application = value.queryApplication();
+        const char * name = value.queryName();
+        const char * appValue = value.queryValue();
+        archivedValue.application = application ? application : "";
+        archivedValue.name = name ? name : "";
+        archivedValue.value = appValue ? appValue : "";
+        record.applicationValues.push_back(std::move(archivedValue));
+    }
+
+    // Preserve the caller-supplied archive timestamp when available.
+    if (time && !time->isNull())
+        record.modifiedAt.set(*time);
+
+    // Capture logical files read by the workunit.
+    {
+        Owned<IPropertyTreeIterator> fileIter = &wu.getFilesReadIterator();
+        ForEach(*fileIter)
+        {
+            const char * name = fileIter->query().queryProp("@name");
+            if (isEmptyString(name))
+                continue;
+            ArchivedWuFileRecord f;
+            tmp.clear().append(name).toLowerCase();
+            f.fileNameLc = tmp.str();
+            unsigned useCount = (unsigned)fileIter->query().getPropInt("@useCount", 1);
+            f.useCount = useCount;
+            f.isSuper = fileIter->query().getPropBool("@super", false);
+            record.files.push_back(std::move(f));
+        }
+    }
+
+    // Capture the workunit's error messages in sequence order.
+    {
+        Owned<IConstWUExceptionIterator> exIter = &wu.getExceptions();
+        unsigned seq = 0;
+        ForEach(*exIter)
+        {
+            IConstWUException & ex = exIter->query();
+            SCMStringBuffer msg;
+            ex.getExceptionMessage(msg);
+            if (isEmptyString(msg.str()))
+                continue;
+
+            ArchivedWuErrorRecord e;
+            e.sequenceNo = ++seq;
+            e.errorMessage = msg.str();
+            record.errors.push_back(std::move(e));
+        }
+    }
+
+}
 
 static const char *splitWUID(const char *wuid,StringBuffer &head)
 {
-    while (*wuid&&(*wuid!='-')) {
+    while (*wuid&&(*wuid!='-'))
+    {
         head.append((char)toupper(*wuid));
         wuid++;
     }
@@ -51,7 +142,8 @@ static void splitWUIDpath(const char *wuid,StringBuffer &path)
 {
     StringBuffer head;
     splitWUID(wuid,head);
-    if (head.length()) {
+    if (head.length())
+    {
         if (path.length())
             path.append('/');
         path.append(head);
@@ -61,7 +153,8 @@ static void splitWUIDpath(const char *wuid,StringBuffer &path)
 static void mkDateCompare(bool dfu,const char *dt,StringBuffer &out,char fill)
 {
     out.clear();
-    if (dt&&*dt) {
+    if (dt&&*dt)
+    {
         while (*dt&&!isdigit(*dt))
             dt++;
         if (dfu)
@@ -674,7 +767,8 @@ public:
     bool ready()
     {
 #ifdef _DEBUG
-        if (firsttime) {
+        if (firsttime)
+        {
             firsttime = false;
             return true;
         }
@@ -689,7 +783,8 @@ public:
         conn = _conn;
         cutoff.setNow();
         cutoff.adjustTime(-60*24*cutoffdays);
-        if (backupdays) {
+        if (backupdays)
+        {
             backupcutoff.setNow();
             backupcutoff.adjustTime(-60*24*backupdays);
         }
@@ -713,10 +808,12 @@ public:
         numlater = 0;
         numprotected = 0;
         numnulltimes = 0;
-        ForEach(*iter) {
+        ForEach(*iter)
+        {
             IPropertyTree &e=iter->query();
             Owned<IBranchItem> item = createBranchItem(e);
-            if (!item->isempty()) {
+            if (!item->isempty())
+            {
                 count++;
                 if (item->qualifies())  // archive
                     branches.append(*item.getClear());
@@ -728,10 +825,12 @@ public:
             if (stopped)
                 break;
         }
-        try {
+        try
+        {
             conn->commit();
         }
-        catch (IException *e) {             // something deleted probably so roll back
+        catch (IException *e)
+        {             // something deleted probably so roll back
             EXCLOG(e,"action commit");
             e->Release();
             conn->rollback();
@@ -741,16 +840,19 @@ public:
         unsigned total=branches.ordinality();
         unsigned done = 0;
         unsigned bdone = 0;
-        if (!stopped) {
+        if (!stopped)
+        {
             unsigned num = (count>limit)?count-limit:0;
-            while (branches.ordinality()&&!stopped) {
+            while (branches.ordinality()&&!stopped)
+            {
                 Owned<IBranchItem> item = &branches.popGet();
                 IInterface *val=item;
                 bool added;
                 toarchive.bAdd(val,compareBranch,added);
                 if (added)
                     item.getClear();    
-                if (toarchive.ordinality()>num) {
+                if (toarchive.ordinality()>num)
+                {
                     Owned<IBranchItem> itemp = &toarchive.popGet();
                     if (itemp->qualifiesBackup())
                         tobackup.append(*itemp.getClear());
@@ -759,7 +861,8 @@ public:
             PROGLOG("ARCHIVE: %s - %d to archive, %d to backup",branchname.get(),toarchive.ordinality(),tobackup.ordinality());
             unsigned start = msTick();
             unsigned start1;
-            while (toarchive.ordinality()&&!stopped) {
+            while (toarchive.ordinality()&&!stopped)
+            {
                 start1 = msTick();
                 Owned<IBranchItem> item = &toarchive.popGet();
                 if (item&&item->archive())
@@ -767,7 +870,8 @@ public:
                 if (!schedule.checkDurationAndThrottle(start,start1,stopped))
                     break;
             }
-            while (tobackup.ordinality()&&!stopped) {
+            while (tobackup.ordinality()&&!stopped)
+            {
                 start1 = msTick();
                 Owned<IBranchItem> item = &tobackup.popGet();
                 if (item&&item->backup())
@@ -799,16 +903,20 @@ static bool doArchiveDfuWorkUnit(const char *dfuwuid, StringBuffer &res)
     addPathSepChar(path).append(dfuwuid).append(".xml");
     Owned<IFile> file = createIFile(path.str());
     res.append("ARCHIVE: ").append(dfuwuid).append(" ");
-    if (file) {
+    if (file)
+    {
         StringBuffer buf;
         StringBuffer xpath("DFU/WorkUnits/");
         xpath.append(dfuwuid);
-        try {
+        try
+        {
             Owned<IRemoteConnection> conn = querySDS().connect(xpath.str(), myProcessSession(), RTM_LOCK_READ, 5*60*1000);  
-            if (conn) {
+            if (conn)
+            {
                 toXML(conn->queryRoot(), buf, 0, XML_Format|XML_SortTags);
                 Owned<IFileIO> fileio = file->open(IFOcreate);
-                if (fileio && (fileio->write(0,buf.length(),buf.str())==buf.length())) {
+                if (fileio && (fileio->write(0,buf.length(),buf.str())==buf.length()))
+                {
                     fileio.clear();
                     if (del)
                         conn->close(true);
@@ -817,7 +925,8 @@ static bool doArchiveDfuWorkUnit(const char *dfuwuid, StringBuffer &res)
                 }
             }
         }
-        catch (IException *e) {
+        catch (IException *e)
+        {
             e->errorMessage(res);
             res.append(' ');
             e->Release();
@@ -827,72 +936,112 @@ static bool doArchiveDfuWorkUnit(const char *dfuwuid, StringBuffer &res)
     return false;
 }
 
-
-static bool doArchiveWorkUnit(IWorkUnitFactory *wufactory,const char *wuid, StringBuffer &res,bool deleteOwned, bool del, CDateTime *time)
+static bool doArchiveWorkUnit(IWorkUnitFactory *wufactory, const char *wuid, StringBuffer &res, bool deleteOwned, bool del, CDateTime *time, IArchivedWuPublisher *publisher)
 {
-    CriticalBlock block(archivingSect);
     if (del)
         res.append("ARCHIVE: ");
     else
         res.append("BACKUP: ");
     res.append(wuid).append(" ");
-    if (wufactory) {
-        Owned<IWorkUnit> wu;
-        try {
-            wu.setown(wufactory->updateWorkUnit(wuid));
-        }
-        catch (IException *e) { // probably locked
-            e->errorMessage(res);
-            res.append(' ');
-            e->Release();
-        }   
-        if (wu) {
-            try {
-#ifdef TESTING
-                del = false; 
-#endif
-                StringBuffer ldspath("Archive/WorkUnits");
-                splitWUIDpath(wuid,ldspath);
-                StringBuffer path;
-                getLdsPath(ldspath.str(),path);
-                if (keepOldVersions||!del) {
-                    StringBuffer renpath(path);
-                    addPathSepChar(renpath).append(wuid).append(".xml");
-                    Owned<IFile> file = createIFile(renpath.str());
-                    try {
-                        if (file->exists()) {
-                            CDateTime dt;
-                            file->getTime(&dt,NULL,NULL);
-                            if (time&&(time->compare(dt,false)<0)) {
-                                //PROGLOG("%s already backed up",wuid);
-                                if (!del) {
-                                    res.clear();
-                                    return true;
-                                }
-                            }
-                            else {
-                                renpath.clear().append(wuid).append('.');
-                                dt.getString(renpath).append(".xml");
-                                file->rename(renpath.str());
-                            }
-                        }
-                    }
-                    catch (IException *e) { // maybe duplicate already?
-                        StringBuffer msg;
-                        e->errorMessage(msg);
-                        OWARNLOG("ARCHIVE %s renaming %s to %s",msg.str(),path.str(),renpath.str());
-                        e->Release();
-                    }
-                }
-                QUERYINTERFACE(wu.get(), IExtendedWUInterface)->archiveWorkUnit(path.str(),del,true,deleteOwned,true);
-                res.append("OK");
-                return true;
+    if (wufactory)
+    {
+        ArchivedWuRecord record;
+        bool shouldPublish = false;
+        bool archiveSucceeded = false;
+        {
+            // Serialize archive and restore operations within this process before acquiring the WU write lock.
+            CriticalBlock block(archivingSect);
+            Owned<IWorkUnit> wu;
+            try
+            {
+                wu.setown(wufactory->updateWorkUnit(wuid));
             }
-            catch (IException *e) {
+            catch (IException *e)
+            { // probably locked
                 e->errorMessage(res);
                 res.append(' ');
                 e->Release();
             }
+            if (wu)
+            {
+                try
+                {
+#ifdef TESTING
+                    del = false;
+#endif
+                    shouldPublish = publisher && del && isArchivableWorkUnitState(wu->getState());
+                    if (shouldPublish)
+                        buildArchivedWuRecord(record, *wu, time);
+
+                    StringBuffer ldspath("Archive/WorkUnits");
+                    splitWUIDpath(wuid,ldspath);
+                    StringBuffer path;
+                    getLdsPath(ldspath.str(),path);
+                    if (keepOldVersions||!del)
+                    {
+                        StringBuffer renpath(path);
+                        addPathSepChar(renpath).append(wuid).append(".xml");
+                        Owned<IFile> file = createIFile(renpath.str());
+                        try
+                        {
+                            if (file->exists())
+                            {
+                                CDateTime dt;
+                                file->getTime(&dt,NULL,NULL);
+                                if (time&&(time->compare(dt,false)<0))
+                                {
+                                    // Workunit is already backed up
+                                    if (!del)
+                                    {
+                                        res.clear();
+                                        return true;
+                                    }
+                                }
+                                else
+                                {
+                                    renpath.clear().append(wuid).append('.');
+                                    dt.getString(renpath).append(".xml");
+                                    file->rename(renpath.str());
+                                }
+                            }
+                        }
+                        catch (IException *e)
+                        { // maybe duplicate already?
+                            StringBuffer msg;
+                            e->errorMessage(msg);
+                            OWARNLOG("ARCHIVE %s renaming %s to %s",msg.str(),path.str(),renpath.str());
+                            e->Release();
+                        }
+                    }
+                    QUERYINTERFACE(wu.get(), IExtendedWUInterface)->archiveWorkUnit(path.str(),del,true,deleteOwned,true);
+                    res.append("OK");
+                    archiveSucceeded = true;
+                }
+                catch (IException *e)
+                {
+                    e->errorMessage(res);
+                    res.append(' ');
+                    e->Release();
+                }
+            }
+        }
+        if (archiveSucceeded)
+        {
+            if (shouldPublish)
+            {
+                try
+                {
+                    publisher->publish(record);
+                }
+                catch (IException *e)
+                {
+                    StringBuffer publishError;
+                    e->errorMessage(publishError);
+                    OERRLOG("ARCHIVE: metadata publish failed for %s after successful archive: %s", wuid, publishError.str());
+                    e->Release();
+                }
+            }
+            return true;
         }
     }
     res.append("FAILED");
@@ -909,13 +1058,16 @@ static bool doRestoreWorkUnit(IWorkUnitFactory *wufactory,const char *wuid, Stri
         splitWUIDpath(wuid,ldspath);
         StringBuffer base;
         getLdsPath(ldspath.str(), base);
-        try {
-            if (wufactory->restoreWorkUnit(base, wuid, true)) {
+        try
+        {
+            if (wufactory->restoreWorkUnit(base, wuid, true))
+            {
                 res.append("OK");
                 return true;
             }
         }
-        catch (IException *e) {
+        catch (IException *e)
+        {
             e->errorMessage(res);
             res.append(' ');
             e->Release();
@@ -936,16 +1088,20 @@ static bool doRestoreDfuWorkUnit(const char *wuid, StringBuffer &res)
     path.append(wuid).append(".xml");
     try {
         Owned<IFile> file = createIFile(path.str());
-        if (file) {
+        if (file)
+        {
             Owned<IFileIO> fileio = file->open(IFOread);
-            if (fileio) {
+            if (fileio)
+            {
                 Owned<IPropertyTree> pt = createPTree(*fileio);
                 StringBuffer buf;
                 StringBuffer xpath("DFU/WorkUnits");
                 Owned<IRemoteConnection> conn = querySDS().connect(xpath.str(), myProcessSession(), RTM_LOCK_WRITE, 5*60*1000);  
-                if (conn) {
+                if (conn)
+                {
                     IPropertyTree *root = conn->queryRoot();
-                    if (!root->hasProp(wuid)) {
+                    if (!root->hasProp(wuid))
+                    {
                         root->addPropTree(wuid,pt.getClear());
                         res.append("OK");
                         return true;
@@ -955,7 +1111,8 @@ static bool doRestoreDfuWorkUnit(const char *wuid, StringBuffer &res)
             }
         }
     }
-    catch (IException *e) {
+    catch (IException *e)
+    {
         e->errorMessage(res);
         res.append(' ');
         e->Release();
@@ -968,12 +1125,14 @@ static bool doRestoreDfuWorkUnit(const char *wuid, StringBuffer &res)
 class CWorkUnitArchiver: public CBranchArchiver
 {
     Owned<IWorkUnitFactory> wufactory;
+    Linked<IArchivedWuPublisher> publisher;
     bool keepResultFiles;
     class cWUBranchItem : public CInterface, implements IBranchItem
     {
         CDateTime &cutoff;
         CDateTime &backupcutoff;
         StringAttr wuid;
+        WUState state;
         bool iserr;
         bool isprotected;
         CWorkUnitArchiver *parent;
@@ -988,20 +1147,26 @@ class CWorkUnitArchiver: public CBranchArchiver
             : cutoff(_cutoff), backupcutoff(_backup), wuid(e.queryName())
         {
             parent = _parent;
+            state = getWorkUnitState(e.queryProp("@state"));
+
             isprotected = e.getPropBool("@protected", false);
             StringBuffer dts;
             CDateTime dt;
             CDateTime now;
-            if (!isprotected) { // see if restored
-                if (e.getProp("@restoredDate",dts.clear())) {
+            if (!isprotected)
+            { // see if restored
+                if (e.getProp("@restoredDate",dts.clear()))
+                {
                     dt.setString(dts);
                     if (dt.compareDate(cutoff)<=0)
                         isprotected = true;
                 }
             }
             iserr = e.getPropBool("@archiveError", false);
-            if (iserr&&!isprotected&&retryinterval) {
-                if (e.getProp("@archiveErrorDate",dts.clear())) {
+            if (iserr&&!isprotected&&retryinterval)
+            {
+                if (e.getProp("@archiveErrorDate",dts.clear()))
+                {
                     dt.setString(dts.str());
                     now.setNow();
                     dt.adjustTime(retryinterval*60*24);
@@ -1020,8 +1185,10 @@ class CWorkUnitArchiver: public CBranchArchiver
             getWorkUnitCreateTime(wuid,time);
             // get latest time stamp
             Owned<IPropertyTreeIterator> iter = e.getElements("Statistics/Statistic");
-            if (iter) {
-                ForEach(*iter) {
+            if (iter)
+            {
+                ForEach(*iter)
+                {
                     CDateTime cmp;
                     timestamp_type ts = iter->query().getPropInt64("@ts");
                     cmp.setTimeStamp(ts);
@@ -1033,7 +1200,8 @@ class CWorkUnitArchiver: public CBranchArchiver
             CDateTime ct;
             getWorkUnitCreateTime(wuid,ct);
             ct.adjustTime(24*60);
-            if (ct.compare(time)<0) {
+            if (ct.compare(time)<0)
+            {
                 StringBuffer s1;
                 time.getDateString(s1);
                 StringBuffer s2;
@@ -1043,7 +1211,8 @@ class CWorkUnitArchiver: public CBranchArchiver
 #endif
         }
         virtual ~cWUBranchItem() {}
-        bool isempty() { 
+        bool isempty()
+        {
             bool ret = (wuid[0]!='W')||iserr; 
 #ifdef _DEBUG
             if (ret)
@@ -1059,7 +1228,8 @@ class CWorkUnitArchiver: public CBranchArchiver
                 parent->numnulltimes++;
             else if (cutoff.isNull()||(time.compare(cutoff)>=0))
                 parent->numlater++;
-            return !isprotected&&!time.isNull()&&!cutoff.isNull()&&(time.compare(cutoff)<0);
+            return !isprotected && isArchivableWorkUnitState(state)
+                && !time.isNull()&&!cutoff.isNull()&&(time.compare(cutoff)<0);
         }   
         bool qualifiesBackup() 
         { 
@@ -1091,8 +1261,8 @@ public:
         return new cWUBranchItem(this,e,cutoff,backupcutoff,props->getPropInt("@retryinterval",7));
     }
 
-    CWorkUnitArchiver(IPropertyTree *archprops,unsigned definterval, std::atomic<bool> &_stopped)
-        : CBranchArchiver(archprops,"WorkUnits","WorkUnits/*",DEFAULT_WORKUNIT_LIMIT,definterval,DEFAULT_WORKUNIT_CUTOFF,_stopped)
+    CWorkUnitArchiver(IPropertyTree *archprops,unsigned definterval, std::atomic<bool> &_stopped, IArchivedWuPublisher *_publisher)
+        : CBranchArchiver(archprops,"WorkUnits","WorkUnits/*",DEFAULT_WORKUNIT_LIMIT,definterval,DEFAULT_WORKUNIT_CUTOFF,_stopped), publisher(_publisher)
     {
         wufactory.setown(getWorkUnitFactory());
         keepResultFiles = props->getPropBool("@keepResultFiles");
@@ -1104,17 +1274,21 @@ public:
     bool archive(const char *wuid,bool del,CDateTime *time)
     {
         StringBuffer s;
-        if (doArchiveWorkUnit(wufactory,wuid,s,!keepResultFiles,del,time)) {
+        if (doArchiveWorkUnit(wufactory,wuid,s,!keepResultFiles,del,time,publisher))
+        {
             if (s.length()) 
                 PROGLOG("%s",s.str());
             return true;
         }
 #ifndef TESTING
-        try {
+        try
+        {
             Owned<IRemoteConnection> wuconn = querySDS().connect("/WorkUnits", myProcessSession(), 0, 5*60*1000);  
-            if (wuconn) {
+            if (wuconn)
+            {
                 IPropertyTree * tree = wuconn->queryRoot()->queryPropTree(wuid);
-                if (tree) {
+                if (tree)
+                {
                     tree->setPropBool("@archiveError",true);
                     CDateTime dt;
                     dt.setNow();
@@ -1124,7 +1298,8 @@ public:
                 }
             }
         }
-        catch (IException *e) {
+        catch (IException *e)
+        {
             StringBuffer err;
             e->errorMessage(err);
             IERRLOG("setting archiveError: %s",err.str());
@@ -1221,7 +1396,8 @@ public:
     bool archive(const char *wuid)
     {
         StringBuffer s;
-        if (doArchiveDfuWorkUnit(wuid,s)) {
+        if (doArchiveDfuWorkUnit(wuid,s))
+        {
             if (s.length())
                 PROGLOG("%s",s.str());
             return true;
@@ -1238,8 +1414,6 @@ public:
 
 class CDFUrecoveryArchiver: public CBranchArchiver
 {
-
-
     class cDRBranchItem : public CInterface, implements IBranchItem
     {
         Linked<IPropertyTree> tree;
@@ -1250,7 +1424,8 @@ class CDFUrecoveryArchiver: public CBranchArchiver
         CDateTime &getTime()
         {
             StringBuffer timestr;
-            if (!timeset&&tree->getProp("@time_started",timestr)) {
+            if (!timeset&&tree->getProp("@time_started",timestr))
+            {
                 time.setString(timestr.str());
                 timeset = true;
             }
@@ -1322,7 +1497,8 @@ public:
 #else
             bool del = true;
 #endif
-            if (del) {
+            if (del)
+            {
                 IPropertyTree *pt = conn->queryRoot()->queryPropTree("DFU/RECOVERY");
                 if (!pt)
                     return false;
@@ -1332,7 +1508,8 @@ public:
             conn->commit();
             return true;
         }
-        catch (IException *e) {
+        catch (IException *e)
+        {
             StringBuffer msg;
             msg.appendf("ARCHIVE: DFUrecovery %s failed", id);
             EXCLOG(e,msg.str());
@@ -1365,9 +1542,11 @@ public:
         Owned<IPropertyTreeIterator> iter1 = root->getElements(branchxpath);
         StringAttrArray branchlist;
         StringBuffer path;
-        ForEach(*iter1) {
+        ForEach(*iter1)
+        {
             Owned<IPropertyTreeIterator> iter2 = iter1->query().getElements("*");
-            ForEach(*iter2) {
+            ForEach(*iter2)
+            {
                 path.clear().append("CachedWorkUnits/").append(iter1->query().queryName()).append('/').append(iter2->query().queryName());
                 branchlist.append(*new StringAttrItem(path.str()));
             }
@@ -1375,17 +1554,20 @@ public:
         unsigned n = branchlist.ordinality();
         unsigned i = 0;
         unsigned start=msTick();
-        while ((i+limit<n)&&!stopped) {
+        while ((i+limit<n)&&!stopped)
+        {
             const char * xpath = branchlist.item(i).text.get();
             PROGLOG("REMOVE CachedWorkUnit: Removing %s",xpath);
             unsigned start1=msTick();
 #ifndef TESTING         
-            try {
+            try
+            {
                 {
                     Owned<IRemoteConnection> delconn = querySDS().connect(xpath, myProcessSession(), RTM_LOCK_READ | RTM_DELETE_ON_DISCONNECT, 5*60*1000);  
                 }
             }
-            catch (IException *e) {
+            catch (IException *e)
+            {
                 StringBuffer msg;
                 msg.append("CLEANUP: CachedWorkUnit failed ").append(xpath);
                 EXCLOG(e,msg.str());
@@ -1434,9 +1616,15 @@ public:
 
 class CSashaCombinedArchiverServer : public CSashaArchiverServerBase
 {
+    Owned<IArchivedWuPublisher> wuPublisher;
 public:
     CSashaCombinedArchiverServer(IPropertyTree *config) : CSashaArchiverServerBase(config)
     {
+        wuPublisher.setown(createArchivedWuPublisher(config));
+    }
+    IArchivedWuPublisher *getWuPublisher() const
+    {
+        return wuPublisher.getLink();
     }
     void runArchiver(CBranchArchiver &archiver,Owned<IRemoteConnection> &conn)
     {
@@ -1454,7 +1642,7 @@ public:
         unsigned definterval = archprops->getPropInt("@interval", DEFAULT_INTERVAL); // no longer used
         if (definterval==0)
             definterval = DEFAULT_INTERVAL;
-        CWorkUnitArchiver wuarchiver(archprops,definterval,stopped);
+        CWorkUnitArchiver wuarchiver(archprops,definterval,stopped,wuPublisher);
         CDFUWorkUnitArchiver dfuwuarchiver(archprops,definterval,stopped);
         CDFUrecoveryArchiver drarchiver(archprops,definterval,stopped);
         CCachedWorkUnitRemover cwuremove(archprops,definterval,stopped);
@@ -1541,11 +1729,17 @@ public:
 
 class CSashaWUArchiverServer : public CSashaArchiverServer
 {  
+    Owned<IArchivedWuPublisher> wuPublisher;
 public:
     CSashaWUArchiverServer(IPropertyTree *config) : CSashaArchiverServer(config)
     {
-        archiver.setown(new CWorkUnitArchiver(config, DEFAULT_INTERVAL, stopped));
+        wuPublisher.setown(createArchivedWuPublisher(config));
+        archiver.setown(new CWorkUnitArchiver(config, DEFAULT_INTERVAL, stopped, wuPublisher));
         xpath.set("WorkUnits/");
+    }
+    IArchivedWuPublisher *getWuPublisher() const
+    {
+        return LINK(wuPublisher);
     }
 };
 
@@ -1614,6 +1808,16 @@ ISashaServer *createSashaCachedWURemoverServer() // for containerized only (BM u
 
 
 
+// Containerized: the WU archiver service; bare-metal: the combined archiver.
+static IArchivedWuPublisher *getArchivePublisher()
+{
+#ifdef _CONTAINERIZED
+    return sashaWUArchiverServer ? sashaWUArchiverServer->getWuPublisher() : nullptr;
+#else
+    return sashaArchiverServer ? sashaArchiverServer->getWuPublisher() : nullptr;
+#endif
+}
+
 bool processArchiverCommand(ISashaCommand *cmd)
 {
     // TBD NEED TIMEOUT!
@@ -1628,24 +1832,32 @@ bool processArchiverCommand(ISashaCommand *cmd)
             ids.append(*new StringAttrItem(cmd->queryId(i)));
         cmd->clearIds();
         cmd->clearResults();
-        switch (cmd->getAction()) {
+        switch (cmd->getAction())
+        {
         case SCA_ARCHIVE:
         case SCA_BACKUP:
         case SCA_RESTORE: {
                 Owned<IWorkUnitFactory> wufactory;
+                Owned<IArchivedWuPublisher> publisher;
                 if (!cmd->getDFU())
+                {
                     wufactory.setown(getWorkUnitFactory());
+                    if (cmd->getAction()==SCA_ARCHIVE)
+                        publisher.setown(getArchivePublisher());
+                }
                 StringBuffer ret;
                 PROGLOG("COMMAND: %s",(cmd->getAction()==SCA_ARCHIVE)?"ARCHIVE":((cmd->getAction()==SCA_RESTORE)?"RESTORE":"BACKUP"));
                 unsigned i;
-                for (i=0;i<n;i++) {
+                for (i=0;i<n;i++)
+                {
                     const char *wuid = ids.item(i).text.get();
                     ret.clear();
-                    if (cmd->getAction()!=SCA_RESTORE) {
+                    if (cmd->getAction()!=SCA_RESTORE)
+                    {
                         if (cmd->getDFU())
                             doArchiveDfuWorkUnit(wuid,ret); 
                         else
-                            doArchiveWorkUnit(wufactory,wuid,ret,true,cmd->getAction()==SCA_ARCHIVE,NULL);
+                            doArchiveWorkUnit(wufactory,wuid,ret,true,cmd->getAction()==SCA_ARCHIVE,NULL,publisher);
                     }
                     else  if (cmd->getDFU()) 
                         doRestoreDfuWorkUnit(wuid,ret); 
@@ -1662,7 +1874,8 @@ bool processArchiverCommand(ISashaCommand *cmd)
         case SCA_WORKUNIT_SERVICES_GET: 
         case SCA_LISTDT: 
             {
-                if (n) {
+                if (n)
+                {
                     for (i=0;i<n;i++)
                         WUiterate(cmd,ids.item(i).text.get());
                 }
@@ -1674,7 +1887,8 @@ bool processArchiverCommand(ISashaCommand *cmd)
             return false;
         }
     }
-    catch (IException *e) {
+    catch (IException *e)
+    {
         EXCLOG(e,"processArchiverCommand");
         e->Release();
         return false;

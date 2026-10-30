@@ -37,6 +37,7 @@ set (    SRCS
          saverify.cpp 
          saxref.cpp 
          sadbghk.cpp
+         wuarchivepublisher.cpp
     )
 
 include_directories ( 
