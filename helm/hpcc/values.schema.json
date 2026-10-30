@@ -1380,6 +1380,10 @@
           "type": "string",
           "description": "The base distinguished name that should be used when looking up workunit scopes on the Active Directory server"
         },
+        "commonBasedn": {
+          "type": "string",
+          "description": "The common base distinguished name shared by the HPCC Active Directory entries"
+        },
         "ldapAdminSecretKey": {
           "type": "string",
           "description": "The key name to be used to look up the Active Directory Administrator account Username/Password"

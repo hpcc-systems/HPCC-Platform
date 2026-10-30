@@ -441,15 +441,17 @@ function createTable(rows, tabDivName, index, compName) {
         //firefox has option to control status bar msg writing that is off by default. 
         //need to doc this to let the user enable the setting.
         if (record.getData('_key')) {
-          if (cS[record.getData('_key')].tip)
-            txt += cS[record.getData('_key')].tip;
-          else if (cS[record.getData('_key') + tabDivName].tip)
-            txt += cS[record.getData('_key') + tabDivName].tip;
+          var aDef = cS[record.getData('_key')];
+          var aTabDef = cS[record.getData('_key') + tabDivName];
+          if (aDef && aDef.tip)
+            txt += aDef.tip;
+          else if (aTabDef && aTabDef.tip)
+            txt += aTabDef.tip;
 
-          if (cS[record.getData('_key')].defaultValue)
-            txt += "<br>Default value = '" + cS[record.getData('_key')].defaultValue + "'";
-          else if (cS[record.getData('_key') + tabDivName].defaultValue)
-            txt += "<br>Default value = '" + cS[record.getData('_key') + tabDivName].defaultValue + "'";
+          if (aDef && aDef.defaultValue)
+            txt += "<br>Default value = '" + aDef.defaultValue + "'";
+          else if (aTabDef && aTabDef.defaultValue)
+            txt += "<br>Default value = '" + aTabDef.defaultValue + "'";
         }
         else {
           var cols = this.getColumnSet();

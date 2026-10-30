@@ -252,6 +252,14 @@
                     </xs:appinfo>
                 </xs:annotation>
             </xs:attribute>
+            <xs:attribute name="commonBasedn" type="xs:string" use="optional" default="">
+                <xs:annotation>
+                    <xs:appinfo>
+                        <required>false</required>
+                        <tooltip>Absolute path to the common base distinguished name for the cluster</tooltip>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:attribute>
             <xs:attribute name="groupsBasedn" type="xs:string" use="required"  default="ou=groups,ou=ecl">
                 <xs:annotation>
                     <xs:appinfo>
