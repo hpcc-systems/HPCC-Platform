@@ -39,6 +39,7 @@
 #include "jsecrets.hpp"
 #include "jutil.hpp"
 #include "junicode.hpp"
+#include "jerror.hpp"
 
 #include "unittests.hpp"
 
@@ -125,7 +126,7 @@ public:
                 catch (IException * e)
                 {
                     //In debug mode it is ok to throw an unexpected error, in release it should be ignored.
-                    if (!isDebugBuild() || e->errorCode() != 9999)
+                    if (!isDebugBuild() || e->errorCode() != JLIBERR_UtilInternalErrorSInSAtSD)
                         CPPUNIT_FAIL("Unexpected exception from second call to compressor->close()");
                     e->Release();
                 }
