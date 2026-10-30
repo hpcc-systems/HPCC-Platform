@@ -22,6 +22,7 @@
 #include "jfile.hpp"
 #include "jmutex.hpp"
 #include "jio.ipp"
+#include "jplane.hpp"
 #include <atomic>
 
 #ifndef _WIN32
@@ -29,11 +30,11 @@
 #include <dirent.h>
 #endif
 
-
 class jlib_decl CFile : implements IFile, public CInterface
 {
-    HANDLE openHandle(IFOmode mode, IFSHmode share, bool async, int stdh=-1);
-    HANDLE openHandleOnce(IFOmode mode, IFSHmode share, bool async, int stdh);
+    HANDLE openHandle(IFOmode mode, IFSHmode share, bool async);
+    HANDLE openHandle(IFOmode mode, IFSHmode share, bool async, int stdh, WriteSyncDetails &writeSync);
+    HANDLE openHandleOnce(IFOmode mode, IFSHmode share, bool async, int stdh, const WriteSyncDetails &writeSync);
 public:
     CFile(const char * _filename);
     IMPLEMENT_IINTERFACE
@@ -92,6 +93,7 @@ class jlib_decl CFileIO : implements IFileIO, public CInterface
 {
 public:
     CFileIO(IFile * _creator,HANDLE,IFOmode _openmode,IFSHmode _sharemode,IFEflags _extraFlags);
+    CFileIO(IFile * _creator,HANDLE,IFOmode _openmode,IFSHmode _sharemode,IFEflags _extraFlags,const WriteSyncDetails &_writeSync);
     ~CFileIO();
     IMPLEMENT_IINTERFACE
 
@@ -120,6 +122,7 @@ protected:
     IFSHmode            sharemode;
     IFOmode             openmode;
     IFEflags            extraFlags;
+    WriteSyncDetails    writeSync;
     FileIOStats         stats;
     RelaxedAtomic<unsigned> unflushedReadBytes; // more: If this recorded flushedReadBytes it could have a slightly lower overhead
     RelaxedAtomic<unsigned> unflushedWriteBytes;

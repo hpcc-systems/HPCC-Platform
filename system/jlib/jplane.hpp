@@ -21,8 +21,11 @@
 #include "jiface.hpp"
 #include "jlib.hpp"
 #include "jstring.hpp"
+#include "jdebug.hpp"
 
 #include <time.h>
+#include <algorithm>
+#include <climits>
 #include <limits>
 #include <string>
 #include <vector>
@@ -63,7 +66,7 @@ extern jlib_decl size32_t roundIndexBlockedIOSize(size32_t blockedIOSize, size32
 extern jlib_decl bool getRenameSupportedFromPath(const char *filePath);
 
 constexpr int noWriteSyncMarginDeltaMs = (std::numeric_limits<int>::min)();
-constexpr int forceWriteSyncWaitDeltaMs = 1; // stop-gap: safeStat (checkSize callers) waits out the full remaining write-sync margin for tracked parts
+constexpr int forceWriteSyncWaitDeltaMs = 1; // stop-gap: size-checking write-sync waits (safeStat checkSize, read opens, CFileIO::size) wait out the full remaining margin for tracked parts
 extern jlib_decl void setWriteSyncMarginDeltaMs(int deltaMs); // A value of noWriteSyncMarginDeltaMs means "not set".
 extern jlib_decl void setJobWriteSyncMarginDeltaMs(int deltaMs); // Overrides the configured value until reset to noWriteSyncMarginDeltaMs.
 extern jlib_decl bool getWriteSyncMarginDeltaMs(int &deltaMs); // Returns true if a delta is set, and fills deltaMs with its value (which may be 0).
@@ -76,18 +79,36 @@ extern jlib_decl bool getWriteSyncMarginDeltaMs(int &deltaMs); // Returns true i
 // part is compressed - and a single precomputed visibility deadline, when a file's descriptor is created
 // (master lookup or slave deserialization); the whole batch is recorded under one lock.
 //
-// getPathWriteSyncDelayRemainingMs is consulted by jfile, with the same physical path, returning the remaining
-// margin and (via expectedSize/compressed) the published size to validate against ((offset_t)-1 if none) and
-// whether it is a compressed part (which affects how an empty part is validated).
+// getFileWriteSyncDetails is consulted by jfile, with the same physical path, returning the visibility
+// deadline, the published size to validate against ((offset_t)-1 if none), and whether it is a compressed part
+// (which affects how an empty part is validated).
 struct WriteSyncFileInfo
 {
     std::string path;                     // full physical path the reader will open
     offset_t expectedSize = (offset_t)-1; // published on-disk size, or (offset_t)-1 if unknown / do not validate
     bool compressed = false;              // part is compressed - affects how an empty (size 0) part is validated
 };
-extern jlib_decl void noteWriteSyncFiles(const std::vector<WriteSyncFileInfo> &files, time_t deadline);
-// Returns 0 if the path was never mapped, or if its mapping has expired (past its write-sync deadline).
-extern jlib_decl unsigned getPathWriteSyncDelayRemainingMs(const char *physicalPath, offset_t &expectedSize, bool &compressed);
+struct WriteSyncDetails
+{
+    cycle_t deadlineCycles = 0;           // get_cycles_now() based visibility deadline; 0 if not tracked
+    offset_t expectedSize = (offset_t)-1;
+    bool compressed = false;
+
+    bool isTracked() const { return 0 != deadlineCycles; }
+    unsigned queryRemainingMs() const
+    {
+        if (!deadlineCycles)
+            return 0;
+        cycle_t now = get_cycles_now();
+        if (static_cast<__int64>(now - deadlineCycles) >= 0)
+            return 0;
+        // Clamp to >= 1 so 0 only means the deadline has passed.
+        return (unsigned)std::clamp(cycle_to_millisec(deadlineCycles - now), (__int64)1, (__int64)UINT_MAX);
+    }
+};
+extern jlib_decl void noteWriteSyncFiles(const std::vector<WriteSyncFileInfo> &files, cycle_t deadlineCycles);
+// Leaves writeSync untracked if the path was never mapped, or if its mapping has expired.
+extern jlib_decl void getFileWriteSyncDetails(const char *physicalPath, WriteSyncDetails &writeSync);
 #ifdef _USE_CPPUNIT
 extern jlib_decl void resetWriteSyncStateForTest();
 #endif

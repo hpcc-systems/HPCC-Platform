@@ -2660,6 +2660,7 @@ static bool isCompressedFile(IFileIO *iFileIO, CompressedFileTrailer *trailer=nu
         else if ((fsize == 0) && trailer)
         {
             //If the file is empty, but we are expecting a compressed file, fill in the trailer with default information
+            WARNLOG("isCompressedFile: synthesizing empty compressed trailer for '%s' after IFileIO::size() returned 0", iFileIO->queryFile() ? iFileIO->queryFile()->queryFilename() : "<unknown>");
             memset(trailer,0,sizeof(*trailer));
             trailer->crc = ~0U;
             trailer->compressedType = LZ4COMPRESSEDFILEFLAG;

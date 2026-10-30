@@ -803,47 +803,34 @@ bool getWriteSyncMarginDeltaMs(int &deltaMs)
     return true;
 }
 
-// {part physical path -> visibility deadline + published on-disk size for a recently published file part}.
+// {part physical path -> cycle-based visibility deadline + published on-disk size for a recently published file part}.
 // The full path the reader will open is stored, so lookups are a direct hash match with no key derivation.
-struct WriteSyncEntry
-{
-    time_t deadline = 0;                 // epoch secs by which the part should be visible to all readers
-    offset_t expectedSize = (offset_t)-1; // published on-disk size to validate against ((offset_t)-1 => unknown / do not validate)
-    bool compressed = false;             // part is compressed - affects how an empty (size 0) part is validated
-};
+using WriteSyncMap = std::unordered_map<std::string, WriteSyncDetails>;
 
 class CWriteSyncSnapshot : public CInterfaceOf<IInterface>
 {
 public:
-    CWriteSyncSnapshot(const std::unordered_map<std::string, WriteSyncEntry> &sourceMap)
+    CWriteSyncSnapshot(const WriteSyncMap &sourceMap) : entries(sourceMap)
     {
-        entries.reserve(sourceMap.size());
-        for (const auto &entry : sourceMap)
+        for (const auto &entry : entries)
         {
-            entries.emplace(entry.first, entry.second);
-            if (entry.second.deadline > latestDeadline)
-                latestDeadline = entry.second.deadline;
+            if (entry.second.deadlineCycles > latestDeadlineCycles)
+                latestDeadlineCycles = entry.second.deadlineCycles;
         }
     }
 
-    inline bool isExpired(time_t now) const
+    inline bool isExpired(cycle_t now) const
     {
-        return now >= latestDeadline;
+        return now >= latestDeadlineCycles;
     }
 
-    unsigned getDelayRemainingMs(const char *physicalPath, time_t now, offset_t &expectedSize, bool &compressed) const
+    bool lookup(const char *physicalPath, cycle_t now, WriteSyncDetails &writeSync) const
     {
         auto it = entries.find(physicalPath);
-        if (it == entries.end())
-            return 0;
-        if (now >= it->second.deadline) // expired - the part should now be visible
-            return 0;
-        expectedSize = it->second.expectedSize;
-        compressed = it->second.compressed;
-        unsigned __int64 remainingMs = (unsigned __int64)(it->second.deadline - now) * 1000;
-        if (remainingMs > 0xFFFFFFFFU)
-            remainingMs = 0xFFFFFFFFU;
-        return (unsigned)remainingMs;
+        if ((it == entries.end()) || (static_cast<__int64>(now - it->second.deadlineCycles) >= 0)) // untracked, or expired - the part should now be visible
+            return false;
+        writeSync = it->second;
+        return true;
     }
 
     inline size_t size() const
@@ -851,12 +838,12 @@ public:
         return entries.size();
     }
 
-    std::unordered_map<std::string, WriteSyncEntry> entries;
-    time_t latestDeadline = 0; // latest deadline across the snapshot; if expired, every entry is expired
+    const WriteSyncMap entries;
+    cycle_t latestDeadlineCycles = 0; // latest deadline across the snapshot; if expired, every entry is expired
 };
 
 // Canonical mutable map. Only ever accessed by writers while holding writeSyncWriteCrit; readers never touch it.
-static std::unordered_map<std::string, WriteSyncEntry> writeSyncDeadlineMap;
+static WriteSyncMap writeSyncDeadlineMap;
 
 static CriticalSection writeSyncWriteCrit; // serializes writers and guards writeSyncDeadlineMap + the snapshot build
 
@@ -898,21 +885,14 @@ void resetWriteSyncStateForTest()
 }
 #endif
 
-void noteWriteSyncFiles(const std::vector<WriteSyncFileInfo> &files, time_t deadline)
+void noteWriteSyncFiles(const std::vector<WriteSyncFileInfo> &files, cycle_t deadlineCycles)
 {
-    time_t now = time(nullptr);
-    if (now >= deadline) // already past the visibility margin - nothing to track
+    cycle_t nowCycles = get_cycles_now();
+    if (nowCycles >= deadlineCycles) // already past the visibility margin - nothing to track
         return;
 
     int marginDeltaMs = 0;
     bool forceTrace = getWriteSyncMarginDeltaMs(marginDeltaMs);
-    StringBuffer deadlineStr;
-    if (forceTrace)
-    {
-        CDateTime deadlineDt;
-        deadlineDt.set(deadline);
-        deadlineDt.getString(deadlineStr, true); // local time, to match log timestamps
-    }
 
     CriticalBlock b(writeSyncWriteCrit); // serialize writers; readers are unaffected by this lock
 
@@ -920,7 +900,7 @@ void noteWriteSyncFiles(const std::vector<WriteSyncFileInfo> &files, time_t dead
     // recently published parts
     for (auto it = writeSyncDeadlineMap.begin(); it != writeSyncDeadlineMap.end(); )
     {
-        if (it->second.deadline <= now)
+        if (it->second.deadlineCycles <= nowCycles)
             it = writeSyncDeadlineMap.erase(it);
         else
             ++it;
@@ -929,39 +909,38 @@ void noteWriteSyncFiles(const std::vector<WriteSyncFileInfo> &files, time_t dead
     for (const WriteSyncFileInfo &file : files)
     {
         auto [it, isNewEntry] = writeSyncDeadlineMap.try_emplace(file.path);
-        WriteSyncEntry &existing = it->second;
-        existing.deadline = deadline;
+        WriteSyncDetails &existing = it->second;
+        existing.deadlineCycles = deadlineCycles;
         // (offset_t)-1 means the published on-disk size is unknown (no meta size) and is carried through as-is
         // so the reader skips size validation; any other value (including 0) is a real size to validate against.
         existing.expectedSize = file.expectedSize;
         existing.compressed = file.compressed;
         if (forceTrace)
         {
-            WARNLOG("noteWriteSyncFiles: %s write-sync entry (marginDeltaMs=%d): path=%s, deadline=%lld (%s), expectedSize=%lld, compressed=%s",
-                isNewEntry ? "added" : "updated", marginDeltaMs, file.path.c_str(), (long long)deadline, deadlineStr.str(), (long long)file.expectedSize, file.compressed ? "true" : "false");
+            WARNLOG("noteWriteSyncFiles: %s write-sync entry (marginDeltaMs=%d): path=%s, remainingMs=%llu, expectedSize=%lld, compressed=%s",
+                isNewEntry ? "added" : "updated", marginDeltaMs, file.path.c_str(), (unsigned long long)cycle_to_millisec(deadlineCycles - nowCycles), (long long)file.expectedSize, file.compressed ? "true" : "false");
         }
     }
     publishWriteSyncSnapshot();
 }
 
-unsigned getPathWriteSyncDelayRemainingMs(const char *physicalPath, offset_t &expectedSize, bool &compressed)
+void getFileWriteSyncDetails(const char *physicalPath, WriteSyncDetails &writeSync)
 {
-    expectedSize = (offset_t)-1; // unknown / do not validate unless a tracked entry says otherwise
-    compressed = false;
+    writeSync = {};
     if (0 == writeSyncDeadlineCount.load(std::memory_order_acquire)) // common case - nothing being tracked (no lock)
-        return 0;
+        return;
     if (isEmptyString(physicalPath))
-        return 0;
+        return;
 
     // Take a linked reference to the current snapshot under the lock - this is only held for the
     // duration of a single link (refcount bump), the map probe below runs lock-free on our private copy.
     Owned<const CWriteSyncSnapshot> snapshot;
-    time_t now = time(nullptr);
+    cycle_t now = get_cycles_now();
     {
         CriticalBlock b(writeSyncDeadlineCrit);
         snapshot.set(writeSyncDeadlineSnapshot);
         if (!snapshot)
-            return 0;
+            return;
         if (snapshot->isExpired(now)) // every entry in the published snapshot has expired
         {
             // All tracked parts have expired. Opportunistically clear the published snapshot so subsequent
@@ -973,10 +952,10 @@ unsigned getPathWriteSyncDelayRemainingMs(const char *physicalPath, offset_t &ex
                 writeSyncDeadlineSnapshot.clear();
                 writeSyncDeadlineCount.store(0, std::memory_order_release);
             }
-            return 0;
+            return;
         }
     }
-    return snapshot->getDelayRemainingMs(physicalPath, now, expectedSize, compressed);
+    snapshot->lookup(physicalPath, now, writeSync);
 }
 
 size32_t roundIndexBlockedIOSize(size32_t blockedIOSize, size32_t pageSize)
