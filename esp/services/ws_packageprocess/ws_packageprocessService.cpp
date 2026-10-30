@@ -125,7 +125,7 @@ bool isFileKnownOnCluster(const char *logicalname, const char *target, IUserDesc
 }
 
 //MORE: This should be a member function of PackageMapUpdator
-void cloneFileInfoToDali(StringBuffer &publisherWuid, unsigned updateFlags, StringArray &notFound, IPropertyTree *packageMap, const char *remoteLocation, IConstWUClusterInfo *dstInfo, const char *srcCluster, const char *remotePrefix, IUserDescriptor* userdesc, bool allowForeignFiles, const char *jobname, const char * keyCompression, const char *dfuTargetPlane)
+void cloneFileInfoToDali(StringBuffer &publisherWuid, unsigned updateFlags, StringArray &notFound, IPropertyTree *packageMap, const char *remoteLocation, IConstWUClusterInfo *dstInfo, const char *srcCluster, const char *remotePrefix, IUserDescriptor* userdesc, bool allowForeignFiles, const char *jobname, const char * keyCompression, const char *dfuTargetPlane, bool ignorePackageMapSources)
 {
     StringBuffer user;
     StringBuffer password;
@@ -139,7 +139,7 @@ void cloneFileInfoToDali(StringBuffer &publisherWuid, unsigned updateFlags, Stri
     Owned<IReferencedFileList> wufiles = createReferencedFileList(user, password, allowForeignFiles, false, jobname);
     if (keyCompression)
         wufiles->setKeyCompression(keyCompression);
-    wufiles->addFilesFromPackageMap(packageMap);
+    wufiles->addFilesFromPackageMap(packageMap, ignorePackageMapSources);
 
     Owned<IDFUhelper> helper = createIDFUhelper();
 #ifdef _CONTAINERIZED
@@ -181,13 +181,13 @@ void cloneFileInfoToDali(StringBuffer &publisherWuid, unsigned updateFlags, Stri
     }
 }
 
-void cloneFileInfoToDali(StringBuffer &publisherWuid, unsigned updateFlags, StringArray &notFound, IPropertyTree *packageMap, const char *lookupDaliIp, const char *dstCluster, const char *srcCluster, const char *prefix, IUserDescriptor* userdesc, bool allowForeignFiles, const char *jobname, const char * keyCompression, const char *dfuTargetPlane)
+void cloneFileInfoToDali(StringBuffer &publisherWuid, unsigned updateFlags, StringArray &notFound, IPropertyTree *packageMap, const char *lookupDaliIp, const char *dstCluster, const char *srcCluster, const char *prefix, IUserDescriptor* userdesc, bool allowForeignFiles, const char *jobname, const char * keyCompression, const char *dfuTargetPlane, bool ignorePackageMapSources)
 {
     Owned<IConstWUClusterInfo> clusterInfo = getWUClusterInfoByName(dstCluster);
     if (!clusterInfo)
         throw MakeStringException(PKG_TARGET_NOT_DEFINED, "Could not find information about target cluster %s ", dstCluster);
 
-    cloneFileInfoToDali(publisherWuid, updateFlags, notFound, packageMap, lookupDaliIp, clusterInfo, srcCluster, prefix, userdesc, allowForeignFiles, jobname, keyCompression, dfuTargetPlane);
+    cloneFileInfoToDali(publisherWuid, updateFlags, notFound, packageMap, lookupDaliIp, clusterInfo, srcCluster, prefix, userdesc, allowForeignFiles, jobname, keyCompression, dfuTargetPlane, ignorePackageMapSources);
 }
 
 void makePackageActive(IPropertyTree *pkgSet, IPropertyTree *psEntryNew, const char *target, bool activate)
@@ -206,7 +206,7 @@ void makePackageActive(IPropertyTree *pkgSet, IPropertyTree *psEntryNew, const c
     psEntryNew->setPropBool("@active", activate);
 }
 
-void fixPackageMapFileIds(IPropertyTreeIterator *iter, bool preloadAll)
+void fixPackageMapFileIds(IPropertyTreeIterator *iter, bool preloadAll, bool ignorePackageMapSources)
 {
     if (!iter)
         return;
@@ -215,6 +215,21 @@ void fixPackageMapFileIds(IPropertyTreeIterator *iter, bool preloadAll)
         IPropertyTree &item = iter->query();
         if (preloadAll)
             item.setPropBool("@preload", true);
+        if (ignorePackageMapSources)
+        {
+            Owned<IPropertyTreeIterator> files = item.getElements("File");
+            ForEach(*files)
+            {
+                IPropertyTree &file = files->query();
+                const char *value = file.queryProp("@value");
+                if (!isEmptyString(value))
+                {
+                    StringBuffer normalized(skipForeignOrRemote(value));
+                    if (!streq(value, normalized))
+                        file.setProp("@value", normalized);
+                }
+            }
+        }
         Owned<IPropertyTreeIterator> superFiles = item.getElements("SuperFile");
         ForEach(*superFiles)
         {
@@ -230,7 +245,13 @@ void fixPackageMapFileIds(IPropertyTreeIterator *iter, bool preloadAll)
             {
                 IPropertyTree &subFile = subFiles->query();
                 id = subFile.queryProp("@value");
-                if (id && *id == '~')
+                if (ignorePackageMapSources && !isEmptyString(id))
+                {
+                    StringBuffer normalized(skipForeignOrRemote(id));
+                    if (!streq(id, normalized))
+                        subFile.setProp("@value", normalized);
+                }
+                else if (id && *id == '~')
                 {
                     StringAttr value(id+1);
                     subFile.setProp("@value", value.get());
@@ -240,15 +261,15 @@ void fixPackageMapFileIds(IPropertyTreeIterator *iter, bool preloadAll)
     }
 }
 
-void fixPackageMapFileIds(IPropertyTree *pm, bool preloadAll)
+void fixPackageMapFileIds(IPropertyTree *pm, bool preloadAll, bool ignorePackageMapSources)
 {
     if (!pm)
         return;
     Owned<IPropertyTreeIterator> iter = pm->getElements("Package");
-    fixPackageMapFileIds(iter, preloadAll);
+    fixPackageMapFileIds(iter, preloadAll, ignorePackageMapSources);
 
     iter.setown(pm->getElements("Part/Package"));
-    fixPackageMapFileIds(iter, preloadAll);
+    fixPackageMapFileIds(iter, preloadAll, ignorePackageMapSources);
 }
 
 //////////////////////////////////////////////////////////
@@ -285,6 +306,7 @@ public:
     StringAttr dfuQueue;
     StringAttr keyCompression;
     StringAttr dfuTargetPlane;
+    bool ignorePackageMapSources = false;
     unsigned flags;
     unsigned dfuWait = 1800000; //wait for DFU Copy, default 30 minutes (only used if !req.getOnlyCopyFiles() and !req.getStopIfFilesCopied())
 
@@ -388,7 +410,7 @@ public:
         StringBuffer lcPmid(pmid);
         pmid = lcPmid.toLowerCase().str();
 
-        fixPackageMapFileIds(pmPart, checkFlag(PKGADD_PRELOAD_ALL));
+        fixPackageMapFileIds(pmPart, checkFlag(PKGADD_PRELOAD_ALL), ignorePackageMapSources);
     }
     void cloneDfsInfo(unsigned updateFlags, StringArray &filesNotFound, IPropertyTree *pt)
     {
@@ -396,7 +418,7 @@ public:
         if (isEmptyString(jobname))
             jobname = pmid.str();
         if (!streq(target.get(), "*"))
-            cloneFileInfoToDali(publisherWuid, updateFlags, filesNotFound, pt, remoteLocation, ensureClusterInfo(), srcCluster, prefix, userdesc, checkFlag(PKGADD_ALLOW_FOREIGN), jobname, keyCompression, dfuTargetPlane);
+            cloneFileInfoToDali(publisherWuid, updateFlags, filesNotFound, pt, remoteLocation, ensureClusterInfo(), srcCluster, prefix, userdesc, checkFlag(PKGADD_ALLOW_FOREIGN), jobname, keyCompression, dfuTargetPlane, ignorePackageMapSources);
         else
         {
             CConstWUClusterInfoArray clusters;
@@ -405,7 +427,7 @@ public:
             {
                 IConstWUClusterInfo &cluster = clusters.item(i);
                 if (cluster.getPlatform() == RoxieCluster)
-                    cloneFileInfoToDali(publisherWuid, updateFlags, filesNotFound, pt, remoteLocation, &cluster, srcCluster, prefix, userdesc, checkFlag(PKGADD_ALLOW_FOREIGN), jobname, keyCompression, dfuTargetPlane);
+                    cloneFileInfoToDali(publisherWuid, updateFlags, filesNotFound, pt, remoteLocation, &cluster, srcCluster, prefix, userdesc, checkFlag(PKGADD_ALLOW_FOREIGN), jobname, keyCompression, dfuTargetPlane, ignorePackageMapSources);
             }
         }
     }
@@ -455,7 +477,7 @@ public:
 
         if (pmTree->hasProp("Part"))
         {
-            fixPackageMapFileIds(pmTree, checkFlag(PKGADD_PRELOAD_ALL));
+            fixPackageMapFileIds(pmTree, checkFlag(PKGADD_PRELOAD_ALL), ignorePackageMapSources);
             cloneDfsInfo(updateFlags, filesNotFound, pmTree);
         }
         else
@@ -876,6 +898,7 @@ static void setDfuOptions(PackageMapUpdater &updater, unsigned &updateFlags, TRe
     updater.publisherWuid = req.getDfuPublisherWuid();
     updater.keyCompression.set(req.getKeyCompression());
     updater.dfuTargetPlane.set(req.getDfuTargetPlane());
+    updater.ignorePackageMapSources = req.getIgnorePackageMapSources();
 }
 
 bool CWsPackageProcessEx::onAddPackage(IEspContext &context, IEspAddPackageRequest &req, IEspAddPackageResponse &resp)
@@ -1226,7 +1249,7 @@ bool CWsPackageProcessEx::onValidatePackage(IEspContext &context, IEspValidatePa
             packageMapTree.setown(createPTreeFromXMLString(packageMapString));
             if (!packageMapTree)
                 throw makeStringException(PKG_LOAD_PACKAGEMAP_FAILED, "Error processing package file content");
-            fixPackageMapFileIds(packageMapTree, false);
+            fixPackageMapFileIds(packageMapTree, false, false);
         }
 
         StringArray &queriesToIgnore = req.getQueriesToIgnore();

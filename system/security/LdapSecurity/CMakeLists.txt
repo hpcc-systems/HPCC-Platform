@@ -55,6 +55,8 @@ IF (USE_CPPUNIT)
          unittests/passwordexpirytests.cpp
          unittests/querybuilderstests.cpp
          unittests/permissionsbinarytests.cpp
+         unittests/authmaptests.cpp
+         unittests/ldaputilstests.cpp
     )
 ENDIF (USE_CPPUNIT)
 

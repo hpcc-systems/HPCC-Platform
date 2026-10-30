@@ -52,6 +52,7 @@ ESPrequest AddPackageRequest
     [min_ver("1.06")] string RemoteStorage;
     [min_ver("1.07")] string KeyCompression;
     [min_ver("1.08")] string DfuTargetPlane; //Override the destination plane for DFU copy
+    [min_ver("1.09")] bool IgnorePackageMapSources(false);
 };
 
 
@@ -90,6 +91,7 @@ ESPrequest CopyPackageMapRequest
     [min_ver("1.06")] string RemoteStorage;
     [min_ver("1.07")] string KeyCompression;
     [min_ver("1.08")] string DfuTargetPlane; //Override the destination plane for DFU copy
+    [min_ver("1.09")] bool IgnorePackageMapSources(false);
 };
 
 ESPresponse [exceptions_inline] CopyPackageMapResponse
@@ -327,6 +329,7 @@ ESPrequest AddPartToPackageMapRequest
     [min_ver("1.06")] string RemoteStorage;
     [min_ver("1.07")] string KeyCompression;
     [min_ver("1.08")] string DfuTargetPlane; //Override the destination plane for DFU copy
+    [min_ver("1.09")] bool IgnorePackageMapSources(false);
 };
 
 ESPresponse [exceptions_inline] AddPartToPackageMapResponse
@@ -364,7 +367,7 @@ ESPresponse [exceptions_inline] GetPartFromPackageMapResponse
     string Content;
 };
 
-ESPservice [auth_feature("NONE"), version("1.08"), default_client_version("1.08"), exceptions_inline("./smc_xslt/exceptions.xslt")] WsPackageProcess
+ESPservice [auth_feature("NONE"), version("1.09"), default_client_version("1.09"), exceptions_inline("./smc_xslt/exceptions.xslt")] WsPackageProcess
 {
     ESPmethod Echo(EchoRequest, EchoResponse);
     ESPmethod [auth_feature("PackageMapAccess:WRITE")] AddPackage(AddPackageRequest, AddPackageResponse);

@@ -860,7 +860,7 @@ public:
         if (nodeType != NodeNone && !keyFailed && localFile && !keyIndex)
         {
             //Pass false for isTLK - it will be initialised from the index header
-            keyIndex.setown(createKeyIndex(filename, localFile->getCrc(), *localFile.get(), fileIdx, false, 0));
+            keyIndex.setown(createKeyIndex(filename, localFile->getCrc(), *localFile.get(), fileIdx, false, {}));
             if (keyIndex)
                 prewarmer.setown(keyIndex->createPrewarmer());
             else
@@ -3388,7 +3388,7 @@ public:
 
                         Owned <ILazyFileIO> part;
                         unsigned crc = 0;
-                        size32_t blockedIOSize = 0;
+                        IndexReadOptions readOptions;
                         if (fdesc) // NB there may be no parts for this channel 
                         {
                             IPartDescriptor *pdesc = fdesc->queryPart(partNo-1);
@@ -3401,7 +3401,8 @@ public:
                                 if (!local) // do not buffer local files used by standaloe roxie
                                 {
                                     unsigned replicationLevel = getReplicationLevel(channel);
-                                    blockedIOSize = getPartPlaneAttr(*pdesc, replicationLevel, BlockedRandomIO, 0);
+                                    readOptions.randomReadSize = getPartPlaneAttr(*pdesc, replicationLevel, BlockedRandomIO, 0);
+                                    readOptions.sequentialReadSize = getPartPlaneAttr(*pdesc, replicationLevel, BlockedSequentialIO, 0);
                                 }
                             }
                         }
@@ -3410,10 +3411,10 @@ public:
                             if (lazyOpen)
                             {
                                 // We pass the IDelayedFile interface to createKeyIndex, so that it does not open the file immediately
-                                keyset->addIndex(createKeyIndex(part->queryFilename(), crc, *QUERYINTERFACE(part.get(), IDelayedFile), part->getFileIdx(), false, blockedIOSize));
+                                keyset->addIndex(createKeyIndex(part->queryFilename(), crc, *QUERYINTERFACE(part.get(), IDelayedFile), part->getFileIdx(), false, readOptions));
                             }
                             else
-                                keyset->addIndex(createKeyIndex(part->queryFilename(), crc, *part.get(), part->getFileIdx(), false, blockedIOSize));
+                                keyset->addIndex(createKeyIndex(part->queryFilename(), crc, *part.get(), part->getFileIdx(), false, readOptions));
                         }
                         else
                             keyset->addIndex(NULL);
@@ -3444,20 +3445,21 @@ public:
                     pdesc->getCrc(crc);
                     StringBuffer pname;
                     pdesc->getPath(pname);
-                    size32_t blockedIOSize = 0;
+                    IndexReadOptions readOptions;
                     bool local = pdesc->queryProperties().getPropBool("@local");
                     if (!local) // do not buffer local files used by standaloe roxie
                     {
                         unsigned replicationLevel = getReplicationLevel(channel);
-                        blockedIOSize = getPartPlaneAttr(*pdesc, replicationLevel, BlockedRandomIO, 0);
+                        readOptions.randomReadSize = getPartPlaneAttr(*pdesc, replicationLevel, BlockedRandomIO, 0);
+                        readOptions.sequentialReadSize = getPartPlaneAttr(*pdesc, replicationLevel, BlockedSequentialIO, 0);
                     }
                     if (lazyOpen)
                     {
                         // We pass the IDelayedFile interface to createKeyIndex, so that it does not open the file immediately
-                        key.setown(createKeyIndex(pname.str(), crc, *QUERYINTERFACE(keyFile.get(), IDelayedFile), keyFile->getFileIdx(), numParts>1, blockedIOSize));
+                        key.setown(createKeyIndex(pname.str(), crc, *QUERYINTERFACE(keyFile.get(), IDelayedFile), keyFile->getFileIdx(), numParts>1, readOptions));
                     }
                     else
-                        key.setown(createKeyIndex(pname.str(), crc, *keyFile.get(), keyFile->getFileIdx(), numParts>1, blockedIOSize));
+                        key.setown(createKeyIndex(pname.str(), crc, *keyFile.get(), keyFile->getFileIdx(), numParts>1, readOptions));
                     keyset->addIndex(LINK(key->queryPart(0)));
                 }
                 else

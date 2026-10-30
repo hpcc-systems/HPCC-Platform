@@ -78,11 +78,11 @@ class event_decl GroupAttributeExtractor
 public:
     static GroupAttribute parseAttribute(const char* attrDesc);
     static const char* queryCanonicalName(unsigned attrId);
-    static bool isApplicable(const GroupAttribute& attr, const CEvent& event);
-    static std::string getValue(const GroupAttribute& attr, const CEvent& event, const CMetaInfoState* metaState);
+    static bool isApplicable(const GroupAttribute& attr, const CEvent& event, const EventFileProperties* properties);
+    static std::string getValue(const GroupAttribute& attr, const CEvent& event, const CMetaInfoState* metaState, const EventFileProperties* properties);
     static std::string formatValue(const GroupAttribute& attr, const std::string& rawValue);
-    static __uint64 getHash(const std::vector<GroupAttribute>& attrs, const CEvent& event, const CMetaInfoState* metaState);
-    static bool isEqual(const std::vector<GroupAttribute>& attrs, const CEvent& event, const CMetaInfoState* metaState, const std::vector<std::string>& groupValues);
+    static __uint64 getHash(const std::vector<GroupAttribute>& attrs, const CEvent& event, const CMetaInfoState* metaState, const EventFileProperties* properties);
+    static bool isEqual(const std::vector<GroupAttribute>& attrs, const CEvent& event, const CMetaInfoState* metaState, const std::vector<std::string>& groupValues, const EventFileProperties* properties);
 private:
     static const char* resolveStringAttribute(EventAttr attr, const CEvent& event, const CMetaInfoState* metaState);
     static bool resolveMetaFnv(EventAttr attr, const CEvent& event, const CMetaInfoState* metaState, __uint64& hash);
@@ -111,7 +111,8 @@ public:
     std::optional<TLeafAccumulator> leafSummary;
 
     void process(const CEvent& event, const CMetaInfoState* metaState,
-                 const std::vector<std::vector<GroupAttribute>>& hierarchy, size_t currentLevel, size_t maxApplicableDepth)
+                 const std::vector<std::vector<GroupAttribute>>& hierarchy, size_t currentLevel, size_t maxApplicableDepth,
+                 const EventFileProperties* properties)
     {
         subTotal.accumulate(event, metaState);
 
@@ -126,12 +127,12 @@ public:
         if (currentLevel >= maxApplicableDepth)
             return;
 
-        __uint64 hash = GroupAttributeExtractor::getHash(hierarchy[currentLevel], event, metaState);
+        __uint64 hash = GroupAttributeExtractor::getHash(hierarchy[currentLevel], event, metaState, properties);
         auto range = children.equal_range(hash);
         auto it = range.first;
         for (; it != range.second; ++it)
         {
-            if (GroupAttributeExtractor::isEqual(hierarchy[currentLevel], event, metaState, it->second->groupValues))
+            if (GroupAttributeExtractor::isEqual(hierarchy[currentLevel], event, metaState, it->second->groupValues, properties))
                 break;
         }
 
@@ -139,11 +140,11 @@ public:
         {
             auto newNode = std::make_unique<CGroupNode>();
             for (const GroupAttribute& attr : hierarchy[currentLevel])
-                newNode->groupValues.push_back(GroupAttributeExtractor::getValue(attr, event, metaState));
+                newNode->groupValues.push_back(GroupAttributeExtractor::getValue(attr, event, metaState, properties));
             it = children.emplace(hash, std::move(newNode));
         }
 
-        it->second->process(event, metaState, hierarchy, currentLevel + 1, maxApplicableDepth);
+        it->second->process(event, metaState, hierarchy, currentLevel + 1, maxApplicableDepth, properties);
     }
 
     void render(IGroupFormatter<TLeafAccumulator, TSubtotalAccumulator>& formatter, const std::vector<std::string>& parentGroupValues, const std::vector<std::vector<GroupAttribute>>& hierarchy, size_t currentLevel, bool isRoot = false) const

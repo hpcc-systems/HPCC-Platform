@@ -1579,9 +1579,8 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
                 // which the remote side needs to access the index part.
                 StringBuffer fname;
                 rfn.getPath(fname);
-                size32_t blockedIOSize = activity.queryIndexBlockedIOSize(part);
-
-                msg.append(activity.queryId()).append(fname).append(crc).append(blockedIOSize); // lookup key
+                IndexReadOptions readOptions = activity.queryIndexReadOptions(part);
+                msg.append(activity.queryId()).append(fname).append(crc).append(readOptions.randomReadSize).append(readOptions.sequentialReadSize); // lookup key
                 // serialize onCreate context
                 DelayedSizeMarker sizeMark(msg);
                 activity.queryHelper()->serializeCreateContext(msg);
@@ -2247,7 +2246,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
 
     IHThorKeyedJoinArg *helper = nullptr;
     StringAttr indexName;
-    size32_t foreignBlockedIOSize = (size32_t)-1;
+    IndexReadOptions foreignReadOptions{ (size32_t)-1, (size32_t)-1 };
     size32_t fixedRecordSize = 0;
     bool initialized = false;
     bool preserveGroups = false, preserveOrder = false;
@@ -2391,14 +2390,14 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
         }
         return partIO;
     }
-    size32_t queryIndexBlockedIOSize(IPartDescriptor &filePart) const
+    IndexReadOptions queryIndexReadOptions(IPartDescriptor &filePart) const
     {
-        if (foreignBlockedIOSize != (size32_t)-1)
-            return foreignBlockedIOSize;
+        if (foreignReadOptions.randomReadSize != (size32_t)-1)
+            return foreignReadOptions;
 
         StringBuffer planeName;
         filePart.queryOwner().getClusterLabel(0, planeName);
-        return getIndexBlockedIOSize(planeName, true);
+        return getIndexReadOptions(planeName);
     }
     unsigned queryMaxHandlers(HandlerType hType)
     {
@@ -2492,8 +2491,8 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
             * The underlying IFileIO can later be closed by fhe file caching mechanism.
             */
         Owned<IFileIO> lazyIFileIO = queryThor().queryFileCache().lookupIFileIO(*this, indexName, filePart, nullptr);
-        size32_t blockedIOSize = queryIndexBlockedIOSize(filePart);
-        return createKeyIndex(filename, crc, *lazyIFileIO, (unsigned)-1, false, blockedIOSize);
+        IndexReadOptions readOptions = queryIndexReadOptions(filePart);
+        return createKeyIndex(filename, crc, *lazyIFileIO, (unsigned)-1, false, readOptions);
     }
     IKeyManager *createPartKeyManager(unsigned partNo, unsigned copy, IContextLogger *ctx)
     {
@@ -3089,7 +3088,7 @@ public:
         data.read(indexName);
         CDfsLogicalFileName dlfn;
         dlfn.set(indexName);
-        foreignBlockedIOSize = dlfn.isForeign() ? getForeignBlockedIOSize(true) : (size32_t)-1;
+        foreignReadOptions = dlfn.isForeign() ? getForeignIndexReadOptions() : IndexReadOptions{ (size32_t)-1, (size32_t)-1 };
         data.read(totalIndexParts);
         if (totalIndexParts)
         {
@@ -3130,7 +3129,7 @@ public:
                     Owned<IFileIO> iFileIO = createIFileI(lenArray.item(p), tlkMb.toByteArray()+posArray.item(p));
                     StringBuffer name("TLK");
                     name.append('_').append(container.queryId()).append('_');
-                    Owned<IKeyIndex> tlkKeyIndex = createKeyIndex(name.append(p).str(), 0, *iFileIO, (unsigned) -1, true, 0); // MORE - not the right crc
+                    Owned<IKeyIndex> tlkKeyIndex = createKeyIndex(name.append(p).str(), 0, *iFileIO, (unsigned) -1, true, {}); // MORE - not the right crc
                     tlkKeyIndexes.append(*tlkKeyIndex.getClear());
                 }
             }

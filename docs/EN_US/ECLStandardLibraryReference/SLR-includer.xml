@@ -26,7 +26,6 @@
 
       <para>LexisNexis and the Knowledge Burst logo are registered trademarks
       of Reed Elsevier Properties Inc., used under license.</para>
-
       <para>HPCC Systems<superscript>®</superscript> is a registered trademark
       of LexisNexis Risk Data Management Inc.</para>
 
@@ -472,6 +471,9 @@
                 xmlns:xi="http://www.w3.org/2001/XInclude"/>
 
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/CurrentTime.xml"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLStandardLibraryReference/SLR-Mods/IsUSDaylightSavingsInEffect.xml"
                 xmlns:xi="http://www.w3.org/2001/XInclude"/>
 
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/DayOfWeek.xml"

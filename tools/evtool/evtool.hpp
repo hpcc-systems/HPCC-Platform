@@ -138,6 +138,12 @@ protected:
             if (const IndexSearchFlagInfo* flag = queryIndexSearchFlagInfo(attrName))
                 return op.acceptExtendedAttribute(flag->attrId, value);
             EventAttr attr = queryEventAttribute(attrName);
+            if (EvAttrNone == attr)
+            {
+                unsigned extendedAttr = queryExtendedEventAttribute(attrName);
+                if (EvExtAttrMax != extendedAttr)
+                    return op.acceptExtendedAttribute(extendedAttr, value);
+            }
             switch (attr)
             {
             case EvAttrNone: // not an attribute

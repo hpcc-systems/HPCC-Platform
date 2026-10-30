@@ -41,13 +41,13 @@ private:
     std::atomic<unsigned> nextId { 0x80000000 };
 
     unsigned getUniqId(unsigned useId, const char * filename);
-    IKeyIndex *doload(const char *fileName, unsigned crc, IReplicatedFile *part, IFileIO *iFileIO, unsigned fileIdx, IMemoryMappedFile *iMappedFile, bool isTLK, size32_t blockedIOSize);
+    IKeyIndex *doload(const char *fileName, unsigned crc, IReplicatedFile *part, IFileIO *iFileIO, unsigned fileIdx, IMemoryMappedFile *iMappedFile, bool isTLK, IndexReadOptions readOptions);
 public:
     CKeyStore();
     ~CKeyStore();
-    IKeyIndex *load(const char *fileName, unsigned crc, bool isTLK, size32_t blockedIOSize);
-    IKeyIndex *load(const char *fileName, unsigned crc, IFileIO *iFileIO, unsigned fileIdx, bool isTLK, size32_t blockedIOSize);
-    IKeyIndex *load(const char *fileName, unsigned crc, IMemoryMappedFile *iMappedFile, bool isTLK, size32_t blockedIOSize);
+    IKeyIndex *load(const char *fileName, unsigned crc, bool isTLK, IndexReadOptions readOptions);
+    IKeyIndex *load(const char *fileName, unsigned crc, IFileIO *iFileIO, unsigned fileIdx, bool isTLK, IndexReadOptions readOptions);
+    IKeyIndex *load(const char *fileName, unsigned crc, IMemoryMappedFile *iMappedFile, bool isTLK, IndexReadOptions readOptions);
     void clearCache(bool killAll);
     void clearCacheEntry(const char *name);
     void clearCacheEntry(const IFileIO *io);
@@ -92,7 +92,7 @@ protected:
     std::atomic<bool> bloomFiltersLoaded = {0};
     std::atomic<bool> initialised{0};
     const bool forceTLK; // saved from constructor to be used when loading the index
-    size32_t blockedIOSize = 0;
+    IndexReadOptions readOptions;
     offset_t cachedBlobNodePos;
 
     CKeyHdr *keyHdr;
@@ -108,7 +108,7 @@ protected:
     const CJHSearchNode *getIndexNodeUsingLoader(const INodeLoader &nodeLoader, offset_t offset, NodeTypeWithFlags typeWithFlags, IContextLogger *ctx) const;
     const CJHBlobNode *getBlobNode(const INodeLoader &nodeLoader, offset_t nodepos, IContextLogger *ctx);
 
-    CKeyIndex(unsigned _iD, const char *_name, bool _forceTLK);
+    CKeyIndex(unsigned _iD, const char *_name, bool _forceTLK, IndexReadOptions _readOptions);
     ~CKeyIndex();
     void init(KeyHdr &hdr, const INodeLoader & nodeLoader);
     void loadBloomFilters(const INodeLoader & nodeLoader);
@@ -222,7 +222,7 @@ private:
     Linked<IFileIO> io;
     
 public:
-    CDiskKeyIndex(unsigned _iD, IFileIO *_io, const char *_name, bool _isTLK, size32_t _blockedIOSize);
+    CDiskKeyIndex(unsigned _iD, IFileIO *_io, const char *_name, bool _isTLK, IndexReadOptions _readOptions);
 
     virtual const char *queryFileName() const { return name.get(); }
     virtual const IFileIO *queryFileIO() const override { return io; }
@@ -248,16 +248,17 @@ protected:
     // yield count is initialised to -1 to suppress a yield before the first leaf fetch
     unsigned int yieldCount = (unsigned)-1;
     mutable PayloadReference activePayload;
-    NodeTypeWithFlags nodeFilterFlags = NodeNoFlags;   // Set by reset() from the filter; narrowing calls (nextRange/incrementKey/fixSortSegs) do not recalculate it
+    NodeTypeWithFlags nodeFilterFlags = NodeNoFlags;   // Set from finalized filters; narrowing calls (nextRange/incrementKey/fixSortSegs) do not recalculate it
     NodeTypeWithFlags fixedNodeFilterFlags = NodeNoFlags;   // Flags that survive reset()
     
     mutable bool fullBufferValid = false;
     bool eof=false;
     bool matched=false; //MORE - this should probably be renamed. It's tracking state from one call of lookup to the next.
     bool logExcessiveSeeks = false;
+    IndexReadOptions readOptions;
     mutable CLoadNodeCacheState readState;
 public:
-    CKeyCursor(CKeyIndex &_key, const IIndexFilterList *filter, bool _logExcessiveSeeks, unsigned _blockedIOSize);
+    CKeyCursor(CKeyIndex &_key, const IIndexFilterList *filter, bool _logExcessiveSeeks, IndexReadOptions _readOptions);
     ~CKeyCursor();
 
     virtual const char *queryName() const override;
@@ -268,6 +269,7 @@ public:
     virtual void deserializeCursorPos(MemoryBuffer &mb, IContextLogger *ctx);
     virtual unsigned __int64 getSequence(); 
     virtual const byte *loadBlob(unsigned __int64 blobid, size32_t &blobsize, IContextLogger *ctx);
+    virtual void finishSegmentMonitors() override;
     virtual void reset(IContextLogger *ctx);
     virtual bool lookup(bool exact, IContextLogger *ctx) override;
     virtual bool next(IContextLogger *ctx) override;
@@ -284,10 +286,7 @@ public:
     virtual const byte *queryKeyedBuffer() const override;
 
  // INodeLoader impl.
-    virtual const CJHTreeNode *loadNode(cycle_t * fetchCycles, offset_t offset) const override
-    {
-        return key.loadNode(fetchCycles, offset, readState);
-    }
+    virtual const CJHTreeNode *loadNode(cycle_t * fetchCycles, offset_t offset) const override;
 
     // This is the main function that is used to load a node from an index for the current cursor.  The
     // typical function flow is

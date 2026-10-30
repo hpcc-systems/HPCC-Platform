@@ -29,6 +29,7 @@
 #include "jiface.hpp"
 #include "jfile.hpp"
 #include "jlog.hpp"
+#include "jplane.hpp"
 #include "errorlist.h"
 
 enum NodeType : byte;
@@ -53,6 +54,7 @@ interface jhtree_decl IKeyCursor : public IInterface
     virtual unsigned __int64 getSequence() = 0;
     virtual offset_t getFPos() const = 0;
     virtual const byte *loadBlob(unsigned __int64 blobid, size32_t &blobsize, IContextLogger *ctx) = 0;
+    virtual void finishSegmentMonitors() = 0;
     virtual void reset(IContextLogger *ctx) = 0;
     virtual bool lookup(bool exact, IContextLogger *ctx) = 0;
     virtual bool next(IContextLogger *ctx) = 0;
@@ -158,9 +160,9 @@ extern jhtree_decl void setIndexWarningThresholds(IPropertyTree * options);
 
 extern jhtree_decl void getNodeCacheInfo(ICacheInfoRecorder &cacheInfo);
 
-extern jhtree_decl IKeyIndex *createKeyIndex(const char *filename, unsigned crc, bool isTLK, size32_t blockedIOSize);
-extern jhtree_decl IKeyIndex *createKeyIndex(const char *filename, unsigned crc, IFileIO &ifile, unsigned fileIdx, bool isTLK, size32_t blockedIOSize);
-extern jhtree_decl IKeyIndex *createKeyIndex(const char *filename, unsigned crc, IDelayedFile &ifile, unsigned fileIdx, bool isTLK, size32_t blockedIOSize);
+extern jhtree_decl IKeyIndex *createKeyIndex(const char *filename, unsigned crc, bool isTLK, IndexReadOptions readOptions);
+extern jhtree_decl IKeyIndex *createKeyIndex(const char *filename, unsigned crc, IFileIO &ifile, unsigned fileIdx, bool isTLK, IndexReadOptions readOptions);
+extern jhtree_decl IKeyIndex *createKeyIndex(const char *filename, unsigned crc, IDelayedFile &ifile, unsigned fileIdx, bool isTLK, IndexReadOptions readOptions);
 
 extern jhtree_decl bool isIndexFile(const char *fileName);
 extern jhtree_decl bool isIndexFile(IFile *file);

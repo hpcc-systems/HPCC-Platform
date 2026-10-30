@@ -2373,7 +2373,7 @@ protected:
         crc32.tally(sizeof(time_t), &modTimeTT);
         unsigned crc = crc32.get();
 
-        keyIndex.setown(createKeyIndex(fileName, crc, isTlk, 0));
+        keyIndex.setown(createKeyIndex(fileName, crc, isTlk, {}));
         keyManager.setown(createLocalKeyManager(*record, keyIndex, nullptr, true, false));
         keyFilter.createSegmentMonitors(keyManager);
         keyManager->finishSegmentMonitors();

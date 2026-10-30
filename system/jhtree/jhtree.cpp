@@ -618,6 +618,8 @@ public:
     virtual void finishSegmentMonitors()
     {
         filter->finish(keyedSize);
+        if (keyCursor)
+            keyCursor->finishSegmentMonitors();
     }
 
     virtual void describeFilter(StringBuffer &out) const override
@@ -1183,12 +1185,12 @@ unsigned CKeyStore::getUniqId(unsigned useId, const char * filename)
 
 
 
-IKeyIndex *CKeyStore::doload(const char *fileName, unsigned crc, IReplicatedFile *part, IFileIO *iFileIO, unsigned fileIdx, IMemoryMappedFile *iMappedFile, bool isTLK, size32_t blockedIOSize)
+IKeyIndex *CKeyStore::doload(const char *fileName, unsigned crc, IReplicatedFile *part, IFileIO *iFileIO, unsigned fileIdx, IMemoryMappedFile *iMappedFile, bool isTLK, IndexReadOptions readOptions)
 {
     // isTLK provided by caller since flags in key header unreliable. If either say it's a TLK, I believe it.
     IKeyIndex *keyIndex;
     StringBuffer fname;
-    fname.append(fileName).append('/').append(crc).append('/').append(blockedIOSize);
+    fname.append(fileName).append('/').append(crc);
 
     const bool diskBackedLoad = (iMappedFile == nullptr);
     {
@@ -1206,7 +1208,7 @@ IKeyIndex *CKeyStore::doload(const char *fileName, unsigned crc, IReplicatedFile
             else if (iFileIO)
             {
                 assert(!part);
-                keyIndex = new CDiskKeyIndex(getUniqId(fileIdx, fileName), LINK(iFileIO), fname, isTLK, blockedIOSize);
+                keyIndex = new CDiskKeyIndex(getUniqId(fileIdx, fileName), LINK(iFileIO), fname, isTLK, readOptions);
             }
             else
             {
@@ -1223,7 +1225,7 @@ IKeyIndex *CKeyStore::doload(const char *fileName, unsigned crc, IReplicatedFile
                 IFileIO *fio = iFile->open(IFOread);
                 if (fio)
                 {
-                    keyIndex = new CDiskKeyIndex(getUniqId(fileIdx, fileName), fio, fname, isTLK, blockedIOSize);
+                    keyIndex = new CDiskKeyIndex(getUniqId(fileIdx, fileName), fio, fname, isTLK, readOptions);
                 }
                 else
                     throw MakeStringException(0, "Failed to open index file %s", fileName);
@@ -1258,19 +1260,19 @@ IKeyIndex *CKeyStore::doload(const char *fileName, unsigned crc, IReplicatedFile
     return keyIndex;
 }
 
-IKeyIndex *CKeyStore::load(const char *fileName, unsigned crc, IFileIO *iFileIO, unsigned fileIdx, bool isTLK, size32_t blockedIOSize)
+IKeyIndex *CKeyStore::load(const char *fileName, unsigned crc, IFileIO *iFileIO, unsigned fileIdx, bool isTLK, IndexReadOptions readOptions)
 {
-    return doload(fileName, crc, NULL, iFileIO, fileIdx, NULL, isTLK, blockedIOSize);
+    return doload(fileName, crc, NULL, iFileIO, fileIdx, NULL, isTLK, readOptions);
 }
 
-IKeyIndex *CKeyStore::load(const char *fileName, unsigned crc, IMemoryMappedFile *iMappedFile, bool isTLK, size32_t blockedIOSize)
+IKeyIndex *CKeyStore::load(const char *fileName, unsigned crc, IMemoryMappedFile *iMappedFile, bool isTLK, IndexReadOptions readOptions)
 {
-    return doload(fileName, crc, NULL, NULL, (unsigned) -1, iMappedFile, isTLK, blockedIOSize);
+    return doload(fileName, crc, NULL, NULL, (unsigned) -1, iMappedFile, isTLK, readOptions);
 }
 
-IKeyIndex *CKeyStore::load(const char *fileName, unsigned crc, bool isTLK, size32_t blockedIOSize)
+IKeyIndex *CKeyStore::load(const char *fileName, unsigned crc, bool isTLK, IndexReadOptions readOptions)
 {
-    return doload(fileName, crc, NULL, NULL, (unsigned) -1, NULL, isTLK, blockedIOSize);
+    return doload(fileName, crc, NULL, NULL, (unsigned) -1, NULL, isTLK, readOptions);
 }
 
 StringBuffer &CKeyStore::getMetrics(StringBuffer &xml)
@@ -1426,7 +1428,7 @@ static void noteSkips(IContextLogger *ctx, unsigned lskips, unsigned lnullSkips)
 
 // CKeyIndex impl.
 
-CKeyIndex::CKeyIndex(unsigned _iD, const char *_name, bool _forceTLK) : name(_name), forceTLK(_forceTLK)
+CKeyIndex::CKeyIndex(unsigned _iD, const char *_name, bool _forceTLK, IndexReadOptions _readOptions) : name(_name), forceTLK(_forceTLK), readOptions(_readOptions)
 {
     iD = _iD;
     cache = queryNodeCache(); // use one node cache for all key indexes;
@@ -1497,7 +1499,7 @@ CKeyIndex::~CKeyIndex()
 //---------------------------------------------------------------------------------------------------------------------
 
 CMemKeyIndex::CMemKeyIndex(unsigned _iD, IMemoryMappedFile *_io, const char *_name, bool isTLK)
-    : CKeyIndex(_iD, _name, isTLK)
+    : CKeyIndex(_iD, _name, isTLK, {})
 {
     io.setown(_io);
 }
@@ -1548,10 +1550,9 @@ void CMemKeyIndex::ensureReady()
 
 //---------------------------------------------------------------------------------------------------------------------
 
-CDiskKeyIndex::CDiskKeyIndex(unsigned _iD, IFileIO *_io, const char *_name, bool isTLK, size32_t _blockedIOSize)
-    : CKeyIndex(_iD, _name, isTLK)
+CDiskKeyIndex::CDiskKeyIndex(unsigned _iD, IFileIO *_io, const char *_name, bool isTLK, IndexReadOptions _readOptions)
+    : CKeyIndex(_iD, _name, isTLK, _readOptions)
 {
-    blockedIOSize = _blockedIOSize;
     io.setown(_io);
     //Do not read any data in the constructor - so that the load can be performed in parallel with other indexes.
 }
@@ -1751,7 +1752,7 @@ unsigned CKeyIndex::numPartitions()
 
 IKeyCursor *CKeyIndex::getCursor(const IIndexFilterList *filter, bool logExcessiveSeeks)
 {
-    return new CKeyCursor(*this, filter, logExcessiveSeeks, blockedIOSize);
+    return new CKeyCursor(*this, filter, logExcessiveSeeks, readOptions);
 }
 
 
@@ -2128,6 +2129,23 @@ const CJHSearchNode *CKeyIndex::locateLastLeafNode(INodeLoader & nodeLoader, ICo
 static IPageCache * activePageCache{nullptr};
 static size32_t pageCachePageSize{0};           // How big are the pages in the page cache - must be a power of 2 and a multiple of the node size
 
+static size32_t roundReadSize(size32_t readSize, size32_t nodeSize)
+{
+    if (!readSize)
+        return 0;
+
+    size32_t granule = (activePageCache && pageCachePageSize) ? pageCachePageSize : nodeSize;
+    size32_t remainder = readSize % granule;
+    if (remainder)
+    {
+        size32_t increment = granule - remainder;
+        if (readSize > (size32_t)-1 - increment)
+            throw makeStringExceptionV(-1, "Index read size %u cannot be rounded to a multiple of %u", readSize, granule);
+        readSize += increment;
+    }
+    return readSize;
+}
+
 const CJHTreeNode *CDiskKeyIndex::loadNode(cycle_t * fetchCycles, offset_t pos, CLoadNodeCacheState & readState) const
 {
     nodesLoaded++;
@@ -2155,8 +2173,6 @@ const CJHTreeNode *CDiskKeyIndex::loadNode(cycle_t * fetchCycles, offset_t pos, 
             // Ensure that we read one or more page cache pages - ensure that large reads are a multiple of the page size
             if (readSize < pageCachePageSize)
                 readSize = pageCachePageSize;
-            else
-                assertex((readSize & (pageCachePageSize - 1))== 0);
         }
 
         {
@@ -2180,8 +2196,11 @@ const CJHTreeNode *CDiskKeyIndex::loadNode(cycle_t * fetchCycles, offset_t pos, 
             if (activePageCache && readState.usePageCache)
             {
                 //Insert the pages into the page cache - if more than one page was read they may already exist.
-                for (size32_t delta = 0; delta < readSize; delta += pageCachePageSize)
+                for (size32_t delta = 0; delta < sizeRead; delta += pageCachePageSize)
                 {
+                    size32_t bytesRead = std::min(pageCachePageSize, sizeRead - delta);
+                    if (bytesRead < pageCachePageSize)
+                        memset(buffer + delta + bytesRead, 0, pageCachePageSize - bytesRead);
                     activePageCache->write(iD, alignedPos + delta, buffer + delta);
                 }
             }
@@ -2312,26 +2331,24 @@ IKeyIndexPrewarmer * CKeyIndex::createPrewarmer()
     return new IndexPrewarmer(*this);
 }
 
-CKeyCursor::CKeyCursor(CKeyIndex &_key, const IIndexFilterList *_filter, bool _logExcessiveSeeks, size32_t _blockedIOSize)
-    : key(OLINK(_key)), filter(_filter), logExcessiveSeeks(_logExcessiveSeeks)
+CKeyCursor::CKeyCursor(CKeyIndex &_key, const IIndexFilterList *_filter, bool _logExcessiveSeeks, IndexReadOptions _readOptions)
+    : key(OLINK(_key)), filter(_filter), logExcessiveSeeks(_logExcessiveSeeks), readOptions(_readOptions)
 {
-    if (_blockedIOSize)
-    {
-        //If the blockedIOSize is < cache size then it will use the page cache page size.  Otherwise ensure it is a multiple of the page size.
-        if (pageCachePageSize && (_blockedIOSize > pageCachePageSize))
-        {
-            if ((_blockedIOSize % pageCachePageSize) != 0)
-                throw makeStringExceptionV(-1, "Blocked IO size %u must be a multiple of the page cache page size (%u)", _blockedIOSize, pageCachePageSize);
-        }
-        readState.preferredReadSize = _blockedIOSize;
-    }
+    readOptions.randomReadSize = roundReadSize(readOptions.randomReadSize, key.getNodeSize());
+    readOptions.sequentialReadSize = roundReadSize(readOptions.sequentialReadSize, key.getNodeSize());
 
     nodeKey = 0;
     recordBuffer = (char *) malloc(key.keySize());  // MORE - would be nice to know real max - is it stored in metadata?
 }
 
+const CJHTreeNode *CKeyCursor::loadNode(cycle_t *fetchCycles, offset_t offset) const
+{
+    readState.preferredReadSize = ((nodeFilterFlags & NodeSearchUnfiltered) && !(nodeFilterFlags & NodeSearchCount)) ? readOptions.sequentialReadSize : readOptions.randomReadSize;
+    return key.loadNode(fetchCycles, offset, readState);
+}
+
 CKeyCursor::CKeyCursor(const CKeyCursor &from)
-: key(OLINK(from.key)), filter(from.filter)
+: key(OLINK(from.key)), filter(from.filter), logExcessiveSeeks(from.logExcessiveSeeks), readOptions(from.readOptions)
 {
     nodeKey = from.nodeKey;
     node.set(from.node);
@@ -2348,6 +2365,8 @@ CKeyCursor::CKeyCursor(const CKeyCursor &from)
     fullBufferValid = false;
     eof = from.eof;
     matched = from.matched;
+    readState.preferredReadSize = from.readState.preferredReadSize;
+    readState.usePageCache = from.readState.usePageCache;
 }
 
 
@@ -2366,6 +2385,11 @@ void CKeyCursor::reset(IContextLogger *ctx)
     if (!eof)
         setLow(0);
 
+    finishSegmentMonitors();
+}
+
+void CKeyCursor::finishSegmentMonitors()
+{
     nodeFilterFlags = fixedNodeFilterFlags;
     if (!eof)
     {
@@ -3347,7 +3371,7 @@ class CLazyKeyIndex final : implements IKeyIndex, public CInterface
     mutable Owned<IKeyIndex> realKey;
     mutable CriticalSection c{SYNC_LOCATION};
     bool isTLK;
-    size32_t blockedIOSize = 0;
+    IndexReadOptions readOptions;
 
     inline IKeyIndex &checkOpen() const
     {
@@ -3356,11 +3380,11 @@ class CLazyKeyIndex final : implements IKeyIndex, public CInterface
         {
             Owned<IMemoryMappedFile> mapped = useMemoryMappedIndexes ? delayedFile->getMappedFile() : nullptr;
             if (mapped)
-                realKey.setown(queryKeyStore()->load(keyfile, crc, mapped, isTLK, blockedIOSize));
+                realKey.setown(queryKeyStore()->load(keyfile, crc, mapped, isTLK, readOptions));
             else
             {
                 iFileIO.setown(delayedFile->getFileIO());
-                realKey.setown(queryKeyStore()->load(keyfile, crc, iFileIO, fileIdx, isTLK, blockedIOSize));
+                realKey.setown(queryKeyStore()->load(keyfile, crc, iFileIO, fileIdx, isTLK, readOptions));
             }
             if (!realKey)
             {
@@ -3373,8 +3397,8 @@ class CLazyKeyIndex final : implements IKeyIndex, public CInterface
 
 public:
     IMPLEMENT_IINTERFACE;
-    CLazyKeyIndex(const char *_keyfile, unsigned _crc, IDelayedFile *_delayedFile, unsigned _fileIdx, bool _isTLK, size32_t _blockedIOSize)
-        : keyfile(_keyfile), crc(_crc), fileIdx(_fileIdx), delayedFile(_delayedFile), isTLK(_isTLK), blockedIOSize(_blockedIOSize)
+    CLazyKeyIndex(const char *_keyfile, unsigned _crc, IDelayedFile *_delayedFile, unsigned _fileIdx, bool _isTLK, IndexReadOptions _readOptions)
+        : keyfile(_keyfile), crc(_crc), fileIdx(_fileIdx), delayedFile(_delayedFile), isTLK(_isTLK), readOptions(_readOptions)
     {}
 
     virtual bool IsShared() const { return CInterface::IsShared(); }
@@ -3420,19 +3444,19 @@ public:
     virtual void ensureReady() override { checkOpen().ensureReady(); }
 };
 
-extern jhtree_decl IKeyIndex *createKeyIndex(const char *keyfile, unsigned crc, IFileIO &iFileIO, unsigned fileIdx, bool isTLK, size32_t blockedIOSize)
+extern jhtree_decl IKeyIndex *createKeyIndex(const char *keyfile, unsigned crc, IFileIO &iFileIO, unsigned fileIdx, bool isTLK, IndexReadOptions readOptions)
 {
-    return queryKeyStore()->load(keyfile, crc, &iFileIO, fileIdx, isTLK, blockedIOSize);
+    return queryKeyStore()->load(keyfile, crc, &iFileIO, fileIdx, isTLK, readOptions);
 }
 
-extern jhtree_decl IKeyIndex *createKeyIndex(const char *keyfile, unsigned crc, bool isTLK, size32_t blockedIOSize)
+extern jhtree_decl IKeyIndex *createKeyIndex(const char *keyfile, unsigned crc, bool isTLK, IndexReadOptions readOptions)
 {
-    return queryKeyStore()->load(keyfile, crc, isTLK, blockedIOSize);
+    return queryKeyStore()->load(keyfile, crc, isTLK, readOptions);
 }
 
-extern jhtree_decl IKeyIndex *createKeyIndex(const char *keyfile, unsigned crc, IDelayedFile &iFileIO, unsigned fileIdx, bool isTLK, size32_t blockedIOSize)
+extern jhtree_decl IKeyIndex *createKeyIndex(const char *keyfile, unsigned crc, IDelayedFile &iFileIO, unsigned fileIdx, bool isTLK, IndexReadOptions readOptions)
 {
-    return new CLazyKeyIndex(keyfile, crc, &iFileIO, fileIdx, isTLK, blockedIOSize);
+    return new CLazyKeyIndex(keyfile, crc, &iFileIO, fileIdx, isTLK, readOptions);
 }
 
 extern jhtree_decl void clearKeyStoreCache(bool killAll)
@@ -4317,6 +4341,8 @@ public:
     virtual void finishSegmentMonitors()
     {
         CKeyLevelManager::finishSegmentMonitors();
+        ForEachItemIn(idx, cursorArray)
+            cursorArray.item(idx).finishSegmentMonitors();
         if (sortFieldOffset)
         {
             filter->checkSize(keyedSize, "[merger]"); // Ensures trailing KSM is setup
@@ -4468,7 +4494,190 @@ public:
 };
 
 
-class IKeyManagerSlowTest : public CppUnit::TestFixture  
+class ReadSizeTestCursor : public CKeyCursor
+{
+public:
+    using CKeyCursor::CKeyCursor;
+
+    size32_t queryReadSize() const
+    {
+        Owned<const CJHTreeNode> loaded = loadNode(nullptr, node->getFpos());
+        return readState.preferredReadSize;
+    }
+};
+
+class ReadSizeTestKeyManager : public CKeyLevelManager
+{
+public:
+    ReadSizeTestKeyManager(const RtlRecord &recInfo, IKeyIndex *index, IndexReadOptions readOptions)
+        : CKeyLevelManager(recInfo, index, nullptr, false, false)
+    {
+        ::Release(keyCursor);
+        keyCursor = new ReadSizeTestCursor(static_cast<CKeyIndex &>(*index), filter, false, readOptions);
+    }
+
+    size32_t queryReadSize() const
+    {
+        return static_cast<ReadSizeTestCursor *>(keyCursor)->queryReadSize();
+    }
+};
+
+class IKeyManagerTest : public CppUnit::TestFixture
+{
+    CPPUNIT_TEST_SUITE(IKeyManagerTest);
+        CPPUNIT_TEST(testResumeReadSize);
+        CPPUNIT_TEST(testDemoCacheRewrite);
+        CPPUNIT_TEST(testDiskCacheRewrite);
+    CPPUNIT_TEST_SUITE_END();
+
+    StringBuffer filename;
+
+    class ScopedTestPageCache
+    {
+    public:
+        ScopedTestPageCache(IPageCache *_cache, size32_t _pageSize)
+            : previousCache(activePageCache), previousPageSize(pageCachePageSize)
+        {
+            activePageCache = _cache;
+            pageCachePageSize = _pageSize;
+        }
+
+        ~ScopedTestPageCache()
+        {
+            activePageCache = previousCache;
+            pageCachePageSize = previousPageSize;
+        }
+
+    private:
+        IPageCache *previousCache;
+        size32_t previousPageSize;
+    };
+
+    class TestCacheInfoRecorder : public ICacheInfoRecorder
+    {
+    public:
+        virtual void noteWarm(unsigned _fileIdx, offset_t _page, size32_t, NodeType) override
+        {
+            fileIdx = _fileIdx;
+            page = _page;
+            recorded = true;
+        }
+
+        unsigned fileIdx = 0;
+        offset_t page = 0;
+        bool recorded = false;
+    };
+
+    void testPageCacheDuplicateWrite(IPageCache &cache)
+    {
+        size32_t pageSize = cache.queryPageSize();
+        ScopedTestPageCache useDemoPageCache(&cache, pageSize);
+
+        constexpr unsigned testFileId = 0x00ffffff; // maximum valid file id.
+        MemoryAttr original;
+        MemoryAttr replacement;
+        original.allocate(pageSize);
+        replacement.allocate(pageSize);
+        memset(original.mem(), 0x11, pageSize);
+        memset(replacement.mem(), 0x22, pageSize);
+
+        cache.write(testFileId, 0, static_cast<const byte *>(original.get()));
+        //Loop many times to ensure the first page would be evicted if now checking is occuring
+        for (unsigned iter = 0; iter < 32; iter++)
+            cache.write(testFileId, 0, static_cast<const byte *>(replacement.get()));
+
+        CCachedIndexRead readCache;
+        ASSERT(cache.read(testFileId, 0, 1, readCache));
+        ASSERT(readCache.queryBuffer(0, 1)[0] == 0x11);
+    }
+
+public:
+    virtual void tearDown() override
+    {
+        clearKeyStoreCache(true);
+        if (filename.length())
+        {
+            Owned<IFile> file = createIFile(filename);
+            file->remove();
+            filename.clear();
+        }
+    }
+
+private:
+    void testResumeReadSize()
+    {
+        const char *json = "{ \"ty1\": { \"fieldType\": 4, \"length\": 10 }, "
+                           "\"fieldType\": 13, \"length\": 10, "
+                           "\"fields\": [ { \"name\": \"f1\", \"type\": \"ty1\", \"flags\": 4 } ] }";
+        Owned<IOutputMetaData> meta = createTypeInfoOutputMetaData(json, false);
+        const RtlRecord &recInfo = meta->queryRecordAccessor(true);
+        Owned<IFileIO> io = createUniqueFile(nullptr, "IKeyManagerTest", "tmp", filename, IFOcreaterw);
+        {
+            TestIndexWriteArg helper(filename, nullptr, meta);
+            Owned<IFileIOStream> out = createIOStream(io);
+            KeyBuilderOptions options(COL_PREFIX | HTREE_FULLSORT_KEY | HTREE_COMPRESSED_KEY,
+                                      10, NODESIZE, 10, &helper);
+            Owned<IKeyBuilder> builder = createKeyBuilder(out, options);
+            builder->processKeyData("0000000001", 10, 10);
+            builder->processKeyData("0000000002", 20, 10);
+            builder->finish(nullptr, nullptr, 10, nullptr);
+            out->flush();
+        }
+        {
+            const IndexReadOptions readOptions{0x10000, 0x40000};
+            Owned<IKeyIndex> index = createKeyIndex(filename, 0, *io, 0, false, readOptions);
+            Owned<ReadSizeTestKeyManager> source = new ReadSizeTestKeyManager(recInfo, index, readOptions);
+            source->finishSegmentMonitors();
+            source->reset(false);
+            CPPUNIT_ASSERT(source->lookup(true));
+            MemoryBuffer continuation;
+            source->serializeCursorPos(continuation);
+            CPPUNIT_ASSERT(source->lookup(true));
+
+            Owned<ReadSizeTestKeyManager> resumed = new ReadSizeTestKeyManager(recInfo, index, readOptions);
+            resumed->deserializeCursorPos(continuation);
+            resumed->finishSegmentMonitors();
+            resumed->reset(true);
+            CPPUNIT_ASSERT(resumed->lookup(true));
+            CPPUNIT_ASSERT_EQUAL(0, memcmp(source->queryKeyBuffer(), resumed->queryKeyBuffer(), index->keyedSize()));
+            CPPUNIT_ASSERT_EQUAL(readOptions.sequentialReadSize, resumed->queryReadSize());
+        }
+    }
+
+    void testDemoCacheRewrite()
+    {
+        START_TEST;
+
+        Owned<IPropertyTree> pageCacheConfig = createPTree("pageCache");
+        pageCacheConfig->setProp("@type", "demo");
+        pageCacheConfig->setPropInt64("@sizeMB", 1);
+        Owned<IPageCache> demoPageCache = createDemoPageCache(pageCacheConfig);
+
+        testPageCacheDuplicateWrite(*demoPageCache);
+        END_TEST;
+    }
+
+    void testDiskCacheRewrite()
+    {
+        START_TEST;
+
+        Owned<IPropertyTree> pageCacheConfig = createPTree("pageCache");
+        Owned<IFileIO> cacheFile = createUniqueFile(nullptr, "IKeyManagerCacheTest", "tmp", filename, IFOcreaterw);
+        cacheFile.clear();
+        pageCacheConfig->setProp("@file", filename.str());
+        pageCacheConfig->setProp("@type", "disk");
+        Owned<IPageCache> diskPageCache = createDiskPageCache(pageCacheConfig);
+        if (diskPageCache)
+            testPageCacheDuplicateWrite(*diskPageCache);
+
+        END_TEST;
+    }
+};
+
+CPPUNIT_TEST_SUITE_REGISTRATION(IKeyManagerTest);
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(IKeyManagerTest, "IKeyManagerTest");
+
+class IKeyManagerSlowTest : public CppUnit::TestFixture
 {
     CPPUNIT_TEST_SUITE( IKeyManagerSlowTest  );
         CPPUNIT_TEST(testStepping);
@@ -4480,8 +4689,10 @@ class IKeyManagerSlowTest : public CppUnit::TestFixture
         buildTestKeys(false, true, false, false, nullptr, nullptr);
         {
             // We are going to treat as a 7-byte field then a 3-byte field, and request the datasorted by the 3-byte...
-            Owned <IKeyIndex> index1 = createKeyIndex("keyfile1.$$$", 0, false, 0);
-            Owned <IKeyIndex> index2 = createKeyIndex("keyfile2.$$$", 0, false, 0);
+            Owned <IKeyIndex> index1 = createKeyIndex("keyfile1.$$$", 0, false, { 0x10001, 0x40003 });
+            Owned <IKeyIndex> sameIndex = createKeyIndex("keyfile1.$$$", 0, false, { 0x20000, 0x80000 });
+            Owned <IKeyIndex> index2 = createKeyIndex("keyfile2.$$$", 0, false, { 0x10001, 0x40003 });
+            CPPUNIT_ASSERT(index1->queryId() == sameIndex->queryId());
             Owned<IKeyIndexSet> keyset = createKeyIndexSet();
             keyset->addIndex(index1.getClear());
             keyset->addIndex(index2.getClear());
@@ -4578,7 +4789,6 @@ class IKeyManagerSlowTest : public CppUnit::TestFixture
             ASSERT(tlk4->lookup(true)); ASSERT(memcmp(tlk4->queryKeyBuffer(), "0000006999", 10)==0);
             ASSERT(!tlk4->lookup(true)); 
             ASSERT(!tlk4->lookup(true)); 
-
         }
         clearKeyStoreCache(true);
         removeTestKeys();
@@ -4681,6 +4891,7 @@ class IKeyManagerSlowTest : public CppUnit::TestFixture
         }
         key->releaseBlobs();
     }
+
 protected:
     void testKeys(bool variable, bool useTrailingHeader, bool noSeek, bool quickCompressed, const char * compression)
     {
@@ -4704,7 +4915,7 @@ protected:
         const RtlRecord &recInfo = meta->queryRecordAccessor(true);
         buildTestKeys(variable, useTrailingHeader, noSeek, quickCompressed, meta, compression);
         {
-            Owned <IKeyIndex> index1 = createKeyIndex("keyfile1.$$$", 0, false, 0);
+            Owned <IKeyIndex> index1 = createKeyIndex("keyfile1.$$$", 0, false, {});
             Owned <IKeyManager> tlk1 = createLocalKeyManager(recInfo, index1, NULL, false, false);
             Owned<IStringSet> sset1 = createStringSet(10);
             sset1->addRange("0000000001", "0000000100");
@@ -4735,7 +4946,7 @@ protected:
             ASSERT(ssetx->numValues() == (unsigned) -1);
 
 
-            Owned <IKeyIndex> index2 = createKeyIndex("keyfile2.$$$", 0, false, 0);
+            Owned <IKeyIndex> index2 = createKeyIndex("keyfile2.$$$", 0, false, {});
             Owned <IKeyManager> tlk2 = createLocalKeyManager(recInfo, index2, NULL, false, false);
             Owned<IStringSet> sset2 = createStringSet(10);
             sset2->addRange("0000000001", "0000000100");

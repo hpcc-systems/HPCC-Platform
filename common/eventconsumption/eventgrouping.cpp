@@ -92,13 +92,13 @@ GroupAttribute GroupAttributeExtractor::parseAttribute(const char* attrDesc)
             ret.attrId = flag->attrId;
             ret.unit = EAUnone;
         }
-        else if (strieq(attrName.c_str(), "LogicalFileName"))
+        else if (unsigned extendedAttr = queryExtendedEventAttribute(attrName.c_str()); EvExtAttrMax != extendedAttr)
         {
-            ret.attrId = EvExtAttrLogicalFileName;
+            ret.attrId = extendedAttr;
             ret.unit = EAUnone;
         }
         else
-            throw makeStringExceptionV(0, "Unknown grouping attribute '%s'", attrName.c_str());
+            throw makeStringExceptionV(0, "Unknown grouping attribute '%s'. Use 'evtool describe' to view recognized attribute names.", attrName.c_str());
     }
 
     if (slashPos != std::string::npos)
@@ -145,11 +145,11 @@ GroupAttribute GroupAttributeExtractor::parseAttribute(const char* attrDesc)
 
 const char* GroupAttributeExtractor::queryCanonicalName(unsigned attrId)
 {
-    if (const IndexSearchFlagInfo* flag = queryIndexSearchFlagInfo(attrId))
-        return flag->name;
     const char* derivedName = queryDerivedMetaAttributeName(attrId);
     if (derivedName)
         return derivedName;
+    if (const char* extendedName = queryExtendedEventAttributeName(attrId))
+        return extendedName;
     if (attrId < EvAttrMax)
         return queryEventAttributeName((EventAttr)attrId);
     return nullptr;
@@ -178,9 +178,11 @@ std::string GroupAttributeExtractor::formatValue(const GroupAttribute& groupAttr
 }
 
 
-bool GroupAttributeExtractor::isApplicable(const GroupAttribute& groupAttr, const CEvent& event)
+bool GroupAttributeExtractor::isApplicable(const GroupAttribute& groupAttr, const CEvent& event, const EventFileProperties* properties)
 {
     unsigned attrId = groupAttr.attrId;
+    if (attrId == EvExtAttrInputFileName)
+        return properties != nullptr;
     if (queryIndexSearchFlagInfo(attrId))
         return event.hasAttribute(EvAttrSearchFlags);
     if (attrId == EvExtAttrLogicalFileName)
@@ -203,9 +205,11 @@ bool GroupAttributeExtractor::isApplicable(const GroupAttribute& groupAttr, cons
     }
 }
 
-std::string GroupAttributeExtractor::getValue(const GroupAttribute& groupAttr, const CEvent& event, const CMetaInfoState* metaState)
+std::string GroupAttributeExtractor::getValue(const GroupAttribute& groupAttr, const CEvent& event, const CMetaInfoState* metaState, const EventFileProperties* properties)
 {
     unsigned attrId = groupAttr.attrId;
+    if (attrId == EvExtAttrInputFileName)
+        return properties ? queryInputFileName(*properties) : "";
     if (const IndexSearchFlagInfo* flag = queryIndexSearchFlagInfo(attrId))
     {
         if (!event.hasAttribute(EvAttrSearchFlags))
@@ -272,7 +276,7 @@ std::string GroupAttributeExtractor::getValue(const GroupAttribute& groupAttr, c
     return "";
 }
 
-__uint64 GroupAttributeExtractor::getHash(const std::vector<GroupAttribute>& attrs, const CEvent& event, const CMetaInfoState* metaState)
+__uint64 GroupAttributeExtractor::getHash(const std::vector<GroupAttribute>& attrs, const CEvent& event, const CMetaInfoState* metaState, const EventFileProperties* properties)
 {
     __uint64 hash = fnv1a64InitialHash;
     for (const GroupAttribute& groupAttr : attrs)
@@ -295,6 +299,13 @@ __uint64 GroupAttributeExtractor::getHash(const std::vector<GroupAttribute>& att
                 else if (hashResolvedValue(metaState->queryLogicalFileName(event), attrHash))
                     hash = foldHash(hash, attrHash);
             }
+            continue;
+        }
+        if (attrId == EvExtAttrInputFileName)
+        {
+            __uint64 attrHash;
+            if (properties && hashResolvedValue(queryInputFileName(*properties), attrHash))
+                hash = foldHash(hash, attrHash);
             continue;
         }
         EventAttr attr = (EventAttr)attrId;
@@ -361,7 +372,7 @@ __uint64 GroupAttributeExtractor::getHash(const std::vector<GroupAttribute>& att
     return hash;
 }
 
-bool GroupAttributeExtractor::isEqual(const std::vector<GroupAttribute>& attrs, const CEvent& event, const CMetaInfoState* metaState, const std::vector<std::string>& groupValues)
+bool GroupAttributeExtractor::isEqual(const std::vector<GroupAttribute>& attrs, const CEvent& event, const CMetaInfoState* metaState, const std::vector<std::string>& groupValues, const EventFileProperties* properties)
 {
     if (attrs.size() != groupValues.size())
         return false;
@@ -390,6 +401,13 @@ bool GroupAttributeExtractor::isEqual(const std::vector<GroupAttribute>& attrs, 
         if (attrId == EvExtAttrLogicalFileName) {
             const char* lfn = metaState ? metaState->queryLogicalFileName(event) : nullptr;
             if (expected != (lfn ? lfn : ""))
+                return false;
+            continue;
+        }
+
+        if (attrId == EvExtAttrInputFileName)
+        {
+            if (expected != (properties ? queryInputFileName(*properties) : ""))
                 return false;
             continue;
         }
@@ -530,6 +548,7 @@ class EventGroupingTest : public CppUnit::TestFixture
     CPPUNIT_TEST_SUITE(EventGroupingTest);
     CPPUNIT_TEST(testParseAttribute_Valid);
     CPPUNIT_TEST(testSearchFlagGroupingAttribute);
+    CPPUNIT_TEST(testInputFileNameGroupingAttribute);
     CPPUNIT_TEST(testParseAttribute_MetaPrefixAlias);
     CPPUNIT_TEST(testParseAttribute_Invalid);
     CPPUNIT_TEST(testCanonicalGroupNames);
@@ -551,14 +570,52 @@ public:
         CEvent event;
         event.reset(EventIndexLoad);
         event.setValue(EvAttrSearchFlags, __uint64(countFlag->mask));
-        CPPUNIT_ASSERT(GroupAttributeExtractor::isApplicable(attr, event));
-        CPPUNIT_ASSERT_EQUAL(std::string("true"), GroupAttributeExtractor::getValue(attr, event, nullptr));
+        CPPUNIT_ASSERT(GroupAttributeExtractor::isApplicable(attr, event, nullptr));
+        CPPUNIT_ASSERT_EQUAL(std::string("true"), GroupAttributeExtractor::getValue(attr, event, nullptr, nullptr));
 
         event.setValue(EvAttrSearchFlags, __uint64(0));
-        CPPUNIT_ASSERT_EQUAL(std::string("false"), GroupAttributeExtractor::getValue(attr, event, nullptr));
+        CPPUNIT_ASSERT_EQUAL(std::string("false"), GroupAttributeExtractor::getValue(attr, event, nullptr, nullptr));
 
         event.reset(EventIndexLoad);
-        CPPUNIT_ASSERT_EQUAL(std::string(""), GroupAttributeExtractor::getValue(attr, event, nullptr));
+        CPPUNIT_ASSERT_EQUAL(std::string(""), GroupAttributeExtractor::getValue(attr, event, nullptr, nullptr));
+    }
+
+    static void assertInputFileName(const GroupAttribute& attr, CEvent& event, EventFileProperties& properties, const char* path, const char* expected)
+    {
+        properties.path.set(path);
+        CPPUNIT_ASSERT_EQUAL(std::string(expected), GroupAttributeExtractor::getValue(attr, event, nullptr, &properties));
+    }
+
+    void testInputFileNameGroupingAttribute()
+    {
+        GroupAttribute attr = GroupAttributeExtractor::parseAttribute(EVENT_EXT_INPUT_FILE_NAME);
+        CPPUNIT_ASSERT_EQUAL((unsigned)EvExtAttrInputFileName, attr.attrId);
+        CPPUNIT_ASSERT_EQUAL(std::string(EVENT_EXT_INPUT_FILE_NAME), std::string(GroupAttributeExtractor::queryCanonicalName(attr.attrId)));
+
+        EventFileProperties firstProperties;
+        firstProperties.path.set("/var/events/first.evt");
+        EventFileProperties secondProperties;
+        secondProperties.path.set("/var/events/second.evt");
+        CEvent event;
+        event.reset(EventIndexLoad);
+
+        CPPUNIT_ASSERT(GroupAttributeExtractor::isApplicable(attr, event, &firstProperties));
+        CPPUNIT_ASSERT_EQUAL(std::string("first.evt"), GroupAttributeExtractor::getValue(attr, event, nullptr, &firstProperties));
+        CPPUNIT_ASSERT(GroupAttributeExtractor::getHash({attr}, event, nullptr, &firstProperties)
+            != GroupAttributeExtractor::getHash({attr}, event, nullptr, &secondProperties));
+        CPPUNIT_ASSERT(GroupAttributeExtractor::isEqual({attr}, event, nullptr, {"first.evt"}, &firstProperties));
+
+        firstProperties.path.set("C:\\events\\windows.evt");
+        CPPUNIT_ASSERT_EQUAL(std::string("windows.evt"), GroupAttributeExtractor::getValue(attr, event, nullptr, &firstProperties));
+        firstProperties.path.clear();
+        CPPUNIT_ASSERT_EQUAL(std::string(""), GroupAttributeExtractor::getValue(attr, event, nullptr, &firstProperties));
+
+        assertInputFileName(attr, event, firstProperties, "/var/events/", "");
+        assertInputFileName(attr, event, firstProperties, "C:\\", "");
+        assertInputFileName(attr, event, firstProperties, "\\\\server\\share\\", "");
+        assertInputFileName(attr, event, firstProperties, "/var\\events/mixed.evt", "mixed.evt");
+        assertInputFileName(attr, event, firstProperties, ".", ".");
+        assertInputFileName(attr, event, firstProperties, "..", "..");
     }
 
     static void assertParsedAttributeId(const char* name, unsigned expectedAttrId)
@@ -666,6 +723,11 @@ public:
         CPPUNIT_ASSERT(streq(GroupAttributeExtractor::queryCanonicalName(EvAttrPlane), EVENT_META_PLANE));
         CPPUNIT_ASSERT(streq(GroupAttributeExtractor::queryCanonicalName(EvExtAttrLogicalFileName), EVENT_META_LOGICAL_FILE_NAME));
         CPPUNIT_ASSERT(streq(GroupAttributeExtractor::queryCanonicalName(EvAttrNodeKind), "NodeKind"));
+        CPPUNIT_ASSERT(streq(queryExtendedEventAttributeName(EvExtAttrLogicalFileName), EVENT_META_LOGICAL_FILE_NAME));
+        CPPUNIT_ASSERT_EQUAL((unsigned)EvExtAttrLogicalFileName, queryExtendedEventAttribute(EVENT_META_LOGICAL_FILE_NAME));
+        CPPUNIT_ASSERT(streq(queryExtendedEventAttributeName(EvExtAttrInputFileName), EVENT_EXT_INPUT_FILE_NAME));
+        CPPUNIT_ASSERT_EQUAL((unsigned)EvExtAttrInputFileName, queryExtendedEventAttribute(EVENT_EXT_INPUT_FILE_NAME));
+        CPPUNIT_ASSERT_EQUAL((unsigned)EvExtAttrInputFileName, queryExtendedEventAttribute("inputfilename"));
     }
 
     void testSummarizeCanonicalGroupHeaders()
@@ -801,7 +863,7 @@ public:
         CPPUNIT_ASSERT(state.queryPlaneHash(event, planeHash));
         expected = fnv1a64Seeded(&planeHash, sizeof(planeHash), expected);
 
-        __uint64 actual = GroupAttributeExtractor::getHash(attrs, event, &state);
+        __uint64 actual = GroupAttributeExtractor::getHash(attrs, event, &state, nullptr);
         CPPUNIT_ASSERT_EQUAL(expected, actual);
 
         CEvent emptyService;
@@ -812,7 +874,7 @@ public:
         serviceAttrs.push_back(GroupAttributeExtractor::parseAttribute("ServiceName"));
 
         __uint64 emptyExpected = fnv1a64InitialHash;
-        __uint64 emptyActual = GroupAttributeExtractor::getHash(serviceAttrs, emptyService, nullptr);
+        __uint64 emptyActual = GroupAttributeExtractor::getHash(serviceAttrs, emptyService, nullptr, nullptr);
         CPPUNIT_ASSERT_EQUAL(emptyExpected, emptyActual);
         END_TEST
     }

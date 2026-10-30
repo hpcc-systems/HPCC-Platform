@@ -17,6 +17,7 @@
 
 #include "eventconsumption.h"
 #include "eventindex.hpp"
+#include "eventmetaparser.hpp"
 #include "jhconst.hpp"
 #include <limits>
 
@@ -30,6 +31,17 @@ constexpr IndexSearchFlagInfo searchFlagInfos[] = {
     { EvExtAttrSearchSingleValue, NodeSearchSingleValue, "SearchFlags.SingleValue" },
     { EvExtAttrSearchUnfiltered, NodeSearchUnfiltered, "SearchFlags.Unfiltered" },
     { EvExtAttrSearchCount, NodeSearchCount, "SearchFlags.Count" },
+};
+
+struct ExtendedEventAttributeInfo
+{
+    unsigned attrId;
+    const char* name;
+};
+
+constexpr ExtendedEventAttributeInfo extendedEventAttributeInfos[] = {
+    { EvExtAttrLogicalFileName, EVENT_META_LOGICAL_FILE_NAME },
+    { EvExtAttrInputFileName, EVENT_EXT_INPUT_FILE_NAME },
 };
 }
 
@@ -61,4 +73,43 @@ const IndexSearchFlagInfo* queryIndexSearchFlagInfo(const char* name)
             return &info;
     }
     return nullptr;
+}
+
+const char* queryExtendedEventAttributeName(unsigned attrId)
+{
+    if (const IndexSearchFlagInfo* flag = queryIndexSearchFlagInfo(attrId))
+        return flag->name;
+    for (const auto& info : extendedEventAttributeInfos)
+    {
+        if (info.attrId == attrId)
+            return info.name;
+    }
+    return nullptr;
+}
+
+unsigned queryExtendedEventAttribute(const char* name)
+{
+    if (name)
+    {
+        if (const IndexSearchFlagInfo* flag = queryIndexSearchFlagInfo(name))
+            return flag->attrId;
+        for (const auto& info : extendedEventAttributeInfos)
+        {
+            if (strieq(info.name, name))
+                return info.attrId;
+        }
+    }
+    return EvExtAttrMax;
+}
+
+const char* queryInputFileName(const EventFileProperties& properties)
+{
+    const char* path = properties.path.str();
+    if (isEmptyString(path))
+        return "";
+    const char* separator = strrchr(path, '/');
+    const char* backslash = strrchr(path, '\\');
+    if (backslash && (!separator || backslash > separator))
+        separator = backslash;
+    return separator ? separator + 1 : path;
 }

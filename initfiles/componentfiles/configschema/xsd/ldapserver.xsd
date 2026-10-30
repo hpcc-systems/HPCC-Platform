@@ -52,6 +52,8 @@
                               hpcc:tooltip="Required if systemUser is specified. The LDAP Common Name (cn) for the systemUser account as specified on the LDAP server"/>
                 <xs:attribute name="systemBasedn" type="xs:string" hpcc:displayName="System Base DN" use="required" hpcc:presetValue="cn=Users"
                               hpcc:tooltip="The ldap 'base distinguished name' of the systemUser"/>
+                <xs:attribute name="commonBasedn" type="xs:string" hpcc:displayName="Common Base DN"
+                              hpcc:tooltip="Absolute path to the common base distinguished name for the cluster"/>
                 <xs:attribute name="groupsBasedn" type="xs:string" hpcc:displayName="Groups Base DN" use="required" hpcc:presetValue="ou=groups,ou=ecl"
                               hpcc:tooltip="The ldap 'base distinguished name' that ecl server should use when looking up groups in the ldap (Active Directory) server"/>
                 <xs:attribute name="viewsBasedn" type="xs:string" hpcc:displayName="Views Base DN" use="required" hpcc:presetValue="ou=views,ou=ecl"

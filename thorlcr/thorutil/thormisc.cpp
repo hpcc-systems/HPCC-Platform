@@ -1734,8 +1734,8 @@ bool hasTLK(IDistributedFile &file, CActivityBase *activity)
         rfn.getPath(filename);
         StringBuffer planeName;
         file.getClusterName(0, planeName);
-        unsigned __int64 blockedIOSize = getPlaneAttributeValue(planeName, BlockedRandomIO, 0);
-        Owned<IKeyIndex> index = createKeyIndex(filename, 0, false, (size32_t)blockedIOSize);
+        IndexReadOptions readOptions = getIndexReadOptions(planeName);
+        Owned<IKeyIndex> index = createKeyIndex(filename, 0, false, readOptions);
         dbgassertex(index);
         if (index->isTopLevelKey())
         {

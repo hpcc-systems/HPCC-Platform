@@ -208,6 +208,10 @@
             "type": "string",
             "description": "The name of the dfuserver process"
           },
+          "mtls": {
+            "type": "boolean",
+            "description": "Override the global mTLS setting for this component"
+          },
           "replicas": {
             "type": "integer"
           },
@@ -534,7 +538,7 @@
         "mtls": {
           "description": "Enable global mtls between clients (except roxie which has own setting). NB: requires certificates.enabled=true",
           "type": "boolean",
-          "default": true
+          "default": false
         },
         "eclSecurity": {
           "$ref": "#/definitions/eclSecurity"
@@ -1376,6 +1380,10 @@
           "type": "string",
           "description": "The base distinguished name that should be used when looking up workunit scopes on the Active Directory server"
         },
+        "commonBasedn": {
+          "type": "string",
+          "description": "The common base distinguished name shared by the HPCC Active Directory entries"
+        },
         "ldapAdminSecretKey": {
           "type": "string",
           "description": "The key name to be used to look up the Active Directory Administrator account Username/Password"
@@ -1716,6 +1724,10 @@
           "type": "string",
           "description": "The name of the dali process"
         },
+        "mtls": {
+          "type": "boolean",
+          "description": "Override the global mTLS setting for this component"
+        },
         "image": {
           "$ref": "#/definitions/image"
         },
@@ -1797,6 +1809,10 @@
         "name": {
           "type": "string",
           "description": "The name of the eclccserver process"
+        },
+        "mtls": {
+          "type": "boolean",
+          "description": "Override the global mTLS setting for this component"
         },
         "architecture": {
           "type": "string",
@@ -1921,6 +1937,10 @@
           "type": "string",
           "description": "The name of the eclccserver process"
         },
+        "mtls": {
+          "type": "boolean",
+          "description": "Override the global mTLS setting for this component"
+        },
         "image": {
           "$ref": "#/definitions/image"
         },
@@ -1960,6 +1980,10 @@
         "name": {
           "type": "string",
           "description": "The name of the esp process"
+        },
+        "mtls": {
+          "type": "boolean",
+          "description": "Override the global mTLS setting for this component"
         },
         "replicas": {
           "type": "integer"
@@ -2042,6 +2066,10 @@
       "additionalProperties": { "type": ["integer", "string", "boolean"] },
       "required": [ "maxActive" ],
       "properties": {
+        "mtls": {
+          "type": "boolean",
+          "description": "Override the global mTLS setting for this component"
+        },
         "replicas": {
           "type": "integer"
         },
@@ -2160,6 +2188,10 @@
         "name": {
           "type": "string",
           "description": "The name of the roxie process"
+        },
+        "mtls": {
+          "type": "boolean",
+          "description": "Override the global mTLS setting for this component"
         },
         "architecture": {
           "type": "string",
@@ -2949,6 +2981,10 @@
       "type": "object",
       "additionalProperties": { "type": ["integer", "string", "boolean"] },
       "properties": {
+        "mtls": {
+          "type": "boolean",
+          "description": "Override the global mTLS setting for this component"
+        },
         "port": {
           "type": "integer"
         },
@@ -3051,6 +3087,10 @@
         "name": {
           "type": "string",
           "description": "The name of the thor process"
+        },
+        "mtls": {
+          "type": "boolean",
+          "description": "Override the global mTLS setting for this component"
         },
         "architecture": {
           "type": "string",
@@ -3226,6 +3266,10 @@
     "sashacommon": {
       "type": "object",
       "properties": {
+        "mtls": {
+          "type": "boolean",
+          "description": "Override the global mTLS setting for this component"
+        },
         "disabled": {
           "type": "boolean"
         },
@@ -3322,6 +3366,7 @@
         { "$ref": "#/definitions/sashacommon" },
         {
           "properties": {
+            "mtls": {},
             "minDeltaSize": {
               "type": "integer",
               "description": "Coalescing will only begin, if the delta size is above this threshold (K)"
@@ -3374,6 +3419,7 @@
               "description": "minimal time before retrying archive of failed WorkUnits (days)",
               "default": 7
             },
+            "mtls": {},
             "disabled": {},
             "interval": {},
             "service": {},
@@ -3404,6 +3450,7 @@
         {
           "properties":
           {
+            "mtls": {},
             "disabled": {},
             "interval": {},
             "service": {},
@@ -3432,6 +3479,7 @@
         { "$ref": "#/definitions/sasha-limitcutoff" },
         {
           "properties": {
+            "mtls": {},
             "disabled": {},
             "interval": {},
             "service": {},
@@ -3472,6 +3520,7 @@
           "description": "Override of server limit of maximum files that can be retrieved",
           "default": 100000
         },
+        "mtls": {},
         "disabled": {},
         "interval": {},
         "user": {},
@@ -3504,6 +3553,7 @@
           "description": "Minimum time (in seconds) to wait before switching to a different queue",
           "default": 0
         },
+        "mtls": {},
         "disabled": {},
         "hold": {},
         "interval": {},
@@ -3526,6 +3576,7 @@
           "description": "Default number of days passed that debug plane files or directories are deleted.",
           "default": 14
         },
+        "mtls": {},
         "disabled": {},
         "interval": {},
         "at" : {},
@@ -3542,6 +3593,7 @@
         "type": "object",
         "allOf": [{ "$ref": "#/definitions/sashacommon" }],
         "properties": {
+          "mtls": {},
           "disabled": {},
           "interval": {},
           "user": {},
@@ -3576,6 +3628,7 @@
         "type": "object",
         "allOf": [{ "$ref": "#/definitions/sashacommon" }],
         "properties": {
+          "mtls": {},
           "disabled": {},
           "interval": {
             "type": "integer",
@@ -3647,6 +3700,10 @@
           "type": "string",
           "enum": ["stream", "directio", "spray"],
           "description": "Application type"
+        },
+        "mtls": {
+          "type": "boolean",
+          "description": "Override the global mTLS setting for this component"
         },
         "service": {
           "$ref": "#/definitions/service"

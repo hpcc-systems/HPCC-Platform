@@ -365,15 +365,20 @@ static NamedSelection resolveNamedSelectionFrom(const char* text)
         selection.attribute = attribute;
         selection.kinds |= NamedSelectionKind::attribute;
     }
-    if (const IndexSearchFlagInfo* flag = queryIndexSearchFlagInfo(text))
-    {
-        selection.extendedAttribute = flag->attrId;
-        selection.kinds |= NamedSelectionKind::extendedAttribute;
-    }
     if (auto meta = queryMetaAttribute(text); meta != MetaAttrMax)
     {
         selection.meta = meta;
         selection.kinds |= NamedSelectionKind::meta;
+    }
+    else if (const IndexSearchFlagInfo* flag = queryIndexSearchFlagInfo(text))
+    {
+        selection.extendedAttribute = flag->attrId;
+        selection.kinds |= NamedSelectionKind::extendedAttribute;
+    }
+    else if (unsigned extendedAttribute = queryExtendedEventAttribute(text); extendedAttribute != EvExtAttrMax)
+    {
+        selection.extendedAttribute = extendedAttribute;
+        selection.kinds |= NamedSelectionKind::extendedAttribute;
     }
     return selection;
 }
@@ -976,6 +981,15 @@ void DescribeRenderer::appendAttributes()
         }
     }
 
+    const char* inputFileName = queryExtendedEventAttributeName(EvExtAttrInputFileName);
+    const bool inputFileNameObserved = !ctx.filterByObserved || ctx.anyEventPassesObservedFilter(ctx.events);
+    if (inputFileNameObserved &&
+        (ctx.namedSelection.empty() ||
+            (ctx.namedSelection.has(NamedSelectionKind::extendedAttribute) &&
+                ctx.namedSelection.extendedAttribute == EvExtAttrInputFileName)) &&
+        inputFileName)
+        output.addPropTreeArrayItem("attribute", createPTree())->setProp(nullptr, inputFileName);
+
     appendTerseMetaItems("attribute");
 }
 }
@@ -1068,6 +1082,7 @@ class EventDescribeTests : public CppUnit::TestFixture
         CPPUNIT_TEST(testNamedMetaSelectionRendersInAttributeList);
         CPPUNIT_TEST(testNamedContextSelection);
         CPPUNIT_TEST(testNamedAttributeSelection);
+        CPPUNIT_TEST(testNamedInputFileNameSelection);
         CPPUNIT_TEST(testNamedEntityUnknownThrows);
         CPPUNIT_TEST(testNamedEntityUnknownThrowsBeforeTraversal);
         CPPUNIT_TEST(testNamedEntityExcludedBySectionThrows);
@@ -1460,6 +1475,29 @@ public:
         assertExactSectionValues(describeTree, "context", {});
         assertExactSectionValues(describeTree, "event", {});
         assertExactSectionValues(describeTree, "attribute", { "ServiceName" });
+        END_TEST
+    }
+
+    void testNamedInputFileNameSelection()
+    {
+        START_TEST
+
+        CDescribeEventsOp op;
+        op.setFormat(DescribeOutputFormat::json);
+        op.setNamedEntity(EVENT_EXT_INPUT_FILE_NAME);
+
+        StringBuffer output;
+        Owned<IBufferedSerialOutputStream> stream;
+        setupOutput(op, output, stream);
+
+        CPPUNIT_ASSERT(op.doOp());
+        stream->flush();
+
+        Owned<IPropertyTree> jsonTree = createPTreeFromJSONString(output.str());
+        const IPropertyTree& describeTree = queryDescribeRoot(*jsonTree);
+        assertExactSectionValues(describeTree, "context", {});
+        assertExactSectionValues(describeTree, "event", {});
+        assertExactSectionValues(describeTree, "attribute", { EVENT_EXT_INPUT_FILE_NAME });
         END_TEST
     }
 
@@ -2129,6 +2167,7 @@ public:
             CPPUNIT_ASSERT_MESSAGE("missing meta attribute name", !isEmptyString(name));
             CPPUNIT_ASSERT_MESSAGE("expected meta attribute not emitted", attributes.count(name) != 0);
         }
+        CPPUNIT_ASSERT_MESSAGE("expected input filename attribute not emitted", attributes.count(EVENT_EXT_INPUT_FILE_NAME) != 0);
 
         CPPUNIT_ASSERT(strstr(result, "\"context\"") != nullptr);
         CPPUNIT_ASSERT(strstr(result, "\"event\"") != nullptr);

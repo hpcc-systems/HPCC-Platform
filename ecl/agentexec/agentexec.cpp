@@ -411,7 +411,7 @@ public:
         }
         catch (IException *e)
         {
-            if (e->errorCode() == JLIBERR_UserAbort)
+            if (e->errorCode() == JLIBERR_ReceivedAbortSignal)
             {
                 e->Release();
                 return; // User abort requested: avoid misreporting and unnecessary Dali I/O

@@ -1,0 +1,80 @@
+security:
+  mtls: true
+certificates:
+  enabled: true
+
+dali:
+- name: mydali
+  auth: none
+  mtls: true
+  services:
+    coalescer:
+      mtls: true
+
+eclccserver:
+- name: myeclccserver
+  maxActive: 4
+  mtls: true
+
+eclscheduler:
+- name: myeclscheduler
+  mtls: true
+
+esp:
+- name: eclwatch
+  application: eclwatch
+  auth: none
+  mtls: true
+  service:
+    servicePort: 8010
+    visibility: cluster
+
+eclagent:
+- name: hthor
+  maxActive: 100
+  mtls: true
+
+dfuserver:
+- name: mydfuserver
+  mtls: true
+
+roxie:
+- name: roxie
+  mtls: true
+  topoServer:
+    mtls: true
+
+thor:
+- name: thor
+  maxJobs: 1
+  maxGraphs: 1
+  numWorkers: 1
+  mtls: true
+
+dafilesrv:
+- name: spray-service
+  application: spray
+  mtls: true
+  service:
+    servicePort: 7300
+    visibility: cluster
+
+sasha:
+  wu-archiver:
+    plane: sasha
+    mtls: true
+  dfuwu-archiver:
+    plane: sasha
+    mtls: true
+  dfurecovery-archiver:
+    mtls: true
+  file-expiry:
+    mtls: true
+  thor-qmon:
+    mtls: true
+  debugplane-housekeeping:
+    mtls: true
+  xref:
+    mtls: true
+  global-message-housekeeping:
+    mtls: true

@@ -1259,11 +1259,12 @@ class CGenericGroupCollector : public CSummaryCollector
     {
         CEvent prototype;
         prototype.reset(EventIndexOpen);
+        EventFileProperties prototypeProperties;
         for (size_t idx = groupAttributeIds.size(); idx > 0; --idx)
         {
             for (const GroupAttribute& attr : groupAttributeIds[idx - 1])
             {
-                if (GroupAttributeExtractor::isApplicable(attr, prototype))
+                if (GroupAttributeExtractor::isApplicable(attr, prototype, &prototypeProperties))
                 {
                     maxGroupLevelPerEvent[EventIndexOpen] = idx;
                     return;
@@ -1298,7 +1299,7 @@ public:
         }
     }
 
-    virtual bool visitEvent(CEvent& event, [[maybe_unused]] const EventFileProperties& properties) override
+    virtual bool visitEvent(CEvent& event, const EventFileProperties& properties) override
     {
         // Implicit event filter applied unconditionally
         EventType type = event.queryType();
@@ -1310,7 +1311,7 @@ public:
         case EventIndexPayload:
         case EventIndexEviction:
         case EventIndexOpen:
-            root.process(event, &operation.queryMetaInfoState(), groupAttributeIds, 0, maxGroupLevelPerEvent[type]);
+            root.process(event, &operation.queryMetaInfoState(), groupAttributeIds, 0, maxGroupLevelPerEvent[type], &properties);
             break;
         default:
             break;

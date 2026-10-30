@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="IsUSDaylightSavingsInEffect">
+  <title>IsUSDaylightSavingsInEffect</title>
+
+  <para><emphasis role="bold">STD.Date.IsUSDaylightSavingsInEffect<indexterm>
+      <primary>STD.Date.IsUSDaylightSavingsInEffect</primary>
+    </indexterm><indexterm>
+      <primary>Date.IsUSDaylightSavingsInEffect</primary>
+    </indexterm><indexterm>
+      <primary>IsUSDaylightSavingsInEffect</primary>
+    </indexterm>([</emphasis><emphasis>date</emphasis><emphasis
+  role="bold">])</emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt"/>
+
+      <colspec/>
+
+      <tbody>
+        <row>
+          <entry><emphasis>date</emphasis></entry>
+
+          <entry>Data no formato Date_t (YYYYMMDD). Opcional; o padrao usa a
+          data UTC atual.</entry>
+        </row>
+
+        <row>
+          <entry>Return:</entry>
+
+          <entry>IsUSDaylightSavingsInEffect retorna TRUE quando o horario de
+          verao dos EUA esta em vigor para a data informada; caso contrario,
+          FALSE.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>A funcao <emphasis role="bold">IsUSDaylightSavingsInEffect</emphasis>
+  retorna TRUE se o horario de verao for considerado em vigor para a data
+  informada, de acordo com os cronogramas federais dos EUA (quando
+  existentes); caso contrario, retorna FALSE.</para>
+
+  <para>Esta funcao usa uma aproximacao apenas por data. A data de inicio da
+  transicao e inclusiva, e a data de fim da transicao e exclusiva. Se voce
+  precisar de precisao por hora perto das transicoes, use timestamp e regras
+  de fuso horario.</para>
+
+  <para>Notas historicas e limitacoes:</para>
+
+  <itemizedlist>
+    <listitem>
+      <para>1967 em diante segue os cronogramas do Uniform Time Act, incluindo
+      as excecoes de 1974-1975 e as mudancas de regra de 1987 e 2007.</para>
+    </listitem>
+
+    <listitem>
+      <para>1942-1945 modela o "War Time" da Segunda Guerra como horário de
+      verão em vigor. A implementação atual começa em 1942-02-08 (um dia antes
+      do início histórico) e termina em 1945-09-30.</para>
+    </listitem>
+
+    <listitem>
+      <para>1920-1941 e 1946-1966 retorna FALSE porque o horario de verao nao
+      era padronizado federalmente e variava por localidade.</para>
+    </listitem>
+
+    <listitem>
+      <para>Excecoes estaduais e locais nao sao modeladas.</para>
+    </listitem>
+  </itemizedlist>
+
+  <para>Exemplo:</para>
+
+  <programlisting format="linespecific">IMPORT STD;
+startOfDST := STD.Date.IsUSDaylightSavingsInEffect(20240310);
+endOfDST := STD.Date.IsUSDaylightSavingsInEffect(20241103);
+OUTPUT(startOfDST); //startOfDST is TRUE
+OUTPUT(endOfDST); //endOfDST is FALSE
+</programlisting>
+
+  <para/>
+</sect1>

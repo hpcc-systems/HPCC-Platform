@@ -922,20 +922,25 @@ void removeAbortHandler(IAbortHandler & handler)
     queryUninstallAbortHandler();
 }
 
-bool isAborting()
+bool hasReceivedAbortSignal()
 {
     return hadAbortSignal;
 }
 
-void throwAbortException()
+void throwAbortSignalException()
 {
-    throw MakeStringException(JLIBERR_UserAbort, "Operation aborted by user");
+    throw makeStringException(JLIBERR_ReceivedAbortSignal, "Abort signal received");
+}
+
+void throwProcessAbortRequestedException()
+{
+    throw makeStringException(JLIBERR_ProcessAbortRequest, "Operation termination requested");
 }
 
 void throwExceptionIfAborting() 
 { 
-    if (isAborting())
-        throwAbortException(); 
+    if (hasReceivedAbortSignal())
+        throwAbortSignalException();
 }
 
 //========================================================================================================================

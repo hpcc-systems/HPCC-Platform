@@ -525,7 +525,7 @@ export function useDfuWorkunit(wuid: string, full: boolean = false): [DFUWorkuni
     const [retVal, setRetVal] = React.useState<{ workunit: DFUWorkunit, state: number, lastUpdate: number, isComplete: boolean, refresh: (full?: boolean) => Promise<DFUWorkunit> }>();
 
     React.useEffect(() => {
-        if (wuid === undefined || wuid === null) {
+        if (!wuid) {
             setRetVal({ workunit: undefined, state: WUStateID.NotFound, lastUpdate: Date.now(), isComplete: undefined, refresh: () => Promise.resolve(undefined) });
             return;
         }

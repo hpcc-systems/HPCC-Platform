@@ -6,8 +6,8 @@ import {
     ProhibitedRegular, QuestionCircleRegular, SettingsRegular, WarningRegular
 } from "@fluentui/react-icons";
 import { Palette } from "@hpcc-js/common";
-import { WUStateID } from "@hpcc-js/comms";
-import { useWorkunit } from "../../hooks/workunit";
+import { FileSprayStates, WUStateID } from "@hpcc-js/comms";
+import { useWorkunit, useDfuWorkunit } from "../../hooks/workunit";
 import { useUserTheme } from "../../hooks/theme";
 import { copyToClipboard } from "src/Utility";
 import nlsHPCC from "src/nlsHPCC";
@@ -147,6 +147,43 @@ const usePersonaStyles = makeStyles({
     }
 });
 
+interface OverlayState {
+    name: string;
+    color: string;
+}
+
+const DEFAULT_OVERLAY: OverlayState = { name: "StatusCircleQuestionMark", color: ERROR_ICON };
+
+const WU_STATE_OVERLAYS = new Map<number, OverlayState>([
+    [WUStateID.Compiling, { name: "LightningBolt", color: WARNING_ICON }],
+    [WUStateID.Compiled, { name: "LightningBolt", color: WARNING_ICON }],
+    [WUStateID.DebugRunning, { name: "Play", color: WARNING_ICON }],
+    [WUStateID.Running, { name: "Play", color: WARNING_ICON }],
+    [WUStateID.Completed, { name: "SkypeCheck", color: SUCCESS_ICON }],
+    [WUStateID.Aborted, { name: "Warning", color: ERROR_ICON }],
+    [WUStateID.Failed, { name: "Warning", color: ERROR_ICON }],
+    [WUStateID.Aborting, { name: "SkypeClock", color: ERROR_ICON }],
+    [WUStateID.Submitted, { name: "SkypeClock", color: WARNING_ICON }],
+    [WUStateID.Scheduled, { name: "SkypeClock", color: WARNING_ICON }],
+    [WUStateID.UploadingFiled, { name: "Upload", color: WARNING_ICON }],
+    [WUStateID.Wait, { name: "Blocked", color: WARNING_ICON }],
+    [WUStateID.Blocked, { name: "Blocked", color: WARNING_ICON }],
+    [WUStateID.DebugPaused, { name: "Pause", color: WARNING_ICON }],
+    [WUStateID.Paused, { name: "Pause", color: WARNING_ICON }],
+    [WUStateID.Archived, { name: "Archive", color: SUCCESS_ICON }],
+]);
+
+const DFU_STATE_OVERLAYS = new Map<number, OverlayState>([
+    [FileSprayStates.scheduled, { name: "SkypeClock", color: WARNING_ICON }],
+    [FileSprayStates.queued, { name: "SkypeClock", color: WARNING_ICON }],
+    [FileSprayStates.started, { name: "Play", color: WARNING_ICON }],
+    [FileSprayStates.monitoring, { name: "Play", color: WARNING_ICON }],
+    [FileSprayStates.finished, { name: "SkypeCheck", color: SUCCESS_ICON }],
+    [FileSprayStates.aborted, { name: "Warning", color: ERROR_ICON }],
+    [FileSprayStates.failed, { name: "Warning", color: ERROR_ICON }],
+    [FileSprayStates.aborting, { name: "SkypeClock", color: ERROR_ICON }],
+]);
+
 interface WorkunitPersonaProps {
     wuid: string;
     showProtected?: boolean;
@@ -161,74 +198,31 @@ export const WorkunitPersona: React.FunctionComponent<WorkunitPersonaProps> = ({
     size = "sm"
 }) => {
 
-    const { workunit } = useWorkunit(wuid);
+    const firstChar = wuid?.trim().charAt(0).toUpperCase();
+    const isDFUWorkunit = firstChar === "D" || firstChar === "P";
+
+    const { workunit: eclWorkunit } = useWorkunit(isDFUWorkunit ? "" : wuid);
+    const [dfuWorkunit, dfuStateID] = useDfuWorkunit(isDFUWorkunit ? wuid : "");
+
+    const stateID = isDFUWorkunit ? dfuStateID : eclWorkunit?.StateID;
+    const isProtected = isDFUWorkunit ? dfuWorkunit?.isProtected : eclWorkunit?.Protected;
+    const stateTitle = isDFUWorkunit ? dfuWorkunit?.StateMessage : eclWorkunit?.State;
+
     const [overlayName, setOverlayName] = React.useState("");
     const [overlayColor, setOverlayColor] = React.useState("");
     const { themeV9 } = useUserTheme();
     const styles = usePersonaStyles();
 
     React.useEffect(() => {
-        switch (workunit?.StateID) {
-            case WUStateID.Compiling:
-            case WUStateID.Compiled:
-                setOverlayName("LightningBolt");
-                setOverlayColor(WARNING_ICON);
-                break;
-            case WUStateID.DebugRunning:
-            case WUStateID.Running:
-                setOverlayName("Play");
-                setOverlayColor(WARNING_ICON);
-                break;
-            case WUStateID.Completed:
-                setOverlayName("SkypeCheck");
-                setOverlayColor(SUCCESS_ICON);
-                break;
-            case WUStateID.Aborted:
-            case WUStateID.Failed:
-                setOverlayName("Warning");
-                setOverlayColor(ERROR_ICON);
-                break;
-            case WUStateID.Aborting:
-                setOverlayName("SkypeClock");
-                setOverlayColor(ERROR_ICON);
-                break;
-            case WUStateID.Submitted:
-            case WUStateID.Scheduled:
-                setOverlayName("SkypeClock");
-                setOverlayColor(WARNING_ICON);
-                break;
-            case WUStateID.UploadingFiled:
-                setOverlayName("Upload");
-                setOverlayColor(WARNING_ICON);
-                break;
-            case WUStateID.Wait:
-            case WUStateID.Blocked:
-                setOverlayName("Blocked");
-                setOverlayColor(WARNING_ICON);
-                break;
-            case WUStateID.DebugPaused:
-            case WUStateID.Paused:
-                setOverlayName("Pause");
-                setOverlayColor(WARNING_ICON);
-                break;
-            case WUStateID.Archived:
-                setOverlayName("Archive");
-                setOverlayColor(SUCCESS_ICON);
-                break;
-            case WUStateID.LAST:
-            case WUStateID.Unknown:
-            case WUStateID.NotFound:
-            default:
-                setOverlayName("StatusCircleQuestionMark");
-                setOverlayColor(ERROR_ICON);
-                break;
-        }
-    }, [workunit, workunit?.StateID]);
+        const overlay = (isDFUWorkunit ? DFU_STATE_OVERLAYS : WU_STATE_OVERLAYS).get(stateID) ?? DEFAULT_OVERLAY;
+        setOverlayName(overlay.name);
+        setOverlayColor(overlay.color);
+    }, [stateID, isDFUWorkunit]);
 
-    return <FluentProvider theme={themeV9} style={{ display: "flex", alignItems: "center", height: 26 }} title={workunit?.State}>
+    return <FluentProvider theme={themeV9} style={{ display: "flex", alignItems: "center", height: 26 }} title={stateTitle}>
         {showProtected &&
             <span style={{ marginLeft: 8, marginRight: 2 }}>
-                <StateIcon iconName={workunit?.Protected ? "LockSolid" : "Unlock"} size={size} />
+                <StateIcon iconName={isProtected ? "LockSolid" : "Unlock"} size={size} />
             </span>
         }
         <StateIcon iconName="Settings" overlayName={overlayName} overlayColor={overlayColor} size={size} />

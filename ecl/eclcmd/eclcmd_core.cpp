@@ -82,6 +82,11 @@ static bool isSoapRpcException(IException *E)
     return false;
 }
 
+static bool isConnectionException(IException *E)
+{
+    return (dynamic_cast<IJSOCK_Exception *>(E) != nullptr) || isSoapRpcException(E);
+}
+
 static unsigned nextWait(unsigned wait, unsigned waited)
 {
     if (waited < 5000)
@@ -138,6 +143,18 @@ static bool isFinalCompileState(WUState state)
     if (state == WUStateCompiled)
         return true;
     return isFinalRunState(state);
+}
+
+static bool isPendingCompileState(WUState state)
+{
+    switch (state)
+    {
+    case WUStateUnknown: // timed out or socket error
+    case WUStateSubmitted:
+    case WUStateCompiling:
+        return true;
+    }
+    return false;
 }
 
 int EclCmdWithEclTarget::checkComplete(IClientWsWorkunits* client, IClientWUWaitRequest* req)
@@ -205,17 +222,18 @@ WUState EclCmdWithEclTarget::pollForCompile(IClientWsWorkunits* client, const ch
 
         if (optVerbose)
             fputs("Polling for compile...\n", stdout);
+        unsigned waitLimit = getCompileWaitLimit();
         WUState state = WUStateUnknown;
         for(;;)
         {
             state = checkCompiled(client, req);
-            //Older versions of the platform would return if the state was WuStateCompiling, so include that.
-            if ((state != WUStateUnknown) && (state != WUStateCompiling))
+            //Older platforms return the current state (e.g. submitted, compiling) rather than unknown on timeout
+            if (!isPendingCompileState(state))
                 break;
             unsigned waited = msTick() - startTimeMs;
-            if (optWaitTime!=(unsigned)-1 && waited>=optWaitTime)
+            if (waitLimit!=(unsigned)-1 && waited>=waitLimit)
                 return WUStateUnknown;
-            Sleep(nextWait(optWaitTime, waited));
+            Sleep(nextWait(waitLimit, waited));
         }
 
         switch (state)
@@ -248,7 +266,7 @@ WUState EclCmdWithEclTarget::pollForCompile(IClientWsWorkunits* client, const ch
 }
 
 
-bool EclCmdWithEclTarget::doDeploy(IClientWsWorkunits *client, unsigned waitMs, const char *cluster, const char *name, StringBuffer *wuid, StringBuffer *wucluster, bool noarchive, bool displayWuid, bool compress, bool protect)
+bool EclCmdWithEclTarget::doDeploy(IClientWsWorkunits *client, const char *cluster, const char *name, StringBuffer *wuid, StringBuffer *wucluster, bool noarchive, bool displayWuid, bool compress, bool protect)
 {
     int major = 0;
     int minor = 0;
@@ -271,7 +289,8 @@ bool EclCmdWithEclTarget::doDeploy(IClientWsWorkunits *client, unsigned waitMs, 
 
     StringBuffer objType(compressed ? "compressed_" : ""); //change compressed type string so old ESPs will fail gracefully
     Owned<IClientWUDeployWorkunitRequest> req = client->createWUDeployWorkunitRequest();
-    setRpcOptions(req->rpc(), waitMs);
+    int serverWaitMs = getInitialCompileWait();
+    setRpcOptionsForServerWait(req->rpc(), serverWaitMs);
 
     switch (optObj.type)
     {
@@ -325,7 +344,7 @@ bool EclCmdWithEclTarget::doDeploy(IClientWsWorkunits *client, unsigned waitMs, 
     if (protect)
         req->setProtect(true);
 
-    req->setWait(getInitialRunWait());
+    req->setWait(serverWaitMs);
 
     unsigned startTimeMs = msTick();
     Owned<IClientWUDeployWorkunitResponse> resp;
@@ -341,6 +360,8 @@ bool EclCmdWithEclTarget::doDeploy(IClientWsWorkunits *client, unsigned waitMs, 
 
         if (optVerbose)
             fprintf(stdout, "Deploy workunit failed with exception %u:%s\n", code, msg.str());
+        if (!optPoll && isConnectionException(E))
+            fputs("Connection lost while waiting for the server, consider using --poll for long running compiles\n", stderr);
 
         //ESP doesn't want to process requests that are too large, and so disconnects before reading
         //  this causes issues capturing the error returned... check if that may have been the issue
@@ -457,7 +478,11 @@ public:
     virtual int processCMD()
     {
         Owned<IClientWsWorkunits> client = createCmdClientExt(WsWorkunits, *this, "?upload_"); //upload_ disables maxRequestEntityLength
-        return doDeploy(client, 0, optTargetCluster.get(), optName.get(), NULL, NULL, optNoArchive, true, true, optProtect) ? 0 : 1;
+        return doDeploy(client, optTargetCluster.get(), optName.get(), NULL, NULL, optNoArchive, true, true, optProtect) ? 0 : 1;
+    }
+    virtual unsigned getCompileWaitLimit() const override
+    {
+        return optWaitTime;
     }
     virtual void usage()
     {
@@ -608,6 +633,10 @@ public:
         }
         return true;
     }
+    virtual unsigned getCompileWaitLimit() const override
+    {
+        return optMsToWait;
+    }
     virtual int processCMD()
     {
         CTimeMon mon(optMsToWait);
@@ -615,7 +644,7 @@ public:
         StringBuffer wuid;
         if (optObj.type==eclObjWuid)
             wuid.set(optObj.value.get());
-        else if (!doDeploy(client, optMsToWait, optTargetCluster.get(), optJobName.length() ? optJobName.get() : optQueryName.get(), &wuid, NULL, optNoArchive, true, true, optProtect))
+        else if (!doDeploy(client, optTargetCluster.get(), optJobName.length() ? optJobName.get() : optQueryName.get(), &wuid, NULL, optNoArchive, true, true, optProtect))
             return 1;
 
         unsigned remaining = 0;
@@ -629,9 +658,8 @@ public:
         if (optVerbose)
             fprintf(stdout, "\nPublishing %s\n", wuid.str());
 
-        unsigned clientRemaining = remaining + 100; //give the ESP method time to return from timeout before hard client stop
         Owned<IClientWUPublishWorkunitRequest> req = client->createWUPublishWorkunitRequest();
-        setRpcOptions(req->rpc(), clientRemaining);
+        setRpcOptionsForServerWait(req->rpc(), remaining);
         req->setWuid(wuid.str());
         if (optDeletePrevious)
             req->setActivate(CWUQueryActivationMode_ActivateDeletePrevious);
@@ -922,7 +950,7 @@ public:
             fputs("Getting Workunit Information\n", stdout);
 
         Owned<IClientWUInfoRequest> req = client->createWUInfoRequest();
-        setRpcOptions(req->rpc(), optWaitTime);
+        setRpcOptions(req->rpc());
 
         req->setWuid(wuid);
         req->setIncludeExceptions(true);
@@ -978,7 +1006,7 @@ public:
         if (optVerbose)
             fputs("Retrieving Results\n", stdout);
         Owned<IClientWUFullResultRequest> req = client->createWUFullResultRequest();
-        setRpcOptions(req->rpc(), optWaitTime);
+        setRpcOptions(req->rpc());
 
         req->setWuid(wuid);
         req->setNoRootTag(optNoRoot);
@@ -1003,7 +1031,7 @@ public:
         int minor = 0;
         int point = 0;
         bool useCompression = false;
-        checkFeatures(client, useCompression, major, minor, point, optWaitTime, optWaitConnectMs, optWaitReadSec);
+        checkFeatures(client, useCompression, major, minor, point, 0, optWaitConnectMs, optWaitReadSec);
         bool optimized = !optPre64 && ((major>=7) || (major==6 && minor>=3));
 
         try
@@ -1039,11 +1067,66 @@ public:
         }
         return 1;
     }
+    int recoverFromRunConnectionError(IClientWsWorkunits* client, const char *wuid)
+    {
+        fprintf(stderr, "Connection lost while running %s\n", wuid);
+        Owned<IClientWUInfoRequest> req;
+        initPollRequest(req, client, wuid);
+        Owned<IClientWUInfoResponse> resp;
+        for (;;)
+        {
+            unsigned waited = msTick() - startTimeMs;
+            unsigned remaining = 0;
+            if (optPoll)
+            {
+                if (optWaitTime != (unsigned)-1 && waited >= optWaitTime)
+                {
+                    fprintf(stderr, "Unable to confirm status of %s after connection loss; it may still be running.\n", wuid);
+                    return 2;
+                }
+                remaining = optWaitTime == (unsigned)-1 ? 0 : optWaitTime - waited;
+            }
+            setRpcOptions(req->rpc(), remaining);
+            try
+            {
+                resp.setown(client->WUInfo(req));
+                break;
+            }
+            catch (IException *E)
+            {
+                if (!optPoll || !isConnectionException(E))
+                    throw;
+                E->Release();
+
+                waited = msTick() - startTimeMs;
+                if (optWaitTime != (unsigned)-1 && waited >= optWaitTime)
+                {
+                    fprintf(stderr, "Unable to confirm status of %s after connection loss; it may still be running.\n", wuid);
+                    return 2;
+                }
+
+                unsigned waitMs = nextWait(optWaitTime, waited);
+                if (optWaitTime != (unsigned)-1 && waitMs > optWaitTime - waited)
+                    waitMs = optWaitTime - waited;
+                Sleep(waitMs);
+            }
+        }
+        WUState state = (WUState)resp->getWorkunit().getStateID();
+        if (state == WUStateCompiled)
+        {
+            fprintf(stderr, "Failed to start %s, use 'ecl run <target> %s' to run it.\n", wuid, wuid);
+            return 1;
+        }
+        if (optPoll)
+            return pollForResults(client, wuid);
+        fprintf(stderr, "%s %s, workunit may still be running.  Consider using --poll.\n", wuid, getWorkunitStateStr(state));
+        return 2;
+    }
     virtual int processCMD()
     {
         Owned<IClientWsWorkunits> client = createCmdClientExt(WsWorkunits, *this, "?upload_"); //upload_ disables maxRequestEntityLength
         Owned<IClientWURunRequest> req = client->createWURunRequest();
-        setRpcOptions(req->rpc(), optWaitTime);
+        setRpcOptionsForServerWait(req->rpc(), getInitialRunWait());
         req->setCloneWorkunit(true);
         req->setNoRootTag(optNoRoot);
 
@@ -1058,6 +1141,7 @@ public:
         StringBuffer wuid;
         StringBuffer wuCluster;
         StringBuffer query;
+        bool deployed = false;
 
         if (optObj.type==eclObjWuid)
         {
@@ -1075,8 +1159,9 @@ public:
         else
         {
             req->setCloneWorkunit(false);
-            if (!doDeploy(client, optWaitTime, optTargetCluster.get(), optName.get(), &wuid, &wuCluster, optNoArchive, optVerbose, true, optProtect))
+            if (!doDeploy(client, optTargetCluster.get(), optName.get(), &wuid, &wuCluster, optNoArchive, optVerbose, true, optProtect))
                 return 1;
+            deployed = true;
             req->setWuid(wuid.str());
             if (optVerbose)
                 fprintf(stdout, "Running deployed workunit %s\n", wuid.str());
@@ -1104,17 +1189,19 @@ public:
         {
             resp.setown(client->WURun(req));
         }
-        catch (IJSOCK_Exception *E)
-        {
-            if (optPoll)
-                fputs("Socket error, no WUID, can't continue but workunit may still be running...\n", stderr);
-            throw E;
-        }
         catch (IException *E)
         {
-            if (optPoll && isSoapRpcException(E))
-                fputs("SOAP error, no WUID, can't continue but workunit may still be running...\n", stderr);
-            throw E;
+            if (!isConnectionException(E))
+                throw;
+            if (!deployed)
+            {
+                if (optPoll)
+                    fputs("Connection error, no WUID, can't continue but workunit may still be running...\n", stderr);
+                throw;
+            }
+            outputExceptionEx(*E);
+            E->Release();
+            return recoverFromRunConnectionError(client, wuid);
         }
 
         if (checkMultiExceptionsQueryNotFound(resp->getExceptions()))
