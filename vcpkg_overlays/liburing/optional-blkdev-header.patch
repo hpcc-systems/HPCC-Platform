@@ -1,0 +1,14 @@
+diff --git a/configure b/configure
+index 76e6334..876023e 100755
+--- a/configure
++++ b/configure
+@@ -721,7 +721,9 @@ EOF
+ 
+ EOF
+ else cat >> $compat_h << EOF
++#if !defined(__has_include) || __has_include(<linux/blkdev.h>)
+ #include <linux/blkdev.h>
++#endif
+ 
+ EOF
+ fi

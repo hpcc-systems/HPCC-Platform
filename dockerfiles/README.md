@@ -3,6 +3,13 @@ Docker images
 
 Docker images related to HPCC are structured as follows
 
+**Chainguard builds**
+
+[chainguard/](chainguard/README.md) contains standalone HPCC-Platform package
+builds, a container-backed CMake command, toolchain image creation, and runtime
+image validation. Run `./dockerfiles/chainguard/build.sh --glibc 2.34 --gcc 11`
+from the HPCC-Platform root; no LN checkout is required.
+
 **hpccsystems/platform-build-base**
 
 This image contains all the development packages required to build the hpcc platform,
