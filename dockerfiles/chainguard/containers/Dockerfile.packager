@@ -1,0 +1,7 @@
+# syntax=docker/dockerfile:1.7
+
+ARG BASE_IMAGE
+FROM ${BASE_IMAGE}
+
+USER root
+RUN apk add --no-cache coreutils "syft~1" patchelf nfpm

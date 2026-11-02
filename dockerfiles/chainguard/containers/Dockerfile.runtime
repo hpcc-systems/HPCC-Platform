@@ -1,0 +1,150 @@
+# syntax=docker/dockerfile:1.7
+
+ARG GO_DEV_IMAGE=useast.jfrog.lexisnexisrisk.com/glb-oci-virtual/chainguard/go:latest-dev
+ARG JDK_FIPS_DEV_IMAGE=useast.jfrog.lexisnexisrisk.com/glb-oci-virtual/lexisnexisrisk.com/jdk-fips:openjdk-21-dev
+ARG JDK_FIPS_RUNTIME_IMAGE=useast.jfrog.lexisnexisrisk.com/glb-oci-virtual/lexisnexisrisk.com/jdk-fips:openjdk-21
+ARG RUNTIME_GCC_MAJOR=11
+# Required: use the PYTHON value from the package's hpcc-baseline metadata.
+ARG RUNTIME_PYTHON
+
+FROM ${GO_DEV_IMAGE} AS wolfi-runtime-deps
+ARG RUNTIME_GCC_MAJOR
+ARG RUNTIME_PYTHON
+USER root
+
+# Install into an isolated rootfs so apk and package indexes do not reach the
+# distroless runtime. The compiler and development files are intentionally
+# retained because eclcc compiles generated C++ in the runtime image.
+# Post-install scripts are not run because the rootfs is not a bootable system.
+RUN test -n "${RUNTIME_PYTHON}" || { echo "RUNTIME_PYTHON must match PYTHON in the packaged hpcc-baseline" >&2; exit 1; } \
+    && apk --root /runtime --initdb \
+        --repositories-file /etc/apk/repositories \
+        --keys-dir /etc/apk/keys \
+        --no-scripts add --no-cache \
+        bash \
+        bind-tools \
+        coreutils \
+        curl \
+        "gcc-${RUNTIME_GCC_MAJOR}-default" \
+        git \
+        git-lfs \
+        glibc-locale-en \
+        jemalloc \
+        jq \
+        kubectl-latest \
+        openssh-client \
+        openssh-server \
+        psmisc \
+        python3 \
+        "python-${RUNTIME_PYTHON}" \
+        "python-${RUNTIME_PYTHON}-base" \
+        R \
+        rsync \
+        zip \
+    && find /runtime/var/lib/db/sbom -maxdepth 1 -name 'glibc-*.spdx.json' -print -quit | grep -q . \
+    && test -x /runtime/usr/bin/git-lfs \
+    && test -x /runtime/usr/bin/kubectl \
+    && test -x /runtime/usr/bin/git \
+    && test -x "/runtime/usr/bin/python${RUNTIME_PYTHON}" \
+    && test -d "/runtime/usr/lib/python${RUNTIME_PYTHON}" \
+    && test -e "/runtime/usr/lib/libpython${RUNTIME_PYTHON}.so.1.0" \
+    && chroot /runtime "/usr/bin/python${RUNTIME_PYTHON}" -c 'import sys; assert "%d.%d" % sys.version_info[:2] == sys.argv[1]' "${RUNTIME_PYTHON}" \
+    && chroot /runtime /usr/bin/gcc --version | grep -E " ${RUNTIME_GCC_MAJOR}\\." \
+    && rm -rf /runtime/etc/apk /runtime/lib/apk /runtime/var/cache/apk \
+    && rm -f /runtime/sbin/apk /runtime/usr/sbin/apk \
+    && find /runtime \( -type f -o -type l \) \( -name 'libc.so.[0-9]*' -o -name 'ld-linux-*.so*' -o -name 'libstdc++.so.[0-9]*' \) -delete
+
+FROM ${GO_DEV_IMAGE} AS wolfi-r-packages
+USER root
+RUN apk add --no-cache R R-dev Rcpp build-base \
+    && mkdir -p /opt/runtime-r-libs \
+    && cp -a /usr/lib/R/library/Rcpp /opt/runtime-r-libs/ \
+    && Rscript -e 'install.packages(c("RInside", "inline"), repos="https://cloud.r-project.org", lib="/opt/runtime-r-libs")'
+
+FROM ${JDK_FIPS_DEV_IMAGE} AS installer
+ARG APK_FILE
+USER root
+WORKDIR /work
+ENV APK_FILE=${APK_FILE}
+
+COPY ${APK_FILE} /work/
+RUN apk add --no-cache --allow-untrusted "/work/${APK_FILE##*/}"
+
+FROM ${JDK_FIPS_RUNTIME_IMAGE} AS runtime
+ARG RUNTIME_GCC_MAJOR
+ARG RUNTIME_PYTHON
+USER root
+
+COPY --from=wolfi-runtime-deps /runtime/ /
+COPY --from=wolfi-r-packages /opt/runtime-r-libs /usr/local/lib/R/site-library
+COPY --from=installer /opt/HPCCSystems /opt/HPCCSystems
+COPY --from=installer /var/lib/HPCCSystems/hpcc-baseline /var/lib/HPCCSystems/hpcc-baseline
+COPY --from=installer /var/lib/db/sbom/hpccsystems-platform-*.spdx.json /var/lib/db/sbom/
+
+RUN test ! -e /sbin/apk \
+    && test ! -e /usr/sbin/apk \
+    && test "$(sed -n 's/^PYTHON=//p' /var/lib/HPCCSystems/hpcc-baseline)" = "${RUNTIME_PYTHON}" \
+    && while IFS=' ' read -r soname library; do \
+        if [ ! -e "/opt/HPCCSystems/lib/${soname}" ]; then \
+            ln -s "${library}" "/opt/HPCCSystems/lib/${soname}"; \
+        fi; \
+    done < /opt/HPCCSystems/lib/soname-links.txt \
+    && rm -f /opt/HPCCSystems/lib/soname-links.txt \
+    && (grep -q '^hpcc:' /etc/group || addgroup -g 10001 hpcc) \
+    && (id hpcc >/dev/null 2>&1 || adduser -D -h /home/hpcc -u 10000 -G hpcc -s /bin/bash hpcc) \
+    && mkdir -p /run/sshd /var/lib/HPCCSystems /var/log/HPCCSystems /var/lock/HPCCSystems /var/run/HPCCSystems \
+    && chown -R hpcc:hpcc /home/hpcc /var/lib/HPCCSystems /var/log/HPCCSystems /var/lock/HPCCSystems /var/run/HPCCSystems
+
+ENV LANG=en_US.UTF-8 \
+    LANGUAGE=en_US:en \
+    LC_ALL=en_US.UTF-8 \
+    PATH="/opt/HPCCSystems/bin:${PATH}" \
+    HPCC_containerized=1 \
+    HPCC_RUNTIME_GCC_MAJOR=${RUNTIME_GCC_MAJOR} \
+    R_LIBS_SITE=/usr/local/lib/R/site-library
+
+USER hpcc
+WORKDIR /var/lib/HPCCSystems
+ENTRYPOINT ["/bin/bash", "--login", "-c"]
+
+FROM ${GO_DEV_IMAGE} AS runtime-audit
+USER root
+RUN apk add --no-cache binutils file
+ARG RUNTIME_PYTHON
+COPY --from=runtime / /image/
+RUN test ! -e /image/sbin/apk \
+    && test ! -e /image/usr/sbin/apk \
+    && for command in bash git git-lfs kubectl java python3 Rscript ssh rsync jq curl; do \
+        test -x "/image/usr/bin/${command}" || test -x "/image/bin/${command}"; \
+    done \
+    && test -d /image/var/lib/db/sbom \
+    && test -f /image/var/lib/db/sbom/hpccsystems-platform-*.runtime.spdx.json \
+    && test -f /image/var/lib/db/sbom/hpccsystems-platform-*.runtime-vcpkg.spdx.json \
+    && test -x /image/usr/bin/git-lfs \
+    && test -x /image/usr/bin/kubectl \
+    && test -d /image/usr/local/lib/R/site-library/RInside \
+    && test -d /image/usr/local/lib/R/site-library/inline \
+    && test -x /image/usr/bin/gcc \
+    && test -x /image/usr/bin/g++ \
+    && test -x /image/opt/HPCCSystems/bin/eclcc \
+    && test -e "/image/usr/lib/libpython${RUNTIME_PYTHON}.so.1.0" \
+    && chroot /image /bin/bash --login -c 'git-lfs version && kubectl version --client=true && gcc --version && g++ --version && printf "int main() { return 0; }\n" > /tmp/eclcc-link-test.cpp && g++ /tmp/eclcc-link-test.cpp -o /tmp/eclcc-link-test && /tmp/eclcc-link-test && python3 --version && R_LIBS_SITE=/usr/local/lib/R/site-library Rscript -e "library(Rcpp); library(RInside); library(inline)"'
+RUN python_plugin="$(find /image/opt/HPCCSystems -type f -name 'libpy3embed.so' -print -quit)" \
+    && test -n "${python_plugin}" \
+    # py3embed owns interpreter initialization and GIL state; load it from a native HPCC host, not ctypes.
+    && python_version="$(printf '%s\n' \
+        'IMPORT Python3;' \
+        'STRING pythonVersion() := EMBED(Python3 : FOLD)' \
+        '    import sys' \
+        '    return "%d.%d" % sys.version_info[:2]' \
+        'ENDEMBED;' \
+        'pythonVersion();' \
+        | LD_LIBRARY_PATH=/opt/HPCCSystems/lib chroot /image /opt/HPCCSystems/bin/eclcc -Me -)" \
+    && { test "${python_version}" = "'${RUNTIME_PYTHON}'" || { \
+        echo "py3embed Python version mismatch: expected '${RUNTIME_PYTHON}', got ${python_version}" >&2; exit 1; \
+    }; } \
+    && touch /runtime-audit-passed
+
+FROM runtime AS final
+RUN --mount=type=bind,from=runtime-audit,source=/,target=/runtime-audit,ro \
+    test -f /runtime-audit/runtime-audit-passed
