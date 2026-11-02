@@ -148,3 +148,10 @@ top-level `Dockerfile` in this directory. The Dockerfiles in this folder live in
 `platform-core-ubuntu-22.04/Dockerfile` and `examples/numpy/addnumpy/Dockerfile`). If you intend to use
 `action.yml` directly as a Docker Action, verify the expected `Dockerfile` is present or adjust the action accordingly.
 
+
+**Chainguard builds**
+
+[chainguard/](chainguard/README.md) contains standalone HPCC-Platform package
+builds, a container-backed CMake command, toolchain image creation, and runtime
+image validation. Run `./dockerfiles/chainguard/build.sh --glibc 2.34 --gcc 11`
+from the HPCC-Platform root; no LN checkout is required.

@@ -1,0 +1,98 @@
+# syntax=docker/dockerfile:1.7
+
+ARG BASE_IMAGE=useast.jfrog.lexisnexisrisk.com/glb-oci-virtual/lexisnexisrisk.com/gcc-glibc:latest-dev
+ARG SYSROOT_IMAGE
+ARG MONO_IMAGE=mono:6.12
+
+FROM ${MONO_IMAGE} AS mono
+
+FROM ${SYSROOT_IMAGE} AS sysroot
+RUN apt-get update || { \
+        find /etc/apt -type f \( -name '*.list' -o -name '*.sources' \) -exec sed -i \
+            -e 's|http://archive.ubuntu.com/ubuntu/|http://old-releases.ubuntu.com/ubuntu/|g' \
+            -e 's|http://security.ubuntu.com/ubuntu/|http://old-releases.ubuntu.com/ubuntu/|g' \
+            -e 's|http://ports.ubuntu.com/ubuntu-ports/|http://old-releases.ubuntu.com/ubuntu/|g' {} + \
+        && apt-get update; \
+    } \
+    && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends libc6-dev linux-libc-dev libcrypt-dev uuid-dev libtirpc-dev libstdc++6 libgcc-s1 python3 libpython3-dev \
+    && rm -rf /var/lib/apt/lists/*
+ARG GLIBC_BASELINE
+COPY prepare-sysroot.sh /tmp/prepare-sysroot.sh
+RUN /tmp/prepare-sysroot.sh /opt/hpcc-sysroot "${GLIBC_BASELINE}"
+
+FROM ${BASE_IMAGE}
+
+# Layers shared by every GCC/sysroot combination come first so a build matrix reuses them.
+RUN { apk del --no-cache build-base gcc || true; } \
+    && sed -i '/^gcc=/d' /etc/apk/world \
+    && apk add --no-cache \
+        autoconf \
+        autoconf-archive \
+        automake \
+        bash \
+        bison \
+        cmake \
+        coreutils \
+        curl \
+        flex \
+        git \
+        libtool \
+        m4 \
+        melange \
+        ninja \
+        nodejs \
+        npm \
+        openjdk-21-default-jdk \
+        perl \
+        pkgconf-dev \
+        posix-libc-utils \
+        python3 \
+        unzip \
+        zip
+
+ENV JAVA_HOME=/usr/lib/jvm/java-21-openjdk
+
+# vcpkg's NuGet binary cache runs nuget.exe under mono, which Wolfi does not package.
+COPY --from=mono /usr/bin/mono-sgen /usr/bin/
+COPY --from=mono /usr/lib/libmono-native.so.0.0.0 /usr/lib/libMonoPosixHelper.so /usr/lib/libmono-btls-shared.so /usr/lib/
+COPY --from=mono /usr/lib/mono/4.5 /usr/lib/mono/4.5
+COPY --from=mono /usr/lib/mono/gac /usr/lib/mono/gac
+COPY --from=mono /etc/mono /etc/mono
+# Matches the nuget.exe pinned in HPCC-Platform/vcpkg/scripts/vcpkg-tools.json.
+ARG NUGET_VERSION=6.10.0
+ARG NUGET_SHA512=71d7307bb89de2df3811419c561efa00618a4c68e6ce481b0bdfc94c7c6c6d126a54eb26a0015686fabf99f109744ca41fead99e97139cdc86dde16a5ec3e7cf
+RUN ln -s mono-sgen /usr/bin/mono \
+    && ln -s libmono-native.so.0.0.0 /usr/lib/libmono-native.so.0 \
+    && ln -s libmono-native.so.0 /usr/lib/libmono-native.so \
+    && mono /usr/lib/mono/4.5/cert-sync.exe --quiet /etc/ssl/certs/ca-certificates.crt \
+    && mkdir -p /opt/nuget \
+    && curl -fsSL -o /opt/nuget/nuget.exe "https://dist.nuget.org/win-x86-commandline/v${NUGET_VERSION}/nuget.exe" \
+    && echo "${NUGET_SHA512}  /opt/nuget/nuget.exe" | sha512sum -c - \
+    && mono /opt/nuget/nuget.exe help >/dev/null
+
+WORKDIR /
+
+# Docker invalidates the cache from the first RUN after an ARG, so declare it only here.
+ARG GCC_MAJOR
+RUN apk add --no-cache "gcc-${GCC_MAJOR}-default" \
+    && gcc --version | grep -E " ${GCC_MAJOR}\\." \
+    && g++ --version | grep -E " ${GCC_MAJOR}\\." \
+    && ldconfig
+
+# fixincludes copied Wolfi's glibc headers into include-fixed, which GCC searches before the sysroot; keep only GCC's own limits headers.
+RUN fixed="$(gcc -print-file-name=include-fixed)" \
+    && find "${fixed}" -mindepth 1 ! -type d ! -name limits.h ! -name syslimits.h ! -name README -delete \
+    && find "${fixed}" -mindepth 1 -type d -empty -delete
+
+ARG SYSROOT_IMAGE
+ARG GLIBC_BASELINE
+COPY --from=sysroot /opt/hpcc-sysroot /opt/hpcc-sysroot
+# HPCC's CALC_DEPS install step resolves py3embed's libpython against host library paths only.
+RUN for lib in /opt/hpcc-sysroot/usr/lib/libpython3.*.so.1.0; do ln -sf "${lib}" /usr/lib/; done
+ENV HPCC_SYSROOT=/opt/hpcc-sysroot
+LABEL org.hpccsystems.glibc-baseline="${GLIBC_BASELINE}" \
+      org.hpccsystems.gcc-major="${GCC_MAJOR}" \
+      org.hpccsystems.sysroot-image="${SYSROOT_IMAGE}"
+
+ENTRYPOINT []
+CMD ["/bin/bash"]
