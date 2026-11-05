@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Combobox as ComboBoxBase, Dropdown as DropdownBase, Option, Field, Input, Checkbox, RadioGroup, Radio, Link, ProgressBar, Skeleton, SkeletonItem } from "@fluentui/react-components";
+import { Combobox as ComboBoxBase, Dropdown as DropdownBase, Option, Field, Input, Checkbox, RadioGroup, Radio, Link, ProgressBar, Skeleton, SkeletonItem, Spinner } from "@fluentui/react-components";
 import type { ComboboxProps } from "@fluentui/react-components";
 import { scopedLogger } from "@hpcc-js/util";
 import { FileSpray, FileSprayService, FileSprayStates, WUStateID } from "@hpcc-js/comms";
@@ -913,6 +913,81 @@ export const GroupMembersField: React.FunctionComponent<GroupMembersProps> = (pr
     }, [props.groupname]);
 
     return <AsyncDropdown {...props} options={users} />;
+};
+
+export interface UserFieldProps {
+    name?: string;
+    label?: string;
+    required?: boolean;
+    selectedKey?: string;
+    errorMessage?: string;
+    onChange?: (value: string) => void;
+}
+
+export const UserField: React.FunctionComponent<UserFieldProps> = ({ label, required, selectedKey, errorMessage, onChange }) => {
+    const [users, setUsers] = React.useState<IComboBoxOption[]>([]);
+    const [loading, setLoading] = React.useState(false);
+
+    React.useEffect(() => {
+        let cancelled = false;
+        setLoading(true);
+        const t = window.setTimeout(() => {
+            WsAccess.Users({ request: { Name: selectedKey ?? "", PageSize: 25 } }).then(({ UserQueryResponse }) => {
+                if (cancelled) return;
+                setUsers((UserQueryResponse?.Users?.User ?? []).map(u => ({ key: u.username, text: u.username })));
+                setLoading(false);
+            }).catch(err => {
+                logger.error(err);
+                if (!cancelled) setLoading(false);
+            });
+        }, 300);
+        return () => {
+            cancelled = true;
+            window.clearTimeout(t);
+        };
+    }, [selectedKey]);
+
+    // Freeform so account names not returned by UserQuery (e.g. virtual principals,
+    // or when directory enumeration is restricted) can still be entered manually.
+    return <Field label={label} required={required} validationMessage={errorMessage}>
+        <ComboBoxBase freeform autoComplete="on" value={selectedKey ?? ""} selectedOptions={selectedKey ? [selectedKey] : []}
+            expandIcon={loading ? <Spinner size="extra-tiny" /> : undefined}
+            onOptionSelect={(_, data) => { if (data.optionValue !== undefined) onChange?.(data.optionValue); }}
+            onInput={ev => onChange?.((ev.target as HTMLInputElement).value)}>
+            {users.map(o => <Option key={String(o.key)} value={String(o.key)} text={o.text}>{o.text}</Option>)}
+        </ComboBoxBase>
+    </Field>;
+};
+
+export interface GroupFieldProps {
+    name?: string;
+    label?: string;
+    required?: boolean;
+    selectedKey?: string;
+    errorMessage?: string;
+    onChange?: (value: string) => void;
+}
+
+export const GroupField: React.FunctionComponent<GroupFieldProps> = ({ label, required, selectedKey, errorMessage, onChange }) => {
+    const [groups, setGroups] = React.useState<IComboBoxOption[]>([]);
+
+    React.useEffect(() => {
+        WsAccess.Groups({ request: { PageSize: 1000 } }).then(({ GroupQueryResponse }) => {
+            const _groups = (GroupQueryResponse?.Groups?.Group ?? [])
+                .map(g => ({ key: g.name, text: g.name }))
+                .sort((a, b) => a.text.localeCompare(b.text));
+            setGroups(_groups);
+        }).catch(err => logger.error(err));
+    }, []);
+
+    // Freeform so group names not returned by GroupQuery can still be entered manually.
+    return <Field label={label} required={required} validationMessage={errorMessage}>
+        <ComboBoxBase freeform autoComplete="on" value={selectedKey ?? ""} selectedOptions={selectedKey ? [selectedKey] : []}
+            onOptionSelect={(_, data) => { if (data.optionValue !== undefined) onChange?.(data.optionValue); }}
+            onInput={ev => onChange?.((ev.target as HTMLInputElement).value)}>
+            {groups.map(o => <Option key={String(o.key)} value={String(o.key)} text={o.text}>{o.text}</Option>)}
+        </ComboBoxBase>
+    </Field>;
 };
 
 export interface PermissionTypeProps extends Omit<AsyncDropdownProps, "options"> {

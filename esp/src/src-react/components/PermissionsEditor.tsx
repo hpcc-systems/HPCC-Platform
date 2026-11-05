@@ -1,19 +1,19 @@
 import * as React from "react";
 import { CommandBar, ContextualMenuItemType, ICommandBarItemProps } from "./CommandBarV9";
-import { Checkbox, Label } from "@fluentui/react-components";
+import { Badge, Checkbox, Label, tokens } from "@fluentui/react-components";
 import { WsAccess, AccessService } from "@hpcc-js/comms";
 import { scopedLogger } from "@hpcc-js/util";
 import nlsHPCC from "src/nlsHPCC";
 import { useConfirm } from "../hooks/confirm";
 import { HolyGrail } from "../layouts/HolyGrail";
-import { AddGroupResourceForm } from "./forms/AddGroupResource";
+import { AddAccountResourceForm } from "./forms/AddAccountResource";
 
 const logger = scopedLogger("src-react/components/PermissionsEditor.tsx");
 
 const service = new AccessService({ baseUrl: "" });
 
 // from ShowIndividualPermissionsWidget.js
-const calcPermissionState = (field, value, row) => {
+export const calcPermissionState = (field, value, row) => {
     switch (field) {
         case "allow_access":
             row.allow_full = value && row.allow_read && row.allow_write;
@@ -80,9 +80,10 @@ export const PermissionsEditor: React.FunctionComponent<PermissionsEditorProps> 
     const refreshData = React.useCallback(() => {
         service.ResourcePermissions({ BasednName: BaseDn, name: Name })
             .then(({ Permissions }: WsAccess.ResourcePermissionsResponse) => {
-                setData(Permissions?.Permission.map(Permission => {
+                setData((Permissions?.Permission ?? []).map(Permission => {
                     return {
                         account_name: Permission.account_name,
+                        account_type: Permission.account_type ?? 1,
                         allow_access: Permission.allow_access ?? false,
                         allow_read: Permission.allow_read ?? false,
                         allow_write: Permission.allow_write ?? false,
@@ -101,13 +102,14 @@ export const PermissionsEditor: React.FunctionComponent<PermissionsEditorProps> 
 
     const [DeleteConfirm, setShowDeleteConfirm] = useConfirm({
         title: nlsHPCC.Delete,
-        message: nlsHPCC.DeleteSelectedGroups + "\n\n" + data[selectedIndex]?.account_name,
+        message: nlsHPCC.DeleteSelectedPermissions + "\n\n" + data[selectedIndex]?.account_name,
         onSubmit: React.useCallback(() => {
             service.PermissionAction({
                 action: "delete",
                 BasednName: BaseDn,
                 rname: Name,
-                account_name: data[selectedIndex]?.account_name
+                account_name: data[selectedIndex]?.account_name,
+                account_type: data[selectedIndex]?.account_type
             })
                 .then(() => refreshData())
                 .catch(err => logger.error(err))
@@ -151,7 +153,7 @@ export const PermissionsEditor: React.FunctionComponent<PermissionsEditorProps> 
             action: "update",
             BasednName: BaseDn,
             rname: Name,
-            account_type: 1,
+            account_type: permission.account_type,
             ...permission
         }).then(({ retcode, retmsg }) => {
             if (retcode === 0) {
@@ -185,7 +187,12 @@ export const PermissionsEditor: React.FunctionComponent<PermissionsEditorProps> 
                     {data?.map((permission, index) => (
                         <div key={`${permission.account_name}-${index}`} style={{ display: "flex", flexDirection: "row", marginBottom: 5 }}>
                             <div><Checkbox checked={index === selectedIndex ? true : false} onChange={(ev) => onRowSelect(ev, index)} /></div>
-                            <div style={{ flexGrow: 1 }}>{permission.account_name}</div>
+                            <div style={{ flexGrow: 1, display: "flex", alignItems: "center", gap: tokens.spacingHorizontalSNudge }}>
+                                <Badge appearance="outline" size="small" color="informative">
+                                    {permission.account_type === 0 ? nlsHPCC.User : nlsHPCC.Group}
+                                </Badge>
+                                {permission.account_name}
+                            </div>
                             <div style={{ width: 36, margin: "0 10px" }}><Checkbox checked={permission.allow_access} onChange={(ev) => onPermissionCheckboxClick(ev, permission, "allow_access")} /></div>
                             <div style={{ width: 36, margin: "0 10px" }}><Checkbox checked={permission.allow_read} onChange={(ev) => onPermissionCheckboxClick(ev, permission, "allow_read")} /></div>
                             <div style={{ width: 36, margin: "0 10px" }}><Checkbox checked={permission.allow_write} onChange={(ev) => onPermissionCheckboxClick(ev, permission, "allow_write")} /></div>
@@ -199,7 +206,7 @@ export const PermissionsEditor: React.FunctionComponent<PermissionsEditorProps> 
                 </div>
             }
         />
-        <AddGroupResourceForm rname={Name} BasednName={BaseDn} refreshGrid={refreshData} showForm={showAddGroup} setShowForm={setShowAddGroup} />
+        <AddAccountResourceForm rname={Name} BasednName={BaseDn} refreshGrid={refreshData} showForm={showAddGroup} setShowForm={setShowAddGroup} />
         <DeleteConfirm />
     </>;
 };
