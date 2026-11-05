@@ -1,0 +1,1091 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HPCC-Platform Changelog Viewer</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    [hidden] { display: none !important; }
+
+    :root {
+      --bg:         #0d1117;
+      --surface:    #161b22;
+      --surface2:   #21262d;
+      --border:     #30363d;
+      --accent:     #388bfd;
+      --accent-bg:  rgba(56,139,253,.12);
+      --text:       #e6edf3;
+      --muted:      #8b949e;
+      --dim:        #6e7681;
+      --green:      #3fb950;
+      --red:        #f85149;
+      --amber:      #d29922;
+      --tag-bg:     #0d419d;
+      --tag-text:   #79c0ff;
+      --tag-border: rgba(56,139,253,.3);
+      --radius:     8px;
+    }
+
+    :root[data-theme="light"] {
+      --bg:         #f6f8fa;
+      --surface:    #ffffff;
+      --surface2:   #eaeef2;
+      --border:     #d0d7de;
+      --accent:     #0969da;
+      --accent-bg:  rgba(9,105,218,.12);
+      --text:       #1f2328;
+      --muted:      #57606a;
+      --dim:        #6e7781;
+      --green:      #1a7f37;
+      --red:        #cf222e;
+      --amber:      #9a6700;
+      --tag-bg:     #ddf4ff;
+      --tag-text:   #0969da;
+      --tag-border: rgba(9,105,218,.3);
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    .site-header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 0 2rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      height: 60px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .site-header svg { flex-shrink: 0; fill: var(--tag-text); }
+    .site-header .title { font-size: 1rem; font-weight: 600; white-space: nowrap; }
+    .site-header .subtitle { font-size: .8rem; color: var(--muted); white-space: nowrap; }
+    .header-sep { flex: 1; }
+    .mode-field { display: flex; align-items: center; gap: .45rem; color: var(--muted); font-size: .75rem; white-space: nowrap; }
+    .mode-field select { width: auto; min-width: 86px; padding: .35rem 1.8rem .35rem .55rem; font-size: .75rem; }
+    .badge {
+      background: var(--tag-bg);
+      border: 1px solid var(--tag-border);
+      color: var(--tag-text);
+      font-size: .7rem;
+      padding: .2rem .55rem;
+      border-radius: 20px;
+      font-weight: 600;
+      letter-spacing: .03em;
+    }
+
+    .page { max-width: 1100px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+
+    .controls-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+    .controls-card h2 {
+      font-size: .8rem;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      margin-bottom: 1.25rem;
+    }
+    .controls-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem; }
+    @media (max-width: 600px) { .controls-grid { grid-template-columns: 1fr; } }
+    .field { display: flex; flex-direction: column; gap: .4rem; }
+    .field-label { font-size: .78rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+    .field-label span { font-weight: 400; text-transform: none; color: var(--dim); font-size: .72rem; }
+    select {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text);
+      font-size: .875rem;
+      padding: .55rem 2.25rem .55rem .75rem;
+      width: 100%;
+      cursor: pointer;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%238b949e' d='M6 8L0 0h12z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right .85rem center;
+      transition: border-color .15s, box-shadow .15s;
+    }
+    select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-bg); }
+    select:disabled { opacity: .45; cursor: not-allowed; }
+
+    .multiselect { position: relative; }
+    .multiselect-toggle {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text);
+      font: inherit;
+      font-size: .875rem;
+      padding: .55rem .75rem;
+      width: 100%;
+      cursor: pointer;
+      text-align: left;
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+      transition: border-color .15s, box-shadow .15s;
+    }
+    .multiselect-toggle:focus-visible { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-bg); }
+    .multiselect-toggle .chev { margin-left: auto; flex-shrink: 0; opacity: .6; transition: transform .2s; }
+    .multiselect.open .multiselect-toggle .chev { transform: rotate(180deg); }
+    .multiselect-menu {
+      display: none;
+      position: absolute;
+      top: calc(100% + 4px);
+      left: 0;
+      right: 0;
+      z-index: 50;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      box-shadow: 0 8px 24px rgba(0,0,0,.4);
+      padding: .35rem;
+    }
+    .multiselect.open .multiselect-menu { display: block; }
+    .multiselect-options { max-height: 240px; overflow-y: auto; }
+    .multiselect-options label {
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+      padding: .35rem .5rem;
+      border-radius: 4px;
+      font-size: .82rem;
+      cursor: pointer;
+    }
+    .multiselect-options label:hover { background: var(--surface2); }
+    .multiselect-options input { accent-color: var(--accent); }
+    .multiselect-actions { display: flex; justify-content: flex-end; border-top: 1px solid var(--border); margin-top: .35rem; padding: .4rem .5rem .15rem; }
+    .link-button { appearance: none; background: none; border: 0; color: var(--accent); font: inherit; font-size: .75rem; cursor: pointer; }
+    .link-button:hover { text-decoration: underline; }
+
+    .controls-footer { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: .75rem; }
+    .tag-scope { display: flex; align-items: center; gap: .6rem; flex-wrap: wrap; }
+    .tag-scope label { font-size: .78rem; color: var(--muted); display: inline-flex; align-items: center; gap: .35rem; }
+    .tag-scope input[type="checkbox"] { accent-color: var(--accent); }
+    .tag-count, .rate-info { font-size: .78rem; color: var(--dim); }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: .45rem;
+      font-size: .875rem;
+      font-weight: 600;
+      border-radius: 6px;
+      padding: .55rem 1.25rem;
+      cursor: pointer;
+      transition: all .15s;
+      border: 1px solid transparent;
+      white-space: nowrap;
+    }
+    .btn:disabled { opacity: .45; cursor: not-allowed; }
+    .btn-primary { background: #238636; border-color: #2ea043; color: #fff; }
+    .btn-primary:hover:not(:disabled) { background: #2ea043; }
+    .btn-secondary { background: var(--surface2); border-color: var(--border); color: var(--muted); }
+    .btn-secondary:hover:not(:disabled) { background: var(--border); color: var(--text); }
+
+    #status-bar {
+      font-size: .8rem;
+      color: var(--muted);
+      min-height: 1.4em;
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+      margin-bottom: 1.25rem;
+      padding: 0 .25rem;
+    }
+    #status-bar[data-type="error"]   { color: var(--red); }
+    #status-bar[data-type="warning"] { color: var(--amber); }
+    #status-bar[data-type="success"] { color: var(--green); }
+    .spinner {
+      width: 14px; height: 14px;
+      border: 2px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+      flex-shrink: 0;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .results-header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: .75rem; margin-bottom: 1rem; }
+    .results-title { font-size: 1rem; font-weight: 600; display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; }
+    .results-meta { font-size: .8rem; color: var(--dim); }
+    .results-actions { display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; }
+    .tag-chip { background: var(--tag-bg); border: 1px solid var(--tag-border); color: var(--tag-text); font-size: .72rem; font-family: monospace; font-weight: 400; padding: .15rem .45rem; border-radius: 4px; }
+    .title-sep { font-size: .75rem; font-weight: 400; color: var(--muted); }
+
+    .cmp-section { margin-bottom: 1.75rem; }
+    .cmp-heading { font-size: .9rem; font-weight: 600; display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; margin-bottom: .6rem; }
+    .cmp-sub { font-size: .75rem; font-weight: 400; color: var(--muted); }
+    .set-label { font-size: .68rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; padding: .15rem .5rem; border-radius: 4px; border: 1px solid currentColor; }
+    .set-label.added { color: var(--green); }
+    .set-label.removed { color: var(--red); }
+    .cmp-section.removed .table-wrap { border-color: var(--red); }
+
+    .table-wrap { border: 1px solid var(--border); border-radius: var(--radius); overflow-x: auto; }
+    table { width: 100%; min-width: 760px; border-collapse: collapse; font-size: .8rem; table-layout: fixed; }
+    thead tr { background: var(--surface); border-bottom: 1px solid var(--border); }
+    thead th { padding: .6rem 1rem; text-align: left; font-size: .72rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; white-space: nowrap; }
+    .sort-button { appearance: none; background: none; border: 0; color: inherit; cursor: pointer; font: inherit; text-transform: inherit; letter-spacing: inherit; }
+    .sort-button:hover, .sort-button:focus-visible { color: var(--text); }
+    .sort-button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+    .sort-indicator { display: inline-block; min-width: 1em; margin-left: .25rem; }
+    tbody tr { border-bottom: 1px solid var(--surface2); transition: background .1s; }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: var(--surface); }
+    td { padding: .6rem 1rem; vertical-align: top; line-height: 1.5; }
+    .sha { width: 72px; }
+    .issue { width: 70px; }
+    .component { width: 120px; }
+    .date { width: 92px; }
+    td.sha { font-family: "SFMono-Regular", Consolas, monospace; white-space: nowrap; }
+    td.sha a { color: var(--accent); text-decoration: none; font-size: .78rem; }
+    td.sha a:hover { text-decoration: underline; }
+    td.msg { word-break: break-word; }
+    td.msg .subject { font-weight: 500; }
+    td.msg .body { font-size: .75rem; color: var(--muted); margin-top: .25rem; white-space: pre-wrap; word-break: break-word; }
+    td.date { white-space: nowrap; font-family: "SFMono-Regular", Consolas, monospace; font-size: .75rem; color: var(--dim); }
+    tr.removed td.sha { box-shadow: inset 3px 0 0 var(--red); }
+    .row-marker { color: var(--red); font-weight: 700; margin-right: .35rem; }
+
+    .empty { text-align: center; padding: 1.1rem 1rem; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); color: var(--dim); font-size: .875rem; }
+    .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+
+    .toast {
+      position: fixed;
+      bottom: 1.5rem; right: 1.5rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: .6rem 1rem;
+      font-size: .8rem;
+      color: var(--green);
+      box-shadow: 0 4px 16px rgba(0,0,0,.4);
+      transform: translateY(8px); opacity: 0;
+      transition: all .2s;
+      pointer-events: none;
+      z-index: 999;
+    }
+    .toast.show { transform: translateY(0); opacity: 1; }
+
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--dim); }
+  </style>
+</head>
+<body>
+
+<header class="site-header">
+  <svg width="24" height="24" viewBox="0 0 16 16" aria-hidden="true">
+    <path d="M8 0c4.42 0 8 3.58 8 8a8.013 8.013 0 0 1-5.45 7.59c-.4.08-.55-.17-.55-.38 0-.27.01-1.13.01-2.2 0-.75-.25-1.23-.54-1.48 1.78-.2 3.65-.88 3.65-3.95 0-.88-.31-1.59-.82-2.15.08-.2.36-1.02-.08-2.12 0 0-.67-.22-2.2.82-.64-.18-1.32-.27-2-.27-.68 0-1.36.09-2 .27-1.53-1.03-2.2-.82-2.2-.82-.44 1.1-.16 1.92-.08 2.12-.51.56-.82 1.28-.82 2.15 0 3.06 1.86 3.75 3.64 3.95-.23.2-.44.55-.51 1.07-.46.21-1.61.55-2.33-.66-.15-.24-.6-.83-1.23-.82-.67.01-.27.38.01.53.34.19.73.9.82 1.13.16.45.68 1.31 2.69.94 0 .67.01 1.3.01 1.49 0 .21-.15.45-.55.38A7.995 7.995 0 0 1 0 8c0-4.42 3.58-8 8-8Z"/>
+  </svg>
+  <div>
+    <div class="title">HPCC-Platform</div>
+    <div class="subtitle">Changelog Viewer</div>
+  </div>
+  <div class="header-sep"></div>
+  <label class="mode-field">
+    Mode
+    <select id="mode-select">
+      <option value="dark">Dark</option>
+      <option value="light">Light</option>
+    </select>
+  </label>
+  <span class="badge">hpcc-systems / HPCC-Platform</span>
+</header>
+
+<main class="page">
+
+  <section class="controls-card" aria-labelledby="controls-heading">
+    <h2 id="controls-heading">Select Tag Range</h2>
+    <div class="controls-grid">
+      <div class="field">
+        <label class="field-label" for="start-tag">Start Tag <span>(compare from — any order)</span></label>
+        <select id="start-tag" disabled></select>
+      </div>
+      <div class="field">
+        <label class="field-label" for="end-tag">End Tag <span>(compare to)</span></label>
+        <select id="end-tag" disabled></select>
+      </div>
+      <div class="field">
+        <span class="field-label" id="component-caption">Component <span>(optional)</span></span>
+        <div class="multiselect" id="component-filter">
+          <button type="button" class="multiselect-toggle" id="component-toggle" aria-haspopup="true" aria-expanded="false" aria-controls="component-menu" aria-labelledby="component-caption component-label">
+            <span id="component-label">All components</span>
+            <svg class="chev" width="12" height="12" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M12.78 5.22a.749.749 0 0 1 0 1.06l-4.25 4.25a.749.749 0 0 1-1.06 0L3.22 6.28a.749.749 0 1 1 1.06-1.06L8 8.939l3.72-3.719a.749.749 0 0 1 1.06 0Z"/></svg>
+          </button>
+          <div class="multiselect-menu" id="component-menu" role="group" aria-label="Filter by component">
+            <div class="multiselect-options" id="component-options"></div>
+            <div class="multiselect-actions">
+              <button type="button" class="link-button" id="component-clear">Clear all</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="field">
+        <label class="field-label" for="detail-mode">Message Detail</label>
+        <select id="detail-mode">
+          <option value="summary">One line</option>
+          <option value="full">Full commit message</option>
+        </select>
+      </div>
+    </div>
+    <div class="controls-footer">
+      <div class="tag-scope">
+        <span class="tag-count" id="tag-count"></span>
+        <label><input id="show-all-tags" type="checkbox"> Show all tags</label>
+        <button class="btn btn-secondary" id="reload-tags-btn" type="button">Reload tags</button>
+        <span class="rate-info" id="rate-info"></span>
+      </div>
+      <button class="btn btn-primary" id="run-btn" type="button" disabled>
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0a8 8 0 1 1 0 16A8 8 0 0 1 8 0ZM1.5 8a6.5 6.5 0 1 0 13 0 6.5 6.5 0 0 0-13 0Zm4.879-2.773 4.264 2.559a.25.25 0 0 1 0 .428l-4.264 2.559A.25.25 0 0 1 6 10.559V5.442a.25.25 0 0 1 .379-.215Z"/></svg>
+        Generate Changelog
+      </button>
+    </div>
+  </section>
+
+  <div id="status-bar" role="status" aria-live="polite">
+    <div class="spinner" id="spinner" aria-hidden="true" hidden></div>
+    <span id="status-text"></span>
+  </div>
+
+  <section id="results-section" aria-labelledby="results-title" hidden>
+    <div class="results-header">
+      <h2 class="results-title" id="results-title">Changelog</h2>
+      <div class="results-actions">
+        <span class="results-meta" id="results-meta"></span>
+        <button class="btn btn-secondary" id="copy-btn" type="button">
+          <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"/><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"/></svg>
+          Copy as text
+        </button>
+        <button class="btn btn-secondary" id="csv-btn" type="button">
+          <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M3.75 1.5a.25.25 0 0 0-.25.25v11.5c0 .138.112.25.25.25h8.5a.25.25 0 0 0 .25-.25V6H9.75A1.75 1.75 0 0 1 8 4.25V1.5Zm5.75.56v2.19c0 .138.112.25.25.25h2.19Zm-8.5-1.06A1.75 1.75 0 0 1 2.75 0h5.086c.464 0 .909.184 1.237.513l3.414 3.414c.329.328.513.773.513 1.237v8.086A1.75 1.75 0 0 1 11.25 15h-8.5A1.75 1.75 0 0 1 1 13.25V1.75Z"/></svg>
+          Export CSV
+        </button>
+      </div>
+    </div>
+    <div id="results-body"></div>
+  </section>
+
+</main>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(() => {
+  'use strict';
+
+  /* ── 1. Configuration ─────────────────────────────────────────────── */
+
+  const OWNER = 'hpcc-systems';
+  const REPO = 'HPCC-Platform';
+  const API_ROOT = 'https://api.github.com';
+  const REPO_PATH = `/repos/${OWNER}/${REPO}`;
+  const THEME_KEY = 'hpcc_changelog_theme';
+  const CACHE_PREFIX = 'clod:v1:';
+  const DEFAULT_TAG_PREFIX = 'community_10';
+  const PUBLIC_ISSUE_REPO = 'hpcc-systems/HPCC-Platform';
+  const PRIVATE_ISSUE_REPO = 'risk-HSY/HPCC-Platform';
+  const PRIVATE_ISSUE_START = 10000;
+  const COMPONENTS = ['build', 'config', 'dafilesrv', 'dali', 'dfuserver', 'documentation', 'eclcc', 'eclccserver', 'eclwatch', 'esp', 'evtool', 'hthor', 'roxie', 'sasha', 'security', 'testing', 'thor', 'tracing', 'unittests', 'xref', 'unspecified'];
+  const COMPONENT_ALIASES = { docs: 'documentation', 'ecl-watch': 'eclwatch' };
+  const TRAILER_LINE = /^(?:Impacts?|Resolves|Fixes|Closes|NoIssue|Signed-off-by|Co-authored-by|Reviewed-by|Change-Id)\b\s*:?/i;
+  // Version-stamp subjects. Community Edition stamps sit on tag-only side commits, so they would otherwise always appear as Start only.
+  const RELEASE_STAMP = /^(?:Split off \d|Community Edition \S+ (?:Gold|RC \d+|Release Candidate \d+)\s*$)/i;
+  // Statuses meaning the matching-refs endpoint itself is unavailable; rate limits and network errors never trigger a fallback.
+  const ENDPOINT_UNAVAILABLE = new Set([404, 410, 501]);
+  const SORT_COLUMNS = [['sha', 'SHA'], ['subject', 'Commit Message'], ['issue', 'Issue'], ['component', 'Component'], ['date', 'Date']];
+
+  /* ── 2. DOM references ────────────────────────────────────────────── */
+
+  const byId = id => document.getElementById(id);
+  const dom = {
+    modeSelect: byId('mode-select'),
+    startSel: byId('start-tag'),
+    endSel: byId('end-tag'),
+    componentFilter: byId('component-filter'),
+    componentToggle: byId('component-toggle'),
+    componentLabel: byId('component-label'),
+    componentOptions: byId('component-options'),
+    componentClear: byId('component-clear'),
+    detailMode: byId('detail-mode'),
+    tagCount: byId('tag-count'),
+    showAllTags: byId('show-all-tags'),
+    reloadTagsBtn: byId('reload-tags-btn'),
+    rateInfo: byId('rate-info'),
+    runBtn: byId('run-btn'),
+    statusBar: byId('status-bar'),
+    spinner: byId('spinner'),
+    statusText: byId('status-text'),
+    resultsSection: byId('results-section'),
+    resultsTitle: byId('results-title'),
+    resultsMeta: byId('results-meta'),
+    resultsBody: byId('results-body'),
+    copyBtn: byId('copy-btn'),
+    csvBtn: byId('csv-btn'),
+    toast: byId('toast')
+  };
+
+  /* ── 3. Application state ─────────────────────────────────────────── */
+
+  const state = {
+    tags: { prefix: DEFAULT_TAG_PREFIX, items: [], loading: false, fromCache: false },
+    comparison: null,
+    comparing: false,
+    componentOptions: [...COMPONENTS],
+    filters: { components: new Set(), detail: 'summary' },
+    sort: { column: 'date', direction: 'desc' },
+    requestInfo: { limit: null, remaining: null, resetAt: null }
+  };
+
+  /* ── 4. API and caching layer ─────────────────────────────────────── */
+
+  class GitHubError extends Error {
+    constructor(kind, message, status = 0) {
+      super(message);
+      this.kind = kind;
+      this.status = status;
+    }
+  }
+
+  function formatClock(date) {
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  }
+
+  function readResponseMeta(headers) {
+    const number = name => {
+      const value = headers.get(name);
+      return value === null || value === '' || Number.isNaN(Number(value)) ? null : Number(value);
+    };
+    return {
+      link: headers.get('link') || '',
+      limit: number('x-ratelimit-limit'),
+      remaining: number('x-ratelimit-remaining'),
+      reset: number('x-ratelimit-reset'),
+      retryAfter: number('retry-after')
+    };
+  }
+
+  function toGitHubError(status, meta, body) {
+    const apiMessage = typeof body?.message === 'string' ? body.message : '';
+    if ((status === 403 || status === 429) && meta.remaining === 0) {
+      const when = meta.reset !== null ? `after ${formatClock(new Date(meta.reset * 1000))}` : 'later';
+      const allowance = meta.limit ? ` Anonymous access allows ${meta.limit} requests per hour from your network address.` : '';
+      return new GitHubError('primary-rate-limit', `GitHub's anonymous API limit was reached. Try again ${when}.${allowance}`, status);
+    }
+    if (status === 429 || (status === 403 && meta.retryAfter !== null) || /secondary rate limit/i.test(apiMessage)) {
+      const wait = meta.retryAfter !== null ? `Wait ${meta.retryAfter} second${meta.retryAfter === 1 ? '' : 's'}` : 'Wait a minute';
+      return new GitHubError('secondary-rate-limit', `GitHub is temporarily limiting request bursts. ${wait} and try again.`, status);
+    }
+    if (status === 404) {
+      return new GitHubError('not-found', 'GitHub could not find the repository or the selected tag.', status);
+    }
+    const detail = apiMessage.split(/\.\s/)[0].replace(/\s+/g, ' ').trim().slice(0, 160);
+    return new GitHubError('api', `GitHub API error ${status}${detail ? `: ${detail}` : '.'}`, status);
+  }
+
+  // Single entry point for every GitHub request: anonymous, JSON, with rate-limit bookkeeping.
+  async function ghFetch(pathOrUrl) {
+    const url = pathOrUrl.startsWith(`${API_ROOT}/`) ? pathOrUrl : `${API_ROOT}${pathOrUrl}`;
+    let response;
+    try {
+      response = await fetch(url, { headers: { Accept: 'application/vnd.github+json' } });
+    } catch {
+      throw new GitHubError('network', 'Could not reach GitHub. Check your connection and try again.');
+    }
+    const meta = readResponseMeta(response.headers);
+    if (meta.remaining !== null) {
+      state.requestInfo = { limit: meta.limit, remaining: meta.remaining, resetAt: meta.reset !== null ? meta.reset * 1000 : null };
+    }
+    const body = await response.json().catch(() => null);
+    if (!response.ok) throw toGitHubError(response.status, meta, body);
+    if (body === null) throw new GitHubError('api', 'GitHub returned an unreadable response.', response.status);
+    return { data: body, meta };
+  }
+
+  function nextLink(link) {
+    const match = /<([^>]+)>;\s*rel="next"/.exec(link);
+    return match ? match[1] : null;
+  }
+
+  async function fetchAllPages(path) {
+    const items = [];
+    for (let url = path; url; ) {
+      const { data, meta } = await ghFetch(url);
+      if (!Array.isArray(data)) throw new GitHubError('api', 'GitHub returned an unexpected response.');
+      items.push(...data);
+      url = nextLink(meta.link);
+    }
+    return items;
+  }
+
+  async function fetchTagNames(prefix) {
+    let names;
+    try {
+      const refs = await fetchAllPages(`${REPO_PATH}/git/matching-refs/tags${prefix ? `/${encodeURIComponent(prefix)}` : ''}`);
+      names = refs.map(ref => String(ref.ref || '').replace(/^refs\/tags\//, ''));
+    } catch (error) {
+      if (!(error instanceof GitHubError) || !ENDPOINT_UNAVAILABLE.has(error.status)) throw error;
+      try {
+        const tags = await fetchAllPages(`${REPO_PATH}/tags?per_page=100`);
+        names = tags.map(tag => tag.name);
+      } catch (fallbackError) {
+        throw /rate-limit|network/.test(fallbackError.kind) ? fallbackError : error;
+      }
+    }
+    return [...new Set(names)]
+      .filter(name => name && (!prefix || name.startsWith(prefix)))
+      .sort(byTagDescending);
+  }
+
+  // Returns commits reachable from head but not from base (git log base..head), excluding merges and release stamps.
+  async function fetchDirection(base, head) {
+    const stats = { expected: 0, fetched: 0, merges: 0, stamps: 0 };
+    const commits = [];
+    let behindBy = 0;
+    let url = `${REPO_PATH}/compare/${encodeURIComponent(base)}...${encodeURIComponent(head)}?per_page=100`;
+    for (let first = true; url; first = false) {
+      const { data, meta } = await ghFetch(url);
+      if (first) {
+        stats.expected = data.ahead_by || 0;
+        behindBy = data.behind_by || 0;
+      }
+      for (const raw of data.commits || []) {
+        stats.fetched++;
+        if ((raw.parents || []).length > 1) { stats.merges++; continue; }
+        const commit = slimCommit(raw);
+        if (isReleaseStamp(commit)) stats.stamps++;
+        else commits.push(commit);
+      }
+      url = nextLink(meta.link);
+    }
+    return { commits, stats, behindBy };
+  }
+
+  // Directional comparison by Git reachability only — never by tag date or version order.
+  // The reverse request is made only when the forward response reports behind_by > 0.
+  // Commits are matched by SHA: a cherry-picked/backported change has a different SHA on each
+  // line and can therefore appear on both sides; the API exposes no patch-id to pair them.
+  async function compareTags(start, end) {
+    const forward = await fetchDirection(start, end);
+    const reverse = forward.behindBy > 0
+      ? await fetchDirection(end, start)
+      : { commits: [], stats: { expected: 0, fetched: 0, merges: 0, stamps: 0 } };
+    return {
+      start,
+      end,
+      endOnly: { commits: forward.commits, stats: forward.stats },
+      startOnly: { commits: reverse.commits, stats: reverse.stats }
+    };
+  }
+
+  const sessionCache = {
+    get(key) {
+      try {
+        const raw = sessionStorage.getItem(CACHE_PREFIX + key);
+        return raw ? JSON.parse(raw) : null;
+      } catch {
+        return null;
+      }
+    },
+    set(key, value) {
+      try {
+        sessionStorage.setItem(CACHE_PREFIX + key, JSON.stringify(value));
+      } catch {
+        // Best effort: storage may be full or disabled.
+      }
+    }
+  };
+
+  /* ── 5. Pure domain helpers ───────────────────────────────────────── */
+
+  function byTagDescending(left, right) {
+    return right.localeCompare(left, undefined, { numeric: true, sensitivity: 'base' });
+  }
+
+  function slimCommit(raw) {
+    return {
+      sha: raw.sha,
+      message: raw.commit?.message || '',
+      author: raw.commit?.author?.name || raw.author?.login || '',
+      date: raw.commit?.author?.date || raw.commit?.committer?.date || ''
+    };
+  }
+
+  function isValidComparison(value) {
+    return Boolean(value && Array.isArray(value.endOnly?.commits) && Array.isArray(value.startOnly?.commits));
+  }
+
+  function subjectOf(commit) {
+    return commit.message.split('\n')[0].trim();
+  }
+
+  function isReleaseStamp(commit) {
+    return RELEASE_STAMP.test(subjectOf(commit));
+  }
+
+  function componentsFor(commit) {
+    const components = [...commit.message.matchAll(/^Impacts?:[ \t]*(.+)$/gim)]
+      .flatMap(match => match[1]
+      .replace(/\b(?:Resolves|Fixes|Closes|NoIssue|Signed-off-by):.*$/i, '')
+      .split(','))
+      .map(component => component.trim().replace(/\.$/, '').toLowerCase())
+      .map(component => COMPONENT_ALIASES[component] || component)
+      .filter(Boolean);
+    return [...new Set(components)];
+  }
+
+  function issueReferencesFor(commit) {
+    const references = new Map();
+    const explicitlyLinkedNumbers = new Set();
+    const githubReferences = /https?:\/\/github\.com\/([A-Za-z0-9_.-]+)\/([A-Za-z0-9_.-]+)\/(issues|pull)\/(\d+)\b/gi;
+
+    for (const match of commit.message.matchAll(githubReferences)) {
+      const [, owner, repository, type, number] = match;
+      const reference = { number, repository: `${owner}/${repository}`, type: type.toLowerCase() };
+      references.set(`${reference.repository}/${reference.type}/${number}`, reference);
+      explicitlyLinkedNumbers.add(number);
+    }
+
+    for (const match of commit.message.matchAll(/\b(?:HPCC|IDE)-(\d+)\b|#(\d+)\b/gi)) {
+      const number = match[1] || match[2];
+      if (explicitlyLinkedNumbers.has(number)) continue;
+      const reference = { number, repository: issueRepository(number), type: 'issues' };
+      references.set(`${reference.repository}/${reference.type}/${number}`, reference);
+    }
+
+    return [...references.values()];
+  }
+
+  function issuesFor(commit) {
+    return issueReferencesFor(commit).map(reference => reference.number);
+  }
+
+  function issueRepository(issue) {
+    return Number(issue) >= PRIVATE_ISSUE_START ? PRIVATE_ISSUE_REPO : PUBLIC_ISSUE_REPO;
+  }
+
+  // First prose line of the body, skipping trailers and squash bullets that repeat the subject.
+  function summaryLineFor(commit) {
+    const normalize = text => text.replace(/\s*\(#\d+\)\s*$/, '').replace(/\s+/g, ' ').trim().toLowerCase();
+    const [subjectLine, ...rest] = commit.message.split('\n');
+    const subject = normalize(subjectLine || '');
+    return rest
+      .map(line => line.trim().replace(/^[*-]\s+/, ''))
+      .find(line => line && normalize(line) !== subject && !TRAILER_LINE.test(line)) || '';
+  }
+
+  function bodyFor(commit, detail) {
+    return detail === 'full' ? commit.message.split('\n').slice(1).join('\n').trim() : summaryLineFor(commit);
+  }
+
+  function filterCommits(commits, filters) {
+    if (!filters.components.size) return commits;
+    return commits.filter(commit => {
+      const components = componentsFor(commit);
+      return components.length
+        ? components.some(component => filters.components.has(component))
+        : filters.components.has('unspecified');
+    });
+  }
+
+  function sortValue(commit, column) {
+    switch (column) {
+      case 'sha': return commit.sha;
+      case 'subject': return subjectOf(commit);
+      case 'issue': return issuesFor(commit).join(', ');
+      case 'component': return componentsFor(commit).join(', ');
+      default: return commit.date;
+    }
+  }
+
+  function sortCommits(commits, sort) {
+    const sign = sort.direction === 'asc' ? 1 : -1;
+    return [...commits].sort((left, right) =>
+      sign * sortValue(left, sort.column).localeCompare(sortValue(right, sort.column), undefined, { numeric: true, sensitivity: 'base' }));
+  }
+
+  function discoverComponents(options, commits) {
+    const known = new Set(options);
+    const found = [...new Set(commits.flatMap(componentsFor))].filter(component => !known.has(component)).sort();
+    return found.length ? [...options.filter(c => c !== 'unspecified'), ...found, 'unspecified'] : options;
+  }
+
+  function componentName(component) {
+    return component === 'unspecified' ? 'Unspecified' : component;
+  }
+
+  function formatDate(iso) {
+    const date = new Date(iso);
+    return iso && !Number.isNaN(date.getTime()) ? date.toISOString().slice(0, 10) : '';
+  }
+
+  function plural(count, word) {
+    return `${count} ${word}${count === 1 ? '' : 's'}`;
+  }
+
+  function escHtml(value) {
+    return String(value).replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+  }
+
+  function commitUrl(commit) {
+    return `https://github.com/${OWNER}/${REPO}/commit/${encodeURIComponent(commit.sha)}`;
+  }
+
+  /* ── 6. Rendering ─────────────────────────────────────────────────── */
+
+  function setStatus(message, type = '') {
+    dom.statusText.textContent = message;
+    dom.statusBar.dataset.type = type;
+  }
+
+  function showToast(message) {
+    dom.toast.textContent = message;
+    dom.toast.classList.add('show');
+    clearTimeout(showToast.timer);
+    showToast.timer = setTimeout(() => dom.toast.classList.remove('show'), 2500);
+  }
+
+  function renderBusy() {
+    const busy = state.tags.loading || state.comparing;
+    const noTags = !state.tags.items.length;
+    dom.spinner.hidden = !busy;
+    dom.startSel.disabled = dom.endSel.disabled = busy || noTags;
+    dom.showAllTags.disabled = dom.reloadTagsBtn.disabled = busy;
+    dom.runBtn.disabled = busy || !dom.startSel.value || !dom.endSel.value;
+  }
+
+  function renderRequestInfo() {
+    const { limit, remaining, resetAt } = state.requestInfo;
+    dom.rateInfo.textContent = remaining === null ? '' : `${remaining}${limit ? ` of ${limit}` : ''} GitHub requests left this hour`;
+    dom.rateInfo.title = resetAt ? `Anonymous GitHub API allowance resets at ${formatClock(new Date(resetAt))}` : '';
+  }
+
+  function renderTagSelects() {
+    const { items, loading, prefix } = state.tags;
+    const placeholder = loading ? '— loading tags —' : items.length ? '— select a tag —' : '— tags unavailable —';
+    for (const select of [dom.startSel, dom.endSel]) {
+      select.replaceChildren(new Option(placeholder, ''), ...items.map(name => new Option(name, name)));
+    }
+    if (items.length >= 2) {
+      dom.startSel.value = items[1];
+      dom.endSel.value = items[0];
+    }
+    dom.tagCount.textContent = loading ? '' : `${plural(items.length, 'tag')} available${prefix ? ` (${prefix}*)` : ''}`;
+  }
+
+  function renderComponentOptions() {
+    dom.componentOptions.replaceChildren(...state.componentOptions.map(component => {
+      const label = document.createElement('label');
+      const input = document.createElement('input');
+      input.type = 'checkbox';
+      input.value = component;
+      input.checked = state.filters.components.has(component);
+      label.append(input, componentName(component));
+      return label;
+    }));
+  }
+
+  function renderComponentLabel() {
+    const selected = [...state.filters.components];
+    dom.componentLabel.textContent = !selected.length
+      ? 'All components'
+      : selected.length === 1 ? componentName(selected[0]) : `${selected.length} components selected`;
+  }
+
+  function setComponentMenu(open) {
+    dom.componentFilter.classList.toggle('open', open);
+    dom.componentToggle.setAttribute('aria-expanded', String(open));
+  }
+
+  // The commits currently displayed, per section; also the single source for Copy and CSV.
+  function visibleSets() {
+    const { start, end, endOnly, startOnly } = state.comparison;
+    return [
+      { key: 'end', kind: 'added', label: '+ End only', tag: end, other: start, ...endOnly },
+      { key: 'start', kind: 'removed', label: '− Start only', tag: start, other: end, ...startOnly }
+    ].map(set => ({ ...set, shown: sortCommits(filterCommits(set.commits, state.filters), state.sort) }));
+  }
+
+  function tagChip(tag) {
+    return `<span class="tag-chip">${escHtml(tag)}</span>`;
+  }
+
+  function headerCellsHtml() {
+    const { column: activeColumn, direction } = state.sort;
+    return SORT_COLUMNS.map(([column, label]) => {
+      const active = column === activeColumn;
+      const ariaSort = active ? (direction === 'asc' ? 'ascending' : 'descending') : 'none';
+      const indicator = active ? (direction === 'asc' ? '▲' : '▼') : '';
+      return `<th class="${column}" scope="col" aria-sort="${ariaSort}"><button class="sort-button" type="button" data-sort="${column}">${label}<span class="sort-indicator" aria-hidden="true">${indicator}</span></button></th>`;
+    }).join('');
+  }
+
+  function rowHtml(commit, set) {
+    const body = bodyFor(commit, state.filters.detail);
+    const issues = issueReferencesFor(commit)
+      .map(issue => `<a href="${escHtml(`https://github.com/${issue.repository}/${issue.type}/${issue.number}`)}" target="_blank" rel="noopener">#${escHtml(issue.number)}</a>`)
+      .join(', ') || '—';
+    const components = componentsFor(commit).map(component => `<span class="badge">${escHtml(component)}</span>`).join(' ') || '—';
+    const removed = set.kind === 'removed';
+    const marker = removed
+      ? `<span class="row-marker" aria-hidden="true">−</span><span class="sr-only">Only in ${escHtml(set.tag)}: </span>`
+      : '';
+    return `<tr${removed ? ' class="removed"' : ''}>
+      <td class="sha"><a href="${escHtml(commitUrl(commit))}" target="_blank" rel="noopener" title="${escHtml(commit.sha)}">${escHtml(commit.sha.slice(0, 7))}</a></td>
+      <td class="msg"><div class="subject">${marker}${escHtml(subjectOf(commit))}</div>${body ? `<div class="body">${escHtml(body)}</div>` : ''}</td>
+      <td class="issue">${issues}</td>
+      <td class="component">${components}</td>
+      <td class="date">${escHtml(formatDate(commit.date))}</td>
+    </tr>`;
+  }
+
+  function sectionHtml(set) {
+    const headingId = `heading-${set.key}`;
+    const heading = `<h3 class="cmp-heading" id="${headingId}"><span class="set-label ${set.kind}">${set.label}</span> Only in ${tagChip(set.tag)} <span class="cmp-sub">not in ${escHtml(set.other)}</span></h3>`;
+    let content;
+    if (!set.commits.length) {
+      content = `<p class="empty">No commits found only in ${escHtml(set.tag)}.</p>`;
+    } else if (!set.shown.length) {
+      content = `<p class="empty">All ${plural(set.commits.length, 'commit')} only in ${escHtml(set.tag)} are hidden by the component filter.</p>`;
+    } else {
+      content = `<div class="table-wrap"><table aria-labelledby="${headingId}">
+        <thead><tr>${headerCellsHtml()}</tr></thead>
+        <tbody>${set.shown.map(commit => rowHtml(commit, set)).join('')}</tbody>
+      </table></div>`;
+    }
+    return `<section class="cmp-section ${set.kind}" data-set="${set.key}">${heading}${content}</section>`;
+  }
+
+  function renderResults() {
+    dom.resultsSection.hidden = !state.comparison;
+    if (!state.comparison) {
+      dom.resultsBody.replaceChildren();
+      return;
+    }
+    const sets = visibleSets();
+    const [endSet, startSet] = sets;
+    const stamps = endSet.stats.stamps + startSet.stats.stamps;
+    const merges = endSet.stats.merges + startSet.stats.merges;
+    const meta = [
+      `${endSet.shown.length} of ${endSet.commits.length} only in end`,
+      `${startSet.shown.length} of ${startSet.commits.length} only in start`
+    ];
+    if (stamps) meta.push(`${plural(stamps, 'release-stamp commit')} hidden`);
+    if (merges) meta.push(`${plural(merges, 'merge commit')} excluded`);
+
+    dom.resultsTitle.innerHTML = `Comparing ${tagChip(startSet.tag)} <span class="title-sep" aria-label="to">→</span> ${tagChip(endSet.tag)}`;
+    dom.resultsMeta.textContent = meta.join(' · ');
+    dom.resultsBody.innerHTML = sets.map(sectionHtml).join('');
+  }
+
+  function reportComparison(fromCache) {
+    const { start, end, endOnly, startOnly } = state.comparison;
+    const summary = `Done — ${endOnly.commits.length} only in ${end}, ${startOnly.commits.length} only in ${start}${fromCache ? ' (from this session’s cache)' : ''}.`;
+    const incomplete = [[endOnly, `End only (${end})`], [startOnly, `Start only (${start})`]]
+      .filter(([direction]) => direction.stats.fetched < direction.stats.expected)
+      .map(([direction, label]) => `${label}: GitHub returned ${direction.stats.fetched} of ${direction.stats.expected} commits`);
+    if (incomplete.length) setStatus(`${summary} Warning — the commit list may be incomplete. ${incomplete.join('; ')}.`, 'warning');
+    else setStatus(summary, 'success');
+  }
+
+  /* ── 7. Event handlers ────────────────────────────────────────────── */
+
+  async function loadTags({ force = false } = {}) {
+    const prefix = dom.showAllTags.checked ? '' : DEFAULT_TAG_PREFIX;
+    const cacheKey = `tags:${prefix ? `prefix:${prefix}` : 'all'}`;
+    const scopeLabel = prefix ? ` (${prefix}*)` : '';
+    state.tags = { prefix, items: [], loading: true, fromCache: false };
+    renderTagSelects();
+    renderBusy();
+    setStatus(`Loading tags${scopeLabel} from GitHub…`);
+    try {
+      const cached = force ? null : sessionCache.get(cacheKey);
+      const items = Array.isArray(cached) ? cached : await fetchTagNames(prefix);
+      if (!Array.isArray(cached)) sessionCache.set(cacheKey, items);
+      state.tags = { prefix, items, loading: false, fromCache: Array.isArray(cached) };
+      setStatus(`${plural(items.length, 'tag')} loaded${scopeLabel} — select a range and click Generate Changelog.`, 'success');
+    } catch (error) {
+      state.tags = { prefix, items: [], loading: false, fromCache: false };
+      setStatus(error.message, 'error');
+    } finally {
+      renderTagSelects();
+      renderBusy();
+      renderRequestInfo();
+    }
+  }
+
+  async function runComparison() {
+    if (state.comparing) return;
+    const start = dom.startSel.value;
+    const end = dom.endSel.value;
+    if (!start || !end) return setStatus('Select both a Start Tag and an End Tag.', 'error');
+    if (start === end) return setStatus('Start and End tags must be different.', 'error');
+
+    state.comparing = true;
+    renderBusy();
+    setStatus(`Comparing ${start} and ${end}…`);
+    try {
+      const cacheKey = `compare:${start}...${end}`;
+      const cached = sessionCache.get(cacheKey);
+      const fromCache = isValidComparison(cached);
+      const comparison = fromCache ? cached : await compareTags(start, end);
+      if (!fromCache) sessionCache.set(cacheKey, comparison);
+      state.comparison = comparison;
+      state.componentOptions = discoverComponents(state.componentOptions, [...comparison.endOnly.commits, ...comparison.startOnly.commits]);
+      renderComponentOptions();
+      renderResults();
+      reportComparison(fromCache);
+    } catch (error) {
+      state.comparison = null;
+      renderResults();
+      setStatus(error.message, 'error');
+    } finally {
+      state.comparing = false;
+      renderBusy();
+      renderRequestInfo();
+    }
+  }
+
+  function filterDescription() {
+    return state.filters.components.size ? [...state.filters.components].map(componentName).join(', ') : '';
+  }
+
+  function copyAsText() {
+    if (!state.comparison) return;
+    const { start, end } = state.comparison;
+    const filter = filterDescription();
+    const line = commit => `${commit.sha.slice(0, 7)}  ${subjectOf(commit)}  [${commit.author}]  ${formatDate(commit.date)}`;
+    const blocks = visibleSets().map(set =>
+      `${set.kind === 'added' ? '+' : '-'} Only in ${set.tag} (not in ${set.other}) — ${plural(set.shown.length, 'commit')}\n` +
+      `${'─'.repeat(60)}\n${set.shown.length ? set.shown.map(line).join('\n') : '(none)'}`);
+    const text = `Comparison: ${start} → ${end}\nComponent filter: ${filter || 'none (all components)'}\n\n${blocks.join('\n\n')}`;
+    navigator.clipboard.writeText(text)
+      .then(() => showToast('✓ Copied to clipboard'))
+      .catch(() => setStatus('Could not copy to the clipboard in this browser.', 'error'));
+  }
+
+  function csvCell(value) {
+    let text = String(value ?? '');
+    if (/^[=+\-@\t\r]/.test(text)) text = `'${text}`;
+    return `"${text.replace(/"/g, '""')}"`;
+  }
+
+  function exportCsv() {
+    if (!state.comparison) return;
+    const { start, end } = state.comparison;
+    const filter = filterDescription();
+    const header = ['SHA', 'SHA_SHORT', 'SUBJECT', 'AUTHOR', 'DATE', 'ISSUES', 'COMPONENTS', 'URL', 'ONLY_IN', 'NOT_IN', 'COMPONENT_FILTER'];
+    const rows = visibleSets().flatMap(set => set.shown.map(commit => [
+      commit.sha,
+      commit.sha.slice(0, 7),
+      subjectOf(commit),
+      commit.author,
+      formatDate(commit.date),
+      issuesFor(commit).join(' '),
+      componentsFor(commit).join(' '),
+      commitUrl(commit),
+      set.tag,
+      set.other,
+      filter || 'none'
+    ]));
+    const csv = [header, ...rows].map(row => row.map(csvCell).join(',')).join('\r\n');
+    const safe = name => name.replace(/[^\w.-]+/g, '_');
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(new Blob(['\ufeff', csv], { type: 'text/csv;charset=utf-8' }));
+    link.download = `changelog_${safe(start)}_vs_${safe(end)}${filter ? '_filtered' : ''}.csv`;
+    link.click();
+    setTimeout(() => URL.revokeObjectURL(link.href), 0);
+    showToast('✓ CSV download started');
+  }
+
+  dom.modeSelect.addEventListener('change', () => {
+    document.documentElement.dataset.theme = dom.modeSelect.value;
+    try {
+      localStorage.setItem(THEME_KEY, dom.modeSelect.value);
+    } catch {
+      return;
+    }
+  });
+
+  dom.startSel.addEventListener('change', renderBusy);
+  dom.endSel.addEventListener('change', renderBusy);
+  dom.showAllTags.addEventListener('change', () => loadTags());
+  dom.reloadTagsBtn.addEventListener('click', () => loadTags({ force: true }));
+  dom.runBtn.addEventListener('click', runComparison);
+
+  dom.componentToggle.addEventListener('click', () => setComponentMenu(!dom.componentFilter.classList.contains('open')));
+  dom.componentOptions.addEventListener('change', event => {
+    const { value, checked } = event.target;
+    if (checked) state.filters.components.add(value);
+    else state.filters.components.delete(value);
+    renderComponentLabel();
+    renderResults();
+  });
+  dom.componentClear.addEventListener('click', () => {
+    state.filters.components.clear();
+    renderComponentOptions();
+    renderComponentLabel();
+    renderResults();
+  });
+  document.addEventListener('click', event => {
+    if (!dom.componentFilter.contains(event.target)) setComponentMenu(false);
+  });
+  document.addEventListener('keydown', event => {
+    if (event.key !== 'Escape' || !dom.componentFilter.classList.contains('open')) return;
+    setComponentMenu(false);
+    dom.componentToggle.focus();
+  });
+
+  dom.detailMode.addEventListener('change', () => {
+    state.filters.detail = dom.detailMode.value;
+    renderResults();
+  });
+
+  dom.resultsBody.addEventListener('click', event => {
+    const button = event.target.closest('.sort-button');
+    if (!button) return;
+    const column = button.dataset.sort;
+    const setKey = button.closest('[data-set]').dataset.set;
+    state.sort = {
+      column,
+      direction: state.sort.column === column && state.sort.direction === 'asc' ? 'desc' : 'asc'
+    };
+    renderResults();
+    dom.resultsBody.querySelector(`[data-set="${setKey}"] .sort-button[data-sort="${column}"]`)?.focus();
+  });
+
+  dom.copyBtn.addEventListener('click', copyAsText);
+  dom.csvBtn.addEventListener('click', exportCsv);
+
+  /* ── 8. Initialization ────────────────────────────────────────────── */
+
+  let savedTheme;
+  try {
+    savedTheme = localStorage.getItem(THEME_KEY) === 'light' ? 'light' : 'dark';
+  } catch {
+    savedTheme = 'dark';
+  }
+  document.documentElement.dataset.theme = savedTheme;
+  dom.modeSelect.value = savedTheme;
+  dom.detailMode.value = state.filters.detail;
+  renderComponentOptions();
+  renderComponentLabel();
+  loadTags();
+})();
+</script>
+</body>
+</html>
