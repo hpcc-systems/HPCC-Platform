@@ -57,7 +57,9 @@ export const Permissions: React.FunctionComponent<PermissionsProps> = ({
                 if (row.name === "File Scopes" || row.name === "Workunit Scopes" || row.name === "Repository Modules") {
                     return false;
                 }
-                return row.children ? true : false;
+                // Real resources stay selectable even when they are an expandable prefix-parent;
+                // only virtual grouping folders and categories (which have children but no resource) are blocked.
+                return row.children && row.__hpcc_type !== "Resources" ? true : false;
             }
         }, "checkbox"),
         name: tree({
@@ -65,7 +67,7 @@ export const Permissions: React.FunctionComponent<PermissionsProps> = ({
             label: nlsHPCC.Name,
             formatter: function (_name, idx) {
                 const safeName = encodeHTML(_name);
-                if (idx.__hpcc_parent) {
+                if (idx.__hpcc_parent && idx.__hpcc_type !== "ScopeFolder") {
                     const url = `#/${encodeURIComponent(opsCategory)}/security/permissions/${encodeURIComponent(_name)}/${encodeURIComponent(idx.__hpcc_parent.name)}`;
                     return `<a href="${url}" style="${linkStyle}">${safeName}</a>`;
                 } else {
@@ -82,7 +84,7 @@ export const Permissions: React.FunctionComponent<PermissionsProps> = ({
         const state = { ...defaultUIState };
         if (selection.length) {
             state.hasSelection = true;
-            if (!selection.filter(item => "children" in item).length) {
+            if (!selection.filter(item => "children" in item && item.__hpcc_type !== "Resources").length) {
                 state.canDelete = true;
             } else {
                 state.categorySelected = true;

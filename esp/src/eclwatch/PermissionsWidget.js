@@ -62,7 +62,7 @@ define([
                         editorArgs: { value: true },
                         className: "hpccCentered",
                         autoSave: true,
-                        canEdit: function (object, value) { return object.__hpcc_type !== "Permission"; },
+                        canEdit: function (object, value) { return object.__hpcc_type !== "Permission" && object.__hpcc_type !== "ScopeFolder"; },
                         renderHeaderCell: function (node) {
                             node.innerHTML = Utility.wrapStringWithTag(context.i18n.AllowAccess, "center").split(" ").join("<br />");
                         }
@@ -73,7 +73,7 @@ define([
                         editorArgs: { value: true },
                         className: "hpccCentered",
                         autoSave: true,
-                        canEdit: function (object, value) { return object.__hpcc_type !== "Permission"; },
+                        canEdit: function (object, value) { return object.__hpcc_type !== "Permission" && object.__hpcc_type !== "ScopeFolder"; },
                         renderHeaderCell: function (node) {
                             node.innerHTML = Utility.wrapStringWithTag(context.i18n.AllowRead, "center").split(" ").join("<br />");
                         }
@@ -84,7 +84,7 @@ define([
                         editorArgs: { value: true },
                         className: "hpccCentered",
                         autoSave: true,
-                        canEdit: function (object, value) { return object.__hpcc_type !== "Permission"; },
+                        canEdit: function (object, value) { return object.__hpcc_type !== "Permission" && object.__hpcc_type !== "ScopeFolder"; },
                         renderHeaderCell: function (node) {
                             node.innerHTML = Utility.wrapStringWithTag(context.i18n.AllowWrite, "center").split(" ").join("<br />");
                         }
@@ -95,7 +95,7 @@ define([
                         editorArgs: { value: true },
                         className: "hpccCentered",
                         autoSave: true,
-                        canEdit: function (object, value) { return object.__hpcc_type !== "Permission"; },
+                        canEdit: function (object, value) { return object.__hpcc_type !== "Permission" && object.__hpcc_type !== "ScopeFolder"; },
                         renderHeaderCell: function (node) {
                             node.innerHTML = Utility.wrapStringWithTag(context.i18n.AllowFull, "center").split(" ").join("<br />");
                         }
@@ -111,7 +111,7 @@ define([
                         className: "hpccCentered",
                         autoSave: true,
                         canEdit: function (object, value) {
-                            if (object.__hpcc_type === "Permission" || object.AccountName === "Administrators") {
+                            if (object.__hpcc_type === "Permission" || object.__hpcc_type === "ScopeFolder" || object.AccountName === "Administrators") {
                                 return false;
                             }
                             return true;
@@ -127,7 +127,7 @@ define([
                         className: "hpccCentered",
                         autoSave: true,
                         canEdit: function (object, value) {
-                            if (object.__hpcc_type === "Permission" || object.AccountName === "Administrators") {
+                            if (object.__hpcc_type === "Permission" || object.__hpcc_type === "ScopeFolder" || object.AccountName === "Administrators") {
                                 return false;
                             }
                             return true;
@@ -143,7 +143,7 @@ define([
                         className: "hpccCentered",
                         autoSave: true,
                         canEdit: function (object, value) {
-                            if (object.__hpcc_type === "Permission" || object.AccountName === "Administrators") {
+                            if (object.__hpcc_type === "Permission" || object.__hpcc_type === "ScopeFolder" || object.AccountName === "Administrators") {
                                 return false;
                             }
                             return true;
@@ -159,7 +159,7 @@ define([
                         className: "hpccCentered",
                         autoSave: true,
                         canEdit: function (object, value) {
-                            if (object.__hpcc_type === "Permission" || object.AccountName === "Administrators") {
+                            if (object.__hpcc_type === "Permission" || object.__hpcc_type === "ScopeFolder" || object.AccountName === "Administrators") {
                                 return false;
                             }
                             return true;

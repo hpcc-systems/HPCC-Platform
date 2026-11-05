@@ -55,6 +55,40 @@ class GroupsStore extends ESPRequest.Store {
 }
 
 const CONCAT_SYMBOL = ":";
+
+/**
+ * Returns the grouping prefix for a scope/resource name by finding the first
+ * meaningful separator ("::", ".", "_") after skipping any leading occurrences
+ * of that separator. Returns null if no grouping separator is found.
+ *
+ * Examples:
+ *   "hpccinternal::thor"  → "hpccinternal"
+ *   "_hello_world"        → "_hello"
+ *   "mymodule.sub"        → "mymodule"
+ *   "noseparator"        → null
+ */
+function getScopePrefix(name: string): string | null {
+    // Check "::" first (highest precedence)
+    let start = 0;
+    while (name.startsWith("::", start)) start += 2;
+    const dblColonIdx = name.indexOf("::", start);
+    if (dblColonIdx > start) return name.substring(0, dblColonIdx);
+
+    // Check "."
+    start = 0;
+    while (name.charAt(start) === ".") start++;
+    const dotIdx = name.indexOf(".", start);
+    if (dotIdx > start) return name.substring(0, dotIdx);
+
+    // Check "_"
+    start = 0;
+    while (name.charAt(start) === "_") start++;
+    const underIdx = name.indexOf("_", start);
+    if (underIdx > start) return name.substring(0, underIdx);
+
+    return null;
+}
+
 class ResourcesStore extends Memory {
 
     groupname: string;
@@ -69,6 +103,7 @@ class ResourcesStore extends Memory {
     }
 
     put(row, options) {
+        if (row.__hpcc_type === "ScopeFolder") return row;
         this.get(row.__hpcc_id);
         const retVal = super.put(row, options);
         const request = {
@@ -87,24 +122,27 @@ class ResourcesStore extends Memory {
     }
 
     query(query, options) {
+        const store = this;
         const results = all([
             this.refreshResources(query),
             this.refreshAccountPermissions()
         ]).then(lang.hitch(this, function (response) {
-            const accountPermissions = {};
+            // Use Map to avoid prototype-pollution from resource names like "__proto__".
+            const accountPermissions = new Map<string, any>();
             arrayUtil.forEach(response[1], function (item, idx) {
-                accountPermissions[item.ResourceName] = item;
-            }, this);
+                accountPermissions.set(item.ResourceName, item);
+            }, store);
 
-            const data = [];
+            // Build all resource rows first
+            const allItems = [];
             arrayUtil.forEach(response[0], function (item, idx) {
-                const accountPermission = accountPermissions[item.name];
-                data.push(lang.mixin(item, {
+                const accountPermission = accountPermissions.get(item.name);
+                allItems.push(lang.mixin(item, {
                     __hpcc_type: "Resources",
-                    __hpcc_id: this.parentRow.__hpcc_id + CONCAT_SYMBOL + item.name,
-                    __hpcc_parent: this.parentRow,
+                    __hpcc_id: store.parentRow.__hpcc_id + CONCAT_SYMBOL + item.name,
+                    __hpcc_parent: store.parentRow,
                     DisplayName: item.description ? item.description : item.name,
-                    AccountName: this.groupname,
+                    AccountName: store.groupname,
                     allow_access: accountPermission ? accountPermission.allow_access : false,
                     allow_read: accountPermission ? accountPermission.allow_read : false,
                     allow_write: accountPermission ? accountPermission.allow_write : false,
@@ -114,10 +152,61 @@ class ResourcesStore extends Memory {
                     deny_write: accountPermission ? accountPermission.deny_write : false,
                     deny_full: accountPermission ? accountPermission.deny_full : false
                 }));
-            }, this);
+            }, store);
+
+            // Group items by prefix (:: > . > _), skipping leading separator chars.
+            // Only group when 2+ items share the same prefix.
+            // Use Map to avoid prototype-pollution from resource names like "__proto__".
+            const byName = new Map<string, any>();
+            allItems.forEach(function (item) {
+                byName.set(item.name, item);
+            });
+            const prefixGroups = new Map<string, any[]>();
+            allItems.forEach(function (item) {
+                const prefix = getScopePrefix(item.name);
+                if (prefix) {
+                    if (!prefixGroups.has(prefix)) prefixGroups.set(prefix, []);
+                    prefixGroups.get(prefix)!.push(item);
+                }
+            });
+
+            const data: any[] = [];
+            // Items rendered as nested children are omitted from the top-level list below.
+            const nested = new Set<any>();
+            prefixGroups.forEach(function (items, prefix) {
+                if (items.length < 2) return;
+                // If a resource exactly matching the prefix exists, it becomes the
+                // (clickable) expandable parent instead of a separate virtual folder.
+                const parentItem = byName.get(prefix);
+                const childItems = parentItem ? items.filter(function (item) { return item !== parentItem; }) : items;
+                if (parentItem) {
+                    parentItem.children = { query: function () { return QueryResults(childItems); } };
+                } else {
+                    data.push({
+                        __hpcc_type: "ScopeFolder",
+                        __hpcc_id: store.parentRow.__hpcc_id + CONCAT_SYMBOL + "folder:" + prefix,
+                        __hpcc_parent: store.parentRow,
+                        name: prefix,
+                        DisplayName: prefix,
+                        children: { query: function () { return QueryResults(childItems); } }
+                    });
+                }
+                childItems.forEach(function (item) { nested.add(item); });
+            });
+            // Add top-level items (ungrouped, unique prefix, or merged parents)
+            allItems.forEach(function (item) {
+                if (!nested.has(item)) {
+                    data.push(item);
+                }
+            });
+
             options = options || {};
-            this.setData(SimpleQueryEngine({}, { sort: options.sort })(data));
-            return this.data;
+            // Include all resource items in the backing store so that get/put work
+            // correctly for grouped children (prevents duplicate top-level rows on edit).
+            // The returned query result stays top-level only (folders/parents + ungrouped).
+            const allStoreItems: any[] = [...data, ...nested];
+            store.setData(SimpleQueryEngine({}, { sort: options.sort })(allStoreItems));
+            return SimpleQueryEngine({}, { sort: options.sort })(data);
         }));
         return QueryResults(results);
     }
@@ -428,7 +517,7 @@ class PermissionsStore extends Memory {
     }
 
     mayHaveChildren(object) {
-        return object.__hpcc_type === "Permission";
+        return object.__hpcc_type === "Permission" || object.__hpcc_type === "ScopeFolder" || !!object.children;
     }
 
     query(query, options) {

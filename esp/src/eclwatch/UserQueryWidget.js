@@ -753,7 +753,9 @@ define([
                             if (row.name === "File Scopes" || row.name === "Workunit Scopes" || row.name === "Repository Modules") {
                                 return false;
                             }
-                            return row.children ? true : false;
+                            // Real resources stay selectable even when they are an expandable prefix-parent;
+                            // only virtual grouping folders and categories (children but no resource) are blocked.
+                            return row.children && row.__hpcc_type !== "Resources" ? true : false;
                         }
                     }, "checkbox"),
                     name: tree({
@@ -761,7 +763,7 @@ define([
                         sortable: false,
                         label: this.i18n.Name,
                         formatter: function (_name, idx) {
-                            if (idx.__hpcc_parent) {
+                            if (idx.__hpcc_parent && idx.__hpcc_type !== "ScopeFolder") {
                                 return "<a href='#' onClick='return false;' class='dgrid-row-url'>" + Utility.encodeHTML(_name) + "</a>";
                             } else {
                                 return Utility.encodeHTML(_name);
@@ -797,12 +799,14 @@ define([
             this.permissionsGrid.on(".dgrid-row-url:click", function (evt) {
                 if (context._onPermissionsRowDblClick) {
                     var item = context.permissionsGrid.row(evt).data;
+                    if (item.__hpcc_type === "ScopeFolder") return;
                     context._onPermissionsRowDblClick(item.__hpcc_parent.name, item.name, item.DisplayName);
                 }
             });
             this.permissionsGrid.on(".dgrid-row:dblclick", function (evt) {
                 if (context._onPermissionsRowDblClick) {
                     var item = context.permissionsGrid.row(evt).data;
+                    if (item.__hpcc_type === "ScopeFolder") return;
                     context._onPermissionsRowDblClick(item.__hpcc_parent.name, item.name, item.DisplayName);
                 }
             });
@@ -903,7 +907,7 @@ define([
             registry.byId(this.id + "DeletePermissions").set("disabled", !hasPermissionSelection);
 
             for (var i = 0; i < permissionSelection.length; ++i) {
-                if (permissionSelection[i].children) {
+                if (permissionSelection[i].children && permissionSelection[i].__hpcc_type !== "Resources") {
                     registry.byId(this.id + "DeletePermissions").set("disabled", true);
                 }
                 switch (permissionSelection[i].name) {
