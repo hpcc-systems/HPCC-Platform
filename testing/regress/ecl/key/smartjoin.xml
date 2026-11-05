@@ -110,3 +110,33 @@
  <Row><i>2</i><idl>X</idl><idr>XY</idr></Row>
  <Row><i>2</i><idl>Y</idl><idr>XY</idr></Row>
 </Dataset>
+<Dataset name='Result 13'>
+ <Row><i>1</i><idl>A</idl><idr>a</idr></Row>
+ <Row><i>1</i><idl>A</idl><idr>b</idr></Row>
+ <Row><i>1</i><idl>A</idl><idr>c</idr></Row>
+ <Row><i>1</i><idl>B</idl><idr>a</idr></Row>
+ <Row><i>1</i><idl>B</idl><idr>b</idr></Row>
+ <Row><i>1</i><idl>B</idl><idr>c</idr></Row>
+ <Row><i>1</i><idl>C</idl><idr>a</idr></Row>
+ <Row><i>1</i><idl>C</idl><idr>b</idr></Row>
+ <Row><i>1</i><idl>C</idl><idr>c</idr></Row>
+ <Row><i>2</i><idl>X</idl><idr>x</idr></Row>
+ <Row><i>2</i><idl>X</idl><idr>y</idr></Row>
+ <Row><i>2</i><idl>Y</idl><idr>x</idr></Row>
+ <Row><i>2</i><idl>Y</idl><idr>y</idr></Row>
+</Dataset>
+<Dataset name='Result 14'>
+ <Row><i>1</i><idl>A</idl><idr>a</idr></Row>
+ <Row><i>1</i><idl>A</idl><idr>b</idr></Row>
+ <Row><i>1</i><idl>A</idl><idr>c</idr></Row>
+ <Row><i>1</i><idl>B</idl><idr>a</idr></Row>
+ <Row><i>1</i><idl>B</idl><idr>b</idr></Row>
+ <Row><i>1</i><idl>B</idl><idr>c</idr></Row>
+ <Row><i>1</i><idl>C</idl><idr>a</idr></Row>
+ <Row><i>1</i><idl>C</idl><idr>b</idr></Row>
+ <Row><i>1</i><idl>C</idl><idr>c</idr></Row>
+ <Row><i>2</i><idl>X</idl><idr>x</idr></Row>
+ <Row><i>2</i><idl>X</idl><idr>y</idr></Row>
+ <Row><i>2</i><idl>Y</idl><idr>x</idr></Row>
+ <Row><i>2</i><idl>Y</idl><idr>y</idr></Row>
+</Dataset>
