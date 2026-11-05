@@ -95,6 +95,7 @@ protected:
     IEclRepository * createRepository(IEclSourceCollection * source, const char * rootScopeFullName, bool includeInArchive);
 
     unsigned runGitCommand(StringBuffer * output, const char *args, const char * cwd, bool needCredentials);
+    unsigned runGitCommand(StringBuffer * output, const char *args, const char * cwd, bool needCredentials, StringPairVector * diagnostics);
     IEclPackage * queryRepository(IIdAtom * name, const char * defaultUrl, IEclSourceCollection * overrideSource, bool includeDefinitions);
     IGitUpdateLock * getGitUpdateLock(const char * path)
     {
