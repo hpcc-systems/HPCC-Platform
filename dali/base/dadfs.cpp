@@ -6532,6 +6532,8 @@ public:
         bool mixedwidth = false;
         unsigned width = 0;
         bool first = true;
+        bool hasLogicalFileModified = false;
+        CDateTime mostRecentLogicalFileModified;
         Owned<IPropertyTree> at = getEmptyAttr();
         Owned<IDistributedFileIterator> fiter = getSubFileIterator(true);
         // Set groupName from the first detected plane name so lookups based on
@@ -6544,6 +6546,13 @@ public:
         ForEach(*fiter)
         {
             IDistributedFile &file = fiter->query();
+            CDateTime logicalFileModified;
+            if (file.getModificationTime(logicalFileModified) && logicalFileModified.getSimple() &&
+                (!hasLogicalFileModified || logicalFileModified.compare(mostRecentLogicalFileModified) > 0))
+            {
+                mostRecentLogicalFileModified.set(logicalFileModified);
+                hasLogicalFileModified = true;
+            }
             if (!logicalName.isForeign())
             {
                 for (unsigned c = 0; c < file.numClusters(); c++)
@@ -6605,6 +6614,12 @@ public:
             else if (np!=width)
                 mixedwidth = true;
             subcounts.append(np);
+        }
+
+        if (hasLogicalFileModified)
+        {
+            StringBuffer modifiedStr;
+            at->setProp("@modified", mostRecentLogicalFileModified.getString(modifiedStr).str());
         }
 
         // need common attributes
