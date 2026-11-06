@@ -377,6 +377,9 @@ private:
     bool m_cache_off[RT_SCOPE_MAX];
     bool m_usercache_off;
     bool authenticate(ISecUser* user);
+    // Shared authorizeEx()/getAccessFlagsEx() implementation
+    bool authorizeResourceList(SecResourceType rtype, ISecUser& sec_user, IArrayOf<ISecResource>& rlist);
+    bool authorizeResourceList(SecResourceType rtype, ISecUser& sec_user, IArrayOf<ISecResource>& rlist, const char* resName);
     StringBuffer m_description;
     unsigned m_passwordExpirationWarningDays;
     bool m_checkViewPermissions;

@@ -17,6 +17,8 @@
 
 #define AXA_API DECL_EXPORT
 
+#include <memory>
+
 #include "ldapsecurity.ipp"
 #include "ldapsecurity.hpp"
 #include "authmap.ipp"
@@ -765,6 +767,53 @@ bool CLdapSecManager::authenticate(ISecUser* user)
     return AS_AUTHENTICATED == user->getAuthenticateStatus();
 }
 
+bool CLdapSecManager::authorizeResourceList(SecResourceType rtype, ISecUser& sec_user, IArrayOf<ISecResource>& rlist)
+{
+    return authorizeResourceList(rtype, sec_user, rlist, nullptr);
+}
+
+bool CLdapSecManager::authorizeResourceList(SecResourceType rtype, ISecUser& sec_user, IArrayOf<ISecResource>& rlist, const char* resName)
+{
+    int nResources = rlist.length();
+    for (int ri = 0; ri < nResources; ri++)
+    {
+        ISecResource* res = &rlist.item(ri);
+        if (res != NULL)
+            res->setResourceType(rtype);
+    }
+
+    if (nResources <= 0)
+        return true;
+
+    if (!m_permissionsCache->isCacheEnabled() || m_cache_off[rtype])
+        return m_ldap_client->authorize(rtype, sec_user, rlist, resName);
+
+    // Heap-allocate the "found in cache" flags instead of using alloca(), which sized the
+    // buffer directly from caller-supplied input and could exhaust the stack for very large
+    // resource lists.
+    auto cachedFound = std::make_unique<bool[]>(nResources);
+    int nFound = m_permissionsCache->lookup(sec_user, rlist, cachedFound.get());
+    if (nFound >= nResources)
+        return true;
+
+    IArrayOf<ISecResource> uncached;
+    for (int i = 0; i < nResources; i++)
+    {
+        if (!cachedFound[i])
+        {
+            ISecResource& secRes = rlist.item(i);
+            secRes.Link();
+            uncached.append(secRes);
+            //DBGLOG("CACHE: Fetching permissions for %s:%s", sec_user.getName(), secRes.getName());
+        }
+    }
+
+    bool rc = m_ldap_client->authorize(rtype, sec_user, uncached);
+    if (rc)
+        m_permissionsCache->add(sec_user, uncached);
+    return rc;
+}
+
 bool CLdapSecManager::authorizeEx(SecResourceType rtype, ISecUser& sec_user, ISecResourceList * Resources, IEspSecureContext* secureContext)
 {
     if(!authenticate(&sec_user))
@@ -775,52 +824,8 @@ bool CLdapSecManager::authorizeEx(SecResourceType rtype, ISecUser& sec_user, ISe
     CLdapSecResourceList * reslist = (CLdapSecResourceList*)Resources;
     if(!reslist)
         return true;
-    IArrayOf<ISecResource>& rlist = reslist->getResourceList();
-    int nResources = rlist.length();
-    int ri;
-    for(ri = 0; ri < nResources; ri++)
-    {
-        ISecResource* res = &rlist.item(ri);
-        if(res != NULL)
-            res->setResourceType(rtype);
-    }
 
-    if (nResources <= 0)
-        return true;
-
-    bool rc;
-
-    if (m_permissionsCache->isCacheEnabled() && !m_cache_off[rtype])
-    {
-        bool* cached_found = (bool*)alloca(nResources*sizeof(bool));
-        int nFound = m_permissionsCache->lookup(sec_user, rlist, cached_found);
-        if (nFound < nResources)
-        {
-            IArrayOf<ISecResource> rlist2;
-            int i;
-            for (i=0; i < nResources; i++)
-            {
-                if (*(cached_found+i) == false)
-                {
-                    ISecResource& secRes = rlist.item(i);
-                    secRes.Link();
-                    rlist2.append(secRes);
-                    //DBGLOG("CACHE: Fetching permissions for %s:%s", sec_user.getName(), secRes.getName());
-                }
-            }
-
-            rc = m_ldap_client->authorize(rtype, sec_user, rlist2);
-            if (rc)
-                m_permissionsCache->add(sec_user, rlist2);
-        }
-        else
-            rc = true;  
-    }
-    else
-    {
-        rc = m_ldap_client->authorize(rtype, sec_user, rlist, reslist->getName());
-    }
-    return rc;
+    return authorizeResourceList(rtype, sec_user, reslist->getResourceList(), reslist->getName());
 }
 
 SecAccessFlags CLdapSecManager::authorizeEx(SecResourceType rtype, ISecUser & user, const char * resourcename, IEspSecureContext* secureContext)
@@ -849,52 +854,8 @@ bool CLdapSecManager::authorizeEx(SecResourceType rtype, ISecUser& sec_user, ISe
     CLdapSecResourceList * reslist = (CLdapSecResourceList*)Resources;
     if(!reslist)
         return true;
-    IArrayOf<ISecResource>& rlist = reslist->getResourceList();
-    int nResources = rlist.length();
-    int ri;
-    for(ri = 0; ri < nResources; ri++)
-    {
-        ISecResource* res = &rlist.item(ri);
-        if(res != NULL)
-            res->setResourceType(rtype);
-    }
 
-    if (nResources <= 0)
-        return true;
-
-    bool rc;
-
-    if (m_permissionsCache->isCacheEnabled() && !m_cache_off[rtype])
-    {
-        bool* cached_found = (bool*)alloca(nResources*sizeof(bool));
-        int nFound = m_permissionsCache->lookup(sec_user, rlist, cached_found);
-        if (nFound < nResources)
-        {
-            IArrayOf<ISecResource> rlist2;
-            int i;
-            for (i=0; i < nResources; i++)
-            {
-                if (*(cached_found+i) == false)
-                {
-                    ISecResource& secRes = rlist.item(i);
-                    secRes.Link();
-                    rlist2.append(secRes);
-                    //DBGLOG("CACHE: Fetching permissions for %s:%s", sec_user.getName(), secRes.getName());
-                }
-            }
-
-            rc = m_ldap_client->authorize(rtype, sec_user, rlist2);
-            if (rc)
-                m_permissionsCache->add(sec_user, rlist2);
-        }
-        else
-            rc = true;  
-    }
-    else
-    {
-        rc = m_ldap_client->authorize(rtype, sec_user, rlist);
-    }
-    return rc;
+    return authorizeResourceList(rtype, sec_user, reslist->getResourceList());
 }
 
 SecAccessFlags CLdapSecManager::authorizeEx(SecResourceType rtype, ISecUser & user, const char * resourcename, bool doAuthentication)
@@ -925,53 +886,8 @@ SecAccessFlags CLdapSecManager::getAccessFlagsEx(SecResourceType rtype, ISecUser
     CLdapSecResourceList * reslist = (CLdapSecResourceList*)rlist0.get();
     if(!reslist)
         return SecAccess_Unavailable;
-    IArrayOf<ISecResource>& rlist = reslist->getResourceList();
-    int nResources = rlist.length();
-    int ri;
-    for(ri = 0; ri < nResources; ri++)
-    {
-        ISecResource* res = &rlist.item(ri);
-        if(res != NULL)
-            res->setResourceType(rtype);
-    }
 
-    if (nResources <= 0)
-        return SecAccess_Unavailable;
-
-    bool ok = false;
-
-    if (m_permissionsCache->isCacheEnabled() && !m_cache_off[rtype])
-    {
-        bool* cached_found = (bool*)alloca(nResources*sizeof(bool));
-        int nFound = m_permissionsCache->lookup(user, rlist, cached_found);
-        if (nFound < nResources)
-        {
-            IArrayOf<ISecResource> rlist2;
-            int i;
-            for (i=0; i < nResources; i++)
-            {
-                if (*(cached_found+i) == false)
-                {
-                    ISecResource& secRes = rlist.item(i);
-                    secRes.Link();
-                    rlist2.append(secRes);
-                    //DBGLOG("CACHE: Fetching permissions for %s:%s", sec_user.getName(), secRes.getName());
-                }
-            }
-
-            ok = m_ldap_client->authorize(rtype, user, rlist2);
-            if (ok)
-                m_permissionsCache->add(user, rlist2);
-        }
-        else
-            ok = true;  
-    }
-    else
-    {
-        ok = m_ldap_client->authorize(rtype, user, rlist);
-    }
-
-    //bool ok = authorizeEx(rtype, user, rlist.get());
+    bool ok = authorizeResourceList(rtype, user, reslist->getResourceList());
     if(ok)
         return rlist0->queryResource(0)->getAccessFlags();
     else
