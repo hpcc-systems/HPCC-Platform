@@ -93,12 +93,16 @@ interface IPermissionProcessor : implements IInterface
     virtual bool getPermissions(ISecUser& user, IArrayOf<CSecurityDescriptor>& sdlist, IArrayOf<ISecResource>& resources) = 0;
     virtual CSecurityDescriptor* createDefaultSD(ISecUser * const user, ISecResource* resource, SecPermissionType ptype) = 0;
     virtual CSecurityDescriptor* createDefaultSD(ISecUser * const user, const char* name, SecPermissionType ptype) = 0;
+    // 'ld', when non-null, is reused for any LDAP lookups so the result stays consistent
+    // with the connection used by the caller (e.g. behind a load-balanced LDAP service).
+    virtual CSecurityDescriptor* createDefaultSD(ISecUser * const user, const char* name, SecPermissionType ptype, LDAP* ld) = 0;
     virtual CSecurityDescriptor* createDefaultSD(ISecUser * const user, ISecResource* resource, MemoryBuffer& initial_sd) = 0;
     virtual bool retrieveUserInfo(ISecUser& user) = 0;
 
     virtual void getCachedSid(const char* name, MemoryBuffer& sid) = 0;
     virtual void cacheSid(const char* name, int len, const void* sidbuf) = 0;
     virtual void lookupSid(const char* act_name, MemoryBuffer& act_sid, ACT_TYPE acttype=USER_ACT) = 0;
+    virtual void lookupSid(const char* act_name, MemoryBuffer& act_sid, ACT_TYPE acttype, LDAP* ld) = 0;
     virtual int sdSegments(CSecurityDescriptor* sd) = 0;
     virtual bool getPermissionsArray(CSecurityDescriptor *sd, IArrayOf<CPermission>& permissions) = 0;
     virtual CSecurityDescriptor* changePermission(CSecurityDescriptor* initialsd, CPermissionAction& action) = 0;

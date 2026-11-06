@@ -66,12 +66,14 @@ public:
     virtual bool getPermissions(ISecUser& user, IArrayOf<CSecurityDescriptor>& sdlist, IArrayOf<ISecResource>& resources);
     virtual CSecurityDescriptor* createDefaultSD(ISecUser * const user, ISecResource* resource, SecPermissionType ptype);
     virtual CSecurityDescriptor* createDefaultSD(ISecUser * const user, const char* name, SecPermissionType ptype);
+    virtual CSecurityDescriptor* createDefaultSD(ISecUser * const user, const char* name, SecPermissionType ptype, LDAP* ld);
     virtual CSecurityDescriptor* createDefaultSD(ISecUser * const user, ISecResource* resource, MemoryBuffer& initial_sd);
     virtual bool retrieveUserInfo(ISecUser& user);
 
     virtual void getCachedSid(const char* name, MemoryBuffer& sid);
     virtual void cacheSid(const char* name, int len, const void* sidbuf);
     virtual void lookupSid(const char* act_name, MemoryBuffer& act_sid, ACT_TYPE acttype=USER_ACT);
+    virtual void lookupSid(const char* act_name, MemoryBuffer& act_sid, ACT_TYPE acttype, LDAP* ld);
     virtual int sdSegments(CSecurityDescriptor* sd);
 
     virtual StringBuffer& sec2aci(SecAccessFlags secperm, StringBuffer& aciperm);
@@ -89,6 +91,7 @@ public:
 
     virtual StringBuffer& sec2aci(SecAccessFlags secperm, StringBuffer& aciperm);
     virtual CSecurityDescriptor* createDefaultSD(ISecUser * const user, const char* name, SecPermissionType ptype);
+    virtual CSecurityDescriptor* createDefaultSD(ISecUser * const user, const char* name, SecPermissionType ptype, LDAP* ld);
     virtual CSecurityDescriptor* createDefaultSD(ISecUser * const user, ISecResource* resource, MemoryBuffer& initial_sd);
 };
 
@@ -102,6 +105,7 @@ public:
     
     virtual StringBuffer& sec2aci(SecAccessFlags secperm, StringBuffer& aciperm);
     virtual CSecurityDescriptor* createDefaultSD(ISecUser * const user, const char* name, SecPermissionType ptype);
+    virtual CSecurityDescriptor* createDefaultSD(ISecUser * const user, const char* name, SecPermissionType ptype, LDAP* ld);
     virtual CSecurityDescriptor* createDefaultSD(ISecUser * const user, ISecResource* resource, MemoryBuffer& initial_sd);
 };
 

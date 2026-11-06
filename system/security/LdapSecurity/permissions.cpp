@@ -222,7 +222,12 @@ void PermissionProcessor::cacheSid(const char* name, int len, const void* sidbuf
     }
 }
 
-void PermissionProcessor::lookupSid(const char* act_name, MemoryBuffer& act_sid, ACT_TYPE act_type)
+void PermissionProcessor::lookupSid(const char* act_name, MemoryBuffer& act_sid, ACT_TYPE acttype)
+{
+    lookupSid(act_name, act_sid, acttype, nullptr);
+}
+
+void PermissionProcessor::lookupSid(const char* act_name, MemoryBuffer& act_sid, ACT_TYPE act_type, LDAP* ld)
 {
     act_sid.clear();
 
@@ -262,7 +267,7 @@ void PermissionProcessor::lookupSid(const char* act_name, MemoryBuffer& act_sid,
 #else
         if(m_ldap_client != NULL)
         {
-            m_ldap_client->lookupSid(act_name, act_sid, act_type);
+            m_ldap_client->lookupSid(act_name, act_sid, act_type, ld);
             if(act_sid.length() > 0)
                 cacheSid(act_name, act_sid.length(), (const void*)act_sid.toByteArray());
         }
@@ -1459,10 +1464,15 @@ CSecurityDescriptor* PermissionProcessor::changePermission(CSecurityDescriptor* 
 
 CSecurityDescriptor* PermissionProcessor::createDefaultSD(ISecUser * const user, ISecResource* resource, SecPermissionType ptype)
 {
-    return createDefaultSD(user, resource->getName(), ptype);   
+    return createDefaultSD(user, resource->getName(), ptype);
 }
 
 CSecurityDescriptor* PermissionProcessor::createDefaultSD(ISecUser * const user, const char* name, SecPermissionType ptype)
+{
+    return createDefaultSD(user, name, ptype, nullptr);
+}
+
+CSecurityDescriptor* PermissionProcessor::createDefaultSD(ISecUser * const user, const char* name, SecPermissionType ptype, LDAP* ld)
 {
     SECURITY_DESCRIPTOR sd;
     unsigned char aclBuffer[1024];
@@ -1478,7 +1488,7 @@ CSecurityDescriptor* PermissionProcessor::createDefaultSD(ISecUser * const user,
     if (m_ldap_client->getLdapConfig()->isAzureAD() && DEFAULT_ADMINISTRATORS_PERMISSION != SecAccess_None)
     {
         MemoryBuffer gmb;
-        lookupSid(AAD_ADMINISTRATORS_GROUP, gmb, GROUP_ACT);
+        lookupSid(AAD_ADMINISTRATORS_GROUP, gmb, GROUP_ACT, ld);
         psid = (PSID)(gmb.toByteArray());
         if (psid != nullptr)
         {
@@ -1494,7 +1504,7 @@ CSecurityDescriptor* PermissionProcessor::createDefaultSD(ISecUser * const user,
         if(user && DEFAULT_OWNER_PERMISSION != SecAccess_None)
         {
             //Add SD for given user
-            lookupSid(user->getName(), umb);
+            lookupSid(user->getName(), umb, USER_ACT, ld);
             psid = (PSID)(umb.toByteArray());
             if(psid != NULL)
             {
