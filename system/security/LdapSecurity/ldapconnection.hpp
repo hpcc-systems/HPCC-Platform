@@ -293,7 +293,9 @@ interface ILdapClient : extends IInterface
     virtual bool getUserInfo(ISecUser& user, const char* infotype = NULL) = 0;
     virtual ISecUser* lookupUser(unsigned uid) = 0;
     virtual bool lookupAccount(MemoryBuffer& sidbuf, StringBuffer& account_name, ACT_TYPE& act_type) = 0;
-    virtual void lookupSid(const char* act_name, MemoryBuffer& act_sid, ACT_TYPE act_type) = 0;
+    // 'ld', when non-null, is reused for the lookup instead of acquiring a new connection,
+    // keeping the lookup on the same LDAP server as the caller (e.g. behind a load balancer).
+    virtual void lookupSid(const char* act_name, MemoryBuffer& act_sid, ACT_TYPE act_type, LDAP* ld=nullptr) = 0;
     virtual void setPermissionProcessor(IPermissionProcessor* pp) = 0;
     virtual bool retrieveUsers(IUserArray& users) = 0;
     virtual bool retrieveUsers(const char* searchstr, IUserArray& users) = 0;

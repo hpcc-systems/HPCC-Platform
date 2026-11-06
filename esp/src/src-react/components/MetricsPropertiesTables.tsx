@@ -34,8 +34,8 @@ class TableEx extends ColumnSetTable {
 
     enter(domNode, element) {
         super.enter(domNode, element);
-        this._dgridDiv.on("dgrid-sort", (evt) => {
-            if (evt.sort.length === 0) {
+        this._dgridDiv.on("dgrid-sort", (evt: any) => {
+            if ((evt?.sort?.length ?? 0) === 0) {
                 const data = this.data();
                 data.sort((l, r) => {
                     return l[l.length - 1] < r[r.length - 1] ? -1 : 1;

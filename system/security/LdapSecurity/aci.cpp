@@ -937,7 +937,7 @@ bool AciProcessor::getPermissions(ISecUser& user, IArrayOf<CSecurityDescriptor>&
 
 CSecurityDescriptor* AciProcessor::createDefaultSD(ISecUser * const user, ISecResource* resource, SecPermissionType ptype)
 {
-    return createDefaultSD(user, resource->getName(), ptype);   
+    return createDefaultSD(user, resource->getName(), ptype);
 }
 
 StringBuffer& AciProcessor::sec2aci(SecAccessFlags secperm, StringBuffer& aciperm)
@@ -946,6 +946,11 @@ StringBuffer& AciProcessor::sec2aci(SecAccessFlags secperm, StringBuffer& aciper
 }
 
 CSecurityDescriptor* AciProcessor::createDefaultSD(ISecUser * const user, const char* name, SecPermissionType ptype)
+{
+    return createDefaultSD(user, name, ptype, nullptr);
+}
+
+CSecurityDescriptor* AciProcessor::createDefaultSD(ISecUser * const user, const char* name, SecPermissionType ptype, LDAP* ld)
 {
     throw MakeStringException(-1, "You should call the implementation of the child class");
 }
@@ -991,6 +996,11 @@ void AciProcessor::cacheSid(const char* name, int len, const void* sidbuf)
 }
 
 void AciProcessor::lookupSid(const char* act_name, MemoryBuffer& act_sid, ACT_TYPE acttype)
+{
+    lookupSid(act_name, act_sid, acttype, nullptr);
+}
+
+void AciProcessor::lookupSid(const char* act_name, MemoryBuffer& act_sid, ACT_TYPE acttype, LDAP* ld)
 {
     throw MakeStringException(-1, "You shouldn't need function lookupSid");
 /*preserve dead code for reference
@@ -1093,6 +1103,12 @@ StringBuffer& CIPlanetAciProcessor::sec2aci(SecAccessFlags secperm, StringBuffer
     return aciperm;
 }
 
+CSecurityDescriptor* CIPlanetAciProcessor::createDefaultSD(ISecUser * const user, const char* name, SecPermissionType ptype, LDAP* ld)
+{
+    // 'ld' is unused: ACI generation here is pure string construction with no LDAP calls.
+    return createDefaultSD(user, name, ptype);
+}
+
 CSecurityDescriptor* CIPlanetAciProcessor::createDefaultSD(ISecUser * const user, const char* name, SecPermissionType ptype)
 {
     CSecurityDescriptor* csd = new CSecurityDescriptor(name);
@@ -1181,6 +1197,12 @@ StringBuffer& COpenLdapAciProcessor::sec2aci(SecAccessFlags secperm, StringBuffe
     }
     
     return aciperm;
+}
+
+CSecurityDescriptor* COpenLdapAciProcessor::createDefaultSD(ISecUser * const user, const char* name, SecPermissionType ptype, LDAP* ld)
+{
+    // 'ld' is unused: ACI generation here is pure string construction with no LDAP calls.
+    return createDefaultSD(user, name, ptype);
 }
 
 CSecurityDescriptor* COpenLdapAciProcessor::createDefaultSD(ISecUser * const user, const char* name, SecPermissionType ptype)

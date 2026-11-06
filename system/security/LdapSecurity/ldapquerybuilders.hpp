@@ -47,9 +47,3 @@ void appendUserUidDn(const char *username, const char *userBasedn, StringBuffer 
 // Appends '(userdn = "ldap:///uid=<escaped username>,<userBasedn>");)' to sd. Used by
 // CIPlanetAciProcessor::createDefaultSD() to build the per-user default ACI.
 void appendAciUserdnClause(const char *username, const char *userBasedn, StringBuffer &sd);
-
-// Returns true if, for a non-Active-Directory server, username contains a character forbidden
-// in the LDAP URL embedded in an ACI userdn clause ('"' would break out of the ACI string
-// enabling clause injection; '?' would truncate the URL's DN component). Used by addUser() to
-// reject such usernames before they are ever embedded, unescaped, into an ACI.
-bool shouldRejectAddUserUsername(bool isActiveDirectory, const char *username);

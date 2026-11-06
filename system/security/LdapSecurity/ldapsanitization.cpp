@@ -127,16 +127,22 @@ void escapeLdapDistinguishedName(size_t inputLength, const char *input, StringBu
     }
 }
 
-bool usernameContainsLdapUrlForbiddenChars(const char *username)
+// HPCC rejects these characters in directory identifiers (user/group/resource
+// names) at creation/rename time: '"' and '?' can break out of an ACI userdn
+// ldap:/// URL clause; '%' and '$' create ambiguity between a raw name and a
+// percent-/filter-encoded one once search-string escaping is applied,
+// allowing a crafted name to collide with another name's encoded form.
+bool containsReservedChars(const char *name)
 {
-    if (isEmptyString(username))
+    if (isEmptyString(name))
         return false;
 
-    for (const char *p = username; *p; ++p)
+    for (const char *p = name; *p; ++p)
     {
-        // '"' can break out of the ACI string enabling clause injection;
-        // '?' truncates the DN component of the ldap:/// URL.
-        if (*p == '"' || *p == '?')
+        // '"' can break out of an ACI string enabling clause; '?' truncates
+        // the DN component of an ldap:/// URL; '%' and '$' are reserved so
+        // raw names can never collide with a percent-/filter-encoded name.
+        if (*p == '"' || *p == '?' || *p == '%' || *p == '$')
             return true;
     }
 

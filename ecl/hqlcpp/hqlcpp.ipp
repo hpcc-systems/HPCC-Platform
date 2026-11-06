@@ -737,6 +737,7 @@ struct HqlCppOptions
     bool                groupAllDistribute = false;
     bool                spotLocalMerge = false;
     bool                spotPotentialKeyedJoins = false;
+    bool                allowKeyedJoins = false;
     bool                combineTrivialStored = false;
     bool                combineAllStored = false;
     bool                allowStoredDuplicate = false;

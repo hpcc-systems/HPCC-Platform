@@ -33,7 +33,7 @@ class LdapSanitizationTest : public CppUnit::TestFixture
     CPPUNIT_TEST(testDnEscapeCases);
     CPPUNIT_TEST(testSearchStringWildcardFilterInjection);
     CPPUNIT_TEST(testScopeDnComponentEscaping);
-    CPPUNIT_TEST(testUsernameContainsLdapUrlForbiddenChars);
+    CPPUNIT_TEST(testContainsReservedChars);
     CPPUNIT_TEST_SUITE_END();
 
 public:
@@ -184,20 +184,24 @@ public:
         CPPUNIT_ASSERT_EQUAL_STR("cn=team\\+,dc=example,dc=com", dn.str());
     }
 
-    void testUsernameContainsLdapUrlForbiddenChars()
+    void testContainsReservedChars()
     {
-        // Clean usernames — no forbidden chars
-        CPPUNIT_ASSERT(!usernameContainsLdapUrlForbiddenChars("alice"));
-        CPPUNIT_ASSERT(!usernameContainsLdapUrlForbiddenChars("domain\\alice"));
-        CPPUNIT_ASSERT(!usernameContainsLdapUrlForbiddenChars(nullptr));
+        // Clean names — no reserved chars
+        CPPUNIT_ASSERT(!containsReservedChars("alice"));
+        CPPUNIT_ASSERT(!containsReservedChars("domain\\alice"));
+        CPPUNIT_ASSERT(!containsReservedChars(nullptr));
 
         // '"' enables ACI clause injection
-        CPPUNIT_ASSERT(usernameContainsLdapUrlForbiddenChars("foo\")(userdn=\"ldap:///anyone"));
-        CPPUNIT_ASSERT(usernameContainsLdapUrlForbiddenChars("alice\""));
+        CPPUNIT_ASSERT(containsReservedChars("foo\")(userdn=\"ldap:///anyone"));
+        CPPUNIT_ASSERT(containsReservedChars("alice\""));
 
         // '?' truncates the DN component of the ldap:/// URL
-        CPPUNIT_ASSERT(usernameContainsLdapUrlForbiddenChars("alice?attrs=*"));
-        CPPUNIT_ASSERT(usernameContainsLdapUrlForbiddenChars("alice?"));
+        CPPUNIT_ASSERT(containsReservedChars("alice?attrs=*"));
+        CPPUNIT_ASSERT(containsReservedChars("alice?"));
+
+        // '%' and '$' are reserved to avoid raw/encoded name collisions
+        CPPUNIT_ASSERT(containsReservedChars("alice%22"));
+        CPPUNIT_ASSERT(containsReservedChars("alice$"));
     }
 };
 
@@ -485,5 +489,90 @@ public:
 
 CPPUNIT_TEST_SUITE_REGISTRATION(LdapTimeUtilsTest);
 CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(LdapTimeUtilsTest, "LdapTimeUtilsTest");
+
+// Declared (non-static) in ldapconnection.cpp specifically so these tests can link to them
+// directly, without needing to mock an LDAP connection.
+extern bool claimInitObjectOnce(const char* key);
+extern void releaseInitClaim(const char* key);
+
+class LdapInitClaimTest : public CppUnit::TestFixture
+{
+    CPPUNIT_TEST_SUITE(LdapInitClaimTest);
+    CPPUNIT_TEST(testClaimOnceThenDuplicateFails);
+    CPPUNIT_TEST(testReleaseAllowsReclaim);
+    CPPUNIT_TEST(testCaseInsensitiveKeys);
+    CPPUNIT_TEST(testConcurrentClaimOnlyOneWinner);
+    CPPUNIT_TEST_SUITE_END();
+
+public:
+    void testClaimOnceThenDuplicateFails()
+    {
+        const char* key = "ou:ou=unittest,dc=example";
+        CPPUNIT_ASSERT(claimInitObjectOnce(key));   // first claimer wins
+        CPPUNIT_ASSERT(!claimInitObjectOnce(key));  // second is told to skip
+        releaseInitClaim(key);
+    }
+
+    void testReleaseAllowsReclaim()
+    {
+        const char* key = "group:cn=unittestgroup,dc=example";
+        CPPUNIT_ASSERT(claimInitObjectOnce(key));
+        releaseInitClaim(key);                      // simulates a failed create
+        CPPUNIT_ASSERT(claimInitObjectOnce(key));    // a later init() may retry
+        releaseInitClaim(key);
+    }
+
+    void testCaseInsensitiveKeys()
+    {
+        CPPUNIT_ASSERT(claimInitObjectOnce("dc:DC=Example,DC=Com"));
+        CPPUNIT_ASSERT(!claimInitObjectOnce("dc:dc=example,dc=com"));
+        releaseInitClaim("dc:dc=example,dc=com");
+    }
+
+    // claimInitObjectOnce()/releaseInitClaim() require external synchronization from the caller
+    // (normally production's lcCrit, held throughout CLdapClient::init()); this test's lock is a
+    // separate, test-local CriticalSection used purely to serialize these threads' calls to the
+    // shared registry - it need not be the same lock object as production uses.
+    static CriticalSection s_testClaimCrit;
+
+    class ClaimAttemptThread : public Thread
+    {
+    public:
+        ClaimAttemptThread(const char* _key) : Thread("ClaimAttemptThread"), key(_key) {}
+        virtual int run() override
+        {
+            CriticalBlock block(s_testClaimCrit);
+            won = claimInitObjectOnce(key);
+            return 0;
+        }
+        const char* key;
+        bool won = false;
+    };
+
+    void testConcurrentClaimOnlyOneWinner()
+    {
+        const char* key = "user:cn=unittestadmin,dc=example";
+        constexpr unsigned numThreads = 8;
+        CIArrayOf<ClaimAttemptThread> threads;
+        for (unsigned i = 0; i < numThreads; i++)
+            threads.append(*new ClaimAttemptThread(key));
+        ForEachItemIn(i, threads)
+            threads.item(i).start(false);
+        unsigned winners = 0;
+        ForEachItemIn(j, threads)
+        {
+            threads.item(j).join();
+            if (threads.item(j).won)
+                winners++;
+        }
+        CPPUNIT_ASSERT_EQUAL(1u, winners);   // exactly one thread should have claimed it
+        releaseInitClaim(key);
+    }
+};
+
+CriticalSection LdapInitClaimTest::s_testClaimCrit("LdapInitClaimTest::s_testClaimCrit");
+
+CPPUNIT_TEST_SUITE_REGISTRATION(LdapInitClaimTest);
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(LdapInitClaimTest, "LdapInitClaimTest");
 
 #endif

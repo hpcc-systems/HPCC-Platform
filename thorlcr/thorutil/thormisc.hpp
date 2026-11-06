@@ -70,6 +70,7 @@
 #define THOROPT_JOIN_BATCH_LIMIT "joinBatchLimit"                                 // Max number of candidate join pairs to batch into a single multicore work item (default = 10000)
 #define THOROPT_LKJOIN_LOCALFAILOVER "lkjoin_localfailover"                       // Force SMART to failover to distributed local lookup join (for testing only)   (default = false)
 #define THOROPT_LKJOIN_HASHJOINFAILOVER "lkjoin_hashjoinfailover"                 // Force SMART to failover to hash join (for testing only)                     (default = false)
+#define THOROPT_LKJOIN_HTFAILOVER "lkjoin_htfailover"                             // Force SMART [LOCAL] hash table setup to fail, as if OOM (for testing only)  (default = false)
 #define THOROPT_MAX_KERNLOG "max_kern_level"                                      // Max kernel logging level, to push to workunit, -1 to disable                  (default = 3)
 #define THOROPT_COMP_FORCELZW "v9_4_forceLZW"                                     // Forces file compression to use LZW                                            (default = false)
 #define THOROPT_COMP_FORCEFLZ "v9_4_forceFLZ"                                     // Forces file compression to use FLZ                                            (default = false)

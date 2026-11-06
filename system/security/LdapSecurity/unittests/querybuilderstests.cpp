@@ -34,7 +34,6 @@ class LdapQueryBuildersTest : public CppUnit::TestFixture
     CPPUNIT_TEST(testAppendGroupCnPrefix);
     CPPUNIT_TEST(testAppendUserUidDn);
     CPPUNIT_TEST(testAppendAciUserdnClause);
-    CPPUNIT_TEST(testShouldRejectAddUserUsername);
     CPPUNIT_TEST_SUITE_END();
 
 public:
@@ -112,18 +111,6 @@ public:
         StringBuffer expected("(userdn = \"ldap:///");
         expected.append(userdn).append("\");)");
         CPPUNIT_ASSERT_EQUAL_STR(expected.str(), sd.str());
-    }
-
-    void testShouldRejectAddUserUsername()
-    {
-        // Non-Active-Directory: '"' and '?' are rejected, ordinary usernames are not.
-        CPPUNIT_ASSERT(shouldRejectAddUserUsername(false, "alice\"admin"));
-        CPPUNIT_ASSERT(shouldRejectAddUserUsername(false, "alice?attrs=*"));
-        CPPUNIT_ASSERT(!shouldRejectAddUserUsername(false, "alice"));
-
-        // Active Directory: current behavior does not apply this check.
-        CPPUNIT_ASSERT(!shouldRejectAddUserUsername(true, "alice\"admin"));
-        CPPUNIT_ASSERT(!shouldRejectAddUserUsername(true, "alice?attrs=*"));
     }
 };
 

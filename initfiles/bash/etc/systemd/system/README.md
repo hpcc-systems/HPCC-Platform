@@ -10,6 +10,52 @@ need to be generated any time you modify the environment.xml on the local
 machine.  This can be done manually by an administrator, or by enabling the
 `hpcc-environment-monitor.path` systemd script which we provide.
 
+Starting the platform and starting it on boot
+---------------------------------------------
+
+  Start and stop the platform with:
+
+    sudo systemctl start hpccsystems-platform.target
+    sudo systemctl stop hpccsystems-platform.target
+
+  The generated `hpccsystems-platform.target` contains an `[Install]` section
+(`WantedBy=multi-user.target`), so the platform can be started automatically
+at boot by enabling it:
+
+    sudo systemctl enable hpccsystems-platform.target
+
+  The generated target is a "linked unit": `/etc/systemd/system/hpccsystems-platform.target`
+is a symlink to the file under `/opt/HPCCSystems/etc/systemd/system/gen`.
+Consequently, `sudo systemctl disable hpccsystems-platform.target` removes both
+the boot-time link and that `/etc/systemd/system` symlink, after which
+`systemctl start hpccsystems-platform.target` fails with "Unit not found".  To
+use the target again after disabling it, either re-run
+`generate-hpccsystems-target.sh`, or re-enable it using the full path of the
+generated file:
+
+    sudo systemctl enable /opt/HPCCSystems/etc/systemd/system/gen/hpccsystems-platform.target
+
+  `systemctl stop` only stops the running platform; it does not change boot-time
+enablement.  To stop the platform and also prevent it from starting at boot,
+while keeping the target usable for manual starts, disable it and then re-link
+(without enabling) the generated file:
+
+    sudo systemctl stop hpccsystems-platform.target
+    sudo systemctl disable hpccsystems-platform.target
+    sudo systemctl link /opt/HPCCSystems/etc/systemd/system/gen/hpccsystems-platform.target
+
+  If the target was never enabled, simply `systemctl stop` it.  The target is
+regenerated (see below) whenever `environment.xml` changes; the regenerated
+target keeps the same name and is re-linked, so an existing enablement
+persists.
+
+  The component instances (the generated `<component>@<instance>` units) are pulled in by the
+target through its `Wants=`/`Requires=` lists, so there is no need to enable them
+individually.  The per-component service templates (for example `esp@.service`)
+also contain an `[Install]` section with `WantedBy=hpccsystems-platform.target`
+so that `systemctl enable` on an instance does not fail; this is only needed if
+an instance is managed on its own outside of the generated target.
+
 Manual regeneration of hpccsystems-platform.target
 --------------------------------------------------
 

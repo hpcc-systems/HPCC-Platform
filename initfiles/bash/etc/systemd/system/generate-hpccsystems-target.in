@@ -1,7 +1,15 @@
 #!/bin/bash
 
-want=($(@ADMIN_PATH@/configgen -env @CONFIG_DIR@/@ENV_XML_FILE@ -list | awk 'BEGIN {FS="=|;";} !/dafilesrv/ && !/ftslave/ {printf "%s@%s.service ", $2, $1;}'))
-require=($(@ADMIN_PATH@/configgen -env @CONFIG_DIR@/@ENV_XML_FILE@ -t dafilesrv -list | awk 'BEGIN {FS="=|;";} /dafilesrv/ {printf "%s@%s.service", $2, $1;}'))
+want_list=$(@ADMIN_PATH@/configgen -env @CONFIG_DIR@/@ENV_XML_FILE@ -list) || {
+    echo "configgen failed listing components; leaving existing hpccsystems-platform.target unchanged" >&2
+    exit 1
+}
+require_list=$(@ADMIN_PATH@/configgen -env @CONFIG_DIR@/@ENV_XML_FILE@ -t dafilesrv -list) || {
+    echo "configgen failed listing dafilesrv; leaving existing hpccsystems-platform.target unchanged" >&2
+    exit 1
+}
+want=($(printf '%s\n' "${want_list}" | awk 'BEGIN {FS="=|;";} NF > 1 && !/dafilesrv/ && !/ftslave/ {printf "%s@%s.service ", $2, $1;}'))
+require=($(printf '%s\n' "${require_list}" | awk 'BEGIN {FS="=|;";} NF > 1 && /dafilesrv/ {printf "%s@%s.service ", $2, $1;}'))
 all=(${want[@]} ${require[@]})
 want_string="${want[@]}"
 require_string="${require[@]}"
@@ -16,14 +24,35 @@ for instance in "${all[@]}"; do
 	rm -f /etc/systemd/system/${instance}
 done
 
-echo "generating hpccsystems platform target from environment.xml"
 mkdir -p @INSTALL_DIR@/etc/systemd/system/gen
+# Remove generated instance units (and their enablement links) for components that are
+# no longer declared in environment.xml, so systemd does not keep starting them.
+for generated in @INSTALL_DIR@/etc/systemd/system/gen/*@*.service; do
+    [[ -e "${generated}" || -L "${generated}" ]] || continue
+    name="$(basename "${generated}")"
+    keep=0
+    for instance in "${all[@]}"; do
+        if [[ "${instance}" == "${name}" ]]; then
+            keep=1
+            break
+        fi
+    done
+    if [[ ${keep} -eq 0 ]]; then
+        echo "removing obsolete ${name}"
+        rm -f "/etc/systemd/system/${name}" "/etc/systemd/system/hpccsystems-platform.target.wants/${name}" "${generated}"
+    fi
+done
+
+echo "generating hpccsystems platform target from environment.xml"
 cd /etc/systemd/system
-cat << EOT >> @INSTALL_DIR@/etc/systemd/system/gen/hpccsystems-platform.target
+cat << EOT > @INSTALL_DIR@/etc/systemd/system/gen/hpccsystems-platform.target
 [Unit]
 Description=hpccsystems-platform components
 Requires=${require_string}
 Wants=${want_string}
+
+[Install]
+WantedBy=multi-user.target
 EOT
 ln -sf @INSTALL_DIR@/etc/systemd/system/gen/hpccsystems-platform.target hpccsystems-platform.target
 for ((i=0; i<${#all[@]}; i++)); do

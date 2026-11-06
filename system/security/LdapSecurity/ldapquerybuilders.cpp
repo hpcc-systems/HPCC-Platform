@@ -55,8 +55,3 @@ void appendAciUserdnClause(const char *username, const char *userBasedn, StringB
     appendUserUidDn(username, userBasedn, sd);
     sd.append("\");)");
 }
-
-bool shouldRejectAddUserUsername(bool isActiveDirectory, const char *username)
-{
-    return !isActiveDirectory && usernameContainsLdapUrlForbiddenChars(username);
-}

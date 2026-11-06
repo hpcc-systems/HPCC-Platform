@@ -411,7 +411,8 @@ bool CHThorIndexReadActivityBase::doPreopenLimitFile(unsigned __int64 & count, u
         if(localSortKey)
         {
             // MORE - partition support goes here
-            Owned<IKeyIndex> tlk = openKeyFile(df->queryPart(num));
+            IDistributedFilePart &tlkPart = df->queryPart(num);
+            Owned<IKeyIndex> tlk = openKeyFile(tlkPart, getPartReadOptions(tlkPart));
             verifyIndex(tlk);
             for(unsigned idx = 0; idx < num; ++idx)
             {
@@ -422,7 +423,8 @@ bool CHThorIndexReadActivityBase::doPreopenLimitFile(unsigned __int64 & count, u
         }
         else
         {
-            Owned<IKeyIndex> tlk = openKeyFile(df->queryPart(num));
+            IDistributedFilePart &tlkPart = df->queryPart(num);
+            Owned<IKeyIndex> tlk = openKeyFile(tlkPart, getPartReadOptions(tlkPart));
             verifyIndex(tlk);
             const RtlRecord & actualRecInfo = layoutTrans ? layoutTrans->querySourceMeta() : eclKeySize.queryRecordAccessor(true);
             Owned<IKeyManager> tlman = createLocalKeyManager(actualRecInfo, tlk, &contextLogger, helper.hasNewSegmentMonitors(), false);
@@ -472,7 +474,8 @@ IKeyIndex * CHThorIndexReadActivityBase::doPreopenLimitPart(unsigned __int64 & r
 
 void CHThorIndexReadActivityBase::openTlk()
 {
-    tlk.setown(openKeyFile(df->queryPart(df->numParts()-1)));
+    IDistributedFilePart &tlkPart = df->queryPart(df->numParts()-1);
+    tlk.setown(openKeyFile(tlkPart, getPartReadOptions(tlkPart)));
 }
 
 
@@ -583,9 +586,7 @@ IndexReadOptions CHThorIndexReadActivityBase::getPartReadOptions(IDistributedFil
     if (foreignReadOptions.randomReadSize != (size32_t)-1)
         return foreignReadOptions;
 
-    StringBuffer planeName;
-    df->getClusterName(part.copyClusterNum(0), planeName);
-    return getIndexReadOptions(planeName);
+    return getIndexReadOptionsForPart(*df, part);
 }
 
 bool CHThorIndexReadActivityBase::setCurrentPart(unsigned whichPart)
@@ -3050,6 +3051,7 @@ class DistributedKeyLookupHandler;
 class KeyedLookupPartHandler : extends ThreadedPartHandler<MatchSet>, implements IInterface
 {
     IJoinProcessor &owner;
+    Linked<IDistributedFile> file;
     Owned<IKeyManager> manager;
     IAgentContext &agent;
     DistributedKeyLookupHandler * tlk;
@@ -3057,7 +3059,7 @@ class KeyedLookupPartHandler : extends ThreadedPartHandler<MatchSet>, implements
 public:
     IMPLEMENT_IINTERFACE;
 
-    KeyedLookupPartHandler(IJoinProcessor &_owner, IDistributedFilePart *_part, DistributedKeyLookupHandler * _tlk, unsigned _subno, IThreadPool * _threadPool, IAgentContext &_agent, IContextLogger & _contextLogger);
+    KeyedLookupPartHandler(IJoinProcessor &_owner, IDistributedFile &_file, IDistributedFilePart *_part, DistributedKeyLookupHandler * _tlk, unsigned _subno, IThreadPool * _threadPool, IAgentContext &_agent, IContextLogger & _contextLogger);
 
     ~KeyedLookupPartHandler()
     {
@@ -3118,7 +3120,7 @@ class DistributedKeyLookupHandler : public CInterface, implements IThreadedExcep
         for (unsigned idx = 0; idx < numParts; idx++)
         {
             IDistributedFilePart *part = f.getPart(idx);
-            parts.append(*new KeyedLookupPartHandler(owner, part, this, tlks.ordinality(), threadPool, agent, contextLogger));
+            parts.append(*new KeyedLookupPartHandler(owner, f, part, this, tlks.ordinality(), threadPool, agent, contextLogger));
         }
         keyFiles.append(OLINK(f));
         tlks.append(*f.getPart(numParts));
@@ -3191,7 +3193,7 @@ public:
         {
             IDistributedFile & f = keyFiles.item(idx);
             IDistributedFilePart &tlk = tlks.item(idx);
-            Owned<IKeyIndex> index = openKeyFile(tlk);
+            Owned<IKeyIndex> index = openKeyFile(tlk, getIndexReadOptionsForPart(f, tlk));
             //Owned<IRecordLayoutTranslator> 
             trans.setown(owner.getLayoutTranslator(&f));
             owner.verifyIndex(&f, index, trans);
@@ -3225,8 +3227,8 @@ public:
     const IDynamicTransform * queryRecordLayoutTranslator() const { return trans; }
 };
 
-KeyedLookupPartHandler::KeyedLookupPartHandler(IJoinProcessor &_owner, IDistributedFilePart *_part, DistributedKeyLookupHandler * _tlk, unsigned _subno, IThreadPool * _threadPool, IAgentContext &_agent, IContextLogger & _contextLogger)
-    : ThreadedPartHandler<MatchSet>(_part, _tlk, _threadPool), owner(_owner), agent(_agent), tlk(_tlk), contextLogger(_contextLogger)
+KeyedLookupPartHandler::KeyedLookupPartHandler(IJoinProcessor &_owner, IDistributedFile &_file, IDistributedFilePart *_part, DistributedKeyLookupHandler * _tlk, unsigned _subno, IThreadPool * _threadPool, IAgentContext &_agent, IContextLogger & _contextLogger)
+    : ThreadedPartHandler<MatchSet>(_part, _tlk, _threadPool), owner(_owner), file(&_file), agent(_agent), tlk(_tlk), contextLogger(_contextLogger)
 {
 }
 
@@ -3234,7 +3236,7 @@ void KeyedLookupPartHandler::openPart()
 {
     if(manager)
         return;
-    Owned<IKeyIndex> index = openKeyFile(*part);
+    Owned<IKeyIndex> index = openKeyFile(*part, getIndexReadOptionsForPart(*file, *part));
     const IDynamicTransform * trans = tlk->queryRecordLayoutTranslator();
     const RtlRecord & actualRecInfo = trans ? trans->querySourceMeta() : owner.queryIndexRecord();
     manager.setown(createLocalKeyManager(actualRecInfo, index, &contextLogger, owner.hasNewSegmentMonitors(), false));
@@ -3315,7 +3317,8 @@ public:
             Owned<IKeyManager> manager;
             if(f.numParts() == 1)
             {
-                Owned<IKeyIndex> index = openKeyFile(f.queryPart(0));
+                IDistributedFilePart &part = f.queryPart(0);
+                Owned<IKeyIndex> index = openKeyFile(part, getIndexReadOptionsForPart(f, part));
                 owner.verifyIndex(&f, index, trans);
                 const RtlRecord & actualRecInfo = trans ? trans->querySourceMeta() : owner.queryIndexRecord();
                 manager.setown(createLocalKeyManager(actualRecInfo, index, &contextLogger, owner.hasNewSegmentMonitors(), false));
@@ -3327,7 +3330,8 @@ public:
                 Owned<IKeyIndex> index;
                 for(unsigned i=0; i<num; ++i)
                 {
-                    index.setown(openKeyFile(f.queryPart(i)));
+                    IDistributedFilePart &part = f.queryPart(i);
+                    index.setown(openKeyFile(part, getIndexReadOptionsForPart(f, part)));
                     parts->addIndex(index.getLink());
                 }
                 owner.verifyIndex(&f, index, trans);

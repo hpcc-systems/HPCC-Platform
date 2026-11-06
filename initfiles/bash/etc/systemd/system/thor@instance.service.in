@@ -25,3 +25,4 @@ LimitMEMLOCK=infinity
 
 [Install]
 DefaultInstance=my@component@
+WantedBy=hpccsystems-platform.target

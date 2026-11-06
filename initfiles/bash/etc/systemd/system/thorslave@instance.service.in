@@ -1,5 +1,6 @@
 [Unit]
 Description=%i
+PartOf=hpccsystems-platform.target
 After=network.target remote-fs.target @dependencies@
 
 [Service]
@@ -13,3 +14,4 @@ ExecStart=@EXEC_PATH@/@processName@ @processArgs@
 
 [Install]
 DefaultInstance=my@component@
+WantedBy=hpccsystems-platform.target

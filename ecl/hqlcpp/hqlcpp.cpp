@@ -1844,6 +1844,7 @@ void HqlCppTranslator::cacheOptions()
         DebugOption(options.groupAllDistribute,"groupAllDistribute", true),
         DebugOption(options.spotLocalMerge,"spotLocalMerge", true),
         DebugOption(options.spotPotentialKeyedJoins,"spotPotentialKeyedJoins", false),
+        DebugOption(options.allowKeyedJoins,"allowKeyedJoins", true),
         DebugOption(options.combineTrivialStored,"combineTrivialStored", true),
         DebugOption(options.combineAllStored,"combineAllStored", false),
         DebugOption(options.allowStoredDuplicate,"allowStoredDuplicate", false),    // only here as a temporary workaround

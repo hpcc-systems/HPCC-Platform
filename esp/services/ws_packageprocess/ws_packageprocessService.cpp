@@ -102,6 +102,12 @@ IPropertyTree *getPkgSetRegistry(const char *process, bool readonly)
 ////////////////////////////////////////////////////////////////////////////////////////
 const unsigned roxieQueryRoxieTimeOut = 60000;
 
+static inline void ensureRoxieTargetCluster(IConstWUClusterInfo *clusterInfo)
+{
+    if (clusterInfo->getPlatform() != RoxieCluster)
+        throw makeStringException(PKG_INVALID_CLUSTER_TYPE, "Roxie target required");
+}
+
 bool isFileKnownOnCluster(const char *logicalname, IConstWUClusterInfo *clusterInfo, IUserDescriptor* userdesc)
 {
     Owned<IDistributedFile> dst = queryDistributedFileDirectory().lookup(logicalname, userdesc, AccessMode::readLogicalMeta, false, false, nullptr, defaultPrivilegedUser);
@@ -127,6 +133,7 @@ bool isFileKnownOnCluster(const char *logicalname, const char *target, IUserDesc
 //MORE: This should be a member function of PackageMapUpdator
 void cloneFileInfoToDali(StringBuffer &publisherWuid, unsigned updateFlags, StringArray &notFound, IPropertyTree *packageMap, const char *remoteLocation, IConstWUClusterInfo *dstInfo, const char *srcCluster, const char *remotePrefix, IUserDescriptor* userdesc, bool allowForeignFiles, const char *jobname, const char * keyCompression, const char *dfuTargetPlane, bool ignorePackageMapSources)
 {
+    ensureRoxieTargetCluster(dstInfo);
     StringBuffer user;
     StringBuffer password;
 
@@ -395,6 +402,12 @@ public:
         if (pmExisting && !pmExisting->getPropBool("@multipart", false))
             convertExisting();
     }
+    void initForClone()
+    {
+        if (!streq(target.get(), "*"))
+            ensureRoxieTargetCluster(ensureClusterInfo());
+        init();
+    }
     void createPart(const char *partname, IPropertyTree *pTree)
     {
         if (!partname || !*partname)
@@ -526,12 +539,12 @@ public:
     }
     bool create(const char *partname, const char *xml, unsigned updateFlags, StringArray &filesNotFound, bool copyonly, bool stopifcopy)
     {
-        init();
+        initForClone();
         return doCreate(partname, xml, updateFlags, filesNotFound, copyonly, stopifcopy);
     }
     bool copy(IPropertyTree *pm, const char *name, unsigned updateFlags, StringArray &filesNotFound, bool copyonly, bool stopifcopy)
     {
-        init();
+        initForClone();
         return doCreate(name, pm, updateFlags, filesNotFound, copyonly, stopifcopy);
     }
     bool copy(const char *srcAddress, const char *srcTarget, const char *name, unsigned updateFlags, StringArray &filesNotFound, bool copyonly, bool stopifcopy)
@@ -559,12 +572,12 @@ public:
             mE->append(const_cast<IMultiException&>(resp->getExceptions()));
             throw mE.getClear();
         }
-        init();
+        initForClone();
         return doCreate(name, resp->getInfo(), updateFlags, filesNotFound, copyonly, stopifcopy);
     }
     bool addPart(const char *partname, const char *xml, unsigned updateFlags, StringArray &filesNotFound, bool copyonly, bool stopifcopy)
     {
-        init();
+        initForClone();
 
         if (!pmExisting)
             return doCreate(partname, xml, updateFlags, filesNotFound, copyonly, stopifcopy);
@@ -1265,6 +1278,7 @@ bool CWsPackageProcessEx::onValidatePackage(IEspContext &context, IEspValidatePa
             Owned<IConstWUClusterInfo> clusterInfo = getWUClusterInfoByName(target);
             if (!clusterInfo)
                 throw makeStringException(PKG_TARGET_NOT_DEFINED, "Target cluster not found");
+            ensureRoxieTargetCluster(clusterInfo);
             validatePackage(context, req, packageMapTree, clusterInfo, queriesToVerify, queriesToIgnore,
                 (version < 1.04) ? &resp : nullptr, results);
         }
@@ -1458,8 +1472,7 @@ bool CWsPackageProcessEx::onGetQueryFileMapping(IEspContext &context, IEspGetQue
     Owned<IConstWUClusterInfo> clusterInfo = getWUClusterInfoByName(target);
     if (!clusterInfo)
         throw MakeStringException(PKG_TARGET_NOT_DEFINED, "Unable to find target cluster");
-    if (clusterInfo->getPlatform()!=RoxieCluster)
-        throw MakeStringException(PKG_INVALID_CLUSTER_TYPE, "Roxie target required");
+    ensureRoxieTargetCluster(clusterInfo);
 
     Owned<IHpccPackageSet> set;
     Owned<IHpccPackageMap> ownedmap;

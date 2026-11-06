@@ -370,7 +370,7 @@ private:
 class EclCmdPackageDelete : public EclCmdCommon
 {
 public:
-    EclCmdPackageDelete()
+    EclCmdPackageDelete() : optGlobalScope(false)
     {
     }
     virtual eclCmdOptionMatchIndicator parseCommandLineOptions(ArgvIterator &iter)
@@ -1430,7 +1430,7 @@ private:
 class EclCmdPackageRemovePart : public EclCmdCommon
 {
 public:
-    EclCmdPackageRemovePart()
+    EclCmdPackageRemovePart() : optGlobalScope(false)
     {
     }
     virtual eclCmdOptionMatchIndicator parseCommandLineOptions(ArgvIterator &iter)
@@ -1532,7 +1532,7 @@ private:
 class EclCmdPackageGetPart: public EclCmdCommon
 {
 public:
-    EclCmdPackageGetPart()
+    EclCmdPackageGetPart() : optGlobalScope(false)
     {
     }
     virtual eclCmdOptionMatchIndicator parseCommandLineOptions(ArgvIterator &iter)

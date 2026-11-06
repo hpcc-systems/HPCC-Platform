@@ -1747,13 +1747,13 @@ public:
         int64_t modifiedMs = (int64_t)modifiedTime * 1000 + (nano ? (nano + 999999) / 1000000 : 1000);
 
         // A part modified at modifiedMs should have propagated to all readers by modifiedMs + margin.
-        // Sample wall-clock and cycles back-to-back so the cycle deadline matches the wall-clock deadline.
+        // Sample wall-clock and monotonic clocks back-to-back so the monotonic deadline matches the wall-clock deadline.
         int64_t nowMs = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(); // epoch milliseconds
         int64_t remainingMs = modifiedMs + marginMs - nowMs;
         if (remainingMs <= 0) // already past the visibility margin - nothing to track
             return;
-        cycle_t nowCycles = get_cycles_now();
-        cycle_t deadlineCycles = nowCycles + millisec_to_cycle((unsigned)std::min(remainingMs, (int64_t)(unsigned)-1));
+        remainingMs = std::min(remainingMs, (int64_t)UINT_MAX);
+        unsigned __int64 deadlineMs = writeSyncNowMs() + (unsigned __int64)remainingMs;
 
         // Compression is a file-level property; resolve it once so the reader can apply the same empty-part
         // size tolerance that doesPhysicalMatchMeta uses (an empty compressed part may legitimately be 0 bytes
@@ -1788,7 +1788,7 @@ public:
         }
         // Record the whole file's parts in a single locked batch (one mutex acquisition, one prune pass).
         if (!files.empty())
-            noteWriteSyncFiles(files, deadlineCycles);
+            noteWriteSyncFiles(files, deadlineMs);
     }
 
     CFileDescriptor(IPropertyTree *tree, INamedGroupStore *resolver, unsigned flags)
@@ -2707,8 +2707,7 @@ static IFileDescriptor *_createExternalFileDescriptor(const char *_logicalname, 
     fileDesc->setDefaultDir(dir.str());
     unsigned n = group.get()?group->ordinality():1;
     StringBuffer partname;
-    CDateTime modTime;
-    StringBuffer modTimeStr;
+    CDateTime newestModTime;
     for (unsigned i=0;i<n;i++)
     {
         if (group.get())
@@ -2741,19 +2740,18 @@ static IFileDescriptor *_createExternalFileDescriptor(const char *_logicalname, 
             ep.port = getDaliServixPort();
         RemoteFilename rfn;
         rfn.setPath(ep,partname.str());
+        CDateTime partModTime;
+        StringBuffer partModTimeStr;
         if (!isspecial&&(memcmp(partname.str(),"/$/",3)!=0)&&(memcmp(partname.str(),"\\$\\",3)!=0)) // don't get date on external data
         {
             try
             {
                 Owned<IFile> file = createIFile(rfn);
-                CDateTime dt;
-                if (file&&file->getTime(NULL,&dt,NULL))
+                if (file&&file->getTime(NULL,&partModTime,NULL))
                 {
-                    if ((0 == modTimeStr.length())||(dt.compareDate(modTime)>0))
-                    {
-                        modTime.set(dt);
-                        modTime.getString(modTimeStr);
-                    }
+                    partModTime.getString(partModTimeStr);
+                    if (newestModTime.isNull() || (partModTime.compare(newestModTime)>0))
+                        newestModTime.set(partModTime);
                 }
             }
             catch (IException *e)
@@ -2768,15 +2766,19 @@ static IFileDescriptor *_createExternalFileDescriptor(const char *_logicalname, 
             if (!iFile->exists())
                 return NULL; // >=1 part does not exist.
         }
-        if (modTimeStr.length())
+        if (partModTimeStr.length())
         {
             Owned<IPropertyTree> part = createPTree("Part");
-            part->setProp("@modified", modTimeStr.str());
+            part->setProp("@modified", partModTimeStr.str());
             fileDesc->setPart(i, rfn, part);
         }
         else
             fileDesc->setPart(i, rfn);
     }
+    if (newestModTime.isNull())
+        newestModTime.setNow();
+    StringBuffer newestModTimeStr;
+    fileDesc->queryProperties().setProp("@modified", newestModTime.getString(newestModTimeStr).str());
     fileDesc->queryPartDiskMapping(0).defaultCopies = DFD_NoCopies;
     return fileDesc.getClear();
 }
@@ -4106,10 +4108,10 @@ void disableStoragePlanesDaliUpdates()
     savedConnectedToDali = false;
 }
 
-unsigned __int64 getPartPlaneAttr(IPartDescriptor &part, unsigned copy, PlaneAttributeType attr, size32_t defaultValue)
+IndexReadOptions getPartPlaneReadOptions(IPartDescriptor &part, unsigned copy)
 {
     unsigned clusterNum = part.copyClusterNum(copy);
     StringBuffer planeName;
     part.queryOwner().getClusterLabel(clusterNum, planeName);
-    return getPlaneAttributeValue(planeName, attr, defaultValue);
+    return getIndexReadOptions(planeName);
 }

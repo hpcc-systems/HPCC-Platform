@@ -26,6 +26,91 @@
 #include "hqlutil.hpp"
 #include "jsecrets.hpp"
 
+static void extractGitDiagnostics(StringBuffer & error, StringPairVector & diagnostics)
+{
+    diagnostics.clear();
+    StringBuffer filtered;
+    const char * current = error.str();
+    while (*current)
+    {
+        const char * end = strchr(current, '\n');
+        size_t length = end ? end - current : strlen(current);
+        std::string line(current, length);
+
+        bool isTracing = false;
+        // Git curl traces start with HH:MM:SS.ffffff; match only the first nine characters.
+        if (line.size() >= 9 && line[2] == ':' && line[5] == ':' && line[8] == '.')
+        {
+            if (isdigit((unsigned char)line[0]) && isdigit((unsigned char)line[1]) &&
+                isdigit((unsigned char)line[3]) && isdigit((unsigned char)line[4]) &&
+                isdigit((unsigned char)line[6]) && isdigit((unsigned char)line[7]))
+            {
+                isTracing = true;
+            }
+        }
+        if (isTracing)
+        {
+            size_t marker = line.find("<= Recv header:");
+            if (marker != std::string::npos)
+            {
+                StringBuffer header;
+                header.append(line.c_str() + marker + strlen("<= Recv header:")).trim();
+                if (startsWith(header.str(), "HTTP/"))
+                {
+                    diagnostics.clear();
+                    const char * status = strchr(header.str(), ' ');
+                    if (status)
+                        diagnostics.emplace_back("http-status", std::string(status + 1, strcspn(status + 1, " \r\t")));
+                }
+                else if (const char * colon = strchr(header.str(), ':'))
+                {
+                    StringBuffer name;
+                    name.append(colon - header.str(), header.str()).toLowerCase();
+                    if (streq(name, "retry-after") || startsWith(name.str(), "ratelimit-") || startsWith(name.str(), "x-ratelimit-") ||
+                        streq(name, "x-github-request-id") || streq(name, "x-vss-e2eid") || streq(name, "x-tfs-session") || streq(name, "x-request-id"))
+                    {
+                        StringBuffer value;
+                        value.append(colon + 1).trim();
+                        if (diagnostics.size() < 64)
+                            diagnostics.emplace_back(name.str(), std::string(value.str(), std::min<size_t>(value.length(), 512)));
+                    }
+                }
+            }
+        }
+        else
+        {
+            filtered.append(length, current);
+            if (end)
+                filtered.append('\n');
+        }
+        if (!end)
+            break;
+        current = end + 1;
+    }
+    error.swapWith(filtered);
+}
+
+static StringBuffer & formatGitDiagnostics(StringBuffer & text, const StringPairVector & diagnostics)
+{
+    for (const auto & diagnostic : diagnostics)
+    {
+        if (text.length())
+            text.append("; ");
+        text.append(diagnostic.first.c_str()).append('=');
+        for (unsigned char next : diagnostic.second)
+            text.append((next < ' ' || next == 0x7f) ? ' ' : (char)next);
+    }
+    return text;
+}
+
+static void logGitDiagnostics(const char * repoPath, const StringPairVector & diagnostics)
+{
+    StringBuffer text;
+    formatGitDiagnostics(text, diagnostics);
+    if (text.length())
+        DBGLOG("Git HTTP diagnostics for '%s': %s", repoPath, text.str());
+}
+
 static std::atomic<unsigned> fetchNesting{0};
 static std::atomic<bool> abortPending{false};
 
@@ -1005,7 +1090,9 @@ IEclSourceCollection * EclRepositoryManager::resolveGitCollection(const char * r
                     if (action == GitFetchAction::fetch)
                     {
                         DBGLOG("Fetching git repository '%s' to resolve '%s'", repoPath, version.str());
-                        retCode = runGitCommand(nullptr, "fetch origin --prune", repoPath, true);
+                        StringPairVector diagnostics;
+                        retCode = runGitCommand(nullptr, "fetch origin --prune", repoPath, true, &diagnostics);
+                        logGitDiagnostics(repoPath, diagnostics);
                         if (gitUpdateLock)
                             gitUpdateLock->noteFetchResult(fetchStartTimestamp, retCode == 0);
                     }
@@ -1033,7 +1120,9 @@ IEclSourceCollection * EclRepositoryManager::resolveGitCollection(const char * r
                 DBGLOG("Cloning git repository '%s' to resolve '%s'", repoPath, version.str());
                 VStringBuffer params("clone %s \"%s\" --no-checkout", repoUrn.str(), repo.str());
                 unsigned __int64 fetchStartTimestamp = getTimeStampNowValue();
-                unsigned retCode = runGitCommand(nullptr, params, options.eclRepoPath, true);
+                StringPairVector diagnostics;
+                unsigned retCode = runGitCommand(nullptr, params, options.eclRepoPath, true, &diagnostics);
+                logGitDiagnostics(repoPath, diagnostics);
                 if (gitUpdateLock)
                     gitUpdateLock->noteFetchResult(fetchStartTimestamp, retCode == 0);
                 if (retCode != 0)
@@ -1132,12 +1221,24 @@ void EclRepositoryManager::kill()
 
 unsigned EclRepositoryManager::runGitCommand(StringBuffer * output, const char *args, const char * cwd, bool needCredentials)
 {
+    return runGitCommand(output, args, cwd, needCredentials, nullptr);
+}
+
+unsigned EclRepositoryManager::runGitCommand(StringBuffer * output, const char *args, const char * cwd, bool needCredentials, StringPairVector * diagnostics)
+{
     StringBuffer tempOutput;
     if (!output)
         output= &tempOutput;
 
     Owned<IFile> extractedKey;
     EnvironmentVector env;
+    if (diagnostics)
+    {
+        diagnostics->clear();
+        env.emplace_back("GIT_TRACE_CURL", "1");
+        env.emplace_back("GIT_TRACE_CURL_NO_DATA", "1");
+        env.emplace_back("GIT_TRACE_REDACT", "1");
+    }
     bool useScript = false;
     //If fetching from git and the username is specified then use the script file to provide the username/password
     //NB: This code should be kept in sync with readLfsContents() in gitfile.cpp (and ideally combined)
@@ -1178,6 +1279,9 @@ unsigned EclRepositoryManager::runGitCommand(StringBuffer * output, const char *
     if (extractedKey)
         extractedKey->remove();
 
+    if (diagnostics)
+        extractGitDiagnostics(error, *diagnostics);
+
     if (ret > 0)
     {
         const char * extra = "";
@@ -1203,9 +1307,53 @@ class GitRepositoryTests : public CppUnit::TestFixture
         CPPUNIT_TEST(testFullCommitSha);
         CPPUNIT_TEST(testSafeGitVersion);
         CPPUNIT_TEST(testExtractRemoteSha);
+        CPPUNIT_TEST(testGitDiagnostics);
     CPPUNIT_TEST_SUITE_END();
 
 public:
+    void testGitDiagnostics()
+    {
+        StringBuffer error(
+            "12:34:56.123456 http.c:800 unknown trace marker\n"
+            "12:34:56.123456 http.c:800 == Info: connection details\n"
+            "12:34:56.123456 http.c:800 => Send header: Authorization: secret\n"
+            "12:34:56.123456 http.c:800 <= Recv header: HTTP/1.1 302 Found\r\n"
+            "12:34:56.123456 http.c:800 <= Recv header: X-RateLimit-Remaining: 10\r\n"
+            "12:34:56.123456 http.c:800 <= Recv header: HTTP/2 429\r\n"
+            "12:34:56.123456 http.c:800 <= Recv header: Retry-After: 30\r\n"
+            "12:34:56.123456 http.c:800 <= Recv header: X-RATELIMIT-Remaining: 0\r\n"
+            "12:34:56.123456 http.c:800 <= Recv header: Set-Cookie: secret\r\n"
+            "fatal: server returned 429\n");
+        StringPairVector diagnostics{{"stale", "value"}};
+        extractGitDiagnostics(error, diagnostics);
+        CPPUNIT_ASSERT_EQUAL_STR("fatal: server returned 429\n", error.str());
+        CPPUNIT_ASSERT_EQUAL(size_t(3), diagnostics.size());
+        StringBuffer text;
+        formatGitDiagnostics(text, diagnostics);
+        CPPUNIT_ASSERT_EQUAL_STR("http-status=429; retry-after=30; x-ratelimit-remaining=0", text.str());
+
+        error.set("ordinary stderr without newline");
+        extractGitDiagnostics(error, diagnostics);
+        CPPUNIT_ASSERT(diagnostics.empty());
+        CPPUNIT_ASSERT_EQUAL_STR("ordinary stderr without newline", error.str());
+
+        error.set("12:34:56\n"
+              "12:34:56 ordinary error\n"
+              "12:3x:56.123456 ordinary error\n");
+        extractGitDiagnostics(error, diagnostics);
+        CPPUNIT_ASSERT(diagnostics.empty());
+        CPPUNIT_ASSERT_EQUAL_STR("12:34:56\n12:34:56 ordinary error\n12:3x:56.123456 ordinary error\n", error.str());
+
+        error.set("12:34:56.123456 http.c:800 <= Recv header: HTTP/2 200\n"
+                  "12:34:56.123456 http.c:800 <= Recv header: X-RateLimit-Delay: 1.5\n");
+        extractGitDiagnostics(error, diagnostics);
+        CPPUNIT_ASSERT(error.isEmpty());
+        CPPUNIT_ASSERT_EQUAL(size_t(2), diagnostics.size());
+        diagnostics.emplace_back("x-request-id", "one\rtwo\nthree");
+        formatGitDiagnostics(text.clear(), diagnostics);
+        CPPUNIT_ASSERT_EQUAL_STR("http-status=200; x-ratelimit-delay=1.5; x-request-id=one two three", text.str());
+    }
+
     void testFetchDecision()
     {
         CPPUNIT_ASSERT_EQUAL(GitFetchAction::fetch, decideGitFetch(100, 10, 0, 0, false));
@@ -1253,15 +1401,15 @@ public:
         VStringBuffer output("%s\trefs/heads/feature/v1\n%s\trefs/tags/v1\n%s\trefs/tags/v1^{}\n", branchSha, tagSha, peeledSha);
         StringBuffer sha;
         CPPUNIT_ASSERT(extractRemoteSha(sha, output, "v1"));
-        CPPUNIT_ASSERT_EQUAL(std::string(peeledSha), std::string(sha.str()));
+        CPPUNIT_ASSERT_EQUAL_STR(peeledSha, sha.str());
 
         output.appendf("%s\trefs/heads/v1\r\n", branchSha);
         CPPUNIT_ASSERT(extractRemoteSha(sha.clear(), output, "v1"));
-        CPPUNIT_ASSERT_EQUAL(std::string(branchSha), std::string(sha.str()));
+        CPPUNIT_ASSERT_EQUAL_STR(branchSha, sha.str());
 
         VStringBuffer lightweight("%s\trefs/tags/v2", tagSha);
         CPPUNIT_ASSERT(extractRemoteSha(sha.clear(), lightweight, "v2"));
-        CPPUNIT_ASSERT_EQUAL(std::string(tagSha), std::string(sha.str()));
+        CPPUNIT_ASSERT_EQUAL_STR(tagSha, sha.str());
 
         CPPUNIT_ASSERT(!extractRemoteSha(sha.clear(), output, "main"));
         CPPUNIT_ASSERT(!extractRemoteSha(sha.clear(), "", "main"));

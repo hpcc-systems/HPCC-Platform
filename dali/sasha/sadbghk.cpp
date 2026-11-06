@@ -9,6 +9,7 @@
 #include "jplane.hpp"
 
 #include "sautil.hpp"
+#include "sadbghk.hpp"
 
 static constexpr unsigned defaultExpiryDays = 14;
 static constexpr unsigned defaultHouseKeepingIntervalHours = 24;

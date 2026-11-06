@@ -109,6 +109,13 @@ IHThorDiskReadArg * createWorkUnitReadArg(const char * filename, IHThorWorkunitR
 
 #define MAX_FILE_READ_FAIL_COUNT 3
 
+static IndexReadOptions getIndexReadOptionsForPart(IDistributedFilePart &keyFile)
+{
+    StringBuffer path, planeName;
+    keyFile.getStorageFilePath(path, 0);
+    return findPlaneFromPath(path, planeName) ? getIndexReadOptions(planeName) : IndexReadOptions{};
+}
+
 IKeyIndex *openKeyFile(IDistributedFilePart & keyFile, IndexReadOptions readOptions)
 {
     unsigned failcount = 0;
@@ -153,18 +160,11 @@ IKeyIndex *openKeyFile(IDistributedFilePart & keyFile, IndexReadOptions readOpti
     throw MakeStringException(1001, "Could not open key file at %s%s", url.str(), (numCopies > 1) ? " or any alternate location." : ".");
 }
 
-// FUTURE: Remove this overload and ensure that all callers provide explicit IndexReadOptions
-IKeyIndex *openKeyFile(IDistributedFilePart &keyFile)
-{
-    return openKeyFile(keyFile, {});
-}
-
-
 //-----------------------------------------------------------------------------
 
 constexpr unsigned defaultTimeout = 10000;
 
-static bool checkIndexMetaInformation(IDistributedFilePart * part, bool force)
+static bool checkIndexMetaInformation(IDistributedFile &file, IDistributedFilePart *part, bool force)
 {
     if (part->queryAttributes().hasProp("@offsetBranches"))
         return true;
@@ -172,7 +172,7 @@ static bool checkIndexMetaInformation(IDistributedFilePart * part, bool force)
     if (!force)
         return false;
 
-    Owned<IKeyIndex> index = openKeyFile(*part);
+    Owned<IKeyIndex> index = openKeyFile(*part, getIndexReadOptionsForPart(file, *part));
     offset_t branchOffset = index->queryFirstBranchOffset();
 
     part->lockProperties(defaultTimeout);
@@ -207,7 +207,7 @@ bool checkIndexMetaInformation(IDistributedFile * file, bool force)
 
             //Read values from the header of the first index part and save in the meta data
             IDistributedFilePart & part = file->queryPart(0);
-            Owned<IKeyIndex> index = openKeyFile(part);
+            Owned<IKeyIndex> index = openKeyFile(part, getIndexReadOptionsForPart(*file, part));
             size_t keySize = index->keySize();
             size_t nodeSize = index->getNodeSize();
 
@@ -224,7 +224,7 @@ bool checkIndexMetaInformation(IDistributedFile * file, bool force)
             ForEach(*parts)
             {
                 IDistributedFilePart & cur = parts->query();
-                if (!checkIndexMetaInformation(&cur, force))
+                if (!checkIndexMetaInformation(*file, &cur, force))
                     return false;
             }
         }
