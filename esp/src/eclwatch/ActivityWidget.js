@@ -480,7 +480,7 @@ define([
                         sortable: false,
                         formatter: function (state, row) {
                             if (context.activity.isInstanceOfQueue(row)) {
-                                return row.isNormal() ? "" : row.StatusDetails;
+                                return row.isNormal() ? "" : Utility.encodeHTML(row.StatusDetails);
                             }
                             if (row.Duration) {
                                 return state + " (" + row.Duration + ")";
