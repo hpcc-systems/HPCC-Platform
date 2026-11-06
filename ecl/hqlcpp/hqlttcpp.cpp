@@ -2519,6 +2519,21 @@ IHqlExpression * ThorHqlTransformer::createTransformed(IHqlExpression * expr)
     case no_selfjoin:
     case no_denormalize:
     case no_denormalizegroup:
+        if (!options.allowKeyedJoins && isKeyedJoin(transformed))
+        {
+            bool hasBareKeyed = false;
+            ForEachChild(idx, transformed)
+            {
+                IHqlExpression * child = transformed->queryChild(idx);
+                if (child->isAttribute() && child->queryName() == keyedAtom && !child->queryChild(0))
+                {
+                    hasBareKeyed = true;
+                    break;
+                }
+            }
+            if (!hasBareKeyed)
+                translator.reportError(transformed, ECODETEXT(HQLERR_KeyedJoinDisabled));
+        }
         if (transformed->hasAttribute(groupAtom))
             normalized = normalizeJoinAndGroup(transformed);
         else
@@ -3407,7 +3422,7 @@ IHqlExpression * ThorHqlTransformer::normalizeJoinOrDenormalize(IHqlExpression *
         if (isDistributedCoLocally(leftDs, rightDs, joinInfo.queryLeftReq(), joinInfo.queryRightReq()))
             return appendOwnedOperand(expr, createLocalAttribute());
 
-        if (options.createImplicitKeyedDistributeForJoin && !expr->hasAttribute(lookupAtom))
+        if (options.allowKeyedJoins && options.createImplicitKeyedDistributeForJoin && !expr->hasAttribute(lookupAtom))
         {
             IHqlExpression * rhsKey = queryDistributionKey(rightDs);
             if (rhsKey)
@@ -9642,6 +9657,18 @@ IHqlExpression * DFSLayoutTransformer::createTransformed(IHqlExpression * expr)
 //==============================================================================================================
 
 
+static IHqlExpression * replaceKeyedIndexAttribute(IHqlExpression * expr, IHqlExpression * ownedAttribute)
+{
+    OwnedHqlExpr attribute(ownedAttribute);
+    ForEachChild(idx, expr)
+    {
+        IHqlExpression * child = expr->queryChild(idx);
+        if (child->isAttribute() && child->queryName() == keyedAtom && child->queryChild(0))
+            return replaceChild(expr, idx, attribute);
+    }
+    throwUnexpected();
+}
+
 static HqlTransformerInfo KeyedProjectTransformerInfo("KeyedProjectTransformer");
 KeyedProjectTransformer::KeyedProjectTransformer()
 : NewHqlTransformer(KeyedProjectTransformerInfo)
@@ -9678,7 +9705,7 @@ IHqlExpression * KeyedProjectTransformer::createTransformed(IHqlExpression * exp
             // Full keyed joins need to skip any keyed project that may have been inserted on the KEYED attr
             IHqlExpression *index = queryAttributeChild(transformed, keyedAtom, 0);
             if (index->getOperator()==no_hqlproject && index->hasAttribute(keyedAtom) && !hasUnknownTransform(index))
-                transformed.setown(replaceOwnedAttribute(transformed, createExprAttribute(keyedAtom, LINK(index->queryChild(0)))));
+                transformed.setown(replaceKeyedIndexAttribute(transformed, createExprAttribute(keyedAtom, LINK(index->queryChild(0)))));
         }
         if (rhsOp == no_hqlproject && rhs->hasAttribute(keyedAtom) && !hasUnknownTransform(rhs))
         {
@@ -9723,7 +9750,7 @@ IHqlExpression * KeyedProjectTransformer::createTransformed(IHqlExpression * exp
                 args.append(*LINK(index->queryChild(1)));
                 args.append(*mapper.expandFields(oldTransform, oldFlatFile, newFlatFile));
                 unwindChildren(args, index, 3);
-                transformed.setown(replaceOwnedAttribute(transformed, createExprAttribute(keyedAtom, index->clone(args))));
+                transformed.setown(replaceKeyedIndexAttribute(transformed, createExprAttribute(keyedAtom, index->clone(args))));
             }
         }
     }
