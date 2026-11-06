@@ -1747,13 +1747,13 @@ public:
         int64_t modifiedMs = (int64_t)modifiedTime * 1000 + (nano ? (nano + 999999) / 1000000 : 1000);
 
         // A part modified at modifiedMs should have propagated to all readers by modifiedMs + margin.
-        // Sample wall-clock and cycles back-to-back so the cycle deadline matches the wall-clock deadline.
+        // Sample wall-clock and monotonic clocks back-to-back so the monotonic deadline matches the wall-clock deadline.
         int64_t nowMs = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(); // epoch milliseconds
         int64_t remainingMs = modifiedMs + marginMs - nowMs;
         if (remainingMs <= 0) // already past the visibility margin - nothing to track
             return;
-        cycle_t nowCycles = get_cycles_now();
-        cycle_t deadlineCycles = nowCycles + millisec_to_cycle((unsigned)std::min(remainingMs, (int64_t)(unsigned)-1));
+        remainingMs = std::min(remainingMs, (int64_t)UINT_MAX);
+        unsigned __int64 deadlineMs = writeSyncNowMs() + (unsigned __int64)remainingMs;
 
         // Compression is a file-level property; resolve it once so the reader can apply the same empty-part
         // size tolerance that doesPhysicalMatchMeta uses (an empty compressed part may legitimately be 0 bytes
@@ -1788,7 +1788,7 @@ public:
         }
         // Record the whole file's parts in a single locked batch (one mutex acquisition, one prune pass).
         if (!files.empty())
-            noteWriteSyncFiles(files, deadlineCycles);
+            noteWriteSyncFiles(files, deadlineMs);
     }
 
     CFileDescriptor(IPropertyTree *tree, INamedGroupStore *resolver, unsigned flags)

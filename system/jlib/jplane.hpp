@@ -22,6 +22,7 @@
 #include "jlib.hpp"
 #include "jstring.hpp"
 #include "jdebug.hpp"
+#include "jutil.hpp"
 
 #include <time.h>
 #include <algorithm>
@@ -88,25 +89,27 @@ struct WriteSyncFileInfo
     offset_t expectedSize = (offset_t)-1; // published on-disk size, or (offset_t)-1 if unknown / do not validate
     bool compressed = false;              // part is compressed - affects how an empty (size 0) part is validated
 };
+// Monotonic (CLOCK_MONOTONIC) milliseconds; 64-bit so deadlines never wrap.
+inline unsigned __int64 writeSyncNowMs() { return nsTick() / 1000000; }
 struct WriteSyncDetails
 {
-    cycle_t deadlineCycles = 0;           // get_cycles_now() based visibility deadline; 0 if not tracked
+    unsigned __int64 deadlineMs = 0;      // writeSyncNowMs() based visibility deadline; 0 if not tracked
     offset_t expectedSize = (offset_t)-1;
     bool compressed = false;
 
-    bool isTracked() const { return 0 != deadlineCycles; }
+    bool isTracked() const { return 0 != deadlineMs; }
     unsigned queryRemainingMs() const
     {
-        if (!deadlineCycles)
+        if (!deadlineMs)
             return 0;
-        cycle_t now = get_cycles_now();
-        if (static_cast<__int64>(now - deadlineCycles) >= 0)
+        unsigned __int64 now = writeSyncNowMs();
+        if (now >= deadlineMs)
             return 0;
-        // Clamp to >= 1 so 0 only means the deadline has passed.
-        return (unsigned)std::clamp(cycle_to_millisec(deadlineCycles - now), (__int64)1, (__int64)UINT_MAX);
+        // Defensive cap; configured write-sync margins should be far below UINT_MAX milliseconds.
+        return (unsigned)(std::min)(deadlineMs - now, (unsigned __int64)UINT_MAX);
     }
 };
-extern jlib_decl void noteWriteSyncFiles(const std::vector<WriteSyncFileInfo> &files, cycle_t deadlineCycles);
+extern jlib_decl void noteWriteSyncFiles(const std::vector<WriteSyncFileInfo> &files, unsigned __int64 deadlineMs);
 // Leaves writeSync untracked if the path was never mapped, or if its mapping has expired.
 extern jlib_decl void getFileWriteSyncDetails(const char *physicalPath, WriteSyncDetails &writeSync);
 #ifdef _USE_CPPUNIT

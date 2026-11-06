@@ -320,7 +320,7 @@ public:
 public:
     // 'short' entries are the ones we deliberately let expire; 'long' entries must stay live for the whole
     // test. The wide gap keeps both robust on slow single-core containers, and waitUntilExpired waits on the
-    // same cycle deadline the cache uses, so it cannot report a premature expiry.
+    // same monotonic deadline the cache uses, so it cannot report a premature expiry.
     static constexpr unsigned shortMarginSecs = 3;
     static constexpr unsigned longMarginSecs = 600;
     // recoveryMarginMs only bounds a regression (the open would otherwise wait it out); recovery takes recoveryDelayMs.
@@ -347,13 +347,13 @@ public:
     };
 
     // Note a single part, returning its deadline.
-    cycle_t noteMs(const char * path, offset_t size, bool compressed, unsigned marginMs)
+    unsigned __int64 noteMs(const char * path, offset_t size, bool compressed, unsigned marginMs)
     {
-        cycle_t deadline = get_cycles_now() + millisec_to_cycle(marginMs);
+        unsigned __int64 deadline = writeSyncNowMs() + marginMs;
         noteWriteSyncFiles({ WriteSyncFileInfo{path, size, compressed} }, deadline);
         return deadline;
     }
-    cycle_t note(const char * path, offset_t size, bool compressed, unsigned marginSecs)
+    unsigned __int64 note(const char * path, offset_t size, bool compressed, unsigned marginSecs)
     {
         return noteMs(path, size, compressed, marginSecs * 1000);
     }
@@ -542,7 +542,7 @@ public:
         Owned<IFileIO> writer = createUniqueFile(nullptr, "unittests_writeSyncSize", "tmp", filename);
         Owned<IFile> file = createIFile(filename);
         writer->write(0, 8, "abcdefgh");
-        cycle_t deadline = noteMs(filename, 8, false, timeoutMarginMs);
+        unsigned __int64 deadline = noteMs(filename, 8, false, timeoutMarginMs);
         Owned<IFileIO> reader = file->open(IFOread);
         CPPUNIT_ASSERT(reader);
         writer->setSize(4);
@@ -561,15 +561,11 @@ public:
         file->remove();
     }
 
-    void waitUntilExpired(cycle_t deadline)
+    void waitUntilExpired(unsigned __int64 deadline)
     {
-        // Wait until the cache itself would treat 'deadline' as passed.
-        // Only the cycle counter decides when we are done: the loop exits on the same get_cycles_now() check
-        // the cache uses, so the wait can never end early from the cache's point of view.
-        //
-        // (A single sleep_for(deadline - now) is not used because sleep_for runs on the OS clock, which drifts
-        // slightly from the cycle counter, so it could wake just before the cache sees the deadline as passed.)
-        while (get_cycles_now() < deadline)
+        // Wait until the cache itself would treat 'deadline' as passed: the loop exits on the same
+        // writeSyncNowMs() check the cache uses, so the wait can never end early from the cache's point of view.
+        while (writeSyncNowMs() < deadline)
             std::this_thread::sleep_for(std::chrono::milliseconds(20));
     }
 
@@ -581,7 +577,7 @@ public:
     void testSnapshotExpiryAndRepublish()
     {
         static constexpr const char * path = "/var/lib/HPCCSystems/test/writeSync/single";
-        cycle_t deadline = note(path, 1234, true, shortMarginSecs);
+        unsigned __int64 deadline = note(path, 1234, true, shortMarginSecs);
         assertLive(path, 1234, true);
 
         waitUntilExpired(deadline);
@@ -593,12 +589,12 @@ public:
 
     // With several keys in the snapshot, each is looked up independently and expires on its own per-entry
     // deadline: the short entry expires while the long entry (which also sets the snapshot-wide
-    // latestDeadlineCycles, still in the future) stays live - proving neither gate short-circuits the other.
+    // latestDeadlineMs, still in the future) stays live - proving neither gate short-circuits the other.
     void testMultiEntrySelectiveExpiry()
     {
         static constexpr const char * shortPath = "/var/lib/HPCCSystems/test/writeSync/multiShort";
         static constexpr const char * longPath = "/var/lib/HPCCSystems/test/writeSync/multiLong";
-        cycle_t shortDeadline = note(shortPath, 100, false, shortMarginSecs);
+        unsigned __int64 shortDeadline = note(shortPath, 100, false, shortMarginSecs);
         note(longPath, 200, true, longMarginSecs);
 
         assertLive(shortPath, 100, false);
@@ -665,7 +661,7 @@ public:
                 }
                 // Mix short deadlines (which expire and get pruned mid-run) with longer-lived ones.
                 unsigned marginSecs = (0 == (rng() % 4)) ? 1 : 30;
-                noteWriteSyncFiles(batch, get_cycles_now() + millisec_to_cycle(marginSecs * 1000));
+                noteWriteSyncFiles(batch, writeSyncNowMs() + (unsigned __int64)marginSecs * 1000);
                 // Brief yield so the writer does not busy-spin and inflate CPU/log churn on shared CI runners,
                 // while still exercising concurrent publish/read against the (hammered) lock-free reader.
                 std::this_thread::sleep_for(std::chrono::milliseconds(1));
