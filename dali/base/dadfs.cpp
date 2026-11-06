@@ -5798,6 +5798,16 @@ unsigned CDistributedFilePart::getStripeNum(unsigned copy)
     return stripeNumber[copy];
 }
 
+IndexReadOptions getIndexReadOptionsForPart(IDistributedFile &file, IDistributedFilePart &keyFile)
+{
+    if (isForeignFilename(file.queryLogicalName()))
+        return getForeignIndexReadOptions();
+
+    StringBuffer planeName;
+    file.getClusterName(keyFile.copyClusterNum(0), planeName);
+    return getIndexReadOptions(planeName);
+}
+
 static unsigned findSubFileOrd(const char *name)
 {
     if (*name=='#') {

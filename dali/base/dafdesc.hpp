@@ -409,6 +409,6 @@ inline DFD_OS SepCharBaseOs(char c)
 
 extern da_decl void extractFilePartInfo(IPropertyTree &info, IFileDescriptor &file);
 
-extern da_decl unsigned __int64 getPartPlaneAttr(IPartDescriptor &part, unsigned copy, PlaneAttributeType attr, size32_t defaultValue);
+extern da_decl IndexReadOptions getPartPlaneReadOptions(IPartDescriptor &part, unsigned copy);
 
 #endif

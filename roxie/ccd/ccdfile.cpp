@@ -21,6 +21,7 @@
 #include "jfile.hpp"
 #include "jdebug.hpp"
 #include "jhtree.hpp"
+#include "jplane.hpp"
 #include "jisem.hpp"
 #include "jqueue.tpp"
 #include "dautils.hpp"
@@ -860,7 +861,9 @@ public:
         if (nodeType != NodeNone && !keyFailed && localFile && !keyIndex)
         {
             //Pass false for isTLK - it will be initialised from the index header
-            keyIndex.setown(createKeyIndex(filename, localFile->getCrc(), *localFile.get(), fileIdx, false, {}));
+            StringBuffer planeName;
+            const char *plane = findPlaneFromPath(filename, planeName);
+            keyIndex.setown(createKeyIndex(filename, localFile->getCrc(), *localFile.get(), fileIdx, false, getIndexReadOptions(plane)));
             if (keyIndex)
                 prewarmer.setown(keyIndex->createPrewarmer());
             else
@@ -1132,7 +1135,6 @@ class CRoxieFileCache : implements IRoxieFileCache, implements ICopyFileProgress
         }
 
         ret->init(local, size, modified, isCompressed, isKey, crc);
-
         // Simple case - is the file on the local filesystem and up to date?
         RoxieFileStatus fileStatus = checkFileUpToDate(local, size, modified, isCompressed, true);
         if (fileStatus == FileIsValid)
@@ -3401,8 +3403,7 @@ public:
                                 if (!local) // do not buffer local files used by standaloe roxie
                                 {
                                     unsigned replicationLevel = getReplicationLevel(channel);
-                                    readOptions.randomReadSize = getPartPlaneAttr(*pdesc, replicationLevel, BlockedRandomIO, 0);
-                                    readOptions.sequentialReadSize = getPartPlaneAttr(*pdesc, replicationLevel, BlockedSequentialIO, 0);
+                                    readOptions = getPartPlaneReadOptions(*pdesc, replicationLevel);
                                 }
                             }
                         }
@@ -3450,8 +3451,7 @@ public:
                     if (!local) // do not buffer local files used by standaloe roxie
                     {
                         unsigned replicationLevel = getReplicationLevel(channel);
-                        readOptions.randomReadSize = getPartPlaneAttr(*pdesc, replicationLevel, BlockedRandomIO, 0);
-                        readOptions.sequentialReadSize = getPartPlaneAttr(*pdesc, replicationLevel, BlockedSequentialIO, 0);
+                        readOptions = getPartPlaneReadOptions(*pdesc, replicationLevel);
                     }
                     if (lazyOpen)
                     {

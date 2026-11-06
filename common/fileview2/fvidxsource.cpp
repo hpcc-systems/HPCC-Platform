@@ -207,7 +207,7 @@ IKeyIndex * IndexDataSource::queryTLK()
     if (!cachedTLK)
     {
         Owned<IDistributedFilePart> kf = df->getPart(numParts-1);
-        cachedTLK.setown(openKeyFile(*kf));
+        cachedTLK.setown(openKeyFile(*kf, getIndexReadOptionsForPart(*df, *kf)));
     }
     return cachedTLK;
 }
@@ -231,7 +231,7 @@ __int64 IndexDataSource::numRows(bool force)
         else
         {
             Owned<IDistributedFilePart> kf = df->getPart(matchingParts.item(i));
-            curPart.setown(openKeyFile(*kf));
+            curPart.setown(openKeyFile(*kf, getIndexReadOptionsForPart(*df, *kf)));
             if (!curPart)
             {
                 total = UNKNOWN_NUM_ROWS;
@@ -294,7 +294,7 @@ bool IndexDataSource::getNextRow(MemoryBuffer & out, bool extractRow)
             else
             {
                 Owned<IDistributedFilePart> kf = df->getPart(matchingParts.item(curPartIndex));
-                curPart.setown(openKeyFile(*kf));
+                curPart.setown(openKeyFile(*kf, getIndexReadOptionsForPart(*df, *kf)));
                 if (!curPart)
                     return false;
             }

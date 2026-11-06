@@ -481,6 +481,8 @@ interface IDistributedFile: extends IInterface
     virtual IUserDescriptor *queryUser() const = 0;
 };
 
+extern da_decl IndexReadOptions getIndexReadOptionsForPart(IDistributedFile &file, IDistributedFilePart &keyFile);
+
 
 // ==SUPER FILES===================================================================================================
 

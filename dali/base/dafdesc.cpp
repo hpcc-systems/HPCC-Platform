@@ -4106,10 +4106,10 @@ void disableStoragePlanesDaliUpdates()
     savedConnectedToDali = false;
 }
 
-unsigned __int64 getPartPlaneAttr(IPartDescriptor &part, unsigned copy, PlaneAttributeType attr, size32_t defaultValue)
+IndexReadOptions getPartPlaneReadOptions(IPartDescriptor &part, unsigned copy)
 {
     unsigned clusterNum = part.copyClusterNum(copy);
     StringBuffer planeName;
     part.queryOwner().getClusterLabel(clusterNum, planeName);
-    return getPlaneAttributeValue(planeName, attr, defaultValue);
+    return getIndexReadOptions(planeName);
 }

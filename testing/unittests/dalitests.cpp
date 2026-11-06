@@ -3016,9 +3016,34 @@ CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( CDaliDFSRetrySlowTests, "CDaliDFSRetrySlo
 class CDaliUtils : public CppUnit::TestFixture
 {
     CPPUNIT_TEST_SUITE(CDaliUtils);
+      CPPUNIT_TEST(testIsForeignFilename);
       CPPUNIT_TEST(testDFSLfn);
     CPPUNIT_TEST_SUITE_END();
 public:
+    void testIsForeignFilename()
+    {
+        struct TestCase
+        {
+            const char *name;
+            bool expected;
+        };
+        const TestCase testCases[] = {
+            { nullptr, false },
+            { "", false },
+            { "foreign::192.168.16.1::scope::file", true },
+            { "~foreign::192.168.16.1::scope::file", true },
+            { "  ~ FOREIGN :: 192.168.16.1::scope::file", true },
+            { "foreign::192.168.16.1", false },
+            { "scope::foreign::192.168.16.1::file", false },
+            { "file::192.168.16.1::path::file", false },
+            { "{scope::file, foreign::192.168.16.1::file}", true },
+            { "{scope::file, file::192.168.16.1::path::file}", false }
+        };
+
+        for (const TestCase &testCase : testCases)
+            CPPUNIT_ASSERT_EQUAL_MESSAGE(testCase.name ? testCase.name : "(null)", testCase.expected, isForeignFilename(testCase.name));
+    }
+
     void testDFSLfn()
     {
         const char *lfns[] = { "~foreign::192.168.16.1::scope1::file1",

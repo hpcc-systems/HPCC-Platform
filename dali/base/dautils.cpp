@@ -1578,6 +1578,17 @@ const char * skipScope(const char *lname,const char *scope) // returns NULL if s
     return lname;
 }
 
+bool isForeignFilename(const char *name)
+{
+    if (!name)
+        return false;
+
+    CDfsLogicalFileName lfn;
+    lfn.set(name);
+    return lfn.isForeign();
+}
+
+
 const char * querySdsFilesRoot()
 {
     return SDS_DFS_ROOT;
