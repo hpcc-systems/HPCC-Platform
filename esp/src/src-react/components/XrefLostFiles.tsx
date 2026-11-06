@@ -6,7 +6,7 @@ import nlsHPCC from "src/nlsHPCC";
 import { formatNum } from "src/Utility";
 import * as WsDFUXref from "src/WsDFUXref";
 import { useConfirm } from "../hooks/confirm";
-import { FluentGrid, useCopyButtons, useFluentStoreState, FluentColumns } from "./controls/Grid";
+import { AutoSizeFluentGrid, useCopyButtons, useFluentStoreState, FluentColumns } from "./controls/Grid";
 
 const logger = scopedLogger("src-react/components/XrefLostFiles.tsx");
 
@@ -113,7 +113,7 @@ export const XrefLostFiles: React.FunctionComponent<XrefLostFilesProps> = ({
         header={<CommandBar items={buttons} farItems={copyButtons} />}
         main={
             <>
-                <FluentGrid
+                <AutoSizeFluentGrid
                     data={data}
                     primaryID={"Name"}
                     sort={{ attribute: "modified", descending: false }}
@@ -121,7 +121,7 @@ export const XrefLostFiles: React.FunctionComponent<XrefLostFilesProps> = ({
                     setSelection={setSelection}
                     setTotal={setTotal}
                     refresh={refreshTable}
-                ></FluentGrid>
+                ></AutoSizeFluentGrid>
                 <DeleteConfirm />
             </>
         }

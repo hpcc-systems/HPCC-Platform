@@ -332,7 +332,8 @@ inline constexpr bool isDebugBuild() { return false; }
 #define arraysize(T) (sizeof(T)/sizeof(*T))
 #endif
 
-using EnvironmentVector = std::vector<std::pair<std::string, std::string>>;
+using StringPairVector = std::vector<std::pair<std::string, std::string>>;
+using EnvironmentVector = StringPairVector;
 extern jlib_decl unsigned runExternalCommand(StringBuffer &output, StringBuffer &error, const char *cmd, const char *input);
 extern jlib_decl unsigned runExternalCommand(const char *title, StringBuffer &output, StringBuffer &error, const char *cmd, const char *input, const char * cwd, const EnvironmentVector * optEnvironment);
 

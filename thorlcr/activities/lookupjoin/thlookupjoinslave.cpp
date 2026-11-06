@@ -2239,6 +2239,8 @@ protected:
             uniqueKeys = marker.calculate(temp, compareRight, false);
             rightCollector.transferRowsIn(temp);
         }
+        if (isSmart() && getOptBool(THOROPT_LKJOIN_HTFAILOVER)) // for testing only (as if setupHT() hit OOM)
+            return false;
         if (!setupHT(uniqueKeys)) // could cause spilling
         {
             if (!isSmart())
@@ -2311,7 +2313,7 @@ protected:
                 }
 
                 // For testing purposes only
-                if (isSmart() && getOptBool(THOROPT_LKJOIN_LOCALFAILOVER, getOptBool(THOROPT_LKJOIN_HASHJOINFAILOVER)))
+                if (isSmart() && getOptBool(THOROPT_LKJOIN_LOCALFAILOVER, getOptBool(THOROPT_LKJOIN_HASHJOINFAILOVER) || getOptBool(THOROPT_LKJOIN_HTFAILOVER)))
                     clearAllNonLocalRows("testing");
             }
             rowidx_t uniqueKeys = 0;
@@ -2808,9 +2810,11 @@ protected:
                     if (!prepareLocalHT(marker, *rightCollector)) // can cause others to spill, but must not be allowed to spill channel rows I'm working on.
                     {
                         setFailoverToStandard();
-                        ActPrintLog("Out of memory trying to prepare [LOCAL] hashtable for a SMART join (%" RIPF "d rows), will now failover to a std hash join", rhs.ordinality());
+                        ActPrintLog("Out of memory trying to prepare [LOCAL] hashtable for a SMART join (%" RCPF "d rows), will now failover to a std hash join", rightCollector->numRows());
+                        rightStream.setown(rightCollector->getStream(false));
                     }
-                    rightStream.setown(rightCollector->getStream(false, &rhs));
+                    else
+                        rightStream.setown(rightCollector->getStream(false, &rhs));
                 }
             }
             if (rightStream)

@@ -6,7 +6,7 @@ import { formatNum } from "src/Utility";
 import * as WsDFUXref from "src/WsDFUXref";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { useConfirm } from "../hooks/confirm";
-import { FluentGrid, useCopyButtons, useFluentStoreState, FluentColumns } from "./controls/Grid";
+import { AutoSizeFluentGrid, useCopyButtons, useFluentStoreState, FluentColumns } from "./controls/Grid";
 
 const logger = scopedLogger("src-react/components/XrefFoundFiles.tsx");
 
@@ -125,7 +125,7 @@ export const XrefFoundFiles: React.FunctionComponent<XrefFoundFilesProps> = ({
         header={<CommandBar items={buttons} farItems={copyButtons} />}
         main={
             <>
-                <FluentGrid
+                <AutoSizeFluentGrid
                     data={data}
                     primaryID={"Name"}
                     sort={{ attribute: "modified", descending: false }}
@@ -133,7 +133,7 @@ export const XrefFoundFiles: React.FunctionComponent<XrefFoundFilesProps> = ({
                     setSelection={setSelection}
                     setTotal={setTotal}
                     refresh={refreshTable}
-                ></FluentGrid>
+                ></AutoSizeFluentGrid>
                 <AttachConfirm />
                 <DeleteConfirm />
             </>

@@ -230,6 +230,7 @@
 #define HQLERR_UnsupportedReturnType            4218
 #define HQLERR_UnsupportedFormEncNotation       4219
 #define HQLERR_SteppedExactField                4220
+#define HQLERR_KeyedJoinDisabled                4221
 
 //Warnings....
 #define HQLWRN_PersistDataNotLikely             4500
@@ -545,6 +546,7 @@
 #define HQLERR_UnsupportedReturnType_Text       "Function returning type %s is not currently supported"
 #define HQLERR_UnsupportedFormEncNotation_Text  "x-www-form-urlencoded parameter notation format %s is not currently supported"
 #define HQLERR_SteppedExactField_Text           "Stepped field must be an exact field (no expressions allowed) '%s'"
+#define HQLERR_KeyedJoinDisabled_Text           "Keyed JOIN or DENORMALIZE is disallowed in this environment. Add a bare KEYED flag to the JOIN or DENORMALIZE options to explicitly allow keyed access but be aware that performance will suffer"
 
 //Warnings.
 #define HQLWRN_CannotRecreateDistribution_Text  "Cannot recreate the distribution for a persistent dataset"

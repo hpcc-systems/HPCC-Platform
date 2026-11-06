@@ -1,0 +1,147 @@
+name: CodeQL
+
+on:
+  schedule:
+    # Nightly at 03:17 UTC (off-peak, avoids the top-of-the-hour load)
+    - cron: "17 3 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  actions: read
+  contents: read
+  security-events: write
+
+jobs:
+  analyze:
+    if: ${{ github.repository == 'hpcc-systems/HPCC-Platform' || github.repository == 'risk-hsy/HPCC-Platform' }}
+    name: Analyze (${{ matrix.language }})
+    runs-on: ubuntu-22.04
+    timeout-minutes: 360
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - language: c-cpp
+            build-mode: manual
+          - language: javascript-typescript
+            build-mode: none
+          - language: actions
+            build-mode: none
+          - language: python
+            build-mode: none
+
+    steps:
+      - name: Free additional disk space
+        if: ${{ matrix.language == 'c-cpp' }}
+        continue-on-error: true
+        run: |
+          df -h
+          sudo rm -rf "$ANDROID_HOME"
+          sudo rm -rf "$JAVA_HOME_8_X64"
+          sudo rm -rf "$JAVA_HOME_11_X64"
+          sudo rm -rf "$JAVA_HOME_17_X64"
+          sudo rm -rf "$JAVA_HOME_21_X64"
+          sudo rm -rf "$CHROMEWEBDRIVER"
+          sudo rm -rf "$EDGEWEBDRIVER"
+          sudo rm -rf "$GECKOWEBDRIVER"
+          sudo rm -rf "$SELENIUM_JAR_PATH"
+          df -h
+
+      - name: Checkout repository
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          submodules: ${{ matrix.language == 'c-cpp' && 'recursive' || 'false' }}
+
+      - name: Install build dependencies
+        if: ${{ matrix.language == 'c-cpp' }}
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -yq --no-install-recommends \
+            apt-transport-https \
+            autoconf \
+            autoconf-archive \
+            automake \
+            autotools-dev \
+            binutils-dev \
+            bison \
+            build-essential \
+            ca-certificates \
+            ccache \
+            curl \
+            default-jdk \
+            dirmngr \
+            flex \
+            fop \
+            git \
+            gnupg \
+            groff-base \
+            libsaxonb-java \
+            libtool \
+            ninja-build \
+            python3-dev \
+            rsync \
+            software-properties-common \
+            tar \
+            unzip \
+            uuid-dev \
+            zip
+
+      - name: Install Mono
+        if: ${{ matrix.language == 'c-cpp' }}
+        run: |
+          sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 3FA7E0328081BFF6A14DA29AA6A19B38D3D831EF
+          echo "deb https://download.mono-project.com/repo/ubuntu stable-focal main" | sudo tee /etc/apt/sources.list.d/mono-official-stable.list
+          sudo apt-get update -y
+          sudo apt-get install -yq --no-install-recommends mono-complete
+
+      - name: Bootstrap vcpkg
+        if: ${{ matrix.language == 'c-cpp' }}
+        run: ./vcpkg/bootstrap-vcpkg.sh
+
+      - name: Configure vcpkg binary cache
+        if: ${{ matrix.language == 'c-cpp' }}
+        env:
+          VCPKG_BINARY_SOURCES: "clear;nuget,JFrog,readwrite"
+          JFROG_REGISTRY: ${{ secrets.JFROG_REGISTRY }}
+          JFROG_USERNAME: ${{ secrets.JFROG_USERNAME }}
+          JFROG_PASSWORD: ${{ secrets.JFROG_PASSWORD }}
+        run: |
+          mono "$(./vcpkg/vcpkg fetch nuget | tail -n 1)" \
+            sources add \
+            -name "JFrog" \
+            -source "https://${JFROG_REGISTRY}/artifactory/api/nuget/v3/hpccpl-nuget-local/index.json" \
+            -storepasswordincleartext \
+            -username "${JFROG_USERNAME}" \
+            -password "${JFROG_PASSWORD}"
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4
+        with:
+          languages: ${{ matrix.language }}
+          build-mode: ${{ matrix.build-mode }}
+
+      - name: Configure and build
+        if: ${{ matrix.language == 'c-cpp' }}
+        env:
+          VCPKG_BINARY_SOURCES: "clear;nuget,JFrog,readwrite"
+        run: |
+          cmake -G Ninja -S . -B build \
+            -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+            -DCONTAINERIZED=OFF \
+            -DINCLUDE_PLUGINS=ON \
+            -DUSE_CPPUNIT=ON \
+            -DUSE_OPTIONAL=OFF \
+            -DSUPPRESS_REMBED=ON \
+            -DSUPPRESS_V8EMBED=ON \
+            -DSKIP_ECLWATCH=ON
+          cmake --build build --parallel
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4
+        with:
+          category: "/language:${{ matrix.language }}"

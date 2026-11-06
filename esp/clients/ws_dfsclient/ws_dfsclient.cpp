@@ -463,6 +463,13 @@ public:
         // it is stored in turn into the IFileDescriptor properties for use by clients accessing paths
         fileDesc->queryProperties().setPropInt("@accessMode", static_cast<int>(accessMode));
         legacyDFSFile.setown(queryDistributedFileDirectory().createNew(fileDesc, logicalName));
+        const char *modified = file->queryProp("@modified");
+        if (!isEmptyString(modified))
+        {
+            CDateTime dt;
+            dt.setString(modified);
+            legacyDFSFile->setModificationTime(dt);
+        }
     }
 };
 
@@ -1023,7 +1030,13 @@ public:
         {
             if (lfn.isExternalFile() || lfn.isExternalPlane())
             {
-                Owned<IFileDescriptor> fDesc = createExternalFileDescriptor(lfn.get());
+                Owned<IFileDescriptor> fDesc;
+                if (write)
+                    fDesc.setown(createExternalFileDescriptor(lfn.get()));
+                else
+                    fDesc.setown(getExternalFileDescriptor(lfn.get()));
+                if (!fDesc)
+                    return false;
                 dfile.setown(queryDistributedFileDirectory().createExternal(fDesc, lfn.get()));
                 Owned<IFile> file = getPartFile(0,0);
                 if (file.get())
