@@ -33,7 +33,7 @@ class LdapSanitizationTest : public CppUnit::TestFixture
     CPPUNIT_TEST(testDnEscapeCases);
     CPPUNIT_TEST(testSearchStringWildcardFilterInjection);
     CPPUNIT_TEST(testScopeDnComponentEscaping);
-    CPPUNIT_TEST(testUsernameContainsLdapUrlForbiddenChars);
+    CPPUNIT_TEST(testContainsReservedChars);
     CPPUNIT_TEST_SUITE_END();
 
 public:
@@ -184,20 +184,24 @@ public:
         CPPUNIT_ASSERT_EQUAL_STR("cn=team\\+,dc=example,dc=com", dn.str());
     }
 
-    void testUsernameContainsLdapUrlForbiddenChars()
+    void testContainsReservedChars()
     {
-        // Clean usernames — no forbidden chars
-        CPPUNIT_ASSERT(!usernameContainsLdapUrlForbiddenChars("alice"));
-        CPPUNIT_ASSERT(!usernameContainsLdapUrlForbiddenChars("domain\\alice"));
-        CPPUNIT_ASSERT(!usernameContainsLdapUrlForbiddenChars(nullptr));
+        // Clean names — no reserved chars
+        CPPUNIT_ASSERT(!containsReservedChars("alice"));
+        CPPUNIT_ASSERT(!containsReservedChars("domain\\alice"));
+        CPPUNIT_ASSERT(!containsReservedChars(nullptr));
 
         // '"' enables ACI clause injection
-        CPPUNIT_ASSERT(usernameContainsLdapUrlForbiddenChars("foo\")(userdn=\"ldap:///anyone"));
-        CPPUNIT_ASSERT(usernameContainsLdapUrlForbiddenChars("alice\""));
+        CPPUNIT_ASSERT(containsReservedChars("foo\")(userdn=\"ldap:///anyone"));
+        CPPUNIT_ASSERT(containsReservedChars("alice\""));
 
         // '?' truncates the DN component of the ldap:/// URL
-        CPPUNIT_ASSERT(usernameContainsLdapUrlForbiddenChars("alice?attrs=*"));
-        CPPUNIT_ASSERT(usernameContainsLdapUrlForbiddenChars("alice?"));
+        CPPUNIT_ASSERT(containsReservedChars("alice?attrs=*"));
+        CPPUNIT_ASSERT(containsReservedChars("alice?"));
+
+        // '%' and '$' are reserved to avoid raw/encoded name collisions
+        CPPUNIT_ASSERT(containsReservedChars("alice%22"));
+        CPPUNIT_ASSERT(containsReservedChars("alice$"));
     }
 };
 

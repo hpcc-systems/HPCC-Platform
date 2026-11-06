@@ -4656,6 +4656,11 @@ public:
         if(groupname == NULL || *groupname == '\0')
             return;
 
+        // See containsReservedChars() for why '"', '?', '%', and '$' are rejected.
+        if(containsReservedChars(groupname))
+            throw MakeStringException(-1, "Can't add group '%s': groupname contains a character"
+                " that is not permitted ('\"', '?', '%%', and '$' are forbidden)", groupname);
+
         if(m_ldapconfig->getServerType() == ACTIVE_DIRECTORY)
         {
             if(stricmp(groupname, "Administrators") == 0)
@@ -4966,6 +4971,11 @@ public:
         if(oldname == NULL || *oldname == '\0' || newname == NULL || *newname == '\0')
             throw MakeStringException(-1, "please specfiy old and new names");
 
+        // See containsReservedChars() for why '"', '?', '%', and '$' are rejected.
+        if(containsReservedChars(newname))
+            throw MakeStringException(-1, "Can't rename resource to '%s': name contains a character"
+                " that is not permitted ('\"', '?', '%%', and '$' are forbidden)", newname);
+
         if(basedn == NULL || *basedn == '\0')
             basedn = m_ldapconfig->getResourceBasedn(rtype);
 
@@ -5014,6 +5024,11 @@ public:
     {
         if(oldname == NULL || *oldname == '\0' || newname == NULL || *newname == '\0')
             throw MakeStringException(-1, "please specfiy old and new names");
+
+        // See containsReservedChars() for why '"', '?', '%', and '$' are rejected.
+        if(containsReservedChars(newname))
+            throw MakeStringException(-1, "Can't copy resource to '%s': name contains a character"
+                " that is not permitted ('\"', '?', '%%', and '$' are forbidden)", newname);
 
         if(basedn == NULL || *basedn == '\0')
             basedn = m_ldapconfig->getResourceBasedn(rtype);
@@ -6190,7 +6205,9 @@ private:
             return false;
         }
 
-        if(strchr(resourcename, '/') != NULL || strchr(resourcename, '=') != NULL)
+        // See containsReservedChars() for why '"', '?', '%', and '$' are rejected.
+        if(strchr(resourcename, '/') != NULL || strchr(resourcename, '=') != NULL ||
+            containsReservedChars(resourcename))
         {
             DBGLOG("CLdapClient::addResource Can't add resource '%s', invalid characters specified",resourcename);
             return false;
@@ -6493,13 +6510,13 @@ private:
         if(username == NULL || *username == '\0')
             throw MakeStringException(-1, "Can't add user, username not set");
 
-        // For iPlanet/389ds the username is embedded verbatim into an LDAP URL inside an ACI
-        // string: (userdn = "ldap:///uid=<username>,..."). A '"' breaks out of the ACI string
-        // enabling clause injection; a '?' truncates the URL's DN component. Reject both at
-        // account creation so the bad value never enters the directory.
-        if(shouldRejectAddUserUsername(serverType == ACTIVE_DIRECTORY, username))
-            throw MakeStringException(-1, "Can't add user '%s': username contains character"
-                " not permitted in LDAP ACI userdn URLs ('\"' and '?' are forbidden)", username);
+        // '"', '?', '%', and '$' are rejected in directory identifiers so raw names can
+        // never be mistaken for (or collide with) an ACI userdn URL or a
+        // percent-/filter-encoded name. Reject at account creation so the bad value
+        // never enters the directory.
+        if(containsReservedChars(username))
+            throw MakeStringException(-1, "Can't add user '%s': username contains a character"
+                " that is not permitted ('\"', '?', '%%', and '$' are forbidden)", username);
 
         const char* userPassword = user.credentials().getPassword();
         if(isEmptyString(userPassword))
