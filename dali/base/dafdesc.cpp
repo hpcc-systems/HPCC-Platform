@@ -2707,8 +2707,7 @@ static IFileDescriptor *_createExternalFileDescriptor(const char *_logicalname, 
     fileDesc->setDefaultDir(dir.str());
     unsigned n = group.get()?group->ordinality():1;
     StringBuffer partname;
-    CDateTime modTime;
-    StringBuffer modTimeStr;
+    CDateTime newestModTime;
     for (unsigned i=0;i<n;i++)
     {
         if (group.get())
@@ -2741,19 +2740,18 @@ static IFileDescriptor *_createExternalFileDescriptor(const char *_logicalname, 
             ep.port = getDaliServixPort();
         RemoteFilename rfn;
         rfn.setPath(ep,partname.str());
+        CDateTime partModTime;
+        StringBuffer partModTimeStr;
         if (!isspecial&&(memcmp(partname.str(),"/$/",3)!=0)&&(memcmp(partname.str(),"\\$\\",3)!=0)) // don't get date on external data
         {
             try
             {
                 Owned<IFile> file = createIFile(rfn);
-                CDateTime dt;
-                if (file&&file->getTime(NULL,&dt,NULL))
+                if (file&&file->getTime(NULL,&partModTime,NULL))
                 {
-                    if ((0 == modTimeStr.length())||(dt.compareDate(modTime)>0))
-                    {
-                        modTime.set(dt);
-                        modTime.getString(modTimeStr);
-                    }
+                    partModTime.getString(partModTimeStr);
+                    if (newestModTime.isNull() || (partModTime.compare(newestModTime)>0))
+                        newestModTime.set(partModTime);
                 }
             }
             catch (IException *e)
@@ -2768,15 +2766,19 @@ static IFileDescriptor *_createExternalFileDescriptor(const char *_logicalname, 
             if (!iFile->exists())
                 return NULL; // >=1 part does not exist.
         }
-        if (modTimeStr.length())
+        if (partModTimeStr.length())
         {
             Owned<IPropertyTree> part = createPTree("Part");
-            part->setProp("@modified", modTimeStr.str());
+            part->setProp("@modified", partModTimeStr.str());
             fileDesc->setPart(i, rfn, part);
         }
         else
             fileDesc->setPart(i, rfn);
     }
+    if (newestModTime.isNull())
+        newestModTime.setNow();
+    StringBuffer newestModTimeStr;
+    fileDesc->queryProperties().setProp("@modified", newestModTime.getString(newestModTimeStr).str());
     fileDesc->queryPartDiskMapping(0).defaultCopies = DFD_NoCopies;
     return fileDesc.getClear();
 }
