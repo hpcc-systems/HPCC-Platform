@@ -14,3 +14,4 @@ RemainAfterExit=yes
 
 [Install]
 DefaultInstance=my@component@
+WantedBy=hpccsystems-platform.target
