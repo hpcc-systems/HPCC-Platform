@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "paused": true,
+  "paused": false,
   "pause_reason": "Initial rollout: validate full-scope authentication and dry-run before enabling writes.",
   "control_ref": "refs/heads/master",
   "upmerge_order": [

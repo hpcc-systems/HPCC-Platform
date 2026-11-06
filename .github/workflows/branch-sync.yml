@@ -2,8 +2,8 @@ name: Branch Synchronization
 run-name: Branch sync (${{ github.event_name }})
 
 on:
-  schedule:
-    - cron: '30 23 * * *'
+  # schedule:
+  #   - cron: '30 23 * * *'
   workflow_dispatch:
     inputs:
       mode:
