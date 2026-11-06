@@ -6,7 +6,7 @@ import { HolyGrail } from "../layouts/HolyGrail";
 import nlsHPCC from "src/nlsHPCC";
 import * as WsDFUXref from "src/WsDFUXref";
 import { useConfirm } from "../hooks/confirm";
-import { FluentGrid, useCopyButtons, useFluentStoreState, FluentColumns } from "./controls/Grid";
+import { AutoSizeFluentGrid, useCopyButtons, useFluentStoreState, FluentColumns } from "./controls/Grid";
 import { pushUrl } from "../util/history";
 
 const logger = scopedLogger("src-react/components/Xrefs.tsx");
@@ -180,7 +180,7 @@ export const Xrefs: React.FunctionComponent<XrefsProps> = ({
         header={<CommandBar items={buttons} farItems={copyButtons} />}
         main={
             <>
-                <FluentGrid
+                <AutoSizeFluentGrid
                     data={data}
                     primaryID={"name"}
                     sort={{ attribute: "modified", descending: false }}
@@ -188,7 +188,7 @@ export const Xrefs: React.FunctionComponent<XrefsProps> = ({
                     setSelection={setSelection}
                     setTotal={setTotal}
                     refresh={refreshTable}
-                ></FluentGrid>
+                ></AutoSizeFluentGrid>
                 <CancelConfirm />
                 <GenerateConfirm />
             </>

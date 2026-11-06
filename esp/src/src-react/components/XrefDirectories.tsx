@@ -6,7 +6,7 @@ import nlsHPCC from "src/nlsHPCC";
 import { formatNum } from "src/Utility";
 import * as WsDFUXref from "src/WsDFUXref";
 import { useConfirm } from "../hooks/confirm";
-import { FluentGrid, useCopyButtons, useFluentStoreState, FluentColumns } from "./controls/Grid";
+import { AutoSizeFluentGrid, useCopyButtons, useFluentStoreState, FluentColumns } from "./controls/Grid";
 
 const logger = scopedLogger("src-react/components/XrefDirectories.tsx");
 
@@ -106,7 +106,7 @@ export const XrefDirectories: React.FunctionComponent<XrefDirectoriesProps> = ({
         header={<CommandBar items={buttons} farItems={copyButtons} />}
         main={
             <>
-                <FluentGrid
+                <AutoSizeFluentGrid
                     data={data}
                     primaryID={"name"}
                     sort={{ attribute: "name", descending: false }}
@@ -114,7 +114,7 @@ export const XrefDirectories: React.FunctionComponent<XrefDirectoriesProps> = ({
                     setSelection={setSelection}
                     setTotal={setTotal}
                     refresh={refreshTable}
-                ></FluentGrid>
+                ></AutoSizeFluentGrid>
                 <DeleteConfirm />
             </>
         }

@@ -4,7 +4,7 @@ import { scopedLogger } from "@hpcc-js/util";
 import nlsHPCC from "src/nlsHPCC";
 import * as WsDFUXref from "src/WsDFUXref";
 import { HolyGrail } from "../layouts/HolyGrail";
-import { FluentGrid, useCopyButtons, useFluentStoreState, FluentColumns } from "./controls/Grid";
+import { AutoSizeFluentGrid, useCopyButtons, useFluentStoreState, FluentColumns } from "./controls/Grid";
 
 const logger = scopedLogger("src-react/components/XrefErrors.tsx");
 
@@ -105,7 +105,7 @@ export const XrefErrors: React.FunctionComponent<XrefErrorsProps> = ({
 
     return <HolyGrail
         header={<CommandBar items={buttons} farItems={copyButtons} />}
-        main={<FluentGrid
+        main={<AutoSizeFluentGrid
             data={data}
             primaryID={"name"}
             sort={{ attribute: "name", descending: false }}
@@ -113,7 +113,7 @@ export const XrefErrors: React.FunctionComponent<XrefErrorsProps> = ({
             setSelection={setSelection}
             setTotal={setTotal}
             refresh={refreshTable}
-        ></FluentGrid>}
+        ></AutoSizeFluentGrid>}
     />;
 
 };
