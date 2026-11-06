@@ -4342,14 +4342,21 @@ public:
         root->setPropTree("ClusterLock", createPTree());
 //      fdesc->serializeTree(*root,IFDSF_EXCLUDE_NODES);
         setFileAttrs(fdesc,true);
-        if (!external)
+        external = _external;
+        // External files are not attached, so retain their descriptor timestamp on the root; createNew files get a publish-time timestamp when attached.
+        if (external)
+        {
+            const char *modified = fdesc->queryProperties().queryProp("@modified");
+            if (modified)
+                root->setProp("@modified", modified);
+        }
+        else
             setLFNHash(fdesc);
         setClusters(fdesc);
         setPreferredClusters(_parent->defprefclusters);
         saveClusters();
         setParts(fdesc,true);
         udesc.set(user);
-        external = _external;
 #ifdef EXTRA_LOGGING
         LOGPTREE("CDistributedFile.b root.1",root);
 #endif
@@ -4410,7 +4417,6 @@ public:
             queryAttributes().setPropInt64("@uncompressedSize", totalUncompressedSize);
         if (useableCheckSum)
             queryAttributes().setPropInt64("@checkSum", checkSum);
-        setModified(); // superseded by attach() when published; retained for external/unattached files
 #ifdef EXTRA_LOGGING
         LOGPTREE("CDistributedFile.b root.2",root);
 #endif
@@ -4953,7 +4959,7 @@ public:
                 lfnHash = getFilenameHash(logicalName.get());
                 queryAttributes().setPropInt("@lfnHash", lfnHash);
             }
-            setModified(); // stamp @modified at publish (materialisation) time, overriding the value set at construction
+            setModified(); // stamp @modified at publish (materialisation) time
             parent->addEntry(logicalName,root.getClear(),false,false);
             killParts();
             clusters.kill();
@@ -6629,6 +6635,8 @@ public:
         bool mixedwidth = false;
         unsigned width = 0;
         bool first = true;
+        bool hasLogicalFileModified = false;
+        CDateTime mostRecentLogicalFileModified;
         Owned<IPropertyTree> at = getEmptyAttr();
         Owned<IDistributedFileIterator> fiter = getSubFileIterator(true);
         // Set groupName from the first detected plane name so lookups based on
@@ -6641,6 +6649,13 @@ public:
         ForEach(*fiter)
         {
             IDistributedFile &file = fiter->query();
+            CDateTime logicalFileModified;
+            if (file.getModificationTime(logicalFileModified) && logicalFileModified.getSimple() &&
+                (!hasLogicalFileModified || logicalFileModified.compare(mostRecentLogicalFileModified) > 0))
+            {
+                mostRecentLogicalFileModified.set(logicalFileModified);
+                hasLogicalFileModified = true;
+            }
             if (!logicalName.isForeign())
             {
                 for (unsigned c = 0; c < file.numClusters(); c++)
@@ -6702,6 +6717,12 @@ public:
             else if (np!=width)
                 mixedwidth = true;
             subcounts.append(np);
+        }
+
+        if (hasLogicalFileModified)
+        {
+            StringBuffer modifiedStr;
+            at->setProp("@modified", mostRecentLogicalFileModified.getString(modifiedStr).str());
         }
 
         // need common attributes

@@ -1,4 +1,4 @@
-name: Build Clienttools macos-14
+name: Build Clienttools macos-15
 
 env:
   VCPKG_BINARY_SOURCES: "clear;nuget,GitHub,read"
@@ -32,15 +32,21 @@ permissions:
   packages: read
 
 jobs:
-  generate_macos_14_clienttools:
-    name: Generate MacOS 14 Clienttools
-    runs-on: "macos-14"
+  generate_macos_15_clienttools:
+    name: Generate MacOS 15 Clienttools
+    runs-on: "macos-15"
 
     steps:
       - name: Dependencies
         shell: "bash"
         run: |
           brew install bison flex autoconf-archive libtool automake openjdk@11
+          if [ "$(uname -m)" = "x86_64" ]; then
+            brew install --cask mono-mdk
+            echo "/Library/Frameworks/Mono.framework/Versions/Current/Commands" >> "$GITHUB_PATH"
+          else
+            brew install mono
+          fi
 
       - name: Remove builtin vcpkg
         shell: "bash"
@@ -97,6 +103,6 @@ jobs:
         if: ${{ failure() || cancelled() }}
         uses: actions/upload-artifact@v7
         with:
-          name: macos-14-clienttools-logs-${{ github.job }}-${{ github.run_number }}
+          name: macos-15-clienttools-logs-${{ github.job }}-${{ github.run_number }}
           path: ./build/**/*.log
           retention-days: 1

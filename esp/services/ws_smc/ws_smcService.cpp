@@ -1801,7 +1801,11 @@ const char* CWsSMCEx::createQueueActionInfo(IEspContext &context, const char* st
     CDateTime now;
     now.setNow();
     now.getString(currentTime);
-    info.appendf("%s by <%s> at <%s> from <%s>", state, userId, currentTime.str(), peer.str());
+    // Containerized deployments see an internal proxy address here, not the user's source IP.
+    if (isContainerized())
+        info.appendf("%s by <%s> at <%s>", state, userId, currentTime.str());
+    else
+        info.appendf("%s by <%s> at <%s> from <%s>", state, userId, currentTime.str(), peer.str());
     const char* comment = req.getComment();
     if (comment && *comment)
         info.append(": ' ").append(comment).append("'");
