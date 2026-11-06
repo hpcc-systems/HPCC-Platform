@@ -3,7 +3,7 @@ set -uo pipefail
 
 usage() {
     cat <<'EOF'
-Usage: sync-oss-branches.sh [--policy FILE] [--mode dry-run|apply] [--repository ID]
+Usage: sync-oss-branches.sh [--policy FILE] [--mode dry-run|apply] [--repository ID] [--tracematch]
 
 Reads the repository list and sync_enabled flags from the root
 branch-policy.json. For each enabled repository, a single local Git repository
@@ -21,6 +21,7 @@ Options:
   --policy FILE       Policy JSON (default: repository-root branch-policy.json)
   --mode MODE         dry-run or apply
   --repository ID     One policy repository ID; default is all configured repos
+  --tracematch        Trace match operations (branch and tag matching)
   -h, --help          Show this help
 
 Local bare-repository tests may set SYNCOSS_ALLOW_LOCAL_REMOTES=1. The Actions
@@ -33,6 +34,7 @@ REPO_ROOT=$(cd "$SCRIPT_DIR/../.." && pwd)
 POLICY_FILE="$REPO_ROOT/branch-policy.json"
 MODE="dry-run"
 SELECTED_REPOSITORY="all"
+TRACEMATCH=0
 INTERNAL_TOKEN=${BRANCH_APP_TOKEN_INTERNAL:-}
 OSS_TOKEN=${BRANCH_APP_TOKEN_OSS:-}
 OUTCOME="not-started"
@@ -103,6 +105,10 @@ while [[ $# -gt 0 ]]; do
             [[ $# -ge 2 ]] || { usage >&2; exit 2; }
             SELECTED_REPOSITORY=$2
             shift 2
+            ;;
+        --tracematch)
+            TRACEMATCH=1
+            shift
             ;;
         -h|--help)
             usage
@@ -266,8 +272,9 @@ while IFS= read -r entry; do
 
         if [[ -n "$target_sha" ]]; then
             if [[ "$source_sha" == "$target_sha" ]]; then
+                [[ "$TRACEMATCH" -eq 1 ]] && \
+                    record "no-op" "$repo_id" "$branch" "Internal and OSS refs already match"
                 printf '%s\t%s\n' "$source_sha" "$branch" >> "$syncable_branches_file"
-                record "no-op" "$repo_id" "$branch" "Internal and OSS refs already match"
                 continue
             fi
             if ! git -C "$repository_dir" merge-base "$target_sha" "$source_sha" >/dev/null 2>&1 || \
@@ -323,7 +330,8 @@ while IFS= read -r entry; do
                 continue
             }
             if [[ "$source_oid" == "$destination_oid" ]]; then
-                record "no-op" "$repo_id" "tag:$tag" "Associated tag objects already match"
+                [[ "$TRACEMATCH" -eq 1 ]] && \
+                    record "no-op" "$repo_id" "tag:$tag" "Associated tag objects already match"
                 continue
             fi
             record "diverged" "$repo_id" "tag:$tag" "OSS tag exists with a different object; tag will not be overwritten"

@@ -90,7 +90,7 @@ jobs:
         if: ${{ steps.settings.outputs.paused != 'true' || steps.settings.outputs.mode == 'dry-run' }}
         uses: actions/create-github-app-token@v3
         with:
-          app-id: ${{ secrets.BRANCH_APP_ID_INTERNAL }}
+          client-id: ${{ secrets.BRANCH_APP_ID_INTERNAL }}
           private-key: ${{ secrets.BRANCH_APP_PRIVATE_KEY_INTERNAL }}
           owner: risk-hsy
           repositories: HPCC-Platform,ln,eclide,hpcc4j,helm-chart
@@ -101,7 +101,7 @@ jobs:
         if: ${{ steps.settings.outputs.paused != 'true' || steps.settings.outputs.mode == 'dry-run' }}
         uses: actions/create-github-app-token@v3
         with:
-          app-id: ${{ secrets.BRANCH_APP_ID_OSS }}
+          client-id: ${{ secrets.BRANCH_APP_ID_OSS }}
           private-key: ${{ secrets.BRANCH_APP_PRIVATE_KEY_OSS }}
           owner: hpcc-systems
           repositories: HPCC-Platform,ln,eclide,hpcc4j,helm-chart
