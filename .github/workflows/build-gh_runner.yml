@@ -126,6 +126,12 @@ jobs:
         shell: "bash"
         run: |
           brew install bison flex autoconf autoconf-archive automake libtool openjdk@11 ninja
+          if [ "$(uname -m)" = "x86_64" ]; then
+            brew install --cask mono-mdk
+            echo "/Library/Frameworks/Mono.framework/Versions/Current/Commands" >> "$GITHUB_PATH"
+          else
+            brew install mono
+          fi
 
       - name: "Remove builtin vcpkg (old)"
         working-directory: .

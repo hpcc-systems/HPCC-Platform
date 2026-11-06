@@ -156,7 +156,7 @@ jobs:
       matrix:
         cmake-config-options: [ "-DCMAKE_OSX_ARCHITECTURES=x86_64 -DCPACK_SYSTEM_NAME=Darwin-x86_64 -DUSE_PYTHON3=OFF", "" ]
       fail-fast: false
-    uses: ./.github/workflows/build-clienttools-macos-14.yml
+    uses: ./.github/workflows/build-clienttools-macos-15.yml
     with:
       community-ref: ${{ needs.preamble.outputs.community_ref }}
       make-latest: ${{ needs.preamble.outputs.is_latest != 'false' }}
