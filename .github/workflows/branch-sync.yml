@@ -1,0 +1,121 @@
+name: Branch Synchronization
+run-name: Branch sync (${{ github.event_name }})
+
+on:
+  schedule:
+    - cron: '30 23 * * *'
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: Operation mode
+        required: true
+        type: choice
+        options:
+          - dry-run
+          - apply
+        default: dry-run
+      repository:
+        description: Policy repository ID, or all configured repositories
+        required: true
+        type: choice
+        options:
+          - all
+          - platform
+          - ln
+          - eclide
+          - hpcc4j
+          - helm-chart
+        default: all
+
+permissions:
+  contents: read
+
+concurrency:
+  group: branch-synchronization-${{ github.repository }}
+  # Never cancel a writer in progress. GitHub keeps only the newest pending run;
+  # each run reconciles the full configured ref set, so a superseded run is recovered.
+  cancel-in-progress: false
+
+jobs:
+  synchronize:
+    name: Validate and synchronize approved refs
+    if: ${{ github.repository == 'risk-hsy/HPCC-Platform' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch) }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      INPUT_MODE: ${{ inputs.mode || 'dry-run' }}
+      INPUT_REPOSITORY: ${{ inputs.repository || 'all' }}
+
+    steps:
+      - name: Checkout workflow and policy repository
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          persist-credentials: false
+          submodules: false
+
+      - name: Resolve mode and validate policy
+        id: settings
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "$GITHUB_EVENT_NAME" == "schedule" ]]; then
+            mode=apply
+          else
+            mode="$INPUT_MODE"
+          fi
+          jq -e '
+            .schema_version == 1 and
+            (.paused | type == "boolean") and
+            (.repositories | type == "array" and length > 0) and
+            (.repositories | all(.[];
+              (.id | type == "string" and length > 0) and
+              (.source | type == "string" and length > 0) and
+              (.destination | type == "string" and length > 0) and
+              (.sync_enabled | type == "boolean")
+            ))
+          ' branch-policy.json >/dev/null
+          paused=$(jq -r '.paused' branch-policy.json)
+          echo "mode=$mode" >> "$GITHUB_OUTPUT"
+          echo "paused=$paused" >> "$GITHUB_OUTPUT"
+          if [[ "$mode" == "apply" && "$paused" == "true" ]]; then
+            echo "## Branch synchronization: paused" >> "$GITHUB_STEP_SUMMARY"
+            echo "Policy is paused; no remotes will be fetched or changed." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "Mode: \`$mode\`; repository selection: \`$INPUT_REPOSITORY\`; policy paused: \`$paused\`." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Create internal App token
+        id: internal-token
+        if: ${{ steps.settings.outputs.paused != 'true' || steps.settings.outputs.mode == 'dry-run' }}
+        uses: actions/create-github-app-token@v3
+        with:
+          app-id: ${{ secrets.BRANCH_APP_ID_INTERNAL }}
+          private-key: ${{ secrets.BRANCH_APP_PRIVATE_KEY_INTERNAL }}
+          owner: risk-hsy
+          repositories: HPCC-Platform,ln,eclide,hpcc4j,helm-chart
+          permission-contents: read
+
+      - name: Create OSS App token
+        id: oss-token
+        if: ${{ steps.settings.outputs.paused != 'true' || steps.settings.outputs.mode == 'dry-run' }}
+        uses: actions/create-github-app-token@v3
+        with:
+          app-id: ${{ secrets.BRANCH_APP_ID_OSS }}
+          private-key: ${{ secrets.BRANCH_APP_PRIVATE_KEY_OSS }}
+          owner: hpcc-systems
+          repositories: HPCC-Platform,ln,eclide,hpcc4j,helm-chart
+          permission-contents: write
+          permission-workflows: write
+
+      - name: Fetch and selectively synchronize refs
+        shell: bash
+        env:
+          BRANCH_APP_TOKEN_INTERNAL: ${{ steps.internal-token.outputs.token }}
+          BRANCH_APP_TOKEN_OSS: ${{ steps.oss-token.outputs.token }}
+        run: |
+          set -euo pipefail
+          bash tools/tagging/sync-oss-branches.sh \
+            --policy "$GITHUB_WORKSPACE/branch-policy.json" \
+            --mode "${{ steps.settings.outputs.mode }}" \
+            --repository "$INPUT_REPOSITORY"

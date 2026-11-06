@@ -1,0 +1,50 @@
+{
+  "schema_version": 1,
+  "paused": true,
+  "pause_reason": "Initial rollout: validate full-scope authentication and dry-run before enabling writes.",
+  "control_ref": "refs/heads/master",
+  "upmerge_order": [
+    "candidate-10.2.x",
+    "candidate-10.4.x",
+    "candidate-10.6.x",
+    "candidate-10.8.x",
+    "master"
+  ],
+  "repositories": [
+    {
+      "id": "platform",
+      "source": "risk-hsy/hpcc-platform",
+      "destination": "hpcc-systems/HPCC-Platform",
+      "upmerge_enabled": true,
+      "sync_enabled": true
+    },
+    {
+      "id": "ln",
+      "source": "risk-hsy/ln",
+      "destination": "hpcc-systems/ln",
+      "upmerge_enabled": true,
+      "sync_enabled": true
+    },
+    {
+      "id": "eclide",
+      "source": "risk-hsy/eclide",
+      "destination": "hpcc-systems/eclide",
+      "upmerge_enabled": true,
+      "sync_enabled": true
+    },
+    {
+      "id": "hpcc4j",
+      "source": "risk-hsy/hpcc4j",
+      "destination": "hpcc-systems/hpcc4j",
+      "upmerge_enabled": false,
+      "sync_enabled": true
+    },
+    {
+      "id": "helm-chart",
+      "source": "risk-hsy/helm-chart",
+      "destination": "hpcc-systems/helm-chart",
+      "upmerge_enabled": false,
+      "sync_enabled": true
+    }
+  ]
+}
