@@ -55,6 +55,26 @@ This may be useful in some scenarios if the connections would otherwise be close
 An example of this is that Azure instances will close sockets that have been idle for greater than 4 minutes that are connected
 outside of its networks.
 
+## useTLSProxy (Roxie service setting)
+
+Enables TLS PROXY protocol v1/v2 header parsing on a Roxie TLS service listener. This allows Roxie to log the original
+client address supplied to a load balancer. It defaults to `false` and has no effect on other listeners.
+
+Only enable this setting on a listener behind a trusted load balancer configured to send TLS PROXY protocol headers. Any
+client that can connect directly to that listener may send a PROXY header and spoof its source address.
+
+Configure the setting on the specific service, alongside its TLS configuration:
+
+```
+roxie:
+- name: myroxie
+  services:
+  - name: external
+    servicePort: 19876
+    tls: true
+    useTLSProxy: true
+```
+
 ## saveQueryDlls (boolean)
 
 This is a Thor only setting. Default: false

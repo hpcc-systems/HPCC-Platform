@@ -127,10 +127,13 @@ private:
     Owned<ISecureSocketContext> secureContext;
     std::atomic<bool> running{true};
     unsigned short port;
+    bool proxyHeaderOptIn = true;
     Semaphore started{SYNC_LOCATION};
     std::atomic<bool> startupSucceeded{false};
     CTLSTestCertificate cert;
     std::atomic<unsigned> acceptCount{0};
+    std::atomic<bool> hasProxyPeerEndpoint{false};
+    SocketEndpoint peerEndpoint;
 
 public:
     SimpleTLSEchoServer(ISecureSocketContext *_secureContext = nullptr) : Thread("SimpleTLSEchoServer"), port(0)
@@ -172,6 +175,9 @@ public:
 
     unsigned short getPort() const { return port; }
     unsigned getAcceptCount() const { return acceptCount; }
+    bool hasProxyEndpoint() const { return hasProxyPeerEndpoint.load(); }
+    SocketEndpoint &getPeerEndpoint(SocketEndpoint &ep) const { ep.set(peerEndpoint); return ep; }
+    void setProxyHeaderOptIn(bool enabled) { proxyHeaderOptIn = enabled; }
 
     virtual int run() override
     {
@@ -217,10 +223,13 @@ public:
 
                     // Perform TLS accept (synchronous for server side)
                     Owned<ISecureSocket> secureClient = secureContext->createSecureSocket(client.getClear());
+                    if (proxyHeaderOptIn)
+                        secureClient->setAllowProxyHeader();
                     int status = secureClient->secure_accept(SSLogMin);
                     if (status < 0)
                         continue;
 
+                    hasProxyPeerEndpoint = secureClient->queryProxyPeerEndpoint(peerEndpoint);
                     acceptCount++;
 
                     // Simple echo - read messages and send them back until connection closes
@@ -780,6 +789,7 @@ private:
 
     CPPUNIT_TEST_SUITE(TLSAsyncTests);
         CPPUNIT_TEST(testSyncTLSAccept);
+        CPPUNIT_TEST(testSyncTLSAcceptWithProxy);
 
         CPPUNIT_TEST(testSyncedContextRefreshOnVersionChange);
         CPPUNIT_TEST(testSyncedContextPeerPolicyRotationStress);
@@ -883,6 +893,99 @@ protected:
         return config.getClear();
     }
 
+    void testSyncTLSAcceptWithProxyHeader(const byte *proxyHeader, size32_t headerLength, size32_t splitOffset, const char *expectedIp, unsigned short expectedPort)
+    {
+        SimpleTLSEchoServer server;
+        server.start();
+
+        try
+        {
+            SocketEndpoint ep("127.0.0.1", server.getPort());
+            Owned<ISocket> socket = ISocket::connect_timeout(ep, 5000);
+            ASSERT(socket.get() != nullptr);
+
+            socket->write(proxyHeader, splitOffset);
+            Sleep(50);
+            socket->write(proxyHeader + splitOffset, headerLength - splitOffset);
+
+            Owned<IPropertyTree> config = createTLSClientConfig();
+            Owned<ISecureSocketContext> clientContext = createSecureSocketContextEx2(config, ClientSocket);
+            Owned<ISecureSocket> secureSocket = clientContext->createSecureSocket(socket.getClear());
+
+            int status = secureSocket->secure_connect(SSLogMin);
+            ASSERT(status == 0);
+
+            constexpr char message[] = "Hello through PROXY";
+            secureSocket->write(message, sizeof(message) - 1);
+
+            char buffer[sizeof(message)];
+            size32_t bytesRead = 0;
+            secureSocket->read(buffer, sizeof(message) - 1, sizeof(buffer), bytesRead, 5);
+            ASSERT(bytesRead == sizeof(message) - 1);
+            ASSERT(memcmp(buffer, message, sizeof(message) - 1) == 0);
+
+            secureSocket->close();
+            ASSERT(server.getAcceptCount() == 1);
+            ASSERT(server.hasProxyEndpoint() == (expectedIp != nullptr));
+
+            if (expectedIp)
+            {
+                SocketEndpoint peerEndpoint;
+                server.getPeerEndpoint(peerEndpoint);
+                StringBuffer peerIp;
+                peerEndpoint.getHostText(peerIp);
+                ASSERT(streq(peerIp, expectedIp));
+                ASSERT(peerEndpoint.port == expectedPort);
+            }
+        }
+        catch (IException *e)
+        {
+            StringBuffer message;
+            e->errorMessage(message);
+            e->Release();
+            CPPUNIT_FAIL(message.str());
+        }
+
+        server.stop();
+    }
+
+    void testRejectedProxyHeaderWithSettings(const byte *proxyHeader, size32_t headerLength, bool proxyHeaderOptIn)
+    {
+        SimpleTLSEchoServer server;
+        server.setProxyHeaderOptIn(proxyHeaderOptIn);
+        server.start();
+
+        bool rejected = false;
+        try
+        {
+            SocketEndpoint ep("127.0.0.1", server.getPort());
+            Owned<ISocket> socket = ISocket::connect_timeout(ep, 5000);
+            ASSERT(socket.get() != nullptr);
+            socket->write(proxyHeader, headerLength);
+
+            Owned<IPropertyTree> config = createTLSClientConfig();
+            Owned<ISecureSocketContext> clientContext = createSecureSocketContextEx2(config, ClientSocket);
+            Owned<ISecureSocket> secureSocket = clientContext->createSecureSocket(socket.getClear());
+            rejected = (secureSocket->secure_connect(SSLogMin) != 0);
+            secureSocket->close();
+        }
+        catch (IException *e)
+        {
+            e->Release();
+            rejected = true;
+        }
+
+        server.stop();
+        ASSERT(rejected);
+        ASSERT(server.getAcceptCount() == 0);
+        ASSERT(!server.hasProxyEndpoint());
+    }
+
+    void testRejectedProxyHeader(const byte *proxyHeader, size32_t headerLength)
+    {
+        testRejectedProxyHeaderWithSettings(proxyHeader, headerLength, true);
+    }
+
 public:
     void testSyncTLSAccept()
     {
@@ -929,6 +1032,89 @@ public:
         }
 
         server.stop();
+    }
+
+    void testSyncTLSAcceptWithProxy()
+    {
+        testSyncTLSAccept();
+
+        constexpr char proxyV1Header[] = "PROXY TCP4 192.0.2.1 198.51.100.2 12345 443\r\n";
+        testSyncTLSAcceptWithProxyHeader(reinterpret_cast<const byte *>(proxyV1Header), sizeof(proxyV1Header) - 1, sizeof(proxyV1Header) - 2, "192.0.2.1", 12345);
+
+        constexpr char proxyV1UnknownHeader[] = "PROXY UNKNOWN  ignored remainder with extra fields \r\n";
+        testSyncTLSAcceptWithProxyHeader(reinterpret_cast<const byte *>(proxyV1UnknownHeader), sizeof(proxyV1UnknownHeader) - 1, sizeof(proxyV1UnknownHeader) - 2, nullptr, 0);
+
+        constexpr byte proxyV2Header[] =
+        {
+            0x0d, 0x0a, 0x0d, 0x0a, 0x00, 0x0d, 0x0a, 0x51, 0x55, 0x49, 0x54, 0x0a,
+            0x21, 0x11, 0x00, 0x0c,
+            0xc0, 0x00, 0x02, 0x01, 0xc6, 0x33, 0x64, 0x02, 0x30, 0x39, 0x01, 0xbb
+        };
+        testSyncTLSAcceptWithProxyHeader(proxyV2Header, sizeof(proxyV2Header), 1, "192.0.2.1", 12345);
+
+        constexpr char proxyV1IPv6Header[] = "PROXY TCP6 2001:db8::1 2001:db8::2 12345 443\r\n";
+        testSyncTLSAcceptWithProxyHeader(reinterpret_cast<const byte *>(proxyV1IPv6Header), sizeof(proxyV1IPv6Header) - 1, 1, "2001:db8::1", 12345);
+
+        constexpr byte proxyV2IPv6Header[] =
+        {
+            0x0d, 0x0a, 0x0d, 0x0a, 0x00, 0x0d, 0x0a, 0x51, 0x55, 0x49, 0x54, 0x0a,
+            0x21, 0x21, 0x00, 0x24,
+            0x20, 0x01, 0x0d, 0xb8, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01,
+            0x20, 0x01, 0x0d, 0xb8, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02,
+            0x30, 0x39, 0x01, 0xbb
+        };
+        testSyncTLSAcceptWithProxyHeader(proxyV2IPv6Header, sizeof(proxyV2IPv6Header), 16, "2001:db8::1", 12345);
+
+        constexpr byte proxyV2LocalWithTlv[] =
+        {
+            0x0d, 0x0a, 0x0d, 0x0a, 0x00, 0x0d, 0x0a, 0x51, 0x55, 0x49, 0x54, 0x0a,
+            0x20, 0x00, 0x00, 0x05,
+            0x01, 0x00, 0x02, 0xaa, 0xbb
+        };
+        testSyncTLSAcceptWithProxyHeader(proxyV2LocalWithTlv, sizeof(proxyV2LocalWithTlv), 16, nullptr, 0);
+
+        constexpr byte proxyV2IPv4WithTlv[] =
+        {
+            0x0d, 0x0a, 0x0d, 0x0a, 0x00, 0x0d, 0x0a, 0x51, 0x55, 0x49, 0x54, 0x0a,
+            0x21, 0x11, 0x00, 0x11,
+            0xc0, 0x00, 0x02, 0x01, 0xc6, 0x33, 0x64, 0x02, 0x30, 0x39, 0x01, 0xbb,
+            0x01, 0x00, 0x02, 0xaa, 0xbb
+        };
+        testSyncTLSAcceptWithProxyHeader(proxyV2IPv4WithTlv, sizeof(proxyV2IPv4WithTlv), 16, "192.0.2.1", 12345);
+
+        constexpr char invalidPortHeader[] = "PROXY TCP4 192.0.2.1 198.51.100.2 65536 443\r\n";
+        testRejectedProxyHeader(reinterpret_cast<const byte *>(invalidPortHeader), sizeof(invalidPortHeader) - 1);
+
+        byte oversizedV1Header[108];
+        memset(oversizedV1Header, '1', sizeof(oversizedV1Header));
+        memcpy(oversizedV1Header, "PROXY TCP4 ", 11);
+        testRejectedProxyHeader(oversizedV1Header, sizeof(oversizedV1Header));
+
+        constexpr byte truncatedV2Header[] =
+        {
+            0x0d, 0x0a, 0x0d, 0x0a, 0x00, 0x0d, 0x0a, 0x51, 0x55, 0x49, 0x54, 0x0a,
+            0x21, 0x11, 0x00, 0x0b,
+            0xc0, 0x00, 0x02, 0x01, 0xc6, 0x33, 0x64, 0x02, 0x30, 0x39, 0x01
+        };
+        testRejectedProxyHeader(truncatedV2Header, sizeof(truncatedV2Header));
+
+        constexpr byte invalidVersionHeader[] =
+        {
+            0x0d, 0x0a, 0x0d, 0x0a, 0x00, 0x0d, 0x0a, 0x51, 0x55, 0x49, 0x54, 0x0a,
+            0x31, 0x00, 0x00, 0x00
+        };
+        testRejectedProxyHeader(invalidVersionHeader, sizeof(invalidVersionHeader));
+
+        constexpr byte invalidFamilyHeader[] =
+        {
+            0x0d, 0x0a, 0x0d, 0x0a, 0x00, 0x0d, 0x0a, 0x51, 0x55, 0x49, 0x54, 0x0a,
+            0x21, 0x41, 0x00, 0x00
+        };
+        testRejectedProxyHeader(invalidFamilyHeader, sizeof(invalidFamilyHeader));
+        const byte *header = reinterpret_cast<const byte *>(proxyV1Header);
+        constexpr size32_t headerLength = sizeof(proxyV1Header) - 1;
+
+        testRejectedProxyHeaderWithSettings(header, headerLength, false);
     }
 
     void testSyncedContextRefreshOnVersionChange()

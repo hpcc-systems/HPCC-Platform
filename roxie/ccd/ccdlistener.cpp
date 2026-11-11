@@ -1568,7 +1568,7 @@ public:
         return *cascade;
     }
 
-    virtual void startSpan(const char * id, const char * querySetName, const char * queryName, const IProperties * headers, const SpanTimeStamp * spanStartTimeStamp) override
+    virtual void startSpan(const char * id, const char * querySetName, const char * queryName, const IProperties * headers, const char * tlsProxySource, const SpanTimeStamp * spanStartTimeStamp) override
     {
         Linked<const IProperties> allHeaders = headers;
         SpanFlags flags = (ensureGlobalIdExists) ? SpanFlags::EnsureGlobalId : SpanFlags::None;
@@ -1597,6 +1597,8 @@ public:
         {
             if (headers->hasProp("X-Forwarded-For"))
                 requestSpan->setSpanAttribute("http.forwarded_for", headers->queryProp("X-Forwarded-For"));
+            if (!isEmptyString(tlsProxySource))
+                requestSpan->setSpanAttribute("client.address", tlsProxySource);
 
             if (headers->hasProp("X-Client-ID"))
                 requestSpan->setSpanAttribute("http.client_id", headers->queryProp("X-Client-ID"));

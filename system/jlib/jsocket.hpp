@@ -466,6 +466,7 @@ public:
     virtual bool check_connection() = 0;
 
     virtual bool isSecure() const = 0;
+    virtual bool queryProxyPeerEndpoint(SocketEndpoint &) const { return false; }
     virtual bool isValid() const = 0;
 
     virtual unsigned __int64 getStatistic(StatisticKind kind) const = 0;

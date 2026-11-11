@@ -41,7 +41,7 @@ interface IHpccProtocolMsgContext : extends IInterface
     virtual bool getIntercept() = 0;
     virtual void outputLogXML(IXmlStreamFlusher &out) = 0;
     virtual void writeLogXML(IXmlWriter &writer) = 0;
-    virtual void startSpan(const char * uid, const char * querySetName, const char * queryName, const IProperties * headers, const SpanTimeStamp * spanStartTimeStamp) = 0;
+    virtual void startSpan(const char * uid, const char * querySetName, const char * queryName, const IProperties * headers, const char * tlsProxySource, const SpanTimeStamp * spanStartTimeStamp) = 0;
 };
 
 interface IHpccProtocolResultsWriter : extends IInterface
@@ -136,7 +136,7 @@ interface IActiveQueryLimiterFactory : extends IInterface
 
 interface IHpccProtocolPlugin : extends IInterface
 {
-    virtual IHpccProtocolListener *createListener(const char *protocol, IHpccProtocolMsgSink *sink, unsigned port, unsigned listenQueue, const char *config, const ISyncedPropertyTree *tlsConfig)=0;
+    virtual IHpccProtocolListener *createListener(const char *protocol, IHpccProtocolMsgSink *sink, unsigned port, unsigned listenQueue, const char *config, const ISyncedPropertyTree *tlsConfig, bool useTLSProxy)=0;
 };
 
 extern IHpccProtocolPlugin *loadHpccProtocolPlugin(IHpccProtocolPluginContext *ctx, IActiveQueryLimiterFactory *limiterFactory);
