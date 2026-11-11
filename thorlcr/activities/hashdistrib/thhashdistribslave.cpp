@@ -3294,7 +3294,7 @@ public:
             }
             else
             {
-                CriticalBlock b(stopsect); // JCSMORE - because stopInput can be called async, by stopping distributor.
+                // NB: no stopsect needed. Global distInput is the distributor output, not the input stopped async (which could block)
                 row.setown(grouped?distInput->nextRow():distInput->ungroupedNextRow());
             }
             if (row)
@@ -3949,10 +3949,6 @@ public:
 // IStopInput
     virtual void stopInput() override
     {
-        /* JCSMORE - am not sure why distributor given a IStopInput to stop this activities input asynchronously
-         * It means nextRow has a CS around input->nextRow() as it stands.
-         * Would be better to flag stop and perhaps call stopInput on next nextRow() call
-         */
         CriticalBlock block(stopsect);  // can be called async by distribute.
         PARENT::stopInput(0);
     }
