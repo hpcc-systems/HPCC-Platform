@@ -962,6 +962,9 @@ static void dfuCopy(IDFUWorkUnit *publisherWu, StringArray &subtaskWuids, IUserD
     wuOptions->setPreserveCompression(preserveCompression);
     wuOptions->setNoSplit(nosplit);
 
+    // default crcCheck to off
+    wuOptions->setCrcCheck(false);
+
     const char * keyCompression = parentOptions->queryKeyCompression();
     if (!isEmptyString(keyCompression))
         wuOptions->setKeyCompression(keyCompression);
