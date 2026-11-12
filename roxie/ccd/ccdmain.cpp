@@ -1244,6 +1244,7 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         traceStrands = topology->getPropBool("@traceStrands", false);
 
         useMemoryMappedIndexes = topology->getPropBool("@useMemoryMappedIndexes", false);
+        setAllowZeroLengthIndexPart(topology->getPropBool("@allowZeroLengthIndexPart", false));
         flushJHtreeCacheOnOOM = topology->getPropBool("@flushJHtreeCacheOnOOM", true);
         fastLaneQueue = topology->getPropBool("@fastLaneQueue", true);
         udpOutQsPriority = topology->getPropInt("@udpOutQsPriority", 0);

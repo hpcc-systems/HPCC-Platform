@@ -395,6 +395,7 @@ protected:
     Owned <IIndexFilterList> filter;
     IKeyCursor *keyCursor;
     IKeyIndexBase *key = nullptr;
+    Linked<IKeyIndex> emptyKey;
     ConstPointerArray activeBlobs;
     __uint64 partitionFieldMask = 0;
     unsigned indexParts = 0;
@@ -437,6 +438,7 @@ public:
         key = nullptr;
         ::Release(keyCursor);
         keyCursor = NULL;
+        emptyKey.clear();
     }
 
     void setKey(IKeyIndexBase * _key, const RtlRecord & actualRecInfo)
@@ -450,18 +452,31 @@ public:
         key = _key;
         ::Release(keyCursor);
         keyCursor = NULL;
+        emptyKey.clear();
         if (_key)
         {
             assertex(_key->numParts()==1);
             IKeyIndex *ki = _key->queryPart(0);
-            keyCursor = ki->getCursor(filter, logExcessiveSeeks);
-            keyedSize = ki->keyedSize();
-            filter->updateIndexFormat(actualRecInfo);
-            partitionFieldMask = ki->getPartitionFieldMask();
-            indexParts = ki->numPartitions();
+            if (ki->isEmptyIndexPart())
+            {
+                emptyKey.set(ki);
+                keyedSize = actualRecInfo.getKeyedSize();
+                filter->updateIndexFormat(actualRecInfo);
+                partitionFieldMask = 0;
+                indexParts = 0;
+                activeCtx = nullptr;
+            }
+            else
+            {
+                keyCursor = ki->getCursor(filter, logExcessiveSeeks);
+                keyedSize = ki->keyedSize();
+                filter->updateIndexFormat(actualRecInfo);
+                partitionFieldMask = ki->getPartitionFieldMask();
+                indexParts = ki->numPartitions();
 
-            // If TLK don't collect context information
-            activeCtx = ki->isTopLevelKey() ? nullptr : ctx;
+                // If TLK don't collect context information
+                activeCtx = ki->isTopLevelKey() ? nullptr : ctx;
+            }
         }
     }
 
@@ -562,26 +577,22 @@ public:
 
     unsigned __int64 getCount()
     {
-        assertex(keyCursor);
-        return keyCursor->getCount(activeCtx);
+        return keyCursor ? keyCursor->getCount(activeCtx) : 0;
     }
 
     unsigned __int64 getCurrentRangeCount(unsigned groupSegCount)
     {
-        assertex(keyCursor);
-        return keyCursor->getCurrentRangeCount(groupSegCount, activeCtx);
+        return keyCursor ? keyCursor->getCurrentRangeCount(groupSegCount, activeCtx) : 0;
     }
 
     bool nextRange(unsigned groupSegCount)
     {
-        assertex(keyCursor);
-        return keyCursor->nextRange(groupSegCount);
+        return keyCursor ? keyCursor->nextRange(groupSegCount) : false;
     }
 
     unsigned __int64 checkCount(unsigned __int64 max)
     {
-        assertex(keyCursor);
-        return keyCursor->checkCount(max, activeCtx);
+        return keyCursor ? keyCursor->checkCount(max, activeCtx) : 0;
     }
 
     virtual void serializeCursorPos(MemoryBuffer &mb)
@@ -1572,6 +1583,23 @@ void CDiskKeyIndex::ensureReady()
     const size32_t maxReadSize = 0x20000;
     offset_t actualSize = io->size();
 
+    if (actualSize == 0)
+    {
+        if (!queryAllowZeroLengthIndexPart())
+            throw makeStringExceptionV(0, "Failed to read key '%s' header: index part has zero length", name.str());
+
+        emptyIndexPart = true;
+        keyHdr = new CKeyHdr(iD);
+        keyHdr->getHdrStruct()->nodeSize = 512;
+        keyHdr->getHdrStruct()->nodeKeyLength = -1;
+        keyHdr->getHdrStruct()->ktype = COL_PREFIX | (forceTLK ? HTREE_TOPLEVEL_KEY | HTREE_FULLSORT_KEY : 0);
+        nodeIndexFlags = forceTLK ? NodeInTLK : NodeNoFlags;
+
+        rootNode = CJHLegacySearchNode::createNullLeaf(keyHdr);
+        initialised.store(true, std::memory_order_release);
+        return;
+    }
+
     DefaultNodeLoader nodeLoader(*this);
     CCachedIndexRead & readCache = nodeLoader.queryReadCache();
     nodeLoader.setUsePageCache(false); // The data read when the index is opened is never read again (unless it gets swapped out)
@@ -2381,6 +2409,12 @@ void CKeyCursor::reset(IContextLogger *ctx)
     node.clear();
     matched = false;
     clearParentNodes();
+    if (key.isEmptyIndexPart())
+    {
+        eof = true;
+        finishSegmentMonitors();
+        return;
+    }
     eof = key.bloomFilterReject(*filter, ctx) || !filter->canMatch();
     if (!eof)
         setLow(0);
@@ -3378,12 +3412,20 @@ class CLazyKeyIndex final : implements IKeyIndex, public CInterface
         CriticalBlock b(c);
         if (!realKey)
         {
-            Owned<IMemoryMappedFile> mapped = useMemoryMappedIndexes ? delayedFile->getMappedFile() : nullptr;
+            Owned<IMemoryMappedFile> mapped;
+            if (useMemoryMappedIndexes)
+            {
+                if (CDiskKeyIndex::queryAllowZeroLengthIndexPart() && !iFileIO)
+                    iFileIO.setown(delayedFile->getFileIO());
+                if (!iFileIO || iFileIO->size() != 0)
+                    mapped.setown(delayedFile->getMappedFile());
+            }
             if (mapped)
                 realKey.setown(queryKeyStore()->load(keyfile, crc, mapped, isTLK, readOptions));
             else
             {
-                iFileIO.setown(delayedFile->getFileIO());
+                if (!iFileIO)
+                    iFileIO.setown(delayedFile->getFileIO());
                 realKey.setown(queryKeyStore()->load(keyfile, crc, iFileIO, fileIdx, isTLK, readOptions));
             }
             if (!realKey)
@@ -3407,6 +3449,7 @@ public:
     virtual size32_t keySize() { return checkOpen().keySize(); }
     virtual size32_t keyedSize() { return checkOpen().keyedSize(); }
     virtual bool hasPayload() { return checkOpen().hasPayload(); }
+    virtual bool isEmptyIndexPart() override { return checkOpen().isEmptyIndexPart(); }
     virtual bool isTopLevelKey() const override { return checkOpen().isTopLevelKey(); }
     virtual bool isFullySorted() override { return checkOpen().isFullySorted(); }
     virtual __uint64 getPartitionFieldMask() { return checkOpen().getPartitionFieldMask(); }
@@ -3457,6 +3500,11 @@ extern jhtree_decl IKeyIndex *createKeyIndex(const char *keyfile, unsigned crc, 
 extern jhtree_decl IKeyIndex *createKeyIndex(const char *keyfile, unsigned crc, IDelayedFile &iFileIO, unsigned fileIdx, bool isTLK, IndexReadOptions readOptions)
 {
     return new CLazyKeyIndex(keyfile, crc, &iFileIO, fileIdx, isTLK, readOptions);
+}
+
+void setAllowZeroLengthIndexPart(bool allow)
+{
+    CDiskKeyIndex::setAllowZeroLengthIndexPart(allow);
 }
 
 extern jhtree_decl void clearKeyStoreCache(bool killAll)
@@ -4096,15 +4144,23 @@ public:
         keyset.set(_keyset);
         if (_keyset && _keyset->numParts())
         {
-            IKeyIndex *ki = _keyset->queryPart(0);
-            keyedSize = ki->keyedSize();
             numkeys = _keyset->numParts();
-            for (unsigned i=1; i < numkeys; i++)
+            IKeyIndex *ki = nullptr;
+            for (unsigned i=0; i < numkeys; i++)
             {
                 IKeyIndex * part = _keyset->queryPart(i);
-                if (part->keyedSize() != keyedSize)
+                if (part->isEmptyIndexPart())
+                    continue;
+                if (!ki)
+                {
+                    ki = part;
+                    keyedSize = part->keyedSize();
+                }
+                else if (part->keyedSize() != keyedSize)
                     throw MakeStringException(0, "Key size mismatch on key %s v %s - key size is %u, expected %u", part->queryFileName(), ki->queryFileName(), part->keyedSize(), keyedSize);
             }
+            if (!ki)
+                keyedSize = actualRecInfo.getKeyedSize();
             if (sortFieldOffset > keyedSize)
                 throw MakeStringException(0, "Index sort order can only include keyed fields");
         }
@@ -4120,7 +4176,10 @@ public:
         unsigned i;
         for (i = 0; i < numkeys; i++)
         {
-            Owned<IKeyCursor> cursor = keyset->queryPart(i)->getCursor(filter, logExcessiveSeeks);
+            IKeyIndex *part = keyset->queryPart(i);
+            if (part->isEmptyIndexPart())
+                continue;
+            Owned<IKeyCursor> cursor = part->getCursor(filter, logExcessiveSeeks);
             cursor->setStepping(sortFieldOffset != 0);
             cursor->reset(ctx);
             for (;;)
@@ -4522,15 +4581,55 @@ public:
     }
 };
 
+class LayoutTestKeyManager : public CKeyLevelManager
+{
+public:
+    using CKeyLevelManager::CKeyLevelManager;
+
+    unsigned queryFilterFieldCount() const { return filter->numFilterFields(); }
+};
+
 class IKeyManagerTest : public CppUnit::TestFixture
 {
     CPPUNIT_TEST_SUITE(IKeyManagerTest);
+        CPPUNIT_TEST(testZeroLengthIndexPart);
         CPPUNIT_TEST(testResumeReadSize);
         CPPUNIT_TEST(testDemoCacheRewrite);
         CPPUNIT_TEST(testDiskCacheRewrite);
     CPPUNIT_TEST_SUITE_END();
 
     StringBuffer filename;
+    StringBuffer populatedFilename;
+
+    class TestDelayedFile : implements IDelayedFile, public CInterface
+    {
+        Linked<IFileIO> io;
+
+    public:
+        IMPLEMENT_IINTERFACE;
+        TestDelayedFile(IFileIO *_io) : io(_io) {}
+
+        virtual IMemoryMappedFile *getMappedFile() override { throwUnexpected(); }
+        virtual IFileIO *getFileIO() override { return LINK(io); }
+    };
+
+    class ScopedMappedIndexes
+    {
+        bool previous = useMemoryMappedIndexes;
+
+    public:
+        ScopedMappedIndexes() { useMemoryMappedIndexes = true; }
+        ~ScopedMappedIndexes() { useMemoryMappedIndexes = previous; }
+    };
+
+    class ScopedZeroLengthIndexParts
+    {
+        bool previous = CDiskKeyIndex::queryAllowZeroLengthIndexPart();
+
+    public:
+        ScopedZeroLengthIndexParts() { setAllowZeroLengthIndexPart(true); }
+        ~ScopedZeroLengthIndexParts() { setAllowZeroLengthIndexPart(previous); }
+    };
 
     class ScopedTestPageCache
     {
@@ -4601,9 +4700,135 @@ public:
             file->remove();
             filename.clear();
         }
+        if (populatedFilename.length())
+        {
+            Owned<IFile> file = createIFile(populatedFilename);
+            file->remove();
+            populatedFilename.clear();
+        }
     }
 
 private:
+    void testZeroLengthIndexPart()
+    {
+        Owned<IFileIO> io = createUniqueFile(nullptr, "IKeyManagerTest", "tmp", filename, IFOcreaterw);
+        try
+        {
+            Owned<IKeyIndex> rejected = createKeyIndex(filename, 0, *io, 0, false, {});
+            CPPUNIT_FAIL("Expected a zero-length index part error");
+        }
+        catch (IException *e)
+        {
+            Owned<IException> error = e;
+            StringBuffer message;
+            CPPUNIT_ASSERT(strstr(error->errorMessage(message).str(), "index part has zero length"));
+        }
+
+        ScopedZeroLengthIndexParts allowEmptyParts;
+        IndexReadOptions readOptions;
+        Owned<IKeyIndex> empty = new CDiskKeyIndex(0, LINK(io), filename, false, readOptions);
+        empty->ensureReady();
+        CPPUNIT_ASSERT(!empty->hasPayload());
+        Owned<IKeyCursor> cursor = empty->getCursor(nullptr, false);
+        CPPUNIT_ASSERT(!cursor->next(nullptr));
+
+        {
+            ScopedMappedIndexes mappedIndexes;
+            Owned<TestDelayedFile> delayed = new TestDelayedFile(io);
+            Owned<IKeyIndex> lazy = createKeyIndex(filename, 0, *delayed, 0, false, readOptions);
+            lazy->ensureReady();
+            CPPUNIT_ASSERT(lazy->isEmptyIndexPart());
+            Owned<IKeyCursor> lazyCursor = lazy->getCursor(nullptr, false);
+            CPPUNIT_ASSERT(!lazyCursor->next(nullptr));
+        }
+
+        Owned<IKeyIndex> emptyTlk = new CDiskKeyIndex(0, LINK(io), filename, true, readOptions);
+        emptyTlk->ensureReady();
+        CPPUNIT_ASSERT(emptyTlk->isTopLevelKey());
+        CPPUNIT_ASSERT(emptyTlk->isFullySorted());
+        Owned<IKeyCursor> tlkCursor = emptyTlk->getCursor(nullptr, false);
+        CPPUNIT_ASSERT(!tlkCursor->next(nullptr));
+
+        const char *json = "{ \"ty1\": { \"fieldType\": 4, \"length\": 16 }, "
+                           "\"fieldType\": 13, \"length\": 16, "
+                           "\"fields\": [ { \"name\": \"f1\", \"type\": \"ty1\", \"flags\": 4 } ] }";
+        Owned<IOutputMetaData> meta = createTypeInfoOutputMetaData(json, false);
+        const RtlRecord &recInfo = meta->queryRecordAccessor(true);
+        Owned<IStringSet> values = createStringSet(16);
+        values->addRange("0000000000000001", "0000000000000001");
+
+        Owned<IKeyManager> filtered = createLocalKeyManager(recInfo, empty, nullptr, false, false);
+        filtered->append(createKeySegmentMonitor(false, values.getLink(), 0, 0, 16));
+        filtered->finishSegmentMonitors();
+        filtered->reset(false);
+        CPPUNIT_ASSERT(!filtered->lookup(true));
+        CPPUNIT_ASSERT_EQUAL((unsigned __int64) 0, filtered->getCount());
+
+        Owned<IKeyManager> newFiltered = createLocalKeyManager(recInfo, empty, nullptr, true, false);
+        newFiltered->append(FFkeyed, createFieldFilter(0, *recInfo.queryType(0), "0000000000000001"));
+        newFiltered->finishSegmentMonitors();
+        newFiltered->reset(false);
+        CPPUNIT_ASSERT(!newFiltered->lookup(true));
+
+        const char *oneKeyedJson = "{ \"ty1\": { \"fieldType\": 4, \"length\": 16 }, "
+                       "\"fieldType\": 13, \"length\": 32, "
+                       "\"fields\": [ { \"name\": \"f1\", \"type\": \"ty1\", \"flags\": 4 }, "
+                                   "{ \"name\": \"f2\", \"type\": \"ty1\", \"flags\": 65536 } ] }";
+        const char *twoKeyedJson = "{ \"ty1\": { \"fieldType\": 4, \"length\": 16 }, "
+                       "\"fieldType\": 13, \"length\": 32, "
+                       "\"fields\": [ { \"name\": \"f1\", \"type\": \"ty1\", \"flags\": 4 }, "
+                       "{ \"name\": \"f2\", \"type\": \"ty1\", \"flags\": 4 } ] }";
+        Owned<IOutputMetaData> oneKeyedMeta = createTypeInfoOutputMetaData(oneKeyedJson, false);
+        Owned<IOutputMetaData> twoKeyedMeta = createTypeInfoOutputMetaData(twoKeyedJson, false);
+        Owned<IKeyIndex> nextEmpty = new CDiskKeyIndex(1, LINK(io), filename, false, readOptions);
+        nextEmpty->ensureReady();
+        Owned<LayoutTestKeyManager> reused = new LayoutTestKeyManager(oneKeyedMeta->queryRecordAccessor(true), empty, nullptr, false, false);
+        reused->finishSegmentMonitors();
+        CPPUNIT_ASSERT_EQUAL(1U, reused->queryFilterFieldCount());
+        reused->setKey(nextEmpty, twoKeyedMeta->queryRecordAccessor(true));
+        reused->finishSegmentMonitors();
+        CPPUNIT_ASSERT_EQUAL(2U, reused->queryFilterFieldCount());
+        reused->reset(false);
+        CPPUNIT_ASSERT(!reused->lookup(true));
+
+        Owned<IFileIO> populatedIo = createUniqueFile(nullptr, "IKeyManagerTest", "tmp", populatedFilename, IFOcreaterw);
+        {
+            TestIndexWriteArg helper(populatedFilename, nullptr, meta);
+            Owned<IFileIOStream> out = createIOStream(populatedIo);
+            KeyBuilderOptions options(COL_PREFIX | HTREE_FULLSORT_KEY | HTREE_COMPRESSED_KEY,
+                                      16, NODESIZE, 16, &helper);
+            Owned<IKeyBuilder> builder = createKeyBuilder(out, options);
+            builder->processKeyData("0000000000000001", 1, 16);
+            builder->finish(nullptr, nullptr, 16, nullptr);
+            out->flush();
+        }
+        Owned<IKeyIndex> populated = createKeyIndex(populatedFilename, 0, *populatedIo, 0, false, {});
+        Owned<IKeyIndexSet> keyset = createKeyIndexSet();
+        keyset->addIndex(LINK(empty));
+        keyset->addIndex(LINK(populated));
+        Owned<IKeyManager> merged = createKeyMerger(recInfo, keyset, 0, nullptr, false, false);
+        merged->append(createKeySegmentMonitor(false, values.getLink(), 0, 0, 16));
+        merged->finishSegmentMonitors();
+        merged->reset(false);
+        CPPUNIT_ASSERT(merged->lookup(true));
+        CPPUNIT_ASSERT_EQUAL(0, memcmp(merged->queryKeyBuffer(), "0000000000000001", 16));
+        CPPUNIT_ASSERT(!merged->lookup(true));
+
+        Owned<IKeyIndexSet> emptyParts = createKeyIndexSet();
+        emptyParts->addIndex(LINK(empty));
+        emptyParts->addIndex(LINK(empty));
+        Owned<IKeyManager> emptyMerger = createKeyMerger(recInfo, emptyParts, 0, nullptr, false, false);
+        emptyMerger->finishSegmentMonitors();
+        emptyMerger->reset(false);
+        CPPUNIT_ASSERT(!emptyMerger->lookup(true));
+        CPPUNIT_ASSERT_EQUAL((unsigned __int64) 0, emptyMerger->getCount());
+
+        const char invalidHeader = 0;
+        io->write(0, 1, &invalidHeader);
+        Owned<IKeyIndex> truncated = new CDiskKeyIndex(0, LINK(io), filename, false, readOptions);
+        CPPUNIT_ASSERT_THROW(truncated->ensureReady(), IException *);
+    }
+
     void testResumeReadSize()
     {
         const char *json = "{ \"ty1\": { \"fieldType\": 4, \"length\": 10 }, "

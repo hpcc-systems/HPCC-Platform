@@ -92,6 +92,7 @@ protected:
     std::atomic<bool> bloomFiltersLoaded = {0};
     std::atomic<bool> initialised{0};
     const bool forceTLK; // saved from constructor to be used when loading the index
+    bool emptyIndexPart = false;
     IndexReadOptions readOptions;
     offset_t cachedBlobNodePos;
 
@@ -127,6 +128,7 @@ public:
 
     virtual size32_t keySize();
     virtual bool hasPayload();
+    virtual bool isEmptyIndexPart() override { return emptyIndexPart; }
     virtual size32_t keyedSize();
     virtual bool isTopLevelKey() const override final;
     virtual bool isFullySorted() override;
@@ -220,9 +222,12 @@ class jhtree_decl CDiskKeyIndex : public CKeyIndex
 {
 private:
     Linked<IFileIO> io;
+    inline static std::atomic<bool> allowZeroLengthIndexPart{false};
     
 public:
     CDiskKeyIndex(unsigned _iD, IFileIO *_io, const char *_name, bool _isTLK, IndexReadOptions _readOptions);
+    static void setAllowZeroLengthIndexPart(bool allow) { allowZeroLengthIndexPart.store(allow); }
+    static bool queryAllowZeroLengthIndexPart() { return allowZeroLengthIndexPart.load(); }
 
     virtual const char *queryFileName() const { return name.get(); }
     virtual const IFileIO *queryFileIO() const override { return io; }

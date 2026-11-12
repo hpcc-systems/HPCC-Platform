@@ -910,6 +910,16 @@ int CJHLegacySearchNode::locateGT(const char * search, unsigned minIndex) const
     return a;
 }
 
+CJHLegacySearchNode *CJHLegacySearchNode::createNullLeaf(CKeyHdr *keyHdr)
+{
+    byte emptyNode[sizeof(NodeHdr) + sizeof(unsigned __int64)] = {};
+    NodeHdr *nodeHdr = reinterpret_cast<NodeHdr *>(emptyNode);
+    nodeHdr->nodeType = NodeLeaf;
+    Owned<CJHLegacySearchNode> emptyLeaf = new CJHLegacySearchNode();
+    emptyLeaf->load(keyHdr, emptyNode, 0, true);
+    return emptyLeaf.getClear();
+}
+
 void CJHLegacySearchNode::load(CKeyHdr *_keyHdr, const void *rawData, offset_t _fpos, bool needCopy)
 {
     CJHSearchNode::load(_keyHdr, rawData, _fpos, needCopy);

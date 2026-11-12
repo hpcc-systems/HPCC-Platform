@@ -97,6 +97,7 @@ interface jhtree_decl IKeyIndex : public IKeyIndexBase
     virtual unsigned querySeeks() = 0;
     virtual size32_t keyedSize() = 0;
     virtual bool hasPayload() = 0;
+    virtual bool isEmptyIndexPart() = 0;
     virtual const char *queryFileName() const = 0;
     virtual unsigned queryId() const = 0;
     virtual offset_t queryBlobHead() = 0;
@@ -183,6 +184,7 @@ extern jhtree_decl bool flushJHtreeCacheOnOOM;
 extern jhtree_decl bool useMemoryMappedIndexes;
 extern jhtree_decl void logNodeCacheStats(const char *prefix);
 extern jhtree_decl void setCheckIndexCrcs(bool check);
+extern jhtree_decl void setAllowZeroLengthIndexPart(bool allow);
 
 #define CHEAP_UCHAR_DEF
 #ifdef _WIN32

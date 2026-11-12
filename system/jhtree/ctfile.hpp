@@ -358,6 +358,7 @@ protected:
 
 public:
 //These are the key functions that need to be implemented for a node that can be searched
+    static CJHLegacySearchNode *createNullLeaf(CKeyHdr *keyHdr);
     inline size32_t getNumKeys() const { return hdr.numKeys; }
     virtual bool getKeyAt(unsigned int num, char *dest) const override;         // Retrieve keyed fields
     virtual bool fetchPayload(unsigned int num, char *dest, PayloadReference & activePayload) const override;     // Retrieve payload fields. Note destination is assumed to already contain keyed fields
