@@ -36,15 +36,14 @@ class EspShell {
         int sendRequest(const char* serviceName, const char* methodName, const char* reqString, const char* resType, const char* reqType, const char* targeturl
         ,const char* port, const char* query);
 
-        bool hasValidService=false, hasValidMethod=false, hasDescribe=false;
+        bool hasDescribe=false;
         bool hasListServices = false, hasListMethods = false, hasHelp=false;
-        bool hasServer = false, hasRequestType = false, hasResponseType = false;
+        bool hasServer = false, hasResponseType = false;
         bool hasUsername = false, hasPassword = false, hasReqStr = false;
         bool hasServiceName = false, hasServiceAndMethodName = false;
         bool hasQuery = false;
         bool hasPort = false;
         bool hasTest = false;
-        bool hasTerse = false;
 
         const char* serviceName = nullptr;
         const char* methodName = nullptr;

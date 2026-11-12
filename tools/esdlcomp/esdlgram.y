@@ -308,7 +308,7 @@ EspServiceMethod
         AddEspMessage();
         CurEspMessage=NULL;
 
-        EspMethodInfo *CurMethod=new EspMethodInfo(CurProc);
+        [[maybe_unused]] EspMethodInfo *CurMethod=new EspMethodInfo(CurProc);
         delete CurProc;
         CurProc=NULL;
 
