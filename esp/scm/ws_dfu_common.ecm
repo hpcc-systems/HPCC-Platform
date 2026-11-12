@@ -59,4 +59,5 @@ ESPStruct DFULogicalFile
     [min_ver("1.63"), nil_remove] int64 MaxSkew;
     [min_ver("1.63"), nil_remove] int64 MinSkewPart;
     [min_ver("1.63"), nil_remove] int64 MaxSkewPart;
+    [min_ver("1.69")] int64 FileSize;
 };

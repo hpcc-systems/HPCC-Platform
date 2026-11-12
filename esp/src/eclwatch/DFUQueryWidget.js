@@ -737,7 +737,7 @@ define([
                         label: nlsHPCC.MinSkew, width: 60,
                         formatter: function (value, row) {
                             if (value) {
-                                return "-" + Utility.formatDecimal(value / 100) + "%";
+                                return Utility.formatDecimal(value / 100, "-", "%");
                             }
                             return "";
                         }
@@ -746,7 +746,7 @@ define([
                         label: nlsHPCC.MaxSkew, width: 60,
                         formatter: function (value, row) {
                             if (value) {
-                                return Utility.formatDecimal(value / 100) + "%";
+                                return Utility.formatDecimal(value / 100, "", "%");
                             }
                             return "";
                         }
