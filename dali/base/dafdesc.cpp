@@ -3250,6 +3250,13 @@ StringBuffer &getLFNDirectoryUsingBaseDir(StringBuffer &result, const char *lnam
     return result.clip();
 }
 
+StringBuffer &getLFNDirectoryUsingBaseDir(StringBuffer &result, const char *lname, const char *baseDir, unsigned stripeNum)
+{
+    StringBuffer stripeBase(isEmptyString(baseDir) ? queryUnknownBaseDirectory(0, DFD_OSdefault) : baseDir);
+    addPathSepChar(stripeBase).append('d').append(stripeNum);
+    return getLFNDirectoryUsingBaseDir(result, lname, stripeBase.str());
+}
+
 StringBuffer &getLFNDirectoryUsingDefaultBaseDir(StringBuffer &result, const char *lname, DFD_OS os)
 {
     const char *baseDir = queryUnknownBaseDirectory(0, os);

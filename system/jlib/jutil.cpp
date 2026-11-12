@@ -1866,6 +1866,29 @@ StringBuffer &expandMask(StringBuffer &buf, const char *mask, unsigned p, unsign
     return buf;
 }
 
+StringBuffer &wildcardMask(StringBuffer &buf, const char *mask)
+{
+    const char *s = mask;
+    if (s)
+        while (*s)
+        {
+            char next = *(s++);
+            if (next == '$')
+            {
+                char placeholder = toupper(s[0]);
+                if ((placeholder == 'P' || placeholder == 'N') && s[1] == '$')
+                {
+                    buf.append('*');
+                    next = 0;
+                    s += 2;
+                }
+            }
+            if (next)
+                buf.append(next);
+        }
+    return buf;
+}
+
 static const char *findExtension(const char *fn)
 {
     if (!fn)

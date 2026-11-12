@@ -346,6 +346,7 @@ extern da_decl StringBuffer &makePhysicalDirectory(StringBuffer &result, const c
 
 // 
 extern da_decl StringBuffer &getLFNDirectoryUsingBaseDir(StringBuffer &result, const char *lname, const char *baseDir);
+extern da_decl StringBuffer &getLFNDirectoryUsingBaseDir(StringBuffer &result, const char *lname, const char *baseDir, unsigned stripeNum);
 extern da_decl StringBuffer &getLFNDirectoryUsingDefaultBaseDir(StringBuffer &result, const char *lname, DFD_OS os);
 
 // set/get defaults

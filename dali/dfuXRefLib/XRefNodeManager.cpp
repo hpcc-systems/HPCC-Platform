@@ -202,7 +202,7 @@ StringBuffer &CXRefNode::serializeBranch(const char *branchName, Owned<IProperty
             StringBuffer filepath(xrefPath);
             addPathSepChar(filepath).append(branchName).append(".xml");
             MemoryBuffer xmlContent;
-            readXrefBranch(branchName, filepath.str(), xrefMaxFileSize, xmlContent); // NB: includes null terminator
+            readTextFileIfPresent(filepath.str(), xrefMaxFileSize, xmlContent); // NB: includes null terminator
             size32_t len = xmlContent.length();
             if (len)
                 buf.setBuffer(len, (char *)xmlContent.detach(), len-1); // NB: StringBuffer::setBuffer strLen (3rd param) includes the null terminator

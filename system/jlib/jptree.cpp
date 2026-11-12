@@ -6928,25 +6928,25 @@ void dbglogXML(const IPropertyTree *tree, unsigned indent, unsigned flags)
     DBGLOG("%s", xml.str());
 }
 
-void saveXML(const char *filename, const IPropertyTree *tree, unsigned indent, unsigned flags)
+void saveXML(const char *filename, const IPropertyTree *tree, unsigned indent, unsigned flags, size32_t preferredBlockSize)
 {
     OwnedIFile ifile = createIFile(filename);
-    saveXML(*ifile, tree, indent, flags);
+    saveXML(*ifile, tree, indent, flags, preferredBlockSize);
 }
 
-void saveXML(IFile &ifile, const IPropertyTree *tree, unsigned indent, unsigned flags)
+void saveXML(IFile &ifile, const IPropertyTree *tree, unsigned indent, unsigned flags, size32_t preferredBlockSize)
 {
     OwnedIFileIO ifileio = ifile.open(IFOcreate);
     if (!ifileio)
         throw MakeStringException(JLIBERR_ParseSavexmlCouldNotFindSToOpen, "saveXML: could not find %s to open", ifile.queryFilename());
-    saveXML(*ifileio, tree, indent, flags);
+    saveXML(*ifileio, tree, indent, flags, preferredBlockSize);
     ifileio->close(); // Ensure errors are reported
 }
 
-void saveXML(IFileIO &ifileio, const IPropertyTree *tree, unsigned indent, unsigned flags)
+void saveXML(IFileIO &ifileio, const IPropertyTree *tree, unsigned indent, unsigned flags, size32_t preferredBlockSize)
 {
     Owned<IIOStream> stream = createIOStream(&ifileio);
-    stream.setown(createBufferedIOStream(stream));
+    stream.setown(createBufferedIOStream(stream, preferredBlockSize));
     saveXML(*stream, tree, indent, flags);
 }
 

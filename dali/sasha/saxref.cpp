@@ -52,6 +52,28 @@
 
 #define DEFAULT_RECENT_CUTOFF_DAYS 1
 
+void saveXRefBranchToPlane(const char *directory, const char *name, IPropertyTree &branch, size32_t blockSize)
+{
+    StringBuffer filepath(directory);
+    addPathSepChar(filepath).append(name).append(".xml");
+    saveXML(filepath.str(), &branch, 0, XML_Format, blockSize);
+}
+
+void getXRefPlanes(const char *requestedPlane, StringArray &planeNames)
+{
+    Owned<IPropertyTreeIterator> planes = getPlanesIterator("data", requestedPlane);
+    ForEach(*planes)
+    {
+        IPropertyTree &plane = planes->query();
+        if (plane.getPropBool("@copy", false) || plane.getPropBool("@hthorplane", false))
+            continue;
+
+        const char *planeName = plane.queryProp("@name");
+        if (!isEmptyString(planeName))
+            planeNames.append(planeName);
+    }
+}
+
 inline bool nextCsvToken(const char *&s,StringBuffer &tok)
 {
     if (!s)
@@ -1061,25 +1083,9 @@ public:
         try
         {
             branch->setProp("Cluster",clustname);
-            StringBuffer filepath(sashaDir);
-            addPathSepChar(filepath).append(name).append(".xml");
-
-            Owned<IFile> file = createIFile(filepath.str());
-            Owned<IFileIO> fileIO = file->open(IFOcreate);
-            if (!fileIO)
-            {
-                warn(filepath.str(), "Failed to create file");
-                return;
-            }
-
-            PROGLOG(LOGPFX "Saving branch %s to %s", name, filepath.str());
-
-            Owned<IFileIOStream> stream = createBufferedIOStream(fileIO, blockSize);
-            saveXML(*stream, branch, 0, XML_Format);
-            stream.clear();
-            fileIO->close();
-
-            PROGLOG(LOGPFX "Saved branch %s to %s", name, filepath.str());
+            PROGLOG(LOGPFX "Saving branch %s to %s", name, sashaDir);
+            saveXRefBranchToPlane(sashaDir, name, *branch, blockSize);
+            PROGLOG(LOGPFX "Saved branch %s to %s", name, sashaDir);
         }
         catch (IException *e)
         {
@@ -1273,7 +1279,7 @@ public:
     bool filterScopesEnabled = false;
     StringArray scopeFilters;
 
-    CNewXRefManager(const IPropertyTree *plane, unsigned maxMb, bool saveToPlane, const char *_scopeFilters)
+    CNewXRefManager(const char *planeName, unsigned maxMb, bool saveToPlane, const char *_scopeFilters)
         : CNewXRefManagerBase(saveToPlane), allocator(maxMb)
     {
         root.reset(cDirDesc::create("", &allocator));
@@ -1290,9 +1296,9 @@ public:
         udesc.setown(createUserDescriptor());
         udesc->set(userName.str(), nullptr);
 
-        if (plane)
+        storagePlane.setown(getStoragePlaneConfig(planeName, false));
+        if (storagePlane)
         {
-            storagePlane.set(plane);
             unsigned numDevices = storagePlane->getPropInt("@numDevices", 1);
             isPlaneStriped = !storagePlane->hasProp("@hostGroup") && (numDevices>1);
             numStripedDevices = isPlaneStriped ? numDevices : 1;
@@ -3004,7 +3010,6 @@ class CSashaXRefServer: public ISashaServer, public Thread
     Mutex runmutex{SYNC_LOCATION};
     bool ignorelazylost, suspendCoalescer;
     Owned<IPropertyTree> props;
-    std::unordered_map<std::string, Linked<IPropertyTree>> storagePlanes;
 
     class cRunThread: public Thread
     {
@@ -3103,19 +3108,13 @@ public:
         StringArray cnames;
         // NB: must be a list of planes only
         ForEachItemIn(i1, list) {
-            const char *planeName = list.item(i1);
-            Owned<IPropertyTreeIterator> planesIter = getPlanesIterator("data", planeName);
-            ForEach(*planesIter) {
-                IPropertyTree &plane = planesIter->query();
-                bool isNotCopy = !plane.getPropBool("@copy", false);
-                bool isNotHthorPlane = !plane.getPropBool("@hthorplane", false);
-                if (isNotCopy && isNotHthorPlane) {
-                    planeName = plane.queryProp("@name");
-                    if (isContainerized()) {
-                        groups.append(planeName);
-                        cnames.append(planeName);
-                    }
-                    storagePlanes[planeName].set(&plane);
+            StringArray planeNames;
+            getXRefPlanes(list.item(i1), planeNames);
+            ForEachItemIn(i2, planeNames) {
+                const char *planeName = planeNames.item(i2);
+                if (isContainerized()) {
+                    groups.append(planeName);
+                    cnames.append(planeName);
                 }
             }
         }
@@ -3162,7 +3161,7 @@ public:
             }
             else
                 maxMb = props->getPropInt("@memoryLimit", DEFAULT_MAXMEMORY);
-            CNewXRefManager manager(storagePlanes[gname],maxMb,saveToPlane,filterScopes);
+            CNewXRefManager manager(gname,maxMb,saveToPlane,filterScopes);
             if (!manager.setGroup(cnames.item(i),gname,groupsdone,dirsdone))
                 continue;
             manager.start(updateeclwatch);

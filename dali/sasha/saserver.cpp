@@ -39,6 +39,7 @@
 #include "saarch.hpp"
 #include "saverify.hpp"
 #include "saxref.hpp"
+#include "saxreflite.hpp"
 #include "sadbghk.hpp"
 #include "saqmon.hpp"
 #include "sacoalescer.hpp"
@@ -179,9 +180,22 @@ void stopSashaServer(const char *eps,unsigned short port)
 
 void usage()
 {
-    printf("Usage: SASERVER   (all configuration parameters in sashaconf.xml)\n"
-           "or:    SASERVER --coalesce [--force]\n"
-           "or:    SASERVER --stop\n");
+    printf("Usage:\n"
+           "  saserver                                      Start Sasha using sashaconf.xml\n"
+           "  saserver --coalesce [--force]                 Coalesce the Sasha datastore\n"
+           "  saserver --stop                               Stop the running Sasha server\n"
+           "  saserver --daliServers=<address> --runExpiry  Run file expiry once\n"
+           "  saserver --daliServers=<address> --runXRefLite [options]\n"
+           "\n"
+           "XRef Lite options:\n"
+           "  --xrefLiteUser=<user>              Dali user for logical-file lookup (default: none)\n"
+           "  --xrefLiteDaysBack=<days>          0 resumes from checkpoint; if omitted, XRef Lite scans all available logs\n"
+           "  --xrefLiteIgnoreLazyLost=<0|1>     Ignore lazy files (default: 1)\n"
+           "  --xrefLiteMaxAtOnce=<count>        Maximum concurrent physical part checks (default: 20)\n"
+           "  --xrefLiteRecentCutoffMinutes=<minutes>  Suppress recently modified files (default: 60)\n"
+           "  --xrefLiteFromFile=<path>          Read audit log records from a file instead of querying audit logs\n"
+           "\n"
+           "  --help, -h                         Show this help\n");
 }
 
 class CSashaCmdThread : public CInterface, implements IPooledThread
@@ -341,6 +355,15 @@ sasha:
 
 int main(int argc, const char* argv[])
 {
+    for (unsigned arg = 1; arg < static_cast<unsigned>(argc); ++arg)
+    {
+        if (streq(argv[arg], "--help") || streq(argv[arg], "-h"))
+        {
+            usage();
+            return EXIT_SUCCESS;
+        }
+    }
+
     if (!checkCreateDaemon(argc, argv))
         return EXIT_FAILURE;
 
@@ -416,9 +439,14 @@ int main(int argc, const char* argv[])
                 writeSentinelFile(sentinelFile);
         }
 #endif
-        // This option is intended to pick up the command line option --runExpiry, e.g. saserver --daliServers=. --runExpiry,
-        // and run the file expiry service directly.
+        // These options run one maintenance operation directly without starting a Sasha request listener.
         bool runExpiry = serverConfig->hasProp("@runExpiry");
+        bool runXRefLite = serverConfig->hasProp("@runXRefLite");
+        if (runExpiry && runXRefLite)
+            throw makeStringException(0, "--runExpiry and --runXRefLite are mutually exclusive");
+        if (runXRefLite && !isDaliClient)
+            throw makeStringException(0, "--runXRefLite requires Dali access");
+        bool runOneShot = runExpiry || runXRefLite;
 
         if (isDaliClient)
         {
@@ -432,11 +460,32 @@ int main(int argc, const char* argv[])
                 return 1;
             }
             Owned<IGroup> serverGroup = createIGroupRetry(daliServer.str(), DALI_SERVER_PORT);
-            initClientProcess(serverGroup, DCR_SashaServer, runExpiry ? 0 : port, nullptr, nullptr, MP_WAIT_FOREVER, true);
+            initClientProcess(serverGroup, DCR_SashaServer, runOneShot ? 0 : port, nullptr, nullptr, MP_WAIT_FOREVER, true);
         }
 
         if (runExpiry)
             runExpiryCLI();
+        else if (runXRefLite)
+        {
+            initializeStoragePlanes(true, true);
+            installDefaultFileHooks(serverConfig);
+            StringBuffer userName;
+            serverConfig->getProp("@xrefLiteUser", userName);
+            bool doFullScan = !serverConfig->hasProp("@xrefLiteDaysBack"); // If daysBack isn't specified, we scan all available logs
+            int daysBack = serverConfig->getPropInt("@xrefLiteDaysBack", 0);
+            if (daysBack < 0)
+                throw makeStringException(0, "--xrefLiteDaysBack cannot be negative");
+            bool ignoreLazyLost = serverConfig->getPropBool("@xrefLiteIgnoreLazyLost", true);
+            int maxAtOnce = serverConfig->getPropInt("@xrefLiteMaxAtOnce", 20);
+            if (maxAtOnce < 0)
+                throw makeStringException(0, "--xrefLiteMaxAtOnce cannot be negative");
+            int recentCutoffMinutes = serverConfig->getPropInt("@xrefLiteRecentCutoffMinutes", 60);
+            if (recentCutoffMinutes < 0)
+                throw makeStringException(0, "--xrefLiteRecentCutoffMinutes cannot be negative");
+            StringBuffer auditLogFile;
+            serverConfig->getProp("@xrefLiteFromFile", auditLogFile);
+            runXRefLiteCLI(userName.str(), doFullScan, static_cast<unsigned>(daysBack), ignoreLazyLost, static_cast<unsigned>(maxAtOnce), static_cast<unsigned>(recentCutoffMinutes), auditLogFile.str());
+        }
         else if (stop)
             stopSashaServer((argc>2)?argv[2]:"", DEFAULT_SASHA_PORT);
         else

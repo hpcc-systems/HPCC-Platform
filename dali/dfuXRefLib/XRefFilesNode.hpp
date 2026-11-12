@@ -31,7 +31,6 @@
 
 // Maximum file size for loading xref data from files (256MB)
 constexpr offset_t xrefMaxFileSize = 0x100000 * 256;
-extern void readXrefBranch(const char *branchName, const char *filePath, offset_t maxFileSize, MemoryBuffer &dst);
 
 
 interface IUserDescriptor;

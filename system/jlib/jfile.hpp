@@ -250,6 +250,8 @@ void jlib_decl _splitpath(const char *path, char *drive, char *dir, char *fname,
 
 
 extern jlib_decl size32_t read(IFileIO * in, offset_t pos, size32_t len, MemoryBuffer & buffer);
+// Fills buffer with the file content followed by a null terminator. Missing and empty files leave buffer unchanged.
+extern jlib_decl void readTextFileIfPresent(const char *filePath, offset_t maxFileSize, MemoryBuffer &buffer);
 extern jlib_decl void renameFile(const char *target, const char *source, bool overwritetarget);
 extern jlib_decl void copyFile(const char *target, const char *source, size32_t buffersize=DEFAULT_COPY_BLKSIZE, ICopyFileProgress *progress=NULL,CFflags copyFlags=CFnone);
 extern jlib_decl void copyFile(IFile * target, IFile * source,size32_t buffersize=DEFAULT_COPY_BLKSIZE, ICopyFileProgress *progress=NULL,CFflags copyFlags=CFnone);

@@ -24,36 +24,6 @@
 #include "jlzw.hpp"
 #include "dautils.hpp"
 
-
-// NB: fills dst with content of xml file at filePath and adds a null terminator
-void readXrefBranch(const char *branchName, const char *filePath, offset_t maxFileSize, MemoryBuffer &dst)
-{
-    Owned<IFile> file = createIFile(filePath);
-    if (file->exists())
-    {
-        Owned<IFileIO> fileIO = file->open(IFOread);
-        if (fileIO)
-        {
-            offset_t fileSize = file->size();
-            if (fileSize > 0) // allow to be empty without error
-            {
-                if (fileSize < maxFileSize)
-                {
-                    dst.ensureCapacity((size32_t)fileSize);
-                    char *ptr = (char *)dst.reserveTruncate((size32_t)fileSize+1);
-                    size32_t bytesRead = fileIO->read(0, (size32_t)fileSize, ptr);
-                    if (bytesRead == 0)
-                        throw makeStringExceptionV(0, "Failed to read %s from file", branchName);
-                    ptr[fileSize] = '\0'; // Ensure null-terminated
-                }
-                else
-                    throw makeStringExceptionV(0, "File exceeds maximum size tolerance (%u MB). File size = %u MB", (unsigned)(maxFileSize / 0x100000), (unsigned)(fileSize / 0x100000));
-            }
-        }
-    }
-}
-
-
 //////////////////////////////////////////////////////////////////////
 // Construction/Destruction
 //////////////////////////////////////////////////////////////////////
@@ -99,7 +69,7 @@ MemoryBuffer &CXRefFilesNode::queryData()
             {
                 StringBuffer filepath(xrefPath);
                 addPathSepChar(filepath).append(branchName).append(".xml");
-                readXrefBranch(branchName, filepath.str(), xrefMaxFileSize, _data);
+                readTextFileIfPresent(filepath.str(), xrefMaxFileSize, _data);
             }
             catch (IException *e)
             {

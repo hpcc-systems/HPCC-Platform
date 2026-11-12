@@ -293,9 +293,9 @@ jlib_decl IPropertyTreeIterator * createSortedIterator(IArrayOf<IPropertyTree> &
 
 jlib_decl StringBuffer &toXML(const IPropertyTree *tree, StringBuffer &ret, unsigned indent = 0, unsigned flags=XML_Format);
 jlib_decl void toXML(const IPropertyTree *tree, IIOStream &out, unsigned indent = 0, unsigned flags=XML_Format);
-jlib_decl void saveXML(const char *filename, const IPropertyTree *tree, unsigned indent = 0, unsigned flags=XML_Format);
-jlib_decl void saveXML(IFile &ifile, const IPropertyTree *tree, unsigned indent = 0, unsigned=XML_Format);
-jlib_decl void saveXML(IFileIO &ifileio, const IPropertyTree *tree, unsigned indent = 0, unsigned flags=XML_Format);
+jlib_decl void saveXML(const char *filename, const IPropertyTree *tree, unsigned indent = 0, unsigned flags=XML_Format, size32_t preferredBlockSize=(unsigned)-1);
+jlib_decl void saveXML(IFile &ifile, const IPropertyTree *tree, unsigned indent = 0, unsigned=XML_Format, size32_t preferredBlockSize=(unsigned)-1);
+jlib_decl void saveXML(IFileIO &ifileio, const IPropertyTree *tree, unsigned indent = 0, unsigned flags=XML_Format, size32_t preferredBlockSize=(unsigned)-1);
 jlib_decl void saveXML(IIOStream &stream, const IPropertyTree *tree, unsigned indent = 0, unsigned flags=XML_Format);
 jlib_decl void printXML(const IPropertyTree *tree, unsigned indent = 0, unsigned flags=XML_Format);
 jlib_decl void dbglogXML(const IPropertyTree *tree, unsigned indent = 0, unsigned flags=XML_Format);

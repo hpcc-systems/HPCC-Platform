@@ -3499,6 +3499,30 @@ size32_t read(IFileIO * in, offset_t pos, size32_t len, MemoryBuffer & buffer)
     return lenRead;
 }
 
+void readTextFileIfPresent(const char *filePath, offset_t maxFileSize, MemoryBuffer &buffer)
+{
+    Owned<IFile> file = createIFile(filePath);
+    if (!file->exists())
+        return;
+
+    Owned<IFileIO> fileIO = file->open(IFOread);
+    if (!fileIO)
+        return;
+
+    offset_t fileSize = fileIO->size();
+    if (fileSize <= 0)
+        return;
+    if (fileSize >= maxFileSize || fileSize > (offset_t)((size32_t)-1))
+        throw makeStringExceptionV(JLIBERR_FileExceedsMaximumSize, "File '%s' exceeds maximum size tolerance (%u MB). File size = %u MB", filePath, (unsigned)(maxFileSize / 0x100000), (unsigned)(fileSize / 0x100000));
+
+    buffer.clear();
+    size32_t expectedSize = (size32_t)fileSize;
+    size32_t bytesRead = read(fileIO, 0, (size32_t)fileSize, buffer);
+    if (bytesRead != expectedSize)
+        throw makeStringExceptionV(JLIBERR_FileReadSizeMismatch, "Failed to read %u bytes from %s. Got %u bytes instead.", expectedSize, filePath, bytesRead);
+    buffer.append((byte)0);
+}
+
 void renameFile(const char *target, const char *source, bool overwritetarget)
 {
     OwnedIFile src = createIFile(source);

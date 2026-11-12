@@ -36,6 +36,7 @@ set (    SRCS
          sautil.cpp 
          saverify.cpp 
          saxref.cpp 
+         saxreflite.cpp
          sadbghk.cpp
     )
 
