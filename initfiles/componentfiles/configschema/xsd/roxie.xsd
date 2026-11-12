@@ -266,6 +266,9 @@
                     <xs:attribute name="logFullQueries" type="xs:boolean" hpcc:displayName="Log Full Queries"
                                   hpcc:presetValue="false"
                                   hpcc:tooltip="Log full text (unless blindLogging) and resource usage of all queries received"/>
+                    <xs:attribute name="logControlQueries" type="xs:boolean" hpcc:displayName="Log Control Queries"
+                                  hpcc:presetValue="false"
+                                  hpcc:tooltip="Log all control: queries with the client address, including any proxy/X-Forwarded-For details"/>
                     <xs:attribute name="blindLogging" type="xs:boolean" hpcc:displayName="Blind Logging"
                                   hpcc:presetValue="false"
                                   hpcc:tooltip="Suppress all logging of any data or query text"/>
@@ -474,6 +477,15 @@
 
                 <xs:sequence>
 
+                    <xs:element name="expert" hpcc:displayName="Expert" minOccurs="0">
+                        <xs:complexType>
+                            <xs:sequence>
+                                <xs:any namespace="##any" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
+                            </xs:sequence>
+                            <xs:anyAttribute namespace="##any" processContents="lax"/>
+                        </xs:complexType>
+                    </xs:element>
+
                     <!-- the element set may need to relate to how current config manager displays these as children of
                          Roxie Ports, each child being named based on the 'name' attribute below,
                          Also, they are currently collected under the Ports tab in current config mgr -->
@@ -494,7 +506,8 @@
                             <xs:attribute name="aclName" hpcc:displayName="ACL" type="xs:string"
                                           hpcc:tooltip="Name of any Access Control List to use"/>
                             <xs:attribute name="protocol" hpcc:displayName="Protocol" use="required"
-                                          hpcc:presetValue="native" hpcc:tooltip="Protocol to use">
+                                          hpcc:presetValue="native"
+                                          hpcc:tooltip="Protocol used by external clients. For TLS ports behind a trusted PROXY protocol load balancer, enable useTLSProxy on this listener">
                                 <xs:simpleType>
                                     <xs:restriction base="xs:string">
                                         <xs:enumeration value="native" hpcc:description=""/>
@@ -502,6 +515,9 @@
                                     </xs:restriction>
                                 </xs:simpleType>
                             </xs:attribute>
+                            <xs:attribute name="useTLSProxy" type="xs:boolean"
+                                          hpcc:displayName="TLS PROXY v1/v2" hpcc:presetValue="false"
+                                          hpcc:tooltip="Enable TLS PROXY protocol v1/v2 headers from a trusted load balancer on this TLS listener"/>
                             <xs:attribute name="passphrase" hpcc:displayName="Pass Phrase" hpcc:modifiers="password"
                                           hpcc:requiredIf=".[@certificateFilename]"
                                           type="xs:string" hpcc:tooltip="Pass phrase for cert"/>

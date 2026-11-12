@@ -1,0 +1,45 @@
+# Node-local storage for single-node kind development clusters.
+storage:
+  planes:
+  - name: dali
+    category: dali
+    prefix: /var/lib/HPCCSystems/dalistorage
+    storageClass: standard
+    storageSize: 1Gi
+    storageMode: ReadWriteOnce
+    forcePermissions: true
+  - name: sasha
+    category: sasha
+    prefix: /var/lib/HPCCSystems/sashastorage
+    storageClass: standard
+    storageSize: 1Gi
+    storageMode: ReadWriteOnce
+    forcePermissions: true
+  - name: dll
+    category: dll
+    prefix: /var/lib/HPCCSystems/queries
+    storageClass: standard
+    storageSize: 1Gi
+    storageMode: ReadWriteOnce
+    forcePermissions: true
+  - name: data
+    category: data
+    prefix: /var/lib/HPCCSystems/hpcc-data
+    storageClass: standard
+    storageSize: 1Gi
+    storageMode: ReadWriteOnce
+    forcePermissions: true
+  - name: mydropzone
+    category: lz
+    prefix: /var/lib/HPCCSystems/mydropzone
+    storageClass: standard
+    storageSize: 1Gi
+    storageMode: ReadWriteOnce
+    forcePermissions: true
+  - name: debug
+    category: debug
+    prefix: /var/lib/HPCCSystems/debug
+    storageClass: standard
+    storageSize: 1Gi
+    storageMode: ReadWriteOnce
+    forcePermissions: true

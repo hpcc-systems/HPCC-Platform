@@ -67,9 +67,16 @@ jobs:
           echo "pwd: $(pwd)"
           while read test
           do
-            echo "$test" | tee -a $logFile
+            echo "Suite START: $test | timestamp=$(date -u +%Y-%m-%dT%H:%M:%SZ)" | tee -a $logFile
             echo "--------------------------------------" | tee -a  $logFile
-            sudo /opt/HPCCSystems/bin/unittests -e "$test" 2>&1 | tee -a $logFile
+            suiteStart=$SECONDS
+            suiteStatus=0
+            sudo /opt/HPCCSystems/bin/unittests -e "$test" 2>&1 | tee -a $logFile || suiteStatus=$?
+            suiteElapsed=$((SECONDS - suiteStart))
+            echo "Suite END: $test | timestamp=$(date -u +%Y-%m-%dT%H:%M:%SZ) | elapsed=${suiteElapsed}s | exit=$suiteStatus" | tee -a $logFile
+            if [[ $suiteStatus -ne 0 ]]; then
+              exit "$suiteStatus"
+            fi
             echo " " | tee -a $logFile
           done< <(/opt/HPCCSystems/bin/unittests -l | sort )
 

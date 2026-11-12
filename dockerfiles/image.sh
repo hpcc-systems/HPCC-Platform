@@ -14,14 +14,7 @@ trap 'trapFunc "${LINENO}/${BASH_LINENO}" "$?" "$BASH_COMMAND"' ERR
 
 globals() {
     detect_arch
-    SCRIPT_DIR="$( cd -- "$( dirname -- "${BASH_SOURCE[0]:-$0}"; )" &> /dev/null && pwd 2> /dev/null; )"
     ROOT_DIR=$(git rev-parse --show-toplevel)
-
-    set +e
-    if [ -f "$ROOT_DIR/.env" ]; then
-        export $(grep -v '^#' "$ROOT_DIR/.env" | sed -e 's/\r$//' | xargs) > /dev/null
-    fi
-    set -e
 
     GIT_REF=$(git rev-parse --short=8 HEAD)
     GIT_BRANCH=$(git branch --show-current)
@@ -44,7 +37,7 @@ globals() {
     fi
     if [ "$ARCH" == "arm64" ]; then
         VCPKG_REF="$VCPKG_REF-arm"
-        RELEASE_BASE_IMAGE="arm64v8/$RELEASE_BASE_IMAGE"
+        RELEASE_BASE_IMAGE="docker.io/arm64v8/${RELEASE_BASE_IMAGE##*/}"
         DOCKER_PLATFORM="--platform linux/arm64"
         TARGETARCH="arm64"
     else
@@ -53,20 +46,20 @@ globals() {
     fi
     DOCKER_USERNAME="${DOCKER_USERNAME:-hpccbuilds}"
 
-    CMAKE_OPTIONS="-G Ninja -DCPACK_THREADS=$(docker info --format '{{.NCPU}}') -DUSE_OPTIONAL=OFF -DCONTAINERIZED=ON -DINCLUDE_PLUGINS=ON -DSUPPRESS_V8EMBED=ON -DVCPKG_AUTO_UPDATE_SUBMODULE=OFF"
+    CMAKE_OPTIONS="-G Ninja -DCPACK_THREADS=$(container_cpus) -DUSE_OPTIONAL=OFF -DCONTAINERIZED=ON -DINCLUDE_PLUGINS=ON -DSUPPRESS_V8EMBED=ON -DVCPKG_AUTO_UPDATE_SUBMODULE=OFF"
     if [ "$USE_CPPUNIT" -eq 1 ]; then
         CMAKE_OPTIONS="$CMAKE_OPTIONS -DUSE_CPPUNIT=ON"
     fi
 
     if [ "$TAG_BUILD" -eq 1 ]; then
         HPCC_BUILD="hpcc_build_$MODE-$IMAGE_BRANCH_TAG"
-        if ! docker volume inspect "$HPCC_BUILD" >/dev/null 2>&1; then
-            if docker volume inspect "hpcc_build_$MODE" >/dev/null 2>&1; then
-                docker volume create --name "$HPCC_BUILD"
-                docker container run --rm -it \
-                    -v "hpcc_build_$MODE":/from \
-                    -v "$HPCC_BUILD":/to \
-                    alpine ash -c "cd /from ; cp -av . /to"
+        if ! container_volume inspect "$HPCC_BUILD" >/dev/null 2>&1; then
+            if container_volume inspect "hpcc_build_$MODE" >/dev/null 2>&1; then
+                container_volume create "$HPCC_BUILD"
+                container_run --rm -it \
+                    --mount "type=volume,source=hpcc_build_$MODE,target=/from" \
+                    --mount "type=volume,source=$HPCC_BUILD,target=/to" \
+                    docker.io/library/alpine ash -c "cd /from ; cp -av . /to"
             fi
         fi        
     else
@@ -76,7 +69,7 @@ globals() {
 
 create_build_image() {
     echo "--- Create 'build-$BUILD_OS:$VCPKG_REF' image---"
-    docker build --rm $DOCKER_PLATFORM -f "$SCRIPT_DIR/$BUILD_OS.dockerfile" \
+    container_build --rm $DOCKER_PLATFORM -f "$SCRIPT_DIR/$BUILD_OS.dockerfile" \
         -t build-$BUILD_OS:$VCPKG_REF \
         --build-arg DOCKER_NAMESPACE=$DOCKER_USERNAME \
         --build-arg VCPKG_REF=$VCPKG_REF \
@@ -86,7 +79,7 @@ create_build_image() {
 create_platform_core_image() {
     local base=$1
     echo "--- Create 'platform-core:release' image ---"
-    docker build --rm $DOCKER_PLATFORM -f "$SCRIPT_DIR/platform-core-$BUILD_OS.dockerfile" \
+    container_build --rm $DOCKER_PLATFORM -f "$SCRIPT_DIR/platform-core-$BUILD_OS.dockerfile" \
         -t platform-core:release \
         --build-arg BASE_IMAGE=$base \
         --build-arg TARGETARCH=$TARGETARCH \
@@ -94,7 +87,7 @@ create_platform_core_image() {
 
     if [ "$MODE" = "debug" ]; then
         echo "--- Create 'platform-core:debug' image ---"
-        docker build --rm $DOCKER_PLATFORM -f "$SCRIPT_DIR/platform-core-debug-$BUILD_OS.dockerfile" \
+        container_build --rm $DOCKER_PLATFORM -f "$SCRIPT_DIR/platform-core-debug-$BUILD_OS.dockerfile" \
             -t platform-core:debug \
             --build-arg BASE_IMAGE=platform-core:release \
             --build-arg TARGETARCH=$TARGETARCH \
@@ -103,7 +96,7 @@ create_platform_core_image() {
 
     if [ "$MODE" = "relwithdebinfo" ]; then
         echo "--- Create 'platform-core:relwithdebinfo' image ---"
-        docker build --rm $DOCKER_PLATFORM -f "$SCRIPT_DIR/platform-core-debug-$BUILD_OS.dockerfile" \
+        container_build --rm $DOCKER_PLATFORM -f "$SCRIPT_DIR/platform-core-debug-$BUILD_OS.dockerfile" \
             -t platform-core:relwithdebinfo \
             --build-arg BASE_IMAGE=platform-core:release \
             --build-arg TARGETARCH=$TARGETARCH \
@@ -116,39 +109,40 @@ finalize_platform_core_image() {
     local cmd=$2
     local image_name=platform-core:$MODE
     echo "--- Finalize '$image_name' image ---"
-    if [ "$ACTION" == "incr" ] && [[ $(docker images -q incr-core:$MODE 2> /dev/null) ]]; then
+    if [ "$ACTION" == "incr" ] && container_image_exists incr-core:$MODE; then
         local image_name=incr-core:$MODE
         echo "--- Incremental '$image_name' image ---"
     fi
-    local CONTAINER=$(docker run -d $DOCKER_PLATFORM \
+    local CONTAINER
+    CONTAINER=$(container_run -d $DOCKER_PLATFORM \
         --mount source=hpcc_src,target=/hpcc-dev/HPCC-Platform,type=volume \
         --mount source=$HPCC_BUILD,target=/hpcc-dev/build,type=volume \
         $image_name "tail -f /dev/null")
-    docker exec --user root $CONTAINER /bin/bash -c "$cmd"
-    docker exec --user root $CONTAINER /bin/bash -c "eclcc -pch"
-    docker commit $CONTAINER hpccsystems/platform-core:$IMAGE_BRANCH_TAG-$MODE-$crc
-    docker rm -f $CONTAINER
+    container_exec --user root $CONTAINER /bin/bash -c "$cmd"
+    container_exec --user root $CONTAINER /bin/bash -c "eclcc -pch"
+    container_commit $CONTAINER hpccsystems/platform-core:$IMAGE_BRANCH_TAG-$MODE-$crc
+    container_remove $CONTAINER
 
     if [ "$MODE" = "debug" ] || [ "$MODE" = "relwithdebinfo" ]; then
         # Add sources
         echo "--- Adding sources to '$image_name' image ---"
-        local CONTAINER=$(docker run -d $DOCKER_PLATFORM \
+        CONTAINER=$(container_run -d $DOCKER_PLATFORM \
             --mount source=$ROOT_DIR,target=/hpcc-dev/HPCC-Platform-local,type=bind,readonly \
             --mount source=$HPCC_BUILD,target=/hpcc-dev/build,type=volume \
             hpccsystems/platform-core:$IMAGE_BRANCH_TAG-$MODE-$crc "tail -f /dev/null")
-        docker exec --user root --workdir /hpcc-dev $CONTAINER /bin/bash -c "rm -rf /hpcc-dev/HPCC-Platform && mkdir /hpcc-dev/HPCC-Platform && chown -R hpcc:hpcc /hpcc-dev/HPCC-Platform"
-        docker exec --user root --workdir /hpcc-dev $CONTAINER /bin/bash -c "rsync -a --delete --exclude='.git*' --filter=':- .gitignore' $RSYNC_PROGRESS_ARGS /hpcc-dev/HPCC-Platform-local/ /hpcc-dev/HPCC-Platform/ && chown -R hpcc:hpcc /hpcc-dev/HPCC-Platform"
-        docker exec --user root --workdir /hpcc-dev $CONTAINER /bin/bash -c "find /hpcc-dev/HPCC-Platform -exec touch -r /hpcc-dev/build/CMakeCache.txt {} +"
-        docker commit $CONTAINER hpccsystems/platform-core:$IMAGE_BRANCH_TAG-$MODE-$crc
-        docker rm -f $CONTAINER
+        container_exec --user root --workdir /hpcc-dev $CONTAINER /bin/bash -c "rm -rf /hpcc-dev/HPCC-Platform && mkdir /hpcc-dev/HPCC-Platform && chown -R hpcc:hpcc /hpcc-dev/HPCC-Platform"
+        container_exec --user root --workdir /hpcc-dev $CONTAINER /bin/bash -c "rsync -a --delete --exclude='.git*' --filter=':- .gitignore' $RSYNC_PROGRESS_ARGS /hpcc-dev/HPCC-Platform-local/ /hpcc-dev/HPCC-Platform/ && chown -R hpcc:hpcc /hpcc-dev/HPCC-Platform"
+        container_exec --user root --workdir /hpcc-dev $CONTAINER /bin/bash -c "find /hpcc-dev/HPCC-Platform -exec touch -r /hpcc-dev/build/CMakeCache.txt {} +"
+        container_commit $CONTAINER hpccsystems/platform-core:$IMAGE_BRANCH_TAG-$MODE-$crc
+        container_remove $CONTAINER
     fi
 
-    docker tag hpccsystems/platform-core:$IMAGE_BRANCH_TAG-$MODE-$crc incr-core:$MODE
+    container_tag hpccsystems/platform-core:$IMAGE_BRANCH_TAG-$MODE-$crc incr-core:$MODE
     
     # Create additional name tag if specified
     if [ -n "$NAME_TAG" ]; then
         echo "--- Creating additional tag: $NAME_TAG ---"
-        docker tag hpccsystems/platform-core:$IMAGE_BRANCH_TAG-$MODE-$crc hpccsystems/platform-core:$NAME_TAG
+        container_tag hpccsystems/platform-core:$IMAGE_BRANCH_TAG-$MODE-$crc hpccsystems/platform-core:$NAME_TAG
     fi
 }
 
@@ -160,24 +154,24 @@ finalize_platform_core_image_from_folder() {
     local build_folder=$(realpath "$DEB_FILE")
     local source_folder=$(grep "CMAKE_HOME_DIRECTORY:INTERNAL" $build_folder/CMakeCache.txt | cut -d "=" -f 2)
     echo "--- Finalize '$build_folder' image ---"
-    CONTAINER=$(docker run -d $DOCKER_PLATFORM \
+    CONTAINER=$(container_run -d $DOCKER_PLATFORM \
         --mount source=$source_folder,target=$source_folder,type=bind \
         --mount source=$build_folder,target=$build_folder,type=bind \
         $image_name "tail -f /dev/null")
-    docker exec --user root $CONTAINER /bin/bash -c "cmake --install $build_folder --prefix /opt/HPCCSystems"
-    docker exec --user root $CONTAINER /bin/bash -c "eclcc -pch"
+    container_exec --user root $CONTAINER /bin/bash -c "cmake --install $build_folder --prefix /opt/HPCCSystems"
+    container_exec --user root $CONTAINER /bin/bash -c "eclcc -pch"
     echo "--- Commit '$build_folder' image ---"
-    docker commit $CONTAINER hpccsystems/platform-core:build
+    container_commit $CONTAINER hpccsystems/platform-core:build
     echo "--- Remove '$CONTAINER' container ---"
-    docker rm -f $CONTAINER
+    container_remove $CONTAINER
     
     # Create additional name tag if specified
     if [ -n "$NAME_TAG" ]; then
         echo "--- Creating additional tag: $NAME_TAG ---"
-        docker tag hpccsystems/platform-core:build hpccsystems/platform-core:$NAME_TAG
+        container_tag hpccsystems/platform-core:build hpccsystems/platform-core:$NAME_TAG
     fi
     
-    echo "docker run --entrypoint /bin/bash -it platform-core:build"
+    echo "${CONTAINER_RUNTIME} run --entrypoint /bin/bash -it platform-core:build"
     echo "platform-core:build"
 }
 
@@ -194,30 +188,30 @@ finalize_platform_core_image_from_deb() {
 
     local image_name=platform-core:$MODE
     echo "--- Finalize '$filename' image ---"
-    CONTAINER=$(docker run -d $DOCKER_PLATFORM \
+    CONTAINER=$(container_run -d $DOCKER_PLATFORM \
         --mount source=$deb_file,target=/tmp/hpcc.deb,type=bind \
         --mount source=$HPCC_BUILD,target=/hpcc-dev/build,type=volume \
         $image_name "tail -f /dev/null")
-    docker exec --user root $CONTAINER /bin/bash -c "dpkg -i /tmp/hpcc.deb && apt-get install -f -y"
-    docker exec --user root $CONTAINER /bin/bash -c "eclcc -pch"
-    docker commit $CONTAINER hpccsystems/platform-core:$filename
-    docker rm -f $CONTAINER
+    container_exec --user root $CONTAINER /bin/bash -c "dpkg -i /tmp/hpcc.deb && apt-get install -f -y"
+    container_exec --user root $CONTAINER /bin/bash -c "eclcc -pch"
+    container_commit $CONTAINER hpccsystems/platform-core:$filename
+    container_remove $CONTAINER
     
     # Create additional name tag if specified
     if [ -n "$NAME_TAG" ]; then
         echo "--- Creating additional tag: $NAME_TAG ---"
-        docker tag hpccsystems/platform-core:$filename hpccsystems/platform-core:$NAME_TAG
+        container_tag hpccsystems/platform-core:$filename hpccsystems/platform-core:$NAME_TAG
     fi
 }
 
 clean() {
     echo "--- Clean  ---"
-    docker volume rm hpcc_src hpcc_build hpcc_build_debug hpcc_build_release hpcc_opt 2>/dev/null || true
+    container_volume rm hpcc_src hpcc_build hpcc_build_debug hpcc_build_release hpcc_opt 2>/dev/null || true
 }
 
 run() {
     local cmd=$1
-    docker run --rm $DOCKER_PLATFORM \
+    container_run --rm $DOCKER_PLATFORM \
         --mount source=$ROOT_DIR,target=/hpcc-dev/HPCC-Platform-local,type=bind,readonly \
         --mount source=hpcc_src,target=/hpcc-dev/HPCC-Platform,type=volume \
         --mount source=$HPCC_BUILD,target=/hpcc-dev/build,type=volume \
@@ -228,7 +222,7 @@ run() {
 
 init_hpcc_src() {
     echo "--- Init hpcc_src volume ---"
-    if ! docker volume ls -q -f name=hpcc_src | grep -q hpcc_src; then
+    if ! container_volume inspect hpcc_src >/dev/null 2>&1; then
         echo "--- Sync all sources to hpcc_src (without git metadata) ---"
         run "rsync -a --delete --exclude='.git*' --filter=':- .gitignore' $RSYNC_PROGRESS_ARGS /hpcc-dev/HPCC-Platform-local/ /hpcc-dev/HPCC-Platform/"
     fi
@@ -291,10 +285,9 @@ sync_files() {
 check_cache() {
     local crc=$1
     echo "--- Check cache hpccsystems/platform-core:$IMAGE_BRANCH_TAG-$MODE-$crc ---"
-    image_count=$(docker images --quiet hpccsystems/platform-core:$IMAGE_BRANCH_TAG-$MODE-$crc | wc -l)
-    if [ $image_count -gt 0 ]; then
+    if container_image_exists hpccsystems/platform-core:$IMAGE_BRANCH_TAG-$MODE-$crc; then
         echo "--- Image already exists  --- "
-        echo "docker run --entrypoint /bin/bash -it hpccsystems/platform-core:$IMAGE_BRANCH_TAG-$MODE-$crc"
+        echo "${CONTAINER_RUNTIME} run --entrypoint /bin/bash -it hpccsystems/platform-core:$IMAGE_BRANCH_TAG-$MODE-$crc"
         echo "hpccsystems/platform-core:$IMAGE_BRANCH_TAG-$MODE-$crc"
         rm $RSYNC_TMP_FILE
         exit 0
@@ -367,7 +360,7 @@ build() {
             "cmake --install /hpcc-dev/build --prefix /opt/HPCCSystems"
     fi
 
-    echo "docker run --entrypoint /bin/bash -it hpccsystems/platform-core:$IMAGE_BRANCH_TAG-$MODE-$crc"
+    echo "${CONTAINER_RUNTIME} run --entrypoint /bin/bash -it hpccsystems/platform-core:$IMAGE_BRANCH_TAG-$MODE-$crc"
     echo "hpccsystems/platform-core:$IMAGE_BRANCH_TAG-$MODE-$crc"
     exit 0
 }
@@ -428,6 +421,7 @@ status() {
     echo "GIT_BRANCH: $GIT_BRANCH"
     echo "VCPKG_REF: $VCPKG_REF"
     echo "DOCKER_USERNAME: $DOCKER_USERNAME"
+    echo "CONTAINER_RUNTIME: $CONTAINER_RUNTIME"
     echo "ACTION: $ACTION"
     echo "MODE: $MODE"
     echo "RECONFIGURE: $RECONFIGURE"
@@ -457,6 +451,7 @@ usage() {
     echo "  -a, --architecture      override default architecture (x64 or arm64)"
     echo "  -n, --name-tag          create an additional tag with the specified name for the final image"
     echo "  -c, --cppunit           enable CppUnit tests (adds -DUSE_CPPUNIT=ON to CMake options)"
+    echo "Set CONTAINER_RUNTIME=docker or podman to override automatic runtime selection."
 }
 
 # Set default values
@@ -465,7 +460,7 @@ MODE="release"
 RECONFIGURE=0
 DEB_FILE=""
 BUILD_OS="ubuntu-22.04"
-RELEASE_BASE_IMAGE="ubuntu:22.04" # Matches vcpkg base image (does not need to be an exact match)
+RELEASE_BASE_IMAGE="docker.io/library/ubuntu:22.04" # Matches vcpkg base image (does not need to be an exact match)
 TAG_BUILD=0
 ARCH=""
 NAME_TAG=""
@@ -537,6 +532,13 @@ case $key in
         ;;
 esac
 done
+
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
+source "${SCRIPT_DIR}/chainguard/container-engine.sh"
+case "${CONTAINER_RUNTIME}" in
+    docker|podman) ;;
+    *) echo "image.sh requires Docker or Podman for named volumes and container commits; selected runtime: ${CONTAINER_RUNTIME}" >&2; exit 1 ;;
+esac
 
 # `clean` should not depend on full environment initialization.
 if [ "$ACTION" = "clean" ]; then

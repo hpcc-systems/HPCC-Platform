@@ -29,7 +29,7 @@
 
 //================================================================================================================================
 
-IHpccProtocolListener *createProtocolListener(const char *protocol, IHpccProtocolMsgSink *sink, unsigned port, unsigned listenQueue, const ISyncedPropertyTree *tlsConfig);
+IHpccProtocolListener *createProtocolListener(const char *protocol, IHpccProtocolMsgSink *sink, unsigned port, unsigned listenQueue, const ISyncedPropertyTree *tlsConfig, bool useTLSProxy);
 
 class CHpccProtocolPlugin : implements IHpccProtocolPlugin, public CInterface
 {
@@ -60,9 +60,9 @@ public:
         maxHttpConnectionRequests = ctx.ctxGetPropInt("@maxHttpConnectionRequests", 0);
         maxHttpKeepAliveWait = ctx.ctxGetPropInt("@maxHttpKeepAliveWait", 5000); // In milliseconds
     }
-    IHpccProtocolListener *createListener(const char *protocol, IHpccProtocolMsgSink *sink, unsigned port, unsigned listenQueue, const char *config, const ISyncedPropertyTree *tlsConfig)
+    IHpccProtocolListener *createListener(const char *protocol, IHpccProtocolMsgSink *sink, unsigned port, unsigned listenQueue, const char *config, const ISyncedPropertyTree *tlsConfig, bool useTLSProxy)
     {
-        return createProtocolListener(protocol, sink, port, listenQueue, tlsConfig);
+        return createProtocolListener(protocol, sink, port, listenQueue, tlsConfig, useTLSProxy);
     }
 public:
     StringArray targetNames;
@@ -226,11 +226,12 @@ class ProtocolSocketListener : public ProtocolListener
     SocketEndpoint ep;
     StringAttr protocol;
     Owned<ISecureSocketContext> secureContext;
+    bool useTLSProxy;
     bool isSSL = false;
 
 public:
-    ProtocolSocketListener(IHpccProtocolMsgSink *_sink, unsigned _port, unsigned _listenQueue, const char *_protocol, const ISyncedPropertyTree *_tlsConfig)
-      : ProtocolListener(_sink)
+    ProtocolSocketListener(IHpccProtocolMsgSink *_sink, unsigned _port, unsigned _listenQueue, const char *_protocol, const ISyncedPropertyTree *_tlsConfig, bool _useTLSProxy)
+        : ProtocolListener(_sink), useTLSProxy(_useTLSProxy)
     {
         port = _port;
         listenQueue = _listenQueue;
@@ -298,6 +299,8 @@ public:
         try
         {
             ssock.setown(secureContext->createSecureSocket(base));
+            if (useTLSProxy)
+                ssock->setAllowProxyHeader();
             int loglevel = SSLogMin;
             if (doTrace(traceSockets))
                 loglevel = SSLogMax;
@@ -1534,8 +1537,8 @@ public:
 
 static Owned<IActiveQueryLimiterFactory> queryLimiterFactory;
 static constexpr const char * FORWARDED_FOR_ADDRESS_HEADER_NAME = "X-Forwarded-For";
-// Extract original client IP from headers or inline properties, update peer input param
-static inline void updatePeerAddressFromHeaders(StringBuffer & peer, const IProperties * headers)
+// Extract original client IP from the forwarded-for header, update peer input param
+static inline bool updatePeerAddressFromHeaders(StringBuffer & peer, const IProperties * headers)
 {
     StringBuffer originalClientAddress;
     const char *forwardedFor = headers->queryProp(FORWARDED_FOR_ADDRESS_HEADER_NAME);
@@ -1553,7 +1556,27 @@ static inline void updatePeerAddressFromHeaders(StringBuffer & peer, const IProp
     {
         if (!originalClientAddress.isEmpty() && (peer.isEmpty() || !streq(originalClientAddress.str(), peer.str())))
             peer.set(originalClientAddress);
+        return true;
     }
+    return false;
+}
+
+static const char * formatControlQueryPeer(StringBuffer & formattedPeer, const char * peerStr, const char * tlsProxySource, const char * socketPeer, bool hasValidForwardedFor)
+{
+    if (hasValidForwardedFor)
+    {
+        if (isEmptyString(tlsProxySource) || isEmptyString(socketPeer))
+            return peerStr;
+
+        formattedPeer.append(peerStr).append(" (").append(tlsProxySource).append(" (").append(socketPeer).append("))");
+        return formattedPeer.str();
+    }
+
+    if (isEmptyString(peerStr) || isEmptyString(socketPeer) || streq(peerStr, socketPeer))
+        return peerStr;
+
+    formattedPeer.append(peerStr).append(" (").append(socketPeer).append(')');
+    return formattedPeer.str();
 }
 
 class RoxieSocketWorker : public ProtocolQueryWorker
@@ -1876,6 +1899,19 @@ readAnother:
         StringBuffer sanitizedText;
         StringBuffer peerStr;
         peer.getHostText(peerStr);
+        StringBuffer tlsProxySource;
+        bool hasValidForwardedFor = false;
+#ifdef _USE_OPENSSL
+        SocketEndpoint proxyPeerEndpoint;
+        ISocket *clientSocket = client ? client->querySocket() : nullptr;
+        if (clientSocket && clientSocket->queryProxyPeerEndpoint(proxyPeerEndpoint))
+        {
+            proxyPeerEndpoint.getHostText(tlsProxySource);
+            peerStr.set(tlsProxySource);
+        }
+#endif
+        if (isHTTP && httpHelper.queryRequestHeaders())
+            hasValidForwardedFor = updatePeerAddressFromHeaders(peerStr, httpHelper.queryRequestHeaders());
         const char *uid = "-";
 
         StringAttr queryName;
@@ -1929,6 +1965,12 @@ readAnother:
                 {
                     VStringBuffer fullname("control:%s", queryName.str()); //just easier to keep for debugging and internal checking
                     queryPT->renameProp("/", fullname);
+                }
+                if (logControlQueries.load(std::memory_order_relaxed))
+                {
+                    StringBuffer socketPeer, controlPeer;
+                    peer.getHostText(socketPeer);
+                    logctx.CTXLOG("CONTROL: %s from %s", queryPT->queryName(), formatControlQueryPeer(controlPeer, peerStr, tlsProxySource, socketPeer, hasValidForwardedFor));
                 }
                 Owned<IHpccProtocolResponse> protocol = createProtocolResponse(queryPT->queryName(), client, httpHelper, logctx, protocolFlags | HPCC_PROTOCOL_CONTROL, global->defaultXmlReadFlags);
                 sink->onControlMsg(msgctx, queryPT, protocol);
@@ -1984,9 +2026,9 @@ readAnother:
                 __uint64 timeProcessQueryText = xmlTimer.elapsedNs();
 
                 // Update peer address to use original client IP if available from proxy headers
-                updatePeerAddressFromHeaders(peerStr, isHTTP ? httpHelper.queryRequestHeaders() : inlineHeaders);
+                hasValidForwardedFor = updatePeerAddressFromHeaders(peerStr, isHTTP ? httpHelper.queryRequestHeaders() : inlineHeaders);
 
-                msgctx->startSpan(uid, querySetName, queryName, isHTTP ? httpHelper.queryRequestHeaders() : inlineHeaders, &spanStartTimeStamp);
+                msgctx->startSpan(uid, querySetName, queryName, isHTTP ? httpHelper.queryRequestHeaders() : inlineHeaders, tlsProxySource.str(), &spanStartTimeStamp);
 
                 //This must be set after the startSpan - since that resets the stats in the logctx
                 logctx.noteStatistic(StTimeQueryConsume, timeProcessQueryText); // include in the span and complete lines.
@@ -2303,7 +2345,7 @@ void ProtocolSocketListener::runOnce(const char *query)
     p->runOnce(query);
 }
 
-IHpccProtocolListener *createProtocolListener(const char *protocol, IHpccProtocolMsgSink *sink, unsigned port, unsigned listenQueue, const ISyncedPropertyTree *tlsConfig)
+IHpccProtocolListener *createProtocolListener(const char *protocol, IHpccProtocolMsgSink *sink, unsigned port, unsigned listenQueue, const ISyncedPropertyTree *tlsConfig, bool useTLSProxy)
 {
     if (traceLevel)
     {
@@ -2316,7 +2358,7 @@ IHpccProtocolListener *createProtocolListener(const char *protocol, IHpccProtoco
         }
         DBGLOG("Creating Roxie socket listener, protocol %s, issuer=%s, pool size %d, listen queue %d%s", protocol, certIssuer, sink->getPoolSize(), listenQueue, sink->getIsSuspended() ? " SUSPENDED":"");
     }
-    return new ProtocolSocketListener(sink, port, listenQueue, protocol, tlsConfig);
+    return new ProtocolSocketListener(sink, port, listenQueue, protocol, tlsConfig, useTLSProxy);
 }
 
 extern IHpccProtocolPlugin *loadHpccProtocolPlugin(IHpccProtocolPluginContext *ctx, IActiveQueryLimiterFactory *_limiterFactory)
@@ -2350,9 +2392,28 @@ class CcdProtocolUnitTests : public CppUnit::TestFixture
         CPPUNIT_TEST(testWhiteSpaceForwardForHeaderExtraction);
         CPPUNIT_TEST(testInvalidIpForwardForHeaderExtraction);
         CPPUNIT_TEST(testValidIpv6ForwardForHeaderExtraction);
+        CPPUNIT_TEST(testIgnoresTLSProxySourceHeader);
+        CPPUNIT_TEST(testForwardedForOverridesTLSProxySourceHeader);
+        CPPUNIT_TEST(testInvalidForwardedForDoesNotUseTLSProxySourceHeader);
+        CPPUNIT_TEST(testControlQueryPeerFormatting);
     CPPUNIT_TEST_SUITE_END();
 
 public:
+    void testControlQueryPeerFormatting()
+    {
+        StringBuffer formattedPeer;
+        CPPUNIT_ASSERT_EQUAL(std::string("192.0.2.10"), std::string(formatControlQueryPeer(formattedPeer, "192.0.2.10", "", "192.0.2.10", false)));
+
+        formattedPeer.clear();
+        CPPUNIT_ASSERT_EQUAL(std::string("198.51.100.5 (192.0.2.10)"), std::string(formatControlQueryPeer(formattedPeer, "198.51.100.5", "198.51.100.5", "192.0.2.10", false)));
+
+        formattedPeer.clear();
+        CPPUNIT_ASSERT_EQUAL(std::string("203.0.113.7"), std::string(formatControlQueryPeer(formattedPeer, "203.0.113.7", "", "192.0.2.10", true)));
+
+        formattedPeer.clear();
+        CPPUNIT_ASSERT_EQUAL(std::string("203.0.113.7 (198.51.100.5 (192.0.2.10))"), std::string(formatControlQueryPeer(formattedPeer, "203.0.113.7", "198.51.100.5", "192.0.2.10", true)));
+    }
+
     void testSingleEntryForwardForAddressExtraction()
     {
         Owned<IProperties> headers = createProperties();
@@ -2422,6 +2483,35 @@ public:
         updatePeerAddressFromHeaders(peer, headers);
         // Should update peer to the valid IPv6 address
         CPPUNIT_ASSERT_EQUAL(std::string("2001:0db8:85a3:0000:0000:8a2e:0370:7334"), std::string(peer.str()));
+    }
+
+    void testIgnoresTLSProxySourceHeader()
+    {
+        Owned<IProperties> headers = createProperties();
+        headers->setProp(TLS_PROXY_SOURCE_PROPERTY_NAME, "192.0.2.1");
+        StringBuffer peer("1.0.0.1");
+        updatePeerAddressFromHeaders(peer, headers);
+        CPPUNIT_ASSERT_EQUAL(std::string("1.0.0.1"), std::string(peer.str()));
+    }
+
+    void testForwardedForOverridesTLSProxySourceHeader()
+    {
+        Owned<IProperties> headers = createProperties();
+        headers->setProp(FORWARDED_FOR_ADDRESS_HEADER_NAME, "198.51.100.2");
+        headers->setProp(TLS_PROXY_SOURCE_PROPERTY_NAME, "192.0.2.1");
+        StringBuffer peer("1.0.0.1");
+        updatePeerAddressFromHeaders(peer, headers);
+        CPPUNIT_ASSERT_EQUAL(std::string("198.51.100.2"), std::string(peer.str()));
+    }
+
+    void testInvalidForwardedForDoesNotUseTLSProxySourceHeader()
+    {
+        Owned<IProperties> headers = createProperties();
+        headers->setProp(FORWARDED_FOR_ADDRESS_HEADER_NAME, "not_an_ip");
+        headers->setProp(TLS_PROXY_SOURCE_PROPERTY_NAME, "192.0.2.1");
+        StringBuffer peer("1.0.0.1");
+        updatePeerAddressFromHeaders(peer, headers);
+        CPPUNIT_ASSERT_EQUAL(std::string("1.0.0.1"), std::string(peer.str()));
     }
 };
 

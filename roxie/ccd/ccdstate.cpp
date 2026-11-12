@@ -2909,6 +2909,12 @@ private:
                 logFullQueries = control->getPropBool("@val", true);
                 topology->setPropBool("@logFullQueries", logFullQueries);
             }
+            else if (stricmp(queryName, "control:logcontrolqueries")==0)
+            {
+                bool enabled = control->getPropBool("@val", false);
+                logControlQueries.store(enabled, std::memory_order_relaxed);
+                topology->setPropBool("@logControlQueries", enabled);
+            }
             else
                 unknown = true;
             break;

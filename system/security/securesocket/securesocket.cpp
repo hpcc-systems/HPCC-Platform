@@ -576,6 +576,9 @@ private:
     bool        nonBlocking;
     bool        m_verify;
     bool        m_address_match;
+    bool        m_acceptProxyHeader = false;
+    bool        m_hasProxyPeerEndpoint = false;
+    SocketEndpoint m_proxyPeerEndpoint;
     Linked<CStringSet> m_peers;
     int         m_loglevel;
     bool        m_isSecure;
@@ -593,6 +596,11 @@ private:
     void handleError(int ssl_err, bool writing, bool wait, unsigned timeoutMs, const char *opStr, unsigned long errnum=0);
     bool flushPendingEncryptedOutput(CCycleTimer &timer, unsigned timeoutMs, const char *opStr);
     size32_t readAndQueueEncryptedSocketInput(CCycleTimer &timer, unsigned timeoutMs, const char *opStr);
+    size32_t peekSocketData(void *buffer, size32_t maxLength, CCycleTimer &timer, unsigned timeoutMs);
+    void readSocketData(void *buffer, size32_t length, CCycleTimer &timer, unsigned timeoutMs);
+    void parseProxyProtocolV1(char *header, size32_t headerLength);
+    void parseProxyProtocolV2(const byte *header, const byte *addressData, size32_t addressLength);
+    void consumeProxyProtocolHeader();
     
     // Make verify_cert and network_bio accessible to async handlers
     friend class CAsyncTLSAcceptHandler;
@@ -607,6 +615,7 @@ public:
     CSecureSocket(ISocket* sock, SSL* ssl, bool verify = false, bool address_match = false, CStringSet* m_peers = NULL, int loglevel=SSLogNormal, const char *fqdn = nullptr);
     ~CSecureSocket();
 
+    virtual void setAllowProxyHeader() override;
     virtual int secure_accept(int logLevel);
     virtual int secure_connect(int logLevel);
     virtual void startAsyncAccept(IAsyncProcessor * processor, IAsyncCallback & callback, int logLevel);
@@ -916,7 +925,22 @@ public:
     {
         return m_isSecure;
     }
+
+    virtual bool queryProxyPeerEndpoint(SocketEndpoint &endpoint) const override;
 };
+
+void CSecureSocket::setAllowProxyHeader()
+{
+    m_acceptProxyHeader = true;
+}
+
+bool CSecureSocket::queryProxyPeerEndpoint(SocketEndpoint &endpoint) const
+{
+    if (!m_hasProxyPeerEndpoint)
+        return false;
+    endpoint.set(m_proxyPeerEndpoint);
+    return true;
+}
 
 // CAsyncTLSAcceptHandler constructor implementation
 CAsyncTLSAcceptHandler::CAsyncTLSAcceptHandler(CSecureSocket * _secureSocket, SSL * _ssl, IAsyncProcessor * _processor,
@@ -1198,8 +1222,301 @@ bool CSecureSocket::verify_cert(X509* cert)
     }
 }
 
+size32_t CSecureSocket::peekSocketData(void *buffer, size32_t maxLength, CCycleTimer &timer, unsigned timeoutMs)
+{
+    assertex(maxLength != 0);
+
+    int recvFlags = MSG_PEEK;
+#ifndef _WIN32
+    recvFlags |= MSG_DONTWAIT;
+#endif
+
+    int socketHandle = m_socket->OShandle();
+    for (;;)
+    {
+        unsigned remainingMs = timer.remainingMs(timeoutMs);
+        if (remainingMs == 0)
+            THROWJSOCKEXCEPTION_MSG(JSOCKERR_timeout_expired, "Timed out waiting for connection preamble");
+
+        int waitResult = m_socket->wait_read(remainingMs);
+        if (waitResult == 0)
+            THROWJSOCKEXCEPTION_MSG(JSOCKERR_timeout_expired, "Timed out waiting for connection preamble");
+        if (waitResult < 0)
+            THROWJSOCKEXCEPTION_MSG(SOCKETERRNO(), "Failed waiting for connection preamble");
+
+        int bytesRead = ::recv(socketHandle, static_cast<char *>(buffer), maxLength, recvFlags);
+        if (bytesRead >= 0)
+            return bytesRead;
+
+        int error = SOCKETERRNO();
+#ifdef _WIN32
+        if (error == WSAEINTR)
+            continue;
+        bool wouldBlock = (error == WSAEWOULDBLOCK);
+#else
+        if (error == EINTR)
+            continue;
+        bool wouldBlock = (error == EWOULDBLOCK) || (error == EAGAIN);
+#endif
+        if (!wouldBlock)
+            THROWJSOCKEXCEPTION_MSG(error, "Failed to inspect TLS connection preamble");
+    }
+}
+
+void CSecureSocket::readSocketData(void *buffer, size32_t length, CCycleTimer &timer, unsigned timeoutMs)
+{
+    unsigned remainingMs = timer.remainingMs(timeoutMs);
+    if (remainingMs == 0)
+        THROWJSOCKEXCEPTION_MSG(JSOCKERR_timeout_expired, "Timed out reading TLS PROXY protocol header");
+
+    size32_t bytesRead = 0;
+    m_socket->readtms(buffer, length, length, bytesRead, remainingMs);
+    if (bytesRead != length)
+        THROWJSOCKEXCEPTION_MSG(JSOCKERR_graceful_close, "Connection closed within TLS PROXY protocol header");
+}
+
+static bool parseProxyProtocolPort(const char *text, unsigned short &port)
+{
+    if (!text || !*text)
+        return false;
+
+    unsigned value = 0;
+    unsigned digits = 0;
+    for (const char *finger = text; *finger; ++finger)
+    {
+        if ((*finger < '0') || (*finger > '9') || (++digits > 5))
+            return false;
+        value = (value * 10) + (*finger - '0');
+        if (value > 0xffff)
+            return false;
+    }
+    port = value;
+    return true;
+}
+
+void CSecureSocket::parseProxyProtocolV1(char *header, size32_t headerLength)
+{
+    constexpr size32_t signatureLength = 6;
+    constexpr char unknownCommand[] = "UNKNOWN";
+    constexpr size32_t unknownCommandLength = sizeof(unknownCommand) - 1;
+    if ((headerLength <= signatureLength + 2) || (header[headerLength - 2] != '\r') || (header[headerLength - 1] != '\n'))
+        throwStringExceptionV(-1, "Malformed TLS PROXY protocol v1 header");
+
+    char *cursor = header + signatureLength;
+    char *end = header + headerLength - 2;
+    *end = '\0';
+    size32_t contentLength = end - cursor;
+    if ((contentLength >= unknownCommandLength) &&
+        (memcmp(cursor, unknownCommand, unknownCommandLength) == 0) &&
+        ((contentLength == unknownCommandLength) || (cursor[unknownCommandLength] == ' ')))
+        return;
+
+    char *fields[5];
+    unsigned fieldCount = 0;
+    while (cursor < end)
+    {
+        if ((*cursor == ' ') || (fieldCount == _elements_in(fields)))
+            throwStringExceptionV(-1, "Malformed TLS PROXY protocol v1 header");
+        fields[fieldCount++] = cursor;
+        while ((cursor < end) && (*cursor != ' '))
+        {
+            if ((*cursor < 0x21) || (*cursor > 0x7e))
+                throwStringExceptionV(-1, "Malformed TLS PROXY protocol v1 header");
+            ++cursor;
+        }
+        if (cursor < end)
+        {
+            *cursor++ = '\0';
+            if (cursor == end)
+                throwStringExceptionV(-1, "Malformed TLS PROXY protocol v1 header");
+        }
+    }
+
+    if (fieldCount != _elements_in(fields))
+        throwStringExceptionV(-1, "Malformed TLS PROXY protocol v1 header");
+
+    int addressFamily;
+    size32_t addressLength;
+    if (streq(fields[0], "TCP4"))
+    {
+        addressFamily = AF_INET;
+        addressLength = sizeof(in_addr);
+    }
+    else if (streq(fields[0], "TCP6"))
+    {
+        addressFamily = AF_INET6;
+        addressLength = sizeof(in6_addr);
+    }
+    else
+        throwStringExceptionV(-1, "Unsupported TLS PROXY protocol v1 family");
+
+    unsigned short sourcePort;
+    unsigned short destinationPort;
+    if (!parseProxyProtocolPort(fields[3], sourcePort) || !parseProxyProtocolPort(fields[4], destinationPort))
+        throwStringExceptionV(-1, "Malformed TLS PROXY protocol v1 address");
+
+    IpAddress sourceIp;
+    if (addressFamily == AF_INET)
+    {
+        in_addr sourceAddress;
+        in_addr destinationAddress;
+        if ((inet_pton(addressFamily, fields[1], &sourceAddress) != 1) || (inet_pton(addressFamily, fields[2], &destinationAddress) != 1))
+            throwStringExceptionV(-1, "Malformed TLS PROXY protocol v1 address");
+        sourceIp.setNetAddress(addressLength, &sourceAddress);
+    }
+    else
+    {
+        in6_addr sourceAddress;
+        in6_addr destinationAddress;
+        if ((inet_pton(addressFamily, fields[1], &sourceAddress) != 1) || (inet_pton(addressFamily, fields[2], &destinationAddress) != 1))
+            throwStringExceptionV(-1, "Malformed TLS PROXY protocol v1 address");
+        sourceIp.setNetAddress(addressLength, &sourceAddress);
+    }
+    m_proxyPeerEndpoint.set(sourcePort, sourceIp);
+    m_hasProxyPeerEndpoint = true;
+}
+
+void CSecureSocket::parseProxyProtocolV2(const byte *header, const byte *addressData, size32_t addressLength)
+{
+    byte version = header[12] >> 4;
+    byte command = header[12] & 0x0f;
+    byte family = header[13] >> 4;
+    byte protocol = header[13] & 0x0f;
+    if ((version != 2) || (command > 1))
+        throwStringExceptionV(-1, "Malformed TLS PROXY protocol v2 header");
+    if (command == 0)
+        return;
+    bool validProtocol = ((family == 0) && (protocol == 0)) ||
+                         ((family >= 1) && (family <= 3) && (protocol >= 1) && (protocol <= 2));
+    if (!validProtocol)
+        throwStringExceptionV(-1, "Malformed TLS PROXY protocol v2 header");
+
+    size32_t sourceAddressLength;
+    size32_t sourcePortOffset;
+    if ((family == 1) && (protocol == 1))
+    {
+        sourceAddressLength = sizeof(in_addr);
+        sourcePortOffset = 8;
+        if (addressLength < 12)
+            throwStringExceptionV(-1, "Truncated TLS PROXY protocol v2 IPv4 address");
+    }
+    else if ((family == 2) && (protocol == 1))
+    {
+        sourceAddressLength = sizeof(in6_addr);
+        sourcePortOffset = 32;
+        if (addressLength < 36)
+            throwStringExceptionV(-1, "Truncated TLS PROXY protocol v2 IPv6 address");
+    }
+    else
+        return;
+
+    unsigned short sourcePort = (static_cast<unsigned short>(addressData[sourcePortOffset]) << 8) | addressData[sourcePortOffset + 1];
+    IpAddress sourceIp;
+    if (sourceAddressLength == sizeof(in_addr))
+    {
+        in_addr sourceAddress;
+        memcpy(&sourceAddress, addressData, sizeof(sourceAddress));
+        sourceIp.setNetAddress(sizeof(sourceAddress), &sourceAddress);
+    }
+    else
+    {
+        in6_addr sourceAddress;
+        memcpy(&sourceAddress, addressData, sizeof(sourceAddress));
+        sourceIp.setNetAddress(sizeof(sourceAddress), &sourceAddress);
+    }
+    m_proxyPeerEndpoint.set(sourcePort, sourceIp);
+    m_hasProxyPeerEndpoint = true;
+}
+
+void CSecureSocket::consumeProxyProtocolHeader()
+{
+    constexpr char proxyV1Signature[] = "PROXY ";
+    constexpr byte proxyV2Signature[] = { 0x0d, 0x0a, 0x0d, 0x0a, 0x00, 0x0d, 0x0a, 0x51, 0x55, 0x49, 0x54, 0x0a };
+    constexpr size32_t proxyV1MaxHeaderLength = 107;
+    constexpr size32_t proxyV2FixedHeaderLength = 16;
+    constexpr unsigned proxyProtocolTimeoutMs = 30 * 1000;
+
+    CCycleTimer timer;
+    byte firstByte;
+    if (peekSocketData(&firstByte, 1, timer, proxyProtocolTimeoutMs) != 1)
+        return;
+
+    if (firstByte == proxyV1Signature[0])
+    {
+        char signature[sizeof(proxyV1Signature) - 1];
+        readSocketData(signature, sizeof(signature), timer, proxyProtocolTimeoutMs);
+        if (memcmp(signature, proxyV1Signature, sizeof(signature)) != 0)
+            throwStringExceptionV(-1, "Malformed TLS PROXY protocol v1 signature");
+
+        size32_t headerLength = sizeof(signature);
+        byte previous = signature[sizeof(signature) - 1];
+        char header[proxyV1MaxHeaderLength + 1];
+        memcpy(header, signature, sizeof(signature));
+        byte buffer[proxyV1MaxHeaderLength];
+        while (headerLength < proxyV1MaxHeaderLength)
+        {
+            size32_t bytesRead = peekSocketData(buffer, proxyV1MaxHeaderLength - headerLength, timer, proxyProtocolTimeoutMs);
+            if (bytesRead == 0)
+                THROWJSOCKEXCEPTION_MSG(JSOCKERR_graceful_close, "Connection closed within TLS PROXY protocol v1 header");
+
+            size32_t consumeLength = bytesRead;
+            bool complete = false;
+            for (size32_t index = 0; index < bytesRead; ++index)
+            {
+                byte current = buffer[index];
+                if ((previous == '\r') && (current == '\n'))
+                {
+                    consumeLength = index + 1;
+                    complete = true;
+                    break;
+                }
+                previous = current;
+            }
+
+            readSocketData(buffer, consumeLength, timer, proxyProtocolTimeoutMs);
+            memcpy(header + headerLength, buffer, consumeLength);
+            headerLength += consumeLength;
+            if (complete)
+            {
+                parseProxyProtocolV1(header, headerLength);
+                return;
+            }
+        }
+        throwStringExceptionV(-1, "TLS PROXY protocol v1 header exceeds %u bytes", proxyV1MaxHeaderLength);
+    }
+
+    if (firstByte == proxyV2Signature[0])
+    {
+        byte header[proxyV2FixedHeaderLength];
+        readSocketData(header, sizeof(header), timer, proxyProtocolTimeoutMs);
+        if (memcmp(header, proxyV2Signature, sizeof(proxyV2Signature)) != 0)
+            throwStringExceptionV(-1, "Malformed TLS PROXY protocol v2 signature");
+
+        size32_t remaining = (static_cast<size32_t>(header[14]) << 8) | header[15];
+        byte addressData[36];
+        size32_t addressLength = remaining < sizeof(addressData) ? remaining : sizeof(addressData);
+        if (addressLength != 0)
+        {
+            readSocketData(addressData, addressLength, timer, proxyProtocolTimeoutMs);
+            remaining -= addressLength;
+        }
+        // Consume remaining payload bytes, including unparsed TLVs, so the TLS handshake starts at the correct offset.
+        byte buffer[4096];
+        while (remaining != 0)
+        {
+            size32_t consumeLength = remaining < sizeof(buffer) ? remaining : sizeof(buffer);
+            readSocketData(buffer, consumeLength, timer, proxyProtocolTimeoutMs);
+            remaining -= consumeLength;
+        }
+        parseProxyProtocolV2(header, addressData, addressLength);
+    }
+}
+
 int CSecureSocket::secure_accept(int logLevel)
 {
+    if (m_acceptProxyHeader)
+        consumeProxyProtocolHeader();
+
     int err;
     while (true)
     {

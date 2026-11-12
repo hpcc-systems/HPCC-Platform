@@ -2620,6 +2620,11 @@
           "default": false,
           "description": "Log full text (unless blindLogging) and resource usage of all queries received "
         },
+        "logControlQueries": {
+          "type": "boolean",
+          "default": false,
+          "description": "Log all control: queries with the client address, including any proxy/X-Forwarded-For details"
+        },
         "blindLogging": {
           "type": "boolean",
           "default": false,
@@ -3057,6 +3062,11 @@
         "tls": {
           "type": "boolean",
           "description": "Whether the roxie service uses tls.  Requires cert-manager or custom certificate."
+        },
+        "useTLSProxy": {
+          "type": "boolean",
+          "default": false,
+          "description": "Whether this TLS listener accepts PROXY protocol v1/v2 headers from a trusted load balancer."
         },
         "remoteClients": {
           "$ref": "#/definitions/remoteClients"

@@ -18,6 +18,8 @@
 #ifndef _CCD_INCL
 #define _CCD_INCL
 
+#include <atomic>
+
 #include "jexcept.hpp"
 #include "jsocket.hpp"
 #include "jptree.hpp"
@@ -54,6 +56,8 @@
 #define NUM_DALI_CRITS 64
 
 #define ROXIE_STATEFILE_VERSION 2
+
+static constexpr const char * TLS_PROXY_SOURCE_PROPERTY_NAME = "TLS-Proxy-Source";
 
 extern IException *MakeRoxieException(int code, const char *format, ...) __attribute__((format(printf, 2, 3)));
 void openWorkerRequestSocket();
@@ -322,6 +326,7 @@ extern bool alwaysTrustFormatCrcs;
 extern bool allFilesDynamic;
 extern bool lockSuperFiles;
 extern bool logFullQueries;
+extern std::atomic<bool> logControlQueries;
 extern bool alwaysSendSummaryStats;
 extern bool blindLogging;
 extern bool debugPermitted;

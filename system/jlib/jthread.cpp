@@ -1217,6 +1217,8 @@ class CThreadPool: public CThreadPoolBase, implements IThreadPool, public CInter
     unsigned startsInPeriod = 0;
     cycle_t startDelayInPeriod = 0;
     CCycleTimer overAllTimer;
+    unsigned poolLimitExceededCount = 0;
+    PeriodicTimer poolLimitWarningTimer{60 * 1000, false};
     std::atomic<bool> waitAvailableInterrupted{false};
 
     bool acquireSlot(unsigned timeout)
@@ -1248,6 +1250,7 @@ class CThreadPool: public CThreadPoolBase, implements IThreadPool, public CInter
         }
 
         CPooledThreadWrapper * t = nullptr;
+        unsigned poolLimitWarningCount = 0;
         {
             CriticalBlock block(crit);
             if (timedout)
@@ -1256,7 +1259,12 @@ class CThreadPool: public CThreadPoolBase, implements IThreadPool, public CInter
                 {
                     if (noBlock || timeout > 0)
                         throw MakeStringException(JLIBERR_SystemNoThreadsAvailableInPoolS, "No threads available in pool %s", poolname.get());
-                    IWARNLOG("Pool limit exceeded for %s", poolname.get());
+                    ++poolLimitExceededCount;
+                    if (poolLimitWarningTimer.hasElapsed())
+                    {
+                        poolLimitWarningCount = poolLimitExceededCount;
+                        poolLimitExceededCount = 0;
+                    }
                 }
             }
             if (traceStartDelayPeriod)
@@ -1277,6 +1285,8 @@ class CThreadPool: public CThreadPoolBase, implements IThreadPool, public CInter
             }
             t = &allocThread();
         }
+        if (poolLimitWarningCount)
+            IWARNLOG("Pool limit exceeded for %s: %u occurrences since last report", poolname.get(), poolLimitWarningCount);
         if (name)
             t->setName(name);
         if (hasInheritContextOverride)

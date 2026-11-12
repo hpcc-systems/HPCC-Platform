@@ -85,6 +85,13 @@
                 </xs:appinfo>
               </xs:annotation>
             </xs:attribute>
+            <xs:attribute name="useTLSProxy" type="xs:boolean" use="optional" default="false">
+              <xs:annotation>
+                <xs:appinfo>
+                  <tooltip>Enable TLS PROXY protocol v1/v2 headers from a trusted load balancer on this TLS listener</tooltip>
+                </xs:appinfo>
+              </xs:annotation>
+            </xs:attribute>
             <xs:attribute name="passphrase" type="xs:string" use="optional">
               <xs:annotation>
                 <xs:appinfo>
@@ -1028,6 +1035,13 @@
       <xs:annotation>
         <xs:appinfo>
           <tooltip>Log full text (unless blindLogging) and resource usage of all queries received </tooltip>
+        </xs:appinfo>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="logControlQueries" type="xs:boolean" use="optional" default="false">
+      <xs:annotation>
+        <xs:appinfo>
+          <tooltip>Log all control: queries with the client address, including any proxy/X-Forwarded-For details</tooltip>
         </xs:appinfo>
       </xs:annotation>
     </xs:attribute>

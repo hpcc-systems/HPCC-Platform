@@ -136,6 +136,7 @@ bool doIbytiDelay = true;
 bool copyResources;
 bool chunkingHeap = true;
 bool logFullQueries;
+std::atomic<bool> logControlQueries{false};
 bool alwaysSendSummaryStats = false;
 bool blindLogging = false;
 bool debugPermitted = true;
@@ -1197,6 +1198,7 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         chunkingHeap = topology->getPropBool("@chunkingHeap", true);
         readTimeout = topology->getPropInt("@readTimeout", 300);
         logFullQueries = topology->getPropBool("@logFullQueries", false);
+        logControlQueries.store(topology->getPropBool("@logControlQueries", false), std::memory_order_relaxed);
         alwaysSendSummaryStats = topology->getPropBool("expert/@alwaysSendSummaryStats", alwaysSendSummaryStats);
         debugPermitted = topology->getPropBool("@debugPermitted", true);
         blindLogging = topology->getPropBool("@blindLogging", false);
@@ -1679,7 +1681,7 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
             else
             {
                 Owned<IHpccProtocolPlugin> protocolPlugin = loadHpccProtocolPlugin(protocolCtx, NULL);
-                Owned<IHpccProtocolListener> roxieServer = protocolPlugin->createListener("runOnce", createRoxieProtocolMsgSink(myNode.getIpAddress(), 0, 1, false), 0, 0, nullptr, nullptr);
+                Owned<IHpccProtocolListener> roxieServer = protocolPlugin->createListener("runOnce", createRoxieProtocolMsgSink(myNode.getIpAddress(), 0, 1, false), 0, 0, nullptr, nullptr, false);
                 try
                 {
                     const char *format = topology->queryProp("@format");
@@ -1768,8 +1770,16 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
                     }
                     bool suspended = roxieFarm.getPropBool("@suspended", false);
                     Owned <IHpccProtocolListener> roxieServer;
+                    bool useTLSProxy = false;
                     if (port)
                     {
+                        useTLSProxy = roxieFarm.getPropBool("@useTLSProxy", false);
+                        if (useTLSProxy && !serviceTLS)
+                        {
+                            OWARNLOG("Ignoring useTLSProxy=true for non-TLS Roxie listener on port %u", port);
+                            useTLSProxy = false;
+                        }
+
                         StringBuffer certFileName;
                         StringBuffer keyFileName;
                         StringBuffer passPhraseStr;
@@ -1829,7 +1839,7 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
                         const char *config  = roxieFarm.queryProp("@config");
                         // NB: leaks - until we fix bug in ensureProtocolPlugin() whereby some paths return a linked object and others do not
                         IHpccProtocolPlugin *protocolPlugin = ensureProtocolPlugin(*protocolCtx, soname);
-                        roxieServer.setown(protocolPlugin->createListener(protocol ? protocol : "native", createRoxieProtocolMsgSink(ip, port, numThreads, suspended), port, listenQueue, config, tlsConfig));
+                        roxieServer.setown(protocolPlugin->createListener(protocol ? protocol : "native", createRoxieProtocolMsgSink(ip, port, numThreads, suspended), port, listenQueue, config, tlsConfig, useTLSProxy));
                     }
                     else
                         roxieServer.setown(createRoxieWorkUnitListener(numThreads, suspended));
@@ -1863,6 +1873,8 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
                     roxieServer->start();
                     if (!roxieServer->isRunning())
                         throw MakeStringException(ROXIE_INTERNAL_ERROR, "Roxie Exception starting server");
+                    if (useTLSProxy)
+                        PROGLOG("TLS PROXY protocol enabled for Roxie TLS listener on port %u", port);
                 }
 
                 if (!topology->getPropBool("@disableCachePrewarming", false))

@@ -538,7 +538,8 @@ static const StatisticsMapping indexStatistics({StNumServerCacheHits, StNumIndex
                                                 StSizeContinuationData, StNumContinuationRequests }, actStatistics);
 static const StatisticsMapping diskStatistics({StNumServerCacheHits, StNumDiskRowsRead, StNumDiskSeeks, StNumDiskAccepted,
                                                StNumDiskRejected, StSizeAgentReply, StTimeAgentWait, StTimeAgentQueue, StTimeAgentProcess, StTimeIBYTIDelay, StNumAckRetries, StNumAgentRequests, StSizeAgentRequests,
-                                               StSizeContinuationData, StNumContinuationRequests }, actStatistics);
+                                               StSizeContinuationData, StNumContinuationRequests,
+                                               StTimeFilePrepare }, actStatistics);
 static const StatisticsMapping soapStatistics({ StTimeSoapcall, StTimeSoapcallDNS, StTimeSoapcallConnect, StNumSoapcallConnectFailures, StNumSoapcallRetries }, actStatistics);
 static const StatisticsMapping groupStatistics({ StNumGroups, StNumGroupMax }, actStatistics);
 static const StatisticsMapping sortStatistics({ StTimeSortElapsed }, actStatistics);

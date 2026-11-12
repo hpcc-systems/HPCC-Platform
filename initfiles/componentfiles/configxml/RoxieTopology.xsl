@@ -187,6 +187,7 @@
                 </xsl:copy>
             </xsl:for-each>
             @XSL_PLUGIN_DEFINITION@
+            <!-- In environment.xml, set RoxieFarmProcess/@useTLSProxy to enable TLS PROXY protocol on that TLS listener. -->
             <xsl:for-each select="RoxieFarmProcess">
                 <xsl:element name="RoxieFarmProcess">
                     <xsl:copy-of select="@*[name()!='level']"/>

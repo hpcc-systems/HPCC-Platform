@@ -53,6 +53,8 @@ interface IAsyncCallback;
 // One instance per connection
 interface ISecureSocket : implements ISocket
 {
+    // Opt a server-side socket in to PROXY header parsing; call before secure_accept
+    virtual void setAllowProxyHeader() = 0;
     virtual int secure_accept(int logLevel=1) = 0;
     virtual int secure_connect(int logLevel=1) = 0;
     virtual StringBuffer& get_ssl_version(StringBuffer& ver) = 0;

@@ -18,6 +18,8 @@
 ##############################################################################
 
 # Utility script for stopping a local cluster started by startall.sh
+set -e
+
 wait=0
 force=0
 CLUSTERNAME=mycluster
@@ -36,40 +38,47 @@ while [ "$#" -gt 0 ]; do
       -e) UNINSTALL_ELK=0
          echo "elastic4hpcclogs will not be stopped..."
          ;;
-      *) echo "Usage: stoptall.sh [options]"
+      -h|--help)
+         echo "Usage: stopall.sh [options]"
          echo "    -w  Wait for all pods to terminate"
+         echo "    -f  Force deletion of remaining pods"
+         echo "    -n <name>  Specify cluster name (default: mycluster)"
          echo "    -e  Suppress deletion of elastic4hpcclogs"
+         echo "Uses Helm and kubectl; no local Docker or Podman engine is required."
          exit
+         ;;
+      *) echo "Unknown option: ${arg}. Use -h for help." >&2
+         exit 1
          ;;
     esac
   shift
 done
 
-helm uninstall $CLUSTERNAME
-helm uninstall localfile
-helm uninstall myprometheus4hpccmetrics
-helm uninstall myloki4hpcclogs
-kubectl delete jobs --all
-kubectl delete networkpolicy --all
+helm uninstall "$CLUSTERNAME" --ignore-not-found
+helm uninstall localfile --ignore-not-found
+helm uninstall myprometheus4hpccmetrics --ignore-not-found
+helm uninstall myloki4hpcclogs --ignore-not-found
+kubectl delete jobs --all --ignore-not-found
+kubectl delete networkpolicy --all --ignore-not-found
 
 if [[ $UNINSTALL_ELK == 1 ]] ; then
   echo "Uninstalling myelastic4hpcclogs:"
-  helm uninstall myelastic4hpcclogs
+  helm uninstall myelastic4hpcclogs --ignore-not-found
 
   echo "Deleting Elasticsearch PVC..."
-  kubectl delete pvc elasticsearch-master-elasticsearch-master-0
+  kubectl delete pvc elasticsearch-master-elasticsearch-master-0 --ignore-not-found
 fi
 
 if [[ $force == 1 ]] ; then
   sleep 1
-  for f in `kubectl get pods | grep -v ^NAME | awk '{print $1}'` ; do
-    kubectl delete pod $f --force --grace-period=0
-  done
+  kubectl delete pods --all --force --grace-period=0 --ignore-not-found
 fi
 
 if [[ $wait == 1 ]] ; then
   sleep 2
-  while (kubectl get pods | grep -q ^NAME) ; do
+  while true ; do
+    pods=$(kubectl get pods --output=name)
+    [[ -n "$pods" ]] || break
     echo Waiting...
     sleep 2
   done
