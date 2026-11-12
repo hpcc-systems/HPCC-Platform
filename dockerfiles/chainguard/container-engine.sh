@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Container and host-OS operations used by the package build scripts. Keep runtime- and
+# Container and host-OS operations used by the build scripts. Keep runtime- and
 # OS-specific command syntax here so another backend can be added without changing callers.
 #
 # A backend NAME is listed in CONTAINER_BACKENDS and may define:
@@ -105,10 +105,29 @@ oci_build() { "${CONTAINER_CLI}" build "$@"; }
 oci_run() { "${CONTAINER_CLI}" run "$@"; }
 oci_pull() { "${CONTAINER_CLI}" pull --platform "$1" "$2"; }
 oci_image_exists() { "${CONTAINER_CLI}" image inspect "$1" >/dev/null 2>&1; }
+oci_image_tags() {
+    local images
+    images="$("${CONTAINER_CLI}" image ls --format '{{.Repository}} {{.Tag}}' --filter "reference=$1:*")" || return
+    printf '%s\n' "${images}" | awk -v repository="$1" \
+        'BEGIN { sub(/^docker.io\//, "", repository) }
+         {
+             image_repository = $1
+             sub(/^docker.io\//, "", image_repository)
+             if (image_repository == repository || image_repository == "localhost/" repository) {
+                 print $2
+             }
+         }'
+}
 oci_image_environment() { "${CONTAINER_CLI}" image inspect --format '{{range .Config.Env}}{{println .}}{{end}}' "$1"; }
 oci_image_label() { "${CONTAINER_CLI}" image inspect --format "{{index .Config.Labels \"$2\"}}" "$1"; }
+oci_image_save() { "${CONTAINER_CLI}" save --output "$2" "$1"; }
 oci_exists() { "${CONTAINER_CLI}" container inspect "$1" >/dev/null 2>&1; }
 oci_remove() { "${CONTAINER_CLI}" container rm --force "$1"; }
+oci_exec() { "${CONTAINER_CLI}" exec "$@"; }
+oci_commit() { "${CONTAINER_CLI}" commit "$@"; }
+oci_tag() { "${CONTAINER_CLI}" tag "$@"; }
+oci_volume() { "${CONTAINER_CLI}" volume "$@"; }
+oci_cpus() { "${CONTAINER_CLI}" info --format '{{.NCPU}}'; }
 oci_scratch_mount() { :; }
 
 # ---- podman: Podman on Linux, or podman.exe with a Podman machine on Windows (driven from Git Bash) ----
@@ -130,6 +149,16 @@ podman_init() {
     else
         PODMAN_ROOTLESS="$(podman_cli info --format '{{.Host.Security.Rootless}}' 2>/dev/null || echo false)"
     fi
+}
+
+podman_cpus() { podman_cli info --format '{{.Host.CPUs}}'; }
+
+podman_image_save() {
+    local archive="$2"
+    if host_is_windows; then
+        archive="$(win_host_path "${archive}")" || return
+    fi
+    podman_cli save --output "${archive}" "$1"
 }
 
 podman_build() {
@@ -314,10 +343,17 @@ container_build() { container_backend_call "${CONTAINER_RUNTIME}" build "$@"; } 
 container_run() { container_backend_call "${CONTAINER_RUNTIME}" run "$@"; }                             # docker run args
 container_pull() { container_backend_call "${CONTAINER_RUNTIME}" pull "$@"; }                           # PLATFORM IMAGE
 container_image_exists() { container_backend_call "${CONTAINER_RUNTIME}" image_exists "$@"; }           # IMAGE
+container_image_tags() { container_backend_call "${CONTAINER_RUNTIME}" image_tags "$@"; }               # REPOSITORY -> tag lines
 container_image_environment() { container_backend_call "${CONTAINER_RUNTIME}" image_environment "$@"; } # IMAGE -> KEY=VALUE lines
 container_image_label() { container_backend_call "${CONTAINER_RUNTIME}" image_label "$@"; }             # IMAGE LABEL -> value
+container_image_save() { container_backend_call "${CONTAINER_RUNTIME}" image_save "$@"; }               # IMAGE ARCHIVE
 container_exists() { container_backend_call "${CONTAINER_RUNTIME}" exists "$@"; }                       # NAME
 container_remove() { container_backend_call "${CONTAINER_RUNTIME}" remove "$@"; }                       # NAME
+container_exec() { container_backend_call "${CONTAINER_RUNTIME}" exec "$@"; }                           # exec args
+container_commit() { container_backend_call "${CONTAINER_RUNTIME}" commit "$@"; }                       # CONTAINER IMAGE
+container_tag() { container_backend_call "${CONTAINER_RUNTIME}" tag "$@"; }                             # SOURCE TARGET
+container_volume() { container_backend_call "${CONTAINER_RUNTIME}" volume "$@"; }                       # volume subcommand and args
+container_cpus() { container_backend_call "${CONTAINER_RUNTIME}" cpus "$@"; }                           # engine CPU count
 
 # Sets CONTAINER_SCRATCH_MOUNT to mount args that keep each VOLUME TARGET pair off the host bind mount, or to nothing.
 container_scratch_mount() {
@@ -342,3 +378,4 @@ if [[ " ${CONTAINER_BACKENDS[*]} " != *" ${CONTAINER_RUNTIME} "* ]]; then
     exit 1
 fi
 container_backend_call "${CONTAINER_RUNTIME}" init
+echo "Container runtime: ${CONTAINER_RUNTIME}" >&2
