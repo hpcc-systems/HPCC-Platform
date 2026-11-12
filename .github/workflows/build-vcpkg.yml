@@ -169,6 +169,94 @@ jobs:
           
           echo "=========================="
 
+  # Usage in other jobs:
+  # To gate a job on this review completing with no High or Critical issues, add:
+  #   needs: wait-for-copilot-review
+  #   if: dollar{{ needs.wait-for-copilot-review.outputs.review-completed == 'true' && needs.wait-for-copilot-review.outputs.has-high-issues == 'false' }}
+  # Example:
+  #   deploy:
+  #     needs: wait-for-copilot-review
+  #     if: dollar{{ needs.wait-for-copilot-review.outputs.review-completed == 'true' && needs.wait-for-copilot-review.outputs.has-high-issues == 'false' }}
+  #     runs-on: ubuntu-latest
+  #     steps: ...
+  wait-for-copilot-review:
+    if: ${{ github.event_name == 'pull_request' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    permissions:
+      pull-requests: read
+    outputs:
+      has-high-issues: ${{ steps.result.outputs.has-high-issues }}
+      review-completed: ${{ steps.result.outputs.review-completed }}
+    steps:
+      - name: Wait for Copilot review (up to 30 minutes)
+        id: result
+        uses: actions/github-script@v7
+        with:
+          script: |
+            // Copilot severity is currently presentation markup, not a structured API field.
+            // Support the observed v2 overview format and fail closed if that format changes.
+            function hasHighIssues(body) {
+              if (!body?.startsWith('<!-- ccr-overview-v2 -->')) {
+                throw new Error('Unrecognized Copilot review overview format');
+              }
+
+              const openIssues = body.match(/<details open>\s*<summary><strong>(\d+) open issues?<\/strong><\/summary>([\s\S]*?)<\/details>/);
+              if (!openIssues) {
+                const overview = body.split(/<details\b/)[0];
+                if (/^\*\*No open issues\*\*/m.test(overview)) {
+                  return false;
+                }
+                throw new Error('Copilot review has no recognizable open-issue summary');
+              }
+
+              const count = Number(openIssues[1]);
+              const findings = openIssues[2].split('\n').filter(line => /^-\s/.test(line));
+              const severities = findings.map(line =>
+                line.match(/<img\b[^>]*\balt="(High|Critical|Medium|Low) severity"/i)?.[1]?.toLowerCase()
+              );
+              if (findings.length !== count || severities.some(severity => !severity)) {
+                throw new Error('Copilot review has missing or unrecognized severity badges');
+              }
+              return severities.some(severity => severity === 'high' || severity === 'critical');
+            }
+
+            const maxAttempts = 60;  // 30 minutes @ 30s intervals
+            let attempt = 0;
+            core.setOutput('review-completed', 'false');
+
+            while (attempt < maxAttempts) {
+              const reviews = await github.paginate(github.rest.pulls.listReviews, {
+                ...context.repo,
+                pull_number: context.issue.number,
+                per_page: 100,
+              });
+
+              const copilot = reviews.findLast(review =>
+                review.is_copilot_code_review === true &&
+                review.commit_id === context.payload.pull_request.head.sha &&
+                review.submitted_at &&
+                ['COMMENTED', 'APPROVED', 'CHANGES_REQUESTED'].includes(review.state)
+              );
+
+              if (copilot) {
+                const hasHigh = hasHighIssues(copilot.body);
+                core.setOutput('has-high-issues', hasHigh);
+                core.setOutput('review-completed', 'true');
+                core.info(`Copilot review ${copilot.id} completed. Has High or Critical issues: ${hasHigh}`);
+                return;
+              }
+
+              attempt++;
+              core.info(`Waiting for Copilot review (${attempt}/${maxAttempts})...`);
+
+              if (attempt < maxAttempts) {
+                await new Promise(resolve => setTimeout(resolve, 30000)); // 30 seconds
+              }
+            }
+
+            throw new Error('Copilot review timeout after 30 minutes');
+
   build-workflow-dispatch:
     if: ${{ github.event_name == 'workflow_dispatch' && inputs.nightly != true }}
     uses: ./.github/workflows/build-docker.yml
