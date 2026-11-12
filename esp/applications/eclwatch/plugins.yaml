@@ -24,6 +24,7 @@ service_plugins:
   WSSasha: ws_sasha
   WsCloud: ws_cloud
   ws_logaccess: ws_logaccess
+  ws_sysinfolog: ws_sysinfolog
 
 binding_plugins:
   FileSpray: ws_fs
@@ -47,3 +48,4 @@ binding_plugins:
   WSSasha: ws_sasha
   WsCloud: ws_cloud
   ws_logaccess: ws_logaccess
+  ws_sysinfolog: ws_sysinfolog
