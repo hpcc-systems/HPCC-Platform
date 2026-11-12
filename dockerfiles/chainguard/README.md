@@ -23,6 +23,14 @@ Use Docker or Podman with a running engine. macOS also supports Apple's
 `container` CLI; Windows supports Docker, Podman, or WSL containers
 (`wslc.exe`) from Git Bash.
 
+The scripts automatically select the first usable runtime, trying Docker before
+Podman. An installed Docker CLI without a running engine does not prevent falling
+back to Podman. Set `CONTAINER_RUNTIME=podman` to explicitly select Podman.
+Each script reports the selected container runtime on stderr before doing any
+build work.
+Docker Hub image references are fully qualified, so Podman does not require
+short-name aliases or an unqualified-search registry configuration.
+
 For access to the default JFrog images and shared dependency cache, create
 `.env` in the HPCC-Platform repository root:
 
@@ -128,3 +136,19 @@ To build LN, run its wrapper from the LN repository root instead:
 The wrapper uses the sibling HPCC-Platform checkout for tooling, reads LN's
 `.env`, and writes to `../build/chainguard-glibc2.34-gcc11/`.
 Use `-s /path/to/HPCC-Platform` to select another checkout.
+
+## References
+ 
+| Image | Sysroot | GCC | `GLIBC` / `GLIBCXX` | Python | Supported targets |
+|---|---|---:|---|---:|---|
+| `hpcc-chainguard-glibc2.34-gcc11-dev` | Ubuntu 21.10 | 11 | 2.34 / 3.4.29 | 3.9 | Ubuntu >= 21.10, Rocky >= 9, Wolfi |
+| `hpcc-chainguard-glibc2.35-gcc11-dev` | Ubuntu 22.04 | 11 | 2.35 / 3.4.30 | 3.10 | Ubuntu >= 22.04, Wolfi |
+| `hpcc-chainguard-glibc2.36-gcc11-dev` | Ubuntu 22.10 | 11 | 2.36 / 3.4.30 | 3.10 | Ubuntu >= 22.10, Wolfi |
+| `hpcc-chainguard-glibc2.37-gcc11-dev` | Ubuntu 23.04 | 11 | 2.37 / 3.4.32 | 3.11 | Ubuntu >= 23.04, Wolfi |
+| `hpcc-chainguard-glibc2.38-gcc13-dev` | Ubuntu 23.10 | 13 | 2.38 / 3.4.32 | 3.11 | Ubuntu >= 23.10, Wolfi |
+| `hpcc-chainguard-glibc2.39-gcc13-dev` | Ubuntu 24.04 | 13 | 2.39 / 3.4.33 | 3.12 | Ubuntu >= 24.04, Rocky >= 10, Wolfi |
+| `hpcc-chainguard-glibc2.40-gcc13-dev` | Ubuntu 24.10 | 13 | 2.40 / 3.4.33 | 3.12 | Ubuntu >= 24.10, Wolfi |
+| `hpcc-chainguard-glibc2.41-gcc13-dev` | Ubuntu 25.04 | 13 | 2.41 / 3.4.34 | 3.13 | Ubuntu >= 25.04, Wolfi |
+| `hpcc-chainguard-glibc2.42-gcc15-dev` | Ubuntu 25.10 | 15 | 2.42 / 3.4.34 | 3.13 | Ubuntu >= 25.10, Wolfi |
+| `hpcc-chainguard-glibc2.43-gcc15-dev` | Ubuntu 26.04 | 15 | 2.43 / 3.4.35 | 3.14 | Ubuntu >= 26.04, Wolfi |
+| `hpcc-chainguard-glibc2.44-gcc16-dev` | Ubuntu 26.10 | 16 | 2.44 / 3.4.36 | 3.14 | Ubuntu >= 26.10, Wolfi |

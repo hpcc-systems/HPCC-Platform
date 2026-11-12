@@ -2,7 +2,7 @@
 
 ARG BASE_IMAGE=useast.jfrog.lexisnexisrisk.com/glb-oci-virtual/lexisnexisrisk.com/gcc-glibc:latest-dev
 ARG SYSROOT_IMAGE
-ARG MONO_IMAGE=mono:6.12
+ARG MONO_IMAGE=docker.io/library/mono:6.12
 
 FROM ${MONO_IMAGE} AS mono
 
