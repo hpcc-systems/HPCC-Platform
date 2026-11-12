@@ -39,7 +39,7 @@ public:
 class CSubgraphRule : public CInterface
 {
 public:
-    virtual bool check(PerformanceIssue & results, IWuSubGraph & subgraph, const IAnalyserOptions & options) = 0;
+    virtual bool check(PerformanceIssue & results, IWuSubGraph & subgraph, const IAnalyserOptions & options, const IPropertyTree & envInfo) = 0;
 };
 
 void gatherRules(CIArrayOf<CActivityRule> & rules);
