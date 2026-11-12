@@ -1610,6 +1610,7 @@ extern HQL_API void removeAttributes(HqlExprArray & args);
 extern HQL_API bool isChildRelationOf(IHqlExpression * child, IHqlExpression * other);
 extern HQL_API IHqlExpression * queryRecord(ITypeInfo * type);
 extern HQL_API unsigned numPayloadFields(IHqlExpression * index);
+extern HQL_API unsigned numPayloadFieldsFromAttrList(IHqlExpression * indexAttrs);
 extern HQL_API unsigned firstPayloadField(IHqlExpression * index);
 extern HQL_API unsigned firstPayloadField(IHqlExpression * record, unsigned numPayloadFields);
 extern HQL_API unsigned numKeyedFields(IHqlExpression * index);
