@@ -30,4 +30,10 @@
 IFile * createAzureBlob(const char * filename);
 IFile * createAzureBlob(const char * filename, const DirEntry &entry);
 
+interface IAzureBlockOperations : extends IInterface
+{
+    virtual void stageBlock(unsigned sequence, const byte *data, size32_t length) = 0;
+    virtual void commitBlockList(unsigned count) = 0;
+};
+
 #endif

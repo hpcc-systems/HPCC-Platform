@@ -76,3 +76,8 @@ target_link_libraries ( azurefile PRIVATE
         Azure::azure-storage-files-shares
         Azure::azure-identity
     )
+
+if (USE_CPPUNIT)
+    include_directories( ${HPCC_SOURCE_DIR}/testing/unittests )
+    target_link_libraries(azurefile PRIVATE ${CppUnit_LIBRARIES})
+endif()

@@ -27,6 +27,13 @@
 #include "azureblob.hpp"
 #include "azureapiutils.hpp"
 
+#ifdef _USE_CPPUNIT
+#include "jptree.hpp"
+#include "jstatcodes.h"
+#include "unittests.hpp"
+#include <vector>
+#endif
+
 #include <azure/core/base64.hpp>
 #include <azure/core/http/curl_transport.hpp>
 #include <azure/core/http/policies/policy.hpp>
@@ -50,6 +57,43 @@ using namespace std::chrono;
 using SharedBlobClient = std::shared_ptr<Azure::Storage::Blobs::BlockBlobClient>;
 
 class AzureBlob;
+
+static std::string makeAzureBlockId(const std::string &baseBlockId, unsigned sequence)
+{
+    if (sequence == 0 || sequence > maxAzureBlockCount)
+        throw makeStringException(1234, "Too many blocks for Azure block blob");
+
+    return VStringBuffer("%s%08u", baseBlockId.c_str(), sequence).str();
+}
+
+class AzureBlobBlockOperations final : public CInterfaceOf<IAzureBlockOperations>
+{
+public:
+    AzureBlobBlockOperations(SharedBlobClient _client, const char *_baseBlockId)
+        : client(std::move(_client)), baseBlockId(_baseBlockId) {}
+
+    virtual void stageBlock(unsigned sequence, const byte *data, size32_t length) override
+    {
+        std::string blockId = makeAzureBlockId(baseBlockId, sequence);
+        Azure::Core::IO::MemoryBodyStream content(reinterpret_cast<const uint8_t *>(data), length);
+        client->StageBlock(blockId, content);
+    }
+
+    virtual void commitBlockList(unsigned count) override
+    {
+        std::vector<std::string> blockIds;
+        blockIds.reserve(count);
+        for (unsigned sequence = 1; sequence <= count; ++sequence)
+            blockIds.emplace_back(makeAzureBlockId(baseBlockId, sequence));
+
+        client->CommitBlockList(blockIds);
+    }
+
+private:
+    SharedBlobClient client;
+    std::string baseBlockId;
+};
+
 //The base class for AzureBlobIO.  This class performs NO caching of the data - to avoid problems with
 //copying the data too many times.  It is the responsibility of the caller to implement a cache if necessary.
 class AzureBlobIO : implements CInterfaceOf<IFileIO>
@@ -111,10 +155,18 @@ public:
     virtual void flush() override;
 
 protected:
-    CriticalSection cs{SYNC_LOCATION};
+    void checkAppendPosition(offset_t pos) const;
+    StringBuffer baseBlockId;
+    Owned<IAzureBlockOperations> operations;
     offset_t offset = 0;
 };
 
+// Sequential block-blob writer. IFileIO calls must be serialized by the caller.
+// Each non-empty write must append at the current offset and is staged synchronously
+// as one block directly from the caller's buffer; blocks may have different sizes,
+// subject to Azure's per-block size limit. Empty writes do nothing. Staged blocks
+// aren't visible in the blob until close() commits their ordered list; flush() does
+// not commit. The writer is limited to 50,000 blocks, and close() is idempotent.
 class AzureBlobBlockBlobWriteIO final : implements AzureBlobWriteIO
 {
 public:
@@ -123,14 +175,9 @@ public:
     virtual void close() override;
     virtual size32_t write(offset_t pos, size32_t len, const void * data) override;
 
-protected:
-    std::string generateNextUniqueBlockId();
-
 private:
-    StringBuffer baseBlockId;
-    std::vector<std::string> blockIds;
     bool committed = false;
-    unsigned blockIndex = 0;
+    unsigned lastSequence = 0;
 };
 
 
@@ -209,6 +256,10 @@ class AzureBlob final : implements CInterfaceOf<IFile>
 {
 public:
     AzureBlob(const char *_azureFileName);
+#ifdef _USE_CPPUNIT
+    AzureBlob(const char *_azureFileName, const char *_blobServiceEndpoint,
+        std::shared_ptr<StorageSharedKeyCredential> _testSharedKeyCredential);
+#endif
     AzureBlob(const char *_azureFileName, const DirEntry &entry)
     : AzureBlob(_azureFileName) { setListedInfo(entry.isDir, entry.size, entry.modifiedTime); }
     virtual bool exists() override
@@ -350,6 +401,11 @@ protected:
     time_t lastModified = 0;
     time_t createdOn = 0;
     std::string blobUrl;
+#ifdef _USE_CPPUNIT
+    // Alternate endpoint used only by the Azurite CppUnit tests.
+    std::string blobServiceEndpoint;
+    std::shared_ptr<StorageSharedKeyCredential> testSharedKeyCredential;
+#endif
     mutable CriticalSection cs{SYNC_LOCATION};
     mutable std::shared_ptr<Azure::Storage::Blobs::BlockBlobClient> cachedBlobClient;  // Cache client for reuse per-file
     StorageApiConfig config;
@@ -468,6 +524,27 @@ offset_t AzureBlobReadIO::size()
 AzureBlobWriteIO::AzureBlobWriteIO(AzureBlob * _file)
 : AzureBlobIO(_file)
 {
+    file->invalidateMeta();
+
+    MemoryBuffer blockId;
+    blockId.append(hashncz_fnv1a((const byte *)file->queryFilename(), fnvInitialHash32));
+    blockId.append(getTimeStampNowValue());
+    blockId.append(hashvalue_fnv1a(get_cycles_now(), fnvInitialHash32));
+    blockId.append('_').append('_');
+    dbgassertex(blockId.length() % 3 == 0);
+    JBASE64_Encode(blockId.bytes(), blockId.length(), baseBlockId, false);
+
+    try
+    {
+        Azure::Core::IO::MemoryBodyStream empty(nullptr, 0);
+        blockBlobClient->Upload(empty);
+    }
+    catch (const Azure::Core::RequestFailedException& e)
+    {
+        throw makeStringExceptionV(1234, "Azure create block blob failed: %s (%d)", e.ReasonPhrase.c_str(), static_cast<int>(e.StatusCode));
+    }
+
+    operations.setown(new AzureBlobBlockOperations(blockBlobClient, baseBlockId.str()));
 }
 
 void AzureBlobWriteIO::beforeDispose()
@@ -495,79 +572,34 @@ void AzureBlobWriteIO::flush()
 {
 }
 
+void AzureBlobWriteIO::checkAppendPosition(offset_t pos) const
+{
+    if (unlikely(pos != offset))
+        throw makeStringExceptionV(1234, "Azure Blobs only support appending writes, unexpected write position %llu, expected %llu", pos, offset);
+}
+
 //---------------------------------------------------------------------------------------------------------------------
 
 AzureBlobBlockBlobWriteIO::AzureBlobBlockBlobWriteIO(AzureBlob * _file) : AzureBlobWriteIO(_file)
 {
-    // Each block in a block blob needs to have a unique id.  This must be base64 encoded, and less than 64 characters in length (before encoding).
-    // Use the following to generate a unique id:
-    // * 32bit hash of the file name
-    // * 64bit timestamp
-    // * 32bit hash of get_cycles_now()
-    // * 2 underscores
-    //
-    // This is then encoded to a base64 base string.
-    //
-    // Each block id then has a 8 character blockid appended to this base-64 encoded base id.
-    // 18bytes pre-encoding.  24 bytes post encoding.  32 characters with the blockid appended.
-
-    file->invalidateMeta();
-
-    MemoryBuffer blockId;
-    blockId.append(hashncz_fnv1a((const byte *)file->queryFilename(), fnvInitialHash32));
-    blockId.append(getTimeStampNowValue());
-    blockId.append(hashvalue_fnv1a(get_cycles_now(), fnvInitialHash32));
-    blockId.append('_').append('_');
-    //Ensure the base block id is a multiple of 3, so that when it is base 64 encoded there are no padding characters
-    dbgassertex(blockId.length() % 3 == 0);
-    JBASE64_Encode(blockId.bytes(), blockId.length(), baseBlockId, false);
-
-    try
-    {
-        Azure::Core::IO::MemoryBodyStream empty(nullptr, 0);
-        // The Azure SDK for C++ overwrites an existing blob by default when calling Upload().
-        // There is no 'Overwrite' option in UploadBlockBlobOptions; simply call Upload().
-        blockBlobClient->Upload(empty);
-    }
-    catch (const Azure::Core::RequestFailedException& e)
-    {
-        IException * error = makeStringExceptionV(1234, "Azure create block blob failed: %s (%d)", e.ReasonPhrase.c_str(), static_cast<int>(e.StatusCode));
-        throw error;
-    }
 }
-
-std::string AzureBlobBlockBlobWriteIO::generateNextUniqueBlockId()
-{
-    ++blockIndex;
-    if (blockIndex > maxAzureBlockCount)
-        throw makeStringException(1234, "Too many blocks for Azure block blob");
-
-    //Ensure a multiple of 4 characters are appended - so that it is a valid base64 encoding
-    char blockIndexText[9];
-    sprintf(blockIndexText, "%08u", blockIndex);
-
-    return std::string(baseBlockId).append(blockIndexText);
-}
-
 
 size32_t AzureBlobBlockBlobWriteIO::write(offset_t pos, size32_t len, const void * data)
 {
     if (len == 0)
         return 0;
 
-    if (unlikely(pos != offset))
-        throw makeStringExceptionV(1234, "Azure Blobs only support appending writes, unexpected write position %llu, expected %llu", pos, offset);
+    checkAppendPosition(pos);
 
     file->invalidateMeta();
 
     CCycleTimer timer;
-    std::string blockId = generateNextUniqueBlockId();
-    blockIds.push_back(blockId);
+    const unsigned sequence = lastSequence + 1;
 
     try
     {
-        Azure::Core::IO::MemoryBodyStream content(reinterpret_cast<const uint8_t*>(data), len);
-        blockBlobClient->StageBlock(blockId, content);
+        operations->stageBlock(sequence, static_cast<const byte *>(data), len);
+        lastSequence = sequence;
         offset += len;
     }
     catch (const Azure::Core::RequestFailedException& e)
@@ -593,7 +625,7 @@ void AzureBlobBlockBlobWriteIO::close()
 
     try
     {
-        blockBlobClient->CommitBlockList(blockIds);
+        operations->commitBlockList(lastSequence);
         committed = true;
     }
     catch (const Azure::Core::RequestFailedException& e)
@@ -619,6 +651,20 @@ static std::string getBlobUrl(const char *account, const char * container, const
     std::string url(getContainerUrl(account, container));
     return url.append("/").append(blob);
 }
+
+#ifdef _USE_CPPUNIT
+static std::string getContainerUrl(const char *account, const char *container, const char *blobServiceEndpoint)
+{
+    std::string url(blobServiceEndpoint);
+    return url.append("/").append(container);
+}
+
+static std::string getBlobUrl(const char *account, const char *container, const char *blob, const char *blobServiceEndpoint)
+{
+    std::string url(getContainerUrl(account, container, blobServiceEndpoint));
+    return url.append("/").append(blob);
+}
+#endif
 
 AzureBlob::AzureBlob(const char *_azureFileName) : fullName(_azureFileName)
 {
@@ -689,6 +735,24 @@ AzureBlob::AzureBlob(const char *_azureFileName) : fullName(_azureFileName)
     blobUrl = ::getBlobUrl(accountName, containerName, blobName);
 }
 
+#ifdef _USE_CPPUNIT
+AzureBlob::AzureBlob(const char *_azureFileName, const char *_blobServiceEndpoint,
+    std::shared_ptr<StorageSharedKeyCredential> _testSharedKeyCredential)
+: AzureBlob(_azureFileName)
+{
+    if (isEmptyString(_blobServiceEndpoint))
+        throw makeStringException(-1, "Azure test blob service endpoint is required");
+    if (!_testSharedKeyCredential)
+        throw makeStringException(-1, "Azure test shared-key credential is required");
+
+    blobServiceEndpoint = _blobServiceEndpoint;
+    while (!blobServiceEndpoint.empty() && blobServiceEndpoint.back() == '/')
+        blobServiceEndpoint.pop_back();
+    blobUrl = ::getBlobUrl(accountName, containerName, blobName, blobServiceEndpoint.c_str());
+    testSharedKeyCredential = std::move(_testSharedKeyCredential);
+}
+#endif
+
 IFile * AzureBlobDirectoryIterator::createFile(const char *fullPath, const DirEntry &entry)
 {
     return createAzureBlob(fullPath, entry);
@@ -696,6 +760,10 @@ IFile * AzureBlobDirectoryIterator::createFile(const char *fullPath, const DirEn
 
 std::shared_ptr<StorageSharedKeyCredential> AzureBlob::getSharedKeyCredentials() const
 {
+#ifdef _USE_CPPUNIT
+    if (testSharedKeyCredential)
+        return testSharedKeyCredential;
+#endif
     return getAzureSharedKeyCredential(accountName, secretName.str());
 }
 
@@ -706,7 +774,13 @@ std::string AzureBlob::getBlobUrl() const
 
 std::shared_ptr<BlobContainerClient> AzureBlob::getBlobContainerClient() const
 {
+#ifdef _USE_CPPUNIT
+    std::string blobContainerUrl = blobServiceEndpoint.empty()
+        ? getContainerUrl(accountName, containerName)
+        : getContainerUrl(accountName, containerName, blobServiceEndpoint.c_str());
+#else
     std::string blobContainerUrl = getContainerUrl(accountName, containerName);
+#endif
 
     // Create optimized client options for better performance
     Azure::Storage::Blobs::BlobClientOptions clientOptions;
@@ -900,3 +974,149 @@ IFile *createAzureBlob(const char *azureFileName, const DirEntry &entry)
 {
     return new AzureBlob(azureFileName, entry);
 }
+
+#ifdef _USE_CPPUNIT
+static constexpr const char azuriteBlobEndpoint[] = "http://127.0.0.1:10000/devstoreaccount1";
+static constexpr const char azuriteDevStoreKey[] = "Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==";
+
+static IFile *createAzureBlobForTest(const char *azureFileName)
+{
+    auto credential = std::make_shared<StorageSharedKeyCredential>("devstoreaccount1", azuriteDevStoreKey);
+    return new AzureBlob(azureFileName, azuriteBlobEndpoint, std::move(credential));
+}
+
+/*
+ * This test needs a local Azurite Blob service. Start it in one terminal:
+ *
+ *   npx --yes azurite --location /tmp/azurite-test --blobHost 127.0.0.1 --blobPort 10000
+ *
+ * Then run from the build package directory:
+ *   bin/unittests -v -d <filehooks-directory> -e AzureBlobWriteTimingTest
+ *
+ * The suite name contains "Timing", so the main unittest driver excludes it
+ * from the default run unless the test is selected explicitly or -a is used.
+ */
+class AzureBlobWriteTimingTest : public CppUnit::TestFixture
+{
+public:
+    CPPUNIT_TEST_SUITE(AzureBlobWriteTimingTest);
+        CPPUNIT_TEST(testWriteSizes);
+    CPPUNIT_TEST_SUITE_END();
+
+public:
+    virtual void setUp() override
+    {
+        originalComponentConfig.setown(getComponentConfig());
+        originalGlobalConfig.setown(getGlobalConfig());
+
+        try
+        {
+            setupAzuriteEnvironment();
+        }
+        catch (IException *e)
+        {
+            Owned<IException> ownedException(e);
+            StringBuffer message;
+            e->errorMessage(message);
+            cleanupTestEnvironment();
+            CPPUNIT_FAIL(message.str());
+        }
+        catch (...)
+        {
+            cleanupTestEnvironment();
+            throw;
+        }
+    }
+
+    virtual void tearDown() override
+    {
+        cleanupTestEnvironment();
+    }
+
+    void testWriteSizes()
+    {
+        START_TEST
+        const std::vector<size32_t> sizes = {1, 1023, 1024, 1025, 3 * 1024 + 7};
+        for (size32_t size : sizes)
+        {
+            std::string name = uniqueBlobName();
+            std::vector<byte> expected(size);
+            for (size32_t i = 0; i < size; ++i)
+                expected[i] = static_cast<byte>((i * 31 + size) & 0xff);
+
+            Owned<IFile> output(createAzureBlobForTest(name.c_str()));
+            Owned<IFileIO> writer(output->open(IFOcreate));
+            CPPUNIT_ASSERT(writer);
+            CPPUNIT_ASSERT_EQUAL(size, writer->write(0, size, expected.data()));
+            CPPUNIT_ASSERT_EQUAL(static_cast<offset_t>(size), writer->size());
+            CPPUNIT_ASSERT_EQUAL(1ULL, writer->getStatistic(StNumDiskWrites));
+            CPPUNIT_ASSERT_EQUAL(static_cast<unsigned __int64>(size), writer->getStatistic(StSizeDiskWrite));
+            writer->close();
+
+            Owned<IFile> inputFile(createAzureBlobForTest(name.c_str()));
+            Owned<IFileIO> reader(inputFile->open(IFOread));
+            CPPUNIT_ASSERT(reader);
+            std::vector<byte> actual(size);
+            CPPUNIT_ASSERT_EQUAL(size, reader->read(0, size, actual.data()));
+            CPPUNIT_ASSERT(actual == expected);
+            inputFile->remove();
+        }
+        END_TEST
+    }
+
+private:
+    void setupAzuriteEnvironment()
+    {
+        testPlaneName.set("azurite-test-").append(getTimeStampNowValue());
+
+        VStringBuffer testPlaneYaml(R"!!(
+planes:
+- name: %s
+  category: data
+  prefix: /tmp/azurite-test
+  storageapi:
+    type: azureblob
+    account: devstoreaccount1
+    secret: test-credential-injected
+    containers:
+    - name: hpccparalleltest
+)!!", testPlaneName.str());
+
+        Owned<IPropertyTree> testPlaneConfig = createPTreeFromYAMLString(testPlaneYaml);
+        Owned<IPropertyTree> testPlane = testPlaneConfig->getPropTree("planes");
+        CPPUNIT_ASSERT(testPlane);
+
+        Owned<IPropertyTree> globalConfig = createPTreeFromIPT(originalGlobalConfig);
+        Owned<IPropertyTree> storageConfig = globalConfig->getPropTree("storage");
+        if (!storageConfig)
+            storageConfig.set(globalConfig->addPropTree("storage", createPTree()));
+        storageConfig->addPropTree("planes", testPlane.getClear());
+
+        replaceComponentConfig(originalComponentConfig, globalConfig);
+
+        Owned<IFile> container(createAzureBlobForTest(VStringBuffer("azureblob:%s/", testPlaneName.str())));
+        container->createDirectory();
+    }
+
+    void cleanupTestEnvironment()
+    {
+        replaceComponentConfig(originalComponentConfig, originalGlobalConfig);
+    }
+
+    StringBuffer testPlaneName;
+    Owned<IPropertyTree> originalComponentConfig;
+    Owned<IPropertyTree> originalGlobalConfig;
+    bool configReplacementAttempted = false;
+
+    std::string uniqueBlobName()
+    {
+        // The plane name is only an HPCC lookup key; Azure identifies blobs by container and blob name.
+        // Include the run ID here to prevent concurrent test processes from sharing blob names.
+        static unsigned counter = 0;
+        return std::string("azureblob:") + testPlaneName.str() + "/write-timing-" + testPlaneName.str() + "-" + std::to_string(++counter);
+    }
+};
+
+CPPUNIT_TEST_SUITE_REGISTRATION(AzureBlobWriteTimingTest);
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(AzureBlobWriteTimingTest, "AzureBlobWriteTimingTest");
+#endif
