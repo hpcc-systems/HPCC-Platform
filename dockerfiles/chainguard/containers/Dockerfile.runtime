@@ -107,11 +107,32 @@ USER hpcc
 WORKDIR /var/lib/HPCCSystems
 ENTRYPOINT ["/bin/bash", "--login", "-c"]
 
+# Run the HPCC host with the runtime user/environment and Docker's normal /proc.
+# A bare chroot cannot discover HPCC's plugin path via /proc/self/exe.
+FROM runtime AS runtime-python-audit
+ARG RUNTIME_PYTHON
+RUN python_plugin="$(find /opt/HPCCSystems -type f -name 'libpy3embed.so' -print -quit)" \
+    && test -n "${python_plugin}" \
+    # py3embed owns interpreter initialization and GIL state; load it from a native HPCC host, not ctypes.
+    && python_version="$(printf '%s\n' \
+        'IMPORT Python3;' \
+        'STRING pythonVersion() := EMBED(Python3 : FOLD)' \
+        '    import sys' \
+        '    return "%d.%d" % sys.version_info[:2]' \
+        'ENDEMBED;' \
+        'pythonVersion();' \
+        | LD_LIBRARY_PATH=/opt/HPCCSystems/lib /opt/HPCCSystems/bin/eclcc -Me -)" \
+    && { test "${python_version}" = "'${RUNTIME_PYTHON}'" || { \
+        echo "py3embed Python version mismatch: expected '${RUNTIME_PYTHON}', got ${python_version}" >&2; exit 1; \
+    }; } \
+    && touch /tmp/runtime-python-audit-passed
+
 FROM ${GO_DEV_IMAGE} AS runtime-audit
 USER root
 RUN apk add --no-cache binutils file
 ARG RUNTIME_PYTHON
 COPY --from=runtime / /image/
+COPY --from=runtime-python-audit /tmp/runtime-python-audit-passed /runtime-python-audit-passed
 RUN test ! -e /image/sbin/apk \
     && test ! -e /image/usr/sbin/apk \
     && for command in bash git git-lfs kubectl java python3 Rscript ssh rsync jq curl; do \
@@ -128,21 +149,7 @@ RUN test ! -e /image/sbin/apk \
     && test -x /image/usr/bin/g++ \
     && test -x /image/opt/HPCCSystems/bin/eclcc \
     && test -e "/image/usr/lib/libpython${RUNTIME_PYTHON}.so.1.0" \
-    && chroot /image /bin/bash --login -c 'git-lfs version && kubectl version --client=true && gcc --version && g++ --version && printf "int main() { return 0; }\n" > /tmp/eclcc-link-test.cpp && g++ /tmp/eclcc-link-test.cpp -o /tmp/eclcc-link-test && /tmp/eclcc-link-test && python3 --version && R_LIBS_SITE=/usr/local/lib/R/site-library Rscript -e "library(Rcpp); library(RInside); library(inline)"'
-RUN python_plugin="$(find /image/opt/HPCCSystems -type f -name 'libpy3embed.so' -print -quit)" \
-    && test -n "${python_plugin}" \
-    # py3embed owns interpreter initialization and GIL state; load it from a native HPCC host, not ctypes.
-    && python_version="$(printf '%s\n' \
-        'IMPORT Python3;' \
-        'STRING pythonVersion() := EMBED(Python3 : FOLD)' \
-        '    import sys' \
-        '    return "%d.%d" % sys.version_info[:2]' \
-        'ENDEMBED;' \
-        'pythonVersion();' \
-        | LD_LIBRARY_PATH=/opt/HPCCSystems/lib chroot /image /opt/HPCCSystems/bin/eclcc -Me -)" \
-    && { test "${python_version}" = "'${RUNTIME_PYTHON}'" || { \
-        echo "py3embed Python version mismatch: expected '${RUNTIME_PYTHON}', got ${python_version}" >&2; exit 1; \
-    }; } \
+    && chroot /image /bin/bash --login -c 'git-lfs version && kubectl version --client=true && gcc --version && g++ --version && printf "int main() { return 0; }\n" > /tmp/eclcc-link-test.cpp && g++ /tmp/eclcc-link-test.cpp -o /tmp/eclcc-link-test && /tmp/eclcc-link-test && python3 --version && R_LIBS_SITE=/usr/local/lib/R/site-library Rscript -e "library(Rcpp); library(RInside); library(inline)"' \
     && touch /runtime-audit-passed
 
 FROM runtime AS final
