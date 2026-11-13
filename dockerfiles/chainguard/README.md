@@ -110,10 +110,18 @@ The `runtime-audit` target in
 [Dockerfile.runtime](containers/Dockerfile.runtime) checks the assembled runtime
 before the final image can be built. Its Python check uses the native HPCC
 compiler, `eclcc -Me`, to evaluate a foldable `EMBED(Python3)` function inside
-the runtime rootfs. The function reads `sys.version_info`; its result must match
-`RUNTIME_PYTHON`, which must also match `PYTHON` in the packaged `hpcc-baseline`.
+the `runtime-python-audit` stage, derived from `runtime` with its user,
+working directory and environment. Docker supplies `/proc` in this stage;
+HPCC needs `/proc/self/exe` to discover its plugin path, so this check must
+not run in a bare copied-root `chroot`. The function reads `sys.version_info`;
+its result must match `RUNTIME_PYTHON`, which must also match `PYTHON` in the
+packaged `hpcc-baseline`.
 Missing libraries, plugin initialization/evaluation failures, and version
 mismatches fail the audit rather than bypassing it.
+
+The `runtime-audit` target retains the filesystem, dependency and SBOM checks
+and requires the Python-stage success marker. The final image in turn requires
+the `runtime-audit` success marker, so neither audit can be skipped.
 
 Do not test `libpy3embed.so` with Python's `ctypes.CDLL`. This is an HPCC
 embedding plugin, not a Python extension: its global initialization initializes
