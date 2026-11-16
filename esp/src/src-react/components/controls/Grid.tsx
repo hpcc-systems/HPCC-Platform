@@ -540,7 +540,7 @@ const FluentStoreGrid: React.FunctionComponent<FluentStoreGridProps> = ({
         const itemIndex = items.findIndex(i => getRowId(i) === rowId);
         const overlay = (!("__shimmerIndex__" in item) && onRenderRow) ? onRenderRow({ item, itemIndex }) : null;
         const lastColumnId = tableColumns[tableColumns.length - 1]?.columnId;
-        return <DataGridRow<any> key={rowId} style={style} selectionCell={{ className: styles.selectionCell }}>
+        return <DataGridRow<any> key={rowId} style={style} {...(dgSelectionMode ? { selectionCell: { className: styles.selectionCell } } : {})}>
             {({ renderCell, columnId }) => <>
                 <DataGridCell className={styles.cell}>
                     {"__shimmerIndex__" in item
@@ -555,7 +555,7 @@ const FluentStoreGrid: React.FunctionComponent<FluentStoreGridProps> = ({
                 )}
             </>}
         </DataGridRow>;
-    }, [items, onRenderRow, tableColumns, styles.selectionCell, styles.cell, getRowId]);
+    }, [items, onRenderRow, tableColumns, dgSelectionMode, styles.selectionCell, styles.cell, getRowId]);
 
     return <div style={{ position: "relative", height }}>
         <DataGrid
