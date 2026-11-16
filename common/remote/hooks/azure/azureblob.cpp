@@ -1106,7 +1106,6 @@ planes:
     StringBuffer testPlaneName;
     Owned<IPropertyTree> originalComponentConfig;
     Owned<IPropertyTree> originalGlobalConfig;
-    bool configReplacementAttempted = false;
 
     std::string uniqueBlobName()
     {
