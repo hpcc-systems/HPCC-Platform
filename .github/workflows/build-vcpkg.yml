@@ -253,6 +253,25 @@ jobs:
             }
 
             throw new Error('Copilot review timeout after 30 minutes');
+  
+  analyze-changes:
+    if: ${{ contains('pull_request,push', github.event_name) }}
+    runs-on: ubuntu-latest
+    outputs:
+      changes: ${{ steps.analyze.outputs.changes }}
+      impacts: ${{ steps.analyze.outputs.impacts }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Analyze changes
+        id: analyze
+        uses: ./.github/actions/analyze-changes
+        with:
+          base-sha: ${{ github.event.pull_request.base.sha || github.event.before }}
+          head-sha: ${{ github.event.pull_request.head.sha || github.event.after }}
 
   build-workflow-dispatch:
     if: ${{ contains('workflow_dispatch', github.event_name) }}
@@ -309,12 +328,15 @@ jobs:
     secrets: inherit
 
   test-smoke-docker-ubuntu-22_04:
-    needs: [build-docker-ubuntu-22_04, pre_job]
+    needs: [build-docker-ubuntu-22_04, pre_job, analyze-changes]
     if: ${{ contains('pull_request,push', github.event_name) && (needs.pre_job.outputs.testing == 'true' || needs.pre_job.outputs.platform == 'true') }}
     uses: ./.github/workflows/test-smoke-gh_runner.yml
     with:
       os: ubuntu-22.04
       asset-name: 'docker-ubuntu-22_04'
+      run-roxie-tests: ${{ (fromJSON(needs.analyze-changes.outputs.impacts).roxie) || (fromJSON(needs.analyze-changes.outputs.impacts)['regression-suite']) }}
+      run-thor-tests: ${{ (fromJSON(needs.analyze-changes.outputs.impacts).thor) || (fromJSON(needs.analyze-changes.outputs.impacts)['regression-suite']) }}
+      run-hthor-tests: ${{ (fromJSON(needs.analyze-changes.outputs.impacts).hthor) || (fromJSON(needs.analyze-changes.outputs.impacts)['regression-suite']) }}
     secrets: inherit
 
   test-regression-suite-k8s-ubuntu-22_04:
