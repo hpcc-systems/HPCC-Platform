@@ -14216,6 +14216,35 @@ extern WORKUNIT_API IPropertyTree * getQueryRegistry(const char * wsEclId, bool 
     return LINK(root);
 }
 
+extern WORKUNIT_API bool deleteQuerySet(const char * querySetName, bool deleteChildren)
+{
+    if (!querySetName || !*querySetName)
+        throwStringExceptionV(-1, "QuerySet name is required");
+    unsigned nameLength = 0;
+    for (const char *cursor = querySetName; *cursor; ++cursor)
+    {
+        if (++nameLength > 255)
+            throwStringExceptionV(-1, "QuerySet name is too long");
+        if (!(*cursor >= 'a' && *cursor <= 'z') && !(*cursor >= 'A' && *cursor <= 'Z') &&
+            !(*cursor >= '0' && *cursor <= '9') && *cursor != '_' && *cursor != '-' && *cursor != '.')
+            throwStringExceptionV(-1, "Invalid QuerySet name");
+    }
+
+    StringBuffer xpath;
+    xpath.append("/QuerySets/QuerySet[@id=\"").append(querySetName).append("\"]");
+    Owned<IRemoteConnection> conn = querySDS().connect(xpath.str(), myProcessSession(), RTM_LOCK_WRITE, SDS_LOCK_TIMEOUT);
+    if (!conn)
+        return false;
+    if (!deleteChildren)
+    {
+        Owned<IPropertyTreeIterator> children = conn->queryRoot()->getElements("*");
+        if (children->first())
+            throwStringExceptionV(-1, "QuerySet %s is not empty", querySetName);
+    }
+    conn->close(true);
+    return true;
+}
+
 IPropertyTree * addNamedPackageSet(IPropertyTree * packageRegistry, const char * name, IPropertyTree *packageInfo, bool overWrite)
 {
     StringBuffer xpath;

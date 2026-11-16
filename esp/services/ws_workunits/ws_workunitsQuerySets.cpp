@@ -3218,6 +3218,328 @@ bool CWsWorkunitsEx::onWUQueryConfig(IEspContext &context, IEspWUQueryConfigRequ
     return true;
 }
 
+static bool doDeleteQuerySet(IEspContext &context, IEspWUDeleteQuerySetRequest &req,
+    IEspWUDeleteQuerySetResponse &resp, MapStringToMyClass<ISmartSocketFactory> &roxieConnMap)
+{
+    if (context.getClientVersion() < 2.13)
+        throwStringExceptionV(-1, "WUDeleteQuerySet requires client version 2.13");
+    context.ensureFeatureAccess(OWN_WU_ACCESS, SecAccess_Full, ECLWATCH_ECL_WU_ACCESS_DENIED,
+                                "WUDeleteQuerySet: full own-workunit access required");
+    context.ensureFeatureAccess(OTHERS_WU_ACCESS, SecAccess_Full, ECLWATCH_ECL_WU_ACCESS_DENIED,
+                                "WUDeleteQuerySet: full others-workunit access required");
+    bool force = req.getForce();
+    bool deleteChildren = req.getDeleteChildren();
+    const char *querySetName = req.getQuerySetName();
+    if (isEmptyString(querySetName))
+        throwStringExceptionV(-1, "QuerySet name is required");
+    if (!force)
+    {
+#ifdef _CONTAINERIZED
+        Owned<IStringIterator> targets = config::getContainerTargets("roxie", querySetName);
+        if (roxieConnMap.getValue(querySetName) || targets->first())
+#else
+        Owned<IConstWUClusterInfo> clusterInfo = getTargetClusterInfo(querySetName);
+        if (clusterInfo && clusterInfo->getPlatform() == RoxieCluster)
+#endif
+            throwStringExceptionV(-1, "Cannot delete a QuerySet for a registered Roxie target");
+    }
+    bool deleted = deleteQuerySet(querySetName, deleteChildren);
+    resp.setDeleted(deleted);
+    if (deleted)
+        AuditSystemAccess(context.queryUserId(), true, "Deleted QuerySet %s (DeleteChildren=%s)",
+            querySetName, deleteChildren ? "true" : "false");
+    return true;
+}
+
+bool CWsWorkunitsEx::onWUDeleteQuerySet(IEspContext &context, IEspWUDeleteQuerySetRequest &req, IEspWUDeleteQuerySetResponse &resp)
+{
+    return doDeleteQuerySet(context, req, resp, roxieConnMap);
+}
+
+#ifdef _USE_CPPUNIT
+#include "basesecurity.hpp"
+#include "espcontext.hpp"
+#include "unittests.hpp"
+
+class CQuerySetDeletionTestSecurityManager : public CBaseSecurityManager
+{
+public:
+    CQuerySetDeletionTestSecurityManager(SecAccessFlags _ownAccess, SecAccessFlags _othersAccess)
+        : ownAccess(_ownAccess), othersAccess(_othersAccess)
+    {
+    }
+
+    virtual bool authorize(ISecUser &user, ISecResourceList *resources, IEspSecureContext *secureContext) override
+    {
+        for (unsigned i = 0; i < resources->count(); ++i)
+        {
+            ISecResource *resource = resources->queryResource(i);
+            resource->setAccessFlags(streq(resource->getName(), OWN_WU_ACCESS) ? ownAccess : othersAccess);
+        }
+        return true;
+    }
+
+private:
+    SecAccessFlags ownAccess;
+    SecAccessFlags othersAccess;
+};
+
+// Requires an isolated Dali and a registered Roxie test target without an existing QuerySet.
+// In container builds, configure the test target as a Roxie queue without a service endpoint.
+// Run with --DaliQuerySetDeletionTests.dali=host:port --DaliQuerySetDeletionTests.roxieTarget=target.
+class DaliQuerySetDeletionTests : public CppUnit::TestFixture
+{
+    CPPUNIT_TEST_SUITE(DaliQuerySetDeletionTests);
+        CPPUNIT_TEST(testClientVersion);
+        CPPUNIT_TEST(testRequiresFullAccessToBothFeatures);
+        CPPUNIT_TEST(testEmptyAndMissingQuerySets);
+        CPPUNIT_TEST(testRejectsChildrenWithoutDeleteChildren);
+        CPPUNIT_TEST(testDeleteChildren);
+        CPPUNIT_TEST(testRegisteredRoxieTarget);
+    CPPUNIT_TEST_SUITE_END();
+
+public:
+    void testClientVersion()
+    {
+        START_TEST
+        MapStringToMyClass<ISmartSocketFactory> roxieConnMap;
+        Owned<IEspContext> context = createEspContext();
+        context->setClientVersion(2.12);
+        Owned<IEspWUDeleteQuerySetRequest> request = createWUDeleteQuerySetRequest();
+        Owned<IEspWUDeleteQuerySetResponse> response = createWUDeleteQuerySetResponse();
+        assertRejected(roxieConnMap, *context, *request, *response, "requires client version 2.13");
+        request->setForce(true);
+        request->setDeleteChildren(true);
+        assertRejected(roxieConnMap, *context, *request, *response, "requires client version 2.13");
+        context->setClientVersion(2.13);
+        assertRejected(roxieConnMap, *context, *request, *response, "QuerySet name is required");
+        END_TEST
+    }
+
+    void testRequiresFullAccessToBothFeatures()
+    {
+        START_TEST
+        MapStringToMyClass<ISmartSocketFactory> roxieConnMap;
+        Owned<IEspContext> context = createEspContext();
+        context->setClientVersion(2.13);
+        context->setUserID("queryset-deletion-test");
+        Owned<IEspWUDeleteQuerySetRequest> request = createWUDeleteQuerySetRequest();
+        Owned<IEspWUDeleteQuerySetResponse> response = createWUDeleteQuerySetResponse();
+        request->setForce(true);
+        request->setDeleteChildren(true);
+        for (SecAccessFlags access : {SecAccess_Read, SecAccess_Write, SecAccess_Full})
+        {
+            context->setSecManger(new CQuerySetDeletionTestSecurityManager(access, SecAccess_Full));
+            context->setUser(context->querySecManager()->createUser("queryset-deletion-test"));
+            assertRejected(roxieConnMap, *context, *request, *response,
+                access == SecAccess_Full ? "QuerySet name is required" : "full own-workunit access required");
+
+            context->setSecManger(new CQuerySetDeletionTestSecurityManager(SecAccess_Full, access));
+            context->setUser(context->querySecManager()->createUser("queryset-deletion-test"));
+            assertRejected(roxieConnMap, *context, *request, *response,
+                access == SecAccess_Full ? "QuerySet name is required" : "full others-workunit access required");
+        }
+        END_TEST
+    }
+
+protected:
+    static void assertRejected(MapStringToMyClass<ISmartSocketFactory> &roxieConnMap, IEspContext &context, IEspWUDeleteQuerySetRequest &request,
+        IEspWUDeleteQuerySetResponse &response, const char *expected)
+    {
+        try
+        {
+            doDeleteQuerySet(context, request, response, roxieConnMap);
+            CPPUNIT_FAIL("QuerySet deletion should have been rejected");
+        }
+        catch (IException *error)
+        {
+            Owned<IException> ownedError(error);
+            StringBuffer message;
+            error->errorMessage(message);
+            CPPUNIT_ASSERT_MESSAGE(message.str(), strstr(message.str(), expected));
+        }
+        CPPUNIT_ASSERT(!response.getDeleted());
+    }
+public:
+    virtual void setUp() override
+    {
+        START_TEST
+        auto config = getComponentConfigSP();
+        const char *endpoint = config->queryProp("DaliQuerySetDeletionTests/@dali");
+        CPPUNIT_ASSERT_MESSAGE("Explicit DaliQuerySetDeletionTests.dali endpoint required", !isEmptyString(endpoint));
+        CPPUNIT_ASSERT_MESSAGE("Run this suite in its own unittest process", !daliClientActive());
+        Owned<IGroup> group = createIGroup(endpoint);
+        CPPUNIT_ASSERT(initClientProcess(group, DCR_Testing, 0, nullptr, nullptr, 10000));
+        querySetName.set("Wu.QuerySet_Delete-Test-").append(GetCurrentProcessId()).append('-').append(getTimeStampNowValue());
+        context.setown(createEspContext());
+        context->setClientVersion(2.13);
+        context->setUserID("queryset-deletion-test");
+        END_TEST
+    }
+
+    virtual void tearDown() override
+    {
+        START_TEST
+        if (createdQuerySet)
+        {
+            VStringBuffer xpath("/QuerySets/QuerySet[@id=\"%s\"]", querySetName.str());
+            Owned<IRemoteConnection> conn = querySDS().connect(xpath, myProcessSession(), RTM_LOCK_WRITE, 10000);
+            if (conn)
+                conn->close(true);
+        }
+        context.clear();
+#ifndef _CONTAINERIZED
+        closeEnvironment();
+#endif
+        closedownClientProcess();
+        END_TEST
+    }
+
+    void testEmptyAndMissingQuerySets()
+    {
+        START_TEST
+        querySetName.appendN(255 - querySetName.length(), 'x');
+        CPPUNIT_ASSERT(!callDelete(querySetName));
+        createQuerySet(nullptr);
+        CPPUNIT_ASSERT(callDelete(querySetName));
+        CPPUNIT_ASSERT(!callDelete(querySetName));
+        END_TEST
+    }
+
+    void testRejectsChildrenWithoutDeleteChildren()
+    {
+        START_TEST
+        context->setClientVersion(2.13);
+        for (const char *child : {"Query", "Alias", "Unexpected"})
+        {
+            createQuerySet(child);
+            MapStringToMyClass<ISmartSocketFactory> roxieConnMap;
+            Owned<IEspWUDeleteQuerySetRequest> request = createWUDeleteQuerySetRequest();
+            Owned<IEspWUDeleteQuerySetResponse> response = createWUDeleteQuerySetResponse();
+            request->setQuerySetName(querySetName);
+            assertRejected(roxieConnMap, *context, *request, *response, "is not empty");
+            request->setForce(true);
+            assertRejected(roxieConnMap, *context, *request, *response, "is not empty");
+            VStringBuffer xpath("/QuerySets/QuerySet[@id=\"%s\"]", querySetName.str());
+            Owned<IRemoteConnection> conn = querySDS().connect(xpath, myProcessSession(), RTM_LOCK_WRITE, 10000);
+            CPPUNIT_ASSERT(conn);
+            CPPUNIT_ASSERT(conn->queryRoot()->hasProp(child));
+            conn->queryRoot()->removeProp(child);
+            conn->commit();
+            conn.clear();
+            CPPUNIT_ASSERT(callDelete(querySetName));
+        }
+        END_TEST
+    }
+
+    void testDeleteChildren()
+    {
+        START_TEST
+        createQuerySet("Query");
+        {
+            VStringBuffer xpath("/QuerySets/QuerySet[@id=\"%s\"]", querySetName.str());
+            Owned<IRemoteConnection> conn = querySDS().connect(xpath, myProcessSession(), RTM_LOCK_WRITE, 10000);
+            CPPUNIT_ASSERT(conn);
+            conn->queryRoot()->addPropTree("Alias", createPTree("Alias"))->setProp("@id", "test-query");
+            conn->queryRoot()->queryPropTree("Query")->addPropTree("Metadata", createPTree("Metadata"));
+            conn->commit();
+        }
+        MapStringToMyClass<ISmartSocketFactory> roxieConnMap;
+        Owned<IEspWUDeleteQuerySetRequest> request = createWUDeleteQuerySetRequest();
+        Owned<IEspWUDeleteQuerySetResponse> response = createWUDeleteQuerySetResponse();
+        context->setClientVersion(2.13);
+        request->setQuerySetName(querySetName);
+        assertRejected(roxieConnMap, *context, *request, *response, "is not empty");
+        request->setDeleteChildren(true);
+        CPPUNIT_ASSERT(doDeleteQuerySet(*context, *request, *response, roxieConnMap));
+        CPPUNIT_ASSERT(response->getDeleted());
+        Owned<IPropertyTree> remaining = getQueryRegistry(querySetName, true);
+        CPPUNIT_ASSERT(!remaining);
+        CPPUNIT_ASSERT(doDeleteQuerySet(*context, *request, *response, roxieConnMap));
+        CPPUNIT_ASSERT(!response->getDeleted());
+        END_TEST
+    }
+
+    void testRegisteredRoxieTarget()
+    {
+        START_TEST
+        auto config = getComponentConfigSP();
+        const char *target = config->queryProp("DaliQuerySetDeletionTests/@roxieTarget");
+        CPPUNIT_ASSERT_MESSAGE("Explicit DaliQuerySetDeletionTests.roxieTarget required", !isEmptyString(target));
+        MapStringToMyClass<ISmartSocketFactory> roxieConnMap;
+#ifdef _CONTAINERIZED
+        VStringBuffer queuePath("queues[@type='roxie'][@name='%s']", target);
+        CPPUNIT_ASSERT_MESSAGE("The selected target must be configured as a Roxie queue", config->hasProp(queuePath));
+        VStringBuffer servicePath("services[@type='roxie'][@target='%s']", target);
+        CPPUNIT_ASSERT_MESSAGE("The selected target must not have a Roxie service endpoint", !getGlobalConfigSP()->hasProp(servicePath));
+#else
+        Owned<IConstWUClusterInfo> clusterInfo = getTargetClusterInfo(target);
+        CPPUNIT_ASSERT_MESSAGE("The selected target must be registered as Roxie", clusterInfo && clusterInfo->getPlatform() == RoxieCluster);
+#endif
+        Owned<IEspWUDeleteQuerySetRequest> request = createWUDeleteQuerySetRequest();
+        Owned<IEspWUDeleteQuerySetResponse> response = createWUDeleteQuerySetResponse();
+        request->setQuerySetName(target);
+        assertRejected(roxieConnMap, *context, *request, *response, "registered Roxie target");
+        querySetName.set(target);
+        createQuerySet(nullptr);
+        context->setClientVersion(2.13);
+        request->setForce(true);
+        CPPUNIT_ASSERT(doDeleteQuerySet(*context, *request, *response, roxieConnMap));
+        CPPUNIT_ASSERT(response->getDeleted());
+        Owned<IPropertyTree> remaining = getQueryRegistry(target, true);
+        CPPUNIT_ASSERT(!remaining);
+
+        createQuerySet("Query");
+        response.setown(createWUDeleteQuerySetResponse());
+        context->setClientVersion(2.13);
+        request->setForce(false);
+        request->setDeleteChildren(true);
+        assertRejected(roxieConnMap, *context, *request, *response, "registered Roxie target");
+        request->setForce(true);
+        request->setDeleteChildren(false);
+        assertRejected(roxieConnMap, *context, *request, *response, "is not empty");
+        request->setDeleteChildren(true);
+        CPPUNIT_ASSERT(doDeleteQuerySet(*context, *request, *response, roxieConnMap));
+        CPPUNIT_ASSERT(response->getDeleted());
+        remaining.setown(getQueryRegistry(target, true));
+        CPPUNIT_ASSERT(!remaining);
+        END_TEST
+    }
+
+private:
+    void createQuerySet(const char *child)
+    {
+        Owned<IRemoteConnection> conn = querySDS().connect("/QuerySets", myProcessSession(), RTM_LOCK_WRITE | RTM_CREATE_QUERY, 10000);
+        CPPUNIT_ASSERT(conn);
+        VStringBuffer xpath("QuerySet[@id=\"%s\"]", querySetName.str());
+        CPPUNIT_ASSERT(!conn->queryRoot()->hasProp(xpath));
+        IPropertyTree *querySet = conn->queryRoot()->addPropTree("QuerySet", createPTree("QuerySet"));
+        querySet->setProp("@id", querySetName);
+        if (child)
+            querySet->addPropTree(child, createPTree(child))->setProp("@id", "test-query");
+        conn->commit();
+        createdQuerySet = true;
+    }
+
+    bool callDelete(const char *name)
+    {
+        MapStringToMyClass<ISmartSocketFactory> roxieConnMap;
+        Owned<IEspWUDeleteQuerySetRequest> request = createWUDeleteQuerySetRequest();
+        Owned<IEspWUDeleteQuerySetResponse> response = createWUDeleteQuerySetResponse();
+        request->setQuerySetName(name);
+        CPPUNIT_ASSERT(doDeleteQuerySet(*context, *request, *response, roxieConnMap));
+        return response->getDeleted();
+    }
+
+    StringBuffer querySetName;
+    Owned<IEspContext> context;
+    bool createdQuerySet = false;
+};
+
+CPPUNIT_TEST_SUITE_REGISTRATION(DaliQuerySetDeletionTests);
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(DaliQuerySetDeletionTests, "DaliQuerySetDeletionTests");
+#endif
+
 bool CWsWorkunitsEx::onWUQuerysetQueryAction(IEspContext &context, IEspWUQuerySetQueryActionRequest & req, IEspWUQuerySetQueryActionResponse & resp)
 {
     resp.setQuerySetName(req.getQuerySetName());

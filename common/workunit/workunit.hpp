@@ -1764,6 +1764,9 @@ extern WORKUNIT_API IPropertyTree * resolveQueryAlias(IPropertyTree * queryRegis
 extern WORKUNIT_API IPropertyTree * resolveQueryAlias(const char *queryset, const char *alias, bool readonly);
 extern WORKUNIT_API IPropertyTree * getQueryRegistry(const char * wsEclId, bool readonly);
 extern WORKUNIT_API IPropertyTree * getQueryRegistryRoot();
+// Deletes QuerySet metadata, optionally including children; associated workunits and files are retained.
+// Returns false if absent; rejects invalid names and, unless deleteChildren is true, nonempty sets.
+extern WORKUNIT_API bool deleteQuerySet(const char * querySetName, bool deleteChildren);
 
 extern WORKUNIT_API void checkAddLibrariesToQueryEntry(IPropertyTree *queryTree, IConstWULibraryIterator *libraries);
 extern WORKUNIT_API void checkAddLibrariesToQueryEntry(IPropertyTree *queryTree, IConstWorkUnit *cw);

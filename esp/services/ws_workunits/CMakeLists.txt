@@ -107,6 +107,9 @@ include_directories (
 ADD_DEFINITIONS( -D_USRDLL -DWS_WORKUNITS_EXPORTS -DWSWU_API_LOCAL -Dws_logaccess_API_LOCAL -DFileSpray_API_LOCAL -DESP_SERVICE_WsWorkunits)
 
 HPCC_ADD_LIBRARY( ws_workunits SHARED ${SRCS} )
+if (USE_CPPUNIT)
+    target_sources(ws_workunits PRIVATE ${HPCC_SOURCE_DIR}/system/security/shared/authmap.cpp)
+endif()
 add_dependencies ( ws_workunits espscm )
 install ( TARGETS ws_workunits RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )
 target_link_libraries ( ws_workunits PRIVATE

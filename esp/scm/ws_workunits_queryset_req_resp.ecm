@@ -441,6 +441,20 @@ ESPresponse [exceptions_inline] WUQuerySetQueryActionResponse
     ESParray<ESPstruct QuerySetQueryActionResult, Result> Results;
 };
 
+ESPrequest [min_ver("2.13")] WUDeleteQuerySetRequest
+{
+    [min_ver("2.13")] string QuerySetName;
+    // Bypasses only the registered-target guard; DeleteChildren controls populated QuerySets.
+    [min_ver("2.13")] bool Force(false);
+    // Removes child metadata, including queries and aliases, but not associated workunits or files.
+    [min_ver("2.13")] bool DeleteChildren(false);
+};
+
+ESPresponse [exceptions_inline, min_ver("2.13")] WUDeleteQuerySetResponse
+{
+    [min_ver("2.13")] bool Deleted(false);
+};
+
 ESPrequest WUQuerySetAliasActionRequest
 {
     ESPenum QuerySetAliasActionTypes Action;

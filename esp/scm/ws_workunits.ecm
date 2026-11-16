@@ -25,7 +25,7 @@ EspInclude(ws_workunits_queryset_req_resp);
 
 ESPservice [
     auth_feature("DEFERRED"), //This declares that the method logic handles feature level authorization
-    version("2.12"), default_client_version("2.12"), cache_group("ESPWsWUs"),
+    version("2.13"), default_client_version("2.13"), cache_group("ESPWsWUs"),
     noforms,exceptions_inline("./smc_xslt/exceptions.xslt"),use_method_name] WsWorkunits
 {
     ESPmethod [cache_seconds(60), resp_xsl_default("/esp/xslt/workunits.xslt")]     WUQuery(WUQueryRequest, WUQueryResponse);
@@ -89,10 +89,11 @@ ESPservice [
     ESPmethod [cache_group("ESPWsWUQS"), cache_seconds(60), resp_xsl_default("/esp/xslt/WUQuerysetQueries.xslt")] WUQuerysetDetails(WUQuerySetDetailsRequest, WUQuerySetDetailsResponse);
     ESPmethod [cache_group("ESPWsWUQS"), cache_seconds(60), resp_xsl_default("/esp/xslt/WUQueryDetails.xslt")] WUQueryDetails(WUQueryDetailsRequest, WUQueryDetailsResponse);
     ESPmethod [cache_group("ESPWsWUQS"), cache_seconds(60), min_ver("1.78")] WUQueryDetailsLightWeight(WUQueryDetailsLightWeightRequest, WUQueryDetailsResponse);
-    ESPmethod [cache_seconds(60)] WUMultiQuerysetDetails(WUMultiQuerySetDetailsRequest, WUMultiQuerySetDetailsResponse);
+    ESPmethod [cache_group("ESPWsWUQS"), cache_seconds(60)] WUMultiQuerysetDetails(WUMultiQuerySetDetailsRequest, WUMultiQuerySetDetailsResponse);
     ESPmethod [clear_cache_group("ESPWsWUQS"), min_ver("1.71")] WUQuerysetImport(WUQuerysetImportRequest, WUQuerysetImportResponse);
     ESPmethod [cache_group("ESPWsWUQS"), min_ver("1.71")] WUQuerysetExport(WUQuerysetExportRequest, WUQuerysetExportResponse);
     ESPmethod [clear_cache_group("ESPWsWUQS")] WUQuerysetQueryAction(WUQuerySetQueryActionRequest, WUQuerySetQueryActionResponse);
+    ESPmethod [clear_cache_group("ESPWsWUQS"), min_ver("2.13")] WUDeleteQuerySet(WUDeleteQuerySetRequest, WUDeleteQuerySetResponse);
     ESPmethod [clear_cache_group("ESPWsWUQS")] WUQuerysetAliasAction(WUQuerySetAliasActionRequest, WUQuerySetAliasActionResponse);
     ESPmethod [clear_cache_group("ESPWsWUQS")] WUQuerysetCopyQuery(WUQuerySetCopyQueryRequest, WUQuerySetCopyQueryResponse);
     ESPmethod [clear_cache_group("ESPWsWUQS")] WUCopyQuerySet(WUCopyQuerySetRequest, WUCopyQuerySetResponse);

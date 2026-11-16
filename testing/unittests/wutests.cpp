@@ -17,6 +17,7 @@
 
 #ifdef _USE_CPPUNIT
 #include <limits>
+#include <string>
 
 #include "unittests.hpp"
 #include "workunit.hpp"
@@ -64,6 +65,7 @@ class wuTests : public CppUnit::TestFixture
 {
     CPPUNIT_TEST_SUITE( wuTests );
         CPPUNIT_TEST(testLooksLikeAWuid);
+        CPPUNIT_TEST(testDeleteQuerySetRejectsInvalidName);
         CPPUNIT_TEST(testLooksLikeAPublishWuid);
         CPPUNIT_TEST(testWuidPattern);
         CPPUNIT_TEST(testTargetArchitectureNormalization);
@@ -91,6 +93,30 @@ class wuTests : public CppUnit::TestFixture
 
 public:
     wuTests(){}
+
+    void testDeleteQuerySetRejectsInvalidName()
+    {
+        std::string tooLong(256, 'x');
+        const char *names[] = {nullptr, "", "test-queryset\"]", "test/queryset", "test\nqueryset", "test queryset", "test'queryset", "test-queryset-\xc3\xa9", tooLong.c_str()};
+        for (const char *name : names)
+        {
+            try
+            {
+                deleteQuerySet(name, false);
+                CPPUNIT_FAIL("Invalid QuerySet name was accepted");
+            }
+            catch (IException *error)
+            {
+                Owned<IException> ownedError(error);
+                StringBuffer message;
+                error->errorMessage(message);
+                const char *expected = !name || !*name ? "QuerySet name is required" :
+                    name == tooLong.c_str() ? "QuerySet name is too long" : "Invalid QuerySet name";
+                CPPUNIT_ASSERT_EQUAL_STR(expected, message.str());
+            }
+        }
+        CPPUNIT_ASSERT_THROWS_IEXCEPTION(deleteQuerySet("test/queryset", true), "DeleteChildren must not bypass name validation");
+    }
 
     void testLooksLikeAWuid()
     {
