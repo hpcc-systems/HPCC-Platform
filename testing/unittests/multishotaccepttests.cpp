@@ -222,6 +222,7 @@ class MultishotAcceptTests : public CppUnit::TestFixture
         CPPUNIT_TEST(testMultipleSimultaneousConnections);
         CPPUNIT_TEST(testRapidConnectDisconnect);
         CPPUNIT_TEST(testCleanShutdown);
+        CPPUNIT_TEST(testConcurrentShutdown);
         CPPUNIT_TEST(testShutdownUnderLoad);
         CPPUNIT_TEST(testMultishotAcceptFallback);
         CPPUNIT_TEST(testConnectionAfterShutdown);
@@ -235,6 +236,7 @@ class MultishotAcceptTests : public CppUnit::TestFixture
         CPPUNIT_TEST(testPendingCallbacksManagement);
         CPPUNIT_TEST(testHighConnectionRate);
         CPPUNIT_TEST(testAcceptMethodAfterStart);
+        CPPUNIT_TEST(testConstructorBindFailure);
     CPPUNIT_TEST_SUITE_END();
 
 protected:
@@ -248,6 +250,29 @@ protected:
     }
 
 public:
+    void testConstructorBindFailure()
+    {
+        unsigned short port;
+        Owned<TestConnectionListener> occupiedListener = createTestListener(port, false, false);
+
+        for (bool useIOUring : {true, false})
+        {
+            Owned<IJSOCK_Exception> exception;
+            try
+            {
+                Owned<TestConnectionListener> listener = new TestConnectionListener(port, false, useIOUring);
+            }
+            catch (IJSOCK_Exception *e)
+            {
+                exception.setown(e);
+            }
+            CPPUNIT_ASSERT_MESSAGE("Constructor must propagate the bind failure without terminating", exception != nullptr);
+            CPPUNIT_ASSERT(exception->errorCode() == JSOCKERR_port_in_use);
+        }
+
+        occupiedListener->stop();
+    }
+
     // Test 1: Basic multishot accept with a single connection
     void testBasicMultishotAccept()
     {
@@ -277,7 +302,6 @@ public:
             // Verify connection was accepted
             CPPUNIT_ASSERT_EQUAL_MESSAGE("One connection should be accepted", 
                                         1U, listener->getAcceptedCount());
-            
             client.close();
             listener->stop();
         }
@@ -399,8 +423,32 @@ public:
             CPPUNIT_FAIL(msg.str());
         }
     }
+
+    // Test 5: Concurrent calls to stop are serialized
+    void testConcurrentShutdown()
+    {
+        unsigned short port;
+        Owned<TestConnectionListener> listener = createTestListener(port, false);
+        std::atomic<bool> start{false};
+        std::thread firstStop([&]
+        {
+            while (!start.load())
+                std::this_thread::yield();
+            listener->stop();
+        });
+        std::thread secondStop([&]
+        {
+            while (!start.load())
+                std::this_thread::yield();
+            listener->stop();
+        });
+
+        start.store(true);
+        firstStop.join();
+        secondStop.join();
+    }
     
-    // Test 5: Shutdown under load with active connections
+    // Test 6: Shutdown under load with active connections
     void testShutdownUnderLoad()
     {
         unsigned short port;
@@ -445,7 +493,7 @@ public:
         }
     }
     
-    // Test 6: Verify fallback to thread-based accept when io_uring unavailable
+    // Test 7: Verify fallback to thread-based accept when io_uring unavailable
     void testMultishotAcceptFallback()
     {
         unsigned short port;
@@ -478,7 +526,7 @@ public:
         }
     }
     
-    // Test 7: Attempt connection after shutdown
+    // Test 8: Attempt connection after shutdown
     void testConnectionAfterShutdown()
     {
         unsigned short port;
@@ -539,7 +587,7 @@ public:
         }
     }
     
-    // Test 8: Many sequential connections
+    // Test 9: Many sequential connections
     void testManySequentialConnections()
     {
         unsigned short port;
@@ -578,7 +626,7 @@ public:
         }
     }
     
-    // Test 9: Connection burst (many clients connecting at once)
+    // Test 10: Connection burst (many clients connecting at once)
     void testConnectionBurst()
     {
         unsigned short port;
@@ -627,7 +675,7 @@ public:
         }
     }
     
-    // Test 10: Slow clients (connections that take time to send data)
+    // Test 11: Slow clients (connections that take time to send data)
     void testSlowClients()
     {
         unsigned short port;
@@ -682,7 +730,7 @@ public:
         }
     }
     
-    // Test 11: Verify io_uring can be disabled via constructor parameter
+    // Test 12: Verify io_uring can be disabled via constructor parameter
     void testIOUringDisabledViaParameter()
     {
         unsigned short port;
@@ -719,7 +767,7 @@ public:
         }
     }
     
-    // Test 12: Verify io_uring can be disabled via global configuration
+    // Test 13: Verify io_uring can be disabled via global configuration
     void testIOUringDisabledViaConfig()
     {
         unsigned short port;
@@ -790,7 +838,7 @@ public:
         }
     }
     
-    // Test 13: Verify AcceptMethod is selected correctly based on io_uring availability
+    // Test 14: Verify AcceptMethod is selected correctly based on io_uring availability
     void testAcceptMethodSelection()
     {
         unsigned short port;
@@ -834,7 +882,7 @@ public:
         }
     }
     
-    // Test 14: Verify multishot vs singleshot behavior differences
+    // Test 15: Verify multishot vs singleshot behavior differences
     void testMultishotVsSingleshotBehavior()
     {
         unsigned short port;
@@ -886,7 +934,7 @@ public:
         }
     }
     
-    // Test 15: Verify accept continues working correctly in both io_uring modes
+    // Test 16: Verify accept continues working correctly in both io_uring modes
     void testPendingCallbacksManagement()
     {
         unsigned short port;
@@ -931,7 +979,7 @@ public:
         }
     }
     
-    // Test 16: High connection rate stress test for io_uring
+    // Test 17: High connection rate stress test for io_uring
     void testHighConnectionRate()
     {
         unsigned short port;
@@ -998,7 +1046,7 @@ public:
         }
     }
     
-    // Test 17: Verify AcceptMethod remains stable during operation
+    // Test 18: Verify AcceptMethod remains stable during operation
     void testAcceptMethodAfterStart()
     {
         unsigned short port;

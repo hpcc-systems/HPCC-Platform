@@ -38,6 +38,7 @@ struct CompletionResponse
 {
     IAsyncCallback * callback;
     int result;
+    unsigned flags;
 };
 
 class URingProcessor : public CInterfaceOf<IAsyncProcessor>
@@ -144,6 +145,8 @@ bool URingProcessor::dequeueCompletion(CompletionResponse & response)
 
     response.callback = static_cast<IAsyncCallback *>(io_uring_cqe_get_data(cqe));
     response.result = cqe->res;
+    // Multishot callbacks need F_MORE to know whether the operation is still active.
+    response.flags = cqe->flags;
     io_uring_cqe_seen(&ring, cqe);
     
     // Skip callbacks that are just sentinel values (from cancel operations)
@@ -357,7 +360,7 @@ void URingProcessor::processCompletions()
         CompletionResponse response;
         if (dequeueCompletion(response))
         {
-            if (response.callback->onAsyncComplete(response.result))
+            if (response.callback->onAsyncComplete(response.result, response.flags))
                 response.callback->afterCompletion();
         }
     }
@@ -406,7 +409,7 @@ public:
             if (processor.dequeueCompletion(response))
             {
                 ProTraceTaskScopeTracker scope(EventTask::Processing);
-                if (response.callback->onAsyncComplete(response.result))
+                if (response.callback->onAsyncComplete(response.result, response.flags))
                     response.callback->afterCompletion();
             }
         }
