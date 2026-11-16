@@ -84,7 +84,11 @@ size32_t CTransformer::read(size32_t maxLength, void * buffer)
 {
     if (cursor + maxLength > maxOffset)
         maxLength = (size32_t)(maxOffset - cursor);
+    if (!maxLength)
+        return 0;
     size32_t got = input->read(cursor, maxLength, buffer);
+    if (!got)
+        throwError2(DFTERR_UnexpectedReadFailure, inputFile->queryFilename(), cursor);
     cursor += got;
     return got;
 }
@@ -1453,4 +1457,65 @@ void TransferServer::wrapOutInCRC(unsigned startCRC)
         out.set(crcOut);
     }
 }
+
+#ifdef _USE_CPPUNIT
+#include "unittests.hpp"
+
+class TransformerReadTest : public CppUnit::TestFixture
+{
+    class TestTransformer final : public CNullTransformer
+    {
+    public:
+        TestTransformer(offset_t expectedSize, unsigned actualSize)
+        : CNullTransformer(8)
+        {
+            inputFile.setown(createIFile("unittest-transformer"));
+            input.setown(createIFileI(actualSize, "data"));
+            maxOffset = expectedSize;
+        }
+    };
+
+public:
+    CPPUNIT_TEST_SUITE(TransformerReadTest);
+        CPPUNIT_TEST(testPrematureEOF);
+        CPPUNIT_TEST(testPartitionEnd);
+    CPPUNIT_TEST_SUITE_END();
+
+    void testPrematureEOF()
+    {
+        START_TEST
+        TestTransformer transformer(8, 4);
+        byte buffer[8];
+        CPPUNIT_ASSERT_EQUAL(size32_t(4), transformer.getN(buffer, sizeof(buffer)));
+        try
+        {
+            transformer.getN(buffer, sizeof(buffer));
+            CPPUNIT_FAIL("EOF before the expected partition end must fail the copy");
+        }
+        catch (IException *e)
+        {
+            Owned<IException> error = e;
+            CPPUNIT_ASSERT_EQUAL(int(DFTERR_UnexpectedReadFailure), error->errorCode());
+        }
+        CPPUNIT_ASSERT_EQUAL(offset_t(4), transformer.tell());
+        END_TEST
+    }
+
+    void testPartitionEnd()
+    {
+        START_TEST
+        TestTransformer transformer(4, 4);
+        byte buffer[8];
+        CPPUNIT_ASSERT_EQUAL(size32_t(0), transformer.getN(buffer, 0));
+        CPPUNIT_ASSERT_EQUAL(size32_t(4), transformer.getN(buffer, sizeof(buffer)));
+        CPPUNIT_ASSERT_EQUAL(size32_t(0), transformer.getN(buffer, sizeof(buffer)));
+        TestTransformer empty(0, 0);
+        CPPUNIT_ASSERT_EQUAL(size32_t(0), empty.getN(buffer, sizeof(buffer)));
+        END_TEST
+    }
+};
+
+CPPUNIT_TEST_SUITE_REGISTRATION(TransformerReadTest);
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(TransformerReadTest, "TransformerReadTest");
+#endif
 

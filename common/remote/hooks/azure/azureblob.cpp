@@ -254,6 +254,10 @@ private:
 
 class AzureBlob final : implements CInterfaceOf<IFile>
 {
+#ifdef _USE_CPPUNIT
+    friend class AzureBlobTest;
+    AzureBlob(SharedBlobClient _client) : cachedBlobClient(std::move(_client)) {}
+#endif
 public:
     AzureBlob(const char *_azureFileName);
 #ifdef _USE_CPPUNIT
@@ -365,6 +369,10 @@ public:
 public:
     SharedBlobClient getBlobClient() const;
     void invalidateMeta() { haveMeta = false; }
+    const StorageApiConfig & queryConfig() const { return config; }
+
+protected:
+    // Seed metadata from a directory listing during construction only.
     void setListedInfo(bool _isDir, offset_t _fileSize, time_t _lastModified)
     {
         haveMeta = true;
@@ -374,9 +382,6 @@ public:
         lastModified = _lastModified;
         createdOn = 0;
     }
-    const StorageApiConfig & queryConfig() const { return config; }
-
-protected:
     std::shared_ptr<StorageSharedKeyCredential> getSharedKeyCredentials() const;
     std::string getBlobUrl() const;
     std::shared_ptr<BlobContainerClient> getBlobContainerClient() const;
@@ -401,14 +406,12 @@ protected:
     time_t lastModified = 0;
     time_t createdOn = 0;
     std::string blobUrl;
+    mutable std::shared_ptr<Azure::Storage::Blobs::BlockBlobClient> cachedBlobClient;  // Cache client for reuse per-file
+    StorageApiConfig config;
 #ifdef _USE_CPPUNIT
-    // Alternate endpoint used only by the Azurite CppUnit tests.
     std::string blobServiceEndpoint;
     std::shared_ptr<StorageSharedKeyCredential> testSharedKeyCredential;
 #endif
-    mutable CriticalSection cs{SYNC_LOCATION};
-    mutable std::shared_ptr<Azure::Storage::Blobs::BlockBlobClient> cachedBlobClient;  // Cache client for reuse per-file
-    StorageApiConfig config;
 };
 
 
@@ -443,16 +446,16 @@ AzureBlobReadIO::AzureBlobReadIO(AzureBlob * _file, const FileIOStats & _firstSt
 
 size32_t AzureBlobReadIO::read(offset_t pos, size32_t len, void * data)
 {
+    if (!len)
+        return 0;
+
     CCycleTimer timer;
     offset_t fileSize = file->size();
-    if (pos > fileSize)
+    if (pos >= fileSize)
         return 0;
 
     if (pos + len > fileSize)
         len = fileSize - pos;
-
-    if (len == 0)
-        return 0;
 
     Azure::Storage::Blobs::DownloadBlobToOptions options;
     options.Range = Azure::Core::Http::HttpRange();
@@ -482,12 +485,12 @@ size32_t AzureBlobReadIO::read(offset_t pos, size32_t len, void * data)
     try
     {
         Azure::Response<Models::DownloadBlobToResult> result = blockBlobClient->DownloadTo(buffer, len, options);
-        // result.Value.BlobSize is the size of the blob, not the size of the data returned, use ContentRange instead
+        // DownloadTo can return a shorter range if the blob shrank since its size was cached.
         Azure::Core::Http::HttpRange range = result.Value.ContentRange;
-        if (range.Length.HasValue())
-            sizeRead = range.Length.Value();
-        else
-            sizeRead = 0;
+        if (range.Length.HasValue() && range.Length.Value() != len)
+            throw makeStringExceptionV(1234, "AzureBlob::read returned an unexpected length for file %s at offset %llu: requested %u, returned %llu",
+                                       file->queryFilename(), pos, len, static_cast<unsigned long long>(range.Length.Value()));
+        sizeRead = len;
     }
     catch (const Azure::Core::RequestFailedException& e)
     {
@@ -621,6 +624,7 @@ void AzureBlobBlockBlobWriteIO::close()
 {
     if (committed)
         return;
+    // Invalidate even if the commit fails after the service has accepted it.
     file->invalidateMeta();
 
     try
@@ -803,7 +807,6 @@ std::shared_ptr<BlobContainerClient> AzureBlob::getBlobContainerClient() const
 SharedBlobClient AzureBlob::getBlobClient() const
 {
     // Return cached client if available (per-file caching only)
-    CriticalBlock block(cs);
     if (cachedBlobClient)
         return cachedBlobClient;
 
@@ -868,7 +871,6 @@ IFileIO * AzureBlob::createFileReadIO()
     //ensure the meta information is calculated before creating the file IO object
     FileIOStats readStats;
 
-    CriticalBlock block(cs);
     if (!exists())
         return nullptr;
 
@@ -903,12 +905,10 @@ IDirectoryIterator * AzureBlob::directoryFiles(const char *mask, bool sub, bool 
 
 void AzureBlob::ensureMetaData()
 {
-    CriticalBlock block(cs);
     if (haveMeta)
         return;
 
     gatherMetaData();
-    haveMeta = true;
 }
 
 void AzureBlob::gatherMetaData()
@@ -926,14 +926,17 @@ void AzureBlob::gatherMetaData()
         {
             fileExists = false;
             fileSize = unknownFileSize;
-            return;
+            lastModified = 0;
+            createdOn = 0;
         }
-        throwRequestException(e, "AzureBlob::gatherMetaData", queryFilename());
+        else
+            throwRequestException(e, "AzureBlob::gatherMetaData", queryFilename());
     }
     catch (const std::exception& e)
     {
         throwRequestException(e, "AzureBlob::gatherMetaData", queryFilename());
     }
+    haveMeta = true;
 }
 
 bool AzureBlob::remove()
@@ -942,23 +945,18 @@ bool AzureBlob::remove()
     try
     {
         Azure::Response<Models::DeleteBlobResult> resp = blobClient->DeleteIfExists();
-        if (resp.Value.Deleted==true)
-        {
-            fileExists = false;
-            return true;
-        }
+        invalidateMeta();
+        return resp.Value.Deleted;
     }
     catch (const Azure::Core::RequestFailedException& e)
     {
         IException * error = makeStringExceptionV(1234, "Azure delete blob failed: %s (%d)", e.ReasonPhrase.c_str(), static_cast<int>(e.StatusCode));
         throw error;
     }
-    return false;
 }
 
 void AzureBlob::setProperties(int64_t _blobSize, Azure::DateTime _lastModified, Azure::DateTime _createdOn)
 {
-    haveMeta = true;
     fileExists = true;
     fileSize = _blobSize;
     lastModified = system_clock::to_time_t(system_clock::time_point(_lastModified));
@@ -976,6 +974,136 @@ IFile *createAzureBlob(const char *azureFileName, const DirEntry &entry)
 }
 
 #ifdef _USE_CPPUNIT
+class AzureBlobTest : public CppUnit::TestFixture
+{
+    class MockTransport final : public Azure::Core::Http::HttpTransport
+    {
+    public:
+        std::vector<std::unique_ptr<Azure::Core::Http::RawResponse>> responses;
+        size_t requests = 0;
+
+        virtual std::unique_ptr<Azure::Core::Http::RawResponse> Send(
+            Azure::Core::Http::Request &request, const Azure::Core::Context &context) override
+        {
+            CPPUNIT_ASSERT_MESSAGE("Unexpected Azure request", requests < responses.size());
+            return std::move(responses[requests++]);
+        }
+
+        void addResponse(Azure::Core::Http::HttpStatusCode status, const char *body)
+        {
+            auto response = std::make_unique<Azure::Core::Http::RawResponse>(1, 1, status, "Mock response");
+            response->SetHeader("Content-Length", std::to_string(strlen(body)));
+            response->SetHeader("ETag", "\"test\"");
+            response->SetHeader("Last-Modified", "Mon, 02 Nov 2026 12:00:00 GMT");
+            response->SetHeader("x-ms-creation-time", "Mon, 02 Nov 2026 12:00:00 GMT");
+            response->SetHeader("x-ms-blob-type", "BlockBlob");
+            response->SetHeader("x-ms-server-encrypted", "true");
+            response->SetHeader("x-ms-request-server-encrypted", "true");
+            if (status == Azure::Core::Http::HttpStatusCode::NotFound)
+                response->SetHeader("x-ms-error-code", "BlobNotFound");
+            response->SetBodyStream(std::make_unique<Azure::Core::IO::MemoryBodyStream>(
+                reinterpret_cast<const uint8_t *>(body), strlen(body)));
+            responses.push_back(std::move(response));
+        }
+    };
+
+    static AzureBlob *createFile(const std::shared_ptr<MockTransport> &transport, offset_t size)
+    {
+        BlobClientOptions options;
+        options.Transport.Transport = transport;
+        options.Retry.MaxRetries = 0;
+        Owned<AzureBlob> file = new AzureBlob(std::make_shared<BlockBlobClient>(
+            "https://test.invalid/container/blob", options));
+        file->fullName.set("azureblob:test/blob");
+        file->setListedInfo(false, size, 1);
+        return file.getClear();
+    }
+
+public:
+    CPPUNIT_TEST_SUITE(AzureBlobTest);
+        CPPUNIT_TEST(testReadBoundaries);
+        CPPUNIT_TEST(testShortDownload);
+        CPPUNIT_TEST(testDeleteInvalidatesMetadata);
+        CPPUNIT_TEST(testCommitInvalidatesMetadata);
+    CPPUNIT_TEST_SUITE_END();
+
+    void testReadBoundaries()
+    {
+        START_TEST
+        auto transport = std::make_shared<MockTransport>();
+        Owned<AzureBlob> file = createFile(transport, 4);
+        Owned<IFileIO> io = file->open(IFOread);
+        char buffer[8] = {};
+        CPPUNIT_ASSERT_EQUAL(size32_t(0), io->read(0, 0, nullptr));
+        CPPUNIT_ASSERT_EQUAL(size32_t(0), io->read(4, sizeof(buffer), buffer));
+        CPPUNIT_ASSERT_EQUAL(size32_t(0), io->read(5, sizeof(buffer), buffer));
+        transport->addResponse(Azure::Core::Http::HttpStatusCode::Ok, "data");
+        CPPUNIT_ASSERT_EQUAL(size32_t(4), io->read(0, sizeof(buffer), buffer));
+        CPPUNIT_ASSERT_EQUAL_STR("data", buffer);
+        Owned<AzureBlob> emptyFile = createFile(transport, 0);
+        Owned<IFileIO> emptyIO = emptyFile->open(IFOread);
+        CPPUNIT_ASSERT_EQUAL(size32_t(0), emptyIO->read(0, sizeof(buffer), buffer));
+        CPPUNIT_ASSERT_EQUAL(size_t(1), transport->requests);
+        END_TEST
+    }
+
+    void testShortDownload()
+    {
+        START_TEST
+        auto transport = std::make_shared<MockTransport>();
+        Owned<AzureBlob> file = createFile(transport, 8);
+        Owned<IFileIO> io = file->open(IFOread);
+        transport->addResponse(Azure::Core::Http::HttpStatusCode::Ok, "data");
+        char buffer[8];
+        CPPUNIT_ASSERT_THROWS_IEXCEPTION(io->read(0, sizeof(buffer), buffer),
+                                        "A shorter Azure download must not be accepted");
+        END_TEST
+    }
+
+    void testDeleteInvalidatesMetadata()
+    {
+        START_TEST
+        for (auto status : {Azure::Core::Http::HttpStatusCode::Accepted, Azure::Core::Http::HttpStatusCode::NotFound})
+        {
+            auto transport = std::make_shared<MockTransport>();
+            Owned<AzureBlob> file = createFile(transport, 4);
+            file->createdOn = 1;
+            transport->addResponse(status, "");
+            CPPUNIT_ASSERT_EQUAL(status == Azure::Core::Http::HttpStatusCode::Accepted, file->remove());
+            transport->addResponse(Azure::Core::Http::HttpStatusCode::NotFound, "");
+            CPPUNIT_ASSERT(!file->exists());
+            CPPUNIT_ASSERT_EQUAL(unknownFileSize, file->size());
+            CPPUNIT_ASSERT_EQUAL(time_t(0), file->lastModified);
+            CPPUNIT_ASSERT_EQUAL(time_t(0), file->createdOn);
+            CPPUNIT_ASSERT_EQUAL(size_t(2), transport->requests);
+        }
+        END_TEST
+    }
+
+    void testCommitInvalidatesMetadata()
+    {
+        START_TEST
+        auto transport = std::make_shared<MockTransport>();
+        Owned<AzureBlob> file = createFile(transport, 4);
+        transport->addResponse(Azure::Core::Http::HttpStatusCode::Created, "");
+        Owned<IFileIO> io = file->open(IFOcreate);
+        transport->addResponse(Azure::Core::Http::HttpStatusCode::Created, "");
+        CPPUNIT_ASSERT_EQUAL(size32_t(4), io->write(0, 4, "data"));
+        transport->addResponse(Azure::Core::Http::HttpStatusCode::Ok, "");
+        CPPUNIT_ASSERT_EQUAL(offset_t(0), file->size());
+        transport->addResponse(Azure::Core::Http::HttpStatusCode::Created, "");
+        io->close();
+        transport->addResponse(Azure::Core::Http::HttpStatusCode::Ok, "data");
+        CPPUNIT_ASSERT_EQUAL(offset_t(4), file->size());
+        io->close();
+        CPPUNIT_ASSERT_EQUAL(size_t(5), transport->requests);
+        END_TEST
+    }
+};
+
+CPPUNIT_TEST_SUITE_REGISTRATION(AzureBlobTest);
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(AzureBlobTest, "AzureBlobTest");
+
 static constexpr const char azuriteBlobEndpoint[] = "http://127.0.0.1:10000/devstoreaccount1";
 static constexpr const char azuriteDevStoreKey[] = "Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==";
 
