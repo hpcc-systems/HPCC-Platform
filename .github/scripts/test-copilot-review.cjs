@@ -32,12 +32,24 @@ function review(body, overrides = {}) {
     };
 }
 
-async function run(batches) {
+async function run(batches, commitTrees = {}) {
     const outputs = {};
     let calls = 0;
     const listReviews = () => {};
     const github = {
-        rest: { pulls: { listReviews } },
+        rest: {
+            pulls: { listReviews },
+            git: {
+                async getCommit({ owner, repo, commit_sha }) {
+                    assert.equal(owner, 'owner');
+                    assert.equal(repo, 'repo');
+                    if (!(commit_sha in commitTrees)) {
+                        throw new Error(`No mock tree SHA for commit ${commit_sha}`);
+                    }
+                    return { data: { tree: { sha: commitTrees[commit_sha] } } };
+                },
+            },
+        },
         async paginate(method, params) {
             assert.equal(method, listReviews);
             assert.deepEqual(params, {
@@ -61,6 +73,8 @@ async function run(batches) {
     } catch (error) {
         assert.equal(outputs['review-completed'], 'false');
         assert.equal(outputs['has-high-issues'], undefined);
+        assert.equal(outputs['has-medium-issues'], undefined);
+        assert.equal(outputs['has-low-issues'], undefined);
         throw error;
     }
 }
@@ -68,10 +82,34 @@ async function run(batches) {
 test('flags High and Critical badges, not arbitrary summary prose', async () => {
     for (const severity of ['High', 'Critical']) {
         const { outputs } = await run([[review(overview([severity]))]]);
-        assert.deepEqual(outputs, { 'review-completed': 'true', 'has-high-issues': 'true' });
+        assert.deepEqual(outputs, {
+            'review-completed': 'true',
+            'has-high-issues': 'true',
+            'has-medium-issues': 'false',
+            'has-low-issues': 'false',
+        });
     }
     const { outputs } = await run([[review(overview(['Medium', 'Low']) + '\nNo HIGH or CRITICAL issues found.')]]);
     assert.equal(outputs['has-high-issues'], 'false');
+    assert.equal(outputs['has-medium-issues'], 'true');
+    assert.equal(outputs['has-low-issues'], 'true');
+});
+
+test('reports each open severity independently', async () => {
+    for (const [severities, high, medium, low] of [
+        [['Medium'], false, true, false],
+        [['Low'], false, false, true],
+        [['critical', 'medium', 'low'], true, true, true],
+        [[], false, false, false],
+    ]) {
+        const { outputs } = await run([[review(overview(severities))]]);
+        assert.deepEqual(outputs, {
+            'review-completed': 'true',
+            'has-high-issues': String(high),
+            'has-medium-issues': String(medium),
+            'has-low-issues': String(low),
+        });
+    }
 });
 
 test('ignores High badges in resolved findings', async () => {
@@ -83,6 +121,20 @@ test('ignores High badges in resolved findings', async () => {
     ]) {
         const { outputs } = await run([[review(body)]]);
         assert.equal(outputs['has-high-issues'], 'false');
+        assert.equal(outputs['review-completed'], 'true');
+    }
+});
+
+test('ignores Medium and Low badges in resolved findings', async () => {
+    const resolved = '<details><summary><strong>2 resolved since last review</strong></summary>\n'
+        + '- <img alt="Medium severity"> Fixed\n- <img alt="Low severity"> Fixed\n</details>';
+    for (const body of [
+        overview(['High'], resolved),
+        `<!-- ccr-overview-v2 -->\n**No open issues**\n${resolved}`,
+    ]) {
+        const { outputs } = await run([[review(body)]]);
+        assert.equal(outputs['has-medium-issues'], 'false');
+        assert.equal(outputs['has-low-issues'], 'false');
         assert.equal(outputs['review-completed'], 'true');
     }
 });
@@ -99,9 +151,40 @@ test('waits for a submitted Copilot review of this head, then uses the latest', 
         ...ignored,
         review(high),
         review(overview(['Low']), { id: 124, state: 'APPROVED' }),
-    ]]);
+    ]], { 'head-sha': 'head-tree', 'old-sha': 'other-tree' });
     assert.equal(result.calls, 2);
     assert.equal(result.outputs['has-high-issues'], 'false');
+});
+
+test('accepts Copilot review after force push with unchanged content', async () => {
+    // After a force push, head SHA changed but tree content is identical
+    // The head is always 'head-sha' in the test context, so both old and new commit map to same tree
+    const result = await run([[
+        review(overview(['Medium']), { commit_id: 'old-sha-before-force-push' }),
+    ]], { 'head-sha': 'shared-tree', 'old-sha-before-force-push': 'shared-tree' });
+    assert.equal(result.outputs['has-high-issues'], 'false');
+    assert.equal(result.outputs['has-medium-issues'], 'true');
+    assert.equal(result.calls, 1);  // Should succeed on first poll
+});
+
+test('prefers exact SHA match over tree match', async () => {
+    // Both exact-SHA and tree-SHA reviews exist; prefer exact SHA to match current behavior
+    const result = await run([[
+        review(overview(['Low']), { commit_id: 'old-sha-with-same-tree' }),
+        review(overview(['High']), { commit_id: 'head-sha' }),
+    ]], { 'head-sha': 'head-tree', 'old-sha-with-same-tree': 'head-tree' });
+    assert.equal(result.outputs['has-high-issues'], 'true');  // Uses exact match, not tree match
+    assert.equal(result.calls, 1);
+});
+
+test('rejects different-tree reviews when better SHA matches exist', async () => {
+    // Ensure force-push matching doesn't accidentally accept unrelated reviews
+    const result = await run([[
+        review(overview(['High']), { commit_id: 'different-sha-different-tree' }),
+        review(overview(['Low']), { commit_id: 'head-sha' }),
+    ]], { 'head-sha': 'head-tree', 'different-sha-different-tree': 'other-tree' });
+    assert.equal(result.outputs['has-high-issues'], 'false');  // Uses exact match
+    assert.equal(result.calls, 1);
 });
 
 test('rejects unknown, incomplete, or inconsistent overview formats', async () => {

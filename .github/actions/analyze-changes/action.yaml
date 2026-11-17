@@ -1,0 +1,649 @@
+name: Analyze Code Changes
+description: |
+  Categorizes file changes by type (extension) and component (path prefix).
+  Outputs matrices for workflow conditional logic and computes testing impacts.
+
+  CONFIGURATION:
+  Edit ext_to_type, path_component, and declare_category calls in this action to match your repo.
+  
+  ext_to_type: Maps file extensions to types
+    Example: cpp=hpp|h|cpp|c|ipp  means .hpp, .h, .cpp, .c, .ipp files → type "cpp"
+  
+  path_component: Maps directory prefixes directly to components (longest prefix wins)
+    Example: "esp/esdllib/docs/" maps to "doc"
+    File "esp/esdllib/docs/readme.md" maps to "doc"
+  
+  declare_category: Defines which file type/component combinations trigger testing/actions
+    Syntax: declare_category <name> "#type" "!excluded-comp" "included-comp" "#type2"
+    - #type: Start rules for this type; unlisted components are included by default
+    - #*: Apply component filters to changes of any type
+    - !comp: Exclude this component (only if components are listed for that type)
+    - comp: Include this component (only needed if you want to whitelist)
+    - Result: Category triggers if ANY type matches AND component passes filter
+  
+  OUTPUTS:
+  changes: JSON object with four maps:
+    - has-type[type]: true if any file of this type changed
+    - has-component[component]: true if any file in this component changed
+    - type-components-changed[type]: list of components that changed for this type
+    - type-components-same[type]: list of components that did NOT change for this type
+  
+  impacts: JSON object mapping categories to boolean flags:
+    - impacts[category]: true if changes trigger this test/action category
+  
+  USAGE EXAMPLES:
+  
+  # Test if roxie tests should run
+  if: fromJSON(needs.analyze.outputs.impacts).roxie == 'true'
+  
+  # Test if either roxie OR regression suite should run
+  if: |
+    fromJSON(needs.analyze.outputs.impacts).roxie ||
+    fromJSON(needs.analyze.outputs.impacts).['regression-suite']
+  
+  # Original changes output (still available)
+  if: fromJSON(needs.analyze.outputs.changes)['has-component'].roxie
+      → true if any files in roxie/ changed
+  
+  if: contains(fromJSON(needs.analyze.outputs.changes)['type-components-changed'].cpp, 'roxie')
+      → true if cpp changed in roxie component
+
+  SPECIAL CASES:
+  - Longest path match - if multiple prefixes match the longest is chosen
+  - Unknown component: If a component is not in any category definition, it's included by default
+
+inputs:
+  base-sha:
+    description: 'Base commit SHA'
+    required: true
+  head-sha:
+    description: 'Head commit SHA'
+    required: true
+
+outputs:
+  changes:
+    description: |
+      JSON object containing comprehensive change analysis:
+      - has-type[type]: boolean flag indicating if any file of this type changed (cpp, yaml, markdown, etc.)
+      - has-component[component]: boolean flag indicating if any file in this component changed (roxie, thor, ecl, esp, etc.)
+      - type-components-changed[type]: array of components that had files of this type changed
+      - type-components-same[type]: array of components that did NOT have files of this type changed
+    value: ${{ steps.analyze.outputs.changes }}
+  impacts:
+    description: 'JSON object with boolean flags for each category (e.g., impacts.roxie, impacts.regression-suite)'
+    value: ${{ steps.analyze.outputs.impacts }}
+
+runs:
+  using: composite
+  steps:
+    - name: Analyze changes
+      id: analyze
+      shell: bash
+      env:
+        BASE_SHA: ${{ inputs.base-sha }}
+        HEAD_SHA: ${{ inputs.head-sha }}
+      run: |
+        #!/bin/bash
+        set -e
+        
+        # ============================================================================
+        # CONFIGURATION: Declare types and components
+        # ============================================================================
+        
+        configure_changes() {
+          # ============================================================================
+          # TYPE DEFINITIONS: File extensions → types
+          # Format: declare_type type ".ext1" ".ext2" ... ":" "filename1" "filename2" ...
+          # ============================================================================
+
+          declare_type cpp            ".cpp" ".hpp" ".h" ".c" ".ipp" ".tpp" ".inc"
+          declare_type script         ".py" ".sh" ".bat" ".pm"
+          declare_type document       ".md" ".rst" ".txt" ".xml"
+          declare_type ecl            ".ecl" ".eclxml" ".ecm" ".ecllib" ".manifest" ".l" ".y"
+          declare_type webcode        ".tsx" ".ts" ".js" ".mts" ".mjs" \
+                                      ":" "tsconfig.json" "package.json"
+          declare_type web            ".css" ".html"
+          declare_type config         ".json"
+          declare_type helm           ".yaml" ".yml" ".tpl"
+          declare_type build          ".cmake" ".in" \
+                                      ":" "CMakeLists.txt" "Makefile"
+          declare_type java           ".java"
+          declare_type deployment     ".xslt" ".xsl" ".xsd"
+          declare_type container      ".dockerfile"
+          declare_type image          ".jpg" ".JPG" ".png" ".PNG" ".gif" ".ico"
+          declare_type nlp            ".nlp"
+          declare_type snag           ".snag"
+          declare_type knowledge      ".kb"
+          declare_type data           ".parquet"
+          declare_type developer      ".gitignore" ".githooks"
+          declare_type unexpected     ".er" ".wsdl" ".esdl"
+
+          # ============================================================================
+          # COMPONENT DEFINITIONS: Path prefixes → components
+          # ============================================================================
+
+          # Documentation
+          declare_component docs \
+            "esp/esdllib/docs/" \
+            "esp/src/dgrid/doc/" \
+            "helm/hpcc/docs/" \
+            "devdoc/" \
+            "docs/"
+
+          declare_component aidoc "aidoc/"
+
+          # Compiler: ECL compilation pipeline
+          declare_component eclcc \
+            "ecl/eclcc/" \
+            "ecl/hql/" \
+            "ecl/hqlcpp/" \
+            "ecl/eclccserver/"
+
+          declare_component ecllibrary "ecllibrary/"
+
+          # Execution engines: ECL agents
+          declare_component hthor \
+            "ecl/agentexec/" \
+            "ecl/eclagent/" \
+            "ecl/hthor/"
+
+          # Shared code used across components and execution engines
+          declare_component shared \
+            "system/" \
+            "common/" \
+            "rtl/" \
+            "roxie/roxiemem/" \
+            "roxie/roxiepipe/" \
+            "thorhelper/" \
+            "esp/clients/ws_dfsclient/"
+
+          # Enterprise Services Platform
+          declare_component eclwatch "esp/eclwatch/" "esp/src/"
+          declare_component esp "esp/"
+
+          # Test infrastructure
+          declare_component testing \
+            "testing/" "ecl/regress/"
+
+          # Infrastructure and deployment
+          declare_component helm "helm/"
+          declare_component deployment \
+            "deployment/" "deploy/" "initfiles/"
+
+          declare_component container "dockerfiles/"
+          declare_component plugins "plugins/"
+          declare_component configuration "configuration/"
+          declare_component cicd     ".github/"
+
+          # Filesystem and DAF
+          declare_component dafilesrv "fs/"
+
+          # Build infrastructure and tooling
+          declare_component build "build_utils/" \
+            "tools/esdlcomp/" "tools/esdlcmd/" "tools/esdlcmd-xml/" \
+            "tools/hidl/" "tools/esp-api/" "tools/genht/"
+
+          # Development tools
+          declare_component tools "tools/"
+
+          # vcpkg package management
+          declare_component vcpkg "vcpkg/" "vcpkg_overlays/"
+
+          # Execution engines: query and batch processing
+          declare_component roxie "roxie/"
+          declare_component thor "thorlcr/"
+          declare_component dali "dali/"
+          declare_component ecl "ecl/"
+
+          # ============================================================================
+          # CATEGORY DEFINITIONS: Testing and action impact categories
+          # ============================================================================
+
+          # Define categories based on current build-vcpkg.yml test conditions
+          declare_category roxie \
+            "#build" \
+            "#cpp" "!thor" "!esp"
+
+          declare_category thor \
+            "#build" \
+            "#cpp" "!roxie" "!esp"
+
+          declare_category hthor \
+            "#build" \
+            "#cpp" "!thor" "!roxie"
+
+          declare_category esp \
+            "#build" \
+            "#cpp" "!thor" "!roxie"
+
+          declare_category dali \
+            "#build" \
+            "#cpp" "shared" "dali"
+
+          declare_category regression-suite \
+            "#ecl" \
+            "#config" \
+            "#*" "testing" \
+            "#java"
+        }
+        
+        declare -A ext_to_type
+        declare -A filename_to_type
+        declare -A path_component
+        declare -A configured_components
+        declare -A category_definitions
+        
+        # Helper: map extensions and filenames to a single type
+        # Format: declare_type type ext1 ext2 ... ":" filename1 filename2 ...
+        # Extensions should have leading dot (.cpp, .hpp, etc.)
+        # Filenames are exact matches (CMakeLists.txt, Makefile, etc.)
+        declare_type() {
+          local type="$1"
+          shift
+          local in_filenames=false
+          for item in "$@"; do
+            if [[ "$item" == ":" ]]; then
+              in_filenames=true
+              continue
+            fi
+            if [[ "$in_filenames" == true ]]; then
+              filename_to_type["$item"]="$type"
+            else
+              ext_to_type["$item"]="$type"
+            fi
+          done
+        }
+        
+        # Helper: map path prefixes to a single component
+        declare_component() {
+          local component="$1"
+          shift
+          for prefix in "$@"; do
+            path_component["$prefix"]="$component"
+            configured_components["$component"]=true
+          done
+        }
+        
+        # Helper: declare impact categories with type/component filters
+        # Syntax: declare_category <name> "#type" "!" "excluded-comp" "included-comp" "#type2"
+        # - #type: start filter for this type; unlisted components included by default
+        # - !comp: exclude this component (only if components listed for that type)
+        # - comp: include this component (optional, to be explicit)
+        # - Result: true if ANY type matches AND component passes filter
+        declare_category() {
+          local name="$1"
+          shift
+          local args=("$@")
+          
+          # Build set of defined types (on first call)
+          if [[ -z "${_category_types_checked:-}" ]]; then
+            _category_types_checked=true
+            declare -gA _defined_types
+            for ext in "${!ext_to_type[@]}"; do
+              _defined_types["${ext_to_type[$ext]}"]=true
+            done
+            for filename in "${!filename_to_type[@]}"; do
+              _defined_types["${filename_to_type[$filename]}"]=true
+            done
+          fi
+          
+          # Parse args into type->components mapping
+          local current_type=""
+          local type_filters=""
+          
+          for arg in "${args[@]}"; do
+            if [[ "$arg" =~ ^# ]]; then
+              # New type filter
+              current_type="${arg#\#}"
+              if [[ -n "$current_type" && "$current_type" != "*" ]]; then
+                # Validate type exists
+                if [[ -z "${_defined_types[$current_type]}" ]]; then
+                  echo "ERROR: Category '$name' references undefined type '$current_type'" >&2
+                  return 1
+                fi
+              fi
+              if [[ -n "$type_filters" ]]; then
+                type_filters+=" "
+              fi
+              type_filters+="#$current_type"
+            else
+              # Component (include or exclude)
+              if [[ -z "$current_type" ]]; then
+                echo "ERROR: Component listed before type filter in category $name" >&2
+                return 1
+              fi
+              # Validate component exists (unless it's an exclusion marker)
+              if [[ ! "$arg" =~ ^! ]]; then
+                if [[ -z "${configured_components[$arg]}" ]]; then
+                  echo "ERROR: Category '$name' references undefined component '$arg'" >&2
+                  return 1
+                fi
+              fi
+              type_filters+=" $arg"
+            fi
+          done
+          
+          # Append sentinel # to force final type check
+          if [[ -n "$type_filters" ]]; then
+            type_filters+=" #"
+          fi
+          
+          category_definitions["$name"]="$type_filters"
+        }
+        
+        configure_changes
+        
+        # ============================================================================
+        # ANALYSIS: Process changed files
+        # ============================================================================
+        
+        declare -A hasType
+        declare -A hasComponent
+        declare -A onlyType
+        declare -A onlyComponent
+        declare -A type_component_map    # Track which types appear in which components
+        
+        base_sha="$BASE_SHA"
+        head_sha="$HEAD_SHA"
+        changed_files=""
+
+        if [[ "$base_sha" =~ ^0+$ ]]; then
+          # An all-zero base means there is no comparable prior ref; test every engine.
+          hasType[ecl]=true
+          for comp in "${!configured_components[@]}"; do
+            hasComponent["$comp"]=true
+            type_component_map["ecl_${comp}"]=true
+          done
+          hasComponent[unknown]=true
+          type_component_map[ecl_unknown]=true
+        else
+          # Fetch base commit if needed (for force-push scenarios)
+          git fetch origin "$base_sha" --depth=1 2>/dev/null || true
+          # Disable renames so that both the original and new file paths are tracked
+          changed_files=$(git diff --no-renames --name-only "$base_sha" "$head_sha")
+        fi
+
+        # Process each changed file
+        while IFS= read -r file; do
+          [[ -z "$file" ]] && continue
+          
+          # Get extension and map to type
+          filename="${file##*/}"
+          ext="${file##*.}"
+          
+          # Check filename first (for exact matches like CMakeLists.txt, Makefile)
+          if [[ -n "${filename_to_type[$filename]}" ]]; then
+            type="${filename_to_type[$filename]}"
+          # Then check extension (with leading dot)
+          elif [[ -n "${ext_to_type[.$ext]}" ]]; then
+            type="${ext_to_type[.$ext]}"
+          else
+            type="other"
+          fi
+          hasType[$type]=true
+          
+          # Find longest matching component
+          matched_comp="unknown"
+          longest_match=""
+          
+          for prefix in "${!path_component[@]}"; do
+            if [[ "$file" == "$prefix"* && ${#prefix} -gt ${#longest_match} ]]; then
+              longest_match="$prefix"
+              matched_comp="${path_component[$prefix]}"
+            fi
+          done
+
+          # Skip apparent comment-only C++ diffs to avoid costly PR smoke runs; checking both sides
+          # prevents code-to-comment replacements from being skipped. This heuristic may miss
+          # changed // text inside multiline raw strings, an accepted risk to avoid unnecessary tests.
+          if [[ "$type" == "cpp" ]]; then
+            diff_output=$(git diff --unified=0 "$base_sha" "$head_sha" -- "$file")
+            comment_only=true
+            saw_changed_line=false
+            in_hunk=false
+            while IFS= read -r diff_line; do
+              if [[ "$diff_line" == @@* ]]; then
+                in_hunk=true
+                continue
+              fi
+              [[ "$in_hunk" == true ]] || continue
+              case "$diff_line" in
+                +*|-*)
+                  saw_changed_line=true
+                  line_content="${diff_line:1}"
+                  if [[ ! "$line_content" =~ ^[[:space:]]*// || "$line_content" == *\\* || "$line_content" == *'*/'* ]]; then
+                    comment_only=false
+                    break
+                  fi
+                  ;;
+              esac
+            done <<< "$diff_output"
+            if [[ "$saw_changed_line" == true && "$comment_only" == true ]]; then
+              continue
+            fi
+          fi
+          
+          hasComponent["$matched_comp"]=true
+          type_component_map["${type}_${matched_comp}"]=true
+        done <<< "$changed_files"
+        
+        # ============================================================================
+        # BUILD COMPONENT LISTS FOR EACH TYPE
+        # ============================================================================
+        
+        # Build type-components-changed: for each type, list components that changed
+        declare -A type_components_changed
+        for type_comp in "${!type_component_map[@]}"; do
+          type="${type_comp%%_*}"
+          comp="${type_comp##*_}"
+          if [[ -z "${type_components_changed[$type]}" ]]; then
+            type_components_changed[$type]="$comp"
+          else
+            type_components_changed[$type]+=" $comp"
+          fi
+        done
+        
+        # Build type-components-same: for each type, list components that did NOT change
+        declare -A type_components_same
+        for type in "${!hasType[@]}"; do
+          all_comps=("${!configured_components[@]}")
+          if [[ -n "${hasComponent[unknown]:-}" ]]; then
+            all_comps+=(unknown)
+          fi
+          
+          changed_comps="${type_components_changed[$type]}"
+          for comp in "${all_comps[@]}"; do
+            if [[ ! " $changed_comps " =~ " $comp " ]]; then
+              if [[ -z "${type_components_same[$type]}" ]]; then
+                type_components_same[$type]="$comp"
+              else
+                type_components_same[$type]+=" $comp"
+              fi
+            fi
+          done
+        done
+        
+        # ============================================================================
+        # OUTPUT JSON
+        # ============================================================================
+        
+        # Convert bash arrays to JSON
+        # hasType and hasComponent as boolean objects
+        hasType_json="{"
+        first=true
+        for type in "${!hasType[@]}"; do
+          if [[ "$first" == false ]]; then hasType_json+=","; fi
+          hasType_json+="\"$type\":true"
+          first=false
+        done
+        hasType_json+="}"
+        
+        hasComponent_json="{"
+        first=true
+        for comp in "${!hasComponent[@]}"; do
+          if [[ "$first" == false ]]; then hasComponent_json+=","; fi
+          hasComponent_json+="\"$comp\":true"
+          first=false
+        done
+        hasComponent_json+="}"
+        
+        # type-components-changed and type-components-same as arrays
+        typeComponentsChanged_json="{"
+        first=true
+        for type in "${!type_components_changed[@]}"; do
+          if [[ "$first" == false ]]; then typeComponentsChanged_json+=","; fi
+          comps="${type_components_changed[$type]}"
+          comps_json="["
+          first_comp=true
+          for comp in $comps; do
+            if [[ "$first_comp" == false ]]; then comps_json+=","; fi
+            comps_json+="\"$comp\""
+            first_comp=false
+          done
+          comps_json+="]"
+          typeComponentsChanged_json+="\"$type\":$comps_json"
+          first=false
+        done
+        typeComponentsChanged_json+="}"
+        
+        typeComponentsSame_json="{"
+        first=true
+        for type in "${!type_components_same[@]}"; do
+          if [[ "$first" == false ]]; then typeComponentsSame_json+=","; fi
+          comps="${type_components_same[$type]}"
+          comps_json="["
+          first_comp=true
+          for comp in $comps; do
+            if [[ "$first_comp" == false ]]; then comps_json+=","; fi
+            comps_json+="\"$comp\""
+            first_comp=false
+          done
+          comps_json+="]"
+          typeComponentsSame_json+="\"$type\":$comps_json"
+          first=false
+        done
+        typeComponentsSame_json+="}"
+        
+        # Build final JSON
+        changes_json="{\"has-type\":$hasType_json,\"has-component\":$hasComponent_json,\"type-components-changed\":$typeComponentsChanged_json,\"type-components-same\":$typeComponentsSame_json}"
+        
+        echo "changes=$(echo "$changes_json" | jq -c .)" >> $GITHUB_OUTPUT
+        
+        # ============================================================================
+        # EVALUATION: Determine which categories are impacted
+        # ============================================================================
+        
+        declare -A impacts
+        
+        # Helper function to check if component matches type's filters
+        check_type_filters() {
+          local type="$1"
+          local type_excludes="$2"
+          local type_includes="$3"
+          
+          # Special case: "*" type matches if ANY type has changed
+          if [[ "$type" == "*" ]]; then
+            if [[ ${#hasType[@]} -gt 0 ]]; then
+              # If we have no excludes/includes, "*" always matches any type change
+              if [[ -z "$type_excludes" && -z "$type_includes" ]]; then
+                return 0
+              fi
+              # Fall through to component filtering if needed
+            else
+              return 1
+            fi
+          elif [[ "${hasType[$type]}" != "true" ]]; then
+            return 1
+          fi
+          
+          # Wildcards use any component change; explicit types require a type/component match.
+          local total=0
+          local excluded_count=0
+          local comp
+          
+          # Handle exclusion-based filtering (if exclude list provided)
+          if [[ -n "$type_excludes" ]]; then
+            for comp in "${!hasComponent[@]}"; do
+              if [[ "$type" == "*" && "${hasComponent[$comp]}" == "true" ]] ||
+                 [[ "$type" != "*" && "${type_component_map[${type}_${comp}]}" == "true" ]]; then
+                ((total++))
+                if [[ " $type_excludes " =~ " $comp " ]]; then
+                  ((excluded_count++))
+                fi
+              fi
+            done
+            
+            # Fail if all changed components are excluded
+            if [[ $excluded_count -ge $total ]]; then
+              return 1
+            fi
+            
+            # Exclusion filter passes; fall through.  
+          fi
+          
+          # Handle inclusion-based filtering (if include list provided)
+          if [[ -n "$type_includes" ]]; then
+            for comp in "${!hasComponent[@]}"; do
+              if { [[ "$type" == "*" && "${hasComponent[$comp]}" == "true" ]] ||
+                   [[ "$type" != "*" && "${type_component_map[${type}_${comp}]}" == "true" ]]; } &&
+                 [[ " $type_includes " =~ " $comp " ]]; then
+                return 0
+              fi
+            done
+            return 1
+          fi
+          
+          # If there are no inclusion filters, then this matches
+          return 0
+        }
+        
+        for category in "${!category_definitions[@]}"; do
+          impacted=false
+          filters="${category_definitions[$category]}"
+          
+          # Parse filters: "#type_name" marks type boundaries
+          current_type=""
+          type_excludes=""
+          type_includes=""
+          
+          for filter in $filters; do
+            if [[ "$filter" =~ ^# ]]; then
+              # New type - check previous type if we had one
+              if [[ -n "$current_type" ]]; then
+                if check_type_filters "$current_type" "$type_excludes" "$type_includes"; then
+                  impacted=true
+                  break
+                fi
+              fi
+              
+              # Reset for new type
+              current_type="${filter#\#}"
+              type_excludes=""
+              type_includes=""
+            elif [[ "$filter" =~ ^! ]]; then
+              # Exclude filter
+              type_excludes+=" ${filter#!}"
+            else
+              # Include filter
+              type_includes+=" $filter"
+            fi
+          done
+          
+          impacts[$category]=$([ "$impacted" = true ] && echo "true" || echo "false")
+        done
+        
+        # Build impacts JSON
+        impacts_json="{"
+        first=true
+        for category in "${!impacts[@]}"; do
+          if [[ "$first" == false ]]; then impacts_json+=","; fi
+          impacts_json+="\"$category\":${impacts[$category]}"
+          first=false
+        done
+        impacts_json+="}"
+        
+        echo "impacts=$(echo "$impacts_json" | jq -c .)" >> $GITHUB_OUTPUT
+        
+        # Debug output
+        echo "::notice title=Change Analysis::$(echo "$changes_json" | jq .)"
+        echo "::notice title=Test Impacts::$(echo "$impacts_json" | jq .)"

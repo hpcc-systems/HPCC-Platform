@@ -6,7 +6,7 @@ import { formatDateString, logColor, removeAllExcept, timestampToDate, wuidToDat
 import { useLogAccessInfo } from "../hooks/platform";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { pushParams } from "../util/history";
-import { FluentGrid, useCopyButtons, useFluentStoreState, FluentColumns } from "./controls/Grid";
+import { AutoSizeFluentGrid, useCopyButtons, useFluentStoreState, FluentColumns } from "./controls/Grid";
 import { Filter } from "./forms/Filter";
 import { Fields, DateRange } from "./forms/Fields";
 import { LogsHeader } from "./LogsHeader";
@@ -249,7 +249,13 @@ export const Logs: React.FunctionComponent<LogsProps> = ({
 
     React.useEffect(() => {
         service.GetLogsEx(query as any).then(response => {
-            setData(response.lines);
+            const seen = new Map<string, number>();
+            setData((response.lines ?? []).map(line => {
+                const key = `${(line as any).pod ?? ""}_${line.logid}_${(line.timestamp ?? "").replace(" ", "_")}`;
+                const count = seen.get(key) ?? 0;
+                seen.set(key, count + 1);
+                return { ...line, __hpcc_id: count ? `${key}_${count}` : key };
+            }));
         }).catch(err => logger.error(err));
     }, [query]);
 
@@ -344,9 +350,9 @@ export const Logs: React.FunctionComponent<LogsProps> = ({
         }
         main={
             <div style={{ position: "relative", height: "100%" }}>
-                <FluentGrid
+                <AutoSizeFluentGrid
                     data={data}
-                    primaryID={""}
+                    primaryID={"__hpcc_id"}
                     columns={columns}
                     setSelection={setSelection}
                     setTotal={(total) => {
@@ -356,7 +362,7 @@ export const Logs: React.FunctionComponent<LogsProps> = ({
                         }
                     }}
                     refresh={refreshTable}
-                ></FluentGrid>
+                ></AutoSizeFluentGrid>
                 <Filter showFilter={showFilter} setShowFilter={setShowFilter} filterFields={filterFields} onApply={handleFilterApply} />
             </div>
         }

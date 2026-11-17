@@ -1,0 +1,48 @@
+name: Notify Teams
+description: Post a message with completed workflow details and a run link to a Teams channel.
+
+inputs:
+  webhook-url:
+    description: Teams webhook URL for the destination channel.
+    required: true
+  message:
+    description: Message to display above the completed workflow details.
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Post Teams notification
+      shell: bash
+      env:
+        TEAMS_WEBHOOK_URL: ${{ inputs.webhook-url }}
+        TEAMS_MESSAGE: ${{ inputs.message }}
+        BUILD_WORKFLOW: ${{ github.event.workflow_run.name }}
+        BUILD_RUN_URL: ${{ github.event.workflow_run.html_url }}
+        BUILD_RUN_NUMBER: ${{ github.event.workflow_run.run_number }}
+        BUILD_RUN_ATTEMPT: ${{ github.event.workflow_run.run_attempt }}
+      run: |
+        set -euo pipefail
+        : "${TEAMS_WEBHOOK_URL:?Teams webhook URL is missing}"
+        : "${TEAMS_MESSAGE:?Teams notification message is missing}"
+        details="$BUILD_WORKFLOW in $GITHUB_REPOSITORY (run $BUILD_RUN_NUMBER, attempt $BUILD_RUN_ATTEMPT)."
+        jq -n --arg message "$TEAMS_MESSAGE" --arg details "$details" --arg url "$BUILD_RUN_URL" '{
+          type: "message",
+          attachments: [{
+            contentType: "application/vnd.microsoft.card.adaptive",
+            contentUrl: null,
+            content: {
+              "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
+              type: "AdaptiveCard",
+              version: "1.2",
+              body: [
+                {type: "TextBlock", text: $message, wrap: true},
+                {type: "TextBlock", text: $details, wrap: true}
+              ],
+              actions: [{type: "Action.OpenUrl", title: "View build run", url: $url}]
+            }
+          }]
+        }' | curl --fail --silent --show-error \
+          --connect-timeout 10 --max-time 30 \
+          --header 'Content-Type: application/json' \
+          --data-binary @- "$TEAMS_WEBHOOK_URL"
