@@ -4,6 +4,8 @@ protocol_plugins:
 
 service_plugins:
   ws_sql: ws_sql
+@WSSQL2_PLUGIN_ENTRY@
 
 binding_plugins:
   ws_sql: ws_sql
+@WSSQL2_PLUGIN_ENTRY@

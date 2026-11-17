@@ -1,0 +1,4 @@
+SELECT i AS number
+FROM range(4) t(i)
+ORDER BY i
+OFFSET 1 ROWS FETCH NEXT 2 ROWS ONLY;

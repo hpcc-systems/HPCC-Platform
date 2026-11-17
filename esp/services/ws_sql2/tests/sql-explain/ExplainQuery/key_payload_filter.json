@@ -1,0 +1,7 @@
+{
+  "node": "HPCC_SCAN",
+  "extraInfoContains": {
+    "Post Filters": "dpos"
+  },
+  "extraInfoAbsent": ["Filter Layout Translation"]
+}

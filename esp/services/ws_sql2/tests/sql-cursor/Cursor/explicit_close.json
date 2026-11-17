@@ -1,0 +1,7 @@
+{
+  "fetchSize": 1,
+  "firstRows": [[0]],
+  "cursorAfterFirst": true,
+  "scenario": "explicit-close",
+  "fetchAfterCloseErrorContains": "not found, expired, or not owned"
+}

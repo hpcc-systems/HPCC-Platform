@@ -1,0 +1,3 @@
+SELECT 1 AS one;
+CREATE TABLE scratch (i INTEGER);
+SELECT 'é;' AS accented

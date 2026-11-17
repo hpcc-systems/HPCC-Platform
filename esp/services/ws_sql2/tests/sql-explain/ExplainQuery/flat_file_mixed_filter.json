@@ -1,0 +1,10 @@
+{
+  "node": "HPCC_SCAN",
+  "extraInfoEquals": {
+    "Keyed Filters": "dg_parentid=(,3)",
+    "Residual Filters": "(least(dg_parentid, 3) < 3)"
+  },
+  "extraInfoAbsent": [
+    "Post Filters"
+  ]
+}

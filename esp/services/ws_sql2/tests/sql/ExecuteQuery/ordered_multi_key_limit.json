@@ -1,0 +1,12 @@
+{
+  "columns": [
+    "same_ordered_sort_keys",
+    "limited_rows_exist_in_complete_result"
+  ],
+  "rows": [
+    [
+      true,
+      true
+    ]
+  ]
+}

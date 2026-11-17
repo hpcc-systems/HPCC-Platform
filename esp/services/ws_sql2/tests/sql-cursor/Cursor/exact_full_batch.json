@@ -1,0 +1,8 @@
+{
+  "fetchSize": 2,
+  "firstRows": [[0], [1]],
+  "cursorAfterFirst": true,
+  "followingBatches": [[[2], [3]], []],
+  "cursorAfterFollowingBatches": [true, false],
+  "sameCursorAfterFollowingBatches": [true, false]
+}

@@ -1,0 +1,5 @@
+{
+  "node": "HPCC_SCAN",
+  "scanPartsFromLogicalFile": "regress::multi::searchindex",
+  "limitByPartCount": {"limit": 20, "offset": 500000}
+}

@@ -1,0 +1,6 @@
+{
+  "statements": [
+    "-- Two scans over the regression index\nSELECT kind, word FROM hpcc_scan('regress::multi::searchindex') WHERE word = 'a;b' LIMIT 5",
+    "/* block comment between statements */\nSELECT COUNT(*) AS n\nFROM hpcc_scan('regress::multi::searchindex')"
+  ]
+}

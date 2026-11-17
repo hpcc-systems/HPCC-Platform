@@ -1,0 +1,145 @@
+// Exception codes WsSQL2 reports for specific failures; other failures use -1.
+ESPenum WsSQL2ErrorCode : int
+{
+    QueryCancelled(20001, "Query was cancelled"),
+    QueryLifetimeExceeded(20002, "Query exceeded the maximum cursor lifetime")
+};
+
+ESPrequest SplitQueryRequest
+{
+    [rows(28), cols(80)] string SQLText;
+};
+
+ESPresponse [exceptions_inline, nil_remove] SplitQueryResponse
+{
+    ESParray<string, Statement> Statements;
+};
+
+ESPrequest ExplainQueryRequest
+{
+    [rows(28), cols(80)] string SQLText;
+};
+
+ESPStruct ResultSetColumn
+{
+    string ColumnLabel;
+    string ColumnTypeName;
+    unsigned Precision;
+    unsigned Scale;
+};
+
+ESPresponse [exceptions_inline, nil_remove] ExplainQueryResponse
+{
+    string Plan;
+    string PlanJSON;
+    ESParray<ESPstruct ResultSetColumn, Column> ResultSetMetadata;
+};
+
+ESPrequest ExecuteQueryRequest
+{
+    [rows(28), cols(80)] string SQLText;
+    boolean IncludeRuntimeGraph(false);
+    boolean IncludeResultSetMetadata(false);
+    boolean IncludeDebug(false);
+};
+
+ESPStruct [nil_remove] MemoryUsage
+{
+    int64 DuckDBUsedBytes;
+    int64 DuckDBTempBytes;
+    int64 HeapInUseBytes;
+    int64 ResidentBytes;
+    int64 PeakResidentBytes;
+};
+
+ESPStruct [nil_remove] ScanObjectCounts
+{
+    int64 BindData;
+    int64 GlobalStates;
+    int64 LocalStates;
+};
+
+ESPStruct [nil_remove] DebugInfo
+{
+    ESPstruct MemoryUsage Start;
+    ESPstruct MemoryUsage Current;
+    ESPstruct MemoryUsage Released;
+    ESPstruct MemoryUsage Retained;
+    ESPstruct ScanObjectCounts ScanObjectsCreated;
+    ESPstruct ScanObjectCounts ScanObjectsLive;
+    string LeakCheck;
+    string LeakCheckDetail;
+};
+
+ESPresponse [exceptions_inline, nil_remove] ExecuteQueryResponse
+{
+    string CursorId;
+    double InitMs;
+    double PrepareMs;
+    ESParray<ESPstruct ResultSetColumn, Column> ResultSetMetadata;
+};
+
+ESPrequest FetchResultSetRequest
+{
+    string CursorId;
+    unsigned RowCount(0);  // 0 -> default page size
+};
+
+ESPresponse [exceptions_inline, nil_remove] FetchResultSetResponse
+{
+    string RowsJSON;
+    unsigned RowCount;
+    boolean Complete;
+    double ExecuteMs;
+    string RuntimeGraph;
+    string RuntimeGraphJSON;
+    ESPstruct DebugInfo DebugInfo;
+};
+
+ESPrequest CloseResultSetRequest
+{
+    string CursorId;
+};
+
+ESPresponse [exceptions_inline] CloseResultSetResponse
+{
+    boolean Closed;
+};
+
+ESPrequest LogicalFileMetadataRequest
+{
+    string LogicalName;
+};
+
+ESPStruct LogicalFileMetadata
+{
+    unsigned Version;
+    string LogicalName;
+    string Kind;
+    string Format;
+    boolean Grouped;
+    unsigned FormatCrc;
+    unsigned RecordTranslationMode;
+    int64 Modified;
+    [nil_remove] uint64 RecordCount;
+    string FormatOptions;
+    string ProviderOptions;
+    string EclRecord;
+    string FileParts;
+    string SampleSQL;
+};
+
+ESPresponse [exceptions_inline, nil_remove] LogicalFileMetadataResponse
+{
+    ESPstruct LogicalFileMetadata LogicalFileMetadata;
+};
+
+ESPservice [version("1.01"), default_client_version("1.01"), auth_feature("WsSql2Access:Read"), exceptions_inline("./smc_xslt/exceptions.xslt")] WsSQL2
+{
+    ESPmethod [] SplitQuery(SplitQueryRequest, SplitQueryResponse);
+    ESPmethod [] ExplainQuery(ExplainQueryRequest, ExplainQueryResponse);
+    ESPmethod [] ExecuteQuery(ExecuteQueryRequest, ExecuteQueryResponse);
+    ESPmethod [] FetchResultSet(FetchResultSetRequest, FetchResultSetResponse);
+    ESPmethod [] CloseResultSet(CloseResultSetRequest, CloseResultSetResponse);
+    ESPmethod [] LogicalFileMetadata(LogicalFileMetadataRequest, LogicalFileMetadataResponse);
+};

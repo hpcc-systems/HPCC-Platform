@@ -1,0 +1,1 @@
+SELECT kind, word, doc, dpos FROM hpcc_scan('regress::multi::searchindex') WHERE kind = 1 AND word = 'a                   ' AND doc > 281474976710657 AND doc > 281474976710667 AND doc < 281474976710757 LIMIT 100

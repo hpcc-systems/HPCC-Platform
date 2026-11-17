@@ -20,6 +20,11 @@ if(NOT WSSQL_SERVICE)
     set(WSSQL_SERVICE_BLOCK_E "-->")
 endif(NOT WSSQL_SERVICE)
 
+if(NOT WSSQL2_SERVICE)
+    set(WSSQL2_SERVICE_BLOCK_S "<!-- Built with -DWSSQL2_SERVICE=OFF ")
+    set(WSSQL2_SERVICE_BLOCK_E "-->")
+endif(NOT WSSQL2_SERVICE)
+
 if(NOT "${CUSTOM_PACKAGE_SUFFIX}" STREQUAL "")
     set(version_file_prefix "${CUSTOM_PACKAGE_SUFFIX}_")
 endif()

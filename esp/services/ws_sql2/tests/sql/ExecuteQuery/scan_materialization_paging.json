@@ -1,0 +1,14 @@
+{
+  "columns": [
+    "dpos_is_integer",
+    "multipart_blob_matches_fields",
+    "offset_pages_match"
+  ],
+  "rows": [
+    [
+      true,
+      true,
+      true
+    ]
+  ]
+}

@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+################################################################################
+#    HPCC SYSTEMS software Copyright (C) 2026 HPCC Systems.
+#
+#    Licensed under the Apache License, Version 2.0 (the "License");
+#    you may not use this file except in compliance with the License.
+#    You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#    Unless required by applicable law or agreed to in writing, software
+#    distributed under the License is distributed on an "AS IS" BASIS,
+#    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#    See the License for the specific language governing permissions and
+#    limitations under the License.
+################################################################################
+-->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified">
+    <xs:include schemaLocation="environment.xsd"/>
+    <xs:element name="EspService">
+        <xs:complexType>
+            <xs:attribute name="build" type="buildType" use="required">
+                <xs:annotation>
+                    <xs:appinfo>
+                        <tooltip>The build name to be deployed</tooltip>
+                        <viewType>hidden</viewType>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="buildSet" type="buildSetType" use="required">
+                <xs:annotation>
+                    <xs:appinfo>
+                        <viewType>hidden</viewType>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="name" type="xs:string" use="optional" default="ws_sql2_service">
+                <xs:annotation>
+                    <xs:appinfo>
+                        <tooltip>Name for this ESP service</tooltip>
+                        <required>true</required>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="description" type="xs:string" use="optional">
+                <xs:annotation>
+                    <xs:appinfo>
+                        <tooltip>Web Service providing a DuckDB SQL interface into HPCC</tooltip>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="memoryLimit" type="xs:string" use="optional">
+                <xs:annotation>
+                    <xs:appinfo>
+                        <tooltip>DuckDB memory limit for this WsSQL2 service, e.g. 1GB (default: 80% of system memory)</tooltip>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="threads" type="xs:nonNegativeInteger" use="optional" default="0">
+                <xs:annotation>
+                    <xs:appinfo>
+                        <tooltip>DuckDB threads shared by this WsSQL2 service (0 = all cores)</tooltip>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="tempDirectory" type="xs:string" use="optional">
+                <xs:annotation>
+                    <xs:appinfo>
+                        <tooltip>Parent directory for this service's shared DuckDB spill directory (default: .tmp)</tooltip>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="maxTempDirectorySize" type="xs:string" use="optional">
+                <xs:annotation>
+                    <xs:appinfo>
+                        <tooltip>Maximum spill size for this WsSQL2 service, e.g. 10GB (default: unlimited)</tooltip>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="maxByteLimit" type="xs:nonNegativeInteger" use="optional" default="67108864">
+                <xs:annotation>
+                    <xs:appinfo>
+                        <tooltip>Maximum result batch size in bytes (0 = unlimited)</tooltip>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="defaultFetchSize" type="xs:positiveInteger" use="optional" default="1000">
+                <xs:annotation>
+                    <xs:appinfo>
+                        <tooltip>Default rows per result batch when the request FetchSize is 0</tooltip>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="maxFetchSize" type="xs:positiveInteger" use="optional" default="10000">
+                <xs:annotation>
+                    <xs:appinfo>
+                        <tooltip>Maximum rows returned in one result batch</tooltip>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="maxActiveCursors" type="xs:positiveInteger" use="optional" default="100">
+                <xs:annotation>
+                    <xs:appinfo>
+                        <tooltip>Maximum active result cursors for this WsSQL2 service</tooltip>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="maxCursorsPerUser" type="xs:positiveInteger" use="optional" default="10">
+                <xs:annotation>
+                    <xs:appinfo>
+                        <tooltip>Maximum active result cursors owned by one user</tooltip>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="cursorIdleTimeoutSeconds" type="xs:positiveInteger" use="optional" default="300">
+                <xs:annotation>
+                    <xs:appinfo>
+                        <tooltip>Seconds before an idle result cursor is closed</tooltip>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="cursorMaxLifetimeSeconds" type="xs:positiveInteger" use="optional" default="3600">
+                <xs:annotation>
+                    <xs:appinfo>
+                        <tooltip>Maximum result cursor lifetime in seconds</tooltip>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="leakCheckThresholdBytes" type="xs:nonNegativeInteger" use="optional" default="1048576">
+                <xs:annotation>
+                    <xs:appinfo>
+                        <tooltip>Memory growth in bytes, after an IncludeDebug query is released, above which ExecuteQuery reports a possible leak</tooltip>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:attribute>
+        </xs:complexType>
+    </xs:element>
+</xs:schema>

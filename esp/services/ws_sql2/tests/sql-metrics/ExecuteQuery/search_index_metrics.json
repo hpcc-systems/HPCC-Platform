@@ -1,0 +1,12 @@
+{
+  "result": {
+    "columns": ["value"],
+    "rows": [[1]]
+  },
+  "metrics": {
+    "node": "HPCC_SCAN",
+    "requiredNodeFields": ["operator_cardinality", "operator_timing"],
+    "requiredProfileFields": ["latency", "rows_returned"],
+    "rows_returned": 1
+  }
+}

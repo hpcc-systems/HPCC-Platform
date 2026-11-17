@@ -2,3 +2,4 @@ application:
   name: sql2ecl
   services:
    - ws_sql
+@WSSQL2_APPLICATION_SERVICE@

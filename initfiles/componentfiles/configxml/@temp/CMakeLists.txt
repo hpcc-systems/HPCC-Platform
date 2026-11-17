@@ -30,6 +30,7 @@ FOREACH ( iFILES
     ${CMAKE_CURRENT_SOURCE_DIR}/modularlogagent.xsl
     ${CMAKE_CURRENT_SOURCE_DIR}/wslogserviceespagent.xsl
     ${CMAKE_CURRENT_SOURCE_DIR}/esp_service_wssql.xsl
+    ${CMAKE_CURRENT_SOURCE_DIR}/esp_service_wssql2.xsl
     ${CMAKE_CURRENT_SOURCE_DIR}/esp_service_wsstore.xsl
     ${CMAKE_CURRENT_SOURCE_DIR}/esp_service_decoupledlogging.xsl
 )

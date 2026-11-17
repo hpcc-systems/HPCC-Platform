@@ -55,6 +55,7 @@ option(USE_TBBMALLOC "Enable Threading Building Block scalable allocator proxy s
 option(USE_TBBMALLOC_ROXIE "Enable Threading Building Block scalable allocator proxy support in Roxie" OFF)
 option(LOGGING_SERVICE "Configure use of logging service" ON)
 option(WSSQL_SERVICE "Configure use of ws_sql service" ON)
+option(WSSQL2_SERVICE "Configure use of ws_sql2 DuckDB service (requires OpenSSL)" ON)
 option(USE_DIGISIGN "Use digisign" ON)
 option(USE_PROTRACE "Enable protrace support" OFF)
 option(PROTRACE_LOCKS "Enable protrace tracking of locks" OFF)

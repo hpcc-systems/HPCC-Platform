@@ -1,0 +1,6 @@
+{
+  "node": "HPCC_SCAN",
+  "extraInfoContains": {
+    "Residual Filters": "kind IS NOT DISTINCT FROM 1"
+  }
+}

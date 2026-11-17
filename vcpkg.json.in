@@ -63,6 +63,12 @@
         },
         "curl",
         {
+            "name": "duckdb",
+            "default-features": false,
+            "features": [],
+            "platform": "@VCPKG_DUCKDB@"
+        },
+        {
             "name": "elasticlient",
             "platform": "@VCPKG_ELASTICSTACK_CLIENT@ & !windows"
         },

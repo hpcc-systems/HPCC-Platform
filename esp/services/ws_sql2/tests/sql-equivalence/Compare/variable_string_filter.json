@@ -1,0 +1,3 @@
+{
+  "equivalentTo": "SELECT lname, fname, tfn, __filepos FROM hpcc_scan('regress::multi::dg_fetchtransindex') WHERE tfn IS NOT DISTINCT FROM 'Jane' LIMIT 20"
+}

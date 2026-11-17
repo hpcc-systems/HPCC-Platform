@@ -1,0 +1,7 @@
+{
+  "fetchSize": 1,
+  "scenario": "cancel-during-fetch",
+  "cancelAfterSeconds": 1,
+  "stopWithinSeconds": 30,
+  "fetchErrorContains": ["20001", "Query was cancelled"]
+}

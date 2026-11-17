@@ -46,6 +46,7 @@ set ( ESPSCM_SRCS
       ws_sasha.ecm
       ws_resources.ecm
       ws_logaccess.ecm
+      ws_sql2.ecm
     )
 
 if (NOT CONTAINERIZED)

@@ -14,11 +14,23 @@
 #    limitations under the License.
 ################################################################################
 
+# Only register ws_sql2 when its plugin is built, otherwise the ESP fails to load it
+if (WSSQL2_SERVICE)
+    set ( WSSQL2_APPLICATION_SERVICE "   - ws_sql2" )
+    set ( WSSQL2_PLUGIN_ENTRY "  ws_sql2: ws_sql2" )
+else ()
+    set ( WSSQL2_APPLICATION_SERVICE "" )
+    set ( WSSQL2_PLUGIN_ENTRY "" )
+endif ()
+
+configure_file ( ${CMAKE_CURRENT_SOURCE_DIR}/application.yaml.in ${CMAKE_CURRENT_BINARY_DIR}/application.yaml @ONLY )
+configure_file ( ${CMAKE_CURRENT_SOURCE_DIR}/plugins.yaml.in ${CMAKE_CURRENT_BINARY_DIR}/plugins.yaml @ONLY )
+
 set ( ESP_APPLICATION_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/esp.yaml
-    ${CMAKE_CURRENT_SOURCE_DIR}/application.yaml
+    ${CMAKE_CURRENT_BINARY_DIR}/application.yaml
     ${CMAKE_CURRENT_SOURCE_DIR}/ldap_authorization_map.yaml
-    ${CMAKE_CURRENT_SOURCE_DIR}/plugins.yaml
+    ${CMAKE_CURRENT_BINARY_DIR}/plugins.yaml
 )
 
 FOREACH( iFile ${ESP_APPLICATION_FILES} )

@@ -1,0 +1,5 @@
+{
+  "statements": [
+    "SELECT 1;\n-- nothing follows"
+  ]
+}

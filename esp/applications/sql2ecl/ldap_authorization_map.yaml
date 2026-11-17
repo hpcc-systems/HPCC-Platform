@@ -10,3 +10,8 @@ ldap:
          -  path: WsSQLAccess
             resource: WsSQLAccess
             description: Base access to sql2ecl services
+      ws_sql2:
+         Feature:
+         -  path: WsSql2Access
+            resource: WsSQLAccess
+            description: Access to WsSQL2 service (shares WsSQL access)

@@ -259,6 +259,29 @@
             </BuildSet>
             <BuildSet deployable="no"
                 installSet="deploy_map.xml"
+                name="ws_sql2"
+                path="componentfiles/ws_sql2"
+                processName="EspService"
+                schema="esp_service_wssql2.xsd">
+                <Properties bindingType="ws_sql2SoapBinding"
+                    defaultPort="8510"
+                    defaultResourcesBasedn="ou=WsSql,ou=EspServices,ou=ecl"
+                    defaultSecurePort="18510"
+                    plugin="ws_sql2"
+                    type="ws_sql2">
+                    <Authenticate access="Read"
+                        description="Root access to WS SQL2 service"
+                        path="/"
+                        required="Read"
+                        resource="WsSqlAccess"/>
+                    <AuthenticateFeature description="Access to WS SQL2 service"
+                        path="WsSql2Access"
+                        resource="WsSqlAccess"
+                        service="ws_sql2"/>
+                </Properties>
+            </BuildSet>
+            <BuildSet deployable="no"
+                installSet="deploy_map.xml"
                 name="ws_sql"
                 path="componentfiles/ws_sql"
                 processName="EspService"

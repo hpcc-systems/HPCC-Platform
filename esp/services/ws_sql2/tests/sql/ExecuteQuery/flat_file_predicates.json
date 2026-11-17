@@ -1,0 +1,12 @@
+{
+  "columns": [
+    "pushed_matches_residual",
+    "pushed_matches_mixed"
+  ],
+  "rows": [
+    [
+      true,
+      true
+    ]
+  ]
+}

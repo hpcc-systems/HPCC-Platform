@@ -1,0 +1,1097 @@
+#!/usr/bin/env python3
+
+import argparse
+import base64
+import glob
+import json
+import os
+import re
+import subprocess
+import sys
+import threading
+import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from decimal import Decimal, InvalidOperation
+import urllib.error
+import urllib.parse
+import urllib.request
+import xml.etree.ElementTree as ElementTree
+
+
+SUITE_OPERATIONS = {
+    "sql": "ExecuteQuery",
+    "sql-xfail": "ExecuteQuery",
+    "sql-cursor": "Cursor",
+    "sql-equivalence": "Compare",
+    "sql-metrics": "ExecuteQuery",
+    "sql-explain": "ExplainQuery",
+    "sql-split": "SplitQuery",
+    "sql-ecl": "ECL",
+}
+
+
+def local_name(tag):
+    return tag.rsplit("}", 1)[-1]
+
+
+def xml_escape(value):
+    return (value.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+            .replace('"', "&quot;").replace("'", "&apos;"))
+
+
+class SqlClient:
+    def __init__(self, endpoint, timeout, username=None, password=None):
+        self.endpoint = endpoint
+        self.timeout = timeout
+        self.username = username
+        self.password = password
+
+    def request(self, request_name, action, content, sql, operation):
+        body = (
+            '<?xml version="1.0"?>'
+            '<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">'
+            f'<soap:Body><{request_name} xmlns="urn:hpccsystems:ws:wssql2">'
+            f'{content}</{request_name}></soap:Body></soap:Envelope>'
+        )
+        headers = {
+            "Content-Type": "text/xml; charset=utf-8",
+            "SOAPAction": f'"{action}"',
+        }
+        if self.username is not None:
+            credentials = f"{self.username}:{self.password or ''}".encode()
+            headers["Authorization"] = "Basic " + base64.b64encode(credentials).decode("ascii")
+        request = urllib.request.Request(self.endpoint, data=body.encode(), headers=headers)
+        try:
+            with urllib.request.urlopen(request, timeout=self.timeout) as response:
+                root = ElementTree.fromstring(response.read())
+        except urllib.error.HTTPError as error:
+            response_body = error.read()
+            try:
+                error_root = ElementTree.fromstring(response_body)
+                details = [
+                    " ".join("".join(node.itertext()).split())
+                    for node in error_root.iter()
+                    if local_name(node.tag) in ("faultstring", "Message")
+                ]
+            except ElementTree.ParseError:
+                details = []
+            detail = "; ".join(details) if details else error.reason
+            raise RuntimeError(
+                f"{operation} returned HTTP {error.code} for {sql}: {detail}"
+            ) from error
+        faults = [
+            " ".join("".join(node.itertext()).split())
+            for node in root.iter()
+            if local_name(node.tag) in ("Fault", "Exception")
+        ]
+        if faults:
+            raise RuntimeError(f"{operation} failed for {sql}: {'; '.join(faults)}")
+        return root
+
+    @staticmethod
+    def read_rows(root, sql):
+        rows_node = next((node for node in root.iter() if local_name(node.tag) == "RowsJSON"), None)
+        if rows_node is None:
+            raise RuntimeError(f"FetchResultSet response for {sql} did not contain RowsJSON")
+        try:
+            rows = json.loads("".join(rows_node.itertext()).strip())
+        except json.JSONDecodeError as error:
+            raise RuntimeError(f"Invalid Rows JSON for {sql}: {error}") from error
+        if not isinstance(rows, list):
+            raise RuntimeError(f"Rows for {sql} must be a JSON array")
+        return rows
+
+    @staticmethod
+    def read_cursor_id(root, sql):
+        cursor = next((node for node in root.iter() if local_name(node.tag) == "CursorId"), None)
+        cursor_id = "".join(cursor.itertext()).strip() if cursor is not None else ""
+        if not cursor_id:
+            raise RuntimeError(f"ExecuteQuery response for {sql} did not contain CursorId")
+        return cursor_id
+
+    @staticmethod
+    def read_complete(root):
+        node = next((node for node in root.iter() if local_name(node.tag) == "Complete"), None)
+        return node is not None and "".join(node.itertext()).strip().lower() in ("true", "1")
+
+    @staticmethod
+    def read_columns(root, sql):
+        metadata = next(
+            (node for node in root.iter() if local_name(node.tag) == "ResultSetMetadata"),
+            None,
+        )
+        if metadata is None:
+            raise RuntimeError(f"ExecuteQuery response for {sql} did not contain result metadata")
+        columns = []
+        for column in metadata:
+            label = next((node for node in column if local_name(node.tag) == "ColumnLabel"), None)
+            if label is None:
+                raise RuntimeError(f"Result metadata for {sql} contains a column without ColumnLabel")
+            columns.append("".join(label.itertext()).strip())
+        return columns
+
+    def execute(self, sql, include_metrics=False):
+        result, profile, _ = self.run_query(sql, include_metrics)
+        if include_metrics:
+            if profile is None:
+                raise RuntimeError(f"ExecuteQuery response for {sql} did not contain a runtime graph")
+            return result, profile
+        return result
+
+    def execute_timed(self, sql):
+        """Returns the result and the server's total FetchResultSet ExecuteMs, in seconds."""
+        result, _, execute_ms = self.run_query(sql, False)
+        if execute_ms is None:
+            raise RuntimeError(f"ExecuteQuery response for {sql} did not contain ExecuteMs")
+        return result, execute_ms / 1000
+
+    def run_query(self, sql, include_metrics):
+        metrics_xml = "<IncludeRuntimeGraph>true</IncludeRuntimeGraph>" if include_metrics else ""
+        content = (
+            f"<SQLText>{xml_escape(sql)}</SQLText>"
+            f"<IncludeResultSetMetadata>true</IncludeResultSetMetadata>{metrics_xml}"
+        )
+        root = self.request("ExecuteQueryRequest", "ExecuteQuery", content, sql, "ExecuteQuery")
+        cursor_id = self.read_cursor_id(root, sql)
+        complete = False
+        try:
+            result = {"columns": self.read_columns(root, sql), "rows": []}
+            profile = None
+            execute_ms = None
+            # ExecuteQuery only prepares the query; it runs during the first FetchResultSet.
+            while not complete:
+                content = f"<CursorId>{xml_escape(cursor_id)}</CursorId>"
+                root = self.request(
+                    "FetchResultSetRequest", "FetchResultSet", content, sql, "FetchResultSet"
+                )
+                result["rows"].extend(self.read_rows(root, sql))
+                complete = self.read_complete(root)
+                profile = self.read_execution_profile(root) or profile
+                fetch_ms = self.read_execute_ms(root)
+                if fetch_ms is not None:
+                    execute_ms = (execute_ms or 0) + fetch_ms
+        finally:
+            if not complete:
+                content = f"<CursorId>{xml_escape(cursor_id)}</CursorId>"
+                self.request("CloseResultSetRequest", "CloseResultSet", content, sql, "CloseResultSet")
+        return result, profile, execute_ms
+
+    @staticmethod
+    def read_execute_ms(root):
+        node = next((node for node in root.iter() if local_name(node.tag) == "ExecuteMs"), None)
+        text = "".join(node.itertext()).strip() if node is not None else ""
+        if not text:
+            return None
+        try:
+            return float(text)
+        except ValueError as error:
+            raise RuntimeError(f"Invalid ExecuteMs value {text!r}") from error
+
+    @staticmethod
+    def read_execution_profile(root):
+        node = next((node for node in root.iter() if local_name(node.tag) == "RuntimeGraphJSON"), None)
+        if node is None or not "".join(node.itertext()).strip():
+            return None
+        try:
+            return json.loads("".join(node.itertext()))
+        except json.JSONDecodeError as error:
+            raise RuntimeError(f"Invalid FetchResultSet RuntimeGraphJSON: {error}") from error
+
+    def split_query(self, sql):
+        content = f"<SQLText>{xml_escape(sql)}</SQLText>"
+        root = self.request("SplitQueryRequest", "SplitQuery", content, sql, "SplitQuery")
+        return ["".join(node.itertext()) for node in root.iter() if local_name(node.tag) == "Statement"]
+
+    def explain_query(self, sql):
+        content = f"<SQLText>{xml_escape(sql)}</SQLText>"
+        root = self.request("ExplainQueryRequest", "ExplainQuery", content, sql, "ExplainQuery")
+        text_node = next((node for node in root.iter() if local_name(node.tag) == "Plan"), None)
+        json_node = next((node for node in root.iter() if local_name(node.tag) == "PlanJSON"), None)
+        if text_node is None or json_node is None:
+            raise RuntimeError(f"ExplainQuery response for {sql} did not contain a Plan")
+        try:
+            plan_json = json.loads("".join(json_node.itertext()))
+        except json.JSONDecodeError as error:
+            raise RuntimeError(f"Invalid ExplainQuery plan JSON for {sql}: {error}") from error
+        return {"text": "".join(text_node.itertext()), "json": plan_json}
+
+    def logical_file_parts(self, logical_name):
+        content = f"<LogicalName>{xml_escape(logical_name)}</LogicalName>"
+        root = self.request("LogicalFileMetadataRequest", "LogicalFileMetadata", content, logical_name, "LogicalFileMetadata")
+        meta = next((node for node in root.iter() if local_name(node.tag) == "LogicalFileMetadata"), None)
+        if meta is None:
+            raise RuntimeError(f"LogicalFileMetadata for {logical_name} did not contain metadata")
+        fields = {local_name(node.tag): "".join(node.itertext()).strip() for node in meta}
+        if "Kind" not in fields or "FileParts" not in fields:
+            raise RuntimeError(f"LogicalFileMetadata for {logical_name} did not contain Kind and FileParts")
+        try:
+            parts = json.loads(fields["FileParts"])
+        except json.JSONDecodeError as error:
+            raise RuntimeError(f"Invalid FileParts JSON for {logical_name}: {error}") from error
+        if not isinstance(parts, dict) or not isinstance(parts.get("part"), list) or not parts["part"]:
+            raise RuntimeError(f"LogicalFileMetadata for {logical_name} did not contain a list of file parts")
+        entries = parts["part"]
+        if fields["Kind"].lower() == "key":
+            if any(not isinstance(part, dict) or part.get("@tlk") not in ("0", "1") for part in entries):
+                raise RuntimeError(f"LogicalFileMetadata for {logical_name} has invalid KEY part flags")
+            scan_parts = sum(part["@tlk"] == "0" for part in entries)
+        else:
+            scan_parts = len(entries)
+        if not scan_parts:
+            raise RuntimeError(f"LogicalFileMetadata for {logical_name} has no scan data parts")
+        return len(entries), scan_parts, fields["Kind"].lower() == "key"
+
+    def open_cursor(self, sql):
+        content = (
+            f"<SQLText>{xml_escape(sql)}</SQLText>"
+            "<IncludeResultSetMetadata>true</IncludeResultSetMetadata>"
+        )
+        root = self.request("ExecuteQueryRequest", "ExecuteQuery", content, sql, "ExecuteQuery")
+        return self.read_cursor_id(root, sql)
+
+    def execute_first_batch(self, sql, fetch_size):
+        """Opens a cursor and fetches its first batch; cursor_id is empty once the result is complete."""
+        cursor_id = self.open_cursor(sql)
+        try:
+            return self.fetch_batch(cursor_id, sql, fetch_size)
+        except Exception as fetch_error:
+            try:
+                self.close_cursor(cursor_id, sql)
+            except RuntimeError as cleanup_error:
+                raise RuntimeError(
+                    f"{fetch_error}; failed to close cursor {cursor_id}: {cleanup_error}"
+                ) from fetch_error
+            raise
+
+    def fetch_batch(self, cursor_id, sql, fetch_size):
+        content = f"<CursorId>{xml_escape(cursor_id)}</CursorId><RowCount>{fetch_size}</RowCount>"
+        root = self.request("FetchResultSetRequest", "FetchResultSet", content, sql, "FetchResultSet")
+        return {"rows": self.read_rows(root, sql), "cursor_id": "" if self.read_complete(root) else cursor_id}
+
+    def close_cursor(self, cursor_id, sql):
+        content = f"<CursorId>{xml_escape(cursor_id)}</CursorId>"
+        root = self.request("CloseResultSetRequest", "CloseResultSet", content, sql, "CloseResultSet")
+        closed = next((node for node in root.iter() if local_name(node.tag) == "Closed"), None)
+        return closed is not None and "".join(closed.itertext()).strip().lower() in ("true", "1")
+
+
+
+def resolve_endpoint(config, server=None):
+    endpoint = os.environ.get("WS_SQL2_ENDPOINT") or config.get("wsSql2Endpoint")
+    if endpoint and server is None:
+        return endpoint
+
+    use_ssl = str(config.get("useSsl", "False")).lower() == "true"
+    scheme = "https" if use_ssl else "http"
+    if server:
+        if "://" in server:
+            endpoint = server
+            if not endpoint.rstrip("/").endswith("/WsSQL2"):
+                endpoint = endpoint.rstrip("/") + "/WsSQL2/"
+            return endpoint
+        parsed = urllib.parse.urlsplit("//" + server)
+        host = parsed.hostname or server
+        port = parsed.port or config.get("wsSql2Port", "8510")
+        if ":" in host:
+            host = f"[{host}]"
+        return f"{scheme}://{host}:{port}/WsSQL2/"
+    else:
+        host = config.get("wsSql2Ip", config.get("espIp", "127.0.0.1"))
+        port = config.get("wsSql2Port", "8510")
+        host = f"{host}:{port}"
+    return f"{scheme}://{host.rstrip('/')}/WsSQL2/"
+
+
+def resolve_queries(sql_dir, patterns):
+    matches = []
+    for pattern in patterns or ["**/*.sql"]:
+        expanded = glob.glob(os.path.join(sql_dir, pattern), recursive=True)
+        for path in expanded:
+            if os.path.isfile(path) and path.lower().endswith(".sql"):
+                resolved = os.path.realpath(path)
+                if os.path.commonpath((sql_dir, resolved)) != sql_dir:
+                    raise ValueError(f"SQL test path escapes the sql directory: {path}")
+                matches.append(resolved)
+    return sorted(set(matches))
+
+
+def discover_suite_queries(suite_dir, patterns):
+    suites = []
+    for entry in sorted(os.listdir(suite_dir)):
+        path = os.path.join(suite_dir, entry)
+        if os.path.isdir(path) and (entry == "sql" or entry.startswith("sql-")):
+            if entry not in SUITE_OPERATIONS:
+                raise ValueError(f"Unsupported SQL test suite directory: {entry}")
+            queries = resolve_queries(os.path.realpath(path), patterns)
+            if entry == "sql-ecl":
+                for query in queries:
+                    ecl_path = os.path.splitext(query)[0] + ".ecl"
+                    if not os.path.isfile(ecl_path):
+                        raise ValueError(f"Missing ECL test file {ecl_path}")
+            suites.extend((entry, os.path.realpath(path), query) for query in queries)
+    return suites
+
+
+def results_path(query_path, sql_dir, results_dir):
+    relative = os.path.relpath(query_path, sql_dir)
+    return os.path.join(results_dir, os.path.splitext(relative)[0] + ".json")
+
+
+def find_plan_node(value, name):
+    if isinstance(value, dict):
+        if value.get("name") == name or value.get("operator_name") == name:
+            return value
+        for child in value.values():
+            match = find_plan_node(child, name)
+            if match is not None:
+                return match
+    elif isinstance(value, list):
+        for child in value:
+            match = find_plan_node(child, name)
+            if match is not None:
+                return match
+    return None
+
+
+def contains_text(value, expected):
+    if isinstance(value, dict):
+        return any(contains_text(child, expected) for child in value.values())
+    if isinstance(value, list):
+        return any(contains_text(child, expected) for child in value)
+    return expected in str(value or "")
+
+
+def read_expected(path):
+    try:
+        with open(path, encoding="utf-8") as expected_file:
+            return json.load(expected_file)
+    except FileNotFoundError as error:
+        raise RuntimeError(f"Missing expected result file {path}") from error
+
+
+def read_ecl_datasets(output):
+    try:
+        root = ElementTree.fromstring(f"<Results>{output}</Results>")
+    except ElementTree.ParseError as error:
+        raise RuntimeError(f"ECL did not return valid result XML: {error}") from error
+    datasets = list(root)
+    if not datasets or any(local_name(dataset.tag) != "Dataset" or not dataset.get("name")
+                           for dataset in datasets):
+        raise RuntimeError("ECL must output only named Datasets")
+    return datasets
+
+
+def read_ecl_rows(dataset, sql_columns):
+    rows = []
+    for row in dataset:
+        if local_name(row.tag) != "Row":
+            raise RuntimeError("ECL Dataset contains an unexpected element")
+        fields = [local_name(field.tag) for field in row]
+        # ECL always reports field names in lower case.
+        if [field.lower() for field in fields] != [column.lower() for column in sql_columns]:
+            raise AssertionError(f"ECL columns {fields!r} do not match SQL columns {sql_columns!r}")
+        rows.append([
+            None if field.get("{http://www.w3.org/2001/XMLSchema-instance}nil") == "true"
+            else "".join(field.itertext())
+            for field in row
+        ])
+    return rows
+
+
+def compare_ecl_results(sql_results, ecl_output):
+    """Compares each SQL statement's result (or its error) with the ECL Dataset at the same position."""
+    datasets = read_ecl_datasets(ecl_output)
+    if len(sql_results) == 1 and len(datasets) == 1:
+        if isinstance(sql_results[0], Exception):
+            raise sql_results[0]
+        compare_ecl_dataset(sql_results[0], datasets[0])
+        return
+    errors = []
+    if len(sql_results) != len(datasets):
+        errors.append(f"SQL returned {len(sql_results)} result sets but ECL returned {len(datasets)}")
+    for number, (sql_result, dataset) in enumerate(zip(sql_results, datasets), 1):
+        label = f"Result {number} (ECL {dataset.get('name')!r})"
+        if isinstance(sql_result, Exception):
+            errors.append(f"{label}: SQL failed: {sql_result}")
+            continue
+        try:
+            compare_ecl_dataset(sql_result, dataset)
+        except (AssertionError, RuntimeError) as error:
+            errors.append(f"{label}: {error}")
+    for number, sql_result in enumerate(sql_results[len(datasets):], len(datasets) + 1):
+        if isinstance(sql_result, Exception):
+            errors.append(f"Result {number} (no ECL Dataset): SQL failed: {sql_result}")
+    if errors:
+        raise AssertionError("\n".join(errors))
+
+
+def compare_ecl_dataset(sql_result, dataset):
+    columns = sql_result["columns"]
+    ecl_rows = read_ecl_rows(dataset, columns)
+    sql_rows = sql_result["rows"]
+    if len(sql_rows) != len(ecl_rows):
+        raise AssertionError(f"SQL returned {len(sql_rows)} rows but ECL returned {len(ecl_rows)}")
+    for row_number, (sql_row, ecl_row) in enumerate(zip(sql_rows, ecl_rows), 1):
+        if len(sql_row) != len(columns):
+            raise RuntimeError(f"SQL row {row_number} does not match its column metadata")
+        for column, sql_value, ecl_value in zip(columns, sql_row, ecl_row):
+            if isinstance(sql_value, bool):
+                matches = ecl_value is not None and ecl_value.lower() in ("true", "false") \
+                    and (ecl_value.lower() == "true") == sql_value
+            elif isinstance(sql_value, (int, float)) and not isinstance(sql_value, bool):
+                try:
+                    matches = ecl_value is not None and Decimal(str(sql_value)) == Decimal(ecl_value)
+                except InvalidOperation:
+                    matches = False
+            else:
+                matches = sql_value == ecl_value
+            if not matches:
+                raise AssertionError(
+                    f"Row {row_number}, column {column}: SQL {sql_value!r} != ECL {ecl_value!r}"
+                )
+
+
+def parse_cluster_time(value):
+    # WsWorkunits formats TotalClusterTime as "[N days ][h:][m:]s.mmm".
+    match = re.fullmatch(r"\s*(?:(\d+) days )?((?:\d+:){0,2})(\d+(?:\.\d+)?)\s*", str(value or ""))
+    if not match:
+        return None
+    seconds = Decimal(match.group(3))
+    units = [int(part) for part in match.group(2).split(":")[:-1]]
+    multiplier = 60
+    for part in reversed(units):
+        seconds += part * multiplier
+        multiplier *= 60
+    if match.group(1):
+        seconds += int(match.group(1)) * 86400
+    return seconds
+
+
+def compare_timings(sql_seconds, cluster_time):
+    ecl_seconds = parse_cluster_time(cluster_time)
+    if ecl_seconds is None:
+        return "?"
+    sql_ms = Decimal(str(sql_seconds)).quantize(Decimal("0.001"))
+    ecl_ms = ecl_seconds.quantize(Decimal("0.001"))
+    return "<" if sql_ms < ecl_ms else ">" if sql_ms > ecl_ms else "="
+
+
+def fetch_total_cluster_time(wuid, ecl_config):
+    scheme = "https" if ecl_config["ssl"] else "http"
+    query = urllib.parse.urlencode({
+        "Wuid": wuid + "*",
+        "PageSize": 2,
+        "Sortby": "Wuid",
+    })
+    url = f"{scheme}://{ecl_config['server']}:{ecl_config['port']}/WsWorkunits/WUQuery.json?{query}"
+    headers = {}
+    if ecl_config["username"]:
+        credentials = f"{ecl_config['username']}:{ecl_config['password'] or ''}".encode()
+        headers["Authorization"] = "Basic " + base64.b64encode(credentials).decode("ascii")
+    request = urllib.request.Request(url, headers=headers)
+    try:
+        with urllib.request.urlopen(request, timeout=ecl_config["timeout"]) as response:
+            document = json.load(response)
+    except (urllib.error.URLError, json.JSONDecodeError) as error:
+        raise RuntimeError(f"WUQuery failed for {wuid}: {error}") from error
+    info = document.get("WUQueryResponse", {})
+    if info.get("Exceptions"):
+        raise RuntimeError(f"WUQuery reported exceptions for {wuid}: {info['Exceptions']}")
+    workunits = info.get("Workunits", {}).get("ECLWorkunit", [])
+    matches = [workunit for workunit in workunits if workunit.get("Wuid") == wuid]
+    if len(matches) != 1 or not matches[0].get("TotalClusterTime"):
+        raise RuntimeError(f"WUQuery did not return TotalClusterTime for {wuid}")
+    return matches[0]["TotalClusterTime"]
+
+
+def delete_ecl_workunit(wuid, ecl_config):
+    scheme = "https" if ecl_config["ssl"] else "http"
+    query = urllib.parse.urlencode({"Wuids": wuid})
+    url = f"{scheme}://{ecl_config['server']}:{ecl_config['port']}/WsWorkunits/WUDelete.json?{query}"
+    headers = {}
+    if ecl_config["username"]:
+        credentials = f"{ecl_config['username']}:{ecl_config['password'] or ''}".encode()
+        headers["Authorization"] = "Basic " + base64.b64encode(credentials).decode("ascii")
+    request = urllib.request.Request(url, data=b"", headers=headers)
+    try:
+        with urllib.request.urlopen(request, timeout=ecl_config["timeout"]) as response:
+            document = json.load(response)
+    except (urllib.error.URLError, json.JSONDecodeError) as error:
+        raise RuntimeError(f"WUDelete failed for {wuid}: {error}") from error
+    info = document.get("WUDeleteResponse")
+    if not isinstance(info, dict):
+        raise RuntimeError(f"WUDelete did not return a response for {wuid}")
+    if info.get("Exceptions"):
+        raise RuntimeError(f"WUDelete reported exceptions for {wuid}: {info['Exceptions']}")
+    results = info.get("ActionResults", {}).get("WUActionResult", [])
+    if results:
+        raise RuntimeError(f"WUDelete failed for {wuid}: {results}")
+
+
+def ecl_workunit_id(output):
+    if isinstance(output, bytes):
+        output = output.decode("utf-8", errors="replace")
+    match = re.search(r"(?m)^\s*wuid:\s*(W\d{8}-\d{6}(?:-\d+)?)\s*$", output or "")
+    return match.group(1) if match else None
+
+
+def run_sql_ecl_case(client, sql, ecl_path, ecl_config):
+    if not os.path.isfile(ecl_path):
+        raise RuntimeError(f"Missing ECL test file {ecl_path}")
+    statements = client.split_query(sql)
+    if not statements:
+        raise ValueError(f"SQL test file for {ecl_path} contains no SQL statements")
+    sql_results = []
+    sql_execute = 0
+    sql_started = time.monotonic()
+    for statement in statements:
+        # Keep running later statements so one failure does not hide the other comparisons.
+        try:
+            result, execute_seconds = client.execute_timed(statement)
+        except RuntimeError as error:
+            sql_results.append(error)
+            continue
+        sql_results.append(result)
+        sql_execute += execute_seconds
+    sql_elapsed = time.monotonic() - sql_started
+    target = ecl_config["target"]
+    cluster = ecl_config["cluster"]
+    timeout = ecl_config["timeout"]
+    command = [
+        "ecl", "run", "-v", f"--target={target}", f"--cluster={cluster}",
+        f"--server={ecl_config['server']}", f"--port={ecl_config['port']}",
+        f"--wait={timeout * 1000}", "--exception-level=warning", "--noroot",
+        f"--name=sql-test-{os.path.splitext(os.path.basename(ecl_path))[0]}",
+    ]
+    if ecl_config["ssl"]:
+        command.append("--ssl")
+    if ecl_config["username"]:
+        command.append(f"--username={ecl_config['username']}")
+    if ecl_config["password"]:
+        command.append(f"--password={ecl_config['password']}")
+    command.append(ecl_path)
+    ecl_started = time.monotonic()
+    try:
+        completed = subprocess.run(
+            command, capture_output=True, text=True, timeout=timeout + 60, check=False,
+        )
+    except FileNotFoundError as error:
+        raise RuntimeError("ECL command not found; install or add 'ecl' to PATH") from error
+    except subprocess.TimeoutExpired as error:
+        wuid = ecl_workunit_id(error.stdout)
+        if wuid:
+            delete_ecl_workunit(wuid, ecl_config)
+        raise RuntimeError(f"ECL timed out after {timeout + 60} seconds for {ecl_path}") from error
+    ecl_elapsed = time.monotonic() - ecl_started
+    wuid = ecl_workunit_id(completed.stdout)
+    if wuid is None:
+        if completed.returncode:
+            raise RuntimeError(
+                f"ECL run failed for {ecl_path} (exit {completed.returncode}, "
+                f"SQL {sql_elapsed:.3f}s, ECL {ecl_elapsed:.3f}s): "
+                f"{completed.stderr.strip() or completed.stdout.strip()}"
+            )
+        raise RuntimeError(f"ECL run did not report a workunit ID for {ecl_path}")
+    try:
+        if completed.returncode:
+            raise RuntimeError(
+                f"ECL run failed for {ecl_path} (exit {completed.returncode}, "
+                f"SQL {sql_elapsed:.3f}s, ECL {ecl_elapsed:.3f}s): "
+                f"{completed.stderr.strip() or completed.stdout.strip()}"
+            )
+        _, dataset_tag, dataset_xml = completed.stdout.partition("<Dataset")
+        if not dataset_tag:
+            raise RuntimeError(f"ECL run did not return a Dataset for {ecl_path}")
+        try:
+            compare_ecl_results(sql_results, dataset_tag + dataset_xml)
+        except (AssertionError, RuntimeError) as error:
+            raise AssertionError(
+                f"{error} (SQL {sql_elapsed:.3f}s, ECL {ecl_elapsed:.3f}s)"
+            ) from error
+        cluster_time = fetch_total_cluster_time(wuid, ecl_config)
+        return sql_execute, cluster_time, sql_elapsed, ecl_elapsed
+    finally:
+        original_error = sys.exc_info()[1]
+        try:
+            delete_ecl_workunit(wuid, ecl_config)
+        except RuntimeError as cleanup_error:
+            if original_error is not None:
+                raise RuntimeError(f"{original_error}; {cleanup_error}") from original_error
+            raise
+
+
+def check_explain_expectations(plan, expected, sql, client=None):
+    for text in expected.get("contains", []):
+        if text not in plan["text"]:
+            raise AssertionError(f"ExplainQuery for {sql} did not contain {text!r}")
+    for text in expected.get("notContains", []):
+        if text in plan["text"]:
+            raise AssertionError(f"ExplainQuery for {sql} unexpectedly contained {text!r}")
+    node_name = expected.get("node")
+    if node_name:
+        node = find_plan_node(plan["json"], node_name)
+        if node is None:
+            raise AssertionError(f"ExplainQuery for {sql} did not contain plan node {node_name}")
+        extra_info = node.get("extra_info", {})
+        for key, value in expected.get("extraInfoEquals", {}).items():
+            if extra_info.get(key) != value:
+                raise AssertionError(
+                    f"ExplainQuery for {sql} expected {key}={value!r}, got {extra_info.get(key)!r}"
+                )
+        for key, value in expected.get("extraInfoContains", {}).items():
+            fragments = value if isinstance(value, list) else [value]
+            for fragment in fragments:
+                if not contains_text(extra_info.get(key), fragment):
+                    raise AssertionError(f"ExplainQuery for {sql} expected {key} to contain {fragment!r}")
+        for key in expected.get("extraInfoAbsent", []):
+            if key in extra_info:
+                raise AssertionError(f"ExplainQuery for {sql} unexpectedly reported {key}")
+        for key, value in expected.get("extraInfoStartsWith", {}).items():
+            if not str(extra_info.get(key, "")).startswith(value):
+                raise AssertionError(f"ExplainQuery for {sql} expected {key} to start with {value!r}")
+        for key, value in expected.get("extraInfoGreaterThan", {}).items():
+            actual = extra_info.get(key)
+            try:
+                matches = int(actual) > value
+            except (TypeError, ValueError):
+                matches = False
+            if not matches:
+                raise AssertionError(f"ExplainQuery for {sql} expected {key} > {value}, got {actual!r}")
+        logical_name = expected.get("scanPartsFromLogicalFile")
+        if logical_name:
+            if client is None:
+                raise ValueError("Scan part assertions require a LogicalFileMetadata client")
+            if f"hpcc_scan('{logical_name}')" not in sql:
+                raise ValueError(f"ExplainQuery for {sql} does not scan {logical_name}")
+            physical_parts, scan_parts, is_key = client.logical_file_parts(logical_name)
+            derived = {
+                "Physical Parts": physical_parts,
+                "Max Threads": scan_parts,
+                "Partitioned Scan": "true" if scan_parts > 1 else "false",
+            }
+            if is_key:
+                derived["Key Data Parts"] = scan_parts
+            for key, value in derived.items():
+                if str(extra_info.get(key)) != str(value):
+                    raise AssertionError(
+                        f"ExplainQuery for {sql} expected {key}={value!r} from LogicalFileMetadata, "
+                        f"got {extra_info.get(key)!r}"
+                    )
+            if "limitByPartCount" in expected:
+                limit = expected["limitByPartCount"]["limit"]
+                offset = expected["limitByPartCount"].get("offset", 0)
+                pushed = scan_parts == 1
+                limit_node = find_plan_node(plan["json"], "STREAMING_LIMIT")
+                if (limit_node is not None) == pushed:
+                    raise AssertionError(f"ExplainQuery for {sql} returned an unexpected LIMIT plan")
+                expected_info = {
+                    "Limit Pushdown": "true" if pushed else "false",
+                    "Pushed Limit": str(limit) if pushed else None,
+                    "Pushed Offset": str(offset) if pushed and offset else None,
+                }
+                for key, value in expected_info.items():
+                    if extra_info.get(key) != value:
+                        raise AssertionError(
+                            f"ExplainQuery for {sql} expected {key}={value!r}, got {extra_info.get(key)!r}"
+                        )
+
+
+def run_cancel_case(client, sql, fetch_size, expected):
+    """Cancels a cursor with CloseResultSet while its first FetchResultSet is executing the query."""
+    cursor_id = client.open_cursor(sql)
+    outcome = {}
+
+    def fetch():
+        try:
+            outcome["batch"] = client.fetch_batch(cursor_id, sql, fetch_size)
+        except RuntimeError as error:
+            outcome["error"] = str(error)
+
+    fetcher = threading.Thread(target=fetch, daemon=True)
+    fetcher.start()
+    time.sleep(expected.get("cancelAfterSeconds", 1))
+    closed = client.close_cursor(cursor_id, sql)
+    fetcher.join(expected.get("stopWithinSeconds", 30))
+    if fetcher.is_alive():
+        raise AssertionError("FetchResultSet did not stop after CloseResultSet")
+    if not closed:
+        raise AssertionError("CloseResultSet did not confirm cursor closure")
+    if "error" not in outcome:
+        raise AssertionError("FetchResultSet completed although its cursor was cancelled")
+    for text in expected.get("fetchErrorContains", []):
+        if text not in outcome["error"]:
+            raise AssertionError(f"Cancelled FetchResultSet error {outcome['error']!r} does not contain {text!r}")
+
+
+def run_cursor_case(client, sql, expected):
+    fetch_size = expected.get("fetchSize")
+    if not isinstance(fetch_size, int) or fetch_size < 1:
+        raise ValueError("Cursor test requires a positive fetchSize")
+    if expected.get("scenario") == "cancel-during-fetch":
+        run_cancel_case(client, sql, fetch_size, expected)
+        return
+    first = client.execute_first_batch(sql, fetch_size)
+    cursor_id = first["cursor_id"]
+    try:
+        if first["rows"] != expected.get("firstRows"):
+            raise AssertionError(f"Cursor test first batch differs: {first['rows']!r}")
+        if expected.get("cursorAfterFirst", False) != bool(cursor_id):
+            raise AssertionError("Cursor test returned an unexpected cursor state after the first fetch")
+
+        scenario = expected.get("scenario")
+        if scenario == "explicit-close":
+            if not cursor_id:
+                raise AssertionError("Cursor test needs a cursor before explicit close")
+            if not client.close_cursor(cursor_id, sql):
+                raise AssertionError("CloseResultSet did not confirm cursor closure")
+            closed_cursor_id = cursor_id
+            cursor_id = ""
+            try:
+                client.fetch_batch(closed_cursor_id, sql, fetch_size)
+            except RuntimeError as error:
+                if expected.get("fetchAfterCloseErrorContains", "") not in str(error):
+                    raise
+            else:
+                raise AssertionError("FetchResultSet succeeded after explicit close")
+            return
+
+        expected_batches = expected.get("followingBatches", [])
+        expected_cursor_states = expected.get("cursorAfterFollowingBatches", [])
+        if len(expected_batches) != len(expected_cursor_states):
+            raise ValueError("Cursor test expected batch and cursor-state counts differ")
+        same_cursor = expected.get("sameCursorAfterFollowingBatches", [])
+        if same_cursor and len(same_cursor) != len(expected_batches):
+            raise ValueError("Cursor test same-cursor assertion count differs from expected batches")
+        for index, (expected_rows, expect_cursor) in enumerate(zip(expected_batches, expected_cursor_states)):
+            if not cursor_id:
+                raise AssertionError(f"Cursor disappeared before expected follow-up batch {index + 1}")
+            previous_cursor_id = cursor_id
+            batch = client.fetch_batch(cursor_id, sql, fetch_size)
+            if batch["rows"] != expected_rows:
+                raise AssertionError(f"Cursor test batch {index + 1} differs: {batch['rows']!r}")
+            cursor_id = batch["cursor_id"]
+            if bool(cursor_id) != expect_cursor:
+                raise AssertionError(f"Cursor test batch {index + 1} returned an unexpected cursor state")
+            if same_cursor and same_cursor[index] and cursor_id != previous_cursor_id:
+                raise AssertionError(f"Cursor test batch {index + 1} did not retain its cursor ID")
+    finally:
+        if cursor_id:
+            client.close_cursor(cursor_id, sql)
+
+
+def run_split_case(client, sql, expected, query_path):
+    error_contains = (expected or {}).get("errorContains", "")
+    try:
+        statements = client.split_query(sql)
+    except RuntimeError as error:
+        if expected is None:
+            return
+        if not error_contains or error_contains not in str(error):
+            raise AssertionError(f"Unexpected error for {query_path}: {error}") from error
+        return
+    if error_contains:
+        raise AssertionError(f"Expected split to fail with {error_contains!r}")
+    if expected is None:
+        return
+    if "statements" not in expected:
+        raise ValueError(f"Split case {query_path} requires statements or errorContains")
+    if statements != expected["statements"]:
+        raise AssertionError(
+            f"Split statements differ for {query_path}\n"
+            f"Expected: {json.dumps(expected['statements'], ensure_ascii=False)}\n"
+            f"Actual:   {json.dumps(statements, ensure_ascii=False)}"
+        )
+
+
+def run_query(client, query_path, sql_dir, results_dir, ignore_result, update_results,
+              mode="sql", ecl_config=None):
+    with open(query_path, encoding="utf-8") as sql_file:
+        sql = sql_file.read().strip()
+    if not sql:
+        raise ValueError("SQL test file is empty")
+
+    expected_path = results_path(query_path, sql_dir, results_dir)
+    if update_results and mode in ("sql-xfail", "sql-cursor", "sql-equivalence", "sql-explain", "sql-split",
+                                "sql-ecl"):
+        raise ValueError(f"--updateResults cannot update assertions in {mode} cases")
+    if ignore_result or mode == "sql-ecl":
+        expected = None
+    elif update_results and not os.path.isfile(expected_path):
+        expected = None
+    else:
+        expected = read_expected(expected_path)
+    if mode == "sql-ecl":
+        if ignore_result:
+            for statement in client.split_query(sql):
+                client.execute(statement)
+            return None
+        if ecl_config is None:
+            raise ValueError("SQL/ECL tests require ECL connection settings")
+        ecl_path = os.path.splitext(query_path)[0] + ".ecl"
+        return run_sql_ecl_case(client, sql, ecl_path, ecl_config)
+    if mode == "sql-xfail":
+        error_contains = (expected or {}).get("errorContains", "")
+        if not ignore_result and not error_contains:
+            raise ValueError(f"Expected-error case {query_path} requires errorContains")
+        try:
+            client.execute(sql)
+        except RuntimeError as error:
+            if error_contains not in str(error):
+                raise AssertionError(f"Unexpected error for {query_path}: {error}") from error
+            return None
+        raise AssertionError(f"Expected query to fail with {error_contains!r}")
+    if mode == "sql-cursor":
+        if expected is None:
+            client.execute(sql)
+            return None
+        run_cursor_case(client, sql, expected)
+        return None
+    if mode == "sql-explain":
+        plan = client.explain_query(sql)
+        if expected is not None:
+            check_explain_expectations(plan, expected, sql, client)
+        return None
+    if mode == "sql-split":
+        run_split_case(client, sql, expected, query_path)
+        return None
+    if mode == "sql-equivalence":
+        result = client.execute(sql)
+        if expected is None:
+            return None
+        equivalent_sql = expected.get("equivalentTo")
+        if equivalent_sql:
+            equivalent_result = client.execute(equivalent_sql)
+            if result != equivalent_result:
+                raise AssertionError(
+                    f"Results differ for {query_path}\n"
+                    f"Query:      {json.dumps(result, ensure_ascii=False)}\n"
+                    f"Equivalent: {json.dumps(equivalent_result, ensure_ascii=False)}"
+                )
+        if "rowCount" in expected and len(result["rows"]) != expected["rowCount"]:
+            raise AssertionError(
+                f"Expected {expected['rowCount']} rows for {query_path}, got {len(result['rows'])}"
+            )
+        if not equivalent_sql and "rowCount" not in expected:
+            raise ValueError(f"Equivalence case {query_path} needs equivalentTo or rowCount")
+        return None
+    if mode == "sql-metrics":
+        result, profile = client.execute(sql, include_metrics=True)
+        metric_expectations = expected.get("metrics", {}) if expected is not None else {}
+        result = {"columns": result["columns"], "rows": result["rows"]}
+        if not ignore_result and not update_results and result != expected.get("result"):
+            raise AssertionError(
+                f"Result does not match {expected_path}\n"
+                f"Expected: {json.dumps(expected.get('result'), ensure_ascii=False)}\n"
+                f"Actual:   {json.dumps(result, ensure_ascii=False)}"
+            )
+        scan = find_plan_node(profile, metric_expectations.get("node", "HPCC_SCAN"))
+        if scan is None:
+            raise AssertionError("Runtime graph did not contain an HPCC scan profile")
+        for field in metric_expectations.get("requiredNodeFields", []):
+            if field not in scan:
+                raise AssertionError(f"Runtime graph omitted HPCC scan field {field}")
+        for field in metric_expectations.get("requiredProfileFields", []):
+            if field not in profile:
+                raise AssertionError(f"Runtime graph omitted profile field {field}")
+        if "rows_returned" in metric_expectations and profile.get("rows_returned") != metric_expectations["rows_returned"]:
+            raise AssertionError(
+                f"Runtime graph expected rows_returned={metric_expectations['rows_returned']!r}, "
+                f"got {profile.get('rows_returned')!r}"
+            )
+        if update_results:
+            os.makedirs(os.path.dirname(expected_path), exist_ok=True)
+            with open(expected_path, "w", encoding="utf-8") as expected_file:
+                json.dump({"result": result, "metrics": metric_expectations}, expected_file, indent=2, ensure_ascii=False)
+                expected_file.write("\n")
+        return None
+    result = client.execute(sql)
+    if ignore_result:
+        return None
+
+    if update_results:
+        os.makedirs(os.path.dirname(expected_path), exist_ok=True)
+        with open(expected_path, "w", encoding="utf-8") as expected_file:
+            json.dump(result, expected_file, indent=2, ensure_ascii=False)
+            expected_file.write("\n")
+        return None
+
+    if result != expected:
+        raise AssertionError(
+            f"Result does not match {expected_path}\n"
+            f"Expected: {json.dumps(expected, ensure_ascii=False)}\n"
+            f"Actual:   {json.dumps(result, ensure_ascii=False)}"
+        )
+    return None
+
+
+def load_config(config_path):
+    with open(config_path, encoding="utf-8") as config_file:
+        document = json.load(config_file)
+    if "Regress" not in document or not isinstance(document["Regress"], dict):
+        raise ValueError(f"Config file {config_path} must contain a Regress object")
+    return document["Regress"]
+
+
+def get_worker_count(parallelism):
+    if parallelism == -1:
+        parallelism = max(1, (os.cpu_count() or 1) * 2)
+    return max(1, parallelism)
+
+
+def run_one_query(client, query_path, sql_dir, results_dir, ignore_result, update_results,
+                  mode="sql", ecl_config=None):
+    name = os.path.relpath(query_path, sql_dir)
+    if mode != "sql":
+        name = f"{mode}/{name}"
+    print(f"START {name}", flush=True)
+    started = time.monotonic()
+    try:
+        timings = run_query(client, query_path, sql_dir, results_dir, ignore_result,
+                            update_results, mode, ecl_config)
+        return name, time.monotonic() - started, None, timings
+    except Exception as error:
+        return name, time.monotonic() - started, error, None
+
+
+def run_suite(client, queries, sql_dir, results_dir, ignore_result, update_results,
+              parallelism, mode="sql", ecl_config=None):
+    workers = get_worker_count(parallelism)
+
+    def run(path):
+        return run_one_query(client, path, sql_dir, results_dir, ignore_result,
+                             update_results, mode, ecl_config)
+
+    if workers == 1:
+        results = map(run, queries)
+        executor = None
+    else:
+        executor = ThreadPoolExecutor(max_workers=workers)
+        futures = [executor.submit(run, query) for query in queries]
+        results = (future.result() for future in as_completed(futures))
+
+    prefix = "" if mode == "sql" else f"{mode}/"
+    name_width = max((len(prefix + os.path.relpath(query, sql_dir)) for query in queries), default=0)
+    passed = 0
+    failures = []
+    try:
+        for name, elapsed, error, timings in results:
+            if error is None:
+                passed += 1
+                if timings is not None:
+                    sql_execute, cluster_time, sql_elapsed, ecl_elapsed = timings
+                    relation = compare_timings(sql_execute, cluster_time)
+                    end_to_end_relation = compare_timings(sql_elapsed, f"{ecl_elapsed:.3f}")
+                    print(f"PASS {name:<{name_width}}  SQL {sql_execute:>8.3f}s {relation} "
+                          f"ECL {cluster_time:>9}  (end-to-end SQL {sql_elapsed:>8.3f}s "
+                          f"{end_to_end_relation} ECL {ecl_elapsed:>8.3f}s)  ({elapsed:.1f}s total)",
+                          flush=True)
+                else:
+                    print(f"PASS {name:<{name_width}}  ({elapsed:.1f}s)", flush=True)
+            else:
+                failures.append((name, error))
+                print(f"FAIL {name} ({elapsed:.1f}s): {error}", file=sys.stderr, flush=True)
+    finally:
+        if executor is not None:
+            executor.shutdown(wait=True)
+    return passed, failures
+
+
+def main(argv=None):
+    parser = argparse.ArgumentParser(
+        prog="sql-test",
+        description="Run WsSQL2 regression tests from sql and sql-* suite directories.",
+    )
+    parser.add_argument(
+        "--config",
+        default=os.path.join(os.path.dirname(os.path.abspath(__file__)), "sql-test.json"),
+        help="SQL test config file (default: sql-test.json)",
+    )
+    parser.add_argument("--suiteDir", "-s", default=os.path.dirname(os.path.abspath(__file__)),
+                        help="Suite root; discovers sql/ and sql-*/ directories")
+    parser.add_argument("--suite", choices=sorted(SUITE_OPERATIONS),
+                        help="Run only tests from this suite directory")
+    parser.add_argument("--server", help="WsSQL2 host[:port] or service URL (overrides config)")
+    parser.add_argument("--timeout", type=int, help="HTTP timeout in seconds (default: configured query timeout)")
+    parser.add_argument("--eclTarget", help="ECL target for sql-ecl cases (default: configured eclTarget)")
+    parser.add_argument("--eclCluster", help="ECL cluster for sql-ecl cases (default: target)")
+    parser.add_argument("--pq", type=int, default=0,
+                        help="Run queries in parallel: 0/1 is sequential, N uses N threads, -1 uses twice the CPU count")
+    parser.add_argument("--resultsDir", "--keyDir", "-r", "-k",
+                        help="Override the expected-result directory (defaults to each suite's operation folder)")
+    parser.add_argument("--username", "-u", help="Override the username from the config file")
+    parser.add_argument("--ignoreResult", "-i", action="store_true",
+                        help="Execute queries without comparing or updating expected results")
+    parser.add_argument("--updateResults", "--updateKeys", action="store_true",
+                        help="Write actual results to the corresponding ExecuteQuery JSON files")
+    parser.add_argument("queries", nargs="*", metavar="SQL_query",
+                        help="SQL file names or wildcards relative to each suite; defaults to all *.sql files")
+    arguments = list(sys.argv[1:] if argv is None else argv)
+    if arguments and arguments[0] == "run":
+        arguments.pop(0)
+    args = parser.parse_args(arguments)
+
+    try:
+        config = load_config(os.path.abspath(args.config))
+        suite_dir = os.path.realpath(os.path.abspath(args.suiteDir))
+        suite_queries = discover_suite_queries(suite_dir, args.queries)
+        if args.suite:
+            suite_queries = [case for case in suite_queries if case[0] == args.suite]
+        if not suite_queries:
+            raise ValueError(f"No SQL test files matched under {suite_dir}/sql*")
+        if args.updateResults and args.ignoreResult:
+            raise ValueError("--updateResults and --ignoreResult cannot be used together")
+        if args.pq < -1:
+            raise ValueError("--pq must be -1 or a non-negative thread count")
+
+        username = args.username or config.get("username")
+        password = config.get("password")
+        if args.username:
+            import getpass
+
+            if sys.stdin.isatty():
+                password = getpass.getpass(f"Please enter {username}'s password: ")
+            else:
+                password = sys.stdin.readline().rstrip()
+        timeout = args.timeout if args.timeout is not None else int(config.get("timeout", "720"))
+        client = SqlClient(resolve_endpoint(config, args.server), timeout, username, password)
+        ecl_config = {
+            "target": args.eclTarget or config.get("eclTarget", "hthor"),
+            "cluster": args.eclCluster or config.get("eclCluster", args.eclTarget or config.get("eclTarget", "hthor")),
+            "server": config.get("espIp", "127.0.0.1"),
+            "port": config.get("espSocket", "8010"),
+            "ssl": str(config.get("useSsl", "False")).lower() == "true",
+            "username": username,
+            "password": password,
+            "timeout": timeout,
+        }
+
+        passed = 0
+        failures = []
+        modes = sorted({suite_mode for suite_mode, _, _ in suite_queries})
+        for mode in modes:
+            sql_dir = os.path.realpath(os.path.join(suite_dir, mode))
+            queries = [query for found_mode, _, query in suite_queries if found_mode == mode]
+            if args.resultsDir and len(modes) == 1:
+                results_dir = os.path.realpath(os.path.join(suite_dir, args.resultsDir))
+            elif args.resultsDir:
+                results_base = os.path.realpath(os.path.join(suite_dir, args.resultsDir))
+                results_dir = os.path.join(results_base, mode, SUITE_OPERATIONS[mode])
+            else:
+                operation = SUITE_OPERATIONS[mode]
+                results_dir = os.path.join(sql_dir, operation)
+            suite_passed, suite_failures = run_suite(
+                client, queries, sql_dir, results_dir, args.ignoreResult, args.updateResults,
+                args.pq, mode, ecl_config
+            )
+            passed += suite_passed
+            failures.extend(suite_failures)
+
+        print(f"Result: {passed} passed, {len(failures)} failed")
+        return 1 if failures else 0
+    except (OSError, ValueError) as error:
+        print(f"sql-test: {error}", file=sys.stderr)
+        return 2
+
+
+if __name__ == "__main__":
+    sys.exit(main())

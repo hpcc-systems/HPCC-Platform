@@ -1,0 +1,12 @@
+{
+  "Regress": {
+    "espIp": "127.0.0.1",
+    "wsSql2Port": "8510",
+    "espSocket": "8010",
+    "eclTarget": "hthor",
+    "useSsl": "False",
+    "username": "regress",
+    "password": "regress",
+    "timeout": "720"
+  }
+}

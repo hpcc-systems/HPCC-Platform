@@ -1,0 +1,3 @@
+{
+  "errorContains": "Unsupported record layout for 'regress::multi::dg_var'"
+}

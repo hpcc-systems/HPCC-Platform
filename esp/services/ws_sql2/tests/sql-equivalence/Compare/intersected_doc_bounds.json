@@ -1,0 +1,3 @@
+{
+  "equivalentTo": "SELECT kind, word, doc, dpos FROM hpcc_scan('regress::multi::searchindex') WHERE kind IS NOT DISTINCT FROM 1 AND word IS NOT DISTINCT FROM 'a                   ' AND CASE WHEN doc > 281474976710657 AND doc > 281474976710667 AND doc < 281474976710757 THEN true ELSE false END LIMIT 100"
+}

@@ -1,0 +1,16 @@
+{
+  "columns": [
+    "all_rows_match",
+    "keyed_filter_rows_match",
+    "payload_filter_rows_match",
+    "offset_window_row_count"
+  ],
+  "rows": [
+    [
+      true,
+      true,
+      true,
+      25
+    ]
+  ]
+}

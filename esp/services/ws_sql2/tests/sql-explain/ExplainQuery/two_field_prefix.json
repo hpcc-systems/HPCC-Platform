@@ -1,0 +1,6 @@
+{
+  "node": "HPCC_SCAN",
+  "extraInfoContains": {
+    "Keyed Filters": ["kind=", "word="]
+  }
+}

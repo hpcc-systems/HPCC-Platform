@@ -1,0 +1,2 @@
+SELECT 1;
+SELEC 2;

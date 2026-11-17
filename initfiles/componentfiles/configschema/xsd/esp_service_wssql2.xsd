@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema
+        xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified" attributeFormDefault="unqualified"
+        xmlns:hpcc="someuri">
+    <xs:include schemaLocation="types.xsd"/>
+    <hpcc:insert hpcc:schemaPath="/Environment/Software">
+        <xs:element name="EspService" hpcc:displayName="WsSQL2 Service" hpcc:itemType="ws_sql2" minOccurs="0"
+                    maxOccurs="unbounded" hpcc:class="component">
+            <xs:complexType>
+                <xs:attributeGroup ref="buildInfo"/>
+                <xs:attribute name="name" type="xs:string" use="required" hpcc:displayName="Name"
+                              hpcc:autoGenerateType="prefix" hpcc:autoGenerateValue="ws_sql2_service"
+                              hpcc:uniqueKey="espservice_name" hpcc:tooltip="Name for this WsSQL2 service"/>
+                <xs:attribute name="description" type="xs:string" hpcc:displayName="Description"
+                              hpcc:tooltip="Web Service providing a DuckDB SQL interface into HPCC"/>
+                <xs:attribute name="memoryLimit" type="xs:string" hpcc:displayName="Memory Limit"
+                              hpcc:tooltip="DuckDB memory limit for this WsSQL2 service, e.g. 1GB (default: 80% of system memory)"/>
+                <xs:attribute name="threads" type="xs:nonNegativeInteger" hpcc:presetValue="0" hpcc:displayName="Threads"
+                              hpcc:tooltip="DuckDB threads shared by this WsSQL2 service (0 = all cores)"/>
+                <xs:attribute name="tempDirectory" type="xs:string" hpcc:displayName="Temp Directory"
+                              hpcc:tooltip="Parent directory for this service's shared DuckDB spill directory (default: .tmp)"/>
+                <xs:attribute name="maxTempDirectorySize" type="xs:string" hpcc:displayName="Max Temp Directory Size"
+                              hpcc:tooltip="Maximum spill size for this WsSQL2 service, e.g. 10GB (default: unlimited)"/>
+                <xs:attribute name="maxByteLimit" type="xs:nonNegativeInteger" hpcc:presetValue="67108864"
+                              hpcc:displayName="Max Byte Limit" hpcc:tooltip="Maximum result batch size in bytes (0 = unlimited)"/>
+                <xs:attribute name="defaultFetchSize" type="xs:positiveInteger" hpcc:presetValue="1000"
+                              hpcc:displayName="Default Fetch Size" hpcc:tooltip="Default rows per result batch when the request FetchSize is 0"/>
+                <xs:attribute name="maxFetchSize" type="xs:positiveInteger" hpcc:presetValue="10000"
+                              hpcc:displayName="Max Fetch Size" hpcc:tooltip="Maximum rows returned in one result batch"/>
+                <xs:attribute name="maxActiveCursors" type="xs:positiveInteger" hpcc:presetValue="100"
+                              hpcc:displayName="Max Active Cursors" hpcc:tooltip="Maximum active result cursors for this WsSQL2 service"/>
+                <xs:attribute name="maxCursorsPerUser" type="xs:positiveInteger" hpcc:presetValue="10"
+                              hpcc:displayName="Max Cursors Per User" hpcc:tooltip="Maximum active result cursors owned by one user"/>
+                <xs:attribute name="cursorIdleTimeoutSeconds" type="xs:positiveInteger" hpcc:presetValue="300"
+                              hpcc:displayName="Cursor Idle Timeout" hpcc:tooltip="Seconds before an idle result cursor is closed"/>
+                <xs:attribute name="cursorMaxLifetimeSeconds" type="xs:positiveInteger" hpcc:presetValue="3600"
+                              hpcc:displayName="Cursor Maximum Lifetime" hpcc:tooltip="Maximum result cursor lifetime in seconds"/>
+                <xs:attribute name="leakCheckThresholdBytes" type="xs:nonNegativeInteger" hpcc:presetValue="1048576"
+                              hpcc:displayName="Leak Check Threshold" hpcc:tooltip="Memory growth in bytes, after an IncludeDebug query is released, above which ExecuteQuery reports a possible leak"/>
+            </xs:complexType>
+        </xs:element>
+    </hpcc:insert>
+</xs:schema>

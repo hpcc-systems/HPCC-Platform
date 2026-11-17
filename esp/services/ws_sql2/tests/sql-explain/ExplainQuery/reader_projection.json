@@ -1,0 +1,6 @@
+{
+  "node": "HPCC_SCAN",
+  "extraInfoEquals": {
+    "Reader Projection": "dg_parentid"
+  }
+}

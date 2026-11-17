@@ -503,6 +503,29 @@
                          service="ws_sql"/>
    </EspBinding>
    @WSSQL_SERVICE_BLOCK_E@
+   @WSSQL2_SERVICE_BLOCK_S@
+   <EspBinding defaultForPort="false"
+               defaultServiceVersion=""
+               name="myws_sql2binding"
+               port="8510"
+               protocol="http"
+               resourcesBasedn="ou=WsSql,ou=EspServices,ou=ecl"
+               service="ws_sql2"
+               type=""
+               workunitsBasedn="ou=workunits,ou=ecl"
+               wsdlServiceAddress="">
+    <Authenticate access="Read"
+                  description="Root access to WS SQL2 service"
+                  path="/"
+                  required="Read"
+                  resource="WsSqlAccess"/>
+    <AuthenticateFeature authenticate="Yes"
+                         description="Access to WS SQL2 service"
+                         path="WsSql2Access"
+                         resource="WsSqlAccess"
+                         service="ws_sql2"/>
+   </EspBinding>
+   @WSSQL2_SERVICE_BLOCK_E@
    <EspControlBinding defaultForPort="true"
                defaultServiceVersion=""
                name="espcontrol"
@@ -880,6 +903,30 @@
    </Properties>
   </EspService>
   @WSSQL_SERVICE_BLOCK_E@
+  @WSSQL2_SERVICE_BLOCK_S@
+  <EspService build="_"
+              buildSet="ws_sql2"
+              description="myws_sql2"
+              name="ws_sql2">
+    <Properties bindingType="ws_sql2SoapBinding"
+                defaultPort="8510"
+                defaultResourcesBasedn="ou=WsSql,ou=EspServices,ou=ecl"
+                defaultSecurePort="18510"
+                plugin="ws_sql2"
+                type="ws_sql2">
+    <Authenticate access="Read"
+                  description="Root access to WS SQL2 service"
+                  path="/"
+                  required="Read"
+                  resource="WsSqlAccess"/>
+    <AuthenticateFeature authenticate="Yes"
+                         description="Access to WS SQL2 service"
+                         path="WsSql2Access"
+                         resource="WsSqlAccess"
+                         service="ws_sql2"/>
+      </Properties>
+  </EspService>
+  @WSSQL2_SERVICE_BLOCK_E@
   <EspService build="_"
               buildSet="DynamicESDL"
               description="My DynamicESDL Based Web Service Interface"

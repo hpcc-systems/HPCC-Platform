@@ -1,0 +1,7 @@
+{
+  "node": "HPCC_SCAN",
+  "extraInfoStartsWith": {
+    "Grouped": "true"
+  },
+  "extraInfoAbsent": ["Pushed Limit"]
+}

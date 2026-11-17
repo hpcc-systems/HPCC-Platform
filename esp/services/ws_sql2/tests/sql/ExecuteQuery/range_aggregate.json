@@ -1,0 +1,9 @@
+{
+  "columns": [
+    "row_count",
+    "value_sum"
+  ],
+  "rows": [
+    [10, 45]
+  ]
+}

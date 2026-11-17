@@ -1,0 +1,5 @@
+{
+  "notContains": ["Pushed Limit", "Pushed Offset"],
+  "node": "HPCC_SCAN",
+  "extraInfoAbsent": ["Pushed Limit", "Pushed Offset"]
+}
