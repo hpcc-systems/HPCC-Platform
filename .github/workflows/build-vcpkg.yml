@@ -165,6 +165,7 @@ jobs:
           echo "=========================="
 
   # Usage in other jobs:
+  # Severity outputs: has-high-issues (High or Critical), has-medium-issues, has-low-issues.
   # To gate a job on this review completing with no High or Critical issues, add:
   #   needs: wait-for-copilot-review
   #   if: dollar{{ needs.wait-for-copilot-review.outputs.review-completed == 'true' && needs.wait-for-copilot-review.outputs.has-high-issues == 'false' }}
@@ -177,11 +178,14 @@ jobs:
   wait-for-copilot-review:
     if: ${{ github.event_name == 'pull_request' }}
     runs-on: ubuntu-latest
-    timeout-minutes: 35
+    timeout-minutes: 25
     permissions:
       pull-requests: read
+      contents: read
     outputs:
       has-high-issues: ${{ steps.result.outputs.has-high-issues }}
+      has-medium-issues: ${{ steps.result.outputs.has-medium-issues }}
+      has-low-issues: ${{ steps.result.outputs.has-low-issues }}
       review-completed: ${{ steps.result.outputs.review-completed }}
     steps:
       - name: Wait for Copilot review (up to 30 minutes)
@@ -191,7 +195,7 @@ jobs:
           script: |
             // Copilot severity is currently presentation markup, not a structured API field.
             // Support the observed v2 overview format and fail closed if that format changes.
-            function hasHighIssues(body) {
+            function getIssueFlags(body) {
               if (!body?.startsWith('<!-- ccr-overview-v2 -->')) {
                 throw new Error('Unrecognized Copilot review overview format');
               }
@@ -200,7 +204,7 @@ jobs:
               if (!openIssues) {
                 const overview = body.split(/<details\b/)[0];
                 if (/^\*\*No open issues\*\*/m.test(overview)) {
-                  return false;
+                  return { high: false, medium: false, low: false };
                 }
                 throw new Error('Copilot review has no recognizable open-issue summary');
               }
@@ -213,12 +217,20 @@ jobs:
               if (findings.length !== count || severities.some(severity => !severity)) {
                 throw new Error('Copilot review has missing or unrecognized severity badges');
               }
-              return severities.some(severity => severity === 'high' || severity === 'critical');
+              return {
+                high: severities.some(severity => severity === 'high' || severity === 'critical'),
+                medium: severities.includes('medium'),
+                low: severities.includes('low'),
+              };
             }
 
-            const maxAttempts = 60;  // 30 minutes @ 30s intervals
+            const maxAttempts = 40;  // 20 minutes @ 30s intervals
             let attempt = 0;
             core.setOutput('review-completed', 'false');
+
+            // Cache for tree SHAs to avoid redundant commits fetch across polling attempts
+            let headCommitTree = null;
+            const reviewedCommitTrees = {};
 
             while (attempt < maxAttempts) {
               const reviews = await github.paginate(github.rest.pulls.listReviews, {
@@ -227,18 +239,59 @@ jobs:
                 per_page: 100,
               });
 
-              const copilot = reviews.findLast(review =>
+              const headSha = context.payload.pull_request.head.sha;
+
+              // Filter for valid Copilot code reviews
+              const copilotReviews = reviews.filter(review =>
                 review.is_copilot_code_review === true &&
-                review.commit_id === context.payload.pull_request.head.sha &&
                 review.submitted_at &&
                 ['COMMENTED', 'APPROVED', 'CHANGES_REQUESTED'].includes(review.state)
               );
 
+              // Phase 1: Try direct commit SHA match (handles normal PRs)
+              let copilot = copilotReviews.findLast(review =>
+                review.commit_id === headSha
+              );
+
+              // Phase 2: If no exact match, compare tree SHAs to handle force-pushed branches with identical content
+              if (!copilot && copilotReviews.length > 0) {
+                // Fetch head tree only once
+                if (!headCommitTree) {
+                  const { data: headCommit } = await github.rest.git.getCommit({
+                    ...context.repo,
+                    commit_sha: headSha,
+                  });
+                  headCommitTree = headCommit.tree.sha;
+                }
+
+                for (const review of [...copilotReviews].reverse()) {
+                  // Fetch and cache reviewed tree SHAs
+                  if (!(review.commit_id in reviewedCommitTrees)) {
+                    const { data: reviewedCommit } = await github.rest.git.getCommit({
+                      ...context.repo,
+                      commit_sha: review.commit_id,
+                    });
+                    reviewedCommitTrees[review.commit_id] = reviewedCommit.tree.sha;
+                  }
+
+                  if (reviewedCommitTrees[review.commit_id] === headCommitTree) {
+                    copilot = review;
+                    core.info(
+                      `Accepting Copilot review ${review.id}: ` +
+                      `reviewed commit ${review.commit_id} has the same tree as ${headSha}`
+                    );
+                    break;
+                  }
+                }
+              }
+
               if (copilot) {
-                const hasHigh = hasHighIssues(copilot.body);
-                core.setOutput('has-high-issues', hasHigh);
+                const issues = getIssueFlags(copilot.body);
+                core.setOutput('has-high-issues', issues.high);
+                core.setOutput('has-medium-issues', issues.medium);
+                core.setOutput('has-low-issues', issues.low);
                 core.setOutput('review-completed', 'true');
-                core.info(`Copilot review ${copilot.id} completed. Has High or Critical issues: ${hasHigh}`);
+                core.info(`Copilot review ${copilot.id} completed. Has High or Critical issues: ${issues.high}; Medium: ${issues.medium}; Low: ${issues.low}`);
                 return;
               }
 
@@ -251,6 +304,25 @@ jobs:
             }
 
             throw new Error('Copilot review timeout after 30 minutes');
+  
+  analyze-changes:
+    if: ${{ contains('pull_request,push', github.event_name) }}
+    runs-on: ubuntu-latest
+    outputs:
+      changes: ${{ steps.analyze.outputs.changes }}
+      impacts: ${{ steps.analyze.outputs.impacts }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Analyze changes
+        id: analyze
+        uses: ./.github/actions/analyze-changes
+        with:
+          base-sha: ${{ github.event.pull_request.base.sha || github.event.before }}
+          head-sha: ${{ github.event.pull_request.head.sha || github.event.after }}
 
   build-workflow-dispatch:
     if: ${{ contains('workflow_dispatch', github.event_name) }}
@@ -309,12 +381,15 @@ jobs:
     secrets: inherit
 
   test-smoke-docker-ubuntu-22_04:
-    needs: [build-docker-ubuntu-22_04, pre_job]
+    needs: [build-docker-ubuntu-22_04, pre_job, analyze-changes]
     if: ${{ contains('pull_request,push', github.event_name) && (needs.pre_job.outputs.testing == 'true' || needs.pre_job.outputs.platform == 'true') }}
     uses: ./.github/workflows/test-smoke-gh_runner.yml
     with:
       os: ubuntu-22.04
       asset-name: 'docker-ubuntu-22_04'
+      run-roxie-tests: ${{ (fromJSON(needs.analyze-changes.outputs.impacts).roxie) || (fromJSON(needs.analyze-changes.outputs.impacts)['regression-suite']) }}
+      run-thor-tests: ${{ (fromJSON(needs.analyze-changes.outputs.impacts).thor) || (fromJSON(needs.analyze-changes.outputs.impacts)['regression-suite']) }}
+      run-hthor-tests: ${{ (fromJSON(needs.analyze-changes.outputs.impacts).hthor) || (fromJSON(needs.analyze-changes.outputs.impacts)['regression-suite']) }}
     secrets: inherit
 
   test-regression-suite-k8s-ubuntu-22_04:

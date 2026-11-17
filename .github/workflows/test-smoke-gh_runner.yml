@@ -18,6 +18,21 @@ on:
         description: 'Dependencies'
         required: false
         default: 'bison flex build-essential binutils-dev curl lsb-release libcppunit-dev python3-dev default-jdk r-base-dev r-cran-rcpp r-cran-rinside r-cran-inline libtool autotools-dev automake git cmake xmlstarlet'
+      run-roxie-tests:
+        type: boolean
+        description: 'Run Roxie smoke tests'
+        required: false
+        default: true
+      run-thor-tests:
+        type: boolean
+        description: 'Run Thor smoke tests'
+        required: false
+        default: true
+      run-hthor-tests:
+        type: boolean
+        description: 'Run Hthor smoke tests'
+        required: false
+        default: true
 
 permissions:
   contents: read
@@ -51,28 +66,42 @@ jobs:
 
     steps:
 
+      - name: Check if tests should run for this engine
+        id: should-run
+        run: |
+          case "${{ matrix.engine }}" in
+            hthor) echo "should-run=${{ inputs.run-hthor-tests }}" >> $GITHUB_OUTPUT ;;
+            thor)  echo "should-run=${{ inputs.run-thor-tests }}" >> $GITHUB_OUTPUT ;;
+            roxie) echo "should-run=${{ inputs.run-roxie-tests }}" >> $GITHUB_OUTPUT ;;
+          esac
+
       - name: Free additional disk space (remove Android SDK + Tools)
+        if: steps.should-run.outputs.should-run == 'true'
         run: |
           sudo rm -rf /usr/local/lib/android
 
       - name: Download Package
+        if: steps.should-run.outputs.should-run == 'true'
         uses: actions/download-artifact@v8
         with:
           name: ${{ inputs.asset-name }}
           path: ${{ inputs.asset-name }}
 
       - name: Download Support Files
+        if: steps.should-run.outputs.should-run == 'true'
         uses: actions/download-artifact@v8
         with:
           name: ${{ inputs.asset-name }}-support-files
           path: ${{ inputs.asset-name }}-support-files
 
       - name: vars
+        if: steps.should-run.outputs.should-run == 'true'
         id: vars
         run: |
           echo "matrix-setname=$(echo -n ${{ matrix.match.pattern }} | tr -c \"[:alnum:]\" _)" >> $GITHUB_OUTPUT
 
       - name: Install Dependencies
+        if: steps.should-run.outputs.should-run == 'true'
         shell: "bash"
         run: |
           sudo apt-get update
@@ -98,6 +127,7 @@ jobs:
           echo "TinyProxy pid(s): $(pgrep tinyproxy)"
 
       - name: Install Package
+        if: steps.should-run.outputs.should-run == 'true'
         shell: "bash"
         run: |
           sudo apt-get install -y -f ./${{ inputs.asset-name }}/*.deb
@@ -108,6 +138,7 @@ jobs:
           sudo cp ./${{ inputs.asset-name }}-support-files/* /opt/HPCCSystems/bin
 
       - name: Start HPCC-Platform
+        if: steps.should-run.outputs.should-run == 'true'
         shell: "bash"
         run: |
           export LANG="en_US.UTF-8"
@@ -115,6 +146,7 @@ jobs:
           sudo /etc/init.d/hpcc-init start
 
       - name: Run Setup
+        if: steps.should-run.outputs.should-run == 'true'
         shell: "bash"
         run: |
           ulimit -c unlimited
@@ -125,6 +157,7 @@ jobs:
           if [[ "$(grep -ohP '(?<=^Failure: )[0-9]+$' /home/runner/HPCCSystems-regression/log/setup_*.log | awk '{s+=$1} END {print s}')" -gt 0 ]]; then exit 1; fi
 
       - name: Select Tests
+        if: steps.should-run.outputs.should-run == 'true'
         id: select-tests
         shell: "bash"
         run: |
@@ -142,6 +175,7 @@ jobs:
           echo "queries=${queries}" >> $GITHUB_OUTPUT
 
       - name: Run Tests
+        if: steps.should-run.outputs.should-run == 'true'
         shell: "bash"
         run: |
           ulimit -c unlimited
@@ -153,6 +187,7 @@ jobs:
           if [[ "$(grep -oP '(?<=^Failure: )[0-9]+$' /home/runner/HPCCSystems-regression/log/${{ matrix.engine }}.*.log)" -gt 0 ]]; then cat /var/log/syslog ; exit 1; fi
 
       - name: Check for Core files
+        if: steps.should-run.outputs.should-run == 'true'
         shell: "bash"
         run: |
           CORE_FILES=( $(sudo find /var/lib/HPCCSystems/ -iname 'core*' -type f -print) )
