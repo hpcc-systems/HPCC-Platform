@@ -39,6 +39,28 @@ This helper script attempts to create new Azure LogAnalytics workspace (user can
 ### 2 - Configure HPCC logAccess
 The logAccess feature allows HPCC to query and package relevant logs for various features such as ZAP report, WorkUnit helper logs, ECLWatch log viewer, etc.
 
+#### Authentication options
+`AzureLogAnalyticsCurl` supports client-secret authentication and Azure managed identity. Client-secret authentication remains the default when `connection.managed` is omitted or `false`.
+
+To use a managed identity, set `connection.managed` to `true` and provide the Log Analytics workspace ID in the HPCC LogAccess configuration:
+```yaml
+global:
+  logAccess:
+    type: "AzureLogAnalyticsCurl"
+    connection:
+      managed: true
+      workspaceID: "<workspace-id>"
+```
+
+The plugin selects the managed identity flow from the environment:
+
+- **Azure AD Workload Identity** is used when `AZURE_FEDERATED_TOKEN_FILE` is present. Configure the AKS Workload Identity webhook and a federated credential for the HPCC workload. The pod must receive `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, and `AZURE_FEDERATED_TOKEN_FILE`, and the identity must be authorized to query the workspace.
+- **Legacy Managed Identity** is used otherwise. The plugin uses an injected `IDENTITY_ENDPOINT`/`IDENTITY_HEADER` or `MSI_ENDPOINT`/`MSI_SECRET` endpoint when available, and falls back to the Azure Instance Metadata Service (IMDS) when neither endpoint is set. No endpoint variables are required for IMDS. Set `AZURE_CLIENT_ID` to select a user-assigned identity; leave it unset to use a system-assigned identity.
+
+Managed identity does not require the `azure-logaccess` Kubernetes secret. The workspace ID is still required and must be provided as `connection.workspaceID`; it is not read from a secret in managed-identity mode. The configured identity must have permission to query Azure Log Analytics.
+
+The following client-secret instructions apply only when managed identity is not enabled.
+
 #### a - Procure AAD registered application
 Azure requires an Azure Active Directory registered application in order to broker Log Analytics API access. The registered application should be assigned Log Analytics roles. See official documentation:
 https://docs.microsoft.com/en-us/power-apps/developer/data-platform/walkthrough-register-app-azure-active-directory
@@ -72,7 +94,7 @@ Example manual secret creation command (assuming ./secrets-templates contains a 
 ```
 
 #### c - Configure HPCC logAccess
-The target HPCC deployment should be directed to use the above Azure Log Analytics workspace, and the newly created secret by providing appropriate logAccess values (such as ./loganalytics-hpcc-logaccess.yaml or ./loganalytics-hpcc-logaccessV2.yaml if targeting Azure Log Analytics ContainerLogV2 - recommended ). 
+The target HPCC deployment should be directed to use the Azure Log Analytics workspace by providing appropriate logAccess values (such as ./loganalytics-hpcc-logaccess.yaml or ./loganalytics-hpcc-logaccessV2.yaml if targeting Azure Log Analytics ContainerLogV2 - recommended). For client-secret authentication, configure the `azure-logaccess` secret as described above. For managed identity, set `connection.managed: true` and `connection.workspaceID` in the deployment values; the plugin does not need the `azure-logaccess` secret.
 
 Example use:
 ```console
