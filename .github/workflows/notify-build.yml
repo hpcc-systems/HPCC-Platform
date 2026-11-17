@@ -1,0 +1,51 @@
+name: Notify Teams of build result
+
+on:
+  workflow_run:
+    workflows:
+      - "Tagged Build (build-assets.yml)"
+      - "PR Build and Test (build-vcpkg.yml)"
+    types: [completed]
+
+permissions:
+  contents: read
+
+jobs:
+  notify-build:
+    name: Notify Teams of tagged build result
+    # Both watched workflows restrict push triggers to tags.
+    if: ${{ github.event.workflow_run.event == 'push' && (github.event.workflow_run.conclusion == 'success' || github.event.workflow_run.conclusion == 'failure') }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    env:
+      BUILD_WEBHOOK_URL: ${{ secrets.BUILD_WEBHOOK_URL }}
+    steps:
+      - name: Checkout notification action
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          persist-credentials: false
+      - name: Post build notification
+        uses: ./.github/actions/notify-build
+        with:
+          webhook-url: ${{ env.BUILD_WEBHOOK_URL }}
+          message: Build ${{ github.event.workflow_run.head_branch }} ${{ github.event.workflow_run.conclusion == 'success' && 'succeeded' || 'failed' }}.
+
+  notify-nightly:
+    name: Notify Teams of nightly CI result
+    if: ${{ github.event.workflow_run.event == 'schedule' && github.event.workflow_run.name == 'PR Build and Test (build-vcpkg.yml)' && (github.event.workflow_run.conclusion == 'success' || github.event.workflow_run.conclusion == 'failure') }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    env:
+      CICD_WEBHOOK_URL: ${{ secrets.CICD_WEBHOOK_URL }}
+    steps:
+      - name: Checkout notification action
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          persist-credentials: false
+      - name: Post nightly CI notification
+        uses: ./.github/actions/notify-build
+        with:
+          webhook-url: ${{ env.CICD_WEBHOOK_URL }}
+          message: Nightly CI for ${{ github.event.workflow_run.head_branch }} ${{ github.event.workflow_run.conclusion == 'success' && 'succeeded' || 'failed' }}.
