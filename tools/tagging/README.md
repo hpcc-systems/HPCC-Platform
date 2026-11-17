@@ -41,6 +41,77 @@ The files git-fixversion and git-unupmerge can copied so they are on your defaul
 
 ## Tagging new versions
 
+### Automated branch maintenance
+
+The root [branch-policy.json](../../branch-policy.json) defines the ordered
+upmerge chain and repository enablement. The automation runs only from the
+default branch of `risk-hsy/HPCC-Platform`.
+
+Three Actions entry points are available:
+
+* [Branch Upmerge](../../.github/workflows/branch-upmerge.yml): independently
+  dispatch an internal upmerge, with `dry-run` (default) or `apply` and a
+  repository selection.
+* [Branch Synchronization](../../.github/workflows/branch-sync.yml): independently
+  dispatch the existing OSS synchronization with the same mode/repository inputs.
+* [Daily Branch Maintenance](../../.github/workflows/branch-maintenance.yml):
+  runs upmerge then sync at **23:30 UTC**, and can also be dispatched manually
+  with separate upmerge/sync modes.
+
+Scheduled upmerge initially uses **dry-run** while scheduled sync retains
+**apply**. Dry-run merges and commits the entire chain in an owned temporary
+repository but never pushes. The following synchronization uses actual internal
+remote refs, not those simulated commits. Review dry-run output, pilot an
+explicit `apply` for one repository, then expand. Enable scheduled upmerge apply
+only by reviewing/changing `upmerge_mode` in the daily workflow. No merged-PR
+trigger is enabled yet.
+
+All three entry points share a concurrency group; reusable operation jobs do not
+acquire a nested lock. A cleanly aborted upmerge conflict blocks that repository's
+later upmerge edges, not independent repositories or the subsequent sync. Failed
+operations remain visible in the final run status and Actions output/summary.
+Issue/email/chat notifications are deferred.
+
+The policy's `paused` flag prevents apply operations; dry-run remains available.
+`upmerge_enabled: false` skips sync-only repositories. A repository with one
+applicable branch has no upmerge edges. Multiple applicable branches must contain
+the complete configured chain; missing refs fail that repository without writing.
+
+The internal App needs Contents: write and Workflows: write for upmerge apply.
+Dry-run requests read-only Contents access. Existing app bypass exceptions allow
+ordinary pushes; force pushes remain forbidden. New commits are signed off,
+but not cryptographically signed. No pre-push build/test/PR gate is introduced.
+The normalizer retains target version.cmake/POM content and patches only the HPCC
+chart's `Chart.yaml` version/appVersion and the `helmVersion` emitted by
+`hpcc.generateHelmVersion`. Component and Kubernetes API version fields are left
+to Git's ordinary three-way merge, preserving source-only component upgrades.
+Release-version conflicts in those two metadata files are normalized before
+merging, without executing the legacy helper's `eval` parser.
+
+Local CLI equivalents:
+
+```bash
+bash tools/tagging/upmerge-policy-branches.sh --mode dry-run --repository platform
+bash tools/tagging/sync-oss-branches.sh --mode dry-run --repository platform
+```
+
+For authorized local repair/apply, pause scheduled writers and wait for any
+active run to finish. `BRANCH_APP_TOKEN_INTERNAL` supplies internal authentication;
+sync additionally needs `BRANCH_APP_TOKEN_OSS`. Do not put tokens in command
+arguments or repository URLs. Actions inherits the existing
+`BRANCH_APP_ID_INTERNAL`, `BRANCH_APP_PRIVATE_KEY_INTERNAL`, `BRANCH_APP_ID_OSS`,
+and `BRANCH_APP_PRIVATE_KEY_OSS` secrets. Fresh sync tokens are minted after
+upmerge so a long upmerge does not consume their lifetime.
+
+Run local fixture tests without accessing GitHub:
+
+```bash
+bash tools/tagging/tests/test-upmerge-policy-branches.sh
+bash tools/tagging/tests/test-sync-oss-branches.sh
+```
+
+### Manual tagging process
+
 The following process should be followed when tagging a new set of versions.
 
 1. Upmerge all changes between candidate branches for the different versions

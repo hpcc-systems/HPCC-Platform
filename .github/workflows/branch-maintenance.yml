@@ -1,0 +1,46 @@
+name: Daily Branch Maintenance
+run-name: Upmerge then synchronize (${{ github.event_name }})
+
+on:
+  schedule:
+    - cron: '30 23 * * *'
+  workflow_dispatch:
+    inputs:
+      upmerge_mode:
+        description: Upmerge mode; initially dry-run for gradual rollout
+        required: true
+        type: choice
+        options: [dry-run, apply]
+        default: dry-run
+      sync_mode:
+        description: Synchronization mode
+        required: true
+        type: choice
+        options: [dry-run, apply]
+        default: dry-run
+      repository:
+        description: Policy repository ID
+        required: true
+        type: choice
+        options: [all, platform, ln, eclide, hpcc4j, helm-chart]
+        default: all
+
+permissions:
+  contents: read
+
+concurrency:
+  group: branch-synchronization-${{ github.repository }}
+  cancel-in-progress: false
+
+jobs:
+  maintain:
+    if: ${{ github.repository == 'risk-hsy/HPCC-Platform' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch) }}
+    uses: ./.github/workflows/branch-operations.yml
+    with:
+      run_upmerge: true
+      run_sync: true
+      # Change the scheduled upmerge default only after reviewing dry-run/pilot results.
+      upmerge_mode: ${{ inputs.upmerge_mode || 'dry-run' }}
+      sync_mode: ${{ inputs.sync_mode || 'apply' }}
+      repository: ${{ inputs.repository || 'all' }}
+    secrets: inherit
