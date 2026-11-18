@@ -11,13 +11,13 @@ on:
         required: true
         type: choice
         options: [dry-run, apply]
-        default: dry-run
+        default: apply
       sync_mode:
         description: Synchronization mode
         required: true
         type: choice
         options: [dry-run, apply]
-        default: dry-run
+        default: apply
       repository:
         description: Policy repository ID
         required: true
@@ -38,9 +38,8 @@ jobs:
     uses: ./.github/workflows/branch-operations.yml
     with:
       run_upmerge: true
+      upmerge_mode: ${{ inputs.upmerge_mode || 'apply' }}
       run_sync: true
-      # Change the scheduled upmerge default only after reviewing dry-run/pilot results.
-      upmerge_mode: ${{ inputs.upmerge_mode || 'dry-run' }}
       sync_mode: ${{ inputs.sync_mode || 'apply' }}
       repository: ${{ inputs.repository || 'all' }}
     secrets: inherit

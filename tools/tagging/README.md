@@ -58,14 +58,6 @@ Three Actions entry points are available:
   runs upmerge then sync at **23:30 UTC**, and can also be dispatched manually
   with separate upmerge/sync modes.
 
-Scheduled upmerge initially uses **dry-run** while scheduled sync retains
-**apply**. Dry-run merges and commits the entire chain in an owned temporary
-repository but never pushes. The following synchronization uses actual internal
-remote refs, not those simulated commits. Review dry-run output, pilot an
-explicit `apply` for one repository, then expand. Enable scheduled upmerge apply
-only by reviewing/changing `upmerge_mode` in the daily workflow. No merged-PR
-trigger is enabled yet.
-
 All three entry points share a concurrency group; reusable operation jobs do not
 acquire a nested lock. A cleanly aborted upmerge conflict blocks that repository's
 later upmerge edges, not independent repositories or the subsequent sync. Failed

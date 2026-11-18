@@ -9,7 +9,7 @@ on:
         required: true
         type: choice
         options: [dry-run, apply]
-        default: dry-run
+        default: apply
       repository:
         description: Policy repository ID
         required: true

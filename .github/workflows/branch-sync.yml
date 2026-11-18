@@ -11,7 +11,7 @@ on:
         options:
           - dry-run
           - apply
-        default: dry-run
+        default: apply
       repository:
         description: Policy repository ID, or all configured repositories
         required: true
