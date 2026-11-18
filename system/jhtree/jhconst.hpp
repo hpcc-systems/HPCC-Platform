@@ -52,6 +52,8 @@ enum NodeTypeWithFlags : unsigned
 // The following are specific to an index.  They are less useful for tracing, but may be useful in getCachedNode()
     NodeInTLK            = 0x100, // The node is part of a top-level key (TLK) - used to optimize loading of TLK nodes
     NodeInSinglePartFile = 0x200, // The node is part of a single-partition file
+    NodeNeverReloaded    = 0x400, // Node is retained or consumed elsewhere and will not be loaded again
+    NodeAllFlagMasks     = 0x1FFF, // Flags are ORed into node offsets for tracing; overlap is limited to sub-8KB nodes in regression tests.
 
 // For convenience and efficiency, these flags are ORed into the position field when tracing some events.
 // The normal node size is 0x2000 i.e. 8K, so flags up to 0x1000 will not cause any confusion.

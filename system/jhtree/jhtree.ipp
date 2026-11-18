@@ -61,7 +61,7 @@ enum request { LTE, GTE };
 
 interface INodeLoader
 {
-    virtual const CJHTreeNode *loadNode(cycle_t * fetchCycles, offset_t offset) const = 0;
+    virtual const CJHTreeNode *loadNode(cycle_t * fetchCycles, offset_t offset, NodeTypeWithFlags typeWithFlags) const = 0;
     virtual const char *queryFileName() const = 0;
 };
 
@@ -71,14 +71,13 @@ class CLoadNodeCacheState
 {
 public:
     CCachedIndexRead readCache;     // Information about the last read request
-    size32_t preferredReadSize{0};
-    bool usePageCache{true};        // Set to false if scanning a file sequentially
 };
 
 class jhtree_decl CKeyIndex : implements IKeyIndex, public CInterface
 {
     friend class CKeyStore;
     friend class CKeyCursor;
+    friend class ReadSizeTest;  // Test class that directly accesses getNodeReadSize
 
 private:
     CKeyIndex(CKeyIndex &);
@@ -105,6 +104,7 @@ protected:
     mutable offset_t latestGetNodeOffset;  // NOT SAFE but only used by keydiff
 
     CJHTreeNode *loadNodeFromMemory(const void *nodeData, offset_t pos, bool needsCopy) const;
+    size32_t getNodeReadSize(NodeTypeWithFlags typeWithFlags) const;
     CJHTreeNode *_createNode(const NodeHdr &hdr) const;
     const CJHSearchNode *getIndexNodeUsingLoader(const INodeLoader &nodeLoader, offset_t offset, NodeTypeWithFlags typeWithFlags, IContextLogger *ctx) const;
     const CJHBlobNode *getBlobNode(const INodeLoader &nodeLoader, offset_t nodepos, IContextLogger *ctx);
@@ -162,7 +162,7 @@ public:
 
     // KeyIndex implementation virtuals...
     virtual const char *queryFileName() const = 0;
-    virtual const CJHTreeNode *loadNode(cycle_t * fetchCycles, offset_t offset, CLoadNodeCacheState & readState) const = 0;  // Must be implemented in derived classes
+    virtual const CJHTreeNode *loadNode(cycle_t * fetchCycles, offset_t offset, CLoadNodeCacheState & readState, NodeTypeWithFlags typeWithFlags) const = 0;  // Must be implemented in derived classes
 
     const byte *loadBlob(const INodeLoader &nodeLoader, unsigned __int64 blobid, size32_t &blobsize, IContextLogger *ctx);
     unsigned getBranchDepth() const { return keyHdr->getHdrStruct()->branchDepth; }
@@ -178,9 +178,9 @@ class DefaultNodeLoader : public INodeLoader
 public:
     DefaultNodeLoader(const CKeyIndex & _key) : key(_key) {}
 
-    virtual const CJHTreeNode * loadNode(cycle_t * fetchCycles, offset_t offset) const override
+    virtual const CJHTreeNode * loadNode(cycle_t * fetchCycles, offset_t offset, NodeTypeWithFlags typeWithFlags) const override
     {
-        return key.loadNode(fetchCycles, offset, readState);
+        return key.loadNode(fetchCycles, offset, readState, typeWithFlags);
     }
     virtual const char *queryFileName() const override
     {
@@ -190,11 +190,6 @@ public:
     CCachedIndexRead & queryReadCache()
     {
         return readState.readCache;
-    }
-
-    void setUsePageCache(bool _usePageCache)
-    {
-        readState.usePageCache = _usePageCache;
     }
 
 protected:
@@ -214,7 +209,7 @@ public:
     virtual void ensureReady() override;
 
 // INodeLoader impl.
-    virtual const CJHTreeNode *loadNode(cycle_t * fetchCycles, offset_t offset, CLoadNodeCacheState & readState) const override;
+    virtual const CJHTreeNode *loadNode(cycle_t * fetchCycles, offset_t offset, CLoadNodeCacheState & readState, NodeTypeWithFlags typeWithFlags) const override;
     virtual void mergeStats(CRuntimeStatisticCollection & stats) const override {}
 };
 
@@ -234,7 +229,7 @@ public:
     virtual void ensureReady() override;
 
 // INodeLoader impl.
-    virtual const CJHTreeNode *loadNode(cycle_t * fetchCycles, offset_t offset, CLoadNodeCacheState & readState) const override;
+    virtual const CJHTreeNode *loadNode(cycle_t * fetchCycles, offset_t offset, CLoadNodeCacheState & readState, NodeTypeWithFlags typeWithFlags) const override;
     virtual void mergeStats(CRuntimeStatisticCollection & stats) const override { ::mergeStats(stats, io); }
 };
 
@@ -260,10 +255,9 @@ protected:
     bool eof=false;
     bool matched=false; //MORE - this should probably be renamed. It's tracking state from one call of lookup to the next.
     bool logExcessiveSeeks = false;
-    IndexReadOptions readOptions;
     mutable CLoadNodeCacheState readState;
 public:
-    CKeyCursor(CKeyIndex &_key, const IIndexFilterList *filter, bool _logExcessiveSeeks, IndexReadOptions _readOptions);
+    CKeyCursor(CKeyIndex &_key, const IIndexFilterList *filter, bool _logExcessiveSeeks);
     ~CKeyCursor();
 
     virtual const char *queryName() const override;
@@ -291,7 +285,7 @@ public:
     virtual const byte *queryKeyedBuffer() const override;
 
  // INodeLoader impl.
-    virtual const CJHTreeNode *loadNode(cycle_t * fetchCycles, offset_t offset) const override;
+    virtual const CJHTreeNode *loadNode(cycle_t * fetchCycles, offset_t offset, NodeTypeWithFlags typeWithFlags) const override;
 
     // This is the main function that is used to load a node from an index for the current cursor.  The
     // typical function flow is

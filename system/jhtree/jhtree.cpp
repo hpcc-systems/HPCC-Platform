@@ -1459,7 +1459,7 @@ const CJHSearchNode *CKeyIndex::getRootNode(const INodeLoader & nodeLoader) cons
     // The root node may be a branch or a leaf (on TLK nodes)
     NodeType type = getBranchDepth() != 0 ? NodeBranch : NodeLeaf;
 
-    Owned<const CJHSearchNode> root = (const CJHSearchNode *) nodeCache->getCachedNode(nodeLoader, iD, rootPos, type | nodeIndexFlags, NULL);
+    Owned<const CJHSearchNode> root = (const CJHSearchNode *) nodeCache->getCachedNode(nodeLoader, iD, rootPos, type | nodeIndexFlags | NodeNeverReloaded, NULL);
 
     // It's not uncommon for a TLK to have a "root node" that has a single entry in it pointing to a leaf node
     // with all the info in. In such cases we can avoid a lot of cache lookups by pointing the "root" in the
@@ -1471,7 +1471,7 @@ const CJHSearchNode *CKeyIndex::getRootNode(const INodeLoader & nodeLoader) cons
     {
         Owned<const CJHSearchNode> oldRoot = root;
         rootPos = root->getFPosAt(0);
-        root.setown((const CJHSearchNode *) nodeCache->getCachedNode(nodeLoader, iD, rootPos, NodeLeaf | nodeIndexFlags, NULL));
+        root.setown((const CJHSearchNode *) nodeCache->getCachedNode(nodeLoader, iD, rootPos, NodeLeaf | nodeIndexFlags | NodeNeverReloaded, NULL));
     }
     return root.getClear();
 }
@@ -1515,7 +1515,7 @@ CMemKeyIndex::CMemKeyIndex(unsigned _iD, IMemoryMappedFile *_io, const char *_na
     io.setown(_io);
 }
 
-const CJHTreeNode *CMemKeyIndex::loadNode(cycle_t * fetchCycles, offset_t pos, CLoadNodeCacheState & readState) const
+const CJHTreeNode *CMemKeyIndex::loadNode(cycle_t * fetchCycles, offset_t pos, CLoadNodeCacheState & readState, NodeTypeWithFlags) const
 {
     //Memory mapped files do not take advantage of the read cache
     nodesLoaded++;
@@ -1602,7 +1602,6 @@ void CDiskKeyIndex::ensureReady()
 
     DefaultNodeLoader nodeLoader(*this);
     CCachedIndexRead & readCache = nodeLoader.queryReadCache();
-    nodeLoader.setUsePageCache(false); // The data read when the index is opened is never read again (unless it gets swapped out)
 
     const bool optimisticTailRead = true;
     bool foundTrailingHeader = false;
@@ -1780,7 +1779,7 @@ unsigned CKeyIndex::numPartitions()
 
 IKeyCursor *CKeyIndex::getCursor(const IIndexFilterList *filter, bool logExcessiveSeeks)
 {
-    return new CKeyCursor(*this, filter, logExcessiveSeeks, readOptions);
+    return new CKeyCursor(*this, filter, logExcessiveSeeks);
 }
 
 
@@ -1792,8 +1791,8 @@ const CJHSearchNode *CKeyIndex::getIndexNodeUsingLoader(const INodeLoader &nodeL
 
 void CKeyIndex::dumpNode(FILE *out, offset_t pos, unsigned count, bool isRaw)
 {
-    CLoadNodeCacheState readState;
-    Owned<const CJHTreeNode> node = loadNode(nullptr, pos, readState);
+    DefaultNodeLoader nodeLoader(*this);
+    Owned<const CJHTreeNode> node = nodeLoader.loadNode(nullptr, pos, NodeSearchSingleValue | NodeSearchAllKeyed | nodeIndexFlags);
     node->dump(out, keySize(), count, isRaw);
 }
 
@@ -1979,7 +1978,7 @@ void CKeyIndex::loadBloomFilters(const INodeLoader & nodeLoader)
 
     while (bloomAddr)
     {
-        Owned<const CJHTreeNode> node = nodeLoader.loadNode(nullptr, bloomAddr);
+        Owned<const CJHTreeNode> node = nodeLoader.loadNode(nullptr, bloomAddr, NodeBloom | nodeIndexFlags);
         assertex(node->isBloom());
         CJHTreeBloomTableNode &bloomNode = *(CJHTreeBloomTableNode *)node.get();
         bloomAddr = bloomNode.get8();
@@ -1994,7 +1993,7 @@ void CKeyIndex::loadBloomFilters(const INodeLoader & nodeLoader)
             offset_t next = node->getRightSib();
             if (!next)
                 break;
-            node.setown(nodeLoader.loadNode(nullptr, next));
+            node.setown(nodeLoader.loadNode(nullptr, next, NodeBloom | nodeIndexFlags));
             assertex(node->isBloom());
         }
         assertex(bloomTable.length()==bloomTableSize);
@@ -2049,7 +2048,7 @@ IPropertyTree * CKeyIndex::getMetadata()
     CLoadNodeCacheState readState;
     while(nodepos)
     {
-        node.setown(QUERYINTERFACE(loadNode(nullptr, nodepos, readState), const CJHTreeMetadataNode));
+        node.setown(QUERYINTERFACE(loadNode(nullptr, nodepos, readState, NodeMeta | nodeIndexFlags), const CJHTreeMetadataNode));
         node->get(xml);
         nodepos = node->getRightSib();
     }
@@ -2159,10 +2158,10 @@ static size32_t pageCachePageSize{0};           // How big are the pages in the 
 
 static size32_t roundReadSize(size32_t readSize, size32_t nodeSize)
 {
-    if (!readSize)
-        return 0;
-
     size32_t granule = (activePageCache && pageCachePageSize) ? pageCachePageSize : nodeSize;
+    if (!readSize)
+        return granule;
+
     size32_t remainder = readSize % granule;
     if (remainder)
     {
@@ -2174,7 +2173,31 @@ static size32_t roundReadSize(size32_t readSize, size32_t nodeSize)
     return readSize;
 }
 
-const CJHTreeNode *CDiskKeyIndex::loadNode(cycle_t * fetchCycles, offset_t pos, CLoadNodeCacheState & readState) const
+static bool shouldUsePageCache(NodeTypeWithFlags typeWithFlags)
+{
+    if (typeWithFlags & NodeNeverReloaded)
+        return false;
+
+    NodeType type = (NodeType)(typeWithFlags & NodeTypeMask);
+    switch (type)
+    {
+    case NodeMeta:
+    case NodeBloom:
+        //Bloom filters are loaded and cached, meta is read very infrequently, on non-time critical paths
+        return false;
+    }
+    return true;
+}
+
+size32_t CKeyIndex::getNodeReadSize(NodeTypeWithFlags typeWithFlags) const
+{
+    // NodeSearchStepping is likely to want a larger read in future.
+    bool unfiltered = (typeWithFlags & NodeSearchUnfiltered) && !(typeWithFlags & NodeSearchCount);
+    size32_t readSize = unfiltered ? readOptions.sequentialReadSize : readOptions.randomReadSize;
+    return roundReadSize(readSize, keyHdr->getNodeSize());
+}
+
+const CJHTreeNode *CDiskKeyIndex::loadNode(cycle_t * fetchCycles, offset_t pos, CLoadNodeCacheState & readState, NodeTypeWithFlags typeWithFlags) const
 {
     nodesLoaded++;
 
@@ -2188,12 +2211,13 @@ const CJHTreeNode *CDiskKeyIndex::loadNode(cycle_t * fetchCycles, offset_t pos, 
         CCycleTimer fetchTimer(fetchCycles != nullptr);
 
         // Read at least one node, but potentially multiple nodes (e.g. if from a slow storage device)
-        size32_t readSize = readState.preferredReadSize;
+        size32_t readSize = getNodeReadSize(typeWithFlags);
         if (readSize < nodeSize)
             readSize = nodeSize;
 
         // Now check if there is an entry in the page cache
-        if (activePageCache && readState.usePageCache)
+        bool usePageCache = activePageCache && shouldUsePageCache(typeWithFlags);
+        if (usePageCache)
         {
             if (activePageCache->read(iD, pos, nodeSize, readCache))
                 goto done;
@@ -2221,7 +2245,7 @@ const CJHTreeNode *CDiskKeyIndex::loadNode(cycle_t * fetchCycles, offset_t pos, 
             if (unlikely(alignedPos + sizeRead < pos + nodeSize))
                 throw makeStringExceptionV(-1, "Error %d reading node at position %llx read %u at offset %llx", errno, pos, sizeRead, alignedPos);
 
-            if (activePageCache && readState.usePageCache)
+            if (usePageCache)
             {
                 //Insert the pages into the page cache - if more than one page was read they may already exist.
                 for (size32_t delta = 0; delta < sizeRead; delta += pageCachePageSize)
@@ -2359,24 +2383,20 @@ IKeyIndexPrewarmer * CKeyIndex::createPrewarmer()
     return new IndexPrewarmer(*this);
 }
 
-CKeyCursor::CKeyCursor(CKeyIndex &_key, const IIndexFilterList *_filter, bool _logExcessiveSeeks, IndexReadOptions _readOptions)
-    : key(OLINK(_key)), filter(_filter), logExcessiveSeeks(_logExcessiveSeeks), readOptions(_readOptions)
+CKeyCursor::CKeyCursor(CKeyIndex &_key, const IIndexFilterList *_filter, bool _logExcessiveSeeks)
+    : key(OLINK(_key)), filter(_filter), logExcessiveSeeks(_logExcessiveSeeks)
 {
-    readOptions.randomReadSize = roundReadSize(readOptions.randomReadSize, key.getNodeSize());
-    readOptions.sequentialReadSize = roundReadSize(readOptions.sequentialReadSize, key.getNodeSize());
-
     nodeKey = 0;
     recordBuffer = (char *) malloc(key.keySize());  // MORE - would be nice to know real max - is it stored in metadata?
 }
 
-const CJHTreeNode *CKeyCursor::loadNode(cycle_t *fetchCycles, offset_t offset) const
+const CJHTreeNode *CKeyCursor::loadNode(cycle_t *fetchCycles, offset_t offset, NodeTypeWithFlags typeWithFlags) const
 {
-    readState.preferredReadSize = ((nodeFilterFlags & NodeSearchUnfiltered) && !(nodeFilterFlags & NodeSearchCount)) ? readOptions.sequentialReadSize : readOptions.randomReadSize;
-    return key.loadNode(fetchCycles, offset, readState);
+    return key.loadNode(fetchCycles, offset, readState, typeWithFlags | nodeFilterFlags);
 }
 
 CKeyCursor::CKeyCursor(const CKeyCursor &from)
-: key(OLINK(from.key)), filter(from.filter), logExcessiveSeeks(from.logExcessiveSeeks), readOptions(from.readOptions)
+: key(OLINK(from.key)), filter(from.filter), logExcessiveSeeks(from.logExcessiveSeeks)
 {
     nodeKey = from.nodeKey;
     node.set(from.node);
@@ -2393,8 +2413,6 @@ CKeyCursor::CKeyCursor(const CKeyCursor &from)
     fullBufferValid = false;
     eof = from.eof;
     matched = from.matched;
-    readState.preferredReadSize = from.readState.preferredReadSize;
-    readState.usePageCache = from.readState.usePageCache;
 }
 
 
@@ -3647,11 +3665,11 @@ const CJHTreeNode *CNodeCache::getCachedNode(const INodeLoader & nodeLoader, uns
     NodeCacheLookupTimer lookupTimer(ctx);
 
     // No benefit in caching the following, especially since they will evict useful pages
-    if ((type == NodeMeta) || (type == NodeBloom))
+    if ((typeWithFlags & NodeNeverReloaded) || (type == NodeMeta) || (type == NodeBloom))
     {
         cycle_t fetchCycles = 0;
         cycle_t startLoadCycles = get_cycles_now();
-        const CJHTreeNode *node = nodeLoader.loadNode(&fetchCycles, pos);
+        const CJHTreeNode *node = nodeLoader.loadNode(&fetchCycles, pos, typeWithFlags);
         cycle_t endLoadCycles = get_cycles_now();
         cycle_t loadCycles = endLoadCycles - startLoadCycles;
 
@@ -3680,7 +3698,7 @@ const CJHTreeNode *CNodeCache::getCachedNode(const INodeLoader & nodeLoader, uns
     {
         cycle_t fetchCycles = 0;
         cycle_t startLoadCycles = get_cycles_now();
-        const CJHTreeNode *node = nodeLoader.loadNode(&fetchCycles, pos);
+        const CJHTreeNode *node = nodeLoader.loadNode(&fetchCycles, pos, typeWithFlags);
         cycle_t endLoadCycles = get_cycles_now();
         cycle_t loadCycles = endLoadCycles - startLoadCycles;
 
@@ -3824,7 +3842,7 @@ const CJHTreeNode *CNodeCache::getCachedNode(const INodeLoader & nodeLoader, uns
             startLoadCycles = get_cycles_now();
             if (!ownedCacheEntry->isReady())
             {
-                const CJHTreeNode *node = nodeLoader.loadNode(&fetchCycles, pos);
+                const CJHTreeNode *node = nodeLoader.loadNode(&fetchCycles, pos, typeWithFlags);
                 if (unlikely(type != node->getNodeType()))
                 {
                     //This should never happen, but if it does, report as much information as possible to diagnose the issue.
@@ -4553,16 +4571,143 @@ public:
 };
 
 
+class ReadSizeTest
+{
+public:
+    struct TestCase
+    {
+        size32_t sequentialSize;
+        size32_t randomSize;
+        NodeTypeWithFlags flags;
+        size32_t expectedSizeNoCacheDisabled;  // Expected when page cache is disabled
+        size32_t expectedSizeNoCacheEnabled;   // Expected when page cache is enabled (with specific page size)
+        const char *description;
+    };
+
+    class ScopedPageCache
+    {
+    public:
+        ScopedPageCache(IPageCache *_cache, size32_t _pageSize)
+            : previousCache(activePageCache), previousPageSize(pageCachePageSize)
+        {
+            activePageCache = _cache;
+            pageCachePageSize = _pageSize;
+        }
+
+        ~ScopedPageCache()
+        {
+            activePageCache = previousCache;
+            pageCachePageSize = previousPageSize;
+        }
+
+    private:
+        IPageCache *previousCache;
+        size32_t previousPageSize;
+    };
+
+    static void testGetNodeReadSize()
+    {
+        // Test CKeyIndex::getNodeReadSize() directly with different options
+        // This validates that the read size returned accounts for rounding
+        // Tests run with page cache disabled and enabled to ensure consistency
+
+        // Create a mock file for testing
+        StringBuffer filename;
+        Owned<IFileIO> io = createUniqueFile(nullptr, "ReadSizeTest", "tmp", filename, IFOcreaterw);
+
+        // Build a simple index with all fields keyed
+        const char *json = "{ \"ty1\": { \"fieldType\": 4, \"length\": 10 }, "
+                           "\"fieldType\": 13, \"length\": 10, "
+                           "\"fields\": [ { \"name\": \"f1\", \"type\": \"ty1\", \"flags\": 4 } ] }";
+        Owned<IOutputMetaData> meta = createTypeInfoOutputMetaData(json, false);
+        {
+            TestIndexWriteArg helper(filename, nullptr, meta);
+            Owned<IFileIOStream> out = createIOStream(io);
+            KeyBuilderOptions options(COL_PREFIX | HTREE_FULLSORT_KEY | HTREE_COMPRESSED_KEY,
+                                      10, NODESIZE, 10, &helper);
+            Owned<IKeyBuilder> builder = createKeyBuilder(out, options);
+            builder->processKeyData("0000000001", 10, 10);
+            builder->processKeyData("0000000002", 20, 10);
+            builder->finish(nullptr, nullptr, 10, nullptr);
+            out->flush();
+        }
+
+        // Table-driven test cases - specify expected sizes for both cache scenarios
+        // When page cache is enabled with pageCachePageSize=0x4000:
+        // - Values are rounded to 0x4000 boundary (granule = pageCachePageSize if present)
+        // When page cache is disabled:
+        // - Values are rounded to NODESIZE boundary (0x2000)
+        // TestCase: { sequentialSize, randomSize, flags, expectedNoCachDisabled, expectedNoCacheEnabled, description }
+        TestCase testCases[] = {
+            // Sequential reads (NodeSearchUnfiltered uses sequentialSize)
+            { 0x40000, 0x10000, NodeSearchUnfiltered, 0x40000, 0x40000, "Sequential: aligned 0x40000" },
+            { 0x40001, 0x10000, NodeSearchUnfiltered, 0x42000, 0x44000, "Sequential: unaligned 0x40001 rounds up (0x42000 no cache, 0x44000 with 0x4000 page cache)" },
+            { 0x1000,  0x10000, NodeSearchUnfiltered, (size32_t)NODESIZE, 0x4000, "Sequential: small 0x1000 rounds to NODESIZE (0x2000), but 0x4000 with page cache" },
+
+            // Random reads (NodeNoFlags uses randomSize)
+            { 0x40000, 0x10000, NodeNoFlags, 0x10000, 0x10000, "Random: aligned 0x10000" },
+            { 0x40000, 0x10001, NodeNoFlags, 0x12000, 0x14000, "Random: unaligned 0x10001 rounds up (0x12000 no cache, 0x14000 with 0x4000 page cache)" },
+            { 0x40000, 0x1000,  NodeNoFlags, (size32_t)NODESIZE, 0x4000, "Random: small 0x1000 rounds to NODESIZE (0x2000), but 0x4000 with page cache" },
+
+            // Single-value search with all fields keyed (NodeSearchUnfiltered | NodeSearchCount uses randomSize)
+            { 0x40000, 0x8000,  (NodeTypeWithFlags)(NodeSearchUnfiltered | NodeSearchCount), 0x8000, 0x8000, "Single-value search: all fields keyed, aligned random size" },
+            { 0x40000, 0x8001,  (NodeTypeWithFlags)(NodeSearchUnfiltered | NodeSearchCount), 0xa000, 0xc000, "Single-value search: all fields keyed, unaligned random (0xa000 no cache, 0xc000 with 0x4000)" },
+
+            // Edge case: both configured values are 0 - should return granule (NODESIZE or pageCachePageSize)
+            { 0, 0, NodeSearchUnfiltered, (size32_t)NODESIZE, 0x4000, "Edge case: sequential with both 0 returns NODESIZE (0x2000), or 0x4000 with page cache" },
+            { 0, 0, NodeNoFlags, (size32_t)NODESIZE, 0x4000, "Edge case: random with both 0 returns NODESIZE (0x2000), or 0x4000 with page cache" },
+            { 0, 0, (NodeTypeWithFlags)(NodeSearchUnfiltered | NodeSearchCount), (size32_t)NODESIZE, 0x4000, "Edge case: single-value with both 0 returns NODESIZE (0x2000), or 0x4000 with page cache" },
+        };
+
+        // Test with page cache DISABLED
+        {
+            ReadSizeTest::ScopedPageCache noCacheScope(nullptr, 0);
+
+            for (const TestCase &testCase : testCases)
+            {
+                clearKeyStoreCache(true);
+
+                const IndexReadOptions readOptions{testCase.randomSize, testCase.sequentialSize};
+                Owned<IKeyIndex> index = createKeyIndex(filename, 0, *io, 0, false, readOptions);
+                CKeyIndex *keyIndex = static_cast<CKeyIndex *>(index.get());
+
+                size32_t readSize = keyIndex->getNodeReadSize(testCase.flags);
+                StringBuffer msgBuf;
+                msgBuf.appendf("%s (page cache disabled)", testCase.description);
+                CPPUNIT_ASSERT_EQUAL_MESSAGE(msgBuf.str(), testCase.expectedSizeNoCacheDisabled, readSize);
+            }
+        }
+
+        // Test with page cache ENABLED (simulate demo page cache with 0x4000 byte pages)
+        {
+            Owned<IPropertyTree> pageCacheConfig = createPTree("pageCache");
+            pageCacheConfig->setProp("@type", "demo");
+            pageCacheConfig->setPropInt64("@sizeMB", 1);
+            Owned<IPageCache> demoPageCache = createDemoPageCache(pageCacheConfig);
+
+            ReadSizeTest::ScopedPageCache cacheScope(demoPageCache, 0x4000);  // 16KB pages
+
+            for (const TestCase &testCase : testCases)
+            {
+                clearKeyStoreCache(true);
+
+                const IndexReadOptions readOptions{testCase.randomSize, testCase.sequentialSize};
+                Owned<IKeyIndex> index = createKeyIndex(filename, 0, *io, 0, false, readOptions);
+                CKeyIndex *keyIndex = static_cast<CKeyIndex *>(index.get());
+
+                size32_t readSize = keyIndex->getNodeReadSize(testCase.flags);
+                StringBuffer msgBuf;
+                msgBuf.appendf("%s (page cache enabled, 0x4000)", testCase.description);
+                CPPUNIT_ASSERT_EQUAL_MESSAGE(msgBuf.str(), testCase.expectedSizeNoCacheEnabled, readSize);
+            }
+        }
+    }
+};
+
 class ReadSizeTestCursor : public CKeyCursor
 {
 public:
     using CKeyCursor::CKeyCursor;
-
-    size32_t queryReadSize() const
-    {
-        Owned<const CJHTreeNode> loaded = loadNode(nullptr, node->getFpos());
-        return readState.preferredReadSize;
-    }
 };
 
 class ReadSizeTestKeyManager : public CKeyLevelManager
@@ -4572,12 +4717,7 @@ public:
         : CKeyLevelManager(recInfo, index, nullptr, false, false)
     {
         ::Release(keyCursor);
-        keyCursor = new ReadSizeTestCursor(static_cast<CKeyIndex &>(*index), filter, false, readOptions);
-    }
-
-    size32_t queryReadSize() const
-    {
-        return static_cast<ReadSizeTestCursor *>(keyCursor)->queryReadSize();
+        keyCursor = new ReadSizeTestCursor(static_cast<CKeyIndex &>(*index), filter, false);
     }
 };
 
@@ -4593,7 +4733,7 @@ class IKeyManagerTest : public CppUnit::TestFixture
 {
     CPPUNIT_TEST_SUITE(IKeyManagerTest);
         CPPUNIT_TEST(testZeroLengthIndexPart);
-        CPPUNIT_TEST(testResumeReadSize);
+        CPPUNIT_TEST(testGetNodeReadSize);
         CPPUNIT_TEST(testDemoCacheRewrite);
         CPPUNIT_TEST(testDiskCacheRewrite);
     CPPUNIT_TEST_SUITE_END();
@@ -4829,44 +4969,9 @@ private:
         CPPUNIT_ASSERT_THROW(truncated->ensureReady(), IException *);
     }
 
-    void testResumeReadSize()
+    void testGetNodeReadSize()
     {
-        const char *json = "{ \"ty1\": { \"fieldType\": 4, \"length\": 10 }, "
-                           "\"fieldType\": 13, \"length\": 10, "
-                           "\"fields\": [ { \"name\": \"f1\", \"type\": \"ty1\", \"flags\": 4 } ] }";
-        Owned<IOutputMetaData> meta = createTypeInfoOutputMetaData(json, false);
-        const RtlRecord &recInfo = meta->queryRecordAccessor(true);
-        Owned<IFileIO> io = createUniqueFile(nullptr, "IKeyManagerTest", "tmp", filename, IFOcreaterw);
-        {
-            TestIndexWriteArg helper(filename, nullptr, meta);
-            Owned<IFileIOStream> out = createIOStream(io);
-            KeyBuilderOptions options(COL_PREFIX | HTREE_FULLSORT_KEY | HTREE_COMPRESSED_KEY,
-                                      10, NODESIZE, 10, &helper);
-            Owned<IKeyBuilder> builder = createKeyBuilder(out, options);
-            builder->processKeyData("0000000001", 10, 10);
-            builder->processKeyData("0000000002", 20, 10);
-            builder->finish(nullptr, nullptr, 10, nullptr);
-            out->flush();
-        }
-        {
-            const IndexReadOptions readOptions{0x10000, 0x40000};
-            Owned<IKeyIndex> index = createKeyIndex(filename, 0, *io, 0, false, readOptions);
-            Owned<ReadSizeTestKeyManager> source = new ReadSizeTestKeyManager(recInfo, index, readOptions);
-            source->finishSegmentMonitors();
-            source->reset(false);
-            CPPUNIT_ASSERT(source->lookup(true));
-            MemoryBuffer continuation;
-            source->serializeCursorPos(continuation);
-            CPPUNIT_ASSERT(source->lookup(true));
-
-            Owned<ReadSizeTestKeyManager> resumed = new ReadSizeTestKeyManager(recInfo, index, readOptions);
-            resumed->deserializeCursorPos(continuation);
-            resumed->finishSegmentMonitors();
-            resumed->reset(true);
-            CPPUNIT_ASSERT(resumed->lookup(true));
-            CPPUNIT_ASSERT_EQUAL(0, memcmp(source->queryKeyBuffer(), resumed->queryKeyBuffer(), index->keyedSize()));
-            CPPUNIT_ASSERT_EQUAL(readOptions.sequentialReadSize, resumed->queryReadSize());
-        }
+        ReadSizeTest::testGetNodeReadSize();
     }
 
     void testDemoCacheRewrite()
