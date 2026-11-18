@@ -27,7 +27,7 @@ env:
 
 jobs:
   validate-metadata:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     steps:
       - name: Checkout trusted base code
         uses: actions/checkout@v6
