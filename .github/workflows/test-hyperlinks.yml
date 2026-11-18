@@ -66,7 +66,7 @@ permissions:
 
 jobs:
   precheck-branch-changes:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     outputs:
       branch_changed: ${{ steps.branch_changed.outputs.branch_changed }}
     steps:

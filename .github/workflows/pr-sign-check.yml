@@ -21,7 +21,7 @@ permissions:
 
 jobs:
   validate-signature:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     steps:
       - name: Checkout code
         uses: actions/checkout@v6

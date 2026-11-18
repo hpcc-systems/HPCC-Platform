@@ -26,7 +26,7 @@ permissions:
 jobs:
   build:
     name: "Check helm chart lint"
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     if: ${{ github.repository == 'hpcc-systems/HPCC-Platform' }}
     steps:
       - uses: actions/checkout@v6
