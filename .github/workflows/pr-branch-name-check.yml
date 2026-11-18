@@ -16,7 +16,7 @@ permissions:
 
 jobs:
   validate-branch-name:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     steps:
       - name: Check branch name prefix
         env:
