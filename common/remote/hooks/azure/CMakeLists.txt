@@ -78,6 +78,6 @@ target_link_libraries ( azurefile PRIVATE
     )
 
 if (USE_CPPUNIT)
-    include_directories( ${HPCC_SOURCE_DIR}/testing/unittests )
-    target_link_libraries(azurefile PRIVATE ${CppUnit_LIBRARIES})
+    target_include_directories ( azurefile PRIVATE ${HPCC_SOURCE_DIR}/testing/unittests )
+    target_link_libraries ( azurefile PRIVATE ${CppUnit_LIBRARIES} )
 endif()

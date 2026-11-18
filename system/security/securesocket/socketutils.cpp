@@ -20,6 +20,7 @@
 #include <functional>
 #include <algorithm>
 #include <thread>
+#include <system_error>
 #include <limits.h>
 
 #include "platform.h"
@@ -444,29 +445,63 @@ void CReadSelectHandler::clearupSocketHandlers()
 CSocketConnectionListener::CSocketConnectionListener(unsigned port, bool _useTLS, unsigned _inactiveCloseTimeoutMs, unsigned _maxListenHandlerSockets, bool _useIOUring)
     : CReadSelectHandler(_inactiveCloseTimeoutMs, _maxListenHandlerSockets, _useIOUring), Thread("CSocketConnectionListener"), useTLS(_useTLS)
 {
-    // Determine accept method based on io_uring availability and configuration
-    // Priority: MultishotAccept > SingleshotAccept > SelectThread
-    // Note: asyncReader only exists if io_uring is enabled, so we start with Multishot
-    // and may fall back to Singleshot at runtime if EINVAL is returned
+    // Prefer multishot when io_uring is available. The listener falls back to
+    // single-shot on the same ring if the kernel reports multishot unsupported.
     if (asyncReader)
+    {
         acceptMethod.store(AcceptMethod::MultishotAccept);
+        try
+        {
+            acceptRetryThread = std::thread([this]
+            {
+                while (!aborting)
+                {
+                    acceptRetrySem.wait();
+                    if (aborting)
+                        break;
+
+                    unsigned delayMs = acceptRetryDelayMs.load();
+                    acceptRetryDelayMs.store(std::min(delayMs * 2, 1000U));
+                    if (!acceptRetrySem.wait(delayMs) && !aborting)
+                        startAccept();
+                }
+            });
+        }
+        catch (const std::system_error &e)
+        {
+            OERRLOG("Failed to start accept retry worker; falling back to select-thread accept: %s", e.what());
+            acceptMethod.store(AcceptMethod::SelectThread);
+        }
+    }
     else
         acceptMethod.store(AcceptMethod::SelectThread);
 
-    if (port)
-        startPort(port);
-
-    if (useTLS)
-        secureContextServer.setown(createSecureSocketContextSecretSrv("local", nullptr, true));
-
-    const char *acceptMethodStr = "unknown";
-    switch (acceptMethod.load())
+    try
     {
-    case AcceptMethod::MultishotAccept: acceptMethodStr = "io_uring multishot"; break;
-    case AcceptMethod::SingleshotAccept: acceptMethodStr = "io_uring singleshot"; break;
-    case AcceptMethod::SelectThread: acceptMethodStr = "select()"; break;
+        if (port)
+            startPort(port);
+
+        if (useTLS)
+            secureContextServer.setown(createSecureSocketContextSecretSrv("local", nullptr, true));
+
+        const char *acceptMethodStr = "unknown";
+        switch (acceptMethod.load())
+        {
+        case AcceptMethod::MultishotAccept: acceptMethodStr = "io_uring multishot"; break;
+        case AcceptMethod::SingleshotAccept: acceptMethodStr = "io_uring singleshot"; break;
+        case AcceptMethod::SelectThread: acceptMethodStr = "select()"; break;
+        }
+        PROGLOG("CSocketConnectionListener TLS: %s, accept method: %s", useTLS ? "on" : "off", acceptMethodStr);
     }
-    PROGLOG("CSocketConnectionListener TLS: %s, accept method: %s", useTLS ? "on" : "off", acceptMethodStr);
+    catch (...)
+    {
+        // The destructor will not run if construction fails. Drain callbacks
+        // while the listener's members are still alive, then propagate the error.
+        stop();
+        if (asyncReader)
+            asyncReader->terminate();
+        throw;
+    }
 }
 
 CSocketConnectionListener::~CSocketConnectionListener()
@@ -509,35 +544,13 @@ void CSocketConnectionListener::startPort(unsigned short port)
     }
 
     AcceptMethod method = acceptMethod.load();
-    if (method == AcceptMethod::MultishotAccept)
-    {
-        // Only start accept if not already running
-        unsigned expected = 0;
-        if (pendingAcceptCallbacks.compare_exchange_strong(expected, 1))
-        {
-#if USE_MULTISHOT_ACCEPT
-            // Start the multishot accept operation
-            asyncReader->enqueueSocketMultishotAccept(listenSocket, *this);
-#else
-            // USE_MULTISHOT_ACCEPT disabled - fall back to single-shot
-            acceptMethod.store(AcceptMethod::SingleshotAccept);
-            startSingleshotAccept();
-#endif
-        }
-        // If already running, do nothing (expected would be non-zero)
-    }
-    else if (method == AcceptMethod::SingleshotAccept)
-    {
-        // Start single-shot io_uring accept
-        unsigned expected = 0;
-        if (pendingAcceptCallbacks.compare_exchange_strong(expected, 1))
-            startSingleshotAccept();
-    }
-    else
+    if (method == AcceptMethod::SelectThread)
     {
         // Fall back to the traditional accept thread
         Thread::start(false);
     }
+    else
+        startAccept();
 }
 
 int CSocketConnectionListener::run()
@@ -617,58 +630,108 @@ int CSocketConnectionListener::run()
 
 void CSocketConnectionListener::stop()
 {
-    if (!aborting)
+    CriticalBlock stopBlock(stopCS);
+    bool wasAborting = aborting.exchange(true);
+    if (!wasAborting)
     {
-        aborting = true;
-
         AcceptMethod method = acceptMethod.load();
         if (method != AcceptMethod::SelectThread)
         {
             // Cancel io_uring accept operations (both multishot and single-shot)
-            if (asyncReader && listenSocket)
-                asyncReader->cancelAccept(listenSocket);
-            
-            // Wait for any pending callbacks to complete (with timeout)
-            // The cancellation will trigger a final callback with -ECANCELED
-            constexpr unsigned timeoutMs = 5000; // 5 seconds should be plenty
-            if (!shutdownSem.wait(timeoutMs))
             {
-                // Check if cancellation actually completed before we started waiting
+                CriticalBlock b(acceptCS);
+                if (asyncReader && listenSocket && pendingAcceptCallbacks.load())
+                    asyncReader->cancelAccept(listenSocket);
+            }
+            
+            // Wait (with a timeout) for the cancellation completion before destruction.
+            constexpr unsigned timeoutMs = 5000; // 5 seconds should be plenty
+            if (pendingAcceptCallbacks.load() && !shutdownSem.wait(timeoutMs))
+            {
+                // The completion may have raced with the timeout.
                 if (pendingAcceptCallbacks.load() > 0)
                     OERRLOG("Timeout waiting for accept cancellation to complete");
-                // else: cancellation completed before we started waiting (race condition, but harmless)
             }
         }
         else
         {
             // Cancel the blocking accept call for the thread
-            listenSocket->cancel_accept();
+            if (listenSocket)
+                listenSocket->cancel_accept();
 
             // ensure CSocketConnectionListener::run() has exited, and is not accepting more sockets
-            if (!join(1000*60*5))   // should be pretty instant
+            if (listenSocket && !join(1000*60*5))   // should be pretty instant
                 printf("CSocketConnectionListener::stop timed out\n");
         }
-        
-        // Close the listen socket to prevent any further connections
-        if (listenSocket)
+    }
+
+    std::thread retryThread;
+    {
+        CriticalBlock b(acceptRetryCS);
+        if (acceptRetryThread.joinable())
         {
-            try
-            {
-                shutdownAndCloseNoThrow(listenSocket);
-                listenSocket.clear();
-            }
-            catch (...)
-            {
-                OERRLOG("CSocketConnectionListener::stop socket close failure");
-            }
+            acceptRetrySem.signal();
+            retryThread = std::move(acceptRetryThread);
+        }
+    }
+    if (retryThread.joinable())
+        retryThread.join();
+        
+    // Close the listen socket to prevent any further connections
+    if (listenSocket)
+    {
+        try
+        {
+            shutdownAndCloseNoThrow(listenSocket);
+            listenSocket.clear();
+        }
+        catch (...)
+        {
+            OERRLOG("CSocketConnectionListener::stop socket close failure");
         }
     }
 }
 
-void CSocketConnectionListener::startSingleshotAccept()
+void CSocketConnectionListener::startAccept()
 {
-    if (asyncReader && listenSocket)
+    CriticalBlock b(acceptCS);
+    if (aborting || !asyncReader || !listenSocket)
+        return;
+
+    // A multishot accept has one persistent callback; single-shot accepts need
+    // the same guard to prevent overlapping submissions during rearming.
+    unsigned expected = 0;
+    if (!pendingAcceptCallbacks.compare_exchange_strong(expected, 1))
+        return;
+
+    if (acceptMethod.load() == AcceptMethod::MultishotAccept)
+    {
+#if USE_MULTISHOT_ACCEPT
+        asyncReader->enqueueSocketMultishotAccept(listenSocket, *this);
+#else
+        acceptMethod.store(AcceptMethod::SingleshotAccept);
         asyncReader->enqueueSocketAccept(listenSocket, *this);
+#endif
+    }
+    else
+        asyncReader->enqueueSocketAccept(listenSocket, *this);
+}
+
+void CSocketConnectionListener::clearPendingAccept()
+{
+    unsigned expected = 1;
+    // Signal stop when the final accept callback has drained.
+    if (pendingAcceptCallbacks.compare_exchange_strong(expected, 0) && aborting)
+        shutdownSem.signal();
+}
+
+void CSocketConnectionListener::scheduleAcceptRetry()
+{
+    if (aborting)
+        return;
+
+    // Keep resource-error backoff off the io_uring completion thread.
+    acceptRetrySem.signal();
 }
 
 class CAsyncTLSAcceptCallback : public CSimpleInterfaceOf<IAsyncCallback>
@@ -811,103 +874,99 @@ void CSocketConnectionListener::handleAcceptedConnection(int socketfd)
 
 bool CSocketConnectionListener::onAsyncComplete(int result)
 {
-    // Check if we're shutting down first to avoid accessing members during destruction
+    return onAsyncComplete(result, 0);
+}
+
+bool CSocketConnectionListener::onAsyncComplete(int result, unsigned flags)
+{
+    // F_MORE means the multishot accept remains active; only a terminal CQE
+    // permits fallback or submission of a replacement accept.
+    const bool operationContinues = (flags & asyncCompletionMore) != 0;
+
     if (aborting.load())
     {
-        // If this is a cancellation during shutdown, signal completion
-        if (result == -ECANCELED)
-        {
-            unsigned expected = 1;
-            if (pendingAcceptCallbacks.compare_exchange_strong(expected, 0))
-                shutdownSem.signal();
-        }
-        return false; // Multishot accept callback is persistent
+        // A successful CQE owns a new descriptor even when teardown prevents
+        // handing it to the normal connection path.
+        if (result >= 0)
+            ::close(result);
+        if (!operationContinues)
+            clearPendingAccept();
+        return false;
     }
-    
-    // This is called when a new connection is accepted via multishot accept
+
     if (result < 0)
     {
-        int err = -result; // To make subsequent code-checking code clearer
-
-        // For transient/recoverable errors, multishot accept continues
+        int err = -result;
         if (err == ECANCELED)
         {
-            // Cancellation - should have been handled at function entry if aborting
-            WARNLOG("Multishot accept cancelled unexpectedly (not aborting)");
+            // An unexpected terminal cancellation leaves no accept active.
+            WARNLOG("Accept operation was cancelled unexpectedly");
+            if (!operationContinues)
+            {
+                clearPendingAccept();
+                startAccept();
+            }
             return false;
         }
-        
-        if (!aborting)
+
+        if (err == EINVAL && acceptMethod.load() == AcceptMethod::MultishotAccept && !operationContinues)
         {
-            if (err == EAGAIN || err == EWOULDBLOCK)
-            {
-                // These are transient errors - multishot accept will continue automatically
-#ifdef _FULLTRACE
-                DBGLOG("Transient accept error: %d", result);
-#endif
-            }
-            else if (err == ECONNABORTED)
-            {
-                // Connection aborted before accept completed - this is normal, continue
-#ifdef _FULLTRACE
-                DBGLOG("Connection aborted before accept: %d", result);
-#endif
-            }
-            else if (err == EMFILE || err == ENFILE)
-            {
-                // File descriptor exhaustion - log as error but multishot will continue
-                OERRLOG("File descriptor limit reached during accept (error: %d). Connection dropped.", result);
-            }
-            else if (err == ENOBUFS || err == ENOMEM)
-            {
-                // Out of memory/buffers - serious but transient
-                OERRLOG("Memory/buffer exhaustion during accept (error: %d). Connection dropped.", result);
-            }
-            else if (err == EINVAL)
-            {
-                // EINVAL implies multishot accept is not supported - fall back to single-shot
-                AcceptMethod currentMethod = acceptMethod.load();
-                if (currentMethod == AcceptMethod::MultishotAccept)
-                {
-                    acceptMethod.store(AcceptMethod::SingleshotAccept);
-                    PROGLOG("Multishot accept not supported (EINVAL), falling back to single-shot accept");
-                    startSingleshotAccept();
-                    return false;
-                }
-                // If we get EINVAL on single-shot, that's a fatal error - io_uring accept is not working
-                // Decrement callback counter and signal shutdown
-                OERRLOG("Unexpected EINVAL on %s accept - accept mechanism has failed", currentMethod == AcceptMethod::SingleshotAccept ? "single-shot" : "select-thread");
-                unsigned expected = 1;
-                if (pendingAcceptCallbacks.compare_exchange_strong(expected, 0))
-                    shutdownSem.signal();
-            }
+            // EINVAL terminates the multishot request; retry in single-shot
+            // mode rather than abandoning the listener.
+            acceptMethod.store(AcceptMethod::SingleshotAccept);
+            FLLOG(MCoperatorWarning, "Multishot accept is unsupported; falling back to single-shot io_uring accept");
+            clearPendingAccept();
+            startAccept();
+            return false;
+        }
+
+        // The multishot request is still active; do not submit a duplicate.
+        if (operationContinues)
+            return false;
+
+        clearPendingAccept();
+        if (err == EINVAL)
+        {
+            OERRLOG("Single-shot io_uring accept failed with EINVAL; listener will not be rearmed");
+            return false;
+        }
+
+        if (err == EAGAIN || err == EWOULDBLOCK || err == ECONNABORTED)
+        {
+            // These are transient at the accept boundary; retry immediately.
+            startAccept();
+        }
+        else
+        {
+            if (err == EMFILE || err == ENFILE || err == ENOBUFS || err == ENOMEM)
+                OERRLOG("Accept resource exhaustion (error: %d); retrying with backoff", result);
             else
-            {
-                // For other unexpected errors, the multishot operation may have stopped or may be recoverable
-                // Log as warning since we're not aborting and the error is unexpected
-                WARNLOG("Multishot accept unexpected error: %d. Operation may have stopped or may be recoverable.", result);
-                // If the error is fatal and stops multishot, decrement the callback counter and signal shutdown if needed
-                unsigned expected = 1;
-                if (pendingAcceptCallbacks.compare_exchange_strong(expected, 0))
-                    shutdownSem.signal();
-            }
+                WARNLOG("Accept operation failed (error: %d); retrying with backoff", result);
+
+            // Resource and unexpected errors may persist, so defer rearming.
+            scheduleAcceptRetry();
         }
         return false;
     }
 
-    // result contains the file descriptor of the accepted socket
-    // With multishot accept, the operation continues to accept connections automatically
-    // until it's cancelled or encounters an error
     if (aborting.load())
+    {
+        ::close(result);
+        if (!operationContinues)
+            clearPendingAccept();
         return false;
-    
+    }
+
+    acceptRetryDelayMs.store(25);
+    // Successful single-shot accepts are rearmed below; multishot accepts
+    // continue automatically when F_MORE is set.
     handleAcceptedConnection(result);
-    
-    // If using single-shot accept (not multishot), we need to re-queue another accept
-    if (acceptMethod.load() == AcceptMethod::SingleshotAccept)
-        startSingleshotAccept();
-    
-    return false; // Multishot accept callback is persistent
+    if (!operationContinues)
+    {
+        clearPendingAccept();
+        startAccept();
+    }
+    return false;
 }
 
 //---------------------------------------------------------------------------------------------------------------------

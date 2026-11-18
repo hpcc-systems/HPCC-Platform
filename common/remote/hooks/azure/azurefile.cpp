@@ -199,6 +199,8 @@ class AzureFile final : implements CInterfaceOf<IFile>
     friend class AzureFileReadIO;
 public:
     AzureFile(const char *_azureFileName);
+    AzureFile(const char *_azureFileName, const DirEntry &entry)
+    : AzureFile(_azureFileName) { setListedInfo(entry.isDir, entry.size, entry.modifiedTime); }
     virtual bool exists() override
     {
         ensureMetaData();
@@ -302,6 +304,9 @@ public:
 public:
     SharedFileClient getFileClient() const;
     void invalidateMeta() { haveMeta = false; }
+
+protected:
+    // Seed metadata from a directory listing during construction only.
     void setListedInfo(bool _isDir, offset_t _fileSize, time_t _lastModified)
     {
         haveMeta = true;
@@ -312,7 +317,6 @@ public:
         createdOn = 0;
     }
 
-protected:
     std::shared_ptr<StorageSharedKeyCredential> getSharedKeyCredentials() const;
     std::string getFileUrl() const;
     std::shared_ptr<ShareClient> getShareClient() const;
@@ -434,9 +438,7 @@ AzureFile::AzureFile(const char *_azureFileName) : fullName(_azureFileName)
 
 IFile * AzureFileDirectoryIterator::createFile(const char *fullPath, const DirEntry &entry)
 {
-    AzureFile *file = new AzureFile(fullPath);
-    file->setListedInfo(entry.isDir, entry.size, entry.modifiedTime);
-    return file;
+    return new AzureFile(fullPath, entry);
 }
 
 SharedFileClient AzureFile::getFileClient() const

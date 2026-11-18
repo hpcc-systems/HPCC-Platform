@@ -57,7 +57,7 @@ export const Pods: React.FunctionComponent<PodsProps> = ({
                     <div style={{ position: "absolute", width: "100%", height: `${size.height}px` }}>
                         <FluentGrid
                             data={pods}
-                            primaryID={"name"}
+                            primaryID={"Name"}
                             columns={columns}
                             height={`${size.height}px`}
                             setSelection={setSelection}

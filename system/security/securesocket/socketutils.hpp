@@ -36,6 +36,7 @@
 
 #include <thread>
 #include <list>
+#include <thread>
 #include <vector>
 #include <atomic>
 
@@ -171,10 +172,13 @@ public:
 
 // interface IAsyncCallback
     virtual bool onAsyncComplete(int result) override;
+    virtual bool onAsyncComplete(int result, unsigned flags) override;
 
 private:
     friend class CAsyncTLSAcceptCallback;
-    void startSingleshotAccept();
+    void startAccept();
+    void clearPendingAccept();
+    void scheduleAcceptRetry();
     void handleAcceptedConnection(int socketfd);
 
     Owned<ISocket> listenSocket;
@@ -183,6 +187,12 @@ private:
     std::atomic<bool> aborting{false};
     std::atomic<AcceptMethod> acceptMethod{AcceptMethod::SelectThread};
     std::atomic<unsigned> pendingAcceptCallbacks{0};
+    CriticalSection stopCS{SYNC_LOCATION};
+    CriticalSection acceptCS{SYNC_LOCATION};
+    CriticalSection acceptRetryCS{SYNC_LOCATION};
+    std::thread acceptRetryThread;
+    Semaphore acceptRetrySem{SYNC_LOCATION};
+    std::atomic<unsigned> acceptRetryDelayMs{25};
     Semaphore shutdownSem{SYNC_LOCATION};
 };
 

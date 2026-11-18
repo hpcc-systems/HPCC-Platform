@@ -1,0 +1,106 @@
+name: Analyze Changes Between Versions Action
+
+on:
+  workflow_dispatch:
+    inputs:
+      base-sha:
+        description: 'Base commit SHA'
+        required: true
+      head-sha:
+        description: 'Head commit SHA'
+        required: true
+
+jobs:
+  analyze-version-changes:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Run analyze-changes action
+        id: analyze
+        uses: ./.github/actions/analyze-changes
+        with:
+          base-sha: ${{ inputs.base-sha }}
+          head-sha: ${{ inputs.head-sha }}
+
+      - name: Display analysis results
+        run: |
+          echo "=== Change Analysis Results ==="
+          echo ""
+          echo "Raw changes output:"
+          echo '${{ steps.analyze.outputs.changes }}'
+          echo ""
+          echo "Formatted JSON:"
+          echo '${{ steps.analyze.outputs.changes }}' | jq .
+          echo ""
+          echo "=== Breakdown ==="
+          echo ""
+          echo "Types changed:"
+          echo '${{ steps.analyze.outputs.changes }}' | jq '.["has-type"]'
+          echo ""
+          echo "Components changed:"
+          echo '${{ steps.analyze.outputs.changes }}' | jq '.["has-component"]'
+          echo ""
+          echo "Component breakdown by type:"
+          echo '${{ steps.analyze.outputs.changes }}' | jq '.["type-components-changed"]'
+          echo ""
+          echo "Components NOT changed by type:"
+          echo '${{ steps.analyze.outputs.changes }}' | jq '.["type-components-same"]'
+
+      - name: Display testing impacts
+        run: |
+          echo "=== Category Testing Impacts ==="
+          echo ""
+          echo "Raw impacts output:"
+          echo '${{ steps.analyze.outputs.impacts }}'
+          echo ""
+          echo "Formatted JSON:"
+          echo '${{ steps.analyze.outputs.impacts }}' | jq .
+          echo ""
+          echo "Individual categories:"
+          echo '${{ steps.analyze.outputs.impacts }}' | jq 'to_entries | .[] | "\(.key): \(.value)"'
+
+      - name: Example conditionals
+        run: |
+          changes='${{ steps.analyze.outputs.changes }}'
+          impacts='${{ steps.analyze.outputs.impacts }}'
+          
+          echo "=== Example Usage in Conditionals ==="
+          echo ""
+          
+          # Check if cpp changed
+          has_cpp=$(echo "$changes" | jq '.["has-type"].cpp // false')
+          echo "C++ files changed: $has_cpp"
+          
+          # Check if roxie changed
+          has_roxie=$(echo "$changes" | jq '.["has-component"].roxie // false')
+          echo "Roxie component changed: $has_roxie"
+          
+          # Check if ecl changed in eclcc
+          cpp_comps=$(echo "$changes" | jq '.["type-components-changed"].cpp // []')
+          has_eclcc=$(echo "$cpp_comps" | jq 'contains(["eclcc"])')
+          echo "Eclcc changed (cpp): $has_eclcc"
+          
+          # Check if cpp changed but NOT in thor
+          thor_unchanged=$(echo "$changes" | jq '.["type-components-same"].cpp // []' | jq 'contains(["thor"])')
+          echo "Thor unchanged (cpp): $thor_unchanged"
+          
+          echo ""
+          echo "=== Example Usage with Impacts ==="
+          echo ""
+          
+          # Check if roxie tests should run
+          should_test_roxie=$(echo "$impacts" | jq '.roxie // false')
+          echo "Run roxie tests: $should_test_roxie"
+          
+          # Check if thor tests should run
+          should_test_thor=$(echo "$impacts" | jq '.thor // false')
+          echo "Run thor tests: $should_test_thor"
+          
+          # Check if regression suite should run
+          should_test_regression=$(echo "$impacts" | jq '.["regression-suite"] // false')
+          echo "Run regression suite: $should_test_regression"
+

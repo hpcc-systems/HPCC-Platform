@@ -32,6 +32,10 @@ struct iovec {
 #endif
 
 interface IAsyncProcessor;
+// Keep this independent of liburing headers: it is the public callback flag
+// corresponding to IORING_CQE_F_MORE on Linux.
+static constexpr unsigned asyncCompletionMore = 1U << 1;
+
 // Callback interface for async I/O completions
 interface IAsyncCallback
 {
@@ -39,6 +43,10 @@ interface IAsyncCallback
     // result: Result of the operation (>=0 for success, negative error code for failure)
     // Returns: true if afterCompletion() should be called, false otherwise
     virtual bool onAsyncComplete(int result) = 0;
+
+    // flags: Completion flags from the io_uring CQE, or zero when not available.
+    // The default preserves callbacks that only need the result.
+    virtual bool onAsyncComplete(int result, unsigned flags) { return onAsyncComplete(result); }
     
     // Called after onAsyncComplete() returns true to perform cleanup
     // Default implementation does nothing. Override to call Release() if needed.
