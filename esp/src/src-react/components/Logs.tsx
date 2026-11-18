@@ -276,12 +276,6 @@ export const Logs: React.FunctionComponent<LogsProps> = ({
         setCommittedEndDate(range.endDate);
     }, []);
 
-    // initial data load
-    React.useEffect(() => {
-        refreshData();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
-
     //  Filter  ---
     const filterFields: Fields = React.useMemo(() => {
         const retVal: Fields = {};
