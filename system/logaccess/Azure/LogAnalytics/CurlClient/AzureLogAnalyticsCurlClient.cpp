@@ -18,11 +18,13 @@
 #include "AzureLogAnalyticsCurlClient.hpp"
 
 #include "platform.h"
+#include "jfile.hpp"
 #include <curl/curl.h>
 #include <string>
 #include <vector>
 
 #include <cstdio>
+#include <cstdlib>
 #include <iostream>
 #include <stdexcept>
 
@@ -50,12 +52,67 @@ static constexpr const char * logMapKeyColAtt = "@keyColumn";
 static constexpr const char * logMapDisableJoinsAtt = "@disableJoins";
 
 static constexpr std::size_t  defaultMaxRecordsPerFetch = 100;
+static constexpr auto defaultAccessTokenCacheLifetime = std::chrono::minutes(50);
+// Refresh one minute before expiry so a token does not expire while a request is in flight.
+static constexpr auto tokenExpirySafetyMargin = std::chrono::seconds(60);
+static constexpr auto authFailureCooldown = std::chrono::seconds(30);
+static constexpr auto tokenRequestConnectTimeout = std::chrono::seconds(5);
+static constexpr auto tokenRequestTimeout = std::chrono::seconds(10);
+
+static void setTokenCacheLifetime(std::chrono::seconds & cacheLifetime, unsigned __int64 expiresIn)
+{
+    cacheLifetime = std::chrono::duration_cast<std::chrono::seconds>(defaultAccessTokenCacheLifetime);
+    if (expiresIn == 0)
+        return;
+
+    auto tokenLifetime = std::chrono::seconds(expiresIn);
+    cacheLifetime = tokenLifetime > tokenExpirySafetyMargin ? tokenLifetime - tokenExpirySafetyMargin : std::chrono::seconds(1);
+}
+
+static void parseAccessTokenResponse(StringBuffer & token, std::chrono::seconds & cacheLifetime, const char * response, const char * authMethod)
+{
+    if (isEmptyString(response))
+        throw makeStringExceptionV(-1, "%s Access token request via %s: Empty response received!", COMPONENT_NAME, authMethod);
+
+    Owned<IPropertyTree> tokenResponse;
+    try
+    {
+        tokenResponse.setown(createPTreeFromJSONString(response));
+    }
+    catch (IException * e)
+    {
+        StringBuffer message;
+        e->errorMessage(message);
+        e->Release();
+        throw makeStringExceptionV(-1, "%s Access token request via %s: Could not parse response: %s", COMPONENT_NAME, authMethod, message.str());
+    }
+    catch (const std::exception & e)
+    {
+        throw makeStringExceptionV(-1, "%s Access token request via %s: Could not parse response: %s", COMPONENT_NAME, authMethod, e.what());
+    }
+
+    const char * accessToken = tokenResponse->queryProp("access_token");
+    if (isEmptyString(accessToken))
+        throw makeStringExceptionV(-1, "%s Access token request via %s: Response did not contain a non-empty access_token", COMPONENT_NAME, authMethod);
+
+    if (tokenResponse->hasProp("expires_in"))
+    {
+        __int64 expiresIn = tokenResponse->getPropInt64("expires_in");
+        if (expiresIn <= 0)
+            throw makeStringExceptionV(-1, "%s Access token request via %s: Response contained an invalid expires_in value", COMPONENT_NAME, authMethod);
+        setTokenCacheLifetime(cacheLifetime, static_cast<unsigned __int64>(expiresIn));
+    }
+    else
+        setTokenCacheLifetime(cacheLifetime, 0);
+    token.set(accessToken);
+}
 
 static size_t captureIncomingCURLReply(void* contents, size_t size, size_t nmemb, void* userp)
 {
     size_t          incomingDataSize = size * nmemb;
     MemoryBuffer*   mem = static_cast<MemoryBuffer*>(userp);
-    static constexpr size_t MAX_BUFFER_SIZE = 4194304; // 2^22
+    // Token endpoint responses are small; cap captured data to prevent unbounded memory use.
+    static constexpr size_t MAX_BUFFER_SIZE = 1048576; // 1 MiB
 
     if ((mem->length() + incomingDataSize) < MAX_BUFFER_SIZE)
     {
@@ -71,7 +128,190 @@ static size_t captureIncomingCURLReply(void* contents, size_t size, size_t nmemb
     return incomingDataSize;
 }
 
-static void requestLogAnalyticsAccessToken(StringBuffer & token, const char * clientID, const char * clientSecret, const char * tenantID)
+// Environment variables AKS's workload identity webhook (or a legacy Managed Identity setup)
+// injects into the pod. Detection order mirrors common/remote/hooks/azure/azureapiutils.cpp's
+// getAzureManagedIdentityCredential(): Workload Identity first, then legacy Managed Identity.
+static constexpr const char * envAzureClientID = "AZURE_CLIENT_ID";
+static constexpr const char * envAzureTenantID = "AZURE_TENANT_ID";
+static constexpr const char * envAzureFederatedTokenFile = "AZURE_FEDERATED_TOKEN_FILE";
+// Newer Managed Identity endpoint format (e.g. Azure Container Apps, newer Functions/App Service).
+static constexpr const char * envAzureIdentityEndpoint = "IDENTITY_ENDPOINT";
+static constexpr const char * envAzureIdentityHeader = "IDENTITY_HEADER";
+// Legacy Azure App Service/Functions V1 MSI extension endpoint format.
+static constexpr const char * envAzureMSIEndpoint = "MSI_ENDPOINT";
+static constexpr const char * envAzureMSISecret = "MSI_SECRET";
+
+static void freeEscapedCurlString(char * value)
+{
+    curl_free(value);
+}
+
+static bool hasWorkloadIdentityEnv()
+{
+    const char * federatedTokenFile = getenv(envAzureFederatedTokenFile);
+    return federatedTokenFile != nullptr;
+}
+
+static void urlEncode(StringBuffer & encodedValue, const char * rawValue)
+{
+    OwnedPtrCustomFree<CURL, curl_easy_cleanup> curlHandle = curl_easy_init();
+    if (!curlHandle)
+        throw makeStringExceptionV(-1, "%s: Could not initialize CURL for URL-encoding request fields!", COMPONENT_NAME);
+
+    OwnedPtrCustomFree<char, freeEscapedCurlString> escapedValue = curl_easy_escape(curlHandle, nullText(rawValue), 0);
+    if (!escapedValue)
+        throw makeStringExceptionV(-1, "%s: Could not URL-encode request field value!", COMPONENT_NAME);
+
+    encodedValue.set(escapedValue.get());
+}
+
+// Federated tokens are short-lived JWTs (a few KB at most); guard against an unexpectedly
+// huge file rather than risking truncation/overflow casting its size to a size32_t below.
+static constexpr offset_t maxFederatedTokenFileSize = 65536;
+
+static void readFederatedTokenFile(StringBuffer & token, const char * path)
+{
+    if (isEmptyString(path))
+        throw makeStringExceptionV(-1, "%s: %s is not set or empty", COMPONENT_NAME, envAzureFederatedTokenFile);
+
+    Owned<IFile> file = createIFile(path);
+    if (!file->exists())
+        throw makeStringExceptionV(-1, "%s: Federated token file '%s' does not exist!", COMPONENT_NAME, path);
+
+    Owned<IFileIO> io = file->open(IFOread);
+    if (!io)
+        throw makeStringExceptionV(-1, "%s: Could not open federated token file '%s'!", COMPONENT_NAME, path);
+
+    offset_t fileSize = io->size();
+    if (fileSize <= 0)
+        throw makeStringExceptionV(-1, "%s: Federated token file '%s' is empty or stat failed!", COMPONENT_NAME, path);
+    if (fileSize > maxFederatedTokenFileSize)
+        throw makeStringExceptionV(-1, "%s: Federated token file '%s' is unexpectedly large (%" I64F "u bytes)!", COMPONENT_NAME, path, fileSize);
+
+    size32_t expectedSize = (size32_t)fileSize;
+    size32_t bytesRead = io->read(0, expectedSize, token.reserveTruncate(expectedSize));
+    if (bytesRead != expectedSize)
+        throw makeStringExceptionV(-1, "%s: Short read on federated token file '%s' (expected %u bytes, got %u)!", COMPONENT_NAME, path, expectedSize, bytesRead);
+
+    token.trim();
+}
+
+static void executeTokenRequest(StringBuffer & response, long & httpResponseCode, CURL * curlHandle, MemoryBuffer & captureBuffer)
+{
+    if (curl_easy_setopt(curlHandle, CURLOPT_NOPROGRESS, 1L) != CURLE_OK)
+        throw makeStringExceptionV(-1, "%s Access token request: Could not disable 'CURLOPT_NOPROGRESS' option!", COMPONENT_NAME);
+    if (curl_easy_setopt(curlHandle, CURLOPT_NOSIGNAL, 1L) != CURLE_OK)
+        throw makeStringExceptionV(-1, "%s Access token request: Could not set 'CURLOPT_NOSIGNAL' option!", COMPONENT_NAME);
+    if (curl_easy_setopt(curlHandle, CURLOPT_CONNECTTIMEOUT, static_cast<long>(tokenRequestConnectTimeout.count())) != CURLE_OK)
+        throw makeStringExceptionV(-1, "%s Access token request: Could not set 'CURLOPT_CONNECTTIMEOUT' option!", COMPONENT_NAME);
+    if (curl_easy_setopt(curlHandle, CURLOPT_TIMEOUT, static_cast<long>(tokenRequestTimeout.count())) != CURLE_OK)
+        throw makeStringExceptionV(-1, "%s Access token request: Could not set 'CURLOPT_TIMEOUT' option!", COMPONENT_NAME);
+    if (curl_easy_setopt(curlHandle, CURLOPT_WRITEFUNCTION, captureIncomingCURLReply) != CURLE_OK)
+        throw makeStringExceptionV(-1, "%s Access token request: Could not set 'CURLOPT_WRITEFUNCTION' option!", COMPONENT_NAME);
+    if (curl_easy_setopt(curlHandle, CURLOPT_WRITEDATA, static_cast<void *>(&captureBuffer)) != CURLE_OK)
+        throw makeStringExceptionV(-1, "%s Access token request: Could not set 'CURLOPT_WRITEDATA' option!", COMPONENT_NAME);
+    if (curl_easy_setopt(curlHandle, CURLOPT_USERAGENT, "HPCC Systems Log Access client") != CURLE_OK)
+        throw makeStringExceptionV(-1, "%s Access token request: Could not set 'CURLOPT_USERAGENT' option!", COMPONENT_NAME);
+    if (curl_easy_setopt(curlHandle, CURLOPT_FAILONERROR, 0L) != CURLE_OK)
+        throw makeStringExceptionV(-1, "%s Access token request: Could not set 'CURLOPT_FAILONERROR' option!", COMPONENT_NAME);
+
+    CURLcode curlResponseCode = CURLE_OK;
+    try
+    {
+        curlResponseCode = curl_easy_perform(curlHandle);
+    }
+    catch (IException * e)
+    {
+        StringBuffer message;
+        e->errorMessage(message);
+        e->Release();
+        throw makeStringExceptionV(-1, "%s Access token request: CURL execution failed: %s", COMPONENT_NAME, message.str());
+    }
+    catch (const std::exception & e)
+    {
+        throw makeStringExceptionV(-1, "%s Access token request: CURL execution failed: %s", COMPONENT_NAME, e.what());
+    }
+    catch (...)
+    {
+        throw makeStringExceptionV(-1, "%s Access token request: CURL execution failed unexpectedly", COMPONENT_NAME);
+    }
+
+    if (curlResponseCode != CURLE_OK)
+        throw makeStringExceptionV(-1, "%s Access token request: CURL action failed: %s", COMPONENT_NAME, curl_easy_strerror(curlResponseCode));
+
+    if (captureBuffer.length() > 0)
+        response.append(captureBuffer.length(), (const char *)captureBuffer.toByteArray());
+
+    if (curl_easy_getinfo(curlHandle, CURLINFO_RESPONSE_CODE, &httpResponseCode) != CURLE_OK)
+        throw makeStringExceptionV(-1, "%s Access token request: Could not read HTTP response status", COMPONENT_NAME);
+}
+
+// Shared curl POST + JSON response parsing for the AAD token endpoint (v1.0 client-secret and
+// v2.0 client-assertion/workload-identity flows return the same { "access_token": ... } shape).
+static void performOAuthTokenPostRequest(StringBuffer & token, std::chrono::seconds & cacheLifetime, const char * tokenRequestURL, const char * tokenRequestFields, const char * authMethod)
+{
+    OwnedPtrCustomFree<CURL, curl_easy_cleanup> curlHandle = curl_easy_init();
+    if (!curlHandle)
+        throw makeStringExceptionV(-1, "%s Access token request: Could not initialize CURL handle!", COMPONENT_NAME);
+
+    static constexpr size_t initialBufferSize = 32768; // 2^15
+    MemoryBuffer captureBuffer(initialBufferSize);
+
+    if (curl_easy_setopt(curlHandle, CURLOPT_URL, tokenRequestURL) != CURLE_OK)
+        throw makeStringExceptionV(-1, "%s: Access token request: Could not set 'CURLOPT_URL' (%s)!", COMPONENT_NAME,  tokenRequestURL);
+
+    if (curl_easy_setopt(curlHandle, CURLOPT_POST, 1L) != CURLE_OK)
+        throw makeStringExceptionV(-1, "%s Access token request: Could not set 'CURLOPT_POST' option!", COMPONENT_NAME);
+
+    if (curl_easy_setopt(curlHandle, CURLOPT_POSTFIELDS, tokenRequestFields) != CURLE_OK)
+        throw makeStringExceptionV(-1, "%s Access token request: Could not set 'CURLOPT_POSTFIELDS' option!", COMPONENT_NAME);
+
+    StringBuffer tokenReqResponse;
+    long httpResponseCode = 0;
+    executeTokenRequest(tokenReqResponse, httpResponseCode, curlHandle, captureBuffer);
+
+    if (httpResponseCode == 200L)
+    {
+        parseAccessTokenResponse(token, cacheLifetime, tokenReqResponse.str(), authMethod);
+    }
+    else
+    {
+        /*
+            expected error response layout:
+            {
+                "error": "invalid_client",
+                "error_description": "AADSTS7000215: Invalid client secret is provided."
+            }
+        */
+
+        if (tokenReqResponse.isEmpty())
+            tokenReqResponse.set("Unknown error");
+
+        switch (httpResponseCode)
+        {
+        case 400L:
+            throw makeStringExceptionV(-1,"%s Access token request: Error (400): Bad Request - Request is badly formed and failed (permanently): '%s'", COMPONENT_NAME, tokenReqResponse.str());
+        case 401L:
+            throw makeStringExceptionV(-1,"%s Access token request: Error (401): Unauthorized - Client needs to authenticate first: '%s'", COMPONENT_NAME, tokenReqResponse.str());
+        case 403L:
+            throw makeStringExceptionV(-1,"%s Access token request: Error (403): Forbidden - Client request is denied: '%s'", COMPONENT_NAME, tokenReqResponse.str());
+        case 404L:
+            throw makeStringExceptionV(-1,"%s Access token request: Error (404): NotFound - Request references a non-existing entity. Ensure configured tenantID is valid!: '%s'", COMPONENT_NAME, tokenReqResponse.str());
+        case 408L:
+            throw makeStringExceptionV(-1,"%s Access token request: Error (408): Timeout - Request has timed out: '%s'", COMPONENT_NAME, tokenReqResponse.str());
+        case 500L:
+            throw makeStringExceptionV(-1,"%s Access token request: Error (500): Internal Server Error - Azure AD service found an error while processing the request: '%s'", COMPONENT_NAME, tokenReqResponse.str());
+        case 502L:
+        case 503L:
+        case 504L:
+            throw makeStringExceptionV(-1,"%s Access token request: HTTP status %ld: Gateway/Service Unavailable/Timeout - Temporary Azure AD or network issues: '%s'", COMPONENT_NAME, httpResponseCode, tokenReqResponse.str());
+        default:
+            throw makeStringExceptionV(-1,"%s Access token request: HTTP status %ld: '%s'", COMPONENT_NAME, httpResponseCode, tokenReqResponse.str());
+        }
+    }
+}
+
+static void requestLogAnalyticsAccessTokenViaClientSecret(StringBuffer & token, std::chrono::seconds & cacheLifetime, const char * clientID, const char * clientSecret, const char * tenantID)
 {
     if (isEmptyString(clientID))
         throw makeStringExceptionV(-1, "%s Access token request: Azure Active Directory Application clientID is required!", COMPONENT_NAME);
@@ -82,137 +322,155 @@ static void requestLogAnalyticsAccessToken(StringBuffer & token, const char * cl
     if (isEmptyString(clientSecret))
         throw makeStringExceptionV(-1, "%s Access token request: Azure Active Directory Application Secret is required!", COMPONENT_NAME);
 
+    StringBuffer encodedClientID;
+    StringBuffer encodedClientSecret;
+    StringBuffer encodedResource;
+    urlEncode(encodedClientID, clientID);
+    urlEncode(encodedClientSecret, clientSecret);
+    urlEncode(encodedResource, "https://api.loganalytics.io");
+
+    VStringBuffer tokenRequestURL("https://login.microsoftonline.com/%s/oauth2/token", tenantID);
+    VStringBuffer tokenRequestFields("grant_type=client_credentials&resource=%s&client_secret=%s&client_id=%s", encodedResource.str(), encodedClientSecret.str(), encodedClientID.str());
+
+        /*"curl -X POST -d 'grant_type=client_credentials&client_id=<ADApplicationID>&client_secret=<thesecret>&resource=https://api.loganalytics.io'
+           https://login.microsoftonline.com/<tenantID>/oauth2/token
+        "*/
+
+    performOAuthTokenPostRequest(token, cacheLifetime, tokenRequestURL.str(), tokenRequestFields.str(), "client credentials");
+}
+
+// Azure Workload Identity (AKS-injected federated token, exchanged via the v2.0 client-assertion flow).
+static void requestLogAnalyticsAccessTokenViaWorkloadIdentity(StringBuffer & token, std::chrono::seconds & cacheLifetime, const char * clientID, const char * tenantID, const char * federatedTokenFile)
+{
+    if (isEmptyString(clientID))
+        throw makeStringExceptionV(-1, "%s Access token request: %s is required for Workload Identity authentication!", COMPONENT_NAME, envAzureClientID);
+
+    if (isEmptyString(tenantID))
+        throw makeStringExceptionV(-1, "%s Access token request: %s is required for Workload Identity authentication!", COMPONENT_NAME, envAzureTenantID);
+
+    StringBuffer federatedToken;
+    readFederatedTokenFile(federatedToken, federatedTokenFile);
+
+    StringBuffer encodedClientID;
+    StringBuffer encodedClientAssertion;
+    StringBuffer encodedScope;
+    urlEncode(encodedClientID, clientID);
+    urlEncode(encodedClientAssertion, federatedToken.str());
+    urlEncode(encodedScope, "https://api.loganalytics.io/.default");
+
+    VStringBuffer tokenRequestURL("https://login.microsoftonline.com/%s/oauth2/v2.0/token", tenantID);
+    VStringBuffer tokenRequestFields("grant_type=client_credentials&client_id=%s&client_assertion_type=urn:ietf:params:oauth:client-assertion-type:jwt-bearer&client_assertion=%s&scope=%s", encodedClientID.str(), encodedClientAssertion.str(), encodedScope.str());
+
+        /*"curl -X POST -d 'grant_type=client_credentials&client_id=<ADApplicationID>&client_assertion_type=urn:ietf:params:oauth:client-assertion-type:jwt-bearer&client_assertion=<federatedToken>&scope=https://api.loganalytics.io/.default'
+           https://login.microsoftonline.com/<tenantID>/oauth2/v2.0/token
+        "*/
+
+    performOAuthTokenPostRequest(token, cacheLifetime, tokenRequestURL.str(), tokenRequestFields.str(), "Workload Identity");
+}
+
+// The common Azure SDK credential helper cannot be used here because this curl client needs
+// the raw bearer token and supports the endpoint variants used by the log access API.
+// Shared curl GET + JSON response parsing for the various Managed Identity token endpoints
+// (IMDS/App Service/Container Apps all return the same { "access_token": ... } shape, just
+// via different URLs/headers).
+static void performManagedIdentityTokenGetRequest(StringBuffer & token, std::chrono::seconds & cacheLifetime, const char * url, const char * headerName, const char * headerValue)
+{
+    if (strchr(headerValue, '\r') || strchr(headerValue, '\n'))
+        throw makeStringExceptionV(-1, "%s Access token request: Invalid characters in managed identity header value!", COMPONENT_NAME);
+
+    VStringBuffer headerLine("%s: %s", headerName, headerValue);
+    OwnedPtrCustomFree<curl_slist, curl_slist_free_all> headers = curl_slist_append(nullptr, headerLine.str());
+    if (!headers)
+        throw makeStringExceptionV(-1, "%s Access token request: Could not allocate managed identity request headers!", COMPONENT_NAME);
+
     OwnedPtrCustomFree<CURL, curl_easy_cleanup> curlHandle = curl_easy_init();
-    if (curlHandle)
+    if (!curlHandle)
+        throw makeStringExceptionV(-1, "%s Access token request: Could not initialize CURL handle!", COMPONENT_NAME);
+
+    static constexpr size_t initialBufferSize = 32768; // 2^15
+    MemoryBuffer captureBuffer(initialBufferSize);
+
+    if (curl_easy_setopt(curlHandle, CURLOPT_URL, url) != CURLE_OK)
+        throw makeStringExceptionV(-1, "%s: Access token request: Could not set 'CURLOPT_URL' (%s)!", COMPONENT_NAME, url);
+
+    if (curl_easy_setopt(curlHandle, CURLOPT_NOPROXY, "*") != CURLE_OK)
+        throw makeStringExceptionV(-1, "%s Access token request: Could not set 'CURLOPT_NOPROXY' option!", COMPONENT_NAME);
+
+    if (curl_easy_setopt(curlHandle, CURLOPT_HTTPHEADER, headers.get()) != CURLE_OK)
+        throw makeStringExceptionV(-1, "%s Access token request: Could not set 'CURLOPT_HTTPHEADER' option!", COMPONENT_NAME);
+
+    if (curl_easy_setopt(curlHandle, CURLOPT_HTTPGET, 1L) != CURLE_OK)
+        throw makeStringExceptionV(-1, "%s Access token request: Could not set 'CURLOPT_HTTPGET' option!", COMPONENT_NAME);
+
+    StringBuffer tokenReqResponse;
+    long httpResponseCode = 0;
+    executeTokenRequest(tokenReqResponse, httpResponseCode, curlHandle, captureBuffer);
+    if (httpResponseCode != 200L)
+        throw makeStringExceptionV(-1, "%s Access token request: HTTP status %ld: '%s'", COMPONENT_NAME, httpResponseCode, tokenReqResponse.isEmpty() ? "Unknown error" : tokenReqResponse.str());
+
+    parseAccessTokenResponse(token, cacheLifetime, tokenReqResponse.str(), "managed identity");
+}
+
+// Legacy (non-workload) Managed Identity. clientID is only required for a user-assigned
+// identity; leave empty for the system-assigned identity. Three endpoint styles are supported,
+// matching what each hosting environment actually injects:
+//  - IDENTITY_ENDPOINT/IDENTITY_HEADER: Azure Container Apps, newer Functions/App Service.
+//  - MSI_ENDPOINT/MSI_SECRET: legacy Azure App Service/Functions V1 MSI extension.
+//  - Neither set: the fixed Instance Metadata Service address, used by Azure VMs/VMSS and most
+//    AKS system/user-assigned identity scenarios (no environment variables required at all).
+static void requestLogAnalyticsAccessTokenViaManagedIdentity(StringBuffer & token, std::chrono::seconds & cacheLifetime, const char * clientID)
+{
+    const char * identityEndpoint = getenv(envAzureIdentityEndpoint);
+    const char * identityHeader = getenv(envAzureIdentityHeader);
+    const char * msiEndpoint = getenv(envAzureMSIEndpoint);
+    const char * msiSecret = getenv(envAzureMSISecret);
+
+    if (!isEmptyString(identityEndpoint) && isEmptyString(identityHeader))
+        throw makeStringExceptionV(-1, "%s Access token request: %s is set but %s is missing/empty!", COMPONENT_NAME, envAzureIdentityEndpoint, envAzureIdentityHeader);
+    if (!isEmptyString(msiEndpoint) && isEmptyString(msiSecret))
+        throw makeStringExceptionV(-1, "%s Access token request: %s is set but %s is missing/empty!", COMPONENT_NAME, envAzureMSIEndpoint, envAzureMSISecret);
+    StringBuffer tokenRequestURL;
+    // identityHeader/msiSecret are already guaranteed non-empty here whenever
+    // identityEndpoint/msiEndpoint are set, by the paired validation above.
+    if (!isEmptyString(identityEndpoint))
     {
-        CURLcode                curlResponseCode;
-        static constexpr size_t initialBufferSize = 32768; // 2^15
-        MemoryBuffer            captureBuffer(initialBufferSize);
+        tokenRequestURL.appendf("%s?api-version=2019-08-01&resource=https://api.loganalytics.io", identityEndpoint);
+        if (!isEmptyString(clientID))
+        {
+            StringBuffer encodedClientID;
+            urlEncode(encodedClientID, clientID);
+            tokenRequestURL.appendf("&client_id=%s", encodedClientID.str());
+        }
+        performManagedIdentityTokenGetRequest(token, cacheLifetime, tokenRequestURL.str(), "X-IDENTITY-HEADER", identityHeader);
+    }
+    else if (!isEmptyString(msiEndpoint))
+    {
+        tokenRequestURL.appendf("%s?resource=https://api.loganalytics.io&api-version=2017-09-01", msiEndpoint);
+        if (!isEmptyString(clientID))
+        {
+            StringBuffer encodedClientID;
+            urlEncode(encodedClientID, clientID);
+            tokenRequestURL.appendf("&clientid=%s", encodedClientID.str());
+        }
+        performManagedIdentityTokenGetRequest(token, cacheLifetime, tokenRequestURL.str(), "Secret", msiSecret);
+    }
+    else
+    {
+        // 169.254.169.254 is the well-known Azure Instance Metadata Service (IMDS) link-local
+        // address, reachable without any configuration from Azure VMs/VMSS and AKS nodes.
+        tokenRequestURL.append("http://169.254.169.254/metadata/identity/oauth2/token?api-version=2018-02-01&resource=https://api.loganalytics.io");
+        if (!isEmptyString(clientID))
+        {
+            StringBuffer encodedClientID;
+            urlEncode(encodedClientID, clientID);
+            tokenRequestURL.appendf("&client_id=%s", encodedClientID.str());
+        }
 
-        VStringBuffer tokenRequestURL("https://login.microsoftonline.com/%s/oauth2/token", tenantID);
-        VStringBuffer tokenRequestFields("grant_type=client_credentials&resource=https://api.loganalytics.io&client_secret=%s&client_id=%s", clientSecret, clientID);
-
-            /*"curl -X POST -d 'grant_type=client_credentials&client_id=<ADApplicationID>&client_secret=<thesecret>&resource=https://api.loganalytics.io'
-               https://login.microsoftonline.com/<tenantID>/oauth2/token
+            /*"curl -H Metadata:true --noproxy '*'
+               'http://169.254.169.254/metadata/identity/oauth2/token?api-version=2018-02-01&resource=https://api.loganalytics.io'
             "*/
 
-        if (curl_easy_setopt(curlHandle, CURLOPT_URL, tokenRequestURL.str()) != CURLE_OK)
-            throw makeStringExceptionV(-1, "%s: Access token request: Could not set 'CURLOPT_URL' (%s)!", COMPONENT_NAME,  tokenRequestURL.str());
-
-        if (curl_easy_setopt(curlHandle, CURLOPT_POST, 1) != CURLE_OK)
-            throw makeStringExceptionV(-1, "%s Access token request: Could not set 'CURLOPT_POST' option!", COMPONENT_NAME);
-
-        if (curl_easy_setopt(curlHandle, CURLOPT_POSTFIELDS, tokenRequestFields.str()) != CURLE_OK)
-            throw makeStringExceptionV(-1, "%s Access token request: Could not set 'CURLOPT_POSTFIELDS' option!", COMPONENT_NAME);
-
-        if (curl_easy_setopt(curlHandle, CURLOPT_NOPROGRESS, 1) != CURLE_OK)
-            throw makeStringExceptionV(-1, "%s Access token request: Could not disable 'CURLOPT_NOPROGRESS' option!", COMPONENT_NAME);
-
-        if (curl_easy_setopt(curlHandle, CURLOPT_WRITEFUNCTION, captureIncomingCURLReply) != CURLE_OK)
-            throw makeStringExceptionV(-1, "%s Access token request: Could not set 'CURLOPT_WRITEFUNCTION' option!", COMPONENT_NAME);
-
-        if (curl_easy_setopt(curlHandle, CURLOPT_WRITEDATA, static_cast<void*>(&captureBuffer)) != CURLE_OK)
-            throw makeStringExceptionV(-1, "%s Access token request: Could not set 'CURLOPT_WRITEDATA' option!", COMPONENT_NAME);
-
-        if (curl_easy_setopt(curlHandle, CURLOPT_USERAGENT, "HPCC Systems Log Access client") != CURLE_OK)
-            throw makeStringExceptionV(-1, "%s Access token request: Could not set 'CURLOPT_USERAGENT' option!", COMPONENT_NAME);
-
-        if (curl_easy_setopt(curlHandle, CURLOPT_FAILONERROR, 0L) != CURLE_OK) // Do not treat non-ok HTTP codes as an error
-            throw makeStringExceptionV(-1, "%s Access token request: Could not set 'CURLOPT_FAILONERROR' option!", COMPONENT_NAME);
-
-        try
-        {
-            curlResponseCode = curl_easy_perform(curlHandle);
-        }
-        catch (...)
-        {
-            throw makeStringExceptionV(-1, "%s Access token request: Unknown error!", COMPONENT_NAME);
-        }
-
-        StringBuffer tokenReqResponse;
-        if (captureBuffer.length() > 0)
-        {
-            tokenReqResponse.append(captureBuffer.length(), (const char *)captureBuffer.toByteArray());
-        }
-
-        if (curlResponseCode == CURLE_OK) // this is not the same as http success
-        {
-            long httpResponseCode;
-            curl_easy_getinfo(curlHandle, CURLINFO_RESPONSE_CODE, &httpResponseCode);
-
-            if(httpResponseCode == 200L) // HTTP OK
-            {
-                if (!tokenReqResponse.isEmpty())
-                {
-                    try
-                    {
-                        /*Expected response format
-                        {  "ext_expires_in": "3599", "expires_on": "1653408922", "access_token": "XYZ",
-                            "expires_in": "3599", "not_before": "1653405022", "token_type": "Bearer",
-                            "resource": "https://api.loganalytics.io"
-                        }*/
-
-                        Owned<IPropertyTree> tokenResponse = createPTreeFromJSONString(tokenReqResponse.str());
-                        if (tokenResponse->hasProp("access_token"))
-                        {
-                            DBGLOG("%s: Azure Log Analytics API access Bearer token generated! Expires in '%s' ", COMPONENT_NAME, nullText(tokenResponse->queryProp("expires_in")));
-                            token.set(tokenResponse->queryProp("access_token"));
-                        }
-                        else
-                        {
-                            throw makeStringExceptionV(-1, "Received invalid token request response: '%s'",  tokenReqResponse.str());
-                        }
-                    }
-                    catch(const std::exception& e)
-                    {
-                        throw makeStringExceptionV(-1, "%s Could not parse response for Azure Log Analytics API access token request: %s", COMPONENT_NAME, e.what());
-                    }
-                }
-                else
-                {
-                    throw makeStringExceptionV(-1, "%s Access token request: Empty response received! This could indicate a problem with the request or the server", COMPONENT_NAME);
-                }
-            }
-            else
-            {
-                /*
-                    expected error response layout:
-                    {
-                        "error": "invalid_client",
-                        "error_description": "AADSTS7000215: Invalid client secret is provided."
-                    }
-                */
-
-                if (tokenReqResponse.isEmpty())
-                    tokenReqResponse.set("Unknown error");
-
-                switch (httpResponseCode)
-                {
-                    case 400L:
-                        throw makeStringExceptionV(-1,"%s Access token request: Error (400): Bad Request - Request is badly formed and failed (permanently): '%s'", COMPONENT_NAME, tokenReqResponse.str());
-                    case 401L:
-                        throw makeStringExceptionV(-1,"%s Access token request: Error (401): Unauthorized - Client needs to authenticate first: '%s'", COMPONENT_NAME, tokenReqResponse.str());
-                    case 403L:
-                        throw makeStringExceptionV(-1,"%s Access token request: Error (403): Forbidden - Client request is denied: '%s'", COMPONENT_NAME, tokenReqResponse.str());
-                    case 404L:
-                        throw makeStringExceptionV(-1,"%s Access token request: Error (404): NotFound - Request references a non-existing entity. Ensure configured tenantID is valid!: '%s'", COMPONENT_NAME, tokenReqResponse.str());
-                    case 408L:
-                        throw makeStringExceptionV(-1,"%s Access token request: Error (408): Timeout - Request has timed out: '%s'", COMPONENT_NAME, tokenReqResponse.str());
-                    case 500L:
-                        throw makeStringExceptionV(-1,"%s Access token request: Error (500): Internal Server Error - Azure AD service found an error while processing the request: '%s'", COMPONENT_NAME, tokenReqResponse.str());
-                    case 502L:
-                    case 503L:
-                    case 504L:
-                        throw makeStringExceptionV(-1,"%s Access token request: Error (%ld): Gateway/Service Unavailable/Timeout - Temporary Azure AD or network issues: '%s'", COMPONENT_NAME, httpResponseCode, tokenReqResponse.str());
-                    default:
-                        throw makeStringExceptionV(-1,"%s Access token request: Error (%ld): '%s'", COMPONENT_NAME, httpResponseCode, tokenReqResponse.str());
-                }
-            }
-        }
-        else
-        {
-            throw makeStringExceptionV(-1, "%s Access token request: CURL ACTION FAILED! '%s'", COMPONENT_NAME, curl_easy_strerror(curlResponseCode));
-        }
+        performManagedIdentityTokenGetRequest(token, cacheLifetime, tokenRequestURL.str(), "Metadata", "true");
     }
 }
 
@@ -267,13 +525,13 @@ static void submitKQLQuery(std::string & readBuffer, const char * token, const c
         if (curl_easy_setopt(curlHandle, CURLOPT_URL, kqlQueryString.str()) != CURLE_OK)
             throw makeStringExceptionV(-1, "%s: Log query request: Could not set 'CURLOPT_URL' (%s)!", COMPONENT_NAME, kqlQueryString.str());
 
-        if (curl_easy_setopt(curlHandle, CURLOPT_POST, 0) != CURLE_OK)
+        if (curl_easy_setopt(curlHandle, CURLOPT_POST, 0L) != CURLE_OK)
             throw makeStringExceptionV(-1, "%s: Log query request: Could not disable 'CURLOPT_POST' option!", COMPONENT_NAME);
 
-        if (curl_easy_setopt(curlHandle, CURLOPT_HTTPGET, 1) != CURLE_OK)
+        if (curl_easy_setopt(curlHandle, CURLOPT_HTTPGET, 1L) != CURLE_OK)
             throw makeStringExceptionV(-1, "%s: Log query request: Could not set 'CURLOPT_HTTPGET' option!", COMPONENT_NAME);
 
-        if (curl_easy_setopt(curlHandle, CURLOPT_NOPROGRESS, 1) != CURLE_OK)
+        if (curl_easy_setopt(curlHandle, CURLOPT_NOPROGRESS, 1L) != CURLE_OK)
             throw makeStringExceptionV(-1, "%s: Log query request: Could not set 'CURLOPT_NOPROGRESS' option!", COMPONENT_NAME);
 
         if (curl_easy_setopt(curlHandle, CURLOPT_WRITEFUNCTION, stringCallback) != CURLE_OK)
@@ -345,43 +603,91 @@ AzureLogAnalyticsCurlClient::AzureLogAnalyticsCurlClient(IPropertyTree & logAcce
 {
     PROGLOG("%s: Resolving all required configuration values...", COMPONENT_NAME);
 
-    Owned<const IPropertyTree> secretTree = getSecret(azureLogAccessSecretCategory, azureLogAccessSecretName);
-    if (!secretTree)
-        throw makeStringExceptionV(-1, "%s: Could not fetch %s information!", COMPONENT_NAME, azureLogAccessSecretName);
+    // Managed identity (Workload Identity or legacy Managed Identity) must be explicitly opted
+    // into via connection/@managed -- matches the @managed convention already used by
+    // common/remote/hooks/azure/azureblob.cpp and azurefile.cpp. Which kind is then auto-detected
+    // from the environment, same precedence as those hooks' getAzureManagedIdentityCredential().
+    // Unlike Workload Identity, legacy Managed Identity has no hard environment-variable
+    // prerequisite here: on a plain Azure VM/VMSS or most AKS system/user-assigned identity
+    // setups, none of IDENTITY_ENDPOINT/MSI_ENDPOINT are set at all, and the fixed Instance
+    // Metadata Service address is used instead -- see requestLogAnalyticsAccessTokenViaManagedIdentity().
+    // Both managed-identity modes are entirely secret-free: the azure-logaccess k8s secret is
+    // never fetched for them, and the workspace ID must be supplied via connection/@workspaceID.
+    bool useManagedIdentity = logAccessPluginConfig.getPropBool("connection/@managed", false);
+    if (useManagedIdentity)
+        m_authMode = hasWorkloadIdentityEnv() ? AzureLogAccessAuthMode::WorkloadIdentity : AzureLogAccessAuthMode::ManagedIdentity;
 
-    getSecretKeyValue(m_aadTenantID.clear(), secretTree, azureLogAccessSecretAADTenantID);
-    if (m_aadTenantID.isEmpty())
+    Owned<const IPropertyTree> secretTree;
+    if (m_authMode == AzureLogAccessAuthMode::ClientSecret)
     {
-        WARNLOG("%s: Could not find '%s.%s' secret value!", COMPONENT_NAME, azureLogAccessSecretName, azureLogAccessSecretAADTenantID);
-        m_aadTenantID.set(logAccessPluginConfig.queryProp("connection/@tenantID"));
+        secretTree.setown(getSecret(azureLogAccessSecretCategory, azureLogAccessSecretName));
+        if (!secretTree)
+            throw makeStringExceptionV(-1, "%s: Could not fetch %s information!", COMPONENT_NAME, azureLogAccessSecretName);
+    }
+
+    switch (m_authMode)
+    {
+    case AzureLogAccessAuthMode::WorkloadIdentity:
+        m_aadTenantID.set(getenv(envAzureTenantID));
+        m_aadClientID.set(getenv(envAzureClientID));
+        m_workloadIdentityFederatedTokenFile.set(getenv(envAzureFederatedTokenFile));
+        DBGLOG("%s: Using Azure Workload Identity authentication (clientID=%s, tenantID=%s)", COMPONENT_NAME, m_aadClientID.str(), m_aadTenantID.str());
+        break;
+    case AzureLogAccessAuthMode::ManagedIdentity:
+        // clientID is optional here: empty means the system-assigned identity is used.
+        m_aadClientID.set(getenv(envAzureClientID));
+        DBGLOG("%s: Using Azure Managed Identity authentication (clientID=%s)", COMPONENT_NAME, m_aadClientID.isEmpty() ? "<system-assigned>" : m_aadClientID.str());
+        break;
+    default:
+        getSecretKeyValue(m_aadTenantID.clear(), secretTree, azureLogAccessSecretAADTenantID);
         if (m_aadTenantID.isEmpty())
-            throw makeStringExceptionV(-1, "%s: Could not find AAD Tenant ID, provide it as part of '%s.%s' secret, or connection/@tenantID in AzureClient LogAccess configuration!", COMPONENT_NAME, azureLogAccessSecretName, azureLogAccessSecretAADTenantID);
-    }
+        {
+            WARNLOG("%s: Could not find '%s.%s' secret value!", COMPONENT_NAME, azureLogAccessSecretName, azureLogAccessSecretAADTenantID);
+            m_aadTenantID.set(logAccessPluginConfig.queryProp("connection/@tenantID"));
+            if (m_aadTenantID.isEmpty())
+                throw makeStringExceptionV(-1, "%s: Could not find AAD Tenant ID, provide it as part of '%s.%s' secret, or connection/@tenantID in AzureClient LogAccess configuration!", COMPONENT_NAME, azureLogAccessSecretName, azureLogAccessSecretAADTenantID);
+        }
 
-    getSecretKeyValue(m_aadClientID.clear(), secretTree, azureLogAccessSecretAADClientID);
-    if (m_aadClientID.isEmpty())
-    {
-        WARNLOG("%s: Could not find '%s.%s' secret value!", COMPONENT_NAME, azureLogAccessSecretName, azureLogAccessSecretAADClientID);
-        m_aadClientID.set(logAccessPluginConfig.queryProp("connection/@clientID"));
-
+        getSecretKeyValue(m_aadClientID.clear(), secretTree, azureLogAccessSecretAADClientID);
         if (m_aadClientID.isEmpty())
-            throw makeStringExceptionV(-1, "%s: Could not find AAD Client ID, provide it as part of %s.%s secret, or connection/@clientID in AzureClient LogAccess configuration!", COMPONENT_NAME, azureLogAccessSecretName, azureLogAccessSecretAADClientID);
+        {
+            WARNLOG("%s: Could not find '%s.%s' secret value!", COMPONENT_NAME, azureLogAccessSecretName, azureLogAccessSecretAADClientID);
+            m_aadClientID.set(logAccessPluginConfig.queryProp("connection/@clientID"));
+
+            if (m_aadClientID.isEmpty())
+                throw makeStringExceptionV(-1, "%s: Could not find AAD Client ID, provide it as part of %s.%s secret, or connection/@clientID in AzureClient LogAccess configuration!", COMPONENT_NAME, azureLogAccessSecretName, azureLogAccessSecretAADClientID);
+        }
+
+        getSecretKeyValue(m_aadClientSecret.clear(),secretTree, azureLogAccessSecretAADClientSecret);
+        if (m_aadClientSecret.isEmpty())
+        {
+            throw makeStringExceptionV(-1, "%s: Required secret '%s.%s' not found!", COMPONENT_NAME, azureLogAccessSecretName, azureLogAccessSecretAADClientSecret);
+        }
+        break;
     }
 
-    getSecretKeyValue(m_aadClientSecret.clear(),secretTree, azureLogAccessSecretAADClientSecret);
-    if (m_aadClientSecret.isEmpty())
+    // Workspace ID: client-secret mode sources it from the azure-logaccess secret (falling back
+    // to connection/@workspaceID); managed-identity modes (Workload Identity / Managed Identity)
+    // never consult a k8s secret at all -- connection/@workspaceID is the sole, required source,
+    // keeping those modes entirely secret-free.
+    if (m_authMode == AzureLogAccessAuthMode::ClientSecret)
     {
-        throw makeStringExceptionV(-1, "%s: Required secret '%s.%s' not found!", COMPONENT_NAME, azureLogAccessSecretName, azureLogAccessSecretAADClientSecret);
-    }
-
-    getSecretKeyValue(m_logAnalyticsWorkspaceID.clear(), secretTree, azureLogAccessSecretWorkspaceID);
-    if (m_logAnalyticsWorkspaceID.isEmpty())
-    {
-        WARNLOG("%s: Could not find '%s.%s' secret value!", COMPONENT_NAME, azureLogAccessSecretName, azureLogAccessSecretWorkspaceID);
-        m_logAnalyticsWorkspaceID.set(logAccessPluginConfig.queryProp("connection/@workspaceID"));
-
+        if (secretTree)
+            getSecretKeyValue(m_logAnalyticsWorkspaceID.clear(), secretTree, azureLogAccessSecretWorkspaceID);
         if (m_logAnalyticsWorkspaceID.isEmpty())
-            throw makeStringExceptionV(-1, "%s: Could not find ALA Workspace ID, provide it as part of %s.%s secret, or connection/@workspaceID in AzureClient LogAccess configuration!", COMPONENT_NAME, azureLogAccessSecretName, azureLogAccessSecretWorkspaceID);
+        {
+            WARNLOG("%s: Could not find '%s.%s' secret value!", COMPONENT_NAME, azureLogAccessSecretName, azureLogAccessSecretWorkspaceID);
+            m_logAnalyticsWorkspaceID.set(logAccessPluginConfig.queryProp("connection/@workspaceID"));
+
+            if (m_logAnalyticsWorkspaceID.isEmpty())
+                throw makeStringExceptionV(-1, "%s: Could not find ALA Workspace ID, provide it as part of %s.%s secret, or connection/@workspaceID in AzureClient LogAccess configuration!", COMPONENT_NAME, azureLogAccessSecretName, azureLogAccessSecretWorkspaceID);
+        }
+    }
+    else
+    {
+        m_logAnalyticsWorkspaceID.set(logAccessPluginConfig.queryProp("connection/@workspaceID"));
+        if (m_logAnalyticsWorkspaceID.isEmpty())
+            throw makeStringExceptionV(-1, "%s: Could not find ALA Workspace ID, provide it as connection/@workspaceID in AzureClient LogAccess configuration (required when connection/@managed is set)!", COMPONENT_NAME);
     }
 
     m_pluginCfg.set(&logAccessPluginConfig);
@@ -519,6 +825,84 @@ AzureLogAnalyticsCurlClient::AzureLogAnalyticsCurlClient(IPropertyTree & logAcce
         {
             ERRLOG("Encountered invalid LogAccess field map type: '%s'", logMapType);
         }
+    }
+}
+
+bool AzureLogAnalyticsCurlClient::tryGetCachedAccessToken(StringBuffer & token) const
+{
+    CriticalBlock block(m_accessTokenCS);
+    const auto now = std::chrono::steady_clock::now();
+    if (!m_cachedAccessToken.isEmpty() && now < m_accessTokenExpires)
+    {
+        token.set(m_cachedAccessToken);
+        return true;
+    }
+    return false;
+}
+
+void AzureLogAnalyticsCurlClient::checkAuthFailureCooldown() const
+{
+    CriticalBlock block(m_authFailureCS);
+    const auto now = std::chrono::steady_clock::now();
+    if (!m_cachedAuthFailure.isEmpty() && now < m_authFailureUntil)
+        throw makeStringExceptionV(-1, "%s: Token request is temporarily suppressed after a recent authentication failure: %s", COMPONENT_NAME, m_cachedAuthFailure.str());
+}
+
+void AzureLogAnalyticsCurlClient::requestAccessToken(StringBuffer & token) const
+{
+    if (tryGetCachedAccessToken(token))
+        return;
+
+    checkAuthFailureCooldown();
+
+    CriticalBlock refreshBlock(m_accessTokenRefreshCS);
+
+    // Another caller may have refreshed the token while this caller waited for the refresh lock.
+    if (tryGetCachedAccessToken(token))
+        return;
+
+    checkAuthFailureCooldown();
+
+    StringBuffer requestedToken;
+    std::chrono::seconds requestedTokenLifetime;
+    try
+    {
+        switch (m_authMode)
+        {
+        case AzureLogAccessAuthMode::WorkloadIdentity:
+            requestLogAnalyticsAccessTokenViaWorkloadIdentity(requestedToken, requestedTokenLifetime, m_aadClientID, m_aadTenantID, m_workloadIdentityFederatedTokenFile);
+            break;
+        case AzureLogAccessAuthMode::ManagedIdentity:
+            requestLogAnalyticsAccessTokenViaManagedIdentity(requestedToken, requestedTokenLifetime, m_aadClientID);
+            break;
+        default:
+            requestLogAnalyticsAccessTokenViaClientSecret(requestedToken, requestedTokenLifetime, m_aadClientID, m_aadClientSecret, m_aadTenantID);
+            break;
+        }
+    }
+    catch (IException * e)
+    {
+        StringBuffer message;
+        e->errorMessage(message);
+        e->Release();
+        {
+            CriticalBlock block(m_authFailureCS);
+            m_cachedAuthFailure.set(message.str());
+            m_authFailureUntil = std::chrono::steady_clock::now() + authFailureCooldown;
+        }
+        throw makeStringExceptionV(-1, "%s", message.str());
+    }
+
+    {
+        CriticalBlock block(m_accessTokenCS);
+        m_cachedAccessToken.set(requestedToken.str());
+        m_accessTokenExpires = std::chrono::steady_clock::now() + requestedTokenLifetime;
+        token.set(requestedToken);
+    }
+
+    {
+        CriticalBlock block(m_authFailureCS);
+        m_cachedAuthFailure.clear();
     }
 }
 
@@ -1149,7 +1533,7 @@ void AzureLogAnalyticsCurlClient::healthReport(LogAccessHealthReportOptions opti
         else
         {
             status.escalateStatusCode(LOGACCESS_STATUS_fail);
-            status.appendMessage("ALA Plug-in Configuration tree is empty!!!");
+            status.appendMessage("ALA Plug-in Configuration tree is empty");
         }
 
         report.Configuration.set(configuration.str()); //empty if !(options.IncludeConfiguration)
@@ -1160,22 +1544,43 @@ void AzureLogAnalyticsCurlClient::healthReport(LogAccessHealthReportOptions opti
             status.escalateStatusCode(LOGACCESS_STATUS_fail);
         }
 
-        if (m_aadTenantID.length() == 0)
+        // Tenant/client/secret requirements differ by auth mode: Workload Identity needs
+        // tenant+client (from the environment), legacy Managed Identity needs neither
+        // (client is optional, tenant-agnostic IMDS call), client-secret needs all three.
+        if (m_authMode != AzureLogAccessAuthMode::ManagedIdentity && m_aadTenantID.length() == 0)
         {
             status.appendMessage("Target Azure Tenant ID is empty!");
             status.escalateStatusCode(LOGACCESS_STATUS_fail);
         }
 
-        if (m_aadClientID.length() == 0)
+        switch (m_authMode)
         {
-            status.appendMessage("Target Azure Log Analytics Client Application ID is empty!");
-            status.escalateStatusCode(LOGACCESS_STATUS_fail);
-        }
-
-        if (m_aadClientSecret.length()==0)
-        {
-            status.appendMessage("Target Azure Log Analytics Client Secret is empty!");
-            status.escalateStatusCode(LOGACCESS_STATUS_fail);
+        case AzureLogAccessAuthMode::WorkloadIdentity:
+            if (m_aadClientID.length() == 0)
+            {
+                status.appendMessage("Target Azure Workload Identity Client Application ID is empty!");
+                status.escalateStatusCode(LOGACCESS_STATUS_fail);
+            }
+            if (m_workloadIdentityFederatedTokenFile.length() == 0)
+            {
+                status.appendMessage("Target Azure Workload Identity federated token file is empty!");
+                status.escalateStatusCode(LOGACCESS_STATUS_fail);
+            }
+            break;
+        case AzureLogAccessAuthMode::ClientSecret:
+            if (m_aadClientID.length() == 0)
+            {
+                status.appendMessage("Target Azure Log Analytics Client Application ID is empty!");
+                status.escalateStatusCode(LOGACCESS_STATUS_fail);
+            }
+            if (m_aadClientSecret.length() == 0)
+            {
+                status.appendMessage("Target Azure Log Analytics Client Secret is empty!");
+                status.escalateStatusCode(LOGACCESS_STATUS_fail);
+            }
+            break;
+        case AzureLogAccessAuthMode::ManagedIdentity:
+            break;
         }
 
         if (!m_disableComponentNameJoins)
@@ -1200,16 +1605,21 @@ void AzureLogAnalyticsCurlClient::healthReport(LogAccessHealthReportOptions opti
             StringBuffer debugReport;
             debugReport.set("{");
             debugReport.append("\"ConnectionInfo\": {");
+            const char * authModeStr = (m_authMode == AzureLogAccessAuthMode::WorkloadIdentity) ? "WorkloadIdentity" :
+                                        (m_authMode == AzureLogAccessAuthMode::ManagedIdentity) ? "ManagedIdentity" : "ClientSecret";
+            appendJSONStringValue(debugReport, "AuthMode", authModeStr, true);
             appendJSONStringValue(debugReport, "TargetALAWorkspaceID", m_logAnalyticsWorkspaceID.str(), true);
             appendJSONStringValue(debugReport, "TargetALATenantID", m_aadTenantID.str(), true);
             appendJSONStringValue(debugReport, "TargetALAClientID", m_aadClientID.str(), true);
-            debugReport.appendf(", \"TargetALASecret\": \"");
-            if (m_aadClientSecret.isEmpty())
-                debugReport.append("<EMPTY>");
-            else
-                maskSecret(debugReport, m_aadClientSecret, 80, false);
-
-            debugReport.append("\"");
+            if (m_authMode == AzureLogAccessAuthMode::ClientSecret)
+            {
+                debugReport.appendf(", \"TargetALASecret\": \"");
+                if (m_aadClientSecret.isEmpty())
+                    debugReport.append("<EMPTY>");
+                else
+                    maskSecret(debugReport, m_aadClientSecret, 80, false);
+                debugReport.append("\"");
+            }
 
             appendJSONValue(debugReport, "TargetsContainerLogV2", targetIsContainerLogV2 ? true : false);
             appendJSONValue(debugReport, "ComponentsJoinedQueryEnabled", m_disableComponentNameJoins ? false : true);
@@ -1279,7 +1689,7 @@ void AzureLogAnalyticsCurlClient::healthReport(LogAccessHealthReportOptions opti
             try
             {
                 StringBuffer token;
-                requestLogAnalyticsAccessToken(token, m_aadClientID, m_aadClientSecret, m_aadTenantID); //throws if issues encountered
+                requestAccessToken(token); //throws if issues encountered
 
                 appendJSONStringValue(sampleQueryReport, "Result", token.isEmpty() ? "Error - Empty token received" : "Success", true);
             }
@@ -1382,7 +1792,7 @@ void AzureLogAnalyticsCurlClient::healthReport(LogAccessHealthReportOptions opti
 bool AzureLogAnalyticsCurlClient::fetchLog(LogQueryResultDetails & resultDetails, const LogAccessConditions & options, StringBuffer & returnbuf, LogAccessLogFormat format)
 {
     StringBuffer token;
-    requestLogAnalyticsAccessToken(token, m_aadClientID, m_aadClientSecret, m_aadTenantID); //throws if issues encountered
+    requestAccessToken(token); //throws if issues encountered
 
     if (token.isEmpty())
         throw makeStringExceptionV(-1, "%s Could not fetch valid Azure Log Analytics access token!", COMPONENT_NAME);

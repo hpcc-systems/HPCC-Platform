@@ -26,8 +26,7 @@ permissions:
 jobs:
   build:
     name: "Check helm chart lint"
-    runs-on: ubuntu-latest
-    if: ${{ github.repository == 'hpcc-systems/HPCC-Platform' }}
+    runs-on: ubuntu-slim
     steps:
       - uses: actions/checkout@v6
         with:
@@ -39,7 +38,7 @@ jobs:
         id: install
       - name: Install additional tools
         working-directory: .
-        run: wget https://github.com/zegl/kube-score/releases/download/v1.8.1/kube-score_1.8.1_linux_amd64 && sudo mv kube-score_1.8.1_linux_amd64 /usr/bin/kube-score && sudo chmod +x /usr/bin/kube-score
+        run: wget https://github.com/zegl/kube-score/releases/download/v1.20.0/kube-score_1.20.0_linux_amd64 && sudo mv kube-score_1.20.0_linux_amd64 /usr/bin/kube-score && sudo chmod +x /usr/bin/kube-score
       - name: Validate Helm Templates
         working-directory: ./testing/helm
         run: ./run.sh

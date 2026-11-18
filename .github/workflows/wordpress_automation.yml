@@ -17,7 +17,7 @@ permissions:
 
 jobs:
   generate-asset-manifest:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     steps:
 
       # Look into checking out only HPCC-Platform/build_utils/builds_file_transfer directory

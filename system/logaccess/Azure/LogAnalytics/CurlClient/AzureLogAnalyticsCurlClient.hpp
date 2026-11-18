@@ -21,13 +21,25 @@
 #include "jlog.ipp"
 #include "jptree.hpp"
 #include "jstring.hpp"
+#include "jmutex.hpp"
 #include <ctime>
+#include <chrono>
 #include "jsecrets.hpp"
 
 #define COMPONENT_NAME "AzureLogAnalyticsCurlClient"
 
 static constexpr int defaultEntryLimit = 100;
 static constexpr int defaultEntryStart = 0;
+
+// Authentication mode is auto-detected once at construction, in priority order matching
+// common/remote/hooks/azure/azureapiutils.cpp's getAzureManagedIdentityCredential(): Workload
+// Identity (AKS-injected federated token), then legacy Managed Identity (IMDS), else client secret.
+enum class AzureLogAccessAuthMode
+{
+    ClientSecret,
+    WorkloadIdentity,
+    ManagedIdentity
+};
 
 class AzureLogAnalyticsCurlClient : public CInterfaceOf<IRemoteLogAccess>
 {
@@ -72,12 +84,28 @@ private:
     StringBuffer m_aadTenantID;
     StringBuffer m_aadClientID;
     StringBuffer m_aadClientSecret;
+    StringBuffer m_workloadIdentityFederatedTokenFile;
+
+    AzureLogAccessAuthMode m_authMode = AzureLogAccessAuthMode::ClientSecret;
+    mutable CriticalSection m_accessTokenCS{SYNC_LOCATION};
+    mutable CriticalSection m_accessTokenRefreshCS{SYNC_LOCATION};
+    mutable CriticalSection m_authFailureCS{SYNC_LOCATION};
+    mutable StringBuffer m_cachedAccessToken;
+    mutable std::chrono::steady_clock::time_point m_accessTokenExpires;
+    mutable StringBuffer m_cachedAuthFailure;
+    mutable std::chrono::steady_clock::time_point m_authFailureUntil;
 
     StringBuffer m_componentsLookupKeyColumn;
     StringBuffer m_instanceLookupKeyColumn;
 
     bool targetIsContainerLogV2 = false;
     bool m_blobMode = false;
+
+    // Returns true (and sets token) if a cached, unexpired access token is available.
+    bool tryGetCachedAccessToken(StringBuffer & token) const;
+    // Throws if a recent authentication failure is still within its cooldown window.
+    void checkAuthFailureCooldown() const;
+    void requestAccessToken(StringBuffer & token) const;
 
 public:
     AzureLogAnalyticsCurlClient(IPropertyTree & logAccessPluginConfig);
