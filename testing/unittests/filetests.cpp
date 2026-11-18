@@ -76,26 +76,28 @@ bool createTestBufferedOutputStream(Shared<IBufferedSerialOutputStream> & output
     return createBufferedOutputStream(outputStream, outputfileio, outputFile, providerOptions);
 }
 
-class JlibFileTest : public CppUnit::TestFixture
+class JlibFileTestBase : public CppUnit::TestFixture
 {
-public:
-    CPPUNIT_TEST_SUITE(JlibFileTest);
-        CPPUNIT_TEST(testCompressed);
-        CPPUNIT_TEST(testAppendCompressed);
-        CPPUNIT_TEST(testCompressWrite);
-        CPPUNIT_TEST(cleanup);
-    CPPUNIT_TEST_SUITE_END();
+    const size_t recordCount;
+    const size32_t compressorBlockSize;
+    const offset_t compressWriteSize;
 
+protected:
+    JlibFileTestBase(size_t _recordCount, size32_t _compressorBlockSize, offset_t _compressWriteSize)
+        : recordCount(_recordCount), compressorBlockSize(_compressorBlockSize), compressWriteSize(_compressWriteSize)
+    {
+    }
+
+public:
     static constexpr const char * testFilename = "unittests_compressfile";
     void createCompressed()
     {
         Owned<IFile> file(createIFile(testFilename));
-        Owned<IFileIO> io(createCompressedFileWriter(file, false, false, nullptr, COMPRESS_METHOD_LZ4, 0, -1, IFEnone));
+        Owned<IFileIO> io(createCompressedFileWriter(file, false, false, nullptr, COMPRESS_METHOD_LZ4, compressorBlockSize, -1, IFEnone));
 
-        constexpr size_t cnt = 10000;
         constexpr size_t size = 1000;
         offset_t pos = 0;
-        for (unsigned i = 0; i < cnt; i++)
+        for (unsigned i = 0; i < recordCount; i++)
         {
             byte temp[size];
 
@@ -116,13 +118,12 @@ public:
     {
         Owned<IFile> file(createIFile(testFilename));
 
-        constexpr size_t cnt = 10000;
         constexpr size_t size = 1000;
         offset_t pos = 0;
-        for (unsigned i = 0; i < cnt; i++)
+        for (unsigned i = 0; i < recordCount; i++)
         {
             bool append = (i != 0);
-            Owned<IFileIO> io(createCompressedFileWriter(file, append, false, nullptr, COMPRESS_METHOD_LZ4, 0, -1, IFEnone));
+            Owned<IFileIO> io(createCompressedFileWriter(file, append, false, nullptr, COMPRESS_METHOD_LZ4, compressorBlockSize, -1, IFEnone));
 
             byte temp[size];
 
@@ -148,10 +149,9 @@ public:
             Owned<IFile> file(createIFile(testFilename));
             Owned<IFileIO> io(createCompressedFileReader(file, nullptr, useDefaultIoBufferSize, false, IFEnone));
 
-            constexpr size_t cnt = 10000;
             constexpr size_t size = 1000;
             offset_t pos = 0;
-            for (unsigned i = 0; i < cnt; i++)
+            for (unsigned i = 0; i < recordCount; i++)
             {
                 byte temp[size];
 
@@ -200,34 +200,35 @@ public:
     }
     void testCompressed()
     {
+        const size32_t corruptionSize = compressorBlockSize ? compressorBlockSize : sizeof(zeros);
         createCompressed();
         readCompressed(false);
         readCompressed(false, 0x400000);
 
         // patch the file with zeroes in various places, retest
 
-        write(0, sizeof(zeros), (void *)zeros);
+        write(0, corruptionSize, (void *)zeros);
         readCompressed(true);
 
         createCompressed();
-        write(0x10000, sizeof(zeros), (void *)zeros);
+        write(0x10000, corruptionSize, (void *)zeros);
         readCompressed(true);
 
         createCompressed();
-        write(0x9000, sizeof(zeros), (void *)zeros);
+        write(0x9000, corruptionSize, (void *)zeros);
         readCompressed(true);
 
         //Test the second block being corrupted with zeros
         size32_t firstBlockSize = 0;
         createCompressed();
         read(4, sizeof(firstBlockSize), &firstBlockSize);
-        write(8+firstBlockSize, sizeof(zeros), (void *)zeros);
+        write(8+firstBlockSize, corruptionSize, (void *)zeros);
         readCompressed(true);
 
         //Test the data after the second block being corrupted with zeros
         createCompressed();
         read(4, sizeof(firstBlockSize), &firstBlockSize);
-        write(8+4+firstBlockSize, sizeof(zeros), (void *)zeros);
+        write(8+4+firstBlockSize, corruptionSize, (void *)zeros);
         readCompressed(true);
 
         //Test the second block being corrupted to an invalid size
@@ -285,11 +286,11 @@ public:
     void testCompressWrite()
     {
         const char * sampleSrc = "/home/gavin/dev/hpcc/testing/regress/download/pge0112.txt";
-        testCompressWrite(sampleSrc, 0x10000000, COMPRESS_METHOD_LZ4);
-        testCompressWrite(sampleSrc, 0x10000000, COMPRESS_METHOD_LZ4HC3);
-        testCompressWrite(sampleSrc, 0x10000000, COMPRESS_METHOD_LZW);
-        testCompressWrite(sampleSrc, 0x10000000, COMPRESS_METHOD_ZSTDS);
-        testCompressWrite(sampleSrc, 0x10000000, COMPRESS_METHOD_ZSTD);
+        testCompressWrite(sampleSrc, compressWriteSize, COMPRESS_METHOD_LZ4);
+        testCompressWrite(sampleSrc, compressWriteSize, COMPRESS_METHOD_LZ4HC3);
+        testCompressWrite(sampleSrc, compressWriteSize, COMPRESS_METHOD_LZW);
+        testCompressWrite(sampleSrc, compressWriteSize, COMPRESS_METHOD_ZSTDS);
+        testCompressWrite(sampleSrc, compressWriteSize, COMPRESS_METHOD_ZSTD);
     }
 
     void cleanup()
@@ -299,8 +300,42 @@ public:
     }
 };
 
+// Smaller blocks retain multi-block corruption coverage without large padded append files.
+class JlibFileTest : public JlibFileTestBase
+{
+public:
+    JlibFileTest() : JlibFileTestBase(1000, 0x10000, 0x100000)
+    {
+    }
+
+    CPPUNIT_TEST_SUITE(JlibFileTest);
+        CPPUNIT_TEST(testCompressed);
+        CPPUNIT_TEST(testAppendCompressed);
+        CPPUNIT_TEST(testCompressWrite);
+        CPPUNIT_TEST(cleanup);
+    CPPUNIT_TEST_SUITE_END();
+};
+
 CPPUNIT_TEST_SUITE_REGISTRATION( JlibFileTest );
 CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( JlibFileTest, "JlibFileTest" );
+
+class JlibFileStressTest : public JlibFileTestBase
+{
+public:
+    JlibFileStressTest() : JlibFileTestBase(10000, 0, 0x10000000)
+    {
+    }
+
+    CPPUNIT_TEST_SUITE(JlibFileStressTest);
+        CPPUNIT_TEST(testCompressed);
+        CPPUNIT_TEST(testAppendCompressed);
+        CPPUNIT_TEST(testCompressWrite);
+        CPPUNIT_TEST(cleanup);
+    CPPUNIT_TEST_SUITE_END();
+};
+
+CPPUNIT_TEST_SUITE_REGISTRATION( JlibFileStressTest );
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( JlibFileStressTest, "JlibFileStressTest" );
 
 #ifndef _WIN32
 class JlibWriteSyncCacheTest : public CppUnit::TestFixture
@@ -861,10 +896,10 @@ CPPUNIT_TEST_SUITE_REGISTRATION( JlibStreamTest );
 CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( JlibStreamTest, "JlibStreamTest" );
 
 
-class JlibFileStressTest : public CppUnit::TestFixture
+class JlibFileSeekStressTest : public CppUnit::TestFixture
 {
 public:
-    CPPUNIT_TEST_SUITE(JlibFileStressTest);
+    CPPUNIT_TEST_SUITE(JlibFileSeekStressTest);
         CPPUNIT_TEST(testUncompressedSeeks);
         CPPUNIT_TEST(testCompressedSeeks);
         CPPUNIT_TEST(cleanup);
@@ -983,8 +1018,8 @@ public:
     }
 };
 
-CPPUNIT_TEST_SUITE_REGISTRATION( JlibFileStressTest );
-CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( JlibFileStressTest, "JlibFileStressTest" );
+CPPUNIT_TEST_SUITE_REGISTRATION( JlibFileSeekStressTest );
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( JlibFileSeekStressTest, "JlibFileSeekStressTest" );
 
 
 // Fill a block with deterministic content that achieves a realistic compression ratio (~50%).
