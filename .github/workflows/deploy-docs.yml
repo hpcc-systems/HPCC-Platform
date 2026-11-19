@@ -31,6 +31,11 @@ jobs:
       - run: npm ci
       - run: npm run build
 
+      - name: Copy CLOD viewer
+        run: |
+          mkdir -p ./devdoc/.vitepress/dist/reports/clod
+          cp ./reports/clod/index.html ./devdoc/.vitepress/dist/reports/clod/index.html
+
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
         with:
