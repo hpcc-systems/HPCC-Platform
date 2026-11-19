@@ -4,4 +4,10 @@ ARG BASE_IMAGE
 FROM ${BASE_IMAGE}
 
 USER root
-RUN apk add --no-cache coreutils "syft~1" patchelf nfpm
+RUN apk upgrade --no-cache \
+    && apk add --no-cache coreutils "syft~1" patchelf nfpm \
+    && if [ -n "${HPCC_SYSROOT:-}" ]; then \
+        fixed="$(gcc -print-file-name=include-fixed)" \
+        && find "${fixed}" -mindepth 1 ! -type d ! -name limits.h ! -name syslimits.h ! -name README -delete \
+        && find "${fixed}" -mindepth 1 -type d -empty -delete; \
+    fi

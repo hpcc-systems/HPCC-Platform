@@ -40,12 +40,14 @@ if [[ -z "${IMAGE}" ]]; then
     [[ "${CHAINGUARD_NO_PULL:-0}" == 1 ]] && PULL_ARGS=(--no-pull)
     "${SCRIPT_DIR}/create-build-image.sh" --glibc "${GLIBC}" --gcc "${GCC}" \
         --arch "${BUILDER_ARCH}" --tag-prefix "${IMAGE_PREFIX}" ${PULL_ARGS[@]+"${PULL_ARGS[@]}"} >&2
+elif [[ "${CHAINGUARD_NO_PULL:-0}" == 0 ]]; then
+    container_pull "${CONTAINER_PLATFORM}" "${IMAGE}" >&2
 fi
 PACKAGING_ARGS=()
 if [[ "${CHAINGUARD_PACKAGING:-0}" == 1 ]]; then
     PACKAGING_ARGS=(--privileged)
     PACKAGER_IMAGE="hpcc-chainguard-packager:${BUILDER_ARCH}"
-    container_build --platform "${CONTAINER_PLATFORM}" --build-arg BASE_IMAGE="${IMAGE}" \
+    container_build --no-cache --platform "${CONTAINER_PLATFORM}" --build-arg BASE_IMAGE="${IMAGE}" \
         -f "${SCRIPT_DIR}/containers/Dockerfile.packager" -t "${PACKAGER_IMAGE}" "${SCRIPT_DIR}/containers" >&2
     IMAGE="${PACKAGER_IMAGE}"
 fi
