@@ -2610,7 +2610,7 @@ public:
         }
     }
 
-    // Returns true if all resources are correctly added, otherwise returns false.
+    // Returns true if all resources exist after the call (newly added or already present), otherwise returns false.
     virtual bool addResources(SecResourceType rtype, ISecUser& user, IArrayOf<ISecResource>& resources, SecPermissionType ptype, const char* basedn)
     {
         bool ret = true;
@@ -6371,8 +6371,8 @@ private:
                 //WARNLOG("Can't insert %s to Ldap Server, an LDAP object with this name already exists", resourcename);
                 if(lessException)
                 {
-                    DBGLOG("CLdapClient::addResource Can't add resource '%s', an LDAP object with this name already exists", resourcename);
-                    return false;
+                    //Adding is idempotent on name: the existing resource (description, ACL) is left untouched
+                    return true;
                 }
                 else
                     throw MakeStringException(-1, "Can't insert %s, an LDAP object with this name already exists", resourcename);

@@ -2007,7 +2007,14 @@ bool Cws_accessEx::onResourceAdd(IEspContext &context, IEspResourceAddRequest &r
 
             ISecResource* r = rlist->addResource(namebuf.str());
             r->setDescription(req.getDescription());
-            secmgr->addResourcesEx(rtype, *usr, rlist, PT_ADMINISTRATORS_ONLY, basednReq->getBasedn());
+            if (!secmgr->addResourcesEx(rtype, *usr, rlist, PT_ADMINISTRATORS_ONLY, basednReq->getBasedn()))
+            {
+                resp.setRetcode(-1);
+                StringBuffer errmsg;
+                errmsg.append(basednReq->getRtitle()).append(" '").append(namebuf).append("' could not be created, the name may be invalid");
+                resp.setRetmsg(errmsg.str());
+                return false;
+            }
 
             if(str2type(basednReq->getRtype()) == RT_FILE_SCOPE && newResources.ordinality())
             {
