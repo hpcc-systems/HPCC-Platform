@@ -781,6 +781,18 @@ readinessProbe:
 
 
 {{/*
+Build the preStop command prefix that withdraws readiness before shutdown.
+*/}}
+{{- define "hpcc.preStopShutdownCommand" -}}
+{{- $delaySeconds := int .root.Values.global.preStopShutdownDelaySeconds -}}
+{{- if lt $delaySeconds 0 -}}
+{{- fail "global.preStopShutdownDelaySeconds must not be negative" -}}
+{{- end -}}
+if [ -n "${SENTINEL:-}" ]; then rm -f "$SENTINEL" "$SENTINEL.ready" || exit $?; sleep {{ $delaySeconds }}; fi
+{{- end -}}
+
+
+{{/*
 Generate vault info
 */}}
 {{- define "hpcc.generateVaultConfig" -}}
@@ -1675,7 +1687,7 @@ Pass in dict with root, me, lifeCycleCtx and dali if container in dali pod
 {{- $env := concat (.root.Values.global.env | default list) (.env | default list) }}
 - name: {{ $serviceName | quote }}
   workingDir: /var/lib/HPCCSystems
-{{- include "hpcc.addCommandAndLifecycle" (merge (pick . "root" "lifeCycleCtx") (dict "me" (.me | merge (dict "name" $serviceName))) (dict "process" "saserver" "extraArgs" (list (printf "--service=%s" .me.name)) "component" "Sasha" "optional" false "overrideConfigName" $serviceName "overrideDaliHost" $overrideDaliHost "overrideDaliPort" $overrideDaliPort)) | nindent 2 }}
+{{- include "hpcc.addCommandAndLifecycle" (merge (pick . "root" "lifeCycleCtx") (dict "me" (.me | merge (dict "name" $serviceName))) (dict "process" "saserver" "extraArgs" (list (printf "--service=%s" .me.name)) "component" "Sasha" "optional" false "sentinelWithdrawal" true "overrideConfigName" $serviceName "overrideDaliHost" $overrideDaliHost "overrideDaliPort" $overrideDaliPort)) | nindent 2 }}
 {{- include "hpcc.addResources" (dict "me" .me.resources "root" .root) | indent 2 }}
 {{- include "hpcc.addSecurityContext" . | indent 2 }}
   env:
@@ -2063,19 +2075,22 @@ Pass in root, me and process
 {{- define "hpcc.addCommandAndLifecycle" -}}
 {{- $misc := .root.Values.global.misc | default dict -}}
 {{- $postJobCommand := (.isJob | default false) | ternary $misc.postJobCommand "" -}}
+{{- $preStopCommand := "k8s_postjob_clearup.sh" -}}
+{{- if .sentinelWithdrawal -}}
+ {{- $preStopCommand = printf "%s; %s" (include "hpcc.preStopShutdownCommand" .) $preStopCommand -}}
+{{- end -}}
+{{- if $misc.postJobCommandViaSidecar -}}
+ {{- $preStopCommand = printf "%s; touch /wait-and-run/%s.jobdone" $preStopCommand .me.name -}}
+{{- else if $postJobCommand -}}
+ {{- $preStopCommand = printf "%s; %s" $preStopCommand $postJobCommand -}}
+{{- end -}}
 lifecycle:
   preStop:
     exec:
       command:
       - "/bin/bash"
       - "-c"
-      - >-
-          k8s_postjob_clearup.sh
-{{- if $misc.postJobCommandViaSidecar }} ;
-          touch /wait-and-run/{{ .me.name }}.jobdone
-{{- else if $postJobCommand }} ;
-          {{ $postJobCommand }}
-{{- end -}}
+      - {{ $preStopCommand | quote }}
 {{- $meExpert := .me.expert | default dict -}}
 {{- $globalExpert := .root.Values.global.expert | default dict -}}
 {{- $containerName := .containerName | default .me.name -}}

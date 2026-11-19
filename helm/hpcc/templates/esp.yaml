@@ -160,7 +160,7 @@ spec:
         workingDir: /var/lib/HPCCSystems
 {{- $optional := (has $application (list "esdl" "ldapenvironment" "loggingservice")) -}}
 {{- $extraArgs := list (printf "--application=%s" $application) -}}
-{{- include "hpcc.addCommandAndLifecycle" ($commonCtx | merge (dict "process" "esp" "extraArgs" $extraArgs "component" $application "optional" $optional)) | nindent 8 }}
+{{- include "hpcc.addCommandAndLifecycle" ($commonCtx | merge (dict "process" "esp" "extraArgs" $extraArgs "component" $application "optional" $optional "sentinelWithdrawal" true)) | nindent 8 }}
         env:
 {{ include "hpcc.mergeEnvironments" (dict "env" $env "defaultArenas" 4) | indent 8 -}}
         - name: "SENTINEL"

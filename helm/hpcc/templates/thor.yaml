@@ -406,7 +406,7 @@ spec:
       - name: {{ $commonCtx.eclAgentName | quote }}
         workingDir: /var/lib/HPCCSystems
 {{- $extraArgs := list (printf "--name=%s" .name) -}}
-{{- include "hpcc.addCommandAndLifecycle" ($commonCtx | merge (dict "process" "agentexec" "extraArgs" $extraArgs "component" "Thor ECL Agent" "optional" false)) | nindent 8 }}
+{{- include "hpcc.addCommandAndLifecycle" ($commonCtx | merge (dict "process" "agentexec" "extraArgs" $extraArgs "component" "Thor ECL Agent" "optional" false "sentinelWithdrawal" true)) | nindent 8 }}
         env:
 {{- include "hpcc.mergeEnvironments" (dict "env" $env "defaultArenas" 1) | nindent 8 }}
 {{- include "hpcc.generateImageEnv" $commonCtx | nindent 8 }}
@@ -469,7 +469,7 @@ spec:
       - name: {{ $commonCtx.thorAgentName | quote }}
         workingDir: /var/lib/HPCCSystems
 {{- $extraArgs := list "--componentTag=thoragent" (printf "--name=%s" .name) -}}
-{{- include "hpcc.addCommandAndLifecycle" ($commonCtx | merge (dict "process" "agentexec" "extraArgs" $extraArgs "component" "Thor Agent" "optional" false)) | nindent 8 }}
+{{- include "hpcc.addCommandAndLifecycle" ($commonCtx | merge (dict "process" "agentexec" "extraArgs" $extraArgs "component" "Thor Agent" "optional" false "sentinelWithdrawal" true)) | nindent 8 }}
         env:
 {{- include "hpcc.mergeEnvironments" (dict "env" $env "defaultArenas" 1) | nindent 8 }}
 {{- include "hpcc.generateImageEnv" $commonCtx | nindent 8 }}

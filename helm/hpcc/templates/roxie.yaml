@@ -156,7 +156,7 @@ spec:
 {{-    include "hpcc.addResources" (dict "me" .topoResources "defaults" $defaultResources "root" $) | indent 8 }}
 {{     include "hpcc.addImageAttrs" $commonCtx | indent 8 }}
         workingDir: /var/lib/HPCCSystems
-{{- include "hpcc.addCommandAndLifecycle" ($commonCtx | merge (dict "process" "toposerver" "containerName" $commonCtx.toponame "component" "Toposerver" "optional" false "overrideConfigName" $toposerver.name)) | nindent 8 }}
+{{- include "hpcc.addCommandAndLifecycle" ($commonCtx | merge (dict "process" "toposerver" "containerName" $commonCtx.toponame "component" "Toposerver" "optional" false "sentinelWithdrawal" true "overrideConfigName" $toposerver.name)) | nindent 8 }}
         env:
 {{     include "hpcc.mergeEnvironments" (dict "env" $env "defaultArenas" 1) | indent 8 -}}
         - name: "SENTINEL"
@@ -282,7 +282,7 @@ spec:
       containers:
       - name: {{ $servername | quote }}
         workingDir: /var/lib/HPCCSystems
-{{- include "hpcc.addCommandAndLifecycle" ($commonCtx | merge (dict "process" "roxie" "component" "Roxie" "optional" false)) | nindent 8 }}
+{{- include "hpcc.addCommandAndLifecycle" ($commonCtx | merge (dict "process" "roxie" "component" "Roxie" "optional" false "sentinelWithdrawal" true)) | nindent 8 }}
         env:
 {{      include "hpcc.mergeEnvironments" (dict "env" $env "defaultArenas" 8) | indent 8 -}}
         - name: "SENTINEL"
@@ -301,7 +301,10 @@ spec:
         lifecycle:
           preStop:
             exec:
-              command: ["testsocket", ".", "control:closedown"]        
+              command:
+              - "/bin/bash"
+              - "-c"
+              - {{ printf "%s; testsocket . control:closedown" (include "hpcc.preStopShutdownCommand" (dict "root" $)) | quote }}
 {{      include "hpcc.addSentinelProbes" ( $roxie | merge (dict "readyProbeName" ".ready" )) | indent 8 }}
 {{      include "hpcc.addSecurityContext" (dict "root" $ "me" .) | indent 8 }}
 {{-     include "hpcc.addResources" (dict "me"  ($roxie.serverResources | default $roxie.resources) "root" $) | indent 8 }}
@@ -388,7 +391,7 @@ spec:
       - name: {{ $name | quote}}
         workingDir: /var/lib/HPCCSystems
 {{- $extraArgs := list (printf "--channels=%d" $channel) (printf "--server=%t" (not $serverReplicas)) -}}
-{{- include "hpcc.addCommandAndLifecycle" ($commonCtx | merge (dict "process" "roxie" "extraArgs" $extraArgs "component" "Roxie" "optional" false)) | nindent 8 }}
+{{- include "hpcc.addCommandAndLifecycle" ($commonCtx | merge (dict "process" "roxie" "extraArgs" $extraArgs "component" "Roxie" "optional" false "sentinelWithdrawal" true)) | nindent 8 }}
         env:
 {{      include "hpcc.mergeEnvironments" (dict "env" $env "defaultArenas" 8) | indent 8 -}}
         - name: "SENTINEL"
@@ -408,7 +411,10 @@ spec:
         lifecycle:
           preStop:
             exec:
-              command: ["testsocket", ".", "control:closedown"]
+              command:
+              - "/bin/bash"
+              - "-c"
+              - {{ printf "%s; testsocket . control:closedown" (include "hpcc.preStopShutdownCommand" (dict "root" $)) | quote }}
 {{       include "hpcc.addSentinelProbes" ( $roxie | merge (dict "readyProbeName" ".ready" )) | indent 8 }}
 {{-     end }}{{/* not serverReplicas */}}
 {{      include "hpcc.addSecurityContext" (dict "root" $ "me" .) | indent 8 }}

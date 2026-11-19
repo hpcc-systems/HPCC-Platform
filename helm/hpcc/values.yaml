@@ -2,6 +2,10 @@
 
 global:
   # Settings in the global section apply to all HPCC components in all subcharts
+  # On pod termination (including rollouts and Helm uninstall), the preStop hook removes
+  # readiness and waits this many seconds to give Kubernetes time to stop routing new
+  # Service traffic before normal shutdown.
+  preStopShutdownDelaySeconds: 5
 
   image:
     ## It is recommended to name a specific version rather than latest, for any non-trivial deployment

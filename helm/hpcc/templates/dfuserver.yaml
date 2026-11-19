@@ -77,7 +77,7 @@ spec:
       containers:
       - name: {{ .name | quote }}
         workingDir: /var/lib/HPCCSystems
-{{- include "hpcc.addCommandAndLifecycle" ($commonCtx | merge (dict "process" "dfuserver" "component" "DFU Server" "optional" false)) | nindent 8 }}
+{{- include "hpcc.addCommandAndLifecycle" ($commonCtx | merge (dict "process" "dfuserver" "component" "DFU Server" "optional" false "sentinelWithdrawal" true)) | nindent 8 }}
         env:
 {{ include "hpcc.mergeEnvironments" (dict "env" $env "defaultArenas" 1) | indent 8 -}}
         - name: "SENTINEL"

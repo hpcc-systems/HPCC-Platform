@@ -443,6 +443,11 @@
             }
           ]
         },
+        "preStopShutdownDelaySeconds": {
+          "description": "Seconds the preStop hook waits after withdrawing readiness and before normal shutdown",
+          "type": "integer",
+          "minimum": 0
+        },
         "metrics": {
           "type" : "object",
           "description" : "Global metrics configuration",
