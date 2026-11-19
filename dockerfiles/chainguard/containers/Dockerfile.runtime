@@ -56,7 +56,8 @@ RUN test -n "${RUNTIME_PYTHON}" || { echo "RUNTIME_PYTHON must match PYTHON in t
 
 FROM ${GO_DEV_IMAGE} AS wolfi-r-packages
 USER root
-RUN apk add --no-cache R R-dev Rcpp build-base \
+RUN apk upgrade --no-cache \
+    && apk add --no-cache R R-dev Rcpp build-base \
     && mkdir -p /opt/runtime-r-libs \
     && cp -a /usr/lib/R/library/Rcpp /opt/runtime-r-libs/ \
     && Rscript -e 'install.packages(c("RInside", "inline"), repos="https://cloud.r-project.org", lib="/opt/runtime-r-libs")'
