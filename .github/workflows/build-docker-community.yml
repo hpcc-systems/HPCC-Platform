@@ -161,6 +161,8 @@ jobs:
         uses: docker/build-push-action@v7
         with:
           builder: ${{ steps.buildx.outputs.name }}
+          pull: true
+          no-cache: true
           file: ${{ steps.vars.outputs.folder_platform }}/dockerfiles/${{ inputs.os }}.dockerfile
           context: ${{ steps.vars.outputs.folder_platform }}/dockerfiles
           push: false
@@ -255,6 +257,8 @@ jobs:
         if: ${{ inputs.build-docker-image }}
         with:
           builder: ${{ steps.buildx.outputs.name }}
+          pull: true
+          no-cache: true
           file: ${{ steps.vars.outputs.folder_platform }}/dockerfiles/platform-core-${{ inputs.os }}/Dockerfile
           context: ${{ steps.vars.outputs.folder_build }}
           push: false

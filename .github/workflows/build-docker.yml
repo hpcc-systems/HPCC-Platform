@@ -144,6 +144,8 @@ jobs:
         uses: docker/build-push-action@v7
         with:
           builder: ${{ steps.buildx.outputs.name }}
+          pull: true
+          no-cache: true
           file: HPCC-Platform/dockerfiles/${{ inputs.os }}.dockerfile
           context: HPCC-Platform/dockerfiles/.
           push: false

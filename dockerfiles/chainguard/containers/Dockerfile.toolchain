@@ -14,6 +14,7 @@ RUN apt-get update || { \
             -e 's|http://ports.ubuntu.com/ubuntu-ports/|http://old-releases.ubuntu.com/ubuntu/|g' {} + \
         && apt-get update; \
     } \
+    && DEBIAN_FRONTEND=noninteractive apt-get upgrade -y \
     && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends libc6-dev linux-libc-dev libcrypt-dev uuid-dev libtirpc-dev libstdc++6 libgcc-s1 python3 libpython3-dev \
     && rm -rf /var/lib/apt/lists/*
 ARG GLIBC_BASELINE
@@ -25,6 +26,7 @@ FROM ${BASE_IMAGE}
 # Layers shared by every GCC/sysroot combination come first so a build matrix reuses them.
 RUN { apk del --no-cache build-base gcc || true; } \
     && sed -i '/^gcc=/d' /etc/apk/world \
+    && apk upgrade --no-cache \
     && apk add --no-cache \
         autoconf \
         autoconf-archive \
