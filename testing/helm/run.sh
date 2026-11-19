@@ -39,6 +39,48 @@ then
    failed=1
 fi
 
+echo Testing pod fsGroup opt-in
+helm template $hpccchart ${options} > results.txt 2> errors.txt
+if [ $? -ne 0 ]
+then
+   echo Default fsGroup render failed
+   cat errors.txt
+   failed=1
+else
+   assert_not_contains results.txt "fsGroup:" "Default render unexpectedly set pod fsGroup"
+fi
+
+helm template $hpccchart ${options} --set global.user.fsGroup=true > results.txt 2> errors.txt
+if [ $? -ne 0 ]
+then
+   echo Enabled fsGroup render failed
+   cat errors.txt
+   failed=1
+else
+   assert_contains results.txt "fsGroup: 10001" "Enabled fsGroup did not default to the HPCC GID"
+   assert_contains results.txt "fsGroupChangePolicy: OnRootMismatch" "fsGroupChangePolicy was not rendered"
+fi
+
+helm template $hpccchart ${options} --set global.user.gid=12345 --set global.user.fsGroup=true > results.txt 2> errors.txt
+if [ $? -ne 0 ]
+then
+   echo Custom GID fsGroup render failed
+   cat errors.txt
+   failed=1
+else
+   assert_contains results.txt "fsGroup: 12345" "Enabled fsGroup did not use the configured HPCC GID"
+fi
+
+helm template $hpccchart ${options} --set global.user.fsGroup=false > results.txt 2> errors.txt
+if [ $? -ne 0 ]
+then
+   echo Disabled fsGroup render failed
+   cat errors.txt
+   failed=1
+else
+   assert_not_contains results.txt "fsGroup:" "Disabled fsGroup was unexpectedly rendered"
+fi
+
 echo Running valid tests...
 for file in $scriptdir/tests/*.yaml
 do

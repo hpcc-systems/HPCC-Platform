@@ -600,6 +600,10 @@
         "gid": {
           "type": "integer",
           "default": 10001
+        },
+        "fsGroup": {
+          "description": "Opt in to pod-level fsGroup using global.user.gid (default 10001); unset or false preserves existing volume permissions",
+          "type": "boolean"
         }
       },
       "additionalProperties": false

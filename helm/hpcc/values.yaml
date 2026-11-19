@@ -20,6 +20,7 @@ global:
   ## user:
   ##  uid: 10000
   ##  gid: 10001
+  ##  fsGroup: true # opt in to pod fsGroup using the effective gid (default 10001)
 
   # logging sets the default logging information for all components. Can be overridden locally
   logging:

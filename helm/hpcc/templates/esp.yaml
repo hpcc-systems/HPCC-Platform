@@ -152,6 +152,7 @@ spec:
     spec:
       terminationGracePeriodSeconds: {{ .terminationGracePeriodSeconds | default 600 }}
       {{- include "hpcc.placementsByPodTargetType" (dict "root" $ "pod" .name "type" "esp") | indent 6 }}
+      {{- include "hpcc.addPodSecurityContext" (dict "root" $) | indent 6 }}
       serviceAccountName: "hpcc-esp-service"
       {{- include "hpcc.addImagePullSecrets" $commonCtx | nindent 6 -}}
       containers:

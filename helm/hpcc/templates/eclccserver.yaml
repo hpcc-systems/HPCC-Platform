@@ -71,6 +71,7 @@ data:
             {{- include "hpcc.generateAnnotations" . | indent 12 }}
         spec:
           {{- include "hpcc.placementsByJobTargetType" (dict "root" .root "job" $compileJobName "target" .me.name "type" "eclccserver") | indent 10 }}
+          {{- include "hpcc.addPodSecurityContext" (dict "root" .root) | indent 10 }}
           serviceAccountName: "hpcc-default"
 {{- if $misc.postJobCommandViaSidecar }}
           shareProcessNamespace: true
@@ -161,6 +162,7 @@ spec:
         {{- include "hpcc.generateAnnotations" $commonCtx | indent 8 }}
     spec:
       {{- include "hpcc.placementsByPodTargetType" (dict "root" $ "pod" .name "target" .name "type" "eclccserver") | indent 6 }}
+      {{- include "hpcc.addPodSecurityContext" (dict "root" $) | indent 6 }}
       serviceAccountName: {{ .useChildProcesses | default false | ternary "hpcc-default" "hpcc-agent" }}
       terminationGracePeriodSeconds: {{ .terminationGracePeriodSeconds | default 600 }}
       initContainers:

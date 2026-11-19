@@ -1310,6 +1310,19 @@ securityContext:
 {{ end -}}
 
 {{/*
+Add the pod-level group used for volume ownership.
+Pass in a dictionary with root defined.
+*/}}
+{{- define "hpcc.addPodSecurityContext" -}}
+{{- $user := (.root.Values.global.user | default dict) }}
+{{- if $user.fsGroup }}
+securityContext:
+  fsGroup: {{ $user.gid | default 10001 }}
+  fsGroupChangePolicy: OnRootMismatch
+{{- end }}
+{{- end -}}
+
+{{/*
 Validate the Thors associated with two aux queues match
 */}}
 {{- define "hpcc.validateAuxQueueMatch" -}}

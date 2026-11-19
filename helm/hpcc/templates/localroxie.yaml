@@ -86,6 +86,7 @@ spec:
 {{-    include "hpcc.generateAnnotations" $commonCtx | indent 8 }}
     spec:
 {{-    include "hpcc.placementsByPodTargetType" (dict "root" $ "pod" $roxie.name "target" $roxie.name "type" "roxie") | indent 6 }}
+{{-    include "hpcc.addPodSecurityContext" (dict "root" $) | indent 6 }}
       serviceAccountName: "hpcc-default"
       terminationGracePeriodSeconds: {{ .terminationGracePeriodSeconds | default 600 }}
       initContainers:

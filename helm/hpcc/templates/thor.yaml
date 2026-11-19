@@ -103,6 +103,7 @@ data:
             {{- include "hpcc.generateAnnotations" . | indent 12 }}
         spec:
           {{- include "hpcc.placementsByJobTargetType" (dict "root" .root "job" $eclAgentJobName "target" .me.name "type" "thor") | indent 10 }}
+          {{- include "hpcc.addPodSecurityContext" (dict "root" .root) | indent 10 }}
           serviceAccountName: "hpcc-agent"
           terminationGracePeriodSeconds: {{ .terminationGracePeriodSeconds | default 600 }}
           initContainers:
@@ -176,6 +177,7 @@ data:
             {{- include "hpcc.generateAnnotations" . | indent 12 }}
         spec:
           {{- include "hpcc.placementsByJobTargetType" (dict "root" .root "job" $thorManagerJobName "target" .me.name "type" "thor") | indent 10 }}
+          {{- include "hpcc.addPodSecurityContext" (dict "root" .root) | indent 10 }}
           serviceAccountName: hpcc-thoragent
           terminationGracePeriodSeconds: {{ .terminationGracePeriodSeconds | default 60 }}
           initContainers:
@@ -249,6 +251,7 @@ data:
             {{- include "hpcc.generateAnnotations" . | indent 12 }}
         spec:
           {{- include "hpcc.placementsByJobTargetType" (dict "root" .root "job" $thorWorkerJobName "target" .me.name "type" "thor") | indent 10 }}
+          {{- include "hpcc.addPodSecurityContext" (dict "root" .root) | indent 10 }}
           serviceAccountName: hpcc-default
           terminationGracePeriodSeconds: {{ .terminationGracePeriodSeconds | default 600 }}
           initContainers:
@@ -393,6 +396,7 @@ spec:
         {{- include "hpcc.generateAnnotations" $commonCtx | indent 8 }}
     spec:
       {{- include "hpcc.placementsByPodTargetType" (dict "root" $ "pod" $commonCtx.eclAgentName "target" .name "type" "thor") | indent 6 }}
+      {{- include "hpcc.addPodSecurityContext" (dict "root" $) | indent 6 }}
       {{- include "hpcc.addImagePullSecrets" $commonCtx | nindent 6 -}}
       serviceAccountName: {{ $commonCtx.eclAgentUseChildProcesses | ternary "hpcc-default" "hpcc-agent" }}
       initContainers:
@@ -458,6 +462,7 @@ spec:
         {{- include "hpcc.generateAnnotations" $commonCtx | indent 8 }}
     spec:
       {{- include "hpcc.placementsByPodTargetType" (dict "root" $ "pod" $commonCtx.thorAgentName "target" .name "type" "thor") | indent 6 }}
+      {{- include "hpcc.addPodSecurityContext" (dict "root" $) | indent 6 }}
       {{- include "hpcc.addImagePullSecrets" $commonCtx | nindent 6 -}}
       serviceAccountName: "hpcc-thoragent"
       containers:

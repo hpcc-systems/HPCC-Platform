@@ -132,8 +132,18 @@ can read data from any of the data planes.
 
 # Other storage.planes options
 
+Pod-level `fsGroup` is unset by default so existing deployments' volume permissions are unchanged. Set `global.user.fsGroup: true` to opt in using the effective HPCC GID (`global.user.gid`, default `10001`). This setting is a boolean; configure `global.user.gid` to change the HPCC GID. It is useful when the storage driver supports group-based volume access:
+
+```yaml
+global:
+  user:
+    fsGroup: true
+```
+
+When configured, the chart also sets `fsGroupChangePolicy: OnRootMismatch` to avoid repeated recursive ownership changes when the volume root already has the requested group. This behavior applies only to volume types and drivers that honor `fsGroup`; in particular, `hostPath` ownership is not changed by it.
+
 * forcePermissions: \<boolean>  
-In some situations the default permissions for the mounted volumes do not allow the hpcc user to write to the storage.  Setting this option ensures the ownership of the volume is changed before the main process is started.
+In some situations the default permissions for a mounted volume do not allow the HPCC user to write. Setting this option runs an init container that attempts to change the mounted path ownership to the configured HPCC UID and GID before the main process starts. On volumes where `fsGroup` already provides the required access, this may not be needed; it can still be useful for `hostPath` or storage whose driver does not apply the pod group as required. Whether to enable it is a storage and operations decision.
 
 * subPath: \<string>  
 This property provides an optional sub-directory within \<prefix> to use as the root directory.  Most of the time the different categories of data will be stored in different locations and this option is not needed.  However, if there is a requirement to store two categories of data in the same location, then it is legal to have two storage planes use the same prefix/path and different categories as long as the rest of the plane definitions are identical (except for the name and the subPath).  The subPath property allows the data to reside in separate directories so they cannot clash.
