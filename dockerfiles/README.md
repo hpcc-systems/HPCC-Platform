@@ -243,6 +243,22 @@ and leaves Kubernetes running. Use `-n <name>` for a non-default HPCC release;
 Deleting a kind cluster with `kind delete cluster --name hpcc` also deletes its
 node-local data.
 
+## CI image secret scanning
+
+The [community release workflow](../.github/workflows/build-docker-community.yml)
+scans its builder and runtime images with Trivy before publishing them. The
+[documentation workflow](../.github/workflows/build-documentation.yml) scans its
+builder image. Scans run only when the corresponding Docker Hub push is enabled.
+Images pushed only to the local Kubernetes test registry are not scanned.
+
+Scans inspect locally loaded Docker images using only Trivy's secret scanner,
+at all severities. Detected secrets or scanner errors fail the job and block the
+subsequent push. Review the scan output in the job log and remove embedded
+credentials from the image or its base image before retrying. Existing publish
+conditions and image tags are preserved, including architecture-specific builds.
+Build-only workflows and local build scripts are unchanged; this does not add
+vulnerability scanning.
+
 ## Build tools and further reading
 
 - [image.sh](image.sh): local development images, defaulting to Ubuntu 22.04 and

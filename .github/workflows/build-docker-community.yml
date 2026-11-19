@@ -163,8 +163,8 @@ jobs:
           builder: ${{ steps.buildx.outputs.name }}
           file: ${{ steps.vars.outputs.folder_platform }}/dockerfiles/${{ inputs.os }}.dockerfile
           context: ${{ steps.vars.outputs.folder_platform }}/dockerfiles
-          push: ${{ github.repository_owner == 'hpcc-systems' }}
-          load: ${{ github.repository_owner != 'hpcc-systems' }}
+          push: false
+          load: true
           build-args: |
             VCPKG_REF=${{ steps.vars.outputs.vcpkg_sha_short }}${{ inputs.architecture }}
           tags: |
@@ -173,6 +173,24 @@ jobs:
             type=registry,ref=${{ steps.vars.outputs.docker_tag_candidate_base }}
             type=registry,ref=${{ steps.vars.outputs.docker_tag }}
           cache-to: type=inline
+
+      - name: Scan build image for secrets
+        if: ${{ github.repository_owner == 'hpcc-systems' }}
+        uses: aquasecurity/trivy-action@57a97c7e7821a5776cebc9bb87c984fa69cba8f1 # 0.35.0
+        env:
+          TRIVY_IMAGE_SRC: docker
+        with:
+          scan-type: image
+          image-ref: ${{ steps.vars.outputs.docker_tag_candidate_base }}
+          scanners: secret
+          exit-code: '1'
+          timeout: 15m
+
+      - name: Publish build image
+        if: ${{ github.repository_owner == 'hpcc-systems' }}
+        env:
+          IMAGE: ${{ steps.vars.outputs.docker_tag_candidate_base }}
+        run: docker push "$IMAGE"
 
       - name: CMake Packages
         if: ${{ !inputs.container }}
@@ -239,7 +257,8 @@ jobs:
           builder: ${{ steps.buildx.outputs.name }}
           file: ${{ steps.vars.outputs.folder_platform }}/dockerfiles/platform-core-${{ inputs.os }}/Dockerfile
           context: ${{ steps.vars.outputs.folder_build }}
-          push: ${{ github.repository_owner == 'hpcc-systems' }}
+          push: false
+          load: true
           build-args: |
             PKG_FILE=${{ steps.container.outputs.k8s_pkg_file }}
           tags: |
@@ -248,6 +267,29 @@ jobs:
             hpccsystems/platform-core-${{ inputs.os }}:${{ steps.vars.outputs.candidate_base_branch }}
           cache-from: |
             type=registry,ref=hpccsystems/platform-core-${{ inputs.os }}:${{ steps.vars.outputs.candidate_base_branch }}
+
+      - name: Scan runtime image for secrets
+        if: ${{ inputs.build-docker-image && github.repository_owner == 'hpcc-systems' }}
+        uses: aquasecurity/trivy-action@57a97c7e7821a5776cebc9bb87c984fa69cba8f1 # 0.35.0
+        env:
+          TRIVY_IMAGE_SRC: docker
+        with:
+          scan-type: image
+          image-ref: hpccsystems/platform-core:${{ steps.vars.outputs.hpcc_version }}
+          scanners: secret
+          exit-code: '1'
+          timeout: 15m
+
+      - name: Publish runtime image
+        if: ${{ inputs.build-docker-image && github.repository_owner == 'hpcc-systems' }}
+        env:
+          VERSION_IMAGE: hpccsystems/platform-core:${{ steps.vars.outputs.hpcc_version }}
+          RELEASE_IMAGE: hpccsystems/platform-core-${{ inputs.os }}:${{ steps.vars.outputs.community_tag }}
+          CANDIDATE_IMAGE: hpccsystems/platform-core-${{ inputs.os }}:${{ steps.vars.outputs.candidate_base_branch }}
+        run: |
+          docker push "$VERSION_IMAGE"
+          docker push "$RELEASE_IMAGE"
+          docker push "$CANDIDATE_IMAGE"
   
       - name: Cleanup Environment
         if: always()
