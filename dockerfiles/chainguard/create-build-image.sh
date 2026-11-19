@@ -2,10 +2,11 @@
 set -euo pipefail
 
 usage() {
-    echo "Usage: $0 -g <glibc>[,<glibc>...]|all [-c <gcc-major>[,<gcc-major>...]|default] [-a|--arch|--aarch amd64|arm64] [-t image-prefix] [-i base-image] [--no-pull]" >&2
+    echo "Usage: $0 -g <glibc>[,<glibc>...]|all [-c <gcc-major>[,<gcc-major>...]|default] [-a|--arch|--aarch amd64|arm64] [-t image-prefix] [-i base-image] [--no-pull|--rebuild]" >&2
     echo "  glibc: 2.34 through 2.44" >&2
     echo "  gcc:   Wolfi GCC major version(s); 'default' uses each baseline's paired GCC (2.34-2.37=11, 2.38-2.41=13, 2.42-2.43=15, 2.44=16)" >&2
     echo "  --no-pull: with a registry-qualified prefix, use a local image or build one instead of pulling the published image" >&2
+    echo "  --rebuild: always rebuild with freshly pulled bases and no layer cache" >&2
 }
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
@@ -19,6 +20,7 @@ IMAGE_PREFIX=hpcc-chainguard
 JFROG_REGISTRY="${JFROG_REGISTRY:-useast.jfrog.lexisnexisrisk.com}"
 BASE_IMAGE="${BASE_IMAGE:-${JFROG_REGISTRY}/glb-oci-virtual/lexisnexisrisk.com/gcc-glibc:latest-dev}"
 PULL=1
+REBUILD=0
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -28,6 +30,7 @@ while [[ $# -gt 0 ]]; do
         -t|--tag-prefix) IMAGE_PREFIX="$2"; shift 2 ;;
         -i|--base-image) BASE_IMAGE="$2"; shift 2 ;;
         --no-pull) PULL=0; shift ;;
+        --rebuild) REBUILD=1; shift ;;
         -h|--help) usage; exit 0 ;;
         *) usage; exit 1 ;;
     esac
@@ -94,7 +97,7 @@ for glibc in "${GLIBCS[@]}"; do
         fi
         image="${IMAGE_PREFIX}-glibc${glibc}-gcc${major}-dev:latest-${ARCH}"
         # Pulling keeps a local "latest" tag current; a failed pull falls back to the local image or a build.
-        if [[ ${PULL} -eq 1 && ${REGISTRY_PREFIX} -eq 1 ]]; then
+        if [[ ${REBUILD} -eq 0 && ${PULL} -eq 1 && ${REGISTRY_PREFIX} -eq 1 ]]; then
             [[ "${IMAGE_PREFIX}" == "${JFROG_REGISTRY}/"* ]] && { jfrog_login || true; }
             if container_pull "${CONTAINER_PLATFORM}" "${image}"; then
                 echo "Using published image ${image}"
@@ -102,7 +105,7 @@ for glibc in "${GLIBCS[@]}"; do
             fi
             echo "Could not pull ${image}; using a local image or building one" >&2
         fi
-        if container_image_exists "${image}"; then
+        if [[ ${REBUILD} -eq 0 ]] && container_image_exists "${image}"; then
             echo "Using existing image ${image}"
             continue
         fi
@@ -110,7 +113,7 @@ for glibc in "${GLIBCS[@]}"; do
             echo "Valid JFROG_USERNAME and JFROG_PASSWORD are required in ${ENV_FILE} to use the JFrog base image" >&2
             exit 1
         fi
-        container_build --platform "${CONTAINER_PLATFORM}" \
+        container_build --pull --no-cache --platform "${CONTAINER_PLATFORM}" \
             --build-arg BASE_IMAGE="${BASE_IMAGE}" \
             --build-arg GCC_MAJOR="${major}" \
             --build-arg SYSROOT_IMAGE="${sysroot_image}" \

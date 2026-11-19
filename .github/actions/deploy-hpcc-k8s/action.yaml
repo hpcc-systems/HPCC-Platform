@@ -76,6 +76,8 @@ runs:
       uses: docker/build-push-action@v7
       with:
         builder: ${{ steps.buildx.outputs.name }}
+        pull: true
+        no-cache: true
         file: ${{ inputs.platform-folder }}/dockerfiles/platform-core-ubuntu-22.04/Dockerfile
         context: ${{ inputs.platform-folder }}/
         push: true

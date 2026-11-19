@@ -104,6 +104,46 @@ separately:
 
 Run [create-build-image.sh](create-build-image.sh) with `--help` for options.
 
+## CI Image Freshness
+
+LN's default Chainguard CI build rebuilds its selected development image on every
+run using `create-build-image.sh --rebuild`. The development-image publishing
+workflow uses the same option. It bypasses both published/local image reuse and
+Docker's layer cache, and pulls the current base-image tags. Toolchain builds
+refresh the Ubuntu sysroot packages and upgrade Wolfi packages without changing
+the selected glibc baseline or GCC major.
+
+An explicitly supplied builder image is pulled before use; pull failures stop the
+build rather than silently reusing an old local image. `--no-pull` explicitly
+opts out, including when CI needs to use its freshly rebuilt local builder.
+Packaging layers are rebuilt without cache and upgrade installed Wolfi packages.
+They deliberately use the selected local base instead of pulling it a second
+time, which would replace CI's newly rebuilt builder with the published one.
+For sysroot builders, packaging layers also reapply the toolchain's
+`include-fixed` cleanup after APK operations so GCC updates cannot restore
+Wolfi glibc headers that take precedence over the selected sysroot.
+
+CI pulls runtime bases and disables layer reuse for both the runtime audit and
+the published runtime image. The isolated runtime rootfs installs current APK
+packages, and the R-package build stage upgrades its installed packages. The
+distroless JDK/FIPS runtime has no package manager: its inherited packages are
+refreshed by pulling the current configured upstream image. Explicit version
+constraints (including Python/GCC compatibility, Mono, NuGet, and syft) remain
+in place; unsupported upstream images cannot acquire updates no longer published.
+
+For local development, `create-build-image.sh --no-pull` still reuses an existing
+image. Use `--rebuild` to force a fresh one:
+
+```bash
+./dockerfiles/chainguard/create-build-image.sh --glibc 2.34 --rebuild
+```
+
+The image-selection regression tests run without a container engine:
+
+```bash
+python3 -m unittest discover -s dockerfiles/chainguard/tests -v
+```
+
 ## Runtime Image Audit
 
 The `runtime-audit` target in
