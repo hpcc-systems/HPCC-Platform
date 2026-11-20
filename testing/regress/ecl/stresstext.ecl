@@ -22,6 +22,7 @@
 //version multiPart=false,variant='inplace_row'
 //version multiPart=false,variant='inplace_lzw'
 //version multiPart=false,variant='inplace_lz4hc'
+//version multiPart=true,variant='inplace_zstd'
 //version multiPart=false,variant='inplace_zstd'
 //version multiPart=false,variant='inplace_var'
 //version multiPart=false,variant='hybrid'
@@ -30,6 +31,7 @@
 //version multiPart=true,variant='hybrid_var'
 //version multiPart=true,variant='hybridz'
 //version multiPart=true,variant='hybridz_var'
+//version multiPart=true,variant='hybridpacked'
 
 // The settings below may be useful when trying to analyse Roxie keyed join behaviour, as they will
 // eliminate some wait time for an agent queue to become available
