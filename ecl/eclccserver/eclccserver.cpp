@@ -170,7 +170,7 @@ public:
                     ForEachItemIn(idx, pipes)
                     {
                         IPipeProcess *pipe = pipes.item(idx);
-                        pipe->abort();
+                        pipe->abort(true);
                     }
                     break;
                 }
@@ -195,7 +195,7 @@ public:
         CriticalBlock b(crit);
         pipes.append(LINK(pipe));
         if (timedOut)
-            pipe->abort();
+            pipe->abort(true);
     }
     void removePipe(IPipeProcess *pipe)
     {
