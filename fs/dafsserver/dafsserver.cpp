@@ -70,6 +70,9 @@
 #include "rmtfile.hpp"
 #include "rmtclient_impl.hpp"
 #include "dafsserver.hpp"
+#include "keybuild.hpp"
+#include "eclhelper_base.hpp"
+#include "thorfile.hpp"
 
 #include "ftslavelib.hpp"
 #include "filecopy.hpp"
@@ -824,6 +827,8 @@ interface IRemoteActivity : extends IInterface
     virtual IRemoteReadActivity *queryIsReadActivity() { return nullptr; }
     virtual IRemoteWriteActivity *queryIsWriteActivity() { return nullptr; }
     virtual IRemoteFetchActivity *queryIsFetchActivity() { return nullptr; }
+    // Serialize any info to be returned in the StreamCmd::CLOSE response (e.g. last row for index writes)
+    virtual void serializeCloseInfo(MemoryBuffer &closeInfo) const {}
 };
 
 
@@ -2575,8 +2580,6 @@ public:
         return this;
     }
 };
-
-
 class CRemoteDiskWriteActivity : public CRemoteWriteBaseActivity
 {
     typedef CRemoteWriteBaseActivity PARENT;
@@ -2655,6 +2658,187 @@ public:
     }
 };
 
+
+class CRemoteIndexWriteActivity : public CRemoteWriteBaseActivity, implements IBlobCreator
+{
+    Owned<IFileIOStream> iFileIOStream;
+    Owned<IKeyBuilder> builder;
+    Linked<IOutputMetaData> inMeta, outMeta;
+    UnexpectedVirtualFieldCallback fieldCallback;
+    Owned<const IDynamicTransform> translator;
+    OwnedMalloc<char> prevRowKeyBuffer;
+    OwnedMalloc<char> rowBuffer;
+    Owned<IPropertyTree> metadata;
+
+    uint64_t uncompressedSize = 0;
+    uint64_t processed = 0;
+    size32_t maxDiskRecordSize = 0;
+    size32_t keyedSize = 0;
+    size32_t maxRecordSizeSeen = 0;
+    bool isTlk = false;
+    bool opened = false;
+
+    inline void processRow(const void *row, uint64_t rowSize)
+    {
+        unsigned __int64 fpos = 0;
+        RtlStaticRowBuilder rowBuilder(rowBuffer, maxDiskRecordSize);
+        size32_t indexRowSize = translator->translate(rowBuilder, fieldCallback, (const byte *)row);
+
+        // Key builder checks for duplicate records so we can just check for sortedness
+        if (memcmp(prevRowKeyBuffer.get(), rowBuffer.get(), keyedSize) > 0)
+        {
+            throw createDafsExceptionV(DAFSERR_cmdstream_generalwritefailure, "CRemoteIndexWriteActivity: Incoming rows are not sorted.");
+        }
+
+        builder->processKeyData(rowBuffer, fpos, indexRowSize);
+        uncompressedSize += indexRowSize;
+
+        if (indexRowSize > maxRecordSizeSeen)
+            maxRecordSizeSeen = indexRowSize;
+
+        processed++;
+        memcpy(prevRowKeyBuffer.get(), rowBuffer.get(), keyedSize);
+    }
+
+    void openFileStream()
+    {
+        if (!recursiveCreateDirectoryForFile(fileName))
+            throw createDafsExceptionV(DAFSERR_cmdstream_openfailure, "Failed to create directory for file: '%s'", fileName.get());
+        OwnedIFile iFile = createIFile(fileName);
+
+        iFileIO.setown(iFile->open(IFOcreate));
+        if (!iFileIO)
+            throw createDafsExceptionV(DAFSERR_cmdstream_openfailure, "Failed to open: '%s' for write", fileName.get());
+
+        iFileIOStream.setown(createBufferedIOStream(iFileIO));
+        opened = true;
+    }
+
+    virtual unsigned __int64 createBlob(size32_t size, const void * ptr) override
+    {
+        return builder->createBlob(size, (const char *) ptr);
+    }
+public:
+    CRemoteIndexWriteActivity(IPropertyTree &config, IFileDescriptor *fileDesc) : CRemoteWriteBaseActivity(config, fileDesc)
+    {
+        inMeta.setown(getTypeInfoOutputMetaData(config, "input", false));
+        if (!inMeta)
+            throw createDafsException(DAFSERR_cmdstream_protocol_failure, "CRemoteIndexWriteActivity: input metadata missing");
+
+        outMeta.setown(getTypeInfoOutputMetaData(config, "output", false));
+        if (!outMeta)
+            throw createDafsException(DAFSERR_cmdstream_protocol_failure, "CRemoteIndexWriteActivity: output metadata missing");
+
+        isTlk = config.getPropBool("isTlk", false);
+
+        bool isVariable = outMeta->isVariableSize();
+
+        StringBuffer compressionType;
+        getIndexCompressionType(compressionType, nullptr, config.queryProp("compressed", "legacy"));
+
+        buildUserMetadata(metadata, nullptr, compressionType.str());
+        setRtlFormat(*metadata, outMeta);
+
+        if (config.hasProp("nodeSize"))
+            metadata->setPropInt("_nodeSize", config.getPropInt("nodeSize"));
+
+        bool noSeek = config.getPropBool("noSeek", true);
+        metadata->setPropBool("_noSeek", noSeek);
+
+        bool useTrailingHeader = config.getPropBool("useTrailingHeader", true);
+        metadata->setPropBool("_useTrailingHeader", useTrailingHeader);
+
+        if (hasTrailingFileposition(outMeta->queryTypeInfo()))
+            throw createDafsException(DAFSERR_cmdstream_protocol_failure, "CRemoteIndexWriteActivity: trailing fileposition not supported, use FILEPOSITION(FALSE)");
+
+        unsigned flags = COL_PREFIX | HTREE_FULLSORT_KEY | HTREE_COMPRESSED_KEY;
+        if (isVariable)
+            flags |= HTREE_VARSIZE;
+        if (isTlk)
+            flags |= HTREE_TOPLEVEL_KEY;
+        if (noSeek)
+            flags |= TRAILING_HEADER_ONLY;
+        if (useTrailingHeader)
+            flags |= USE_TRAILING_HEADER;
+
+        const RtlRecord &outRecord = outMeta->queryRecordAccessor(true);
+        keyedSize = outRecord.getFixedOffset(outRecord.getNumKeyedFields());
+
+        if (isTlk)
+            maxDiskRecordSize = keyedSize;
+        else if (isVariable)
+            maxDiskRecordSize = KEYBUILD_MAXLENGTH;
+        else
+            maxDiskRecordSize = outMeta->getFixedSize();
+
+        if (maxDiskRecordSize > KEYBUILD_MAXLENGTH)
+            throw MakeStringException(99, "Index maximum record length (%d) exceeds 32k internal limit", maxDiskRecordSize);
+
+        const RtlRecord &inRecord = inMeta->queryRecordAccessor(true);
+        translator.setown(createRecordTranslator(outRecord, inRecord));
+
+        rowBuffer.allocateN(maxDiskRecordSize, true);
+        prevRowKeyBuffer.allocateN(keyedSize, true);
+
+        unsigned nodeSize = metadata->getPropInt("_nodeSize", NODESIZE);
+
+        openFileStream();
+        KeyBuilderOptions options(flags, maxDiskRecordSize, nodeSize, keyedSize, nullptr);
+        options.setCompression(compressionType);
+        options.isTLK = isTlk;
+        builder.setown(createKeyBuilder(iFileIOStream, options));
+    }
+
+    ~CRemoteIndexWriteActivity()
+    {
+        try
+        {
+            if (builder)
+            {
+                unsigned int fileCrc;
+                builder->finish(metadata, &fileCrc, maxRecordSizeSeen, nullptr);
+            }
+
+            close();
+        }
+        catch (IException *e)
+        {
+            EXCLOG(e, "~CRemoteIndexWriteActivity");
+            e->Release();
+        }
+        catch (...)
+        {
+            IERRLOG("~CRemoteIndexWriteActivity: unknown exception");
+        }
+    }
+
+    virtual void write(size32_t sz, const void *rowData) override
+    {
+        const RtlRecord& inputRecordAccessor = inMeta->queryRecordAccessor(true);
+        size32_t rowOffset = 0;
+        while(rowOffset < sz)
+        {
+            size32_t rowSize = inputRecordAccessor.getRecordSize((const byte *)rowData + rowOffset);
+            processRow((const byte *)rowData + rowOffset, rowSize);
+            rowOffset += rowSize;
+        }
+        if (rowOffset > sz)
+            throw createDafsExceptionV(DAFSERR_cmdstream_generalwritefailure, "CRemoteIndexWriteActivity: partial record detected (offset=%u, size=%u)", rowOffset, sz);
+    }
+
+    virtual void serializeCloseInfo(MemoryBuffer &closeInfo) const override
+    {
+        closeInfo.append(keyedSize);
+        if (processed)
+            closeInfo.append(keyedSize, prevRowKeyBuffer.get());
+    }
+    virtual void serializeCursor(MemoryBuffer &tgt) const override {}
+    virtual void restoreCursor(MemoryBuffer &src) override {}
+    virtual StringBuffer &getInfoStr(StringBuffer &out) const override
+    {
+        return out.appendf("indexwrite[%s]", fileName.get());
+    }
+};
 
 // create a { unsigned8 } output meta for the count
 static const RtlIntTypeInfo indexCountFieldType(type_unsigned|type_int, 8);
@@ -2922,6 +3106,11 @@ IRemoteActivity *createRemoteActivity(IPropertyTree &actNode, bool authorizedOnl
         case TAKdiskwrite:
         {
             activity.setown(new CRemoteDiskWriteActivity(actNode, fileDesc));
+            break;
+        }
+        case TAKindexwrite:
+        {
+            activity.setown(new CRemoteIndexWriteActivity(actNode, fileDesc));
             break;
         }
         default: // in absense of type, read is assumed and file format is auto-detected.
@@ -4938,11 +5127,18 @@ public:
          * {
          *  "format" : "binary",
          *  "command": "newstream"
-         *  "replyLimit" : "64",
+         *  "replylimit" : "64",
          *  "node" : {
          *   "kind" : "indexwrite",
-         *   "fileName": "examplefilename",
+         *   "filename": "examplefilename",
+         *   "compressed" : "hybrid", // optional, defaults to hybrid
+         *   "noSeek" : false, // optional, if true don't add the header that allows seeking
+         *   "isTlk" : false, // optional, if true only the keyed portion of each row is stored
          *   "input" : {
+         *    "f1" : "string",
+         *    "f2" : "string"
+         *   },
+         *   "output" : {
          *    "f1" : "string5",
          *    "f2" : "string5"
          *   }
@@ -4995,6 +5191,7 @@ public:
         Owned<CRemoteRequest> remoteRequest;
         Owned<IRemoteActivity> outputActivity;
         OpenFileInfo fileInfo;
+        MemoryBuffer closeInfoMb; // populated when cmd==StreamCmd::CLOSE, contains serialized close info
 
         StreamCmd cmd;
         const char *qCommand = requestTree->queryProp("command");
@@ -5148,8 +5345,24 @@ public:
                     throw exception;
                 }
 
-                Owned<IFileIO> dummy;
-                checkFileIOHandle(cursorHandle, dummy, true);
+                {
+                    // Retrieve any structured close info (e.g. last row for index writes)
+                    // before the handle entry and its activity are destroyed.
+                    OpenFileInfo closeFileInfo;
+                    if (lookupFileIOHandle(cursorHandle, closeFileInfo))
+                    {
+                        if (closeFileInfo.remoteRequest)
+                        {
+                            IRemoteActivity *activity = closeFileInfo.remoteRequest->queryActivity();
+                            if (activity)
+                                activity->serializeCloseInfo(closeInfoMb);
+                        }
+                    }
+                }
+                {
+                    Owned<IFileIO> dummy;
+                    checkFileIOHandle(cursorHandle, dummy, true);
+                }
                 break;
             }
             case StreamCmd::VERSION:
@@ -5174,6 +5387,18 @@ public:
         }
         switch (cmd)
         {
+            case StreamCmd::CLOSE:
+            {
+                // Append structured close info (e.g. last row for index writes) to the reply
+                if (outFmt_Binary == outputFormat)
+                {
+                    size32_t closeInfoSz = closeInfoMb.length();
+                    reply.append(closeInfoSz);
+                    if (closeInfoSz)
+                        reply.append(closeInfoSz, closeInfoMb.bytes());
+                }
+                break;
+            }
             case StreamCmd::VERSION:
             {
                 OwnedActiveSpanScope versionSpan;
