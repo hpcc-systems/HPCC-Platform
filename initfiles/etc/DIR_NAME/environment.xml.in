@@ -439,6 +439,16 @@
                          path="DfsAccess"
                          resource="DfsAccess"
                          service="ws_dfsservice"/>
+    <AuthenticateFeature authenticate="Yes"
+                         description="Access to SysInfoLog READ operations"
+                         path="WsSysInfoLogAccess"
+                         resource="WsSysInfoLogAccess"
+                         service="ws_sysinfolog"/>
+    <AuthenticateFeature authenticate="Yes"
+                         description="Access to SysInfoLog WRITE operations"
+                         path="WsSysInfoLogAccess:WRITE"
+                         resource="WsSysInfoLogAccess"
+                         service="ws_sysinfolog"/>
     <Authenticate access="Read"
                   description="Root access to SMC service"
                   path="/"
@@ -789,6 +799,16 @@
                          path="DfsAccess"
                          resource="DfsAccess"
                          service="ws_dfsservice"/>
+    <AuthenticateFeature authenticate="Yes"
+                         description="Access to SysInfoLog READ operations"
+                         path="WsSysInfoLogAccess"
+                         resource="WsSysInfoLogAccess"
+                         service="ws_sysinfolog"/>
+    <AuthenticateFeature authenticate="Yes"
+                         description="Access to SysInfoLog WRITE operations"
+                         path="WsSysInfoLogAccess:WRITE"
+                         resource="WsSysInfoLogAccess"
+                         service="ws_sysinfolog"/>
     <ProcessFilters>
      <Platform name="Windows">
       <ProcessFilter name="any">
@@ -1177,6 +1197,16 @@
                           path="DfsAccess"
                           resource="DfsAccess"
                           service="ws_dfsservice"/>
+    <AuthenticateFeature authenticate="Yes"
+                         description="Access to SysInfoLog READ operations"
+                         path="WsSysInfoLogAccess"
+                         resource="WsSysInfoLogAccess"
+                         service="ws_sysinfolog"/>
+    <AuthenticateFeature authenticate="Yes"
+                         description="Access to SysInfoLog WRITE operations"
+                         path="WsSysInfoLogAccess:WRITE"
+                         resource="WsSysInfoLogAccess"
+                         service="ws_sysinfolog"/>
      <ProcessFilters>
       <Platform name="Windows">
        <ProcessFilter name="any">
