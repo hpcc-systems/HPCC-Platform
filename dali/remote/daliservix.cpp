@@ -934,9 +934,6 @@ enum {
 
 typedef unsigned char RemoteFileCommandType;
 
-#define ERR_REMOTE_FIRST                        8200
-#define ERR_REMOTE_LAST                         8249
-
 #define RFSERR_InvalidCommand                   8200
 #define RFSERR_NullFileIOHandle                 8201
 #define RFSERR_InvalidFileIOHandle              8202

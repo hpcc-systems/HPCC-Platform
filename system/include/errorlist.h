@@ -96,8 +96,11 @@
 #define ENGINE_ERROR_START      7100
 #define ENGINE_ERROR_END        7299
 
-#define REMOTE_ERROR_START      8000    // dafilesrv etc - see common/remote/remoteerr.hpp
-#define REMOTE_ERROR_END        8099
+#define REMOTE_ERROR_START      8000    // dafilesrv - see fs/dafsclient/remoteerr.hpp
+#define REMOTE_ERROR_END        8049
+
+#define DFT_ERROR_START         8050    // Distributed file transfer - see dali/ft/fterror.hpp
+#define DFT_ERROR_END           8199
 
 #define JHTREE_ERROR_START      8500
 #define JHTREE_ERROR_END        8699

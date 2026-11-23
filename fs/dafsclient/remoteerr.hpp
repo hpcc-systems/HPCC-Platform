@@ -18,57 +18,56 @@
 #ifndef REMOTEERR_HPP
 #define REMOTEERR_HPP
 
+#include "errorlist.h"
+
 #ifdef REMOTE_EXPORTS
 #define REMOTE_API DECL_EXPORT
 #else
 #define REMOTE_API DECL_IMPORT
 #endif
 
-#define ERR_REMOTE_FIRST                        8000
-#define ERR_REMOTE_LAST                         8049
-
-#define RFSERR_InvalidCommand                   8000
-#define RFSERR_NullFileIOHandle                 8001
-#define RFSERR_InvalidFileIOHandle              8002
-#define RFSERR_TimeoutFileIOHandle              8003
-#define RFSERR_OpenFailed                       8004
-#define RFSERR_ReadFailed                       8005
-#define RFSERR_WriteFailed                      8006
-#define RFSERR_RenameFailed                     8007
-#define RFSERR_ExistsFailed                     8009
-#define RFSERR_RemoveFailed                     8010
-#define RFSERR_CloseFailed                      8011
-#define RFSERR_IsFileFailed                     8012
-#define RFSERR_IsDirectoryFailed                8013
-#define RFSERR_IsReadOnlyFailed                 8014
-#define RFSERR_SetReadOnlyFailed                8015
-#define RFSERR_GetTimeFailed                    8016
-#define RFSERR_SetTimeFailed                    8017
-#define RFSERR_CreateDirFailed                  8018
-#define RFSERR_GetDirFailed                     8019
-#define RFSERR_GetCrcFailed                     8020
-#define RFSERR_MoveFailed                       8021
-#define RFSERR_ExtractBlobElementsFailed        8022
-#define RFSERR_CopyFailed                       8023
-#define RFSERR_AppendFailed                     8024
-#define RFSERR_AuthenticateFailed               8025
-#define RFSERR_CopySectionFailed                8026
-#define RFSERR_TreeCopyFailed                   8027
-#define RFSERR_StreamReadFailed                 8028
-#define RFSERR_InternalError                    8029
+#define RFSERR_InvalidCommand                   (REMOTE_ERROR_START + 0)
+#define RFSERR_NullFileIOHandle                 (REMOTE_ERROR_START + 1)
+#define RFSERR_InvalidFileIOHandle              (REMOTE_ERROR_START + 2)
+#define RFSERR_TimeoutFileIOHandle              (REMOTE_ERROR_START + 3)
+#define RFSERR_OpenFailed                       (REMOTE_ERROR_START + 4)
+#define RFSERR_ReadFailed                       (REMOTE_ERROR_START + 5)
+#define RFSERR_WriteFailed                      (REMOTE_ERROR_START + 6)
+#define RFSERR_RenameFailed                     (REMOTE_ERROR_START + 7)
+#define RFSERR_ExistsFailed                     (REMOTE_ERROR_START + 9)
+#define RFSERR_RemoveFailed                     (REMOTE_ERROR_START + 10)
+#define RFSERR_CloseFailed                      (REMOTE_ERROR_START + 11)
+#define RFSERR_IsFileFailed                     (REMOTE_ERROR_START + 12)
+#define RFSERR_IsDirectoryFailed                (REMOTE_ERROR_START + 13)
+#define RFSERR_IsReadOnlyFailed                 (REMOTE_ERROR_START + 14)
+#define RFSERR_SetReadOnlyFailed                (REMOTE_ERROR_START + 15)
+#define RFSERR_GetTimeFailed                    (REMOTE_ERROR_START + 16)
+#define RFSERR_SetTimeFailed                    (REMOTE_ERROR_START + 17)
+#define RFSERR_CreateDirFailed                  (REMOTE_ERROR_START + 18)
+#define RFSERR_GetDirFailed                     (REMOTE_ERROR_START + 19)
+#define RFSERR_GetCrcFailed                     (REMOTE_ERROR_START + 20)
+#define RFSERR_MoveFailed                       (REMOTE_ERROR_START + 21)
+#define RFSERR_ExtractBlobElementsFailed        (REMOTE_ERROR_START + 22)
+#define RFSERR_CopyFailed                       (REMOTE_ERROR_START + 23)
+#define RFSERR_AppendFailed                     (REMOTE_ERROR_START + 24)
+#define RFSERR_AuthenticateFailed               (REMOTE_ERROR_START + 25)
+#define RFSERR_CopySectionFailed                (REMOTE_ERROR_START + 26)
+#define RFSERR_TreeCopyFailed                   (REMOTE_ERROR_START + 27)
+#define RFSERR_StreamReadFailed                 (REMOTE_ERROR_START + 28)
+#define RFSERR_InternalError                    (REMOTE_ERROR_START + 29)
 
 
-#define RAERR_InvalidUsernamePassword           8040
-#define RFSERR_MasterSeemsToHaveDied            8041
-#define RFSERR_TimeoutWaitSlave                 8042
-#define RFSERR_TimeoutWaitConnect               8043
-#define RFSERR_TimeoutWaitMaster                8044
-#define RFSERR_NoConnectSlave                   8045
-#define RFSERR_NoConnectSlaveXY                 8046
-#define RFSERR_VersionMismatch                  8047
-#define RFSERR_SetThrottleFailed                8048
-#define RFSERR_MaxQueueRequests                 8049
-#define RFSERR_KeyIndexFailed                   8050
+#define RFSERR_KeyIndexFailed                   (REMOTE_ERROR_START + 39)
+#define RAERR_InvalidUsernamePassword           (REMOTE_ERROR_START + 40)
+#define RFSERR_MasterSeemsToHaveDied            (REMOTE_ERROR_START + 41)
+#define RFSERR_TimeoutWaitSlave                 (REMOTE_ERROR_START + 42)
+#define RFSERR_TimeoutWaitConnect               (REMOTE_ERROR_START + 43)
+#define RFSERR_TimeoutWaitMaster                (REMOTE_ERROR_START + 44)
+#define RFSERR_NoConnectSlave                   (REMOTE_ERROR_START + 45)
+#define RFSERR_NoConnectSlaveXY                 (REMOTE_ERROR_START + 46)
+#define RFSERR_VersionMismatch                  (REMOTE_ERROR_START + 47)
+#define RFSERR_SetThrottleFailed                (REMOTE_ERROR_START + 48)
+#define RFSERR_MaxQueueRequests                 (REMOTE_ERROR_START + 49)
 
 //---- Text for all errors (make it easy to internationalise) ---------------------------
 
