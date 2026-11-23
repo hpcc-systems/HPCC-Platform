@@ -129,3 +129,4 @@ jobs:
               /var/log/HPCCSystems
               /home/runner/HPCCSystems-regression
           if-no-files-found: error
+          overwrite: true

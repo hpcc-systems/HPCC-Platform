@@ -9,17 +9,21 @@ description: |
   ext_to_type: Maps file extensions to types
     Example: cpp=hpp|h|cpp|c|ipp  means .hpp, .h, .cpp, .c, .ipp files → type "cpp"
   
-  path_component: Maps directory prefixes directly to components (longest prefix wins)
+  path_component: Maps directory prefixes or exact file paths to components (longest match wins)
     Example: "esp/esdllib/docs/" maps to "doc"
     File "esp/esdllib/docs/readme.md" maps to "doc"
   
   declare_category: Defines which file type/component combinations trigger testing/actions
-    Syntax: declare_category <name> "#type" "!excluded-comp" "included-comp" "#type2"
+    Syntax: declare_category <name> "@category" "#type" "!excluded-comp" "included-comp" "#type2"
+    - @category: OR another category's result with this category's own rules
+    - References can be chained but must name an already declared category
+    - Undefined references and duplicate category declarations are errors
     - #type: Start rules for this type; unlisted components are included by default
     - #*: Apply component filters to changes of any type
     - !comp: Exclude this component (only if components are listed for that type)
     - comp: Include this component (only needed if you want to whitelist)
-    - Result: Category triggers if ANY type matches AND component passes filter
+    - Component filters belong to #type clauses, not to @category references
+    - Result: Category triggers if ANY referenced category or type/component rule matches
   
   OUTPUTS:
   changes: JSON object with four maps:
@@ -30,16 +34,23 @@ description: |
   
   impacts: JSON object mapping categories to boolean flags:
     - impacts[category]: true if changes trigger this test/action category
+    - compiled: C/C++ or code-generator input changes, excluding apparent comment-only C/C++ diffs
+    - codebuild: build inputs outside the docs and aidoc components
+    - regression-suite: changes in testing/regress/, ecllibrary/, or Java files anywhere
+    - unittests: changes in testing/ outside testing/regress/
+    - docs: changes mapped to the docs component; CI/CD workflows are excluded
+    - platform: changes outside helm/docs/aidoc/cicd/regress/eclccregress components, including unknown paths, after comment-only C++ filtering
+    - eclwatch: frontend changes outside separately classified documentation
   
   USAGE EXAMPLES:
   
   # Test if roxie tests should run
-  if: fromJSON(needs.analyze.outputs.impacts).roxie == 'true'
+  if: fromJSON(needs.analyze.outputs.impacts).roxie
   
   # Test if either roxie OR regression suite should run
   if: |
     fromJSON(needs.analyze.outputs.impacts).roxie ||
-    fromJSON(needs.analyze.outputs.impacts).['regression-suite']
+    fromJSON(needs.analyze.outputs.impacts)['regression-suite']
   
   # Original changes output (still available)
   if: fromJSON(needs.analyze.outputs.changes)['has-component'].roxie
@@ -49,8 +60,9 @@ description: |
       → true if cpp changed in roxie component
 
   SPECIAL CASES:
-  - Longest path match - if multiple prefixes match the longest is chosen
-  - Unknown component: If a component is not in any category definition, it's included by default
+  - Longest path match - if multiple mappings match the longest is chosen
+  - Directory mappings end in "/" and also match bare submodule paths; file mappings are exact
+  - Unmapped paths use the unknown component; category inclusion/exclusion filters still apply
 
 inputs:
   base-sha:
@@ -97,9 +109,10 @@ runs:
           # ============================================================================
 
           declare_type cpp            ".cpp" ".hpp" ".h" ".c" ".ipp" ".tpp" ".inc"
+          declare_type codegen        ".l" ".y" ".ecm"
           declare_type script         ".py" ".sh" ".bat" ".pm"
           declare_type document       ".md" ".rst" ".txt" ".xml"
-          declare_type ecl            ".ecl" ".eclxml" ".ecm" ".ecllib" ".manifest" ".l" ".y"
+          declare_type ecl            ".ecl" ".eclxml" ".ecllib" ".manifest"
           declare_type webcode        ".tsx" ".ts" ".js" ".mts" ".mjs" \
                                       ":" "tsconfig.json" "package.json"
           declare_type web            ".css" ".html"
@@ -119,11 +132,12 @@ runs:
           declare_type unexpected     ".er" ".wsdl" ".esdl"
 
           # ============================================================================
-          # COMPONENT DEFINITIONS: Path prefixes → components
+          # COMPONENT DEFINITIONS: Directory prefixes or exact files → components
           # ============================================================================
 
           # Documentation
           declare_component docs \
+            "README.md" "BUILD_ME.md" "index.md" \
             "esp/esdllib/docs/" \
             "esp/src/dgrid/doc/" \
             "helm/hpcc/docs/" \
@@ -162,8 +176,9 @@ runs:
           declare_component esp "esp/"
 
           # Test infrastructure
-          declare_component testing \
-            "testing/" "ecl/regress/"
+          declare_component testing "testing/"
+          declare_component regress "testing/regress/"
+          declare_component eclccregress "ecl/regress/"
 
           # Infrastructure and deployment
           declare_component helm "helm/"
@@ -179,15 +194,20 @@ runs:
           declare_component dafilesrv "fs/"
 
           # Build infrastructure and tooling
-          declare_component build "build_utils/" \
+          declare_component build "build_utils/" "cmake_modules/" "package/" \
+            "CMakeLists.txt" "build-config.h.cmake" "cmake_uninstall.cmake.in" \
+            "version.cmake" "baseaddr.txt" ".gitmodules" \
             "tools/esdlcomp/" "tools/esdlcmd/" "tools/esdlcmd-xml/" \
             "tools/hidl/" "tools/esp-api/" "tools/genht/"
+          declare_component clienttools "clienttools/"
+          declare_component services "services/"
 
           # Development tools
           declare_component tools "tools/"
 
           # vcpkg package management
-          declare_component vcpkg "vcpkg/" "vcpkg_overlays/"
+          declare_component vcpkg "vcpkg/" "vcpkg_overlays/" \
+            "vcpkg.json" "vcpkg.json.in" "vcpkg-configuration.json"
 
           # Execution engines: query and batch processing
           declare_component roxie "roxie/"
@@ -199,32 +219,55 @@ runs:
           # CATEGORY DEFINITIONS: Testing and action impact categories
           # ============================================================================
 
-          # Define categories based on current build-vcpkg.yml test conditions
+          declare_category compiled \
+            "#cpp" \
+            "#codegen"
+
+          declare_category eclwatch \
+            "#*" "eclwatch"
+
+          declare_category codebuild \
+            "#build" "!docs" "!aidoc"
+
           declare_category roxie \
-            "#build" \
-            "#cpp" "!thor" "!esp"
+            "@codebuild" \
+            "#cpp" "!thor" "!esp" \
+            "#codegen"
 
           declare_category thor \
-            "#build" \
-            "#cpp" "!roxie" "!esp"
+            "@codebuild" \
+            "#cpp" "!roxie" "!esp" \
+            "#codegen"
 
+          # hthor tests still run if esp has changed - have one engine test run
           declare_category hthor \
-            "#build" \
-            "#cpp" "!thor" "!roxie"
+            "@codebuild" \
+            "#cpp" "!thor" "!roxie" \
+            "#codegen"
 
           declare_category esp \
-            "#build" \
-            "#cpp" "!thor" "!roxie"
+            "@codebuild" \
+            "#cpp" "!thor" "!roxie" \
+            "#codegen" \
+            "#*" "deployment"
 
           declare_category dali \
-            "#build" \
+            "@codebuild" \
             "#cpp" "shared" "dali"
 
           declare_category regression-suite \
-            "#ecl" \
-            "#config" \
-            "#*" "testing" \
+            "#*" "regress" "ecllibrary" \
+            "#ecl" "plugins" \
             "#java"
+
+          declare_category unittests \
+            "#*" "testing"
+
+          declare_category platform \
+            "#*" "!helm" "!docs" "!aidoc" "!cicd" "!regress" "!eclccregress"
+
+          declare_category docs \
+            "#*" "docs"
         }
         
         declare -A ext_to_type
@@ -232,6 +275,8 @@ runs:
         declare -A path_component
         declare -A configured_components
         declare -A category_definitions
+        declare -A category_references
+        declare -a category_order
         
         # Helper: map extensions and filenames to a single type
         # Format: declare_type type ext1 ext2 ... ":" filename1 filename2 ...
@@ -254,7 +299,7 @@ runs:
           done
         }
         
-        # Helper: map path prefixes to a single component
+        # Helper: map directory prefixes or exact files to a single component
         declare_component() {
           local component="$1"
           shift
@@ -264,16 +309,20 @@ runs:
           done
         }
         
-        # Helper: declare impact categories with type/component filters
-        # Syntax: declare_category <name> "#type" "!" "excluded-comp" "included-comp" "#type2"
+        # Helper: declare impact categories with references and type/component filters
+        # Syntax: declare_category <name> "@category" "#type" "!excluded-comp" "included-comp"
         # - #type: start filter for this type; unlisted components included by default
         # - !comp: exclude this component (only if components listed for that type)
         # - comp: include this component (optional, to be explicit)
-        # - Result: true if ANY type matches AND component passes filter
+        # - @category: OR the referenced category's result with the type/component rules
         declare_category() {
           local name="$1"
           shift
           local args=("$@")
+          if [[ -n "${category_definitions[$name]+defined}" ]]; then
+            echo "ERROR: Duplicate category declaration '$name'" >&2
+            return 1
+          fi
           
           # Build set of defined types (on first call)
           if [[ -z "${_category_types_checked:-}" ]]; then
@@ -290,6 +339,8 @@ runs:
           # Parse args into type->components mapping
           local current_type=""
           local type_filters=""
+          local references=""
+          local reference
           
           for arg in "${args[@]}"; do
             if [[ "$arg" =~ ^# ]]; then
@@ -306,6 +357,18 @@ runs:
                 type_filters+=" "
               fi
               type_filters+="#$current_type"
+            elif [[ "$arg" == @* ]]; then
+              if [[ "$arg" == "@" ]]; then
+                echo "ERROR: Category '$name' has an empty category reference" >&2
+                return 1
+              fi
+              reference="${arg#@}"
+              if [[ -z "${category_definitions[$reference]+defined}" ]]; then
+                echo "ERROR: Category '$name' references undefined category '$reference'; declare it first" >&2
+                return 1
+              fi
+              references+=" $reference"
+              current_type=""
             else
               # Component (include or exclude)
               if [[ -z "$current_type" ]]; then
@@ -329,6 +392,8 @@ runs:
           fi
           
           category_definitions["$name"]="$type_filters"
+          category_references["$name"]="$references"
+          category_order+=("$name")
         }
         
         configure_changes
@@ -387,7 +452,9 @@ runs:
           longest_match=""
           
           for prefix in "${!path_component[@]}"; do
-            if [[ "$file" == "$prefix"* && ${#prefix} -gt ${#longest_match} ]]; then
+            if [[ ( "$file" == "$prefix" || "$file/" == "$prefix" ||
+                    ( "$prefix" == */ && "$file" == "$prefix"* ) ) &&
+                  ${#prefix} -gt ${#longest_match} ]]; then
               longest_match="$prefix"
               matched_comp="${path_component[$prefix]}"
             fi
@@ -552,7 +619,7 @@ runs:
             else
               return 1
             fi
-          elif [[ "${hasType[$type]}" != "true" ]]; then
+          elif [[ "${hasType[$type]}" != "true" || -z "${type_components_changed[$type]}" ]]; then
             return 1
           fi
           
@@ -597,14 +664,22 @@ runs:
           return 0
         }
         
-        for category in "${!category_definitions[@]}"; do
-          impacted=false
-          filters="${category_definitions[$category]}"
+        evaluate_category() {
+          local category="$1"
+          local impacted=false
+          local filters="${category_definitions[$category]}"
+          local reference
+          for reference in ${category_references[$category]}; do
+            if [[ "${impacts[$reference]}" == "true" ]]; then
+              impacted=true
+            fi
+          done
           
           # Parse filters: "#type_name" marks type boundaries
-          current_type=""
-          type_excludes=""
-          type_includes=""
+          local current_type=""
+          local type_excludes=""
+          local type_includes=""
+          local filter
           
           for filter in $filters; do
             if [[ "$filter" =~ ^# ]]; then
@@ -629,7 +704,11 @@ runs:
             fi
           done
           
-          impacts[$category]=$([ "$impacted" = true ] && echo "true" || echo "false")
+          impacts["$category"]="$impacted"
+        }
+
+        for category in "${category_order[@]}"; do
+          evaluate_category "$category" || exit 1
         done
         
         # Build impacts JSON
