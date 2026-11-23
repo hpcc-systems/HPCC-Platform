@@ -222,6 +222,7 @@ jobs:
             ${{ github.workspace }}/build/*.deb
             ${{ github.workspace }}/build/*.rpm
           if-no-files-found: error
+          overwrite: true
 
       - name: Upload Support Files
         if: ${{ inputs.upload-package == true }}
@@ -232,6 +233,7 @@ jobs:
             ${{ github.workspace }}/HPCC-Platform/.github/workflows/smoketest-preabort.sh
             ${{ github.workspace }}/HPCC-Platform/.github/workflows/timeoutcmd
           if-no-files-found: error
+          overwrite: true
 
       - name: Upload ECL Watch UI Test Files
         if: ${{ inputs.upload-package == true }}
@@ -241,6 +243,7 @@ jobs:
           path: |
             ${{ github.workspace }}/HPCC-Platform/esp/src/playwright-report/**/*
           if-no-files-found: error
+          overwrite: true
 
       - name: Upload Error Logs
         if: ${{ failure() || cancelled() }}
@@ -248,3 +251,4 @@ jobs:
         with:
           name: ${{ inputs.os }}-HPCC-Platform-gh-runner-logs
           path: ${{ github.workspace }}/build/**/*.log
+          overwrite: true
