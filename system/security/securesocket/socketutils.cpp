@@ -266,10 +266,10 @@ CReadSelectHandler::CReadSelectHandler(unsigned inactiveCloseTimeoutMs, unsigned
 {
     if (useIOUring)
     {
-        Owned<IPropertyTree> config = createPTreeFromXMLString("<iouring poll='1'/>");
+        Owned<IPropertyTree> config = getComponentConfigSP();
         // MORE: Update queue depth to allow the max number of connections
         constexpr bool useThreadForCompletion = true;
-        asyncReader.setown(createURingProcessorIfEnabled(config, useThreadForCompletion));
+        asyncReader.setown(createURingProcessorIfEnabled(config->queryPropTree("iouring"), useThreadForCompletion));
     }
 
     if (!asyncReader)

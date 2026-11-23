@@ -2575,6 +2575,9 @@ class IOURingTest : public CppUnit::TestFixture
         CPPUNIT_TEST(testcallbackNoThread);
         CPPUNIT_TEST(testcallback2NoThread);
         CPPUNIT_TEST(testcallbacks);
+        CPPUNIT_TEST(testDefaultConfig);
+        CPPUNIT_TEST(testNonPollingConfig);
+        CPPUNIT_TEST(testSharedPollThreadLifetime);
     CPPUNIT_TEST_SUITE_END();
 
     class SemCallback final : public CSimpleInterfaceOf<IAsyncCallback>
@@ -2591,6 +2594,64 @@ class IOURingTest : public CppUnit::TestFixture
     };
 
 public:
+    void testDefaultConfig()
+    {
+        SemCallback callback;
+        Owned<IAsyncProcessor> processor = createURingProcessor(nullptr, true);
+        if (!processor)
+        {
+            DBGLOG("io_uring polling unavailable, skipping default configuration test");
+            return;
+        }
+        processor->enqueueCallbackCommand(callback);
+        CPPUNIT_ASSERT(callback.sem.wait(5000));
+    }
+
+    void testNonPollingConfig()
+    {
+        Owned<IPropertyTree> config = createPTreeFromXMLString("<iouring poll='false' sharePollThread='true'/>");
+        SemCallback callback;
+        Owned<IAsyncProcessor> processor = createURingProcessor(config, true);
+        if (!processor)
+        {
+            DBGLOG("io_uring unavailable, skipping non-polling configuration test");
+            return;
+        }
+        processor->enqueueCallbackCommand(callback);
+        CPPUNIT_ASSERT(callback.sem.wait(5000));
+    }
+
+    void testSharedPollThreadLifetime()
+    {
+        Owned<IPropertyTree> config = createPTreeFromXMLString("<iouring sharePollThread='true'/>");
+        for (unsigned round = 0; round < 2; round++)
+        {
+            SemCallback callback1;
+            SemCallback callback2;
+            SemCallback callback3;
+            Owned<IAsyncProcessor> first = createURingProcessor(config, true);
+            if (!first && round == 0)
+            {
+                DBGLOG("Shared io_uring polling unavailable, skipping lifetime test");
+                return;
+            }
+            CPPUNIT_ASSERT(first);
+            Owned<IAsyncProcessor> second = createURingProcessor(config, true);
+            CPPUNIT_ASSERT(second);
+            first->enqueueCallbackCommand(callback1);
+            CPPUNIT_ASSERT(callback1.sem.wait(5000));
+            first.clear();
+
+            // A new ring must still be able to attach after the first processor terminates.
+            Owned<IAsyncProcessor> third = createURingProcessor(config, true);
+            CPPUNIT_ASSERT(third);
+            second->enqueueCallbackCommand(callback2);
+            third->enqueueCallbackCommand(callback3);
+            CPPUNIT_ASSERT(callback2.sem.wait(5000));
+            CPPUNIT_ASSERT(callback3.sem.wait(5000));
+        }
+    }
+
     void testcallback()
     {
         START_TEST

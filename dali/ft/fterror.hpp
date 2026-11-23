@@ -19,86 +19,87 @@
 #define FTERROR_HPP
 
 #include "remoteerr.hpp"
+#include "errorlist.h"
 
-#define ERR_DFT_FIRST                           8050
-#define ERR_DFT_LAST                            8099
-
-#define DFTERR_CouldNotOpenFile                 8050
-#define DFTERR_BadSrcTgtCombination             8051
-#define DFTERR_UnknownFileFormatType            8052
-#define DFTERR_CouldNotCreateOutput             8053
-#define DFTERR_FixedWidthInconsistent           8054
-#define DFTERR_FormatNotSpecified               8055
-#define DFTERR_UnknownFileFormatX               8056
-#define DFTERR_CouldNotOpenFilePart             8057
-#define DFTERR_FailedStartSlave                 8058
-#define DFTERR_CopyFailed                       8059
-#define DFTERR_ReplicateNumPartsDiffer          8060
-#define DFTERR_CopyFileOntoSelf                 8061
-#define DFTERR_TargetFormatUnknownSource        8065
-#define DFTERR_MasterSeemsToHaveDied            8066
-#define DFTERR_NoSplitSourceLessTarget          8067
-#define DFTERR_NoSplitPushChangeFormat          8068
-#define DFTERR_ReplicateOptionNoSupported       8069
-#define DFTERR_NoReplicationActionGiven         8070
-#define DFTERR_MaxRecordSizeZero                8071
-#define DFTERR_NoConvertCsvOther                8072
-#define DFTERR_UnknownUTFFormat                 8073
-#define DFTERR_UTFXNotYetSupported              8074
-#define DFTERR_OnlyConvertUtfUtf                8075
-#define DFTERR_PartsDoNotHaveSameUtfFormat      8076
-#define DFTERR_BadUtf8InArguments               8077
-#define DFTERR_InputIsInvalidMultiple           8078
-#define DFTERR_InputIsInvalidMultipleUtf        8079
-#define DFTERR_EndOfRecordNotFound              8080
-#define DFTERR_InputCrcMismatch                 8081
-#define DFTERR_CannotKeepHeaderChangeFormat     8082
-#define DFTERR_PrefixCannotTransform            8083
-#define DFTERR_PrefixCannotAlsoAddHeader        8084
-#define DFTERR_InvalidPrefixFormat              8085
-#define DFTERR_PrefixTooSmall                   8086
-#define DFTERR_UnexpectedReadFailure            8087
-#define DFTERR_NoPartsInDestination             8088
-#define DFTERR_PhysicalExistsNoOverwrite        8089
-#define DFTERR_InputOutputCrcMismatch           8090
-#define DFTERR_InvalidSplitPrefixFormat         8091
-#define DFTERR_SplitPrefixSingleTarget          8092
-#define DFTERR_SplitPrefixSameFormat            8093
-#define DFTERR_SplitNoSplitClash                8094
-#define DFTERR_NoFilesMatchWildcard             8095
-#define DFTERR_RowCompressedNotSupported        8096
-#define DFTERR_CannotPushAndCompress            8097
-#define DFTERR_CannotFindFirstXmlRecord         8098
-#define DFTERR_CannotFindLastXmlRecord          8099
-#define DFTERR_CouldNotOpenCompressedFile       8100
-#define DFTERR_EndOfXmlRecordNotFound           8101
-#define DFTERR_EndOfCsvRecordNotFound           8102
-#define DFTERR_EndOfUtfRecordNotFound           8103
-#define DFTERR_WrongRECFMvRecordDescriptorWord  8104
-#define DFTERR_WrongRECFMvbBlockDescriptorWord  8105
-#define DFTERR_WrongRECFMvbBlockSize            8106
-#define DFTERR_WrongRECFMvRecordSize            8107
-#define DFTERR_WrongSplitRecordSize             8108
-#define DFTERR_CannotFindFirstJsonRecord        8109
-#define DFTERR_InvalidXmlPartSize               8110
-#define DFTERR_InvalidFilePath                  8111
-#define DFTERR_NoMatchingDropzonePath           8112
-#define DFTERR_LocalhostAddressUsed             8113
-#define DFTERR_InvalidSuperindexCopy            8114
-#define DFTERR_NoMatchingDropzonePlane          8115
-#define DFTERR_CannotConvertKeyFile             8116
-#define DFTERR_CannotCompressKey                8117
-#define DFTERR_InconsistentQuoteSeparator       8118
+#define DFTERR_CouldNotOpenFile                 (DFT_ERROR_START + 0)
+#define DFTERR_BadSrcTgtCombination             (DFT_ERROR_START + 1)
+#define DFTERR_UnknownFileFormatType            (DFT_ERROR_START + 2)
+#define DFTERR_CouldNotCreateOutput             (DFT_ERROR_START + 3)
+#define DFTERR_FixedWidthInconsistent           (DFT_ERROR_START + 4)
+#define DFTERR_FormatNotSpecified               (DFT_ERROR_START + 5)
+#define DFTERR_UnknownFileFormatX               (DFT_ERROR_START + 6)
+#define DFTERR_CouldNotOpenFilePart             (DFT_ERROR_START + 7)
+#define DFTERR_FailedStartSlave                 (DFT_ERROR_START + 8)
+#define DFTERR_CopyFailed                       (DFT_ERROR_START + 9)
+#define DFTERR_ReplicateNumPartsDiffer          (DFT_ERROR_START + 10)
+#define DFTERR_CopyFileOntoSelf                 (DFT_ERROR_START + 11)
+#define DFTERR_TargetFormatUnknownSource        (DFT_ERROR_START + 15)
+#define DFTERR_MasterSeemsToHaveDied            (DFT_ERROR_START + 16)
+#define DFTERR_NoSplitSourceLessTarget          (DFT_ERROR_START + 17)
+#define DFTERR_NoSplitPushChangeFormat          (DFT_ERROR_START + 18)
+#define DFTERR_ReplicateOptionNoSupported       (DFT_ERROR_START + 19)
+#define DFTERR_NoReplicationActionGiven         (DFT_ERROR_START + 20)
+#define DFTERR_MaxRecordSizeZero                (DFT_ERROR_START + 21)
+#define DFTERR_NoConvertCsvOther                (DFT_ERROR_START + 22)
+#define DFTERR_UnknownUTFFormat                 (DFT_ERROR_START + 23)
+#define DFTERR_UTFXNotYetSupported              (DFT_ERROR_START + 24)
+#define DFTERR_OnlyConvertUtfUtf                (DFT_ERROR_START + 25)
+#define DFTERR_PartsDoNotHaveSameUtfFormat      (DFT_ERROR_START + 26)
+#define DFTERR_BadUtf8InArguments               (DFT_ERROR_START + 27)
+#define DFTERR_InputIsInvalidMultiple           (DFT_ERROR_START + 28)
+#define DFTERR_InputIsInvalidMultipleUtf        (DFT_ERROR_START + 29)
+#define DFTERR_EndOfRecordNotFound              (DFT_ERROR_START + 30)
+#define DFTERR_InputCrcMismatch                 (DFT_ERROR_START + 31)
+#define DFTERR_CannotKeepHeaderChangeFormat     (DFT_ERROR_START + 32)
+#define DFTERR_PrefixCannotTransform            (DFT_ERROR_START + 33)
+#define DFTERR_PrefixCannotAlsoAddHeader        (DFT_ERROR_START + 34)
+#define DFTERR_InvalidPrefixFormat              (DFT_ERROR_START + 35)
+#define DFTERR_PrefixTooSmall                   (DFT_ERROR_START + 36)
+#define DFTERR_UnexpectedReadFailure            (DFT_ERROR_START + 37)
+#define DFTERR_NoPartsInDestination             (DFT_ERROR_START + 38)
+#define DFTERR_PhysicalExistsNoOverwrite        (DFT_ERROR_START + 39)
+#define DFTERR_InputOutputCrcMismatch           (DFT_ERROR_START + 40)
+#define DFTERR_InvalidSplitPrefixFormat         (DFT_ERROR_START + 41)
+#define DFTERR_SplitPrefixSingleTarget          (DFT_ERROR_START + 42)
+#define DFTERR_SplitPrefixSameFormat            (DFT_ERROR_START + 43)
+#define DFTERR_SplitNoSplitClash                (DFT_ERROR_START + 44)
+#define DFTERR_NoFilesMatchWildcard             (DFT_ERROR_START + 45)
+#define DFTERR_RowCompressedNotSupported        (DFT_ERROR_START + 46)
+#define DFTERR_CannotPushAndCompress            (DFT_ERROR_START + 47)
+#define DFTERR_CannotFindFirstXmlRecord         (DFT_ERROR_START + 48)
+#define DFTERR_CannotFindLastXmlRecord          (DFT_ERROR_START + 49)
+#define DFTERR_CouldNotOpenCompressedFile       (DFT_ERROR_START + 50)
+#define DFTERR_EndOfXmlRecordNotFound           (DFT_ERROR_START + 51)
+#define DFTERR_EndOfCsvRecordNotFound           (DFT_ERROR_START + 52)
+#define DFTERR_EndOfUtfRecordNotFound           (DFT_ERROR_START + 53)
+#define DFTERR_WrongRECFMvRecordDescriptorWord  (DFT_ERROR_START + 54)
+#define DFTERR_WrongRECFMvbBlockDescriptorWord  (DFT_ERROR_START + 55)
+#define DFTERR_WrongRECFMvbBlockSize            (DFT_ERROR_START + 56)
+#define DFTERR_WrongRECFMvRecordSize            (DFT_ERROR_START + 57)
+#define DFTERR_WrongSplitRecordSize             (DFT_ERROR_START + 58)
+#define DFTERR_CannotFindFirstJsonRecord        (DFT_ERROR_START + 59)
+#define DFTERR_InvalidXmlPartSize               (DFT_ERROR_START + 60)
+#define DFTERR_InvalidFilePath                  (DFT_ERROR_START + 61)
+#define DFTERR_NoMatchingDropzonePath           (DFT_ERROR_START + 62)
+#define DFTERR_LocalhostAddressUsed             (DFT_ERROR_START + 63)
+#define DFTERR_InvalidSuperindexCopy            (DFT_ERROR_START + 64)
+#define DFTERR_NoMatchingDropzonePlane          (DFT_ERROR_START + 65)
+#define DFTERR_CannotConvertKeyFile             (DFT_ERROR_START + 66)
+#define DFTERR_CannotCompressKey                (DFT_ERROR_START + 67)
+#define DFTERR_InconsistentQuoteSeparator       (DFT_ERROR_START + 68)
 
 //Internal errors
-#define DFTERR_UnknownFormatType                8190
-#define DFTERR_OutputOffsetMismatch             8191
-#define DFTERR_NoSolarisDir                     8192
-#define DFTERR_NoSolarisCopy                    8193
-#define DFTERR_ReplicateSameFormat              8194
-#define DFTERR_PartitioningZeroSizedRowLink     8195
-#define DFTERR_CopyAborted                      8196
-#define DFTERR_WrongComputer                    8197
+#define DFTERR_UnknownFormatType                (DFT_ERROR_START + 140)
+#define DFTERR_OutputOffsetMismatch             (DFT_ERROR_START + 141)
+#define DFTERR_NoSolarisDir                     (DFT_ERROR_START + 142)
+#define DFTERR_NoSolarisCopy                    (DFT_ERROR_START + 143)
+#define DFTERR_ReplicateSameFormat              (DFT_ERROR_START + 144)
+#define DFTERR_PartitioningZeroSizedRowLink     (DFT_ERROR_START + 145)
+#define DFTERR_CopyAborted                      (DFT_ERROR_START + 146)
+#define DFTERR_WrongComputer                    (DFT_ERROR_START + 147)
+
+static_assert(DFTERR_CouldNotOpenFile >= DFT_ERROR_START, "DFT errors must not precede their reserved range");
+static_assert(DFTERR_WrongComputer <= DFT_ERROR_END, "DFT errors must not exceed the reserved DFT range");
 
 
 //---- Text for all errors (make it easy to internationalise) ---------------------------

@@ -2228,6 +2228,29 @@
         "topoServer": {
           "$ref": "#/definitions/toposerver"
         },
+        "iouring": {
+          "type": "object",
+          "description": "io_uring settings for Roxie networking",
+          "properties": {
+            "queueDepth": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 128,
+              "description": "Requested io_uring submission queue depth"
+            },
+            "poll": {
+              "type": "boolean",
+              "default": true,
+              "description": "Enable kernel submission queue polling (SQPOLL)"
+            },
+            "sharePollThread": {
+              "type": "boolean",
+              "default": false,
+              "description": "Share the SQPOLL thread with other opted-in io_uring instances in this process"
+            }
+          },
+          "additionalProperties": false
+        },
         "env": {
           "$ref": "#/definitions/env"
         },

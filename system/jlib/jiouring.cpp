@@ -28,6 +28,7 @@
 #if defined(__linux__) || defined (__FreeBSD__)
 
 #include <liburing.h>
+#include <memory>
 
 // Sentinel value used to identify cancel operation completions that should be discarded
 static constexpr uintptr_t CANCEL_SENTINEL = 1;
@@ -41,10 +42,65 @@ struct CompletionResponse
     unsigned flags;
 };
 
+// An otherwise idle ring keeps the shared SQPOLL thread alive independently of its users.
+class SharedURingPollThread
+{
+public:
+    SharedURingPollThread()
+    {
+        io_uring_params params{};
+        params.flags = IORING_SETUP_SQPOLL;
+        int ret = io_uring_queue_init_params(1, &ring, &params);
+        if (ret != 0)
+            throwStringExceptionV(JLIBERR_SystemFailedToInitializeIoUringQueueErrorCode, "Failed to initialize shared io_uring polling thread: error code %d", ret);
+        io_uring_ring_dontfork(&ring);
+    }
+
+    ~SharedURingPollThread()
+    {
+        io_uring_queue_exit(&ring);
+    }
+
+    int queryFd() const { return ring.ring_fd; }
+
+private:
+    io_uring ring;
+};
+
+static std::shared_ptr<SharedURingPollThread> getSharedURingPollThread()
+{
+    static CriticalSection crit{SYNC_LOCATION};
+    static std::weak_ptr<SharedURingPollThread> shared;
+    {
+        CriticalBlock block(crit);
+        if (auto existing = shared.lock())
+            return existing;
+    }
+
+    // Create outside the lock: queue setup/teardown can block. Concurrent creators use the first published ring.
+    auto candidate = std::make_shared<SharedURingPollThread>();
+    std::shared_ptr<SharedURingPollThread> result;
+    {
+        CriticalBlock block(crit);
+        result = shared.lock();
+        if (!result)
+        {
+            result = candidate;
+            shared = result;
+        }
+    }
+    return result;
+}
+
 class URingProcessor : public CInterfaceOf<IAsyncProcessor>
 {
 public:
     URingProcessor(const IPropertyTree * config);
+
+    virtual ~URingProcessor() override
+    {
+        terminate();
+    }
 
     virtual void beforeDispose() override
     {
@@ -80,6 +136,7 @@ protected:
     bool alive{false};
     std::atomic<bool> aborting{false};
     io_uring ring;
+    std::shared_ptr<SharedURingPollThread> sharedPollThread;
     const byte * startLockedMemory{nullptr};
     const byte * endLockedMemory{nullptr};
 };
@@ -87,9 +144,15 @@ protected:
 
 URingProcessor::URingProcessor(const IPropertyTree * config)
 {
+    Owned<IPropertyTree> defaultConfig;
+    if (!config)
+    {
+        defaultConfig.setown(createPTree("iouring"));
+        config = defaultConfig;
+    }
     unsigned queueDepth = config->getPropInt("@queueDepth", 128);
-    bool polling = config->getPropBool("@poll", false);
-    isMultiThreaded = !config->getPropBool("@singleThreaded", false);
+    bool polling = config->getPropBool("@poll", true);
+    isMultiThreaded = true; // For now, always use multi-threaded mode - add a separate parameter to config it if required
 
     io_uring_params params;
     memset(&params, 0, sizeof(params));
@@ -99,10 +162,10 @@ URingProcessor::URingProcessor(const IPropertyTree * config)
     if (polling)
         params.flags |= IORING_SETUP_SQPOLL;
 
-    int sharedIoRing = 0;
-    if (sharedIoRing)
+    if (polling && config->getPropBool("@sharePollThread", false))
     {
-        params.wq_fd = sharedIoRing;
+        sharedPollThread = getSharedURingPollThread();
+        params.wq_fd = sharedPollThread->queryFd();
         params.flags |= IORING_SETUP_ATTACH_WQ;
     }
 
@@ -374,6 +437,7 @@ void URingProcessor::terminate()
 
     alive = false;
     io_uring_queue_exit(&ring);
+    sharedPollThread.reset();
 }
 
 
