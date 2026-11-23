@@ -17,6 +17,7 @@
 
 #include "ldapsanitization.hpp"
 #include "jstring.hpp"
+#include "jexcept.hpp"
 
 #include <cctype>
 #include <cstring>
@@ -137,14 +138,12 @@ bool containsReservedChars(const char *name)
     if (isEmptyString(name))
         return false;
 
-    for (const char *p = name; *p; ++p)
-    {
-        // '"' can break out of an ACI string enabling clause; '?' truncates
-        // the DN component of an ldap:/// URL; '%' and '$' are reserved so
-        // raw names can never collide with a percent-/filter-encoded name.
-        if (*p == '"' || *p == '?' || *p == '%' || *p == '$')
-            return true;
-    }
+    return strpbrk(name, ldapReservedChars) != nullptr;
+}
 
-    return false;
+void throwIfReservedChars(const char *action, const char *what, const char *name)
+{
+    if (containsReservedChars(name))
+        throw makeStringExceptionV(-1, "Can't %s '%s': %s contains a character that is not permitted (%s are forbidden)",
+                                   action, name, what, ldapReservedCharsDesc);
 }

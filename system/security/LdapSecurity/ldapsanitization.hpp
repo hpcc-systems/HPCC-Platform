@@ -25,5 +25,8 @@ void appendEscapedLdapFilter(size_t inputLength, const char *input, StringBuffer
 
 void escapeLdapDistinguishedName(const char *input, StringBuffer &output);
 void escapeLdapDistinguishedName(size_t inputLength, const char *input, StringBuffer &output);
+constexpr const char *ldapReservedChars = "\"?%$";
+constexpr const char *ldapReservedCharsDesc = "'\"', '?', '%', and '$'";
 
 bool containsReservedChars(const char *name);
+void throwIfReservedChars(const char *action, const char *what, const char *name);
