@@ -90,6 +90,7 @@ std::atomic<unsigned __int64> leafSearchCycles{0};
 static cycle_t traceCacheLockingFrequency{0};
 static cycle_t traceNodeLoadFrequency{0};
 static cycle_t traceNodeLoadThreshold{0};
+static bool pageCacheTrimReads = true;
 
 MODULE_INIT(INIT_PRIORITY_JHTREE_JHTREE)
 {
@@ -2217,6 +2218,7 @@ const CJHTreeNode *CDiskKeyIndex::loadNode(cycle_t * fetchCycles, offset_t pos, 
 
         // Now check if there is an entry in the page cache
         bool usePageCache = activePageCache && shouldUsePageCache(typeWithFlags);
+        offset_t alignedPos = pos;
         if (usePageCache)
         {
             if (activePageCache->read(iD, pos, nodeSize, readCache))
@@ -2225,12 +2227,30 @@ const CJHTreeNode *CDiskKeyIndex::loadNode(cycle_t * fetchCycles, offset_t pos, 
             // Ensure that we read one or more page cache pages - ensure that large reads are a multiple of the page size
             if (readSize < pageCachePageSize)
                 readSize = pageCachePageSize;
+
+            //Adjust the read position to be on a page cache page boundary
+            alignedPos = pos - (pos % pageCachePageSize);
+
+            // Phase 3 optimization: trim the read size if the cache already has data beyond pos + readSize
+            if (pageCacheTrimReads)
+            {
+                // Walk through potential page cache pages and trim if we find a page already present
+                offset_t minOffset = pos + nodeSize;
+                while (readSize > pageCachePageSize)
+                {
+                    offset_t testPos = alignedPos + readSize - pageCachePageSize;
+                    if (testPos < minOffset)
+                        break;
+                    if (!activePageCache->isCached(iD, testPos))
+                        break;
+
+                    // Found cached data at the end of our intended read, trim back
+                    readSize -= pageCachePageSize;
+                }
+            }
         }
 
         {
-            // Align the read position to a multiple of the read granularity, and get a reusable buffer from the readState object
-            offset_t readPosDelta = pos % readSize;
-            offset_t alignedPos = pos - readPosDelta;
             byte * buffer = readCache.getBufferForUpdate(alignedPos, readSize);
 
             // NOTE: There will only be a single call to loadNode for a given position, but there may be multiple calls to
@@ -3536,6 +3556,11 @@ extern jhtree_decl size32_t getPageCachePageSize()
     return pageCachePageSize;
 }
 
+extern jhtree_decl void setPageCacheTrimReads(bool enable)
+{
+    pageCacheTrimReads = enable;
+}
+
 extern jhtree_decl void clearKeyStoreCacheEntry(const char *name)
 {
     queryKeyStore()->clearCacheEntry(name);
@@ -4820,11 +4845,15 @@ class IKeyManagerTest : public CppUnit::TestFixture
         memset(original.mem(), 0x11, pageSize);
         memset(replacement.mem(), 0x22, pageSize);
 
+        ASSERT(!cache.isCached(testFileId, 0));
         cache.write(testFileId, 0, static_cast<const byte *>(original.get()));
+        ASSERT(cache.isCached(testFileId, 1));
+        ASSERT(!cache.isCached(testFileId, pageSize));
         //Loop many times to ensure the first page would be evicted if now checking is occuring
         for (unsigned iter = 0; iter < 32; iter++)
             cache.write(testFileId, 0, static_cast<const byte *>(replacement.get()));
 
+        ASSERT(cache.isCached(testFileId, 0));
         CCachedIndexRead readCache;
         ASSERT(cache.read(testFileId, 0, 1, readCache));
         ASSERT(readCache.queryBuffer(0, 1)[0] == 0x11);

@@ -93,6 +93,9 @@ interface IPageCache : public IInterface
 
     // if all ok with creating page cache.
     virtual bool isInitializedOK() const = 0;
+
+    // Is the specified page already cached?
+    virtual bool isCached(unsigned fileId, offset_t offset) const = 0;
 };
 
 //Not called from outside jhtree, so no jhtree_decl

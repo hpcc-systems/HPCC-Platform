@@ -45,6 +45,7 @@
 #include "thorplugin.hpp"
 #include "hpccconfig.hpp"
 #include "udpsha.hpp"
+#include "jhtree.hpp"
 
 #ifdef _USE_OPENSSL
 #include "securesocket.hpp"
@@ -1506,6 +1507,8 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
 
         // Call upfront to prepare page cache (will only activate if page cache is configured)
         ensureDiskPageCacheInitialized(true);
+        if (topology->hasProp("@pageCacheTrimReads"))
+            setPageCacheTrimReads(topology->getPropBool("@pageCacheTrimReads", true));
 
         unsigned __int64 affinity = topology->getPropInt64("@affinity", 0);
         updateAffinity(affinity);

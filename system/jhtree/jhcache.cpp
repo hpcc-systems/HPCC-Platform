@@ -405,7 +405,7 @@ public:
         posix_fadvise(cacheFd, 0ULL, totSize, POSIX_FADV_RANDOM);
     }
 
-    void getCacheInfo(unsigned fileId, offset_t alignedPosShift, offset_t &cacheVal, unsigned &cacheKey, unsigned &critIndex)
+    void getCacheInfo(unsigned fileId, offset_t alignedPosShift, offset_t &cacheVal, unsigned &cacheKey, unsigned &critIndex) const
     {
         cacheVal = fileId | (alignedPosShift << fileIdBits);
         cacheKey = cacheIndex(cacheVal, numEntries);
@@ -467,6 +467,32 @@ public:
     }
 
     virtual void noteUsed(unsigned fileId, offset_t offset) override { }
+
+    virtual bool isCached(unsigned fileId, offset_t offset) const override
+    {
+#ifdef __linux__
+        if (!cacheOK)
+            return false;
+
+        offset_t alignedPos = offset & pageOffsetMask;
+        offset_t alignedPosShift = alignedPos >> pageSizeExp;
+
+        fileId &= ~(1U << 31);
+
+        if ((fileId >= (1U << fileIdBits)) || (alignedPosShift >= (1ULL << offsetBits)))
+            throw makeStringExceptionV(0, "pageCache error isCached: invalid fileId %u / offset %llu", fileId, alignedPos);
+
+        offset_t cacheVal;
+        unsigned cacheKey;
+        unsigned critIndex;
+        getCacheInfo(fileId, alignedPosShift, cacheVal, cacheKey, critIndex);
+
+        CriticalBlock b(fCrit[critIndex]);
+        return cache[cacheKey].findInCacheSet(cacheVal) != numSets;
+#else
+        return false;
+#endif
+    }
 
     // Searching for a node in the disk node cache.  Return true if found, and ensure nodeData is populated
     // if it returns false then the node is not in the cache.
@@ -998,6 +1024,13 @@ public:
             recorder.noteWarm(cache.file, cache.offset, pageSize, NodeNone);
     }
 
+    virtual bool isCached(unsigned fileId, offset_t offset) const override
+    {
+        CriticalBlock b(crit);
+        offset_t pageOffset = offset & offsetMask;
+        return (fileId == cache.file) && (cache.offset != invalidOffset) && (pageOffset == cache.offset);
+    }
+
 protected:
     bool onCacheMiss(unsigned fileId, offset_t offset, size32_t size)
     {
@@ -1013,7 +1046,7 @@ protected:
     }
 
 protected:
-    CriticalSection crit{SYNC_LOCATION};
+    mutable CriticalSection crit{SYNC_LOCATION};
     offset_t size;
     size32_t pageSize{0};
     size32_t readSize{0};
