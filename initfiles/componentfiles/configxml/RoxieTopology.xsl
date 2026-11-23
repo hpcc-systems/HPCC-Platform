@@ -123,6 +123,7 @@
                 <xsl:value-of select="translate($path3, $oldPathSeparator, $newPathSeparator)"/>
             </xsl:attribute>
             <xsl:copy-of select="./expert"/>
+            <xsl:copy-of select="./iouring"/>
             <xsl:copy-of select="./pageCache"/>
             <xsl:call-template name="copyVaultsConfig"/>
             <xsl:copy-of select="./directAccessPlanes"/>

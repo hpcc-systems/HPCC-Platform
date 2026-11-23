@@ -97,6 +97,10 @@ interface IAsyncProcessor : public IInterface
 };
 
 // Create an instance of the IAsyncProcessor interface - may return null if not supported
+// config is the component's iouring subtree, or null for defaults:
+// @queueDepth=128, @poll=true, @sharePollThread=false.
+// Sharing applies only with polling enabled and shares the kernel polling thread within this process,
+// not the queues or userspace completion threads.
 extern jlib_decl IAsyncProcessor * createURingProcessor(const IPropertyTree * config, bool threaded);
 
 // Helper that checks expert/@useIOUring configuration before creating URing processor
