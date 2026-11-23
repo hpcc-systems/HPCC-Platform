@@ -109,4 +109,5 @@ jobs:
             ${{ github.workspace }}/build/docs/EN_US/HTMLHelp/*.zip
             ${{ github.workspace }}/build/docs/PT_BR/HTMLHelp/*.zip
           compression-level: 0
+          overwrite: true
 

@@ -187,6 +187,7 @@ jobs:
             ${{ github.workspace }}/build/*.deb
             ${{ github.workspace }}/build/*.rpm
           if-no-files-found: error
+          overwrite: true
 
       - name: Upload Support Files
         if: ${{ inputs.upload-package == true }}
@@ -197,10 +198,12 @@ jobs:
             ${{ github.workspace }}/HPCC-Platform/.github/workflows/smoketest-preabort.sh
             ${{ github.workspace }}/HPCC-Platform/.github/workflows/timeoutcmd
           if-no-files-found: error
+          overwrite: true
 
       - name: Upload Error Logs
         if: ${{ failure() || cancelled() }}
         uses: actions/upload-artifact@v7
         with:
-          name: ${{ inputs.os }}-HPCC-Platform-docker-logs
+          name: ${{ inputs.os }}${{ inputs.tag_postfix }}-HPCC-Platform-docker${{ inputs.containerized && '-containerized' || '' }}-logs
           path: ${{ github.workspace }}/build/**/*.log
+          overwrite: true

@@ -22,26 +22,13 @@ on:
   push:
     tags:
       - "community_*"
-      - "!community_8.10.*"
-      - "!community_8.8.*"
-      - "!community_8.6.*"
-      - "!community_8.4.*"
-      - "!community_8.2.*"
-      - "!community_8.0.*"
-      - "!community_7.*"
       - "!HPCC*"
 
   pull_request:
+    types: [opened, synchronize, reopened]
     branches:
       - "master"
       - "candidate-*"
-      - "!candidate-7.10.*"
-      - "!candidate-7.8.*"
-      - "!candidate-7.6.*"
-      - "!candidate-7.4.*"
-      - "!candidate-7.2.*"
-      - "!candidate-7.0.*"
-      - "!candidate-6.*"
 
   schedule:
     - cron: "0 0 * * *"
@@ -57,128 +44,46 @@ permissions:
   packages: read
 
 jobs:
-  pre_job:
+  # Keep prerequisites successful on tag pushes; guard PR-only work at step level.
+  # Failed-job and label-triggered triage reruns reuse this successful job.
+  clear-ready-to-test:
     if: ${{ contains('pull_request,push', github.event_name) }}
-    runs-on: ubuntu-latest
-    # Map a step output to a job output
-    outputs:
-      workflows: ${{ steps.skip_check.outputs.workflows }}
-      platform: ${{ steps.skip_check.outputs.platform }}
-      plugins: ${{ steps.skip_check.outputs.plugins }}
-      dockerfiles: ${{ steps.skip_check.outputs.dockerfiles }}
-      helm: ${{ steps.skip_check.outputs.helm }}
-      ecllibrary: ${{ steps.skip_check.outputs.ecllibrary }}
-      eclwatch: ${{ steps.skip_check.outputs.eclwatch }}
-      docs: ${{ steps.skip_check.outputs.docs }}
-      testing: ${{ steps.skip_check.outputs.testing }}
-      initfiles: ${{ steps.skip_check.outputs.initfiles }}
-      vcpkg: ${{ steps.skip_check.outputs.vcpkg }}
-      other: ${{ steps.skip_check.outputs.other }}
+    runs-on: ubuntu-slim
+    permissions:
+      pull-requests: write
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v6
+      - name: Clear ready-to-test after a PR head update
+        if: ${{ github.event.action == 'synchronize' }}
+        uses: actions/github-script@v7
         with:
-          fetch-depth: 0
-      - id: skip_check
-        uses: dorny/paths-filter@v3
-        with:
-          filters: |
-            workflows:
-              - ".github/workflows/**"
-            platform:
-              - "clienttools/**"
-              - "cmake_modules/**"
-              - "common/**"
-              - "configuration/**"
-              - "dali/**"
-              - "deploy/**"
-              - "deployment/**"
-              - "ecl/**"
-              - "esp/**"
-              - "!esp/src/**"
-              - "!esp/eclwatch/**"
-              - "fs/**"
-              - "lib2/**"
-              - "package/**"
-              - "plugins/**"
-              - "roxie/**"
-              - "rtl/**"
-              - "services/**"
-              - "system/**"
-              - "thorlcr/**"
-              - "tools/**"
-              - "vcpkg/**"
-              - "vcpkg-overlays/**"
-            plugins:
-              - "plugins/**"
-            dockerfiles:
-              - "dockerfiles/**"
-            helm:
-              - "helm/**"
-              - "testing/helm/**"
-            ecllibrary:
-              - "ecllibrary/**"
-            eclwatch:
-              - "esp/eclwatch/**"
-              - "esp/src/**"
-            docs:
-              - "docs/**"
-              - ".github/workflows/test-documentation.yml"
-            testing:
-              - "testing/**"
-            initfiles:
-              - "initfiles/**"
-            vcpkg:
-              - "vcpkg/**"
-              - "vcpkg-overlays/**"
-            other:
-              - "charm/**"
-              - "devdoc/**"
-              - "devel/**"
-              - "githooks/**"
-              - "install/**"
-              - "misc/**"
-          list-files: json
-      - name: Print changed paths
-        run: |
-          echo "=== Path Filter Report ==="
-          echo "Filters with changes: ${{ steps.skip_check.outputs.changes }}"
-          echo ""
-          
-          # Parse the JSON array of changed filters
-          changed_filters='${{ steps.skip_check.outputs.changes }}'
-          
-          # Iterate through each changed filter
-          for filter in $(echo "$changed_filters" | jq -r '.[]'); do
-            echo "### ${filter^} ###"
-            
-            # Get the files for this filter
-            files_var="${filter}_files"
-            files_json=$(echo '${{ toJSON(steps.skip_check.outputs) }}' | jq -r --arg key "$files_var" '.[$key]')
-            
-            if [[ "$files_json" != "null" && "$files_json" != "" ]]; then
-              echo "$files_json" | jq -r '.[]'
-            else
-              echo "No files detected"
-            fi
-            echo ""
-          done
-          
-          echo "=========================="
+          script: |
+            // This step is not designed to work with forked repositories.
+            const { data: pr } = await github.rest.pulls.get({
+              ...context.repo,
+              pull_number: context.issue.number,
+            });
+            if (pr.head.sha !== context.payload.pull_request.head.sha) {
+              throw new Error('PR head changed; refusing to clear the label from an outdated run');
+            }
+            if (pr.labels.some(label => label.name === 'ready-to-test')) {
+              try {
+                await github.rest.issues.removeLabel({
+                  ...context.repo,
+                  issue_number: context.issue.number,
+                  name: 'ready-to-test',
+                });
+                core.info('Removed ready-to-test after PR head update');
+              } catch (error) {
+                if (error.status !== 404) throw error;
+                core.info('ready-to-test was already removed');
+              }
+            } else {
+              core.info('No ready-to-test label to remove');
+            }
 
-  # Usage in other jobs:
-  # Severity outputs: has-high-issues (High or Critical), has-medium-issues, has-low-issues.
-  # To gate a job on this review completing with no High or Critical issues, add:
-  #   needs: wait-for-copilot-review
-  #   if: dollar{{ needs.wait-for-copilot-review.outputs.review-completed == 'true' && needs.wait-for-copilot-review.outputs.has-high-issues == 'false' }}
-  # Example:
-  #   deploy:
-  #     needs: wait-for-copilot-review
-  #     if: dollar{{ needs.wait-for-copilot-review.outputs.review-completed == 'true' && needs.wait-for-copilot-review.outputs.has-high-issues == 'false' }}
-  #     runs-on: ubuntu-latest
-  #     steps: ...
+  # Severity outputs feed triage: High includes Critical; Low does not block builds.
   wait-for-copilot-review:
-    if: ${{ github.event_name == 'pull_request' }}
+    if: ${{ contains('pull_request,push', github.event_name) }}
     runs-on: ubuntu-latest
     timeout-minutes: 25
     permissions:
@@ -191,6 +96,7 @@ jobs:
       review-completed: ${{ steps.result.outputs.review-completed }}
     steps:
       - name: Wait for Copilot review (up to 30 minutes)
+        if: ${{ github.event_name == 'pull_request' }}
         id: result
         uses: actions/github-script@v7
         with:
@@ -309,7 +215,7 @@ jobs:
   
   analyze-changes:
     if: ${{ contains('pull_request,push', github.event_name) }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     outputs:
       changes: ${{ steps.analyze.outputs.changes }}
       impacts: ${{ steps.analyze.outputs.impacts }}
@@ -325,6 +231,66 @@ jobs:
         with:
           base-sha: ${{ github.event.pull_request.base.sha || github.event.before }}
           head-sha: ${{ github.event.pull_request.head.sha || github.event.after }}
+
+  # Consumers use this gate's impacts without depending directly on the analyzer.
+  triage:
+    needs: [clear-ready-to-test, wait-for-copilot-review, analyze-changes]
+    if: ${{ !cancelled() && contains('pull_request,push', github.event_name) }}
+    runs-on: ubuntu-slim
+    outputs:
+      impacts: ${{ needs.analyze-changes.outputs.impacts }}
+    permissions:
+      pull-requests: read
+    steps:
+      - name: Gate builds on review findings or ready-to-test
+        uses: actions/github-script@v7
+        env:
+          NEEDS: ${{ toJSON(needs) }}
+        with:
+          script: |
+            const needs = JSON.parse(process.env.NEEDS);
+            if (needs['analyze-changes'].result !== 'success') {
+              throw new Error('Change analysis must succeed before triage');
+            }
+            const impacts = JSON.parse(needs['analyze-changes'].outputs.impacts);
+            const categories = ['platform', 'eclwatch', 'docs', 'unittests', 'regression-suite',
+                                'roxie', 'thor', 'hthor', 'esp', 'dali'];
+            if (!impacts || Array.isArray(impacts) ||
+                categories.some(name => typeof impacts[name] !== 'boolean')) {
+              throw new Error('Change analysis impacts must contain boolean values for all required categories');
+            }
+            if (context.eventName !== 'pull_request') {
+              core.info('Copilot triage is not required for tag pushes');
+              return;
+            }
+            if (needs['clear-ready-to-test'].result !== 'success') {
+              throw new Error('Label cleanup must succeed before triage');
+            }
+            const review = needs['wait-for-copilot-review'];
+            if (review.result !== 'success' || review.outputs['review-completed'] !== 'true') {
+              throw new Error('Copilot review must complete successfully before triage');
+            }
+            const severities = ['has-high-issues', 'has-medium-issues'];
+            if (severities.some(name => !['true', 'false'].includes(review.outputs[name]))) {
+              throw new Error('Copilot review severity outputs are missing or invalid');
+            }
+            const { data: pr } = await github.rest.pulls.get({
+              ...context.repo,
+              pull_number: context.issue.number,
+            });
+            // A new push may race cancellation, or an old run may be manually rerun.
+            // Do not apply the current PR's labels to an older commit's review results.
+            if (pr.head.sha !== context.payload.pull_request.head.sha) {
+              throw new Error('PR head changed; rerun the workflow for the latest PR commit.');
+            }
+            if (pr.labels.some(label => label.name === 'ready-to-test')) {
+              core.info('ready-to-test overrides High, Critical, and Medium review findings');
+              return;
+            }
+            if (severities.some(name => review.outputs[name] === 'true')) {
+              throw new Error('Copilot found High, Critical, or Medium issues; resolve them or apply ready-to-test');
+            }
+            core.info('No High, Critical, or Medium review findings');
 
   build-workflow-dispatch:
     if: ${{ contains('workflow_dispatch', github.event_name) }}
@@ -345,8 +311,8 @@ jobs:
     secrets: inherit
 
   build-docker-ubuntu-24_04-arm:
-    needs: [pre_job]
-    if: ${{ contains('pull_request,push', github.event_name) && (needs.pre_job.outputs.platform == 'true') }}
+    needs: [triage]
+    if: ${{ contains('pull_request,push', github.event_name) && fromJSON(needs.triage.outputs.impacts).platform }}
     uses: ./.github/workflows/build-docker.yml
     with:
       os: ubuntu-24.04
@@ -354,16 +320,16 @@ jobs:
     secrets: inherit
 
   build-docker-ubuntu-24_04:
-    needs: [pre_job]
-    if: ${{ contains('pull_request,push', github.event_name) && (needs.pre_job.outputs.platform == 'true') }}
+    needs: [triage]
+    if: ${{ contains('pull_request,push', github.event_name) && fromJSON(needs.triage.outputs.impacts).platform }}
     uses: ./.github/workflows/build-docker.yml
     with:
       os: ubuntu-24.04
     secrets: inherit
 
   build-docker-ubuntu-22_04-arm:
-    needs: [pre_job]
-    if: ${{ contains('pull_request,push', github.event_name) && (needs.pre_job.outputs.platform == 'true') }}
+    needs: [triage]
+    if: ${{ contains('pull_request,push', github.event_name) && fromJSON(needs.triage.outputs.impacts).platform }}
     uses: ./.github/workflows/build-docker.yml
     with:
       os: ubuntu-22.04
@@ -371,8 +337,13 @@ jobs:
     secrets: inherit
 
   build-docker-ubuntu-22_04:
-    needs: [pre_job]
-    if: ${{ contains('pull_request,push', github.event_name) && (needs.pre_job.outputs.platform == 'true' || needs.pre_job.outputs.testing == 'true') }}
+    needs: [triage]
+    # Every package-consuming test must have a matching producer condition.
+    if: >-
+      ${{ contains('pull_request,push', github.event_name) &&
+          (fromJSON(needs.triage.outputs.impacts).platform ||
+           fromJSON(needs.triage.outputs.impacts).unittests ||
+           fromJSON(needs.triage.outputs.impacts)['regression-suite']) }}
     uses: ./.github/workflows/build-docker.yml
     with:
       os: ubuntu-22.04
@@ -381,20 +352,25 @@ jobs:
     secrets: inherit
 
   test-smoke-docker-ubuntu-22_04:
-    needs: [build-docker-ubuntu-22_04, pre_job, analyze-changes]
-    if: ${{ contains('pull_request,push', github.event_name) && (needs.pre_job.outputs.testing == 'true' || needs.pre_job.outputs.platform == 'true') }}
+    needs: [build-docker-ubuntu-22_04, triage]
+    if: >-
+      ${{ contains('pull_request,push', github.event_name) &&
+          (fromJSON(needs.triage.outputs.impacts).roxie ||
+           fromJSON(needs.triage.outputs.impacts).thor ||
+           fromJSON(needs.triage.outputs.impacts).hthor ||
+           fromJSON(needs.triage.outputs.impacts)['regression-suite']) }}
     uses: ./.github/workflows/test-smoke-gh_runner.yml
     with:
       os: ubuntu-22.04
       asset-name: 'docker-ubuntu-22_04'
-      run-roxie-tests: ${{ (fromJSON(needs.analyze-changes.outputs.impacts).roxie) || (fromJSON(needs.analyze-changes.outputs.impacts)['regression-suite']) }}
-      run-thor-tests: ${{ (fromJSON(needs.analyze-changes.outputs.impacts).thor) || (fromJSON(needs.analyze-changes.outputs.impacts)['regression-suite']) }}
-      run-hthor-tests: ${{ (fromJSON(needs.analyze-changes.outputs.impacts).hthor) || (fromJSON(needs.analyze-changes.outputs.impacts)['regression-suite']) }}
+      run-roxie-tests: ${{ fromJSON(needs.triage.outputs.impacts).roxie || fromJSON(needs.triage.outputs.impacts)['regression-suite'] }}
+      run-thor-tests: ${{ fromJSON(needs.triage.outputs.impacts).thor || fromJSON(needs.triage.outputs.impacts)['regression-suite'] }}
+      run-hthor-tests: ${{ fromJSON(needs.triage.outputs.impacts).hthor || fromJSON(needs.triage.outputs.impacts)['regression-suite'] }}
     secrets: inherit
 
   test-regression-suite-k8s-ubuntu-22_04:
-    needs: [pre_job]
-    if: ${{ contains('pull_request,push', github.event_name) && (needs.pre_job.outputs.testing == 'true' || needs.pre_job.outputs.platform == 'true') }}
+    needs: [triage]
+    if: ${{ contains('pull_request,push', github.event_name) && (fromJSON(needs.triage.outputs.impacts).esp || fromJSON(needs.triage.outputs.impacts)['regression-suite']) }}
     uses: ./.github/workflows/test-regression-suite-k8s.yml
     secrets: inherit
     with:
@@ -402,8 +378,8 @@ jobs:
       asset-name: 'docker-ubuntu-22_04-containerized'
 
   test-unit-docker-ubuntu-22_04:
-    needs: [build-docker-ubuntu-22_04, pre_job]
-    if: ${{ contains('pull_request,push', github.event_name) && (needs.pre_job.outputs.testing == 'true' || needs.pre_job.outputs.platform == 'true') }}
+    needs: [build-docker-ubuntu-22_04, triage]
+    if: ${{ contains('pull_request,push', github.event_name) && (fromJSON(needs.triage.outputs.impacts).unittests || fromJSON(needs.triage.outputs.impacts).platform) }}
     uses: ./.github/workflows/test-unit-gh_runner.yml
     with:
       os: ubuntu-22.04
@@ -411,8 +387,8 @@ jobs:
     secrets: inherit
 
   test-bundles-on-thor-ubuntu-22_04:
-    needs: [build-docker-ubuntu-22_04, pre_job]
-    if: ${{ contains('pull_request,push', github.event_name) && (needs.pre_job.outputs.testing == 'true' || needs.pre_job.outputs.platform == 'true') }}
+    needs: [build-docker-ubuntu-22_04, triage]
+    if: ${{ contains('pull_request,push', github.event_name) && (fromJSON(needs.triage.outputs.impacts).thor || fromJSON(needs.triage.outputs.impacts)['regression-suite']) }}
     uses: ./.github/workflows/bundleTest-thor.yml
     with:
       os: ubuntu-22.04
@@ -421,8 +397,8 @@ jobs:
     secrets: inherit
 
   test-eclwatch-gh_runner-ubuntu-22_04:
-    needs: [build-docker-ubuntu-22_04, pre_job]
-    if: ${{ contains('pull_request,push', github.event_name) && needs.pre_job.outputs.eclwatch == 'true' }}
+    needs: [build-docker-ubuntu-22_04, triage]
+    if: ${{ contains('pull_request,push', github.event_name) && fromJSON(needs.triage.outputs.impacts).eclwatch }}
     uses: ./.github/workflows/test-eclwatch.yml
     with:
       os: ubuntu-22.04
@@ -430,8 +406,8 @@ jobs:
     secrets: inherit
 
   test-documentation-ubuntu-22_04:
-    needs: [pre_job]
-    if: ${{ contains('pull_request,push', github.event_name) && needs.pre_job.outputs.docs == 'true' }}
+    needs: [triage]
+    if: ${{ contains('pull_request,push', github.event_name) && fromJSON(needs.triage.outputs.impacts).docs }}
     uses: ./.github/workflows/test-documentation.yml
     with:
       os: 'ubuntu-22.04'
@@ -452,16 +428,16 @@ jobs:
     secrets: inherit
 
   build-docker-centos-7:
-    needs: [pre_job]
-    if: ${{ contains('pull_request,push', github.event_name) && (needs.pre_job.outputs.platform == 'true') }}
+    needs: [triage]
+    if: ${{ contains('pull_request,push', github.event_name) && fromJSON(needs.triage.outputs.impacts).platform }}
     uses: ./.github/workflows/build-docker.yml
     with:
       os: centos-7
     secrets: inherit
 
   build-docker-wasm32-emscripten:
-    needs: [pre_job]
-    if: ${{ contains('pull_request,push', github.event_name) && (needs.pre_job.outputs.platform == 'true') }}
+    needs: [triage]
+    if: ${{ contains('pull_request,push', github.event_name) && fromJSON(needs.triage.outputs.impacts).platform }}
     uses: ./.github/workflows/build-docker.yml
     with:
       os: wasm32-emscripten
@@ -477,8 +453,8 @@ jobs:
     secrets: inherit
 
   build-gh_runner-windows-2022:
-    needs: [pre_job]
-    if: ${{ contains('pull_request,push', github.event_name) && (needs.pre_job.outputs.platform == 'true') }}
+    needs: [triage]
+    if: ${{ contains('pull_request,push', github.event_name) && fromJSON(needs.triage.outputs.impacts).platform }}
     uses: ./.github/workflows/build-gh_runner.yml
     with:
       os: windows-2022
@@ -494,8 +470,8 @@ jobs:
     secrets: inherit
 
   build-gh_runner-macos-15-x86_64:
-    needs: [pre_job]
-    if: ${{ contains('pull_request,push', github.event_name) && (needs.pre_job.outputs.platform == 'true') }}
+    needs: [triage]
+    if: ${{ contains('pull_request,push', github.event_name) && fromJSON(needs.triage.outputs.impacts).platform }}
     uses: ./.github/workflows/build-gh_runner.yml
     with:
       os: macos-15-intel
@@ -504,8 +480,8 @@ jobs:
     secrets: inherit
 
   build-gh_runner-macos-15:
-    needs: [pre_job]
-    if: ${{ contains('pull_request,push', github.event_name) && (needs.pre_job.outputs.platform == 'true') }}
+    needs: [triage]
+    if: ${{ contains('pull_request,push', github.event_name) && fromJSON(needs.triage.outputs.impacts).platform }}
     uses: ./.github/workflows/build-gh_runner.yml
     with:
       os: macos-15
