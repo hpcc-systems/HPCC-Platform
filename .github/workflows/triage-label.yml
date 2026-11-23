@@ -1,0 +1,107 @@
+name: Reevaluate PR triage
+
+on:
+  pull_request:
+    types: [labeled, unlabeled]
+    branches:
+      - "master"
+      - "candidate-*"
+
+# Finish cancellation and rerun before processing another ready-to-test event.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}${{ github.event.label.name != 'ready-to-test' && format('-label-{0}', github.run_id) || '' }}
+  cancel-in-progress: false
+
+permissions:
+  actions: write
+  pull-requests: read
+
+jobs:
+  rerun-triage:
+    if: ${{ github.event.label.name == 'ready-to-test' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      # Job reruns retain prerequisite outputs and do not repeat label cleanup.
+      - name: Rerun triage and its dependent jobs for the current PR head
+        uses: actions/github-script@v7
+        with:
+          script: |
+            // This step is not designed to work with forked repositories.
+            const headSha = context.payload.pull_request.head.sha;
+            let cancelledRunId;
+            for (let attempt = 0; attempt < 60; attempt++) {
+              const { data: pr } = await github.rest.pulls.get({
+                ...context.repo,
+                pull_number: context.issue.number,
+              });
+              if (pr.head.sha !== headSha || pr.state !== 'open') {
+                core.info('PR head changed or PR closed; this label event is superseded');
+                return;
+              }
+              const runs = await github.paginate(github.rest.actions.listWorkflowRuns, {
+                ...context.repo,
+                workflow_id: 'build-vcpkg.yml',
+                event: 'pull_request',
+                head_sha: headSha,
+                branch: pr.head.ref,
+                per_page: 100,
+              });
+              const run = runs.filter(run =>
+                run.head_sha === headSha && run.head_branch === pr.head.ref &&
+                (!run.pull_requests.length || run.pull_requests.some(pull => pull.number === pr.number))
+              ).sort((a, b) => b.id - a.id)[0];
+              if (run) {
+                // Include retained jobs from earlier attempts when checking prerequisites.
+                const jobs = await github.paginate(github.rest.actions.listJobsForWorkflowRun, {
+                  ...context.repo,
+                  run_id: run.id,
+                  filter: 'all',
+                  per_page: 100,
+                });
+                jobs.sort((a, b) => b.id - a.id);
+                const triage = jobs.find(job => job.name === 'triage');
+                const prerequisites = ['clear-ready-to-test', 'wait-for-copilot-review', 'analyze-changes'];
+                const prerequisitesCompleted = prerequisites.every(name =>
+                  jobs.find(job => job.name === name)?.status === 'completed'
+                );
+                if (pr.labels.some(label => label.name === 'ready-to-test') &&
+                    cancelledRunId !== run.id && run.conclusion !== 'cancelled' &&
+                    triage?.status === 'completed' && triage.conclusion === 'success') {
+                  core.info('ready-to-test is present and triage succeeded; leaving the authorized build unchanged');
+                  return;
+                }
+                if (run.status === 'completed') {
+                  if (!triage) {
+                    throw new Error('The current PR build has no triage job; push the updated workflow first');
+                  }
+                  await github.rest.actions.reRunJobForWorkflowRun({
+                    ...context.repo,
+                    job_id: triage.id,
+                  });
+                  core.info(`Requested triage and dependent-job rerun for build ${run.id}`);
+                  return;
+                }
+                // Do not cancel prerequisite work. Once it finishes, stop any old builds
+                // before rerunning triage so label removal can block them immediately.
+                if (triage?.status === 'completed' && prerequisitesCompleted &&
+                    cancelledRunId !== run.id) {
+                  try {
+                    await github.rest.actions.cancelWorkflowRun({
+                      ...context.repo,
+                      run_id: run.id,
+                    });
+                    cancelledRunId = run.id;
+                    core.info(`Cancelled active build ${run.id} before reevaluating triage`);
+                  } catch (error) {
+                    if (error.status !== 409) throw error;
+                    core.info('Build changed state before cancellation; checking again');
+                  }
+                }
+              }
+              if (attempt < 59) {
+                core.info('Waiting for the PR build prerequisites or cancellation to finish');
+                await new Promise(resolve => setTimeout(resolve, 30000));
+              }
+            }
+            throw new Error('Timed out waiting to rerun triage for the current PR head');

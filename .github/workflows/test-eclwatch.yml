@@ -100,3 +100,4 @@ jobs:
           name: eclwatch-test-results
           path: ${{ github.workspace }}/esp/src/test-results/*
           if-no-files-found: warn
+          overwrite: true
