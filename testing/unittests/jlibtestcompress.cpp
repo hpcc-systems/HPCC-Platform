@@ -31,6 +31,7 @@
 #include "jsem.hpp"
 #include "jfile.hpp"
 #include "jdebug.hpp"
+#include "jerror.hpp"
 #include "jset.hpp"
 #include "rmtfile.hpp"
 #include "jlzw.hpp"
@@ -46,7 +47,20 @@
 
 class JlibCompressionTestBase : public CppUnit::TestFixture
 {
+    const bool testAllCompressors;
+
 protected:
+    JlibCompressionTestBase(bool _testAllCompressors) : testAllCompressors(_testAllCompressors)
+    {
+    }
+
+    bool includeCompressor(CompressionMethod method) const
+    {
+        // Keep the full codec matrix in the opt-in stress and timing suites.
+        return testAllCompressors || method == COMPRESS_METHOD_LZW_LITTLE_ENDIAN ||
+               method == COMPRESS_METHOD_LZ4 || method == COMPRESS_METHOD_ZSTD3;
+    }
+
     static constexpr size32_t sz = 100*0x100000; // 100MB
     static constexpr const char *aesKey = "012345678901234567890123";
     enum CompressOpt {
@@ -125,7 +139,7 @@ public:
                 catch (IException * e)
                 {
                     //In debug mode it is ok to throw an unexpected error, in release it should be ignored.
-                    if (!isDebugBuild() || e->errorCode() != 9999)
+                    if (!isDebugBuild() || e->errorCode() != JLIBERR_UtilInternalErrorSInSAtSD)
                         CPPUNIT_FAIL("Unexpected exception from second call to compressor->close()");
                     e->Release();
                 }
@@ -442,6 +456,8 @@ public:
             ForEach(*iter)
             {
                 ICompressHandler &handler = iter->query();
+                if (!includeCompressor(handler.queryAliasMethod()))
+                    continue;
                 const char * type = handler.queryType();
                 const char * options = streq("AES", handler.queryType()) ? aesKey: "";
                 bool onlyFixedSize = strieq(type, "diff") || strieq(type, "randrow");
@@ -482,22 +498,6 @@ public:
             CPPUNIT_FAIL(msg.str());
         }
     }
-};
-
-
-class JlibCompressionStandardTest : public JlibCompressionTestBase
-{
-    CPPUNIT_TEST_SUITE(JlibCompressionStandardTest);
-        CPPUNIT_TEST(disableBacktraceOnAssert);
-        CPPUNIT_TEST(testCompressionRegistration);
-        CPPUNIT_TEST(testSingle);
-        CPPUNIT_TEST(testTinyCompression);
-        CPPUNIT_TEST(testStandardCompression);
-        CPPUNIT_TEST(testOverflowBug);
-        CPPUNIT_TEST(testIncompressible);
-    CPPUNIT_TEST_SUITE_END();
-
-public:
     void testTinyCompression()
     {
         // Test compression of a very small incompressible block of data
@@ -511,6 +511,8 @@ public:
             ForEach(*iter)
             {
                 ICompressHandler &handler = iter->query();
+                if (!includeCompressor(handler.queryAliasMethod()))
+                    continue;
                 const char * type = handler.queryType();
                 if (streq("AES", type))
                     continue;
@@ -544,7 +546,7 @@ public:
             size32_t rowSz = 0;
             initCompressionBuffer(src, rowSz);
 
-            const char * compression = "zstd";
+            const char * compression = "zstd3";
             const char * options = nullptr;
             ICompressHandler * handler = queryCompressHandler(compression);
             CPPUNIT_ASSERT_MESSAGE("Unknown compression type", handler);
@@ -578,6 +580,8 @@ public:
             }
 
             CompressionMethod method = (CompressionMethod)i;
+            if (!includeCompressor(method))
+                continue;
             const char * type = translateFromCompMethod(method);
             ICompressHandler * handler1 = queryCompressHandler(method);
             ICompressHandler * handler2 = queryCompressHandler(type);
@@ -653,6 +657,8 @@ public:
         ForEach(*iter)
         {
             ICompressHandler &handler = iter->query();
+            if (!includeCompressor(handler.queryAliasMethod()))
+                continue;
             const char * type = handler.queryType();
 
             bool onlyFixedSize = strieq(type, "diff") || strieq(type, "randrow");
@@ -675,6 +681,24 @@ public:
     }
 };
 
+class JlibCompressionStandardTest : public JlibCompressionTestBase
+{
+    CPPUNIT_TEST_SUITE(JlibCompressionStandardTest);
+        CPPUNIT_TEST(disableBacktraceOnAssert);
+        CPPUNIT_TEST(testCompressionRegistration);
+        CPPUNIT_TEST(testSingle);
+        CPPUNIT_TEST(testTinyCompression);
+        CPPUNIT_TEST(testStandardCompression);
+        CPPUNIT_TEST(testOverflowBug);
+        CPPUNIT_TEST(testIncompressible);
+    CPPUNIT_TEST_SUITE_END();
+
+public:
+    JlibCompressionStandardTest() : JlibCompressionTestBase(false)
+    {
+    }
+};
+
 CPPUNIT_TEST_SUITE_REGISTRATION( JlibCompressionStandardTest );
 CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( JlibCompressionStandardTest, "JlibCompressionStandardTest" );
 
@@ -689,6 +713,10 @@ class JlibCompressionTimingTest : public JlibCompressionTestBase
     CPPUNIT_TEST_SUITE_END();
 
 public:
+    JlibCompressionTimingTest() : JlibCompressionTestBase(true)
+    {
+    }
+
     void testIndexBlock()
     {
         START_TEST
@@ -767,10 +795,18 @@ class JlibCompressionTestsStress : public JlibCompressionTestBase
 {
     CPPUNIT_TEST_SUITE(JlibCompressionTestsStress);
         CPPUNIT_TEST(disableBacktraceOnAssert);
+        CPPUNIT_TEST(testCompressionRegistration);
+        CPPUNIT_TEST(testTinyCompression);
+        CPPUNIT_TEST(testStandardCompression);
+        CPPUNIT_TEST(testIncompressible);
         CPPUNIT_TEST(test);
     CPPUNIT_TEST_SUITE_END();
 
 public:
+    JlibCompressionTestsStress() : JlibCompressionTestBase(true)
+    {
+    }
+
     void test()
     {
         try
