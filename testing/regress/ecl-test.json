@@ -52,7 +52,8 @@
         ],
         "engineParams":[
             "failOnLeaks",
-            "disableLocalOptimizations"
+            "disableLocalOptimizations",
+            "analyzeWorkunit=0"
         ],
         "setupExtraParams":{
             "OriginalTextFilesOsPath" : "/opt/HPCCSystems/testing/regress",
