@@ -115,8 +115,8 @@ jobs:
           builder: ${{ steps.buildx.outputs.name }}
           file: ${{ inputs.folder-platform }}/dockerfiles/${{ inputs.os }}.dockerfile
           context: ${{ inputs.folder-platform }}/dockerfiles
-          push: false
-          load: true
+          push: ${{ github.repository_owner == 'hpcc-systems' }}
+          load: ${{ github.repository_owner != 'hpcc-systems' }}
           build-args: |
             VCPKG_REF=${{ steps.vars.outputs.vcpkg_sha_short }}
           tags: |
@@ -126,24 +126,6 @@ jobs:
             type=registry,ref=${{ steps.vars.outputs.docker_tag }}
           cache-to: |
             type=inline
-
-      - name: Scan build image for secrets
-        if: ${{ github.repository_owner == 'hpcc-systems' }}
-        uses: aquasecurity/trivy-action@57a97c7e7821a5776cebc9bb87c984fa69cba8f1 # 0.35.0
-        env:
-          TRIVY_IMAGE_SRC: docker
-        with:
-          scan-type: image
-          image-ref: ${{ steps.vars.outputs.docker_tag_candidate_base }}
-          scanners: secret
-          exit-code: '1'
-          timeout: 15m
-
-      - name: Publish build image
-        if: ${{ github.repository_owner == 'hpcc-systems' }}
-        env:
-          IMAGE: ${{ steps.vars.outputs.docker_tag_candidate_base }}
-        run: docker push "$IMAGE"
 
       - name: Build documentation
         shell: "bash"
