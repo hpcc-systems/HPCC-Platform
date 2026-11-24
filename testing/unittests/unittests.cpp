@@ -52,7 +52,7 @@ void usage()
     "    unittests <options> <testnames>\n"
     "\n"
     "Options:\n"
-    "    -a  --all                            Include all tests, including timing and stress tests\n"
+    "    -a  --all                            Include all tests, including timing, stress, and external-service tests\n"
     "    -d  --load /x/y/z/                   Dynamically load a library/all libraries in a directory.\n"
     "                                         By default, the HPCCSystems lib directory is loaded.\n"
     "    -e  --exact                          Match subsequent test names exactly\n"
@@ -244,6 +244,7 @@ int main(int argc, const char *argv[])
         excludeNames.append("*stress*");
         excludeNames.append("*timing*");
         excludeNames.append("*slow*");
+        excludeNames.append("*externalservice*");
         excludeNames.append("Dali*"); // disabled by default as dali not available when executed by smoketest
     }
 

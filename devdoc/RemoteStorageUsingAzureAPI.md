@@ -70,7 +70,155 @@ Key points about this configuration:
 - The `<planes>` element within `<remote>` maps `remote="data"` (data is the plane name on the source side) to `local="plane1"` (the plane name on the target side).
 - The `striped=1` is only necessary if reading from striped storage on a bare-metal cluster
 
+## Azure Blob Write Settings
+
+Azure Blob write settings and runtime behavior are shared with containerized
+deployments. For defaults, limits, precedence, resource estimates, and write
+semantics, see [Azure Blob API writes in the Helm storage documentation](../helm/hpcc/docs/storage.md#azure-blob-api-writes).
+
+On bare metal, configure the same settings in `environment.xml`. Global
+defaults go under `<Globals><expert><storageapi .../></expert></Globals>`;
+per-plane overrides go under the plane's `<storageapi><expert .../></storageapi>`.
+For example, merge these settings into the existing global configuration and
+desired plane definition, preserving the plane's other attributes and storage
+API settings:
+
+```xml
+<Globals>
+    <expert>
+        <storageapi parallelWriteConcurrency="16"/>
+    </expert>
+    <storage>
+        <planes name="plane1">
+            <storageapi>
+                <expert parallelWriteConcurrency="0"/>
+            </storageapi>
+        </planes>
+    </storage>
+</Globals>
+```
+
+### Optional Write Tests
+
+`AzureBlobWriteExternalServiceTest` checks functional write/readback and directory
+traversal. `AzureBlobWriteStressTimingTest` measures write throughput at concurrency
+levels 0, 1, 2, 4, 8, 16 and 32, and verifies readback. Both suites make real requests
+and are excluded from the default test run.
+
+Readback uses 4 MiB chunks: `createSerialInputStream` at concurrency 0 and 1, and
+`createParallelReadAheadInputStream` with the matching thread count at concurrency
+2 and above. Read throughput is reported separately from write throughput; its
+wall-clock timing includes opening the reader, read-ahead setup, consumption and
+content verification.
+
+Both accept these suite-prefixed options:
+
+| Option | Meaning |
+|---|---|
+| `url` | Encoded HTTP(S) base blob URL, including a container and blob-name prefix; no SAS query or fragment |
+| `auth` | `sharedKey` (default) or `managedIdentity` |
+| `accountName` | Required for explicitly configured Azurite/custom hosts; otherwise derived from standard Azure blob hosts |
+
+Shared-key authentication reads `HPCC_AZURE_TEST_ACCOUNT_KEY`. The older
+`HPCC_AZURE_WRITE_STRESS_ACCOUNT_KEY` variable remains supported when the new
+variable is unset. With no URL option, both suites use local Azurite
+at `127.0.0.1:10000` with its standard development account and key.
+
+Each suite appends unique suffixes to the supplied base URL and deletes its blobs
+after successful verification; it does not overwrite the base blob itself.
+Failures can leave test blobs behind. Both suites create the container
+if needed and do not delete it.
+The functional suite retains the `127.0.0.1` to `localhost` alias check only for
+loopback endpoints; Azure hostnames are left unchanged.
+
+Set these paths for your build or installation:
+
+```bash
+UT=/path/to/bin/unittests
+HOOKS=/path/to/filehooks
+```
+
+`HOOKS` may also name the built `libazurefile.so` directly.
+Omit `-d "$HOOKS"` when the runner automatically discovers the Azure test library.
+
+#### Running against Azurite
+
+Start an installed Azurite Blob service in a separate terminal:
+
+```bash
+azurite-blob --location /tmp/hpcc-azurite-tests --blobHost 127.0.0.1 --blobPort 10000
+```
+
+Neither suite needs connection options:
+
+```bash
+"$UT" -v -d "$HOOKS" -e AzureBlobWriteExternalServiceTest
+
+"$UT" -v -d "$HOOKS" -e AzureBlobWriteStressTimingTest \
+    --AzureBlobWriteStressTimingTest.sizeMB=16
+```
+
+To configure a different Azurite endpoint for either suite, supply its
+suite-prefixed `url` and `accountName` options and set `HPCC_AZURE_TEST_ACCOUNT_KEY`
+to the Azurite account key. Direct-URL factories use host-style URLs by default;
+set the optional `pathStyle` argument to `true` for path-style URLs. The external
+test suites set it automatically for their built-in local Azurite endpoint. For
+a path-style Azurite endpoint accessed through a custom DNS name, set the suite's
+`pathStyle=true` option. For example:
+
+```text
+--AzureBlobWriteExternalServiceTest.url=http://azurite:10000/devstoreaccount1/hpccparalleltest/azure-blob-test
+--AzureBlobWriteExternalServiceTest.accountName=devstoreaccount1
+--AzureBlobWriteExternalServiceTest.pathStyle=true
+```
+
+#### Running against Azure Storage
+
+Use an account that permits shared-key authentication, or an available managed
+identity with read, write, list and delete access (typically **Storage Blob Data
+Contributor**). Both suites also need permission to create the container.
+Supply a disposable blob-name prefix in the target container.
+
+For shared-key authentication, read the key without putting it in shell history:
+
+```bash
+read -rsp 'Azure storage account key: ' HPCC_AZURE_TEST_ACCOUNT_KEY
+echo
+export HPCC_AZURE_TEST_ACCOUNT_KEY
+
+"$UT" -v -d "$HOOKS" -e AzureBlobWriteExternalServiceTest \
+    --AzureBlobWriteExternalServiceTest.url=https://ACCOUNT.blob.core.windows.net/CONTAINER/functional
+
+"$UT" -v -d "$HOOKS" -e AzureBlobWriteStressTimingTest \
+    --AzureBlobWriteStressTimingTest.url=https://ACCOUNT.blob.core.windows.net/CONTAINER/stress \
+    --AzureBlobWriteStressTimingTest.sizeMB=64
+```
+
+Replace `ACCOUNT` and `CONTAINER` with your storage account and container.
+For managed identity, omit the key and add the corresponding suite's
+`--AzureBlobWriteExternalServiceTest.auth=managedIdentity` or
+`--AzureBlobWriteStressTimingTest.auth=managedIdentity` option. Run on a machine or
+pod with a configured Azure managed/workload identity; an Azure CLI login alone
+does not configure this authentication mode.
+
+The stress suite defaults to 1024 MiB **per concurrency level** and reads every
+blob back, so use a smaller `sizeMB` for a quick check or to limit cloud traffic.
+
 ## Setting Up Authentication
+
+### Internal Direct-URL Factories
+
+The `createAzureBlob` factories are internal to the `azurefile` library and its
+tests. They are intentionally not exported or supported for external C++ callers.
+External callers should use `createIFile()` with the installed Azure file hooks.
+
+These internal factories support encoded HTTP(S) blob URLs without a storage
+plane. `createAzureBlob(blobUrl, accountName, accountKey)` uses a shared key;
+`createAzureBlob(blobUrl, accountName)` uses the configured managed identity.
+The managed-identity overload also accepts a `StorageApiConfig` argument.
+Managed identity must be enabled in the environment. These URL factories reject
+SAS query strings and URL fragments. Container URLs can be used for directory
+creation and enumeration.
 
 ### Verify Network Peering and Keys
 

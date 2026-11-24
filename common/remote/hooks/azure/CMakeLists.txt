@@ -52,9 +52,16 @@ set (   SRCS
         azureapiutils.hpp
     )
 
+if (USE_CPPUNIT)
+    list(APPEND SRCS
+        azuretests.cpp
+    )
+endif ()
+
 include_directories (
         ${HPCC_SOURCE_DIR}/system/include
         ${HPCC_SOURCE_DIR}/system/jlib
+        ${HPCC_SOURCE_DIR}/common/remote/hooks/azure
     )
 
 ADD_DEFINITIONS( -D_USRDLL -DAZURE_API_EXPORTS )

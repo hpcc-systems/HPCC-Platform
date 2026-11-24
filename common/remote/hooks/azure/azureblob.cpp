@@ -24,6 +24,7 @@
 #include "jstring.hpp"
 #include "jsecrets.hpp"
 #include "jplane.hpp"
+#include "jsocket.hpp"
 #include "azureblob.hpp"
 #include "azureapiutils.hpp"
 
@@ -31,14 +32,19 @@
 #include "jptree.hpp"
 #include "jstatcodes.h"
 #include "unittests.hpp"
-#include <vector>
 #endif
 
 #include <azure/core/base64.hpp>
 #include <azure/core/http/curl_transport.hpp>
 #include <azure/core/http/policies/policy.hpp>
 #include <azure/identity.hpp>
+#include <algorithm>
+#include <deque>
+#include <exception>
+#include <limits>
 #include <map>
+#include <optional>
+#include <vector>
 
 using namespace Azure::Storage;
 using namespace Azure::Storage::Blobs;
@@ -58,10 +64,10 @@ using SharedBlobClient = std::shared_ptr<Azure::Storage::Blobs::BlockBlobClient>
 
 class AzureBlob;
 
-static std::string makeAzureBlockId(const std::string &baseBlockId, unsigned sequence)
+std::string makeAzureBlockId(const std::string &baseBlockId, unsigned sequence)
 {
     if (sequence == 0 || sequence > maxAzureBlockCount)
-        throw makeStringException(1234, "Too many blocks for Azure block blob");
+        throw makeStringException(azureWriterError, "Too many blocks for Azure block blob");
 
     return VStringBuffer("%s%08u", baseBlockId.c_str(), sequence).str();
 }
@@ -71,6 +77,12 @@ class AzureBlobBlockOperations final : public CInterfaceOf<IAzureBlockOperations
 public:
     AzureBlobBlockOperations(SharedBlobClient _client, const char *_baseBlockId)
         : client(std::move(_client)), baseBlockId(_baseBlockId) {}
+
+    virtual void initializeEmptyBlob() override
+    {
+        Azure::Core::IO::MemoryBodyStream empty(nullptr, 0);
+        client->Upload(empty);
+    }
 
     virtual void stageBlock(unsigned sequence, const byte *data, size32_t length) override
     {
@@ -147,7 +159,7 @@ public:
     AzureBlobWriteIO(AzureBlob * _file);
 
     virtual void beforeDispose() override;
-
+    virtual unsigned __int64 getStatistic(StatisticKind kind) override;
     virtual size32_t read(offset_t pos, size32_t len, void * data) override
     {
         throwUnexpectedX("Reading from write only file");
@@ -157,31 +169,28 @@ public:
     virtual void flush() override;
 
 protected:
-    void checkAppendPosition(offset_t pos) const;
+    // Checks shared by every non-empty write(); also invalidates the file's cached metadata.
+    void prepareWrite(offset_t pos, const void *data);
+    // Records the IFileIO statistics for one completed write() call.
+    void recordWrite(size32_t len, cycle_t cycles);
+    // Wrap the block operations to record statistics and convert Azure exceptions to IException.
+    void initializeBlob();
+    void stageBlock(unsigned sequence, offset_t pos, const byte *data, size32_t length);
+    void commitBlockList(unsigned count);
     StringBuffer baseBlockId;
     Owned<IAzureBlockOperations> operations;
     offset_t offset = 0;
+    unsigned lastSequence = 0; // Caller-owned block sequence used to stage and commit the write.
+    // The parallel writer protects this shared error state with stateCs while workers are active.
+    Owned<IException> firstError;
+    bool closed = false; // Set once close() has committed the block list.
+    // Relaxed atomics: each statistic is accurate, but they may be read at slightly different moments.
+    RelaxedAtomic<cycle_t> initializeCycles{0};
+    RelaxedAtomic<cycle_t> stageCycles{0};
+    RelaxedAtomic<cycle_t> commitCycles{0};
+    RelaxedAtomic<unsigned> activeStages{0};
+    RelaxedAtomic<unsigned> peakStages{0};
 };
-
-// Sequential block-blob writer. IFileIO calls must be serialized by the caller.
-// Each non-empty write must append at the current offset and is staged synchronously
-// as one block directly from the caller's buffer; blocks may have different sizes,
-// subject to Azure's per-block size limit. Empty writes do nothing. Staged blocks
-// aren't visible in the blob until close() commits their ordered list; flush() does
-// not commit. The writer is limited to 50,000 blocks, and close() is idempotent.
-class AzureBlobBlockBlobWriteIO final : implements AzureBlobWriteIO
-{
-public:
-    AzureBlobBlockBlobWriteIO(AzureBlob * _file);
-
-    virtual void close() override;
-    virtual size32_t write(offset_t pos, size32_t len, const void * data) override;
-
-private:
-    bool committed = false;
-    unsigned lastSequence = 0;
-};
-
 
 //---------------------------------------------------------------------------------------------------------------------
 // Directory iterator for Azure Blob Storage using ListBlobsByHierarchy API.
@@ -191,12 +200,7 @@ private:
 class AzureBlobDirectoryIterator final : public AzureDirectoryIteratorBase
 {
 public:
-    AzureBlobDirectoryIterator(std::shared_ptr<BlobContainerClient> _containerClient,
-                               const char *_prefix, const char *_fullPrefix,
-                               const char *_containerName,
-                               const char *_mask, bool _includeDirs)
-        : AzureDirectoryIteratorBase(_fullPrefix, _containerName, _mask, _includeDirs),
-          containerClient(std::move(_containerClient)), prefix(_prefix) {}
+    AzureBlobDirectoryIterator(AzureBlob &_file, const char *_mask, bool _includeDirs);
 
 protected:
     virtual IFile *createFile(const char *fullPath, const DirEntry &entry) override;
@@ -248,6 +252,7 @@ private:
         return name;
     }
 
+    Linked<AzureBlob> file;
     std::shared_ptr<BlobContainerClient> containerClient;
     std::string prefix;
     std::optional<ListBlobsByHierarchyPagedResponse> pagedResponse;
@@ -256,16 +261,22 @@ private:
 
 class AzureBlob final : implements CInterfaceOf<IFile>
 {
+    friend class AzureBlobDirectoryIterator;
 #ifdef _USE_CPPUNIT
-    friend class AzureBlobTest;
+    friend class AzureBlobReadAndMetadataTest;
+    friend class AzureBlobUrlStyleTest;
     AzureBlob(SharedBlobClient _client) : cachedBlobClient(std::move(_client)) {}
 #endif
 public:
     AzureBlob(const char *_azureFileName);
-#ifdef _USE_CPPUNIT
-    AzureBlob(const char *_azureFileName, const char *_blobServiceEndpoint,
-        std::shared_ptr<StorageSharedKeyCredential> _testSharedKeyCredential);
-#endif
+    AzureBlob(const char *_blobUrl, std::shared_ptr<StorageSharedKeyCredential> _explicitSharedKeyCredential,
+              bool _pathStyleUrl);
+    AzureBlob(const char *_blobUrl, std::shared_ptr<StorageSharedKeyCredential> _explicitSharedKeyCredential,
+              const StorageApiConfig &_config, IAzureBlockOperations *_blockOperations,
+              bool _pathStyleUrl);
+    AzureBlob(const char *_blobUrl, const char *_accountName, bool _pathStyleUrl);
+    AzureBlob(const char *_blobUrl, const char *_accountName, const StorageApiConfig &_config,
+              bool _pathStyleUrl);
     AzureBlob(const char *_azureFileName, const DirEntry &entry)
     : AzureBlob(_azureFileName) { setListedInfo(entry.isDir, entry.size, entry.modifiedTime); }
     virtual bool exists() override
@@ -372,6 +383,7 @@ public:
     SharedBlobClient getBlobClient() const;
     void invalidateMeta() { haveMeta = false; }
     const StorageApiConfig & queryConfig() const { return config; }
+    IAzureBlockOperations * createBlockOperations(const char *baseBlockId) const;
 
 protected:
     // Seed metadata from a directory listing during construction only.
@@ -386,6 +398,7 @@ protected:
     }
     std::shared_ptr<StorageSharedKeyCredential> getSharedKeyCredentials() const;
     std::string getBlobUrl() const;
+    BlobClientOptions makeClientOptions() const;
     std::shared_ptr<BlobContainerClient> getBlobContainerClient() const;
 
     void ensureMetaData();
@@ -408,13 +421,416 @@ protected:
     time_t lastModified = 0;
     time_t createdOn = 0;
     std::string blobUrl;
+    bool pathStyleUrl = false;
     mutable CriticalSection cacheCS{SYNC_LOCATION};
+    std::string blobContainerUrl;
+    std::shared_ptr<StorageSharedKeyCredential> explicitSharedKeyCredential;
     mutable std::shared_ptr<Azure::Storage::Blobs::BlockBlobClient> cachedBlobClient;  // Cache client for reuse per-file
     StorageApiConfig config;
-#ifdef _USE_CPPUNIT
-    std::string blobServiceEndpoint;
-    std::shared_ptr<StorageSharedKeyCredential> testSharedKeyCredential;
-#endif
+    Linked<IAzureBlockOperations> blockOperations;
+
+private:
+    AzureBlob(const char *_blobUrl, std::shared_ptr<StorageSharedKeyCredential> _explicitSharedKeyCredential,
+              const char *_accountName, bool _useManagedIdentity,
+              const StorageApiConfig *_configOverride, IAzureBlockOperations *_blockOperations,
+              bool _pathStyleUrl);
+};
+
+
+//---------------------------------------------------------------------------------------------------------------------
+
+// Sequential block-blob writer. IFileIO calls must be serialized by the caller.
+// Each non-empty write must append at the current offset and is staged synchronously
+// as one block directly from the caller's buffer; blocks may have different sizes,
+// subject to Azure's per-block size limit. Empty writes do nothing. Staged blocks
+// aren't visible in the blob until close() commits their ordered list; flush() does
+// not commit. The writer is limited to 50,000 blocks, close() is idempotent, and
+// writes after close() throw.
+class AzureBlobBlockBlobWriteIO final : public AzureBlobWriteIO
+{
+public:
+    explicit AzureBlobBlockBlobWriteIO(AzureBlob *_file) : AzureBlobWriteIO(_file) {}
+
+    virtual size32_t write(offset_t pos, size32_t len, const void *data) override
+    {
+        if (!len)
+            return 0;
+        if (firstError)
+            throw firstError.getLink();
+        prepareWrite(pos, data);
+
+        CCycleTimer timer;
+        const unsigned sequence = lastSequence + 1;
+        try
+        {
+            stageBlock(sequence, pos, static_cast<const byte *>(data), len);
+        }
+        catch (IException *e)
+        {
+            firstError.setown(e);
+            throw firstError.getLink();
+        }
+        lastSequence = sequence;
+        offset += len;
+
+        recordWrite(len, timer.elapsedCycles());
+        return len;
+    }
+
+    virtual void close() override
+    {
+        if (closed)
+            return;
+        if (firstError)
+            throw firstError.getLink();
+        COnScopeExit invalidateAfterCommit([this] { file->invalidateMeta(); });
+        commitBlockList(lastSequence);
+        closed = true;
+    }
+};
+
+// Runs fn and returns any exception it throws as an IException (or nullptr), so that
+// worker threads and close() can record failures instead of propagating them.
+template <typename F>
+static IException *runNoThrow(const char *what, F &&fn)
+{
+    try
+    {
+        fn();
+    }
+    catch (IException *e)
+    {
+        return e;
+    }
+    catch (const std::exception &e)
+    {
+        return makeStringExceptionV(azureRequestError, "Azure %s failed: %s", what, e.what());
+    }
+    catch (...)
+    {
+        return makeStringExceptionV(azureRequestError, "Azure %s failed with an unknown exception", what);
+    }
+    return nullptr;
+}
+
+// Parallel block-blob writer. IFileIO calls must be serialized by the caller.
+// write() copies data into fixed-size chunk buffers ("slots") and queues each full
+// chunk. Up to concurrency worker threads stage queued chunks while the caller fills
+// one more slot, so there are concurrency + 1 slots. Workers and slots are created on
+// demand. close() stages the final partial chunk, waits for all uploads to finish and
+// then commits the complete block list. Upload errors are reported by the next write()
+// that completes a chunk, or by close().
+class AzureBlobParallelBlockBlobWriteIO final : public AzureBlobWriteIO
+{
+public:
+    explicit AzureBlobParallelBlockBlobWriteIO(AzureBlob *_file)
+        : AzureBlobWriteIO(_file),
+          concurrency(_file->queryConfig().parallelWriteConcurrency),
+          slotCount(concurrency + 1),
+          chunkBytes(static_cast<size32_t>(_file->queryConfig().parallelWriteChunkBytes)),
+          buffers(slotCount)
+    {
+        freeSlots.reserve(slotCount);
+        workers.reserve(concurrency);
+    }
+
+    virtual ~AzureBlobParallelBlockBlobWriteIO()
+    {
+        stopWorkers();
+    }
+
+    virtual unsigned __int64 getStatistic(StatisticKind kind) override
+    {
+        switch (kind)
+        {
+        case StTimeBlobWriteWait:
+            return cycle_to_nanosec(slotWaitCycles.load());
+        case StCycleBlobWriteWaitCycles:
+            return slotWaitCycles.load();
+        }
+        return AzureBlobWriteIO::getStatistic(kind);
+    }
+
+    virtual size32_t write(offset_t pos, size32_t len, const void *data) override
+    {
+        if (!len)
+            return 0;
+        prepareWrite(pos, data);
+
+        CCycleTimer timer;
+        const byte *input = static_cast<const byte *>(data);
+        size32_t remaining = len;
+        while (remaining)
+        {
+            if (currentSlot == noSlot)
+            {
+                IException *acquireError = runNoThrow("parallel writer buffer acquisition", [this] { acquireSlot(); });
+                CriticalBlock block(stateCs);
+                recordFailureIfPresent(acquireError);
+                if (firstError)
+                    throw firstError.getLink();
+            }
+            size32_t amount = std::min<size32_t>(remaining, chunkBytes - currentLength);
+            memcpy(buffers[currentSlot].bytes() + currentLength, input, amount);
+            currentLength += amount;
+            offset += amount;
+            input += amount;
+            remaining -= amount;
+            if (currentLength == chunkBytes)
+            {
+                IException *queueError = runNoThrow("parallel writer queue", [this] { enqueueFullChunk(); });
+                CriticalBlock block(stateCs);
+                recordFailureIfPresent(queueError);
+                if (firstError)
+                    throw firstError.getLink();
+            }
+        }
+
+        recordWrite(len, timer.elapsedCycles());
+        return len;
+    }
+
+    virtual void close() override
+    {
+        if (closed)
+            return;
+
+        CCycleTimer timer;
+        COnScopeExit recordTime([&] { stats.ioWriteCycles.fastAdd(timer.elapsedCycles()); });
+
+        if (currentLength)
+        {
+            IException *stageError = runNoThrow("final block stage", [this]
+            {
+                // Holding a spare slot reserves one of the concurrency uploads for the final block
+                // (see takeSpareSlot). The slot itself is never used, since nothing more is queued.
+                takeSpareSlot();
+                stageSlot(assignSequence(), currentSlot, currentLength);
+            });
+            CriticalBlock block(stateCs);
+            recordFailureIfPresent(stageError);
+        }
+        stopWorkers();
+        // All workers have joined, so firstError no longer needs stateCs.
+        if (!firstError)
+        {
+            COnScopeExit invalidateAfterCommit([this] { file->invalidateMeta(); });
+            firstError.setown(runNoThrow("final block-list commit", [this] { commitBlockList(lastSequence); }));
+        }
+        buffers.clear();
+        currentSlot = noSlot;
+        currentLength = 0;
+        if (firstError)
+            throw firstError.getLink();
+        closed = true;
+    }
+
+private:
+    class AzureBlobParallelWorker final : public Thread
+    {
+    public:
+        explicit AzureBlobParallelWorker(AzureBlobParallelBlockBlobWriteIO &_owner)
+            : Thread("AzureBlobParallelWriter"), owner(_owner) {}
+
+        virtual int run() override
+        {
+            owner.workerLoop();
+            return 0;
+        }
+    private:
+        AzureBlobParallelBlockBlobWriteIO &owner;
+    };
+
+    // Every block except the last is full, so block n starts at file offset (n - 1) * chunkBytes.
+    void stageSlot(unsigned sequence, unsigned slot, size32_t length)
+    {
+        const offset_t pos = static_cast<offset_t>(sequence - 1) * chunkBytes;
+        stageBlock(sequence, pos, buffers[slot].bytes(), length);
+    }
+
+    void workerLoop()
+    {
+        for (;;)
+        {
+            workerWake.wait();
+            unsigned sequence;
+            unsigned slot;
+            {
+                CriticalBlock block(stateCs);
+                if (firstError)
+                    return;
+                if (readySlots.empty())
+                {
+                    if (stopping)
+                        return;
+                    // Defensive: Semaphore::wait() can return without a matching signal (e.g. sem_wait EINTR).
+                    continue;
+                }
+                // Sequence follows FIFO dequeue order, not upload completion order.
+                sequence = nextStageSequence++;
+                slot = readySlots.front();
+                readySlots.pop_front();
+            }
+
+            IException *stageError = runNoThrow("block stage", [this, sequence, slot] { stageSlot(sequence, slot, chunkBytes); });
+            {
+                CriticalBlock block(stateCs);
+                recordFailureIfPresent(stageError);
+                freeSlots.emplace_back(slot);
+                signalProducer();
+            }
+        }
+    }
+
+    // Records the first failure and stops further staging; later failures are only logged.
+    // Must be called with stateCs held. Ignores null, and a rethrown firstError.
+    void recordFailureIfPresent(IException *error)
+    {
+        if (!error)
+            return;
+        if (error == firstError.get())
+        {
+            error->Release();
+            return;
+        }
+        if (!firstError)
+            firstError.setown(error);
+        else
+        {
+            StringBuffer message;
+            error->errorMessage(message);
+            WARNLOG("Additional Azure parallel writer error: %s", message.str());
+            error->Release();
+        }
+        readySlots.clear();
+        signalProducer();
+    }
+
+    void signalProducer()
+    {
+        if (producerWaiting)
+        {
+            producerWaiting = false;
+            producerWake.signal();
+        }
+    }
+
+    void enqueueFullChunk()
+    {
+        dbgassertex(currentSlot != noSlot && currentLength == chunkBytes);
+        bool startWorker;
+        {
+            CriticalBlock block(stateCs);
+            if (firstError)
+                return;
+            assignSequence();
+            readySlots.push_back(currentSlot);
+            startWorker = workers.size() < concurrency && workers.size() < allocatedSlots - freeSlots.size();
+        }
+        // The slot now belongs to the workers.
+        currentSlot = noSlot;
+        currentLength = 0;
+        if (startWorker)
+        {
+            Owned<AzureBlobParallelWorker> worker = new AzureBlobParallelWorker(*this);
+            worker->start(true);
+            workers.emplace_back(worker.getClear());
+        }
+        workerWake.signal();
+    }
+
+    unsigned assignSequence()
+    {
+        if (lastSequence >= maxAzureBlockCount)
+        {
+            const unsigned __int64 maxBlobBytes = static_cast<unsigned __int64>(maxAzureBlockCount) * chunkBytes;
+            throw makeStringExceptionV(azureWriterError, "Azure block blob exceeds %llu bytes at configured chunk size %u", maxBlobBytes, chunkBytes);
+        }
+        return ++lastSequence;
+    }
+
+    // Waits until some slot other than the caller's is spare: free, or not yet allocated.
+    // The caller's slot aside, the other concurrency slots are free, queued or uploading,
+    // so a spare slot means fewer than concurrency chunks are queued or uploading.
+    // Takes and returns a free slot if there is one, otherwise returns noSlot and the
+    // caller may allocate a new slot (only the caller allocates, so that stays possible).
+    unsigned takeSpareSlot()
+    {
+        for (;;)
+        {
+            {
+                CriticalBlock block(stateCs);
+                if (firstError)
+                    throw firstError.getLink();
+                if (!freeSlots.empty())
+                {
+                    unsigned slot = freeSlots.back();
+                    freeSlots.pop_back();
+                    return slot;
+                }
+                if (allocatedSlots < slotCount)
+                    return noSlot; // None free, but the caller can allocate a new one.
+                producerWaiting = true;
+            }
+            CCycleTimer timer;
+            producerWake.wait();
+            slotWaitCycles.fastAdd(timer.elapsedCycles());
+        }
+    }
+
+    // Sets currentSlot to a free or newly allocated slot, waiting for a worker to free one if necessary.
+    void acquireSlot()
+    {
+        dbgassertex(currentSlot == noSlot && currentLength == 0);
+        currentSlot = takeSpareSlot();
+        if (currentSlot == noSlot) // None free, so allocate a new one.
+        {
+            buffers[allocatedSlots].allocate(chunkBytes);
+            currentSlot = allocatedSlots++;
+        }
+    }
+
+    void stopWorkers()
+    {
+        {
+            CriticalBlock block(stateCs);
+            stopping = true;
+        }
+        if (!workers.empty())
+            workerWake.signal(workers.size());
+        for (auto &worker : workers)
+            worker->join();
+        workers.clear();
+    }
+
+    // Marks the absence of a slot, e.g. when the caller isn't currently filling one.
+    static constexpr unsigned noSlot = std::numeric_limits<unsigned>::max();
+
+    // Fixed at construction.
+    const unsigned concurrency;
+    const unsigned slotCount;
+    const size32_t chunkBytes;
+
+    // Used only by the caller's thread (write() and close()). Workers read the buffer of a
+    // slot they have dequeued, but only the caller allocates buffers or starts workers.
+    std::vector<MemoryAttr> buffers;
+    std::vector<Owned<AzureBlobParallelWorker>> workers;
+    unsigned allocatedSlots = 0;
+    unsigned currentSlot = noSlot; // Slot the caller is filling, or noSlot if it holds none.
+    size32_t currentLength = 0;
+
+    // Shared between the caller and the workers, guarded by stateCs.
+    CriticalSection stateCs{SYNC_LOCATION};
+    std::vector<unsigned> freeSlots;
+    std::deque<unsigned> readySlots;
+    unsigned nextStageSequence = 1;
+    bool producerWaiting = false;
+    bool stopping = false;
+
+    // Thread-safe without stateCs.
+    Semaphore workerWake{SYNC_LOCATION};
+    Semaphore producerWake{SYNC_LOCATION};
+    RelaxedAtomic<cycle_t> slotWaitCycles{0};
 };
 
 
@@ -484,7 +900,7 @@ size32_t AzureBlobReadIO::read(offset_t pos, size32_t len, void * data)
         // DownloadTo can return a shorter range if the blob shrank since its size was cached.
         Azure::Core::Http::HttpRange range = result.Value.ContentRange;
         if (range.Length.HasValue() && range.Length.Value() != len)
-            throw makeStringExceptionV(1234, "AzureBlob::read returned an unexpected length for file %s at offset %llu: requested %u, returned %llu",
+            throw makeStringExceptionV(azureRequestError, "AzureBlob::read returned an unexpected length for file %s at offset %llu: requested %u, returned %llu",
                                        file->queryFilename(), pos, len, static_cast<unsigned long long>(range.Length.Value()));
         sizeRead = len;
     }
@@ -533,17 +949,90 @@ AzureBlobWriteIO::AzureBlobWriteIO(AzureBlob * _file)
     dbgassertex(blockId.length() % 3 == 0);
     JBASE64_Encode(blockId.bytes(), blockId.length(), baseBlockId, false);
 
+    operations.setown(file->createBlockOperations(baseBlockId.str()));
+    initializeBlob();
+}
+
+unsigned __int64 AzureBlobWriteIO::getStatistic(StatisticKind kind)
+{
+    switch (kind)
+    {
+    case StTimeBlobWriteInitialize:
+        return cycle_to_nanosec(initializeCycles.load());
+    case StCycleBlobWriteInitializeCycles:
+        return initializeCycles.load();
+    case StTimeBlobWriteStage:
+        return cycle_to_nanosec(stageCycles.load());
+    case StCycleBlobWriteStageCycles:
+        return stageCycles.load();
+    case StTimeBlobWriteCommit:
+        return cycle_to_nanosec(commitCycles.load());
+    case StCycleBlobWriteCommitCycles:
+        return commitCycles.load();
+    case StNumBlobWritePeakConcurrency:
+        return peakStages.load();
+    }
+    return AzureBlobIO::getStatistic(kind);
+}
+
+void AzureBlobWriteIO::initializeBlob()
+{
+    CCycleTimer timer;
+    COnScopeExit recordTime([&] { initializeCycles.fastAdd(timer.elapsedCycles()); });
     try
     {
-        Azure::Core::IO::MemoryBodyStream empty(nullptr, 0);
-        blockBlobClient->Upload(empty);
+        operations->initializeEmptyBlob();
     }
-    catch (const Azure::Core::RequestFailedException& e)
+    catch (const Azure::Core::RequestFailedException &e)
     {
-        throw makeStringExceptionV(1234, "Azure create block blob failed: %s (%d)", e.ReasonPhrase.c_str(), static_cast<int>(e.StatusCode));
+        throwRequestException(e, "AzureBlob::create", file->queryFilename());
     }
+    catch (const std::exception &e)
+    {
+        throwRequestException(e, "AzureBlob::create", file->queryFilename());
+    }
+}
 
-    operations.setown(new AzureBlobBlockOperations(blockBlobClient, baseBlockId.str()));
+void AzureBlobWriteIO::stageBlock(unsigned sequence, offset_t pos, const byte *data, size32_t length)
+{
+    // Workers stage concurrently, so these updates must be atomic (add, not fastAdd).
+    peakStages.store_max(++activeStages);
+    CCycleTimer timer;
+    COnScopeExit recordTime([&]
+    {
+        stageCycles.add(timer.elapsedCycles());
+        --activeStages;
+    });
+    try
+    {
+        operations->stageBlock(sequence, data, length);
+    }
+    catch (const Azure::Core::RequestFailedException &e)
+    {
+        throwRequestException(e, "AzureBlob::write", file->queryFilename(), pos, length);
+    }
+    catch (const std::exception &e)
+    {
+        throwRequestException(e, "AzureBlob::write", file->queryFilename(), pos, length);
+    }
+}
+
+void AzureBlobWriteIO::commitBlockList(unsigned count)
+{
+    CCycleTimer timer;
+    COnScopeExit recordTime([&] { commitCycles.fastAdd(timer.elapsedCycles()); });
+    try
+    {
+        operations->commitBlockList(count);
+    }
+    catch (const Azure::Core::RequestFailedException &e)
+    {
+        throwRequestException(e, "AzureBlob::close", file->queryFilename());
+    }
+    catch (const std::exception &e)
+    {
+        throwRequestException(e, "AzureBlob::close", file->queryFilename());
+    }
 }
 
 void AzureBlobWriteIO::beforeDispose()
@@ -552,8 +1041,16 @@ void AzureBlobWriteIO::beforeDispose()
     {
         close();
     }
+    catch (IException *e)
+    {
+        StringBuffer message;
+        e->errorMessage(message);
+        WARNLOG("Azure blob writer close failed during disposal: %s", message.str());
+        e->Release();
+    }
     catch (...)
     {
+        WARNLOG("Azure blob writer close failed during disposal with an unknown exception");
     }
 }
 
@@ -569,73 +1066,26 @@ void AzureBlobWriteIO::setSize(offset_t size)
 
 void AzureBlobWriteIO::flush()
 {
+    // Only close() commits the complete block list and makes uploaded data readable.
+    // Flushing neither publishes partial contents nor waits for background staging.
 }
 
-void AzureBlobWriteIO::checkAppendPosition(offset_t pos) const
+void AzureBlobWriteIO::prepareWrite(offset_t pos, const void *data)
 {
+    if (closed)
+        throw makeStringException(azureWriterError, "Azure blob writer is already closed");
     if (unlikely(pos != offset))
-        throw makeStringExceptionV(1234, "Azure Blobs only support appending writes, unexpected write position %llu, expected %llu", pos, offset);
-}
-
-//---------------------------------------------------------------------------------------------------------------------
-
-AzureBlobBlockBlobWriteIO::AzureBlobBlockBlobWriteIO(AzureBlob * _file) : AzureBlobWriteIO(_file)
-{
-}
-
-size32_t AzureBlobBlockBlobWriteIO::write(offset_t pos, size32_t len, const void * data)
-{
-    if (len == 0)
-        return 0;
-
-    checkAppendPosition(pos);
-
+        throw makeStringExceptionV(azureWriterError, "Azure Blobs only support appending writes, unexpected write position %llu, expected %llu", pos, offset);
+    if (!data)
+        throw makeStringException(azureWriterError, "Azure blob writer received null data for a non-empty write");
     file->invalidateMeta();
+}
 
-    CCycleTimer timer;
-    const unsigned sequence = lastSequence + 1;
-
-    try
-    {
-        operations->stageBlock(sequence, static_cast<const byte *>(data), len);
-        lastSequence = sequence;
-        offset += len;
-    }
-    catch (const Azure::Core::RequestFailedException& e)
-    {
-        throwRequestException(e, "AzureBlob::write", file->queryFilename(), pos, len);
-    }
-    catch (const std::exception& e)
-    {
-        throwRequestException(e, "AzureBlob::write", file->queryFilename(), pos, len);
-    }
-
+void AzureBlobWriteIO::recordWrite(size32_t len, cycle_t cycles)
+{
     stats.ioWrites.fastAdd(1);
-    stats.ioWriteCycles.fastAdd(timer.elapsedCycles());
     stats.ioWriteBytes.fastAdd(len);
-    return len;
-}
-
-void AzureBlobBlockBlobWriteIO::close()
-{
-    if (committed)
-        return;
-    // Invalidate even if the commit fails after the service has accepted it.
-    file->invalidateMeta();
-
-    try
-    {
-        operations->commitBlockList(lastSequence);
-        committed = true;
-    }
-    catch (const Azure::Core::RequestFailedException& e)
-    {
-        throwRequestException(e, "AzureBlob::close", file->queryFilename(), offset, 0);
-    }
-    catch (const std::exception& e)
-    {
-        throwRequestException(e, "AzureBlob::close", file->queryFilename(), offset, 0);
-    }
+    stats.ioWriteCycles.fastAdd(cycles);
 }
 
 //---------------------------------------------------------------------------------------------------------------------
@@ -652,20 +1102,6 @@ static std::string getBlobUrl(const char *account, const char * container, const
     return url.append("/").append(blob);
 }
 
-#ifdef _USE_CPPUNIT
-static std::string getContainerUrl(const char *account, const char *container, const char *blobServiceEndpoint)
-{
-    std::string url(blobServiceEndpoint);
-    return url.append("/").append(container);
-}
-
-static std::string getBlobUrl(const char *account, const char *container, const char *blob, const char *blobServiceEndpoint)
-{
-    std::string url(getContainerUrl(account, container, blobServiceEndpoint));
-    return url.append("/").append(blob);
-}
-#endif
-
 AzureBlob::AzureBlob(const char *_azureFileName) : fullName(_azureFileName)
 {
     if (startsWith(fullName, azureBlobPrefix))
@@ -674,28 +1110,28 @@ AzureBlob::AzureBlob(const char *_azureFileName) : fullName(_azureFileName)
         const char * filename = fullName + strlen(azureBlobPrefix);
         const char * slash = strchr(filename, '/');
         if (!slash)
-            throw makeStringException(99, "Missing / in azureblob: file reference");
+            throw makeStringException(azureConfigError, "Missing / in azureblob: file reference");
 
         StringBuffer planeName(slash-filename, filename);
         Owned<const IStoragePlane> plane = getStoragePlaneByName(planeName, true);
         Owned<IStorageApiInfo> apiInfo = plane->getStorageApiInfo();
         if (!apiInfo)
-            throw makeStringExceptionV(99, "No storage api defined for plane %s", planeName.str());
+            throw makeStringExceptionV(azureConfigError, "No storage api defined for plane %s", planeName.str());
         config = apiInfo->queryAPIConfig();
         filename = slash+1; // advance past slash
 
         const char * api = apiInfo->getStorageType();
         if (!api)
-            throw makeStringExceptionV(99, "No storage api defined for plane %s", planeName.str());
+            throw makeStringExceptionV(azureConfigError, "No storage api defined for plane %s", planeName.str());
 
         StringBuffer azureBlobAPI(strlen(azureBlobPrefix) - 1, azureBlobPrefix);
         if (!strieq(api, azureBlobAPI.str()))
-            throw makeStringExceptionV(99, "Storage api for plane %s is not azureblob", planeName.str());
+            throw makeStringExceptionV(azureConfigError, "Storage api for plane %s is not azureblob", planeName.str());
 
         useManagedIdentity = apiInfo->useManagedIdentity();
         //MORE: We could allow the managed identity/secret to be supplied in the configuration
         if (useManagedIdentity && !areManagedIdentitiesEnabled())
-            throw makeStringExceptionV(99, "Managed identity is not enabled for this environment");
+            throw makeStringExceptionV(azureConfigError, "Managed identity is not enabled for this environment");
 
         unsigned numDevices = plane->numDevices();
         unsigned device = 1;
@@ -704,15 +1140,15 @@ AzureBlob::AzureBlob(const char *_azureFileName) : fullName(_azureFileName)
             //The device from the path is used to identify which device is in use
             //but it is then stripped from the path
             if (filename[0] != 'd')
-                throw makeStringExceptionV(99, "Expected a device number in the filename %s", fullName.str());
+                throw makeStringExceptionV(azureConfigError, "Expected a device number in the filename %s", fullName.str());
 
             char * endDevice = nullptr;
             device = strtod(filename+1, &endDevice);
             if ((device == 0) || (device > numDevices))
-                throw makeStringExceptionV(99, "Device %d out of range for plane %s", device, planeName.str());
+                throw makeStringExceptionV(azureConfigError, "Device %d out of range for plane %s", device, planeName.str());
 
             if (!endDevice || (*endDevice != '/' && *endDevice != '\0'))
-                throw makeStringExceptionV(99, "Unexpected end of device partition %s", fullName.str());
+                throw makeStringExceptionV(azureConfigError, "Unexpected end of device partition %s", fullName.str());
 
             filename = (*endDevice == '/') ? endDevice+1 : endDevice;
         }
@@ -720,50 +1156,138 @@ AzureBlob::AzureBlob(const char *_azureFileName) : fullName(_azureFileName)
         secretName.set(apiInfo->queryStorageApiSecret(device, accountName, containerName));
 
         if (isEmptyString(containerName))
-            throw makeStringExceptionV(99, "Missing container name for plane %s", planeName.str());
+            throw makeStringExceptionV(azureConfigError, "Missing container name for plane %s", planeName.str());
 
         if (isEmptyString(accountName))
-            throw makeStringExceptionV(99, "Missing account name for plane %s", planeName.str());
+            throw makeStringExceptionV(azureConfigError, "Missing account name for plane %s", planeName.str());
 
         if (!useManagedIdentity && isEmptyString(secretName))
-            throw makeStringExceptionV(99, "Missing secret name for plane %s", planeName.str());
+            throw makeStringExceptionV(azureConfigError, "Missing secret name for plane %s", planeName.str());
 
         blobName.set(filename);
     }
     else
-        throw makeStringExceptionV(99, "Unexpected prefix on azure filename %s", fullName.str());
+        throw makeStringExceptionV(azureConfigError, "Unexpected prefix on azure filename %s", fullName.str());
+    blobContainerUrl = ::getContainerUrl(accountName, containerName);
     blobUrl = ::getBlobUrl(accountName, containerName, blobName);
 }
 
-#ifdef _USE_CPPUNIT
-AzureBlob::AzureBlob(const char *_azureFileName, const char *_blobServiceEndpoint,
-    std::shared_ptr<StorageSharedKeyCredential> _testSharedKeyCredential)
-: AzureBlob(_azureFileName)
+AzureBlob::AzureBlob(const char *_blobUrl, std::shared_ptr<StorageSharedKeyCredential> _explicitSharedKeyCredential,
+                     const char *_accountName, bool _useManagedIdentity,
+                     const StorageApiConfig *_configOverride, IAzureBlockOperations *_blockOperations,
+                     bool _pathStyleOverride)
+    : explicitSharedKeyCredential(std::move(_explicitSharedKeyCredential))
 {
-    if (isEmptyString(_blobServiceEndpoint))
-        throw makeStringException(-1, "Azure test blob service endpoint is required");
-    if (!_testSharedKeyCredential)
-        throw makeStringException(-1, "Azure test shared-key credential is required");
+    if (isEmptyString(_blobUrl))
+        throw makeStringException(azureArgumentError, "Azure blob URL is required");
+    if (strchr(_blobUrl, '?') || strchr(_blobUrl, '#'))
+        throw makeStringException(azureArgumentError, "Azure blob URL must not contain a query or fragment");
+    if (!_useManagedIdentity && !explicitSharedKeyCredential)
+        throw makeStringException(azureArgumentError, "Azure shared-key credential is required");
+    if (_useManagedIdentity && !areManagedIdentitiesEnabled())
+        throw makeStringException(azureArgumentError, "Azure managed identity is not enabled for this environment");
+    if (_useManagedIdentity && isEmptyString(_accountName))
+        throw makeStringException(azureArgumentError, "Azure account name is required for managed-identity blob URLs");
+    useManagedIdentity = _useManagedIdentity;
+    blockOperations.set(_blockOperations);
+    if (_configOverride)
+        config = *_configOverride;
 
-    blobServiceEndpoint = _blobServiceEndpoint;
-    while (!blobServiceEndpoint.empty() && blobServiceEndpoint.back() == '/')
-        blobServiceEndpoint.pop_back();
-    blobUrl = ::getBlobUrl(accountName, containerName, blobName, blobServiceEndpoint.c_str());
-    testSharedKeyCredential = std::move(_testSharedKeyCredential);
+    try
+    {
+        Azure::Core::Url url(_blobUrl);
+        if ((url.GetScheme() != "https" && url.GetScheme() != "http") || url.GetHost().empty())
+            throw makeStringException(azureArgumentError, "Azure blob URL must use HTTP or HTTPS and include a host");
+
+        accountName.set(_useManagedIdentity ? _accountName : explicitSharedKeyCredential->AccountName.c_str());
+        const std::string &path = url.GetPath();
+        size_t containerStart = 0;
+        pathStyleUrl = _pathStyleOverride;
+        if (pathStyleUrl)
+        {
+            std::string accountPrefix = std::string(accountName.str()) + "/";
+            if (path.compare(0, accountPrefix.size(), accountPrefix) != 0)
+                throw makeStringException(azureArgumentError, "Azure path-style blob URL must start with the account name");
+            containerStart = accountPrefix.size();
+        }
+
+        size_t containerEnd = path.find('/', containerStart);
+        const std::string container = path.substr(containerStart, containerEnd - containerStart);
+        if (container.empty())
+            throw makeStringException(azureArgumentError, "Azure blob URL must include a container");
+
+        containerName.set(Azure::Core::Url::Decode(container).c_str());
+        blobName.set(containerEnd == std::string::npos ? "" : Azure::Core::Url::Decode(path.substr(containerEnd + 1)).c_str());
+        blobUrl = url.GetAbsoluteUrl();
+        fullName.set(blobUrl.c_str());
+        url.SetPath(path.substr(0, containerEnd));
+        blobContainerUrl = url.GetAbsoluteUrl();
+    }
+    catch (const std::exception &e)
+    {
+        throw makeStringExceptionV(azureArgumentError, "Invalid Azure blob URL: %s", e.what());
+    }
 }
-#endif
+
+AzureBlob::AzureBlob(const char *_blobUrl, std::shared_ptr<StorageSharedKeyCredential> _explicitSharedKeyCredential,
+                     bool _pathStyleUrl)
+    : AzureBlob(_blobUrl, std::move(_explicitSharedKeyCredential), nullptr, false, nullptr, nullptr, _pathStyleUrl)
+{
+}
+
+AzureBlob::AzureBlob(const char *_blobUrl, std::shared_ptr<StorageSharedKeyCredential> _explicitSharedKeyCredential,
+                     const StorageApiConfig &_config, IAzureBlockOperations *_blockOperations,
+                     bool _pathStyleUrl)
+    : AzureBlob(_blobUrl, std::move(_explicitSharedKeyCredential), nullptr, false, &_config, _blockOperations, _pathStyleUrl)
+{
+}
+
+AzureBlob::AzureBlob(const char *_blobUrl, const char *_accountName, bool _pathStyleUrl)
+    : AzureBlob(_blobUrl, nullptr, _accountName, true, nullptr, nullptr, _pathStyleUrl)
+{
+}
+
+AzureBlob::AzureBlob(const char *_blobUrl, const char *_accountName, const StorageApiConfig &_config,
+                     bool _pathStyleUrl)
+    : AzureBlob(_blobUrl, nullptr, _accountName, true, &_config, nullptr, _pathStyleUrl)
+{
+}
+
+
+AzureBlobDirectoryIterator::AzureBlobDirectoryIterator(AzureBlob &_file, const char *_mask, bool _includeDirs)
+    : AzureDirectoryIteratorBase(_file.fullName.str(), _file.containerName.str(), _mask, _includeDirs),
+      file(&_file), containerClient(_file.getBlobContainerClient()), prefix(_file.blobName.str())
+{
+    // The SDK prefix is container-relative; the full prefix preserves the HPCC filename or URL.
+    if (!prefix.empty() && prefix.back() != '/')
+        prefix += '/';
+
+    StringBuffer fullPathPrefix(fullPrefix);
+    if (fullPathPrefix.length() > 0 && fullPathPrefix.charAt(fullPathPrefix.length()-1) != '/')
+        fullPathPrefix.append('/');
+    fullPrefix.set(fullPathPrefix.str());
+}
 
 IFile * AzureBlobDirectoryIterator::createFile(const char *fullPath, const DirEntry &entry)
 {
+    if (file->explicitSharedKeyCredential || !startsWith(fullPath, azureBlobPrefix))
+    {
+        std::string url = containerClient->GetBlockBlobClient(prefix + entry.name).GetUrl();
+        Owned<AzureBlob> child;
+        if (file->explicitSharedKeyCredential)
+            child.setown(new AzureBlob(url.c_str(), file->explicitSharedKeyCredential, file->queryConfig(), nullptr, file->pathStyleUrl));
+        else
+            child.setown(new AzureBlob(url.c_str(), file->accountName.str(), file->queryConfig(), file->pathStyleUrl));
+        child->setListedInfo(entry.isDir, entry.size, entry.modifiedTime);
+        return child.getClear();
+    }
     return createAzureBlob(fullPath, entry);
 }
 
 std::shared_ptr<StorageSharedKeyCredential> AzureBlob::getSharedKeyCredentials() const
 {
-#ifdef _USE_CPPUNIT
-    if (testSharedKeyCredential)
-        return testSharedKeyCredential;
-#endif
+    if (explicitSharedKeyCredential)
+        return explicitSharedKeyCredential;
     return getAzureSharedKeyCredential(accountName, secretName.str());
 }
 
@@ -772,32 +1296,21 @@ std::string AzureBlob::getBlobUrl() const
     return blobUrl;
 }
 
+// Options shared by every client for this file: configured retries, and the shared HTTP
+// transport so connections are pooled across all blob operations.
+BlobClientOptions AzureBlob::makeClientOptions() const
+{
+    BlobClientOptions clientOptions;
+    setAzureRetryOptions(clientOptions.Retry, config);
+    clientOptions.Transport.Transport = getHttpTransport();
+    return clientOptions;
+}
+
 std::shared_ptr<BlobContainerClient> AzureBlob::getBlobContainerClient() const
 {
-#ifdef _USE_CPPUNIT
-    std::string blobContainerUrl = blobServiceEndpoint.empty()
-        ? getContainerUrl(accountName, containerName)
-        : getContainerUrl(accountName, containerName, blobServiceEndpoint.c_str());
-#else
-    std::string blobContainerUrl = getContainerUrl(accountName, containerName);
-#endif
-
-    // Create optimized client options for better performance
-    Azure::Storage::Blobs::BlobClientOptions clientOptions;
-
-    setAzureRetryOptions(clientOptions.Retry, config);
-
-    // Use shared transport instance for connection pooling across all blob operations
-    clientOptions.Transport.Transport = getHttpTransport();
-
     if (useManagedIdentity)
-    {
-        return std::make_shared<BlobContainerClient>(blobContainerUrl, getAzureManagedIdentityCredential(), clientOptions);
-    }
-    else
-    {
-        return std::make_shared<BlobContainerClient>(blobContainerUrl, getSharedKeyCredentials(), clientOptions);
-    }
+        return std::make_shared<BlobContainerClient>(blobContainerUrl, getAzureManagedIdentityCredential(), makeClientOptions());
+    return std::make_shared<BlobContainerClient>(blobContainerUrl, getSharedKeyCredentials(), makeClientOptions());
 }
 
 SharedBlobClient AzureBlob::getBlobClient() const
@@ -808,20 +1321,18 @@ SharedBlobClient AzureBlob::getBlobClient() const
     if (cachedBlobClient)
         return cachedBlobClient;
 
-    // Create optimized client options for better performance
-    Azure::Storage::Blobs::BlobClientOptions clientOptions;
-
-    setAzureRetryOptions(clientOptions.Retry, config);
-
-    // Use shared transport instance for connection pooling across all blob operations
-    clientOptions.Transport.Transport = getHttpTransport();
-
-    // Create account-specific credentials with caching
     if (useManagedIdentity)
-        cachedBlobClient = std::make_shared<Azure::Storage::Blobs::BlockBlobClient>(getBlobUrl(), getAzureManagedIdentityCredential(), clientOptions);
+        cachedBlobClient = std::make_shared<BlockBlobClient>(getBlobUrl(), getAzureManagedIdentityCredential(), makeClientOptions());
     else
-        cachedBlobClient = std::make_shared<Azure::Storage::Blobs::BlockBlobClient>(getBlobUrl(), getSharedKeyCredentials(), clientOptions);
+        cachedBlobClient = std::make_shared<BlockBlobClient>(getBlobUrl(), getSharedKeyCredentials(), makeClientOptions());
     return cachedBlobClient;
+}
+
+IAzureBlockOperations *AzureBlob::createBlockOperations(const char *baseBlockId) const
+{
+    if (blockOperations)
+        return LINK(blockOperations.get());
+    return new AzureBlobBlockOperations(getBlobClient(), baseBlockId);
 }
 
 bool AzureBlob::createDirectory()
@@ -838,8 +1349,11 @@ bool AzureBlob::createDirectory()
     }
     catch (const Azure::Core::RequestFailedException& e)
     {
-        IException * error = makeStringExceptionV(1234, "Azure create container failed: %s (%d)", e.ReasonPhrase.c_str(), static_cast<int>(e.StatusCode));
-        throw error;
+        throwRequestException(e, "AzureBlob::createDirectory", queryFilename());
+    }
+    catch (const std::exception& e)
+    {
+        throwRequestException(e, "AzureBlob::createDirectory", queryFilename());
     }
 }
 
@@ -872,8 +1386,27 @@ IFileIO * AzureBlob::createFileReadIO()
     return new AzureBlobReadIO(this, fileSize); // NB: exists() ensures metadata is loaded and fileSize is valid
 }
 
+static void validateAzureWriteConfig(const StorageApiConfig &config)
+{
+    constexpr unsigned maxConcurrency = 512;
+    constexpr unsigned __int64 maxChunkBytes = 4000ULL * 1024 * 1024;
+    if (config.parallelWriteConcurrency > maxConcurrency)
+        throw makeStringExceptionV(azureConfigError, "Azure parallel write concurrency %u is outside [0, %u]", config.parallelWriteConcurrency, maxConcurrency);
+    if (!config.parallelWriteChunkBytes || config.parallelWriteChunkBytes > maxChunkBytes)
+        throw makeStringExceptionV(azureConfigError, "Azure parallel write chunk size %llu is outside (0, %llu]", config.parallelWriteChunkBytes, maxChunkBytes);
+    // The parallel writer buffers one chunk per upload plus one being filled by the caller.
+    const unsigned slotCount = config.parallelWriteConcurrency + 1;
+    if (config.parallelWriteChunkBytes > std::numeric_limits<size32_t>::max() / slotCount)
+        throw makeStringException(azureConfigError, "Azure parallel write buffer size must be less than 4 GiB");
+    if (config.parallelWriteChunkBytes > std::numeric_limits<size_t>::max() / slotCount)
+        throw makeStringException(azureConfigError, "Azure parallel write buffer size overflows the address space");
+}
+
 IFileIO * AzureBlob::createFileWriteIO()
 {
+    validateAzureWriteConfig(config);
+    if (config.parallelWriteConcurrency > 0)
+        return new AzureBlobParallelBlockBlobWriteIO(this);
     return new AzureBlobBlockBlobWriteIO(this);
 }
 
@@ -882,20 +1415,7 @@ IDirectoryIterator * AzureBlob::directoryFiles(const char *mask, bool sub, bool 
     if (sub)
         UNIMPLEMENTED_X("AzureBlob::directoryFiles recursive");
 
-    // Build the blob prefix for listing. The blobName is the path within the container.
-    // For directory listing, we want to list blobs under this prefix with "/" delimiter.
-    std::string listPrefix(blobName.str());
-    if (!listPrefix.empty() && listPrefix.back() != '/')
-        listPrefix += '/';
-
-    // Build the full azure path prefix for constructing child IFile paths
-    // fullName is e.g. "azureblob:plane/path" or "azureblob:plane/d1/path"
-    StringBuffer fullPathPrefix(fullName);
-    if (fullPathPrefix.length() > 0 && fullPathPrefix.charAt(fullPathPrefix.length()-1) != '/')
-        fullPathPrefix.append('/');
-
-    auto containerClient = getBlobContainerClient();
-    return new AzureBlobDirectoryIterator(containerClient, listPrefix.c_str(), fullPathPrefix.str(), containerName.str(), mask, includeDirs);
+    return new AzureBlobDirectoryIterator(*this, mask, includeDirs);
 }
 
 void AzureBlob::ensureMetaData()
@@ -947,8 +1467,11 @@ bool AzureBlob::remove()
     }
     catch (const Azure::Core::RequestFailedException& e)
     {
-        IException * error = makeStringExceptionV(1234, "Azure delete blob failed: %s (%d)", e.ReasonPhrase.c_str(), static_cast<int>(e.StatusCode));
-        throw error;
+        throwRequestException(e, "AzureBlob::remove", queryFilename());
+    }
+    catch (const std::exception& e)
+    {
+        throwRequestException(e, "AzureBlob::remove", queryFilename());
     }
 }
 
@@ -971,7 +1494,12 @@ IFile *createAzureBlob(const char *azureFileName, const DirEntry &entry)
 }
 
 #ifdef _USE_CPPUNIT
-class AzureBlobTest : public CppUnit::TestFixture
+/*
+ * Checks read boundaries, short-download rejection and metadata invalidation after
+ * deletion or commit. Azure SDK requests use an in-memory mock HTTP transport;
+ * no Azure service is contacted.
+ */
+class AzureBlobReadAndMetadataTest : public CppUnit::TestFixture
 {
     class MockTransport final : public Azure::Core::Http::HttpTransport
     {
@@ -1017,7 +1545,7 @@ class AzureBlobTest : public CppUnit::TestFixture
     }
 
 public:
-    CPPUNIT_TEST_SUITE(AzureBlobTest);
+    CPPUNIT_TEST_SUITE(AzureBlobReadAndMetadataTest);
         CPPUNIT_TEST(testReadBoundaries);
         CPPUNIT_TEST(testShortDownload);
         CPPUNIT_TEST(testDeleteInvalidatesMetadata);
@@ -1080,167 +1608,92 @@ public:
     void testCommitInvalidatesMetadata()
     {
         START_TEST
-        auto transport = std::make_shared<MockTransport>();
-        Owned<AzureBlob> file = createFile(transport, 4);
-        transport->addResponse(Azure::Core::Http::HttpStatusCode::Created, "");
-        Owned<IFileIO> io = file->open(IFOcreate);
-        transport->addResponse(Azure::Core::Http::HttpStatusCode::Created, "");
-        CPPUNIT_ASSERT_EQUAL(size32_t(4), io->write(0, 4, "data"));
-        transport->addResponse(Azure::Core::Http::HttpStatusCode::Ok, "");
-        CPPUNIT_ASSERT_EQUAL(offset_t(0), file->size());
-        transport->addResponse(Azure::Core::Http::HttpStatusCode::Created, "");
-        io->close();
-        transport->addResponse(Azure::Core::Http::HttpStatusCode::Ok, "data");
-        CPPUNIT_ASSERT_EQUAL(offset_t(4), file->size());
-        io->close();
-        CPPUNIT_ASSERT_EQUAL(size_t(5), transport->requests);
+        for (unsigned concurrency : {0U, 1U})
+        {
+            auto transport = std::make_shared<MockTransport>();
+            Owned<AzureBlob> file = createFile(transport, 4);
+            file->config.parallelWriteConcurrency = concurrency;
+            transport->addResponse(Azure::Core::Http::HttpStatusCode::Created, "");
+            Owned<IFileIO> io = file->open(IFOcreate);
+            if (!concurrency)
+                transport->addResponse(Azure::Core::Http::HttpStatusCode::Created, "");
+            CPPUNIT_ASSERT_EQUAL(size32_t(4), io->write(0, 4, "data"));
+            transport->addResponse(Azure::Core::Http::HttpStatusCode::Ok, "");
+            CPPUNIT_ASSERT_EQUAL(offset_t(0), file->size());
+            if (concurrency)
+                transport->addResponse(Azure::Core::Http::HttpStatusCode::Created, "");
+            transport->addResponse(Azure::Core::Http::HttpStatusCode::Created, "");
+            io->close();
+            transport->addResponse(Azure::Core::Http::HttpStatusCode::Ok, "data");
+            CPPUNIT_ASSERT_EQUAL(offset_t(4), file->size());
+            io->close();
+            CPPUNIT_ASSERT_EQUAL(size_t(5), transport->requests);
+        }
         END_TEST
     }
 };
 
-CPPUNIT_TEST_SUITE_REGISTRATION(AzureBlobTest);
-CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(AzureBlobTest, "AzureBlobTest");
+CPPUNIT_TEST_SUITE_REGISTRATION(AzureBlobReadAndMetadataTest);
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(AzureBlobReadAndMetadataTest, "AzureBlobReadAndMetadataTest");
 
-static constexpr const char azuriteBlobEndpoint[] = "http://127.0.0.1:10000/devstoreaccount1";
-static constexpr const char azuriteDevStoreKey[] = "Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==";
-
-static IFile *createAzureBlobForTest(const char *azureFileName)
-{
-    auto credential = std::make_shared<StorageSharedKeyCredential>("devstoreaccount1", azuriteDevStoreKey);
-    return new AzureBlob(azureFileName, azuriteBlobEndpoint, std::move(credential));
-}
-
-/*
- * This test needs a local Azurite Blob service. Start it in one terminal:
- *
- *   npx --yes azurite --location /tmp/azurite-test --blobHost 127.0.0.1 --blobPort 10000
- *
- * Then run from the build package directory:
- *   bin/unittests -v -d <filehooks-directory> -e AzureBlobWriteTimingTest
- *
- * The suite name contains "Timing", so the main unittest driver excludes it
- * from the default run unless the test is selected explicitly or -a is used.
- */
-class AzureBlobWriteTimingTest : public CppUnit::TestFixture
+class AzureBlobUrlStyleTest : public CppUnit::TestFixture
 {
 public:
-    CPPUNIT_TEST_SUITE(AzureBlobWriteTimingTest);
-        CPPUNIT_TEST(testWriteSizes);
+    CPPUNIT_TEST_SUITE(AzureBlobUrlStyleTest);
+        CPPUNIT_TEST(testCustomHostPathStyleUrl);
     CPPUNIT_TEST_SUITE_END();
 
-public:
-    virtual void setUp() override
-    {
-        originalComponentConfig.setown(getComponentConfig());
-        originalGlobalConfig.setown(getGlobalConfig());
-
-        try
-        {
-            setupAzuriteEnvironment();
-        }
-        catch (IException *e)
-        {
-            Owned<IException> ownedException(e);
-            StringBuffer message;
-            e->errorMessage(message);
-            cleanupTestEnvironment();
-            CPPUNIT_FAIL(message.str());
-        }
-        catch (...)
-        {
-            cleanupTestEnvironment();
-            throw;
-        }
-    }
-
-    virtual void tearDown() override
-    {
-        cleanupTestEnvironment();
-    }
-
-    void testWriteSizes()
+    void testCustomHostPathStyleUrl()
     {
         START_TEST
-        const std::vector<size32_t> sizes = {1, 1023, 1024, 1025, 3 * 1024 + 7};
-        for (size32_t size : sizes)
-        {
-            std::string name = uniqueBlobName();
-            std::vector<byte> expected(size);
-            for (size32_t i = 0; i < size; ++i)
-                expected[i] = static_cast<byte>((i * 31 + size) & 0xff);
-
-            Owned<IFile> output(createAzureBlobForTest(name.c_str()));
-            Owned<IFileIO> writer(output->open(IFOcreate));
-            CPPUNIT_ASSERT(writer);
-            CPPUNIT_ASSERT_EQUAL(size, writer->write(0, size, expected.data()));
-            CPPUNIT_ASSERT_EQUAL(static_cast<offset_t>(size), writer->size());
-            CPPUNIT_ASSERT_EQUAL(1ULL, writer->getStatistic(StNumDiskWrites));
-            CPPUNIT_ASSERT_EQUAL(static_cast<unsigned __int64>(size), writer->getStatistic(StSizeDiskWrite));
-            writer->close();
-
-            Owned<IFile> inputFile(createAzureBlobForTest(name.c_str()));
-            Owned<IFileIO> reader(inputFile->open(IFOread));
-            CPPUNIT_ASSERT(reader);
-            std::vector<byte> actual(size);
-            CPPUNIT_ASSERT_EQUAL(size, reader->read(0, size, actual.data()));
-            CPPUNIT_ASSERT(actual == expected);
-            inputFile->remove();
-        }
+        const char *url = "http://azurite:10000/devstoreaccount1/container/blob";
+        Owned<IFile> file = createAzureBlob(url, "devstoreaccount1", "dGVzdC1rZXk=", true);
+        auto *azureBlob = static_cast<AzureBlob *>(file.get());
+        CPPUNIT_ASSERT_EQUAL(std::string("container"), std::string(azureBlob->containerName.str()));
+        CPPUNIT_ASSERT_EQUAL(std::string("blob"), std::string(azureBlob->blobName.str()));
+        Azure::Core::Url expectedContainerUrl(url);
+        expectedContainerUrl.SetPath("/devstoreaccount1/container");
+        CPPUNIT_ASSERT_EQUAL(expectedContainerUrl.GetAbsoluteUrl(), azureBlob->blobContainerUrl);
+        CPPUNIT_ASSERT(azureBlob->pathStyleUrl);
         END_TEST
-    }
-
-private:
-    void setupAzuriteEnvironment()
-    {
-        testPlaneName.set("azurite-test-").append(getTimeStampNowValue());
-
-        VStringBuffer testPlaneYaml(R"!!(
-planes:
-- name: %s
-  category: data
-  prefix: /tmp/azurite-test
-  storageapi:
-    type: azureblob
-    account: devstoreaccount1
-    secret: test-credential-injected
-    containers:
-    - name: hpccparalleltest
-)!!", testPlaneName.str());
-
-        Owned<IPropertyTree> testPlaneConfig = createPTreeFromYAMLString(testPlaneYaml);
-        Owned<IPropertyTree> testPlane = testPlaneConfig->getPropTree("planes");
-        CPPUNIT_ASSERT(testPlane);
-
-        Owned<IPropertyTree> globalConfig = createPTreeFromIPT(originalGlobalConfig);
-        Owned<IPropertyTree> storageConfig = globalConfig->getPropTree("storage");
-        if (!storageConfig)
-            storageConfig.set(globalConfig->addPropTree("storage", createPTree()));
-        storageConfig->addPropTree("planes", testPlane.getClear());
-
-        replaceComponentConfig(originalComponentConfig, globalConfig);
-
-        Owned<IFile> container(createAzureBlobForTest(VStringBuffer("azureblob:%s/", testPlaneName.str())));
-        container->createDirectory();
-    }
-
-    void cleanupTestEnvironment()
-    {
-        replaceComponentConfig(originalComponentConfig, originalGlobalConfig);
-    }
-
-    StringBuffer testPlaneName;
-    Owned<IPropertyTree> originalComponentConfig;
-    Owned<IPropertyTree> originalGlobalConfig;
-
-    std::string uniqueBlobName()
-    {
-        // The plane name is only an HPCC lookup key; Azure identifies blobs by container and blob name.
-        // Include the run ID here to prevent concurrent test processes from sharing blob names.
-        static unsigned counter = 0;
-        return std::string("azureblob:") + testPlaneName.str() + "/write-timing-" + testPlaneName.str() + "-" + std::to_string(++counter);
     }
 };
 
-CPPUNIT_TEST_SUITE_REGISTRATION(AzureBlobWriteTimingTest);
-CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(AzureBlobWriteTimingTest, "AzureBlobWriteTimingTest");
+CPPUNIT_TEST_SUITE_REGISTRATION(AzureBlobUrlStyleTest);
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(AzureBlobUrlStyleTest, "AzureBlobUrlStyleTest");
 #endif
+
+static std::shared_ptr<StorageSharedKeyCredential> createAzureSharedKeyCredential(const char *accountName,
+                                                                                   const char *accountKey)
+{
+    if (isEmptyString(accountName))
+        throw makeStringException(azureArgumentError, "Azure account name is required");
+    if (isEmptyString(accountKey))
+        throw makeStringException(azureArgumentError, "Azure account key is required");
+    return std::make_shared<StorageSharedKeyCredential>(accountName, accountKey);
+}
+
+IFile *createAzureBlob(const char *blobUrl, const char *accountName, const char *accountKey,
+                       bool pathStyle)
+{
+    return new AzureBlob(blobUrl, createAzureSharedKeyCredential(accountName, accountKey), pathStyle);
+}
+
+
+IFile *createAzureBlob(const char *blobUrl, const char *accountName, const char *accountKey,
+                       const StorageApiConfig &config, IAzureBlockOperations *operations,
+                       bool pathStyle)
+{
+    return new AzureBlob(blobUrl, createAzureSharedKeyCredential(accountName, accountKey), config, operations, pathStyle);
+}
+
+IFile *createAzureBlob(const char *blobUrl, const char *accountName, bool pathStyle)
+{
+    return new AzureBlob(blobUrl, accountName, pathStyle);
+}
+
+IFile *createAzureBlob(const char *blobUrl, const char *accountName, const StorageApiConfig &config,
+                       bool pathStyle)
+{
+    return new AzureBlob(blobUrl, accountName, config, pathStyle);
+}

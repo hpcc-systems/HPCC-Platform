@@ -106,7 +106,7 @@ std::shared_ptr<Azure::Storage::StorageSharedKeyCredential> getAzureSharedKeyCre
     }
     catch (const Azure::Core::RequestFailedException& e)
     {
-        IException * error = makeStringExceptionV(-1, "Azure access: %s (%d)", e.ReasonPhrase.c_str(), static_cast<int>(e.StatusCode));
+        IException * error = makeStringExceptionV(azureAuthenticationError, "Azure access: %s (%d)", e.ReasonPhrase.c_str(), static_cast<int>(e.StatusCode));
         throw error;
     }
 }
@@ -145,7 +145,7 @@ std::shared_ptr<Azure::Core::Credentials::TokenCredential> getAzureManagedIdenti
         }
         catch (const Azure::Core::RequestFailedException& e)
         {
-            throw makeStringExceptionV(-1, "Azure authentication failed: %s (%d)",
+            throw makeStringExceptionV(azureAuthenticationError, "Azure authentication failed: %s (%d)",
                 e.ReasonPhrase.c_str(), static_cast<int>(e.StatusCode));
         }
         return cachedManagedIdentityCredential;
@@ -170,7 +170,7 @@ std::shared_ptr<Azure::Core::Credentials::TokenCredential> getAzureManagedIdenti
     }
     catch (const Azure::Core::RequestFailedException& e)
     {
-        throw makeStringExceptionV(-1, "Azure Managed Identity authentication failed: %s (%d)",
+        throw makeStringExceptionV(azureAuthenticationError, "Azure Managed Identity authentication failed: %s (%d)",
             e.ReasonPhrase.c_str(), static_cast<int>(e.StatusCode));
     }
     return cachedManagedIdentityCredential;
@@ -212,23 +212,23 @@ bool isBase64Char(char c)
 
 void throwRequestException(const Azure::Core::RequestFailedException& e, const char * op, const char * filename, offset_t pos, offset_t len)
 {
-    throw makeStringExceptionV(1234, "%s failed for file %s at offset %llu, len %llu: %s (%d)",
+    throw makeStringExceptionV(azureRequestError, "%s failed for file %s at offset %llu, len %llu: %s (%d)",
                               op, filename, pos, len, e.ReasonPhrase.c_str(), static_cast<int>(e.StatusCode));
 }
 
 void throwRequestException(const std::exception& e, const char * op, const char * filename, offset_t pos, offset_t len)
 {
-    throw makeStringExceptionV(1234, "%s failed for file %s at offset %llu, len %llu: %s",
+    throw makeStringExceptionV(azureRequestError, "%s failed for file %s at offset %llu, len %llu: %s",
                               op, filename, pos, len, e.what());
 }
 
 void throwRequestException(const Azure::Core::RequestFailedException& e, const char * op, const char * filename)
 {
-    throw makeStringExceptionV(1234, "%s failed for file %s: %s (%d)",
+    throw makeStringExceptionV(azureRequestError, "%s failed for file %s: %s (%d)",
                               op, filename, e.ReasonPhrase.c_str(), static_cast<int>(e.StatusCode));
 }
 
 void throwRequestException(const std::exception& e, const char * op, const char * filename)
 {
-    throw makeStringExceptionV(1234, "%s failed for file %s: %s", op, filename, e.what());
+    throw makeStringExceptionV(azureRequestError, "%s failed for file %s: %s", op, filename, e.what());
 }
