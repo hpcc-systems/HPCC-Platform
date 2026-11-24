@@ -724,6 +724,10 @@ CPPUNIT_TEST_SUITE_REGISTRATION( JlibWriteSyncCacheTest );
 CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( JlibWriteSyncCacheTest, "JlibWriteSyncCacheTest" );
 #endif
 
+/*
+ * Verifies storage API configuration defaults, expert overrides and cached snapshots
+ * exposed by storage planes. Uses local property trees only; no Azure service is contacted.
+ */
 class JlibAzureAPIConfigTest : public CppUnit::TestFixture
 {
 public:
@@ -752,9 +756,11 @@ public:
         CPPUNIT_ASSERT_EQUAL(1000U, defaults.retryDelayMs);
         CPPUNIT_ASSERT_EQUAL(30000U, defaults.maxRetryDelayMs);
         CPPUNIT_ASSERT_EQUAL(16U, defaults.parallelConcurrency);
+        CPPUNIT_ASSERT_EQUAL(16U, defaults.parallelWriteConcurrency);
+        CPPUNIT_ASSERT_EQUAL(4ULL * 1024 * 1024, defaults.parallelWriteChunkBytes);
         CPPUNIT_ASSERT(!defaults.traceEnabled);
 
-        Owned<IPropertyTree> overrideConfig = createPlaneConfig("trace='true' parallelThresholdK='8192' parallelConcurrency='4' parallelChunkSizeK='2048' parallelInitialChunkSizeK='1024' maxRetries='8' retryDelayMs='2500' maxRetryDelayMs='45000'");
+        Owned<IPropertyTree> overrideConfig = createPlaneConfig("trace='true' parallelThresholdK='8192' parallelConcurrency='4' parallelChunkSizeK='2048' parallelInitialChunkSizeK='1024' maxRetries='8' retryDelayMs='2500' maxRetryDelayMs='45000' parallelWriteConcurrency='8' parallelWriteChunkSizeK='1024'");
         Owned<IStoragePlane> overridePlane = createStoragePlane(overrideConfig);
         Owned<IStorageApiInfo> overrideApiInfo = overridePlane->getStorageApiInfo();
         const StorageApiConfig & overrides = overrideApiInfo->queryAPIConfig();
@@ -766,6 +772,8 @@ public:
         CPPUNIT_ASSERT_EQUAL(8U, overrides.maxRetries);
         CPPUNIT_ASSERT_EQUAL(2500U, overrides.retryDelayMs);
         CPPUNIT_ASSERT_EQUAL(45000U, overrides.maxRetryDelayMs);
+        CPPUNIT_ASSERT_EQUAL(8U, overrides.parallelWriteConcurrency);
+        CPPUNIT_ASSERT_EQUAL(1024ULL * 1024, overrides.parallelWriteChunkBytes);
 
         Owned<IPropertyTree> numericBoolConfig = createPlaneConfig("trace='2'");
         Owned<IStoragePlane> numericBoolPlane = createStoragePlane(numericBoolConfig);

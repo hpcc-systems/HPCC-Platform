@@ -194,6 +194,8 @@ struct StorageApiConfig
     static constexpr unsigned defaultMaxRetries = 5;                                      // 5 retries after the initial request
     static constexpr unsigned defaultRetryDelayMs = 1000;                                 // 1 second
     static constexpr unsigned defaultMaxRetryDelayMs = 30000;                             // 30 seconds
+    static constexpr unsigned defaultParallelWriteConcurrency = 16;
+    static constexpr unsigned __int64 defaultParallelWriteChunkBytes = 4 * 1024 * 1024;
 
     bool traceEnabled = defaultTraceEnabled;
     unsigned __int64 parallelThresholdBytes = defaultParallelThresholdBytes;
@@ -203,6 +205,8 @@ struct StorageApiConfig
     unsigned maxRetries = defaultMaxRetries;
     unsigned retryDelayMs = defaultRetryDelayMs;
     unsigned maxRetryDelayMs = defaultMaxRetryDelayMs;
+    unsigned parallelWriteConcurrency = defaultParallelWriteConcurrency;
+    unsigned __int64 parallelWriteChunkBytes = defaultParallelWriteChunkBytes;
 };
 
 // This interface should only have specialized methods for accessing the plane information, rather a general function to return a property tree

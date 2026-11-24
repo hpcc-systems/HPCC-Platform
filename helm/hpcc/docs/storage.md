@@ -50,6 +50,66 @@ storage:
     prefix: "azure://ghallidayblobs@data"
     category: lz
 ```
+
+## Azure Blob API writes
+
+For planes configured with `storageapi.type: azureblob`, the storage API expert
+settings control parallel write behavior. They can be set globally with
+`global.expert.storageapi` or overridden per plane with
+`storage.planes[].storageapi.expert`. Plane settings override global settings
+individually; settings omitted at both levels use their built-in defaults. The
+plane's sibling `expert` section (`storage.planes[].expert`) does not configure
+storage API options.
+
+The defaults are `parallelWriteConcurrency: 16` and
+`parallelWriteChunkSizeK: 4096` (KiB). Concurrency must be from 0 through 512;
+zero selects synchronous writes. The chunk size must be greater than zero and
+at most 4000 MiB. The buffer pool, which holds `parallelWriteConcurrency + 1`
+chunks, must total less than 4 GiB. Invalid settings are rejected before the
+destination is created or truncated.
+
+For example, set a global concurrency of 16 and override one plane to use
+synchronous writes:
+
+```yaml
+global:
+  expert:
+    storageapi:
+      parallelWriteConcurrency: 16
+storage:
+  planes:
+  - name: azuredata
+    storageapi:
+      expert:
+        parallelWriteConcurrency: 0
+```
+
+Buffers and workers are allocated on demand. With the defaults, one active
+parallel writer can use up to 17 × 4 MiB = 68 MiB for chunk buffers and up to
+16 worker threads. These are per-writer ceilings, not process-wide limits.
+Estimate process usage by multiplying these costs by the number of concurrent
+writers; for example, four fully active default-configured writers can allocate
+up to 272 MiB of chunk buffers and create up to 64 worker threads. Tune
+concurrency and chunk size for the number of simultaneous outputs and available
+memory and thread resources. Concurrency zero does not create upload worker
+threads.
+
+Parallel writes copy caller data into fixed-size chunks. A full buffer pool
+applies backpressure. Only `close()` commits the ordered block list and makes
+uploaded data readable; `flush()` neither commits nor waits for uploads.
+`close()` waits for outstanding uploads and releases workers and buffers, even
+on failure. Calls on each writer must be serialized by the caller. Direct-URL
+directory entries inherit their parent's storage API settings, including write
+concurrency, chunk size, and retries.
+
+Blob writers expose buffer-wait time, peak simultaneous staging calls, and
+initialization, staging, and commit times through `getStatistic()`. Operation
+times include failures; staging time is summed across threads, not elapsed wall
+time. For parallel writers, `StTimeDiskWriteIO` includes caller time spent in
+`write()` and finalizing in `close()`, including failed finalization. It does
+not sum concurrent worker durations, and a successful repeated `close()` adds
+no time.
+
 # How is storage associated with a storage plane?
 
 So far we have seen the properties that describe how the HPCC application views the storage, but how does Kubernetes associate those definitions with physical storage?

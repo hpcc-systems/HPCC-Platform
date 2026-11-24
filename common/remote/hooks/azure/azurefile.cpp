@@ -375,28 +375,28 @@ AzureFile::AzureFile(const char *_azureFileName) : fullName(_azureFileName)
         const char * filename = fullName + strlen(azureFilePrefix);
         const char * slash = strchr(filename, '/');
         if (!slash)
-            throw makeStringException(99, "Missing / in azurefile: file reference");
+            throw makeStringException(azureConfigError, "Missing / in azurefile: file reference");
 
         StringBuffer planeName(slash-filename, filename);
         Owned<const IStoragePlane> plane = getStoragePlaneByName(planeName, true);
         Owned<IStorageApiInfo> apiInfo = plane->getStorageApiInfo();
         if (!apiInfo)
-            throw makeStringExceptionV(99, "No storage api defined for plane %s", planeName.str());
+            throw makeStringExceptionV(azureConfigError, "No storage api defined for plane %s", planeName.str());
         config = apiInfo->queryAPIConfig();
         filename = slash+1; // advance past slash
 
         const char * api = apiInfo->getStorageType();
         if (!api)
-            throw makeStringExceptionV(99, "No storage api defined for plane %s", planeName.str());
+            throw makeStringExceptionV(azureConfigError, "No storage api defined for plane %s", planeName.str());
 
         StringBuffer azureFileAPI(strlen(azureFilePrefix) - 1, azureFilePrefix);
         if (!strieq(api, azureFileAPI.str()))
-            throw makeStringExceptionV(99, "Storage api for plane %s is not azurefile", planeName.str());
+            throw makeStringExceptionV(azureConfigError, "Storage api for plane %s is not azurefile", planeName.str());
 
         useManagedIdentity = apiInfo->useManagedIdentity();
         //MORE: We could allow the managed identity/secret to be supplied in the configuration
         if (useManagedIdentity && !areManagedIdentitiesEnabled())
-            throw makeStringException(99, "Managed identity is not enabled for this environment");
+            throw makeStringException(azureConfigError, "Managed identity is not enabled for this environment");
 
         unsigned numDevices = plane->numDevices();
         unsigned device = 1;
@@ -405,15 +405,15 @@ AzureFile::AzureFile(const char *_azureFileName) : fullName(_azureFileName)
             //The device from the path is used to identify which device is in use
             //but it is then stripped from the path
             if (filename[0] != 'd')
-                throw makeStringExceptionV(99, "Expected a device number in the filename %s", fullName.str());
+                throw makeStringExceptionV(azureConfigError, "Expected a device number in the filename %s", fullName.str());
 
             char * endDevice = nullptr;
             device = strtod(filename+1, &endDevice);
             if ((device == 0) || (device > numDevices))
-                throw makeStringExceptionV(99, "Device %d out of range for plane %s", device, planeName.str());
+                throw makeStringExceptionV(azureConfigError, "Device %d out of range for plane %s", device, planeName.str());
 
             if (!endDevice || (*endDevice != '/' && *endDevice != '\0'))
-                throw makeStringExceptionV(99, "Unexpected end of device partition %s", fullName.str());
+                throw makeStringExceptionV(azureConfigError, "Unexpected end of device partition %s", fullName.str());
 
             filename = (*endDevice == '/') ? endDevice+1 : endDevice;
         }
@@ -421,18 +421,18 @@ AzureFile::AzureFile(const char *_azureFileName) : fullName(_azureFileName)
         secretName.set(apiInfo->queryStorageApiSecret(device, accountName, shareName));
 
         if (isEmptyString(shareName))
-            throw makeStringExceptionV(99, "Missing share name for plane %s", planeName.str());
+            throw makeStringExceptionV(azureConfigError, "Missing share name for plane %s", planeName.str());
 
         if (isEmptyString(accountName))
-            throw makeStringExceptionV(99, "Missing account name for plane %s", planeName.str());
+            throw makeStringExceptionV(azureConfigError, "Missing account name for plane %s", planeName.str());
 
         if (!useManagedIdentity && isEmptyString(secretName))
-            throw makeStringExceptionV(99, "Missing secret name for plane %s", planeName.str());
+            throw makeStringExceptionV(azureConfigError, "Missing secret name for plane %s", planeName.str());
 
         fileName.set(filename);
     }
     else
-        throw makeStringExceptionV(99, "Unexpected prefix on azure filename %s", fullName.str());
+        throw makeStringExceptionV(azureConfigError, "Unexpected prefix on azure filename %s", fullName.str());
     fileUrl = ::getFileUrl(accountName, shareName, fileName);
 }
 

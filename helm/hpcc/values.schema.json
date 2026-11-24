@@ -921,6 +921,11 @@
               "description": "Default secret name for credentials (used by containers if not specified at container level)",
               "type": "string"
             },
+            "expert": {
+              "description": "Expert storage API settings",
+              "type": "object",
+              "additionalProperties": true
+            },
             "containers": {
               "type": "array",
               "description": "List of containers",

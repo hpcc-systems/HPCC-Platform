@@ -374,6 +374,15 @@ enum StatisticKind
     StSizeParallelReadAheadChunk,
     StTimeParallelReadAheadConsumerWait,
     StCycleParallelReadAheadConsumerWaitCycles,
+    StTimeBlobWriteWait,
+    StCycleBlobWriteWaitCycles,
+    StNumBlobWritePeakConcurrency,
+    StTimeBlobWriteInitialize,
+    StCycleBlobWriteInitializeCycles,
+    StTimeBlobWriteStage,
+    StCycleBlobWriteStageCycles,
+    StTimeBlobWriteCommit,
+    StCycleBlobWriteCommitCycles,
     StMax,
 
     //For any quantity there is potentially the following variants.

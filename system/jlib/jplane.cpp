@@ -213,6 +213,8 @@ static void applyAPIExpertSettings(StorageApiConfig & config, const IPropertyTre
     applyUnsignedSetting(config.maxRetries, expertSettings, "@maxRetries");
     applyUnsignedSetting(config.retryDelayMs, expertSettings, "@retryDelayMs");
     applyUnsignedSetting(config.maxRetryDelayMs, expertSettings, "@maxRetryDelayMs");
+    applyUnsignedSetting(config.parallelWriteConcurrency, expertSettings, "@parallelWriteConcurrency");
+    applyKBytesSetting(config.parallelWriteChunkBytes, expertSettings, "@parallelWriteChunkSizeK");
 }
 
 //Unlikely to be contended - so have a single shared static

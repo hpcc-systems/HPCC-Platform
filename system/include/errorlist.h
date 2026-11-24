@@ -102,6 +102,9 @@
 #define DFT_ERROR_START         8050    // Distributed file transfer - see dali/ft/fterror.hpp
 #define DFT_ERROR_END           8199
 
+#define AZURE_ERROR_START       8400    // Azure blob/file hooks - see common/remote/hooks/azure/azureapiutils.hpp
+#define AZURE_ERROR_END         8499
+
 #define JHTREE_ERROR_START      8500
 #define JHTREE_ERROR_END        8699
 

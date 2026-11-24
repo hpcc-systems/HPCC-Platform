@@ -71,14 +71,14 @@ jobs:
             echo "--------------------------------------" | tee -a  $logFile
             suiteStart=$SECONDS
             suiteStatus=0
-            sudo /opt/HPCCSystems/bin/unittests -e "$test" 2>&1 | tee -a $logFile || suiteStatus=$?
+            sudo /opt/HPCCSystems/bin/unittests -d /opt/HPCCSystems/lib -d /opt/HPCCSystems/filehooks -e "$test" 2>&1 | tee -a $logFile || suiteStatus=$?
             suiteElapsed=$((SECONDS - suiteStart))
             echo "Suite END: $test | timestamp=$(date -u +%Y-%m-%dT%H:%M:%SZ) | elapsed=${suiteElapsed}s | exit=$suiteStatus" | tee -a $logFile
             if [[ $suiteStatus -ne 0 ]]; then
               exit "$suiteStatus"
             fi
             echo " " | tee -a $logFile
-          done< <(/opt/HPCCSystems/bin/unittests -l | sort )
+          done< <(/opt/HPCCSystems/bin/unittests -d /opt/HPCCSystems/lib -d /opt/HPCCSystems/filehooks -l | sort )
 
       - name: Check for Core files
         shell: "bash"

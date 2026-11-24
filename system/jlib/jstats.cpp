@@ -1038,6 +1038,15 @@ static const constexpr StatisticMeta statsMetaData[] = {
     { SIZESTAT(ParallelReadAheadChunk), "The size of each parallel read-ahead chunk" },
     { TIMESTAT(ParallelReadAheadConsumerWait), "The time the consumer waited for parallel read-ahead data" },
     { CYCLESTAT(ParallelReadAheadConsumerWait) },
+    { TIMESTAT(BlobWriteWait), "The time a blob writer spent waiting for a free upload buffer" },
+    { CYCLESTAT(BlobWriteWait) },
+    { PEAKNUMSTAT(BlobWritePeakConcurrency), "The peak number of simultaneous blob block staging calls" },
+    { TIMESTAT(BlobWriteInitialize), "The cumulative time spent initializing empty blobs, including failed calls" },
+    { CYCLESTAT(BlobWriteInitialize) },
+    { TIMESTAT(BlobWriteStage), "The cumulative time spent staging blob blocks across all threads, including failed calls" },
+    { CYCLESTAT(BlobWriteStage) },
+    { TIMESTAT(BlobWriteCommit), "The cumulative time spent committing blob block lists, including failed calls" },
+    { CYCLESTAT(BlobWriteCommit) },
 };
 
 static MapStringTo<StatisticKind, StatisticKind> statisticNameMap(true);
@@ -1431,9 +1440,11 @@ const StatisticsMapping jhtreeCacheStatistics({ StNumIndexSeeks, StNumIndexScans
 const StatisticsMapping allStatistics(StKindAll);
 const StatisticsMapping heapStatistics({StNumAllocations, StNumAllocationScans});
 const StatisticsMapping diskLocalStatistics({StCycleDiskReadIOCycles, StSizeDiskRead, StNumDiskReads, StCycleDiskWriteIOCycles, StSizeDiskWrite, StNumDiskWrites, StNumDiskRetries});
-const StatisticsMapping diskRemoteStatistics({StTimeDiskReadIO, StSizeDiskRead, StNumDiskReads, StTimeDiskWriteIO, StSizeDiskWrite, StNumDiskWrites, StNumDiskRetries});
+const StatisticsMapping diskRemoteStatistics({StTimeDiskReadIO, StSizeDiskRead, StNumDiskReads, StTimeDiskWriteIO, StSizeDiskWrite, StNumDiskWrites, StNumDiskRetries,
+                                            StTimeBlobWriteWait, StNumBlobWritePeakConcurrency, StTimeBlobWriteInitialize, StTimeBlobWriteStage, StTimeBlobWriteCommit});
 const StatisticsMapping diskReadRemoteStatistics({StTimeDiskReadIO, StSizeDiskRead, StNumDiskReads, StNumDiskRetries, StCycleDiskReadIOCycles});
-const StatisticsMapping diskWriteRemoteStatistics({StTimeDiskWriteIO, StSizeDiskWrite, StNumDiskWrites, StNumDiskRetries, StCycleDiskWriteIOCycles});
+const StatisticsMapping diskWriteRemoteStatistics({StTimeDiskWriteIO, StSizeDiskWrite, StNumDiskWrites, StNumDiskRetries, StCycleDiskWriteIOCycles,
+                                                 StTimeBlobWriteWait, StNumBlobWritePeakConcurrency, StTimeBlobWriteInitialize, StTimeBlobWriteStage, StTimeBlobWriteCommit});
 const StatisticsMapping stdAggregateKindStatistics({StCostFileAccess, StSizeGraphSpill, StSizeSpillFile, StCostExecute, StSizePeakTempDisk, StSizePeakEphemeralDisk});
 
 const StatisticsMapping * queryStatsMapping(const StatsScopeId & scope, unsigned hashcode)

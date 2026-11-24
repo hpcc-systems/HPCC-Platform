@@ -15,8 +15,7 @@
     limitations under the License.
 ############################################################################## */
 
-#ifndef AZURE_API_UTILS_HPP
-#define AZURE_API_UTILS_HPP
+#pragma once
 
 #include "jlib.hpp"
 #include "jlog.hpp"
@@ -24,6 +23,7 @@
 #include "jstring.hpp"
 #include "jfile.hpp"
 #include "jregexp.hpp"
+#include "errorlist.h"
 
 #include <azure/core.hpp>
 #include <azure/core/http/http.hpp>
@@ -43,7 +43,12 @@
 constexpr const char * azureBlobPrefix = "azureblob:";
 constexpr const char * azureFilePrefix = "azurefile:";
 
-static constexpr unsigned maxAzureBlockCount = 50000;
+// Error codes thrown by the Azure blob and file hooks.
+constexpr int azureConfigError = AZURE_ERROR_START;             // Invalid storage plane, file name or writer configuration
+constexpr int azureArgumentError = AZURE_ERROR_START + 1;       // Invalid URL, credential or account argument
+constexpr int azureRequestError = AZURE_ERROR_START + 2;        // An Azure storage request failed
+constexpr int azureAuthenticationError = AZURE_ERROR_START + 3; // Creating Azure credentials failed
+constexpr int azureWriterError = AZURE_ERROR_START + 4;         // Invalid use of a blob writer, or a blob size limit was exceeded
 
 struct StorageApiConfig;
 
@@ -201,5 +206,3 @@ private:
     Owned<IFile> curFile;
     bool curValid = false;
 };
-
-#endif
