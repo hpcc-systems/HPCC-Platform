@@ -99,7 +99,6 @@ private:
 class AzureBlobIO : implements CInterfaceOf<IFileIO>
 {
 public:
-    AzureBlobIO(AzureBlob * _file, const FileIOStats & _stats);
     AzureBlobIO(AzureBlob * _file);
 
     virtual void close() override
@@ -119,7 +118,7 @@ protected:
 class AzureBlobReadIO final : public AzureBlobIO
 {
 public:
-    AzureBlobReadIO(AzureBlob * _file, const FileIOStats & _stats);
+    AzureBlobReadIO(AzureBlob * _file, offset_t _fileSize);
 
     virtual offset_t size() override;
     virtual size32_t read(offset_t pos, size32_t len, void * data) override;
@@ -136,6 +135,9 @@ public:
     virtual void flush() override
     {
     }
+
+private:
+    offset_t cachedFileSize = unknownFileSize;
 };
 
 
@@ -406,6 +408,7 @@ protected:
     time_t lastModified = 0;
     time_t createdOn = 0;
     std::string blobUrl;
+    mutable CriticalSection cacheCS{SYNC_LOCATION};
     mutable std::shared_ptr<Azure::Storage::Blobs::BlockBlobClient> cachedBlobClient;  // Cache client for reuse per-file
     StorageApiConfig config;
 #ifdef _USE_CPPUNIT
@@ -416,12 +419,6 @@ protected:
 
 
 //---------------------------------------------------------------------------------------------------------------------
-
-AzureBlobIO::AzureBlobIO(AzureBlob * _file, const FileIOStats & _firstStats)
-: file(_file), stats(_firstStats), blockBlobClient(file->getBlobClient())
-{
-
-}
 
 AzureBlobIO::AzureBlobIO(AzureBlob * _file) : file(_file), blockBlobClient(file->getBlobClient())
 {
@@ -439,8 +436,8 @@ IFile * AzureBlobIO::queryFile() const
 }
 
 
-AzureBlobReadIO::AzureBlobReadIO(AzureBlob * _file, const FileIOStats & _firstStats)
-: AzureBlobIO(_file, _firstStats)
+AzureBlobReadIO::AzureBlobReadIO(AzureBlob * _file, offset_t _fileSize)
+: AzureBlobIO(_file), cachedFileSize(_fileSize)
 {
 }
 
@@ -450,12 +447,11 @@ size32_t AzureBlobReadIO::read(offset_t pos, size32_t len, void * data)
         return 0;
 
     CCycleTimer timer;
-    offset_t fileSize = file->size();
-    if (pos >= fileSize)
+    if (pos >= cachedFileSize)
         return 0;
 
-    if (pos + len > fileSize)
-        len = fileSize - pos;
+    if (pos + len > cachedFileSize)
+        len = cachedFileSize - pos;
 
     Azure::Storage::Blobs::DownloadBlobToOptions options;
     options.Range = Azure::Core::Http::HttpRange();
@@ -501,10 +497,10 @@ size32_t AzureBlobReadIO::read(offset_t pos, size32_t len, void * data)
         throwRequestException(e, "AzureBlob::read", file->queryFilename(), pos, len);
     }
 
-    //Use fastAdd because multi threaded access is not supported by this class
-    stats.ioReads.fastAdd(1);
-    stats.ioReadCycles.fastAdd(timer.elapsedCycles());
-    stats.ioReadBytes.fastAdd(sizeRead);
+    // IFileIO reads can run concurrently, e.g. via createParallelReadAheadInputStream, so updates must be atomic.
+    stats.ioReads.add(1);
+    stats.ioReadCycles.add(timer.elapsedCycles());
+    stats.ioReadBytes.add(sizeRead);
 
     if (file->queryConfig().traceEnabled)
     {
@@ -519,7 +515,7 @@ size32_t AzureBlobReadIO::read(offset_t pos, size32_t len, void * data)
 
 offset_t AzureBlobReadIO::size()
 {
-    return file->size();
+    return cachedFileSize;
 }
 
 //---------------------------------------------------------------------------------------------------------------------
@@ -806,6 +802,8 @@ std::shared_ptr<BlobContainerClient> AzureBlob::getBlobContainerClient() const
 
 SharedBlobClient AzureBlob::getBlobClient() const
 {
+    // Concurrent opens may request the per-file client simultaneously; serialize lazy initialization.
+    CriticalBlock block(cacheCS);
     // Return cached client if available (per-file caching only)
     if (cachedBlobClient)
         return cachedBlobClient;
@@ -867,14 +865,11 @@ bool AzureBlob::getTime(CDateTime * createTime, CDateTime * modifiedTime, CDateT
 
 IFileIO * AzureBlob::createFileReadIO()
 {
-    //Read the first chunk of the file.  If it is the full file then fill in the meta information, otherwise
-    //ensure the meta information is calculated before creating the file IO object
-    FileIOStats readStats;
-
+    // Ensure metadata is loaded and capture the size before creating the reader.
     if (!exists())
         return nullptr;
 
-    return new AzureBlobReadIO(this, readStats);
+    return new AzureBlobReadIO(this, fileSize); // NB: exists() ensures metadata is loaded and fileSize is valid
 }
 
 IFileIO * AzureBlob::createFileWriteIO()
@@ -905,6 +900,8 @@ IDirectoryIterator * AzureBlob::directoryFiles(const char *mask, bool sub, bool 
 
 void AzureBlob::ensureMetaData()
 {
+    // Concurrent opens may trigger the same cold metadata lookup; serialize the cache check and fill.
+    CriticalBlock block(cacheCS);
     if (haveMeta)
         return;
 
