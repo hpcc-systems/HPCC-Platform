@@ -1,0 +1,19 @@
+# Deploys the application release without a local Dali StatefulSet.
+# Dali clients resolve the endpoint from global.externalDaliSvc by default,
+# which must point at the Dali service owned by the dali-only release (see
+# README.md). Individual components can override it with externalDaliSvc.
+#
+# Install example:
+#   helm install app-release ./helm/hpcc -f helm/examples/dali-split-same-namespace/values-no-dali.yaml
+#
+# IMPORTANT:
+# - dali: [] overrides the chart's default values.dali[] entry (which would
+#   otherwise still create a StatefulSet even though this file never sets it).
+# - Set global.externalDaliSvc (host:port) to the Dali service address instead.
+# - The Dali release owns the fixed-name namespace-wide policies and RBAC
+#   resources automatically because it contains the enabled local Dali entry.
+
+dali: []
+
+global:
+  externalDaliSvc: mydali:7070

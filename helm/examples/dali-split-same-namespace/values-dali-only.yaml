@@ -1,0 +1,25 @@
+# Deploys only the Dali StatefulSet (and no other HPCC services).
+#
+# Install example:
+#   helm install dali-release ./helm/hpcc -f helm/examples/dali-split-same-namespace/values-dali-only.yaml
+
+dali:
+- name: mydali
+  auth: none
+  service:
+    servicePort: 7070
+    visibility: cluster
+
+# Disable all standalone services other than Dali.
+thor: null
+roxie: null
+eclagent: null
+eclccserver: null
+eclscheduler: null
+esp: null
+dfuserver: null
+dafilesrv: null
+
+# Disable standalone Sasha services.
+sasha:
+  disabled: true

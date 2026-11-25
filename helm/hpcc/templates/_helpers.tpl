@@ -919,21 +919,56 @@ Add config arg for a component
 {{/*
 Get dali endpoint for a component
 Pass in dict with root, component (in case of error), optional (true if daliArg is optional)
+externalDaliSvc can be set on a component or globally for releases that connect
+to a Dali owned by another release (e.g. a split Dali/app deployment), so that a
+disabled local Dali entry is not (mis)used as the source of the Dali endpoint.
+Without an external endpoint, an enabled local Dali is required.
 */}}
+{{- define "hpcc.getActiveDaliConfig" -}}
+  {{- $found := false -}}
+  {{- range .root.Values.dali -}}
+    {{- if not .disabled -}}
+      {{- if $found -}}
+        {{- $_ := fail "Only one Dali may be enabled" -}}
+      {{- end -}}
+      {{- toYaml . -}}
+      {{- $found = true -}}
+    {{- end -}}
+  {{- end -}}
+{{- end -}}
+
+{{- define "hpcc.hasActiveDali" -}}
+  {{- $found := false -}}
+  {{- range .root.Values.dali -}}
+    {{- if not .disabled -}}
+      {{- if $found -}}
+        {{- $_ := fail "Only one Dali may be enabled" -}}
+      {{- end -}}
+      {{- $found = true -}}
+    {{- end -}}
+  {{- end -}}
+  {{- if $found -}}true{{- end -}}
+{{- end -}}
+
 {{- define "hpcc.getDali" -}}
-  {{- if empty .root.Values.dali -}}
+  {{- if or .me.externalDaliSvc .root.Values.global.externalDaliSvc -}}
+{{ .me.externalDaliSvc | default .root.Values.global.externalDaliSvc }}
+  {{- else if empty .root.Values.dali -}}
     {{- if not .optional -}}
       {{- $_ := fail (printf "%s requires a DALI to be defined" .component) -}}
     {{- end -}}
   {{- else -}}
-    {{- $dali := (index .root.Values.dali 0) -}}
-    {{- $daliService := $dali.service | default dict -}}
-    {{- $daliHost := .overrideDaliHost | default $dali.name -}}
-    {{- $daliServicePort := .overrideDaliPort | default ($daliService.servicePort | default 7070) -}}
+    {{- $dali := include "hpcc.getActiveDaliConfig" (dict "root" .root) | fromYaml | default dict -}}
+    {{- if $dali -}}
+      {{- $daliService := $dali.service | default dict -}}
+      {{- $daliHost := $dali.name -}}
+      {{- $daliServicePort := $daliService.servicePort | default 7070 -}}
 {{ $daliHost }}:{{ $daliServicePort }}
+    {{- else if not .optional -}}
+      {{- $_ := fail (printf "%s requires an enabled DALI to be defined" .component) -}}
+    {{- end -}}
   {{- end -}}
 {{- end -}}
-
 
 {{/*
 Add dali arg for a component
@@ -1657,12 +1692,10 @@ Pass in dict with root, me, lifeCycleCtx and dali if container in dali pod
 */}}
 {{- define "hpcc.addSashaContainer" }}
 {{- $serviceName := printf "sasha-%s" .me.name }}
-{{- $overrideDaliHost := .overrideDaliHost | default "" }}
-{{- $overrideDaliPort := .overrideDaliPort | default 0 }}
 {{- $env := concat (.root.Values.global.env | default list) (.env | default list) }}
 - name: {{ $serviceName | quote }}
   workingDir: /var/lib/HPCCSystems
-{{- include "hpcc.addCommandAndLifecycle" (merge (pick . "root" "lifeCycleCtx") (dict "me" (.me | merge (dict "name" $serviceName))) (dict "process" "saserver" "extraArgs" (list (printf "--service=%s" .me.name)) "component" "Sasha" "optional" false "overrideConfigName" $serviceName "overrideDaliHost" $overrideDaliHost "overrideDaliPort" $overrideDaliPort)) | nindent 2 }}
+{{- include "hpcc.addCommandAndLifecycle" (merge (pick . "root" "lifeCycleCtx") (dict "me" (.me | merge (dict "name" $serviceName))) (dict "process" "saserver" "extraArgs" (list (printf "--service=%s" .me.name)) "component" "Sasha" "optional" false "overrideConfigName" $serviceName)) | nindent 2 }}
 {{- include "hpcc.addResources" (dict "me" .me.resources "root" .root) | indent 2 }}
 {{- include "hpcc.addSecurityContext" . | indent 2 }}
   env:

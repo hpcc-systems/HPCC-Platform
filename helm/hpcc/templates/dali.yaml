@@ -144,8 +144,12 @@ spec:
  {{- if hasKey $sasha "plane" -}}
   {{- $_ := set $thisServiceCtx "sashaStoragePlane" ($sasha.plane | default (include "hpcc.getFirstPlaneForCategory" (dict "root" $ "category" "sasha"))) -}}
  {{- end -}}
- {{- with ($sasha | merge (dict "access" $sashaAccess)) -}}
-  {{- include "hpcc.addSashaContainer" (dict "root" $ "me" . "lifeCycleCtx" $commonCtx.lifeCycleCtx "dali" $dali "overrideDaliHost" "localhost" "overrideDaliPort" $daliPort) | nindent 6 }}
+ {{- /* Embedded Sasha must reach Dali via localhost, not the Dali Service, which excludes this pod until Sasha's own readiness probe passes */ -}}
+ {{- if hasKey $sasha "externalDaliSvc" -}}
+  {{- fail (printf "Dali service %s must not set externalDaliSvc; embedded Sasha services must use the local Dali" $sashaName) -}}
+ {{- end -}}
+ {{- with (mergeOverwrite $sasha (dict "access" $sashaAccess "externalDaliSvc" (printf "localhost:%v" $daliPort))) -}}
+  {{- include "hpcc.addSashaContainer" (dict "root" $ "me" . "lifeCycleCtx" $commonCtx.lifeCycleCtx "dali" $dali) | nindent 6 }}
         volumeMounts:
   {{- $serviceName := printf "sasha-%s" $sashaName -}}
   {{- with (dict "name" $serviceName) }}

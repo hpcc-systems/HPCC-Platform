@@ -64,6 +64,18 @@ do
                 assert_contains results.txt "name: data-volume-alias-1" "$file did not render data-volume-alias-1"
                 assert_not_contains results.txt "name: data-volume-alias-2" "$file unexpectedly rendered data-volume-alias-2"
              fi
+             if [[ "$base" == "dali-split-owner" ]]; then
+                assert_contains results.txt "kind: StatefulSet" "$file did not render a Dali StatefulSet"
+                assert_contains results.txt "name: splitdali" "$file did not render the split Dali"
+                assert_contains results.txt "name: hpcc-dali" "$file did not render the Dali service account"
+                assert_contains results.txt "--daliServers=splitdali:7070" "$file did not use the local Dali endpoint"
+                assert_not_contains results.txt "kind: Deployment" "$file unexpectedly rendered an application Deployment"
+             elif [[ "$base" == "dali-split-app" ]]; then
+                assert_contains results.txt "kind: Deployment" "$file did not render an application Deployment"
+                assert_contains results.txt "name: eclwatch" "$file did not render the application"
+                assert_contains results.txt "--daliServers=splitdali:7070" "$file did not use the external Dali endpoint"
+                assert_not_contains results.txt "--daliServers=localdali:7070" "$file unexpectedly used the disabled local Dali endpoint"
+             fi
              if [[ "$base" =~ ^component-config-sasha-([^-]+)-(enabled|disabled)$ ]]; then
                 service="${BASH_REMATCH[1]}"
                 state="${BASH_REMATCH[2]}"
