@@ -25,6 +25,7 @@
 #include "hqlerror.hpp"
 #include "hqlutil.hpp"
 #include "jsecrets.hpp"
+#include "jcurl.hpp"
 
 static void extractGitDiagnostics(StringBuffer & error, StringPairVector & diagnostics)
 {
@@ -198,6 +199,42 @@ static bool extractRemoteSha(StringBuffer & sha, const char * lsRemoteOutput, co
     if (!isFullCommitSha(match.str()))
         return false;
     sha.set(match);
+    return true;
+}
+
+//Only allow characters that can be embedded in a url path without escaping
+static bool isSafeGitPathText(const char * text)
+{
+    if (isEmptyString(text) || (*text == '/') || strstr(text, ".."))
+        return false;
+    for (const char * cur = text; *cur; cur++)
+    {
+        if (!isalnum((unsigned char)*cur) && !strchr("._-/", *cur))
+            return false;
+    }
+    return true;
+}
+
+//Map the url of a repository hosted by github.com or GHE.com to the base url for the REST api
+static bool getGitHubApiBase(StringBuffer & apiBase, const char * repoUrn)
+{
+    const char * cur = repoUrn;
+    if (startsWith(cur, "git+"))
+        cur += 4;
+    if (!startsWith(cur, "https://"))
+        return false;
+    cur += 8;
+    const char * slash = strchr(cur, '/');
+    if (!slash)
+        return false;
+    StringBuffer host;
+    host.append(slash - cur, cur).toLowerCase();
+    if (streq(host, "github.com"))
+        apiBase.set("https://api.github.com");
+    else if (endsWith(host, ".ghe.com") && isSafeGitPathText(host))
+        apiBase.set("https://api.").append(host);
+    else
+        return false;
     return true;
 }
 
@@ -1020,13 +1057,23 @@ IEclSourceCollection * EclRepositoryManager::resolveGitCollection(const char * r
         sha.set(version);
         shaSource = "version";
     }
-    else if (useExistingCache && options.updateRepos && options.resolveRefsWithLsRemote)
+    else if (useExistingCache && options.updateRepos && (options.resolveRefsWithLsRemote || options.resolveRefsWithApi))
     {
-        //ls-remote only retrieves the ref advertisement, and avoids a fetch if the commit is already cached
-        VStringBuffer params("ls-remote origin \"refs/heads/%s\" \"refs/tags/%s\" \"refs/tags/%s^{}\"", version.str(), version.str(), version.str());
-        StringBuffer output;
-        if ((runGitCommand(&output, params, repoPath, true) == 0) && extractRemoteSha(sha, output, version))
-            shaSource = "ls-remote";
+        if (options.resolveRefsWithApi)
+            resolveRefWithApi(sha, repoUrn, repo, version);
+
+        if (!sha.isEmpty())
+        {
+            shaSource = "github-api";
+        }
+        else if (options.resolveRefsWithLsRemote)
+        {
+            //ls-remote only retrieves the ref advertisement, and avoids a fetch if the commit is already cached
+            VStringBuffer params("ls-remote origin \"refs/heads/%s\" \"refs/tags/%s\" \"refs/tags/%s^{}\"", version.str(), version.str(), version.str());
+            StringBuffer output;
+            if ((runGitCommand(&output, params, repoPath, true) == 0) && extractRemoteSha(sha, output, version))
+                shaSource = "ls-remote";
+        }
     }
 
     if (useExistingCache && shaSource && isCommitCached(sha))
@@ -1297,6 +1344,61 @@ unsigned EclRepositoryManager::runGitCommand(StringBuffer * output, const char *
     return ret;
 }
 
+//Resolve a branch or tag to a full commit sha with a single GitHub REST request - returns false if unsupported or not resolved
+bool EclRepositoryManager::resolveRefWithApi(StringBuffer & sha, const char * repoUrn, const char * repo, const char * version)
+{
+    StringBuffer apiBase;
+    if (!getGitHubApiBase(apiBase, repoUrn) || !isSafeGitPathText(repo) || !isSafeGitPathText(version))
+        return false;
+
+    SimpleHttpClientHeaderMap headers;
+    headers["Accept"] = "application/vnd.github.sha";
+    headers["User-Agent"] = "HPCC-eclcc";
+    headers["X-GitHub-Api-Version"] = "2022-11-28";
+    if (options.gitUser.length())
+    {
+        StringBuffer token;
+        if (getGitAccessToken(token, options.gitUser))
+            headers["Authorization"] = std::string("Bearer ") + token.str();
+    }
+
+    try
+    {
+        Owned<ISimpleHttpClient> client = createSimpleHttpClient(apiBase);
+        client->setTimeouts(10000, 30000);
+        GitFetchTracker gitFetchBlock;
+        //The first prefix ensures we match branches first.  The blank prefix will match tags or any other refs.
+        const char * prefixes[] = { "heads/", "" };
+        for (const char * prefix : prefixes)
+        {
+            VStringBuffer path("/repos/%s/commits/%s%s", repo, prefix, version);
+            StringBuffer response;
+            int status = client->get(path, headers, response);
+            if (status == 200)
+            {
+                response.trim();
+                if (!isFullCommitSha(response))
+                    return false;
+                DBGLOG("GitHub api resolved '%s#%s' to '%s'", repo, version, response.str());
+                sha.swapWith(response);
+                return true;
+            }
+            //404/422 indicate the ref does not exist - try the next prefix
+            if ((status != 404) && (status != 422))
+            {
+                DBGLOG("GitHub api request %s%s failed: status %d %s", apiBase.str(), path.str(), status, client->queryErrorMessage());
+                return false;
+            }
+        }
+    }
+    catch (IException * e)
+    {
+        EXCLOG(e, "resolveRefWithApi");
+        e->Release();
+    }
+    return false;
+}
+
 #ifdef _USE_CPPUNIT
 #include "unittests.hpp"
 
@@ -1308,6 +1410,7 @@ class GitRepositoryTests : public CppUnit::TestFixture
         CPPUNIT_TEST(testSafeGitVersion);
         CPPUNIT_TEST(testExtractRemoteSha);
         CPPUNIT_TEST(testGitDiagnostics);
+        CPPUNIT_TEST(testGitHubApiBase);
     CPPUNIT_TEST_SUITE_END();
 
 public:
@@ -1413,6 +1516,27 @@ public:
 
         CPPUNIT_ASSERT(!extractRemoteSha(sha.clear(), output, "main"));
         CPPUNIT_ASSERT(!extractRemoteSha(sha.clear(), "", "main"));
+    }
+
+    void testGitHubApiBase()
+    {
+        StringBuffer base;
+        CPPUNIT_ASSERT(getGitHubApiBase(base, "https://github.com/hpcc-systems/ecl-bundles"));
+        CPPUNIT_ASSERT_EQUAL(std::string("https://api.github.com"), std::string(base.str()));
+        CPPUNIT_ASSERT(getGitHubApiBase(base.clear(), "git+https://GitHub.com/a/b"));
+        CPPUNIT_ASSERT_EQUAL(std::string("https://api.github.com"), std::string(base.str()));
+        CPPUNIT_ASSERT(getGitHubApiBase(base.clear(), "https://acme.ghe.com/a/b"));
+        CPPUNIT_ASSERT_EQUAL(std::string("https://api.acme.ghe.com"), std::string(base.str()));
+        CPPUNIT_ASSERT(!getGitHubApiBase(base.clear(), "https://gitlab.com/a/b"));
+        CPPUNIT_ASSERT(!getGitHubApiBase(base.clear(), "http://github.com/a/b"));
+        CPPUNIT_ASSERT(!getGitHubApiBase(base.clear(), "https://user@github.com/a/b"));
+
+        CPPUNIT_ASSERT(isSafeGitPathText("feature/my-branch_1.0"));
+        CPPUNIT_ASSERT(!isSafeGitPathText(""));
+        CPPUNIT_ASSERT(!isSafeGitPathText("../x"));
+        CPPUNIT_ASSERT(!isSafeGitPathText("/x"));
+        CPPUNIT_ASSERT(!isSafeGitPathText("a?b"));
+        CPPUNIT_ASSERT(!isSafeGitPathText("a b"));
     }
 };
 

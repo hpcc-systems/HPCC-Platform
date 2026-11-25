@@ -73,6 +73,7 @@ constexpr static unsigned defaultMaskingPercentage = 90;
 extern jlib_decl void maskSecret(StringBuffer & maskedSecret, const char * originalSecret, unsigned maskPercentage = defaultMaskingPercentage, bool maskRightSide = true, char maskChar = defaultMaskChar);
 
 extern jlib_decl std::string generateGithubIAT(const char * appId, const char * appKey, const char * installationId);
+extern jlib_decl bool getGitAccessToken(StringBuffer & token, const char * gitUser);
 extern jlib_decl IFile * getFileWithGitAccessToken(const char * gitUser);
 
 #ifdef _USE_CPPUNIT

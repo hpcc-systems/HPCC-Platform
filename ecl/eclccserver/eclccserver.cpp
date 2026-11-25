@@ -878,7 +878,7 @@ class EclccCompiler : implements IErrorReporter
             eclccCmd.appendf(" --gitfetchtolerance=%s", config->queryProp("@gitFetchTolerance"));
         if (config->getPropBool("@gitLsRemote", true))
             eclccCmd.append(" --gitlsremote");
-        if (config->getPropBool("@gitApi", false))
+        if (config->getPropBool("@gitApi", true))
             eclccCmd.append(" --gitapi");
 
         if (config->queryProp("@defaultRepo"))
