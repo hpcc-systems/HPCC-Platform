@@ -25,8 +25,12 @@ void appendEscapedLdapFilter(size_t inputLength, const char *input, StringBuffer
 
 void escapeLdapDistinguishedName(const char *input, StringBuffer &output);
 void escapeLdapDistinguishedName(size_t inputLength, const char *input, StringBuffer &output);
-constexpr const char *ldapReservedChars = "\"?%$";
-constexpr const char *ldapReservedCharsDesc = "'\"', '?', '%', and '$'";
+#define LDAP_RESERVED_CHARS "\"?%$"
+constexpr const char *ldapReservedChars = LDAP_RESERVED_CHARS;
+
+// Names of OUs and resources additionally may not contain '/' or '='.
+constexpr const char *ldapInvalidNameChars = "/=" LDAP_RESERVED_CHARS;
 
 bool containsReservedChars(const char *name);
 void throwIfReservedChars(const char *action, const char *what, const char *name);
+void throwIfInvalidNameChars(const char *action, const char *what, const char *name);   // any of ldapInvalidNameChars

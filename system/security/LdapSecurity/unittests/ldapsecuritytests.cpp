@@ -34,6 +34,8 @@ class LdapSanitizationTest : public CppUnit::TestFixture
     CPPUNIT_TEST(testSearchStringWildcardFilterInjection);
     CPPUNIT_TEST(testScopeDnComponentEscaping);
     CPPUNIT_TEST(testContainsReservedChars);
+    CPPUNIT_TEST(testThrowIfReservedChars);
+    CPPUNIT_TEST(testThrowIfInvalidNameChars);
     CPPUNIT_TEST_SUITE_END();
 
 public:
@@ -202,6 +204,82 @@ public:
         // '%' and '$' are reserved to avoid raw/encoded name collisions
         CPPUNIT_ASSERT(containsReservedChars("alice%22"));
         CPPUNIT_ASSERT(containsReservedChars("alice$"));
+    }
+
+    void testThrowIfReservedChars()
+    {
+        throwIfReservedChars("add user", "username", nullptr);
+        throwIfReservedChars("add user", "username", "alice");
+        throwIfReservedChars("add user", "username", "a/b=c");  // only rejected for OUs/resources
+
+        try
+        {
+            throwIfReservedChars("add user", "username", "alice$");
+            CPPUNIT_FAIL("expected exception");
+        }
+        catch (IException *e)
+        {
+            Owned<IException> exc(e);
+            StringBuffer msg;
+            exc->errorMessage(msg);
+            CPPUNIT_ASSERT_EQUAL_STR("Can't add user 'alice$': username contains a character that is not permitted ('\"', '?', '%', and '$' are forbidden)", msg.str());
+        }
+    }
+
+    static bool throwsInvalidName(const char *name, StringBuffer *msg = nullptr)
+    {
+        try
+        {
+            throwIfInvalidNameChars("add OU", "name", name);
+        }
+        catch (IException *e)
+        {
+            if (msg)
+                e->errorMessage(*msg);
+            e->Release();
+            return true;
+        }
+        return false;
+    }
+
+    void testThrowIfInvalidNameChars()
+    {
+        CPPUNIT_ASSERT(!throwsInvalidName(nullptr));
+        CPPUNIT_ASSERT(!throwsInvalidName(""));
+        CPPUNIT_ASSERT(!throwsInvalidName("Engineering"));
+        CPPUNIT_ASSERT(!throwsInvalidName("Eng Dept-1_a"));
+
+        // '/' and '=' are rejected only by throwIfInvalidNameChars()
+        for (const char *name : { "a/b", "a=b" })
+        {
+            CPPUNIT_ASSERT(throwsInvalidName(name));
+            CPPUNIT_ASSERT(!containsReservedChars(name));
+        }
+
+        // throwIfInvalidNameChars() must reject everything containsReservedChars() does
+        for (const char *name : { "a\"b", "a?b", "a%22", "a$", "ou\")(userdn=\"ldap:///anyone" })
+        {
+            CPPUNIT_ASSERT(containsReservedChars(name));
+            CPPUNIT_ASSERT(throwsInvalidName(name));
+        }
+
+        // every character in the shared list is rejected
+        for (const char *c = ldapInvalidNameChars; *c; ++c)
+        {
+            StringBuffer name("a");
+            name.append(*c).append("b");
+            CPPUNIT_ASSERT(throwsInvalidName(name));
+        }
+
+        // reserved chars are a subset of the invalid name chars
+        for (const char *c = ldapReservedChars; *c; ++c)
+            CPPUNIT_ASSERT(strchr(ldapInvalidNameChars, *c) != nullptr);
+
+        // the message lists the characters built from the shared list
+        StringBuffer msg;
+        CPPUNIT_ASSERT(throwsInvalidName("a/b", &msg));
+        CPPUNIT_ASSERT(strstr(msg, "Can't add OU 'a/b': name contains") != nullptr);
+        CPPUNIT_ASSERT(strstr(msg, "('/', '=', '\"', '?', '%', and '$' are forbidden)") != nullptr);
     }
 };
 

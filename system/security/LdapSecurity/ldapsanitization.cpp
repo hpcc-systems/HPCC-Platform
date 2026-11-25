@@ -128,6 +128,19 @@ void escapeLdapDistinguishedName(size_t inputLength, const char *input, StringBu
     }
 }
 
+static void describeChars(const char *chars, StringBuffer &desc)
+{
+    size_t count = strlen(chars);
+    for (size_t i = 0; i < count; i++)
+    {
+        if (i > 0)
+            desc.append(count > 2 ? ", " : " ");
+        if (i > 0 && i == count - 1)
+            desc.append("and ");
+        desc.append('\'').append(chars[i]).append('\'');
+    }
+}
+
 // HPCC rejects these characters in directory identifiers (user/group/resource
 // names) at creation/rename time: '"' and '?' can break out of an ACI userdn
 // ldap:/// URL clause; '%' and '$' create ambiguity between a raw name and a
@@ -141,9 +154,23 @@ bool containsReservedChars(const char *name)
     return strpbrk(name, ldapReservedChars) != nullptr;
 }
 
+static void throwIfCharsPresent(const char *chars, const char *action, const char *what, const char *name)
+{
+    if (isEmptyString(name) || !strpbrk(name, chars))
+        return;
+
+    StringBuffer desc;
+    describeChars(chars, desc);
+    throw makeStringExceptionV(-1, "Can't %s '%s': %s contains a character that is not permitted (%s are forbidden)",
+                               action, name, what, desc.str());
+}
+
 void throwIfReservedChars(const char *action, const char *what, const char *name)
 {
-    if (containsReservedChars(name))
-        throw makeStringExceptionV(-1, "Can't %s '%s': %s contains a character that is not permitted (%s are forbidden)",
-                                   action, name, what, ldapReservedCharsDesc);
+    throwIfCharsPresent(ldapReservedChars, action, what, name);
+}
+
+void throwIfInvalidNameChars(const char *action, const char *what, const char *name)
+{
+    throwIfCharsPresent(ldapInvalidNameChars, action, what, name);
 }

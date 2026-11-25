@@ -5979,17 +5979,14 @@ private:
         if(name == NULL || basedn == NULL)
             return false;
 
-        if(strchr(name, '/') != NULL || strchr(name, '=') != NULL)
-        {
-            DBGLOG("CLdapClient::addOrganizationalUnit Invalid characters in OU");
-            return false;
-        }
-
         StringBuffer dn;
         dn.append("ou=").append(name).append(",").append(basedn);
 
+        //Existing OUs are accepted as is; only the creation of new OUs is restricted
         if (organizationalUnitExists(dn.str(), ld))
             return true;
+
+        throwIfInvalidNameChars("add OU", "name", name);
 
         char *ou_values[] = {(char*)name, NULL };
         LDAPMod ou_attr =
@@ -6196,10 +6193,14 @@ private:
             return false;
         }
 
-        if(strchr(resourcename, '/') != NULL || strchr(resourcename, '=') != NULL ||
-            containsReservedChars(resourcename))
+        try
         {
-            DBGLOG("CLdapClient::addResource Can't add resource '%s', invalid characters specified ('/', '=', or one of %s)",resourcename, ldapReservedCharsDesc);
+            throwIfInvalidNameChars("add resource", "name", resourcename);
+        }
+        catch (IException *e)
+        {
+            DBGLOG(e, "CLdapClient::addResource");
+            e->Release();
             return false;
         }
 
