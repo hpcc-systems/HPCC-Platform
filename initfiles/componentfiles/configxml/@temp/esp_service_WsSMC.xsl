@@ -121,10 +121,6 @@ This is required by its binding with ESP service '<xsl:value-of select="$espServ
             <xsl:with-param name="bindingNode" select="$bindingNode"/>
             <xsl:with-param name="authNode" select="$authNode"/>
         </xsl:apply-templates>
-        <xsl:apply-templates select="." mode="ws_elk">
-            <xsl:with-param name="bindingNode" select="$bindingNode"/>
-            <xsl:with-param name="authNode" select="$authNode"/>
-        </xsl:apply-templates>
         <xsl:apply-templates select="." mode="ws_store">
             <xsl:with-param name="bindingNode" select="$bindingNode"/>
             <xsl:with-param name="authNode" select="$authNode"/>
@@ -643,44 +639,6 @@ This is required by its binding with ESP service '<xsl:value-of select="$espServ
                 <xsl:with-param name="bindingNode" select="$bindingNode"/>
                 <xsl:with-param name="authMethod" select="$authNode/@method"/>
                 <xsl:with-param name="service" select="'ws_access'"/>
-            </xsl:call-template>
-        </EspBinding>
-    </xsl:template>
-
-    <!-- ws_elk-->
-    <xsl:template match="EspService" mode="ws_elk">
-        <xsl:param name="bindingNode"/>
-        <xsl:param name="authNode"/>
-
-        <xsl:variable name="serviceType" select="'ws_elk'"/>
-        <xsl:variable name="serviceName" select="concat($serviceType, '_', @name, '_', $process)"/>
-        <xsl:variable name="bindName" select="concat($serviceType, '_', $bindingNode/@name, '_', $process)"/>
-        <xsl:variable name="bindType" select="'ws_elkSoapBinding'"/>
-        <xsl:variable name="servicePlugin">
-            <xsl:call-template name="defineServicePlugin">
-                <xsl:with-param name="plugin" select="'ws_elk'"/>
-            </xsl:call-template>
-        </xsl:variable>
-
-        <EspService name="{$serviceName}" type="{$serviceType}" plugin="{$servicePlugin}">
-            <ELKIntegration>
-                <Kibana>
-                    <xsl:copy-of select="@integrateKibana|@kibanaAddress|@kibanaPort|@kibanaEntryPointURI"/>
-                </Kibana>
-                <ElasticSearch>
-                    <xsl:copy-of select="@reportElasticHealth|@elasticSearchAddresses|@elasticSearchPort"/>
-                </ElasticSearch>
-                <LogStash>
-                    <xsl:copy-of select="@reportLogStashHealth|@logStashAddresses|@logStashPort"/>
-                </LogStash>
-            </ELKIntegration>
-        </EspService>
-
-        <EspBinding name="{$bindName}" service="{$serviceName}" protocol="{$bindingNode/@protocol}" type="{$bindType}" plugin="{$servicePlugin}" netAddress="0.0.0.0" port="{$bindingNode/@port}">
-            <xsl:call-template name="bindAuthentication">
-                <xsl:with-param name="bindingNode" select="$bindingNode"/>
-                <xsl:with-param name="authMethod" select="$authNode/@method"/>
-                <xsl:with-param name="service" select="'ws_account'"/>
             </xsl:call-template>
         </EspBinding>
     </xsl:template>

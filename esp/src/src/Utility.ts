@@ -775,9 +775,6 @@ export function resolve(hpccWidget, callback) {
         case "LogWidget":
             import("hpcc/LogWidget").then(doLoad);
             break;
-        case "LogVisualizationWidget":
-            import("hpcc/LogVisualizationWidget").then(doLoad);
-            break;
         case "LZBrowseWidget":
             import("hpcc/LZBrowseWidget").then(doLoad);
             break;

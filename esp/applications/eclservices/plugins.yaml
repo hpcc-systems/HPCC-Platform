@@ -8,7 +8,6 @@ service_plugins:
   ws_account: ws_account
   WsDfu: ws_dfu
   WsDfuXRef: ws_dfu
-  ws_elk: ws_elk
   ws_esdlconfig: ws_esdlconfig
   WsFileIO: ws_fileio
   WsPackageProcess: ws_packageprocess
@@ -26,7 +25,6 @@ binding_plugins:
   ws_account: ws_account
   WsDfu: ws_dfu
   WsDfuXRef: ws_dfu
-  ws_elk: ws_elk
   ws_esdlconfig: ws_esdlconfig
   WsFileIO: ws_fileio
   WsPackageProcess: ws_packageprocess

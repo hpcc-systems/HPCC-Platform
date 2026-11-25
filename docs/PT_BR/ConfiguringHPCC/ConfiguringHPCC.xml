@@ -1938,55 +1938,6 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
                               xmlns:xi="http://www.w3.org/2001/XInclude"/>
                 </para>
 
-                <para>
-                  <emphasis role="bold">Configurando a integração do ELK Log
-                  Visualization</emphasis>
-                </para>
-
-                <para>O HPCC Systems fornece um mecanismo para integrar
-                visualizações baseadas em ELK (ElasticSearch, Logstash e
-                Kibana) no ECL Watch. Esse recurso pode ser configurado e
-                ativado pelo gerenciador do HPCC Configuration Manager</para>
-
-                <para>Para configurar o componente ELK Log Visualization,
-                clique e expanda o link <emphasis role="bold">ESP
-                Service</emphasis> no lado esquerdo e selecione o
-                link<emphasis role="bold"> EclWatch</emphasis> . Em seguida,
-                selecione a aba <emphasis role="bold">Elk Log
-                Visualization</emphasis> no lado direito.</para>
-
-                <para>A aba ELK Log Visualization no ECL Watch:</para>
-
-                <para>
-                  <xi:include href="../XMLGeneration/xml/espsmcservice.xsd.mod.xml"
-                              xpointer="xpointer(//*[@id='SMC-T02'])"
-                              xmlns:xi="http://www.w3.org/2001/XInclude"/>
-                </para>
-
-                <para>Para configurar a integração de visualização ELK,
-                forneça as seguintes informações: <orderedlist>
-                    <listitem>
-                      <para>No campo <emphasis>kibanaAddress</emphasis>,
-                      forneça o endereço IP do seu componente Kibana. Por
-                      exemplo: http://123.123.123.123</para>
-                    </listitem>
-
-                    <listitem>
-                      <para>No campo <emphasis>kibanaPort</emphasis>, forneça
-                      o número da porta Kibana. Por exemplo: 5601</para>
-                    </listitem>
-
-                    <listitem>
-                      <para>No campo <emphasis>kibanaEntryPointURI</emphasis>,
-                      insira o URI do Kibana apontando para o painel do Kibana
-                      compartilhado.</para>
-
-                      <para>Por exemplo: /app/kibana#/dashboard/etc. (obtido
-                      na aba “share" em Kibana)</para>
-                    </listitem>
-                  </orderedlist></para>
-
-                <para/>
               </sect3>
 
               <sect3 id="cfgmgr_WsECL" role="brk">

@@ -392,11 +392,6 @@
                          resource="ESDLConfigAccess"
                          service="ws_esdlconfig"/>
     <AuthenticateFeature authenticate="Yes"
-                         description="Access to ELK integration service"
-                         path="WsELKAccess"
-                         resource="WsELKAccess"
-                         service="ws_elk"/>
-    <AuthenticateFeature authenticate="Yes"
                          description="Access to sign ECL code"
                          path="CodeSignAccess"
                          resource="CodeSignAccess"
@@ -642,10 +637,6 @@
                          path="ESDLConfigAccess"
                          resource="ESDLConfigAccess"
                          service="ws_esdlconfig"/>
-    <AuthenticateFeature description="Access to ELK integration service"
-                         path="WsELKAccess"
-                         resource="WsELKAccess"
-                         service="ws_elk"/>
     <AuthenticateFeature description="Access to sign ECL code"
                          path="CodeSignAccess"
                          resource="CodeSignAccess"
@@ -946,10 +937,6 @@
                           path="ESDLConfigAccess"
                           resource="ESDLConfigAccess"
                           service="ws_esdlconfig"/>
-     <AuthenticateFeature description="Access to ELK integration service"
-                          path="WsELKAccess"
-                          resource="WsELKAccess"
-                          service="ws_elk"/>
     <AuthenticateFeature  description="Access to sign ECL code"
                           path="CodeSignAccess"
                           resource="CodeSignAccess"

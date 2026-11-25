@@ -1936,54 +1936,6 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
                         xmlns:xi="http://www.w3.org/2001/XInclude" />
           </para>
 
-          <para>
-            <emphasis role="bold">Configuring ELK Log Visualization
-            integration</emphasis>
-          </para>
-
-          <para>HPCC Systems provides a mechanism to integrate ELK
-          (ElasticSearch, Logstash, and Kibana) based visualizations into ECL
-          Watch. This feature can be configured and enabled through the HPCC
-          Systems Configuration manager.</para>
-
-          <para>To configure the ELK Log Visualization component, click and
-          expand the <emphasis role="bold">ESP Service</emphasis> link on the
-          left side then select the <emphasis role="bold">EclWatch</emphasis>
-          link. Then select the <emphasis role="bold">Elk Log
-          Visualization</emphasis> tab from the right side.</para>
-
-          <para>The ELK Log Visualization tab in ECL Watch:</para>
-
-          <para>
-            <xi:include href="../XMLGeneration/xml/espsmcservice.xsd.mod.xml"
-                        xpointer="xpointer(//*[@id='SMC-T02'])"
-                        xmlns:xi="http://www.w3.org/2001/XInclude" />
-          </para>
-
-          <para>To configure the ELK visualization integration, provide the
-          following information: <orderedlist>
-              <listitem>
-                <para>In the <emphasis>kibanaAddress</emphasis> field, supply
-                the IP address for your Kibana component.. For example:
-                http://123.123.123.123</para>
-              </listitem>
-
-              <listitem>
-                <para>In the <emphasis>kibanaPort</emphasis> field, supply the
-                Kibana port number. For example: 5601</para>
-              </listitem>
-
-              <listitem>
-                <para>In the <emphasis>kibanaEntryPointURI</emphasis> field,
-                enter the Kibana URI pointing to your shared Kibana
-                dashboard.</para>
-
-                <para>For example: /app/kibana#/dashboard/etc. (obtained from
-                the "share" tab in Kibana)</para>
-              </listitem>
-            </orderedlist></para>
-
-          <para />
         </sect3>
 
         <sect3 id="cfgmgr_WsECL" role="brk">

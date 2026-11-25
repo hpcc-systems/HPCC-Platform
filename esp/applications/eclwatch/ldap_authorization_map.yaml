@@ -165,7 +165,6 @@ ldap:
       ws_account: []
       ws_access: []
       ws_esdlconfig: []
-      ws_elk: []
       ws_store: []
       WSDali: []
       ws_logaccess:

@@ -90,7 +90,6 @@ set ( SRCS
     ${CMAKE_CURRENT_BINARY_DIR}/eclwatch/templates/InfoGridWidget.html
     ${CMAKE_CURRENT_BINARY_DIR}/eclwatch/templates/LFDetailsWidget.html
     ${CMAKE_CURRENT_BINARY_DIR}/eclwatch/templates/LockDialogWidget.html
-    ${CMAKE_CURRENT_BINARY_DIR}/eclwatch/templates/LogVisualizationWidget.html
     ${CMAKE_CURRENT_BINARY_DIR}/eclwatch/templates/LogWidget.html
     ${CMAKE_CURRENT_BINARY_DIR}/eclwatch/templates/LZBrowseWidget.html
     ${CMAKE_CURRENT_BINARY_DIR}/eclwatch/templates/MachineInformationWidget.html
@@ -175,7 +174,6 @@ set ( SRCS
     ${CMAKE_CURRENT_BINARY_DIR}/eclwatch/LFDetailsWidget.js
     ${CMAKE_CURRENT_BINARY_DIR}/eclwatch/LibrariesUsedWidget.js
     ${CMAKE_CURRENT_BINARY_DIR}/eclwatch/LockDialogWidget.js
-    ${CMAKE_CURRENT_BINARY_DIR}/eclwatch/LogVisualizationWidget.js
     ${CMAKE_CURRENT_BINARY_DIR}/eclwatch/LogWidget.js
     ${CMAKE_CURRENT_BINARY_DIR}/eclwatch/LZBrowseWidget.js
     ${CMAKE_CURRENT_BINARY_DIR}/eclwatch/MachineInformationWidget.js
@@ -312,7 +310,6 @@ set ( SRCS
     ${CMAKE_CURRENT_BINARY_DIR}/src/WsDfu.ts
     ${CMAKE_CURRENT_BINARY_DIR}/src/WsDFUXref.ts
     ${CMAKE_CURRENT_BINARY_DIR}/src/WsEcl.ts
-    ${CMAKE_CURRENT_BINARY_DIR}/src/ws_elk.ts
     ${CMAKE_CURRENT_BINARY_DIR}/src/WsESDLConfig.ts
     ${CMAKE_CURRENT_BINARY_DIR}/src/ws_machine.ts
     ${CMAKE_CURRENT_BINARY_DIR}/src/WsPackageMaps.ts

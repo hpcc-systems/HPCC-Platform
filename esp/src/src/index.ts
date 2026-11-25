@@ -23,7 +23,6 @@ export * from "./UserPreferences/Recent";
 // ESP / WS Layer
 export * from "./ws_account";
 export * from "./ws_machine";
-export * from "./ws_elk";
 
 // NLS
 export * from "./nlsHPCC";

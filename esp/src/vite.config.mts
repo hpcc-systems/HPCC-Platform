@@ -246,7 +246,7 @@ export default defineConfig(async (env: ConfigEnv): Promise<UserConfig> => {
                 "/esp/unlock.json": { target: devTarget, changeOrigin: true },
                 "/WsECL/": { target: wsEclTarget, changeOrigin: true },
                 "/main": { target: devTarget, changeOrigin: true },
-                "^/(FileSpray|WsCloud|WsDali|WsSasha|WsDfu|WsDfuXRef|WsESDLConfig|WsFileIO|WsPackageProcess|WsSMC|WsStore|WsTopology|WsWorkunits|WsResources|ws_access|ws_account|ws_codesign|ws_elk|ws_esdlconfig|ws_logaccess|ws_machine|ws_store|wsstore)/":
+                "^/(FileSpray|WsCloud|WsDali|WsSasha|WsDfu|WsDfuXRef|WsESDLConfig|WsFileIO|WsPackageProcess|WsSMC|WsStore|WsTopology|WsWorkunits|WsResources|ws_access|ws_account|ws_codesign|ws_esdlconfig|ws_logaccess|ws_machine|ws_store|wsstore)/":
                 { target: devTarget, changeOrigin: true },
             }
         },

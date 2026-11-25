@@ -38,7 +38,6 @@ set ( ESPSCM_SRCS
       ws_loggingservice.ecm
       ws_espcontrol.ecm
       ws_configmgr.ecm
-      ws_elk.ecm
       ws_store.ecm
       ws_codesign.ecm
       ws_decoupledlogging.ecm

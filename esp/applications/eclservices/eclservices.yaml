@@ -46,12 +46,6 @@ eclservices:
    FileSpray:
       QueueLabel: dfuserver_queue
       MonitorQueueLabel: dfuserver_monitor_queue
-   ws_elk:
-      ELKIntegration:
-         Kibana: ''
-         ElasticSearch: ''
-         LogStash: ''
-         ELKIntegration: ''
    ws_store:
       StoreProvider:
          lib: dalistorelib
