@@ -115,187 +115,6 @@ private:
     Linked<const IStoragePlane> plane; // Plane configuration used to locate primary and mirror storage.
 };
 
-static void addXRefLiteWarning(IPropertyTree &messages, const char *logicalName, const char *text)
-{
-    unsigned warningCount = messages.getCount("Warning");
-    if (warningCount < maxXRefLiteWarnings)
-    {
-        IPropertyTree *warning = messages.addPropTree("Warning");
-        if (!isEmptyString(logicalName))
-            warning->setProp("File", logicalName);
-        warning->setProp("Text", text);
-    }
-    else if (warningCount == maxXRefLiteWarnings)
-    {
-        IPropertyTree *warning = messages.addPropTree("Warning");
-        warning->setProp("Text", "warning limit exceeded (1000), truncating");
-    }
-}
-
-// Normalizes one audit record and rejects candidates without one consistent storage plane.
-static bool parseXRefLiteCandidate(const char *line, std::string &logicalName, XRefLiteCandidate &candidate, IPropertyTree &messages)
-{
-    logicalName.clear();
-    candidate.planeNames.clear();
-
-    const char *payload = isEmptyString(line) ? nullptr : strstr(line, ",FileAccess,");
-    if (!payload)
-        return false;
-
-    // Example: FileAccess,Dali,PUBLISH,user=alice lfn=scope::file plane=myplane
-    const char *record = payload + 1; // FileAccess,Dali,PUBLISH,user=...
-    const char *componentSeparator = strchr(record, ','); // ,Dali,PUBLISH,user=...
-    const char *operationSeparator = componentSeparator ? strchr(componentSeparator + 1, ',') : nullptr; // ,PUBLISH,user=...
-    const char *logfmtSeparator = operationSeparator ? strchr(operationSeparator + 1, ',') : nullptr; // ,user=...
-    if (!logfmtSeparator)
-        return false;
-
-    DFSAuditContext auditFields = DFSAuditContext::fromLogfmt(logfmtSeparator + 1);
-    const char *auditLogicalName = auditFields.queryValue("lfn", nullptr);
-    CDfsLogicalFileName lfn;
-    if (isEmptyString(auditLogicalName) || !lfn.setValidate(auditLogicalName) || lfn.isExternal() || lfn.isForeign() || lfn.isQuery())
-    {
-        addXRefLiteWarning(messages, auditLogicalName, "Ignoring invalid audit logical file name");
-        return false;
-    }
-    logicalName.assign(lfn.get());
-
-    const char *auditPlane = auditFields.queryValue("plane", nullptr);
-    if (isEmptyString(auditPlane))
-    {
-        addXRefLiteWarning(messages, logicalName.c_str(), "Ignoring audit logical file without a storage plane");
-        return false;
-    }
-    candidate.addPlaneName(auditPlane);
-    return true;
-}
-
-// Collects and merges valid logical-file candidates from the requested audit interval.
-static void collectXRefLiteCandidates(const CDateTime &from, const CDateTime &to, const char *auditLogFile, std::unordered_map<std::string, XRefLiteCandidate> &candidates, IPropertyTree &messages)
-{
-    StringAttrArray rows;
-    if (isEmptyString(auditLogFile))
-        queryAuditLogs(from, to, ",FileAccess", rows); // A single queryAuditLogs call is capped at 100,000 rows.
-    else
-    {
-        OwnedIFileIOStream stream = createBufferedIOStreamFromFile(auditLogFile, IFOread);
-        if (!stream)
-            throw makeStringExceptionV(0, LOGPFX "Failed to open audit log file %s", auditLogFile);
-        Owned<IStreamLineReader> lineReader = createLineReader(stream, false);
-        StringBuffer line;
-        while (!lineReader->readLine(line.clear()))
-        {
-            if (strstr(line.str(), ",FileAccess,"))
-                rows.append(*new StringAttrItem(line.str()));
-        }
-    }
-
-    ForEachItemIn(row, rows)
-    {
-        std::string logicalName;
-        XRefLiteCandidate parsed;
-        if (!parseXRefLiteCandidate(rows.item(row).text, logicalName, parsed, messages))
-            continue;
-
-        XRefLiteCandidate &candidate = candidates[logicalName];
-        for (const auto &planeName : parsed.planeNames)
-            candidate.addPlaneName(planeName.c_str());
-    }
-}
-
-// Resolves metadata at the XRef Lite root and report files beneath its published generation.
-static StringBuffer &getXRefLiteFilePath(const char *name, StringBuffer &path)
-{
-    getLdsPath("xref-lite", path);
-    if (!streq(name, "Metadata"))
-    {
-        StringBuffer metadataPath(path);
-        addPathSepChar(metadataPath).append("Metadata.xml");
-        MemoryBuffer xml;
-        readTextFileIfPresent(metadataPath.str(), maxXRefLiteFileSize, xml);
-        if (xml.length())
-        {
-            Owned<IPropertyTree> metadata = createPTreeFromXMLString((const char *)xml.toByteArray());
-            const char *generation = metadata->queryProp("@modified");
-            if (!isEmptyString(generation))
-                addPathSepChar(path).append(generation);
-        }
-    }
-    addPathSepChar(path).append(name).append(".xml");
-    return path;
-}
-
-// Loads and parses one XRef Lite result file when it exists.
-static bool loadXRefLiteResult(const char *name, Owned<IPropertyTree> &result)
-{
-    result.clear();
-    StringBuffer path;
-    getXRefLiteFilePath(name, path);
-    MemoryBuffer xml;
-    readTextFileIfPresent(path.str(), maxXRefLiteFileSize, xml);
-    if (!xml.length())
-        return false;
-
-    result.setown(createPTreeFromXMLString((const char *)xml.toByteArray()));
-    return result.get() != nullptr;
-}
-
-// Restores the last completed scan time from the published metadata.
-static void loadXRefLiteCheckpoint(CDateTime &checkpoint)
-{
-    Owned<IPropertyTree> metadata;
-    if (!loadXRefLiteResult("Metadata", metadata))
-        return;
-
-    const char *lastScan = metadata->queryProp("@lastXRefLiteScan");
-    if (!isEmptyString(lastScan))
-        checkpoint.setString(lastScan, nullptr, false);
-}
-
-// Saves a complete timestamped result generation, then publishes its metadata.
-static void saveXRefLiteResults(const CDateTime &checkpoint, IPropertyTree &lost, IPropertyTree &found, IPropertyTree &orphans, IPropertyTree &messages)
-{
-    Owned<IPropertyTree> metadata = createPTree("Metadata");
-    StringBuffer checkpointText;
-    checkpoint.getString(checkpointText, false);
-    metadata->setProp("@lastXRefLiteScan", checkpointText.str());
-    CDateTime completed;
-    completed.setNow();
-    StringBuffer completedText;
-    completed.getString(completedText, false);
-    metadata->setProp("@modified", completedText.str());
-    unsigned lostCount = lost.getCount("File");
-    unsigned foundCount = found.getCount("File");
-    unsigned orphanCount = orphans.getCount("File");
-    unsigned errorCount = messages.getCount("Error");
-    metadata->setPropInt("@lost", lostCount);
-    metadata->setPropInt("@found", foundCount);
-    metadata->setPropInt("@orphans", orphanCount);
-    metadata->setPropInt("@errors", errorCount);
-    metadata->setPropInt("@count", lostCount + foundCount + orphanCount);
-    if (errorCount)
-        metadata->setProp("@status", VStringBuffer("Generated [%u issues, %u errors]", lostCount + foundCount + orphanCount, errorCount).str());
-    else
-        metadata->setProp("@status", VStringBuffer("Generated [%u issues]", lostCount + foundCount + orphanCount).str());
-
-    StringBuffer resultDir;
-    getLdsPath("xref-lite", resultDir);
-    size_t rootLength = resultDir.length();
-    addPathSepChar(resultDir).append(completedText);
-    if (!recursiveCreateDirectory(resultDir))
-        throw makeStringExceptionV(0, LOGPFX "Failed to create result directory %s", resultDir.str());
-
-    StringBuffer planeName;
-    findPlaneFromPath(resultDir.str(), planeName);
-    size32_t blockSize = planeName.isEmpty() ? defaultXRefLiteBlockSize : getBlockedFileIOSize(planeName, defaultXRefLiteBlockSize);
-    saveXRefBranchToPlane(resultDir.str(), "Lost", lost, blockSize);
-    saveXRefBranchToPlane(resultDir.str(), "Found", found, blockSize);
-    saveXRefBranchToPlane(resultDir.str(), "Orphans", orphans, blockSize);
-    saveXRefBranchToPlane(resultDir.str(), "Messages", messages, blockSize);
-    resultDir.setLength(rootLength);
-    saveXRefBranchToPlane(resultDir.str(), "Metadata", *metadata, blockSize);
-}
-
 static bool isRecentXRefFile(const CDateTime &modified, unsigned recentCutoffMinutes)
 {
     CDateTime cutoff(modified);
@@ -312,115 +131,12 @@ struct LostPartStatus
     bool replicateExists = false;
 };
 
-// Checks parts concurrently while keeping each worker's result in an independent slot.
-static void checkPhysicalParts(IDistributedFile &distributedFile, std::vector<LostPartStatus> &partStatus, unsigned maxAtOnce)
+struct LostFileCheckResult
 {
-    unsigned numParts = distributedFile.numParts();
-    partStatus.resize(numParts);
-    class CCheckPhysicalParts : public CAsyncFor
-    {
-    public:
-        CCheckPhysicalParts(IDistributedFile &_distributedFile, std::vector<LostPartStatus> &_partStatus)
-            : CAsyncFor(SYNC_LOCATION), distributedFile(_distributedFile), partStatus(_partStatus)
-        {
-        }
-
-        // Checks every physical copy of one part and records which copies exist.
-        void Do(unsigned part) override
-        {
-            LostPartStatus &status = partStatus[part];
-            status.missing.partNumber = part + 1;
-            Owned<IDistributedFilePart> distributedPart = distributedFile.getPart(part);
-            unsigned copies = distributedPart->numCopies();
-            for (unsigned copy = 0; copy < copies; ++copy)
-            {
-                RemoteFilename filename;
-                distributedPart->getFilename(filename, copy);
-                if (copy == 0)
-                {
-                    StringBuffer node;
-                    filename.queryEndpoint().getHostText(node);
-                    status.missing.node.assign(node.str());
-                }
-
-                Owned<IFile> physicalFile = createIFile(filename);
-                if (physicalFile->exists())
-                {
-                    if (copy == 0)
-                        status.primaryExists = true;
-                    else
-                        status.replicateExists = true;
-                }
-            }
-        }
-
-    private:
-        IDistributedFile &distributedFile;
-        std::vector<LostPartStatus> &partStatus;
-    } checker(distributedFile, partStatus);
-    checker.For(numParts, maxAtOnce, true, true);
-}
-
-// Classifies a published file as healthy or adds its fully missing parts to Lost.
-static bool checkIfLostFile(IPropertyTree &lost, const char *logicalName, IUserDescriptor *user, bool ignoreLazyLost, unsigned maxAtOnce)
-{
-    CDfsLogicalFileName lfn;
-    lfn.set(logicalName);
-
-    Owned<IDistributedFile> distributedFile = queryDistributedFileDirectory().lookup(lfn, user, AccessMode::readMeta, false, false, nullptr, defaultPrivilegedUser, xrefLiteSdsConnectTimeout);
-    if (!distributedFile)
-        return false; // file not present in Dali
-    if (distributedFile->querySuperFile())
-        return true;
-    if (ignoreLazyLost && distributedFile->queryAttributes().getPropBool("@lazy", false))
-        return true;
-
-    std::vector<LostPartStatus> partStatus;
-    checkPhysicalParts(*distributedFile, partStatus, maxAtOnce);
     std::vector<PhysicalPart> missingParts;
     unsigned primaryLost = 0;
     unsigned replicateLost = 0;
-    for (auto &status : partStatus)
-    {
-        if (!status.primaryExists)
-            primaryLost++;
-        if (!status.replicateExists)
-            replicateLost++;
-        if (!status.primaryExists && !status.replicateExists)
-            missingParts.emplace_back(std::move(status.missing));
-    }
-
-    if (missingParts.empty())
-        return true;
-
-    IPropertyTree *file = lost.addPropTree("File");
-    file->setProp("Name", logicalName);
-    StringBuffer clusterName;
-    distributedFile->getClusterName(0, clusterName);
-    file->setProp("Cluster", clusterName.str());
-    if (const char *partMask = distributedFile->queryPartMask())
-        file->setProp("Partmask", StringBuffer(partMask).toLowerCase().str());
-    file->setPropInt("Numparts", distributedFile->numParts());
-    file->setPropInt("Partslost", missingParts.size());
-    file->setPropInt("Primarylost", primaryLost);
-    file->setPropInt("Replicatedlost", replicateLost);
-
-    CDateTime modified;
-    if (distributedFile->getModificationTime(modified))
-    {
-        StringBuffer modifiedText;
-        file->setProp("Modified", modified.getString(modifiedText).str());
-    }
-
-    for (const auto &missing : missingParts)
-    {
-        IPropertyTree *part = file->addPropTree("Part");
-        part->setPropInt("Num", missing.partNumber);
-        if (!missing.node.empty())
-            part->setProp("Node", missing.node.c_str());
-    }
-    return true;
-}
+};
 
 // Scans one physical directory and merges matching part files by their deduced part count.
 void PhysicalMatch::scanPhysicalDirectory(std::vector<PhysicalMatch> &matches, const char *directory, const char *fileGlob, const char *fullPhysicalPath, const char *host, bool checkDirPerPart, bool replicate)
@@ -614,97 +330,427 @@ void XRefLitePlane::addPhysicalFile(IPropertyTree &found, IPropertyTree &orphans
     }
 }
 
-// MORE: Encapsulate run state in a CXRefLite owner.
-// Move configurable defaults such as xrefLiteSdsConnectTimeout into that owner.
-// Runs one incremental scan and publishes its results only after the generation is complete.
-static void runXRefLite(bool doFullScan, unsigned daysBack, IUserDescriptor *user, bool ignoreLazyLost, unsigned maxAtOnce, unsigned recentCutoffMinutes, const char *auditLogFile)
+#ifdef _USE_CPPUNIT
+class XRefLiteTest;
+#endif
+
+class CXRefLite
 {
-    CDateTime to;
-    to.setNow();
-
-    CDateTime from;
-    if (doFullScan)
-        from.setString("1970-01-01T00:00:00", nullptr, false);
-    else if (daysBack > 0)
+public:
+    CXRefLite(bool _doFullScan, unsigned _daysBack, IUserDescriptor *_user, bool _ignoreLazyLost, unsigned _maxAtOnce, unsigned _recentCutoffMinutes, const char *_auditLogFile)
+        : doFullScan(_doFullScan), daysBack(_daysBack), user(_user), ignoreLazyLost(_ignoreLazyLost), maxAtOnce(_maxAtOnce), recentCutoffMinutes(_recentCutoffMinutes), auditLogFile(isEmptyString(_auditLogFile) ? "" : _auditLogFile)
     {
-        from.set(to);
-        from.adjustTime(-daysBack * 24 * 60);
+        lost.setown(createPTree("Lost"));
+        found.setown(createPTree("Found"));
+        orphans.setown(createPTree("Orphans"));
+        messages.setown(createPTree("Messages"));
     }
-    else
+
+    void run()
     {
-        loadXRefLiteCheckpoint(from);
-        if (from.isNull())
+        initializeInterval();
+        loadPlanes();
+        collectCandidates();
+        processCandidates();
+        publishResults();
+
+        PROGLOG(LOGPFX "scan finished: %u candidate%s, %u lost, %u found, %u orphan%s", static_cast<unsigned>(candidates.size()), candidates.size() == 1 ? "" : "s", lost->getCount("File"), found->getCount("File"), orphans->getCount("File"), orphans->getCount("File") == 1 ? "" : "s");
+    }
+
+private:
+#ifdef _USE_CPPUNIT
+    friend class XRefLiteTest;
+#endif
+
+    void addWarning(const char *logicalName, const char *text)
+    {
+        unsigned warningCount = messages->getCount("Warning");
+        if (warningCount < maxXRefLiteWarnings)
+        {
+            IPropertyTree *warning = messages->addPropTree("Warning");
+            if (!isEmptyString(logicalName))
+                warning->setProp("File", logicalName);
+            warning->setProp("Text", text);
+        }
+        else if (warningCount == maxXRefLiteWarnings)
+        {
+            IPropertyTree *warning = messages->addPropTree("Warning");
+            warning->setProp("Text", "warning limit exceeded (1000), truncating");
+        }
+    }
+
+    bool parseCandidate(const char *line, std::string &logicalName, XRefLiteCandidate &candidate)
+    {
+        logicalName.clear();
+        candidate.planeNames.clear();
+
+        const char *payload = isEmptyString(line) ? nullptr : strstr(line, ",FileAccess,");
+        if (!payload)
+            return false;
+
+        // Example: FileAccess,Dali,PUBLISH,user=alice lfn=scope::file plane=myplane
+        const char *record = payload + 1; // FileAccess,Dali,PUBLISH,user=...
+        const char *componentSeparator = strchr(record, ','); // ,Dali,PUBLISH,user=...
+        const char *operationSeparator = componentSeparator ? strchr(componentSeparator + 1, ',') : nullptr; // ,PUBLISH,user=...
+        const char *logfmtSeparator = operationSeparator ? strchr(operationSeparator + 1, ',') : nullptr; // ,user=...
+        if (!logfmtSeparator)
+            return false;
+
+        DFSAuditContext auditFields = DFSAuditContext::fromLogfmt(logfmtSeparator + 1);
+        const char *auditLogicalName = auditFields.queryValue("lfn", nullptr);
+        CDfsLogicalFileName lfn;
+        if (isEmptyString(auditLogicalName) || !lfn.setValidate(auditLogicalName) || lfn.isExternal() || lfn.isForeign() || lfn.isQuery())
+        {
+            addWarning(auditLogicalName, "Ignoring invalid audit logical file name");
+            return false;
+        }
+        logicalName.assign(lfn.get());
+
+        const char *auditPlane = auditFields.queryValue("plane", nullptr);
+        if (isEmptyString(auditPlane))
+        {
+            addWarning(logicalName.c_str(), "Ignoring audit logical file without a storage plane");
+            return false;
+        }
+        candidate.addPlaneName(auditPlane);
+        return true;
+    }
+
+    StringBuffer &getResultFilePath(const char *name, StringBuffer &path)
+    {
+        getLdsPath("xref-lite", path);
+        if (!streq(name, "Metadata"))
+        {
+            StringBuffer metadataPath(path);
+            addPathSepChar(metadataPath).append("Metadata.xml");
+            MemoryBuffer xml;
+            readTextFileIfPresent(metadataPath.str(), maxXRefLiteFileSize, xml);
+            if (xml.length())
+            {
+                Owned<IPropertyTree> metadata = createPTreeFromXMLString((const char *)xml.toByteArray());
+                const char *generation = metadata->queryProp("@modified");
+                if (!isEmptyString(generation))
+                    addPathSepChar(path).append(generation);
+            }
+        }
+        addPathSepChar(path).append(name).append(".xml");
+        return path;
+    }
+
+    bool loadResult(const char *name, Owned<IPropertyTree> &result)
+    {
+        result.clear();
+        StringBuffer path;
+        getResultFilePath(name, path);
+        MemoryBuffer xml;
+        readTextFileIfPresent(path.str(), maxXRefLiteFileSize, xml);
+        if (!xml.length())
+            return false;
+
+        result.setown(createPTreeFromXMLString((const char *)xml.toByteArray()));
+        return result.get() != nullptr;
+    }
+
+    void initializeInterval()
+    {
+        to.setNow();
+        if (doFullScan)
             from.setString("1970-01-01T00:00:00", nullptr, false);
+        else if (daysBack > 0)
+        {
+            from.set(to);
+            from.adjustTime(-daysBack * 24 * 60);
+        }
+        else
+        {
+            loadCheckpoint();
+            if (from.isNull())
+                from.setString("1970-01-01T00:00:00", nullptr, false);
+        }
     }
 
-    StringArray planeNames;
-    getXRefPlanes(nullptr, planeNames);
-    std::vector<XRefLitePlane> planes;
-    ForEachItemIn(i, planeNames)
+    void loadCheckpoint()
     {
-        const char *planeName = planeNames.item(i);
-        Owned<const IStoragePlane> plane = getStoragePlaneByName(planeName, true);
-        planes.emplace_back(planeName, plane);
+        Owned<IPropertyTree> metadata;
+        if (!loadResult("Metadata", metadata))
+            return;
+
+        const char *lastScan = metadata->queryProp("@lastXRefLiteScan");
+        if (!isEmptyString(lastScan))
+            from.setString(lastScan, nullptr, false);
     }
 
-    Owned<IPropertyTree> lost = createPTree("Lost");
-    Owned<IPropertyTree> found = createPTree("Found");
-    Owned<IPropertyTree> orphans = createPTree("Orphans");
-    Owned<IPropertyTree> messages = createPTree("Messages");
-    std::unordered_map<std::string, XRefLiteCandidate> candidates;
-    collectXRefLiteCandidates(from, to, auditLogFile, candidates, *messages);
-    unsigned errorCount = 0;
-
-    for (const auto &candidatePair : candidates)
+    void loadPlanes()
     {
-        const char *logicalName = candidatePair.first.c_str();
-        try
+        StringArray planeNames;
+        getXRefPlanes(nullptr, planeNames);
+        ForEachItemIn(i, planeNames)
         {
-            if (checkIfLostFile(*lost, logicalName, user, ignoreLazyLost, maxAtOnce))
-                continue; // File is not lost
+            const char *planeName = planeNames.item(i);
+            Owned<const IStoragePlane> plane = getStoragePlaneByName(planeName, true);
+            planes.emplace_back(planeName, plane);
         }
-        catch (IException *e)
+    }
+
+    void collectCandidates()
+    {
+        StringAttrArray rows;
+        if (auditLogFile.empty())
+            queryAuditLogs(from, to, ",FileAccess", rows); // A single queryAuditLogs call is capped at 100,000 rows.
+        else
         {
-            StringBuffer errorText;
-            e->errorMessage(errorText);
-            if (errorCount++ < maxXRefLiteErrors)
+            OwnedIFileIOStream stream = createBufferedIOStreamFromFile(auditLogFile.c_str(), IFOread);
+            if (!stream)
+                throw makeStringExceptionV(0, LOGPFX "Failed to open audit log file %s", auditLogFile.c_str());
+            Owned<IStreamLineReader> lineReader = createLineReader(stream, false);
+            StringBuffer line;
+            while (!lineReader->readLine(line.clear()))
             {
-                IPropertyTree *error = messages->addPropTree("Error");
-                error->setProp("File", logicalName);
-                error->setProp("Text", errorText.str());
+                if (strstr(line.str(), ",FileAccess,"))
+                    rows.append(*new StringAttrItem(line.str()));
             }
-            else if (errorCount == maxXRefLiteErrors + 1)
-            {
-                IPropertyTree *error = messages->addPropTree("Error");
-                error->setProp("Text", "error limit exceeded (1000), truncating");
-            }
-            StringBuffer tmp(LOGPFX "checking candidate in Dali: ");
-            EXCLOG(e, tmp.append(logicalName).str());
-            e->Release();
-            continue;
         }
 
-        // Files not published in Dali are probed on their recorded planes and reported as found or orphaned.
-        for (const auto &plane : planes)
+        ForEachItemIn(row, rows)
         {
-            if (!candidatePair.second.findPlane(plane.name.c_str()))
+            std::string logicalName;
+            XRefLiteCandidate parsed;
+            if (!parseCandidate(rows.item(row).text, logicalName, parsed))
                 continue;
 
-            // MORE: Candidate-centric probing may enumerate the same scope directory for multiple files.
-            plane.probe(*found, *orphans, logicalName, recentCutoffMinutes);
+            XRefLiteCandidate &candidate = candidates[logicalName];
+            for (const auto &planeName : parsed.planeNames)
+                candidate.addPlaneName(planeName.c_str());
         }
     }
 
-    saveXRefLiteResults(to, *lost, *found, *orphans, *messages);
-    PROGLOG(LOGPFX "scan finished: %u candidate%s, %u lost, %u found, %u orphan%s", static_cast<unsigned>(candidates.size()), candidates.size() == 1 ? "" : "s", lost->getCount("File"), found->getCount("File"), orphans->getCount("File"), orphans->getCount("File") == 1 ? "" : "s");
-}
+    LostFileCheckResult classifyLostParts(std::vector<LostPartStatus> &partStatus) const
+    {
+        LostFileCheckResult result;
+        for (auto &status : partStatus)
+        {
+            if (!status.primaryExists)
+                result.primaryLost++;
+            if (!status.replicateExists)
+                result.replicateLost++;
+            if (!status.primaryExists && !status.replicateExists)
+                result.missingParts.emplace_back(std::move(status.missing));
+        }
+        return result;
+    }
+
+    void addLostFile(IDistributedFile &distributedFile, const char *logicalName, const LostFileCheckResult &checkResult)
+    {
+        IPropertyTree *file = lost->addPropTree("File");
+        file->setProp("Name", logicalName);
+        StringBuffer clusterName;
+        distributedFile.getClusterName(0, clusterName);
+        file->setProp("Cluster", clusterName.str());
+        if (const char *partMask = distributedFile.queryPartMask())
+            file->setProp("Partmask", StringBuffer(partMask).toLowerCase().str());
+        file->setPropInt("Numparts", distributedFile.numParts());
+        file->setPropInt("Partslost", checkResult.missingParts.size());
+        file->setPropInt("Primarylost", checkResult.primaryLost);
+        file->setPropInt("Replicatedlost", checkResult.replicateLost);
+
+        CDateTime modified;
+        if (distributedFile.getModificationTime(modified))
+        {
+            StringBuffer modifiedText;
+            file->setProp("Modified", modified.getString(modifiedText).str());
+        }
+
+        for (const auto &missing : checkResult.missingParts)
+        {
+            IPropertyTree *part = file->addPropTree("Part");
+            part->setPropInt("Num", missing.partNumber);
+            if (!missing.node.empty())
+                part->setProp("Node", missing.node.c_str());
+        }
+    }
+
+    // Checks parts concurrently while keeping each worker's result in an independent slot.
+    // future: Keep these per-file results independently finalizable when checks become asynchronous.
+    void checkPhysicalParts(IDistributedFile &distributedFile, std::vector<LostPartStatus> &partStatus)
+    {
+        unsigned numParts = distributedFile.numParts();
+        partStatus.resize(numParts);
+        class CCheckPhysicalParts : public CAsyncFor
+        {
+        public:
+            CCheckPhysicalParts(IDistributedFile &_distributedFile, std::vector<LostPartStatus> &_partStatus)
+                : CAsyncFor(SYNC_LOCATION), distributedFile(_distributedFile), partStatus(_partStatus)
+            {
+            }
+
+            void Do(unsigned part) override
+            {
+                LostPartStatus &status = partStatus[part];
+                status.missing.partNumber = part + 1;
+                Owned<IDistributedFilePart> distributedPart = distributedFile.getPart(part);
+                unsigned copies = distributedPart->numCopies();
+                for (unsigned copy = 0; copy < copies; ++copy)
+                {
+                    RemoteFilename filename;
+                    distributedPart->getFilename(filename, copy);
+                    if (copy == 0)
+                    {
+                        StringBuffer node;
+                        filename.queryEndpoint().getHostText(node);
+                        status.missing.node.assign(node.str());
+                    }
+
+                    Owned<IFile> physicalFile = createIFile(filename);
+                    if (physicalFile->exists())
+                    {
+                        if (copy == 0)
+                            status.primaryExists = true;
+                        else
+                            status.replicateExists = true;
+                    }
+                }
+            }
+
+        private:
+            IDistributedFile &distributedFile;
+            std::vector<LostPartStatus> &partStatus;
+        } checker(distributedFile, partStatus);
+        checker.For(numParts, maxAtOnce, true, true);
+    }
+
+    bool checkPublishedFile(const char *logicalName)
+    {
+        CDfsLogicalFileName lfn;
+        lfn.set(logicalName);
+
+        Owned<IDistributedFile> distributedFile = queryDistributedFileDirectory().lookup(lfn, user, AccessMode::readMeta, false, false, nullptr, defaultPrivilegedUser, xrefLiteSdsConnectTimeout);
+        if (!distributedFile)
+            return false; // file not present in Dali
+        if (distributedFile->querySuperFile())
+            return true;
+        if (ignoreLazyLost && distributedFile->queryAttributes().getPropBool("@lazy", false))
+            return true;
+
+        std::vector<LostPartStatus> partStatus;
+        checkPhysicalParts(*distributedFile, partStatus);
+        LostFileCheckResult checkResult = classifyLostParts(partStatus);
+        if (checkResult.missingParts.empty())
+            return true;
+
+        addLostFile(*distributedFile, logicalName, checkResult);
+        return true;
+    }
+
+    void processCandidates()
+    {
+        for (const auto &candidatePair : candidates)
+        {
+            const char *logicalName = candidatePair.first.c_str();
+            try
+            {
+                if (checkPublishedFile(logicalName))
+                    continue; // File is not lost
+            }
+            catch (IException *e)
+            {
+                StringBuffer errorText;
+                e->errorMessage(errorText);
+                if (errorCount++ < maxXRefLiteErrors)
+                {
+                    IPropertyTree *error = messages->addPropTree("Error");
+                    error->setProp("File", logicalName);
+                    error->setProp("Text", errorText.str());
+                }
+                else if (errorCount == maxXRefLiteErrors + 1)
+                {
+                    IPropertyTree *error = messages->addPropTree("Error");
+                    error->setProp("Text", "error limit exceeded (1000), truncating");
+                }
+                StringBuffer tmp(LOGPFX "checking candidate in Dali: ");
+                EXCLOG(e, tmp.append(logicalName).str());
+                e->Release();
+                continue;
+            }
+
+            // Files not published in Dali are probed on their recorded planes and reported as found or orphaned.
+            for (const auto &plane : planes)
+            {
+                if (!candidatePair.second.findPlane(plane.name.c_str()))
+                    continue;
+
+                // MORE: Candidate-centric probing may enumerate the same scope directory for multiple files.
+                plane.probe(*found, *orphans, logicalName, recentCutoffMinutes);
+            }
+        }
+    }
+
+    void publishResults()
+    {
+        Owned<IPropertyTree> metadata = createPTree("Metadata");
+        StringBuffer checkpointText;
+        to.getString(checkpointText, false);
+        metadata->setProp("@lastXRefLiteScan", checkpointText.str());
+        CDateTime completed;
+        completed.setNow();
+        StringBuffer completedText;
+        completed.getString(completedText, false);
+        metadata->setProp("@modified", completedText.str());
+        unsigned lostCount = lost->getCount("File");
+        unsigned foundCount = found->getCount("File");
+        unsigned orphanCount = orphans->getCount("File");
+        unsigned errorCount = messages->getCount("Error");
+        metadata->setPropInt("@lost", lostCount);
+        metadata->setPropInt("@found", foundCount);
+        metadata->setPropInt("@orphans", orphanCount);
+        metadata->setPropInt("@errors", errorCount);
+        metadata->setPropInt("@count", lostCount + foundCount + orphanCount);
+        if (errorCount)
+            metadata->setProp("@status", VStringBuffer("Generated [%u issues, %u errors]", lostCount + foundCount + orphanCount, errorCount).str());
+        else
+            metadata->setProp("@status", VStringBuffer("Generated [%u issues]", lostCount + foundCount + orphanCount).str());
+
+        StringBuffer resultDir;
+        getLdsPath("xref-lite", resultDir);
+        size_t rootLength = resultDir.length();
+        addPathSepChar(resultDir).append(completedText);
+        if (!recursiveCreateDirectory(resultDir))
+            throw makeStringExceptionV(0, LOGPFX "Failed to create result directory %s", resultDir.str());
+
+        StringBuffer planeName;
+        findPlaneFromPath(resultDir.str(), planeName);
+        size32_t blockSize = planeName.isEmpty() ? defaultXRefLiteBlockSize : getBlockedFileIOSize(planeName, defaultXRefLiteBlockSize);
+        saveXRefBranchToPlane(resultDir.str(), "Lost", *lost, blockSize);
+        saveXRefBranchToPlane(resultDir.str(), "Found", *found, blockSize);
+        saveXRefBranchToPlane(resultDir.str(), "Orphans", *orphans, blockSize);
+        saveXRefBranchToPlane(resultDir.str(), "Messages", *messages, blockSize);
+        resultDir.setLength(rootLength);
+        saveXRefBranchToPlane(resultDir.str(), "Metadata", *metadata, blockSize);
+    }
+
+    bool doFullScan;
+    unsigned daysBack;
+    Linked<IUserDescriptor> user;
+    bool ignoreLazyLost;
+    unsigned maxAtOnce;
+    unsigned recentCutoffMinutes;
+    std::string auditLogFile;
+    CDateTime from;
+    CDateTime to;
+    std::vector<XRefLitePlane> planes;
+    std::unordered_map<std::string, XRefLiteCandidate> candidates;
+    Owned<IPropertyTree> lost;
+    Owned<IPropertyTree> found;
+    Owned<IPropertyTree> orphans;
+    Owned<IPropertyTree> messages;
+    unsigned errorCount = 0;
+};
 
 // Creates the requested Dali user context and runs one XRef Lite scan from the command line.
 void runXRefLiteCLI(const char *userName, bool doFullScan, unsigned daysBack, bool ignoreLazyLost, unsigned maxAtOnce, unsigned recentCutoffMinutes, const char *auditLogFile)
 {
     Owned<IUserDescriptor> user = createUserDescriptor();
     user->set(userName, nullptr);
-    runXRefLite(doFullScan, daysBack, user, ignoreLazyLost, maxAtOnce, recentCutoffMinutes, auditLogFile);
+    CXRefLite(doFullScan, daysBack, user, ignoreLazyLost, maxAtOnce, recentCutoffMinutes, auditLogFile).run();
 }
 
 #ifdef _USE_CPPUNIT
@@ -717,6 +763,7 @@ class XRefLiteTest : public CppUnit::TestFixture
         CPPUNIT_TEST(testStandardizedFormat);
         CPPUNIT_TEST(testAuditLogfmtParser);
         CPPUNIT_TEST(testWildcardMask);
+        CPPUNIT_TEST(testLostPartClassification);
         CPPUNIT_TEST(testIncompleteFoundParts);
     CPPUNIT_TEST_SUITE_END();
 
@@ -726,16 +773,16 @@ public:
     {
         std::string logicalName;
         XRefLiteCandidate candidate;
-        Owned<IPropertyTree> messages = createPTree("Messages");
+        CXRefLite xrefLite(false, 0, nullptr, false, 1, 0, nullptr);
 
-        CPPUNIT_ASSERT(parseXRefLiteCandidate("2026-09-08 10:00:00 ,FileAccess,Dali,PUBLISH,user=alice lfn=scope::standard plane=myplane note=\"value,with comma\"", logicalName, candidate, *messages));
+        CPPUNIT_ASSERT(xrefLite.parseCandidate("2026-09-08 10:00:00 ,FileAccess,Dali,PUBLISH,user=alice lfn=scope::standard plane=myplane note=\"value,with comma\"", logicalName, candidate));
         CPPUNIT_ASSERT_EQUAL(std::string("scope::standard"), logicalName);
         CPPUNIT_ASSERT_EQUAL(static_cast<size_t>(1), candidate.planeNames.size());
         CPPUNIT_ASSERT(candidate.findPlane("myplane"));
 
-        CPPUNIT_ASSERT(!parseXRefLiteCandidate("2026-09-08 10:00:01 ,FileAccess,Dali,DELETED,user=alice lfn=scope::noplanes", logicalName, candidate, *messages));
-        CPPUNIT_ASSERT_EQUAL(1U, messages->getCount("Warning"));
-        CPPUNIT_ASSERT(streq("scope::noplanes", messages->queryProp("Warning[1]/File")));
+        CPPUNIT_ASSERT(!xrefLite.parseCandidate("2026-09-08 10:00:01 ,FileAccess,Dali,DELETED,user=alice lfn=scope::noplanes", logicalName, candidate));
+        CPPUNIT_ASSERT_EQUAL(1U, xrefLite.messages->getCount("Warning"));
+        CPPUNIT_ASSERT(streq("scope::noplanes", xrefLite.messages->queryProp("Warning[1]/File")));
     }
 
     // Verifies the platform logfmt parser handles the audit fields consumed by XRef Lite.
@@ -754,6 +801,26 @@ public:
         CPPUNIT_ASSERT(streq("*.*.gz", wildcardMask(wildcard.clear(), "$p$.$n$.gz").str()));
         CPPUNIT_ASSERT(streq("price$usd", wildcardMask(wildcard.clear(), "price$usd").str()));
         CPPUNIT_ASSERT(streq("afile_$P_of_*", wildcardMask(wildcard.clear(), "afile_$P_of_$N$").str()));
+    }
+
+    void testLostPartClassification()
+    {
+        std::vector<LostPartStatus> partStatus(3);
+        partStatus[0].primaryExists = true;
+        partStatus[0].replicateExists = true;
+        partStatus[1].primaryExists = true;
+        partStatus[1].replicateExists = false;
+        partStatus[1].missing.partNumber = 2;
+        partStatus[2].primaryExists = false;
+        partStatus[2].replicateExists = false;
+        partStatus[2].missing.partNumber = 3;
+
+        CXRefLite xrefLite(false, 0, nullptr, false, 1, 0, nullptr);
+        LostFileCheckResult result = xrefLite.classifyLostParts(partStatus);
+        CPPUNIT_ASSERT_EQUAL(1U, result.primaryLost);
+        CPPUNIT_ASSERT_EQUAL(2U, result.replicateLost);
+        CPPUNIT_ASSERT_EQUAL(static_cast<size_t>(1), result.missingParts.size());
+        CPPUNIT_ASSERT_EQUAL(3U, result.missingParts.front().partNumber);
     }
 
     // Verifies incomplete physical matches are Orphans and complete matches are Found.
