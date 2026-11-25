@@ -36,6 +36,7 @@ interface IEventVisitationLink : extends IEventVisitor
 {
     virtual void configure(const IPropertyTree& config) = 0;
     virtual void setNextLink(IEventVisitor& visitor) = 0;
+    virtual void clearNextLink() = 0;
     virtual bool preScanRequired() const = 0;
 };
 
@@ -46,5 +47,6 @@ protected: \
     Linked<IEventVisitor> nextLink; \
 public: \
     virtual void setNextLink(IEventVisitor& visitor) override { nextLink.set(&visitor); } \
+    virtual void clearNextLink() override { nextLink.clear(); } \
     virtual bool visitFile(const EventFileProperties& properties) override { if (!nextLink) return false; return nextLink->visitFile(properties); } \
     virtual void departFile(const EventFileProperties& properties) override { if (!nextLink) return; nextLink->departFile(properties); }

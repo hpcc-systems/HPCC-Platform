@@ -168,6 +168,14 @@ bool CEventConsumingOp::preScanEvents(IEventVisitor* visitor)
     return true;
 }
 
+void CEventConsumingOp::detachVisitationLinks()
+{
+    if (model)
+        model->clearNextLink();
+    if (filter)
+        filter->clearNextLink();
+}
+
 bool CEventConsumingOp::traverseEvents(IEventVisitor& visitor)
 {
     if (preScanRequired())

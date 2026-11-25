@@ -16,6 +16,13 @@
 ############################################################################## */
 
 #include "eventdump.hpp"
+#include "eventiterator.h"
+#include "eventprotrace.hpp"
+
+CDumpEventsOp::~CDumpEventsOp()
+{
+    detachVisitationLinks();
+}
 
 void CDumpEventsOp::setFormat(OutputFormat _format)
 {
@@ -24,6 +31,8 @@ void CDumpEventsOp::setFormat(OutputFormat _format)
 
 bool CDumpEventsOp::preScanRequired() const
 {
+    if (exporter && exporter->preScanRequired())
+        return true;
     // ServiceName metadata is derived from EventTraceId -> ServiceName mappings that
     // may be observed later across input files due to clock skew, so request a pre-scan.
     if (hasMetaFlag(metaFlags, DumpMetaFlag::ServiceName))
@@ -33,6 +42,27 @@ bool CDumpEventsOp::preScanRequired() const
 
 bool CDumpEventsOp::doOp()
 {
+    if (format == OutputFormat::protrace)
+    {
+        if (getNumSources() > 1)
+            throw makeStringException(-1, "Protrace output does not support multiplexed input");
+        if (hasModel())
+            throw makeStringException(-1, "Protrace output does not support modeled events");
+        const EventFileProperties& properties = queryIteratorProperties();
+        if (properties.version == AmbiguousVersion ||
+            properties.channelId == AmbiguousChannelId ||
+            properties.replicaId == AmbiguousReplicaId ||
+            properties.instanceId == AmbiguousInstanceId ||
+            properties.options.includeTraceIds == EventFileOption::Ambiguous ||
+            properties.options.includeThreadIds == EventFileOption::Ambiguous ||
+            properties.options.includeStackTraces == EventFileOption::Ambiguous)
+        {
+            throw makeStringException(-1, "Protrace output does not support input with multiplexed source metadata");
+        }
+    }
+
+    detachVisitationLinks();
+    exporter.clear();
     Owned<IEventVisitor> visitor;
     switch (format)
     {
@@ -51,23 +81,22 @@ bool CDumpEventsOp::doOp()
     case OutputFormat::csv:
         visitor.setown(createDumpCSVEventVisitor(*out, queryIteratorProperties(), queryMetaInfoState(), metaFlags));
         break;
-    case OutputFormat::tree:
-        {
-            Owned<IEventPTreeCreator> creator = createEventPTreeCreator(queryMetaInfoState(), metaFlags);
-            if (traverseEvents(creator->queryVisitor()))
-            {
-                StringBuffer yaml;
-                toYAML(creator->queryTree(), yaml, 2, 0);
-                out->put(yaml.length(), yaml.str());
-                out->put(1, "\n");
-                return true;
-            }
-            return false;
-        }
+    case OutputFormat::protrace:
+        exporter.setown(createProtraceEventExporter(*out, queryMetaInfoState()));
+        break;
     default:
         throw makeStringExceptionV(-1, "unsupported output format: %d", (int)format);
     }
+    if (exporter)
+        return traverseEvents(exporter->queryTerminalVisitor());
     return traverseEvents(*visitor);
+}
+
+IEventVisitor* CDumpEventsOp::getPreScanVisitor()
+{
+    if (exporter)
+        return &exporter->queryPreScanVisitor();
+    return CEventConsumingOp::getPreScanVisitor();
 }
 
 IEventMultiplexer* CDumpEventsOp::createMultiplexer(CMetaInfoState& metaState, bool bypassMetaCollector)
@@ -110,12 +139,201 @@ void CDumpEventsOp::setMetaFlags(const char* value)
 
 #include "eventunittests.hpp"
 
+class CTestDumpEventsOp : public CDumpEventsOp
+{
+public:
+    explicit CTestDumpEventsOp(IPropertyTree& _events) : events(&_events)
+    {
+    }
+
+    CTestDumpEventsOp(IPropertyTree& _events, const EventFileProperties& _properties)
+        : events(&_events), properties(_properties), overrideProperties(true)
+    {
+    }
+
+protected:
+    virtual Owned<IEventIterator> createInputIterator() override
+    {
+        Owned<IEventIterator> input = createPropertyTreeEvents(*events);
+        if (!overrideProperties)
+            return input;
+
+        class CPropertiesIterator : public CInterfaceOf<IEventIterator>
+        {
+        public:
+            CPropertiesIterator(IEventIterator& _input, const EventFileProperties& _properties)
+                : input(&_input), properties(_properties)
+            {
+            }
+
+            virtual bool nextEvent(CEvent& event) override
+            {
+                return input->nextEvent(event);
+            }
+
+            virtual const EventFileProperties& queryFileProperties() const override
+            {
+                return properties;
+            }
+
+        private:
+            Owned<IEventIterator> input;
+            EventFileProperties properties;
+        };
+
+        return new CPropertiesIterator(*input.getClear(), properties);
+    }
+
+private:
+    Linked<IPropertyTree> events;
+    EventFileProperties properties;
+    bool overrideProperties{false};
+};
+
 class EventDumpTests : public CppUnit::TestFixture
 {
     CPPUNIT_TEST_SUITE(EventDumpTests);
         CPPUNIT_TEST(testParseMetaFlags);
         CPPUNIT_TEST(testMetaFieldPresence);
+        CPPUNIT_TEST(testStructuredOutputEquivalence);
+        CPPUNIT_TEST(testProtraceOutput);
+        CPPUNIT_TEST(testProtraceOperation);
+        CPPUNIT_TEST(testProtraceRejectsModel);
+        CPPUNIT_TEST(testProtraceRejectsAmbiguousMetadata);
+        CPPUNIT_TEST(testProtraceRejectsMixedSourceEvents);
+        CPPUNIT_TEST(testProtraceEmptyOperation);
+        CPPUNIT_TEST(testProtraceServiceNameFilter);
     CPPUNIT_TEST_SUITE_END();
+
+    static std::vector<CEvent> createStructuredTestEvents()
+    {
+        std::vector<CEvent> events;
+        for (unsigned type = EventNone + 1; type < EventMax; ++type)
+        {
+            EventType eventType = (EventType)type;
+            CEvent event;
+            event.reset(eventType);
+            for (EventAttr attr : queryEventAttributeIds(eventType))
+            {
+                switch (queryEventAttributeType(attr))
+                {
+                case EATbool:
+                    event.setValue(attr, true);
+                    break;
+                case EATtimestamp:
+                    event.setValue(attr, (__uint64)(1000 + type));
+                    break;
+                case EATstring:
+                case EATtraceid:
+                    {
+                        VStringBuffer value("%s-%u", queryEventAttributeName(attr), type);
+                        event.setValue(attr, value.str());
+                        break;
+                    }
+                default:
+                    {
+                        __uint64 value = 100 + type;
+                        if (attr == EvAttrFileId)
+                            value = 100;
+                        else if (attr == EvAttrFileOffset)
+                            value = 0x1000;
+                        else if (attr == EvAttrNodeKind)
+                            value = 2;
+                        else if (attr == EvAttrSearchFlags)
+                            value = 0x28;
+                        else if (attr == EvAttrTask)
+                            value = (unsigned)EventTask::Processing;
+                        else if (attr == EvAttrEventThreadId)
+                            value = 7;
+                        else if (attr == EvAttrActivityId)
+                            value = 42;
+                        event.setValue(attr, value);
+                        break;
+                    }
+                }
+            }
+            events.emplace_back(std::move(event));
+        }
+        return events;
+    }
+
+    static void visitStructuredEvents(IEventVisitor& visitor, const std::vector<CEvent>& source, const EventFileProperties& properties)
+    {
+        visitor.visitFile(properties);
+        for (const CEvent& sourceEvent : source)
+        {
+            CEvent event = sourceEvent;
+            visitor.visitEvent(event, properties);
+        }
+        visitor.departFile(properties);
+    }
+
+    void testStructuredOutputEquivalence()
+    {
+        START_TEST
+        const DumpMetaFlag metaFlags = DumpMetaFlag::All;
+        Owned<CMetaInfoState> metaState = new CMetaInfoState();
+        Owned<IEventVisitationLink> collector = metaState->getCollector();
+        std::vector<CEvent> events = createStructuredTestEvents();
+        for (CEvent& event : events)
+            collector->visitEvent(event, queryTestEventFileProperties());
+
+        EventFileProperties properties = queryTestEventFileProperties();
+        properties.startTimestamp = 1000;
+
+        Owned<IEventPTreeCreator> treeCreator = createEventPTreeCreator(*metaState, metaFlags);
+        visitStructuredEvents(treeCreator->queryVisitor(), events, properties);
+        IPropertyTree* expected = treeCreator->queryTree();
+        CPPUNIT_ASSERT(expected != nullptr);
+        StringBuffer serializedTree;
+        toYAML(expected, serializedTree, 2, 0);
+        Owned<IPropertyTree> expectedYaml = createPTreeFromYAMLString(serializedTree.str());
+
+        {
+            StringBuffer output;
+            Owned<IBufferedSerialOutputStream> stream = createBufferedSerialOutputStream(output);
+            Owned<IEventVisitor> visitor = createDumpYAMLEventVisitor(*stream, *metaState, metaFlags);
+            visitStructuredEvents(*visitor, events, properties);
+            stream->flush();
+            Owned<IPropertyTree> actual = createPTreeFromYAMLString(output.str());
+            if (!areMatchingPTrees(expectedYaml, actual))
+            {
+                StringBuffer expectedText;
+                StringBuffer actualText;
+                toXML(expectedYaml, expectedText, 0, XML_Format | XML_SortTags);
+                toXML(actual, actualText, 0, XML_Format | XML_SortTags);
+                CPPUNIT_FAIL(VStringBuffer("yaml output differs\nExpected:\n%s\nActual:\n%s", expectedText.str(), actualText.str()));
+            }
+        }
+        END_TEST
+    }
+
+    static void configureProtraceOutput(CTestDumpEventsOp& op, IBufferedSerialOutputStream& stream)
+    {
+        op.setOutput(stream);
+        op.setFormat(OutputFormat::protrace);
+    }
+
+    static void configureProtraceOperation(CTestDumpEventsOp& op, IBufferedSerialOutputStream& stream)
+    {
+        op.setInputPath("synthetic.events");
+        configureProtraceOutput(op, stream);
+    }
+
+    static void visitProtraceEvents(IProtraceEventExporter& exporter, const EventFileProperties& properties, IPropertyTree& events)
+    {
+        Owned<IEventIterator> input = createPropertyTreeEvents(events);
+        exporter.queryPreScanVisitor().visitFile(properties);
+        CEvent event;
+        while (input->nextEvent(event))
+            exporter.queryPreScanVisitor().visitEvent(event, properties);
+        exporter.queryPreScanVisitor().departFile(properties);
+
+        input.setown(createPropertyTreeEvents(events));
+        exporter.queryTerminalVisitor().visitFile(properties);
+        while (input->nextEvent(event))
+            exporter.queryTerminalVisitor().visitEvent(event, properties);
+    }
 
     void testParseMetaFlags()
     {
@@ -174,15 +392,18 @@ class EventDumpTests : public CppUnit::TestFixture
         stream->flush();
 
         const char* resultEmpty = out.str();
-        VStringBuffer quotedMetaServiceName("\"%s\"", EVENT_META_SERVICE_NAME);
-        VStringBuffer quotedMetaPlane("\"%s\"", EVENT_META_PLANE);
-        VStringBuffer quotedMetaPath("\"%s\"", EVENT_META_PATH);
-        VStringBuffer quotedMetaLogicalFileName("\"%s\"", EVENT_META_LOGICAL_FILE_NAME);
-
-        CPPUNIT_ASSERT(strstr(resultEmpty, quotedMetaServiceName.str()) == nullptr);
-        CPPUNIT_ASSERT(strstr(resultEmpty, quotedMetaPlane.str()) == nullptr);
-        CPPUNIT_ASSERT(strstr(resultEmpty, quotedMetaPath.str()) == nullptr);
-        CPPUNIT_ASSERT(strstr(resultEmpty, quotedMetaLogicalFileName.str()) == nullptr);
+        const char* metadataNames[] =
+        {
+            EVENT_META_SERVICE_NAME,
+            EVENT_META_PLANE,
+            EVENT_META_PATH,
+            EVENT_META_LOGICAL_FILE_NAME
+        };
+        for (const char* metadataName : metadataNames)
+        {
+            VStringBuffer quotedMetadataName("\"%s\"", metadataName);
+            CPPUNIT_ASSERT(strstr(resultEmpty, quotedMetadataName.str()) == nullptr);
+        }
 
         out.clear();
 
@@ -196,13 +417,210 @@ class EventDumpTests : public CppUnit::TestFixture
         stream->flush();
 
         const char* resultPopulated = out.str();
-        CPPUNIT_ASSERT(strstr(resultPopulated, quotedMetaServiceName.str()) != nullptr);
-        CPPUNIT_ASSERT(strstr(resultPopulated, "\"myservice\"") != nullptr);
-        CPPUNIT_ASSERT(strstr(resultPopulated, quotedMetaPlane.str()) != nullptr);
-        CPPUNIT_ASSERT(strstr(resultPopulated, "\"myplane\"") != nullptr);
-        CPPUNIT_ASSERT(strstr(resultPopulated, quotedMetaPath.str()) != nullptr);
-        CPPUNIT_ASSERT(strstr(resultPopulated, "\"/var/lib/myplane/somefile.dat\"") != nullptr);
-        CPPUNIT_ASSERT(strstr(resultPopulated, quotedMetaLogicalFileName.str()) != nullptr);
+        const char* metadataValues[] =
+        {
+            "myservice",
+            "myplane",
+            "/var/lib/myplane/somefile.dat"
+        };
+        for (const char* metadataValue : metadataValues)
+        {
+            VStringBuffer quotedMetadataValue("\"%s\"", metadataValue);
+            CPPUNIT_ASSERT(strstr(resultPopulated, quotedMetadataValue.str()) != nullptr);
+        }
+        VStringBuffer quotedLogicalFileName("\"%s\"", EVENT_META_LOGICAL_FILE_NAME);
+        CPPUNIT_ASSERT(strstr(resultPopulated, quotedLogicalFileName.str()) != nullptr);
+        END_TEST
+    }
+
+    void testProtraceOutput()
+    {
+        START_TEST
+        StringBuffer out;
+        Owned<IBufferedSerialOutputStream> stream = createBufferedSerialOutputStream(out);
+        Owned<CMetaInfoState> metaState = new CMetaInfoState();
+        Owned<IEventVisitationLink> metaCollector = metaState->getCollector();
+        CEvent fileInfo;
+        fileInfo.reset(MetaFileInformation);
+        fileInfo.setValue(EvAttrFileId, (unsigned)100);
+        fileInfo.setValue(EvAttrPath, "/var/lib/index.dat");
+        metaCollector->visitEvent(fileInfo, queryTestEventFileProperties());
+        Owned<IProtraceEventExporter> exporter = createProtraceEventExporter(*stream, *metaState);
+        EventFileProperties properties = queryTestEventFileProperties();
+        properties.startTimestamp = 1000;
+
+        Owned<IPropertyTree> events = createPTreeFromXMLString(
+            "<events filename='test.events'>"
+                "<event type='QueryStart' EventTimestamp='900' EventThreadId='7' EventTraceId='trace-id' ServiceName='query-service'/>"
+                "<event type='TaskStart' EventTimestamp='1200' EventThreadId='7' Task='6' ActivityId='42'/>"
+                "<event type='TaskStart' EventTimestamp='1250' EventThreadId='7' Task='7' DataSize='5678' InMemorySize='1234'/>"
+                "<event type='IndexCacheHit' EventTimestamp='1300' EventThreadId='7' FileId='100' FileOffset='4096' NodeKind='2' SearchFlags='40' InMemorySize='1' ExpandTime='0'/>"
+                "<event type='IndexLoad' EventTimestamp='1500' EventThreadId='7' FileId='100' FileOffset='8192' NodeKind='1' SearchFlags='0' InMemorySize='2' ReadTime='100' ExpandTime='50'/>"
+            "</events>");
+        visitProtraceEvents(*exporter, properties, *events);
+        stream->flush();
+
+        CPPUNIT_ASSERT(strstr(out.str(), "  \"type\": \"manifest\",") != nullptr);
+        CPPUNIT_ASSERT(strstr(out.str(), "  \"base_ts\": 900,") != nullptr);
+        CPPUNIT_ASSERT(strstr(out.str(), "  \"sortedEvents\": true,") != nullptr);
+        CPPUNIT_ASSERT(strstr(out.str(), "  \"slots_per_cpu\"") == nullptr);
+        CPPUNIT_ASSERT(strstr(out.str(), "\"displayMappings\"") != nullptr);
+        CPPUNIT_ASSERT(strstr(out.str(), "\"threads\"") == nullptr);
+        CPPUNIT_ASSERT(strstr(out.str(), "  \"stringtable\": [\"query-service\",\"/var/lib/index.dat\"]") != nullptr);
+        CPPUNIT_ASSERT(strstr(out.str(), "[0, 7, 17, 0, 1]") != nullptr);
+        VStringBuffer taskStartLine("[0, 7, %u, 300, 42]", getTaskStartOp(EventTask::Processing));
+        CPPUNIT_ASSERT(strstr(out.str(), taskStartLine.str()) != nullptr);
+        VStringBuffer compressionStartLine("[0, 7, %u, 350, %llu]", getTaskStartOp(EventTask::Compressing), ((__uint64)5678 << 32) | 1234);
+        CPPUNIT_ASSERT(strstr(out.str(), compressionStartLine.str()) != nullptr);
+        CPPUNIT_ASSERT(strstr(out.str(), "[0, 7, 1, 400, 100, 4138]") != nullptr);
+        CPPUNIT_ASSERT(strstr(out.str(), "[0, 7, 3, 450, 150, 100, 8193]") != nullptr);
+        END_TEST
+    }
+
+    void testProtraceOperation()
+    {
+        START_TEST
+        Owned<IPropertyTree> events = createPTreeFromXMLString(
+            "<events filename='test.events'>"
+                "<event type='FileInformation' FileId='100' Path='/var/lib/index.dat'/>"
+                "<event type='QueryStart' EventTimestamp='1000' EventThreadId='7' ServiceName='query-service'/>"
+                "<event type='QueryStart' EventTimestamp='900' EventThreadId='7' ServiceName='query-service'/>"
+            "</events>");
+        StringBuffer out;
+        Owned<IBufferedSerialOutputStream> stream = createBufferedSerialOutputStream(out);
+        CTestDumpEventsOp op(*events);
+        configureProtraceOperation(op, *stream);
+        op.acceptEvents("QueryStart");
+
+        CPPUNIT_ASSERT(op.doOp());
+        stream->flush();
+
+        CPPUNIT_ASSERT(strstr(out.str(), "\"sortedEvents\"") == nullptr);
+        CPPUNIT_ASSERT(strstr(out.str(), "\"displayMappings\"") == nullptr);
+        CPPUNIT_ASSERT(strstr(out.str(), "\"query-service\"") != nullptr);
+        CPPUNIT_ASSERT(strstr(out.str(), "\"/var/lib/index.dat\"") != nullptr);
+        CPPUNIT_ASSERT(strstr(out.str(), "[0, 7, 17, 100") != nullptr);
+        CPPUNIT_ASSERT(strstr(out.str(), "[0, 7, 17, 0") != nullptr);
+
+        StringBuffer multiplexedOut;
+        Owned<IBufferedSerialOutputStream> multiplexedStream = createBufferedSerialOutputStream(multiplexedOut);
+        CTestDumpEventsOp multiplexedOp(*events);
+        multiplexedOp.setInputPath("first.events");
+        multiplexedOp.setInputPath("second.events");
+        configureProtraceOutput(multiplexedOp, *multiplexedStream);
+        CPPUNIT_ASSERT_THROWS_IEXCEPTION(multiplexedOp.doOp(), "expected multiplexed Protrace input to be rejected");
+        END_TEST
+    }
+
+    void testProtraceRejectsModel()
+    {
+        START_TEST
+        Owned<IPropertyTree> events = createPTreeFromXMLString(
+            "<events filename='test.events'>"
+                "<event type='FileInformation' FileId='100' Path='/var/lib/index.dat'/>"
+                "<event type='IndexCacheHit' EventTimestamp='100' EventThreadId='7' EventTraceId='trace-1' FileId='100' FileOffset='0' NodeKind='0' SearchFlags='0' InMemorySize='1' ExpandTime='1'/>"
+                "<event type='QueryStart' EventTimestamp='50' EventThreadId='7' ServiceName='query-service'/>"
+            "</events>");
+        Owned<IPropertyTree> model = createPTreeFromXMLString(
+            "<model>"
+                "<storage><plane name='a' readTime='1'/></storage>"
+                "<memory/>"
+            "</model>");
+        StringBuffer out;
+        Owned<IBufferedSerialOutputStream> stream = createBufferedSerialOutputStream(out);
+        CTestDumpEventsOp op(*events);
+        configureProtraceOperation(op, *stream);
+        CPPUNIT_ASSERT(op.acceptModel(*model));
+
+        CPPUNIT_ASSERT_THROWS_IEXCEPTION(op.doOp(), "expected modeled Protrace input to be rejected");
+        END_TEST
+    }
+
+    template <typename T>
+    void assertProtraceRejectsAmbiguousMetadata(EventFileProperties& properties, T& value, T ambiguousValue)
+    {
+        T originalValue = value;
+        value = ambiguousValue;
+        Owned<IPropertyTree> events = createPTreeFromXMLString(
+            "<events filename='test.events'>"
+                "<event type='QueryStart' EventTimestamp='1000' EventThreadId='7' ServiceName='query-service'/>"
+            "</events>");
+        StringBuffer out;
+        Owned<IBufferedSerialOutputStream> stream = createBufferedSerialOutputStream(out);
+        CTestDumpEventsOp op(*events, properties);
+        configureProtraceOperation(op, *stream);
+
+        CPPUNIT_ASSERT_THROWS_IEXCEPTION(op.doOp(), "expected ambiguous Protrace input to be rejected");
+        value = originalValue;
+    }
+
+    void testProtraceRejectsAmbiguousMetadata()
+    {
+        START_TEST
+        EventFileProperties properties = queryTestEventFileProperties();
+
+        assertProtraceRejectsAmbiguousMetadata(properties, properties.version, AmbiguousVersion);
+        assertProtraceRejectsAmbiguousMetadata(properties, properties.channelId, AmbiguousChannelId);
+        assertProtraceRejectsAmbiguousMetadata(properties, properties.replicaId, AmbiguousReplicaId);
+        assertProtraceRejectsAmbiguousMetadata(properties, properties.instanceId, AmbiguousInstanceId);
+        assertProtraceRejectsAmbiguousMetadata(properties, properties.options.includeTraceIds, EventFileOption::Ambiguous);
+        assertProtraceRejectsAmbiguousMetadata(properties, properties.options.includeThreadIds, EventFileOption::Ambiguous);
+        assertProtraceRejectsAmbiguousMetadata(properties, properties.options.includeStackTraces, EventFileOption::Ambiguous);
+        END_TEST
+    }
+
+    void testProtraceRejectsMixedSourceEvents()
+    {
+        START_TEST
+        Owned<IPropertyTree> events = createPTreeFromXMLString(
+            "<events filename='test.events'>"
+                "<event type='QueryStart' EventTimestamp='1000' EventThreadId='7' ChannelId='1' ServiceName='query-service'/>"
+                "<event type='QueryStart' EventTimestamp='1100' EventThreadId='7' ChannelId='2' ServiceName='query-service'/>"
+            "</events>");
+        StringBuffer out;
+        Owned<IBufferedSerialOutputStream> stream = createBufferedSerialOutputStream(out);
+        CTestDumpEventsOp op(*events);
+        configureProtraceOperation(op, *stream);
+
+        CPPUNIT_ASSERT_THROWS_IEXCEPTION(op.doOp(), "expected mixed Protrace source events to be rejected");
+        END_TEST
+    }
+
+    void testProtraceEmptyOperation()
+    {
+        START_TEST
+        Owned<IPropertyTree> events = createPTreeFromXMLString("<events filename='empty.events'/>");
+        StringBuffer out;
+        Owned<IBufferedSerialOutputStream> stream = createBufferedSerialOutputStream(out);
+        CTestDumpEventsOp op(*events);
+        configureProtraceOperation(op, *stream);
+
+        CPPUNIT_ASSERT(op.doOp());
+        stream->flush();
+
+        CPPUNIT_ASSERT(strstr(out.str(), "\"type\": \"manifest\"") != nullptr);
+        END_TEST
+    }
+
+    void testProtraceServiceNameFilter()
+    {
+        START_TEST
+        Owned<IPropertyTree> events = createPTreeFromXMLString(
+            "<events filename='test.events'>"
+                "<event type='IndexCacheMiss' EventTimestamp='900' EventThreadId='7' EventTraceId='trace-1' FileId='100' FileOffset='0' NodeKind='2' SearchFlags='0'/>"
+                "<event type='QueryStart' EventTimestamp='1000' EventThreadId='7' EventTraceId='trace-1' ServiceName='query-service'/>"
+            "</events>");
+        StringBuffer out;
+        Owned<IBufferedSerialOutputStream> stream = createBufferedSerialOutputStream(out);
+        CTestDumpEventsOp op(*events);
+        configureProtraceOperation(op, *stream);
+        CPPUNIT_ASSERT(op.acceptMetaAttribute(EVENT_META_SERVICE_NAME, "query-service"));
+
+        CPPUNIT_ASSERT(op.doOp());
+        stream->flush();
+
+        CPPUNIT_ASSERT(strstr(out.str(), "[0, 7, 2, 0, 100, 2]") != nullptr);
+        CPPUNIT_ASSERT(strstr(out.str(), "[0, 7, 17, 100, 1]") != nullptr);
         END_TEST
     }
 };

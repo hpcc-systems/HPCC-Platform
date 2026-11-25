@@ -20,6 +20,7 @@
 #include "eventconsumption.h"
 #include "eventvisitor.h"
 #include "eventoperation.h"
+#include "eventtraversal.hpp"
 
 enum class DumpMetaFlag : byte
 {
@@ -69,7 +70,7 @@ enum class OutputFormat : byte
     xml,
     yaml,
     csv,
-    tree,
+    protrace,
 };
 
 // Open and parse a binary event file, generating any one of several supported output formats. As
@@ -79,6 +80,8 @@ enum class OutputFormat : byte
 class event_decl CDumpEventsOp : public CEventConsumingOp
 {
 public:
+    virtual ~CDumpEventsOp();
+
     // Cache the requested output format.
     void setFormat(OutputFormat format);
     void setMetaFlags(const char* metaFlagsStr);
@@ -89,8 +92,10 @@ public:
 
 protected:
     virtual bool preScanRequired() const override;
+    virtual IEventVisitor* getPreScanVisitor() override;
     virtual IEventMultiplexer* createMultiplexer(CMetaInfoState& metaState, bool bypassMetaCollector) override;
 
     OutputFormat format = OutputFormat::text;
     DumpMetaFlag metaFlags = DumpMetaFlag::None;
+    Owned<IEventTraversalHandler> exporter;
 };

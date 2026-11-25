@@ -109,6 +109,7 @@ private:
         virtual void departFile(const EventFileProperties& properties) override;
     public: // IEventVisitationLink
         virtual void setNextLink(IEventVisitor& visitor) override;
+        virtual void clearNextLink() override;
         virtual void configure(const IPropertyTree& config) override;
         virtual bool preScanRequired() const override { return false; }
     public:
@@ -129,6 +130,7 @@ public:
     const char* queryFilePath(__uint64 fileId) const;
     bool queryFilePathHash(__uint64 fileId, __uint64& hash) const;
     bool hasFileMapping(__uint64 fileId) const;
+    void forEachFileMapping(const std::function<void(__uint64, std::string_view)>& callback) const;
 
     // Accessor functions for trace ID to service name mappings
     // Note: Returns "" (empty string) to represent a cache miss

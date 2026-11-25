@@ -46,6 +46,7 @@ public:
     bool acceptExtendedAttribute(unsigned attr, const char* values);
     bool acceptMetaAttribute(const char* name, const char* values);
     bool acceptModel(const IPropertyTree& config);
+    bool hasModel() const { return model != nullptr; }
 
     // Determine whether a pre-scan iteration is required to gather metadata.
     // Operations with custom grouping or index configurations can override this.
@@ -54,7 +55,6 @@ public:
     // Optional override for operations that provide an alternate terminal endpoint
     // during a pre-scan.
     virtual IEventVisitor* getPreScanVisitor() { return nullptr; }
-
 
     // Returns the number of sources to be processed. Determines multiplexing requirement.
     virtual unsigned getNumSources() const;
@@ -67,6 +67,7 @@ protected:
     bool traverseEvents(IEventVisitor& visitor);
     bool preScanEvents(IEventVisitor* visitor);
     bool preScanEvents() { return preScanEvents(nullptr); }
+    void detachVisitationLinks();
 
     // Operation implementations may choose which multiplexing strategy to use.
     virtual IEventMultiplexer* createMultiplexer(CMetaInfoState& metaState, bool bypassMetaCollector);

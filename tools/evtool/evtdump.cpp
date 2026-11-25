@@ -57,7 +57,7 @@ public:
             op.setFormat(OutputFormat::csv);
             break;
         case 'p':
-            op.setFormat(OutputFormat::tree);
+            op.setFormat(OutputFormat::protrace);
             break;
         default:
             return TEventConsumingCommand<CDumpEventsOp>::acceptTerseOption(opt);
@@ -67,7 +67,9 @@ public:
 
     virtual const char* getVerboseDescription() const override
     {
-        return R"!!!(Parse a binary event file and write its contents to standard output.
+        return R"!!!(Parse event files and write their contents to standard output. ProTrace
+output (-p) requires exactly one non-multiplexed input file and cannot be
+combined with --model.
 )!!!";
     }
 
@@ -88,6 +90,9 @@ public:
         constexpr const char* usageStr =
 R"!!!(    -c                        Output as comma separated values.
     -j                        Output as JSON.
+    -p                        Output as Protrace JSONL. Requires exactly one
+                              non-multiplexed input file; cannot be combined
+                              with --model.
     -x                        Output as XML.
     -y                        Output as YAML.
     --meta [ '=' <flags> ]    Include meta information columns in output.
@@ -117,6 +122,11 @@ Structured output would, if represented in a property tree, resemble:
 CSV output includes columns for event name, plus one for each event attribute
 that may be present in any iterated event. Event filters apply to iterated
 events, thus filters cannot be used to limit included attributes.
+
+Protrace output is intended to expose the events present in an existing binary
+event file. It does not apply event models and does not accept multiplexed
+input. When Protrace output is selected, the pre-scan collects manifest
+metadata from all input events; filters are applied only to the output pass.
 )!!!";
         size32_t usageStrLength = size32_t(strlen(usageStr));
         out.put(usageStrLength, usageStr);

@@ -16,6 +16,7 @@
 ############################################################################## */
 
 #include "eventmetaparser.hpp"
+
 #include "eventiterator.h"
 #include "eventutility.hpp"
 #include "jevent.hpp"
@@ -91,6 +92,11 @@ inline bool failHashQuery(__uint64& hash)
 void CMetaInfoState::CCollector::setNextLink(IEventVisitor& visitor)
 {
     nextLink.set(&visitor);
+}
+
+void CMetaInfoState::CCollector::clearNextLink()
+{
+    nextLink.clear();
 }
 
 void CMetaInfoState::CCollector::configure(const IPropertyTree& config)
@@ -247,6 +253,13 @@ bool CMetaInfoState::queryLogicalFileNameHash(const CEvent& event, __uint64& has
 bool CMetaInfoState::hasFileMapping(__uint64 fileId) const
 {
     return fileIdToPath.find(fileId) != fileIdToPath.end();
+}
+
+void CMetaInfoState::forEachFileMapping(const std::function<void(__uint64, std::string_view)>& callback) const
+{
+    assertex(callback);
+    for (const auto& entry : fileIdToPath)
+        callback(entry.first, entry.second.view);
 }
 
 const char* CMetaInfoState::queryServiceName(const char* traceId) const
