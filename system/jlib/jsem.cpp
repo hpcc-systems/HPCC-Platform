@@ -17,6 +17,7 @@
 
 
 #include "jlib.hpp"
+#include "jexcept.hpp"
 #include "jsem.hpp"
 #include "jisem.hpp"
 #include "jmutex.hpp"
@@ -67,7 +68,11 @@ void Semaphore::reinit(unsigned initialCount)
 void Semaphore::wait()
 {
     noteEvent(EventSemWait);
-    sem_wait(&sem);
+    while (sem_wait(&sem) != 0)
+    {
+        if (errno != EINTR)
+            throw makeErrnoException("Semaphore::wait");
+    }
     noteEvent(EventSemAcquire);
 }
 
@@ -84,13 +89,13 @@ bool Semaphore::tryWait()
 
 bool Semaphore::wait(unsigned timeout)
 {
-    noteEvent(EventSemWait);
-    if (timeout==(unsigned)-1) {
-        sem_wait(&sem);
-        noteEvent(EventSemAcquire);
+    if (timeout==(unsigned)-1)
+    {
+        wait();
         return true;
     }
 
+    noteEvent(EventSemWait);
     //Ensure uncontended case is handled without calling gettimeofday
     if (sem_trywait(&sem) == 0)
     {
@@ -106,11 +111,15 @@ bool Semaphore::wait(unsigned timeout)
 
     timespec abs;
     getEndTime(abs, timeout);
-    int ret = sem_timedwait(&sem, &abs);
-    if (ret < 0)
+    while (sem_timedwait(&sem, &abs) != 0)
     {
-        noteEvent(EventSemWaitTimeout);
-        return false;
+        if (errno == ETIMEDOUT)
+        {
+            noteEvent(EventSemWaitTimeout);
+            return false;
+        }
+        if (errno != EINTR)
+            throw makeErrnoException("Semaphore::wait");
     }
     noteEvent(EventSemAcquire);
     return true;

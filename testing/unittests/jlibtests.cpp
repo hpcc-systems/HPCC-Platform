@@ -1148,6 +1148,7 @@ class JlibSemTest : public CppUnit::TestFixture
 public:
     CPPUNIT_TEST_SUITE(JlibSemTest);
         CPPUNIT_TEST(testSimple);
+        CPPUNIT_TEST(testTryWait);
     CPPUNIT_TEST_SUITE_END();
 
 protected:
@@ -1183,6 +1184,17 @@ protected:
         sem.wait();
         testTimedAvailable(sem);
         testTimedElapsed(sem, 5);
+    }
+
+    void testTryWait()
+    {
+        Semaphore sem{SYNC_LOCATION, 2};
+        CPPUNIT_ASSERT(sem.tryWait());
+        CPPUNIT_ASSERT(sem.tryWait());
+        CPPUNIT_ASSERT(!sem.tryWait());
+        sem.signal();
+        CPPUNIT_ASSERT(sem.tryWait());
+        CPPUNIT_ASSERT(!sem.tryWait());
     }
 };
 
