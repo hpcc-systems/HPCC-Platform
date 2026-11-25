@@ -4957,9 +4957,9 @@ public:
 
         int rc = ldap_delete_ext_s(ld, (char*)dn.str(), NULL, NULL);
 
-        if ( rc != LDAP_SUCCESS )
+        if ( rc != LDAP_SUCCESS && rc != LDAP_NO_SUCH_OBJECT )
         {
-            DBGLOG("error deleting %s: %s", dn.str(), ldap_err2string(rc));
+            throwStringExceptionV(-1, "error deleting %s: %s", dn.str(), ldap_err2string(rc));
         }
     }
 
