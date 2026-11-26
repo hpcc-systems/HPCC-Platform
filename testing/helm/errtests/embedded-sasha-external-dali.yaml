@@ -1,0 +1,6 @@
+dali:
+  - name: mydali
+    auth: none
+    services:
+      coalescer:
+        externalDaliSvc: otherdali:7070

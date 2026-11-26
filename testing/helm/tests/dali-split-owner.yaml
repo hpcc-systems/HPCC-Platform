@@ -1,0 +1,17 @@
+dali:
+- name: splitdali
+  auth: none
+  service:
+    servicePort: 7070
+    visibility: cluster
+
+thor: []
+roxie: []
+eclagent: []
+eclccserver: []
+eclscheduler: []
+esp: []
+dfuserver: []
+dafilesrv: []
+sasha:
+  disabled: true

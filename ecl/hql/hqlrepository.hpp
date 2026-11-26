@@ -95,6 +95,7 @@ protected:
 
     unsigned runGitCommand(StringBuffer * output, const char *args, const char * cwd, bool needCredentials);
     unsigned runGitCommand(StringBuffer * output, const char *args, const char * cwd, bool needCredentials, StringPairVector * diagnostics);
+    bool resolveRefWithApi(StringBuffer & sha, const char * repoUrn, const char * repo, const char * version);
     IEclPackage * queryRepository(IIdAtom * name, const char * defaultUrl, IEclSourceCollection * overrideSource, bool includeDefinitions);
     IGitUpdateLock * getGitUpdateLock(const char * path)
     {

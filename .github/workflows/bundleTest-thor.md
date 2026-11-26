@@ -343,7 +343,7 @@ The bundle testing process is initiated and the logs are processed through the `
                 continue
             fi
             pushd $bundleRunPath
-            /opt/HPCCSystems/testing/regress/ecl-test run -t thor --config /opt/HPCCSystems/testing/regress/ecl-test.json --timeout 3600 -fthorConnectTimeout=3600 --pq 1 $ML_EXCLUDE_FILES
+            /opt/HPCCSystems/testing/regress/ecl-test run -t thor --config /opt/HPCCSystems/testing/regress/ecl-test.json --timeout 3600 -fthorConnectTimeout=3600 -fanalyzeWorkunit=false --pq 1 $ML_EXCLUDE_FILES
             retCode=$( echo $? )
             if [ ${retCode} -eq 0 ] 
             then

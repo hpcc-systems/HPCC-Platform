@@ -1,0 +1,21 @@
+dali:
+- name: splitdali
+  auth: none
+  disabled: true
+
+thor: []
+roxie: []
+eclagent: []
+eclccserver: []
+eclscheduler: []
+esp:
+- name: eclwatch
+  auth: none
+  application: eclwatch
+  service:
+    servicePort: 8880
+    visibility: cluster
+dfuserver: []
+dafilesrv: []
+sasha:
+  disabled: true

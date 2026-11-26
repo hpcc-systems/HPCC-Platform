@@ -164,11 +164,18 @@ static bool lock_file(const char *lfpath)
     unsigned attempt = 0;
     while (attempt < 3) {
         char lckcontents[12];
-        int fd = open(lfpath, O_RDWR | O_CREAT | O_EXCL, S_IRWXU);
+        int fd;
+        do
+        {
+            fd = open(lfpath, O_RDWR | O_CREAT | O_EXCL, S_IRWXU);
+        } while (fd == -1 && errno == EINTR);
         if (fd==-1) {
             if (errno != EEXIST) 
                 break;
-            fd = open(lfpath, O_RDONLY);
+            do
+            {
+                fd = open(lfpath, O_RDONLY);
+            } while (fd == -1 && errno == EINTR);
             if (fd==-1) 
                 break;
             bool ok = read_data(fd, lckcontents, sizeof(lckcontents)-1);

@@ -39,14 +39,11 @@
           <entry><emphasis>filters</emphasis></entry>
 
           <entry>Opcional. Uma string separada por vírgulas com expressões de
-          filtro para filtragem avançada. Os exemplos incluem
-          'size&gt;100000000' para arquivos maiores que 100MB,
-          'owner:username' para filtrar por proprietário, 'is:superfile' para
-          incluir apenas SuperFiles, 'is:normal' para arquivos normais,
-          'has:description' para arquivos com descrição e
-          'modified&gt;=2026-01-01' para arquivos modificados em uma data
-          específica ou depois dela. Se omitido, o padrão é '' (sem
-          filtragem).</entry>
+          filtro para filtragem avançada. As expressões de atributos são
+          combinadas com AND; se várias expressões <literal>is:</literal>
+          forem fornecidas, a última terá precedência. Consulte abaixo a
+          sintaxe suportada e os nomes dos campos. Se omitido, o padrão é ''
+          (sem filtragem).</entry>
         </row>
 
         <row>
@@ -101,6 +98,129 @@
       </tbody>
     </tgroup>
   </informaltable>
+
+  <para>Expressões suportadas em <emphasis>filters</emphasis>:</para>
+
+  <itemizedlist>
+    <listitem><para><literal>field:pattern</literal> corresponde a um valor
+    usando curingas, por exemplo
+    <literal>owner:*smith</literal>.</para></listitem>
+    <listitem><para><literal>field=value</literal> corresponde a um valor
+    exato. A igualdade de inteiros trata propriedades ausentes como zero,
+    portanto <literal>rowcount=0</literal> também corresponde a arquivos sem
+    contagem de registros armazenada. Use
+    <literal>has:rowcount,rowcount=0</literal> para exigir um zero
+    explicitamente armazenado. A igualdade de booleanos e de valores de
+    ponto flutuante compara o texto armazenado, não valores tipados:
+    <literal>persistent=1</literal> não corresponde ao texto
+    <literal>true</literal> armazenado, e <literal>readCost=1</literal> não
+    corresponde ao texto <literal>1.0</literal> armazenado. Propriedades
+    booleanas ausentes não correspondem a filtros de igualdade, incluindo
+    <literal>persistent=0</literal>; use <literal>!has:persistent</literal>
+    para selecionar arquivos em que essa propriedade esteja
+    ausente.</para></listitem>
+    <listitem><para><literal>field&gt;value</literal>,
+    <literal>field&gt;=value</literal>, <literal>field&lt;value</literal> e
+    <literal>field&lt;=value</literal> comparam campos numéricos. Campos de
+    string suportam apenas as formas inclusivas <literal>&gt;=</literal> e
+    <literal>&lt;=</literal>, por exemplo
+    <literal>modified&gt;=2026-01-01</literal>. Os limites de data comparam
+    strings completas de data e hora, portanto
+    <literal>modified&lt;=2026-01-01</literal> exclui os valores de data e
+    hora de 1 de janeiro, não apenas os dias posteriores. Limites contendo
+    <literal>:</literal> (como um horário) são rejeitados pelo analisador.
+    Para selecionar todos os valores de data e hora de 1 de janeiro, use
+    <literal>modified&gt;=2026-01-01,modified&lt;=2026-01-02</literal>;
+    o limite superior contendo apenas a data exclui os valores de data e
+    hora de 2 de janeiro.</para></listitem>
+    <listitem><para><literal>has:field</literal> testa se uma propriedade
+    existe; <literal>!has:field</literal> testa se ela não existe, por
+    exemplo <literal>!has:description</literal>.</para></listitem>
+    <listitem><para><literal>is:superfile</literal> seleciona SuperFiles,
+    <literal>is:normal</literal> seleciona arquivos normais e
+    <literal>is:any</literal> seleciona ambos (o padrão).</para></listitem>
+  </itemizedlist>
+
+  <para>Nomes de campos reconhecidos (sem distinção entre maiúsculas e
+  minúsculas); use <emphasis>namepattern</emphasis> para filtrar nomes de
+  arquivos:</para>
+
+  <itemizedlist>
+    <listitem><para>String e data: <literal>description</literal>,
+    <literal>group</literal>, <literal>kind</literal>,
+    <literal>modified</literal>, <literal>job</literal>,
+    <literal>owner</literal>, <literal>workunit</literal>,
+    <literal>accessed</literal>, <literal>directory</literal>,
+    <literal>partmask</literal>, <literal>superowners</literal>,
+    <literal>protect</literal>, <literal>subfilenames</literal>.</para></listitem>
+    <listitem><para>Inteiro: <literal>recordcount</literal>,
+    <literal>recordSize</literal>, <literal>size</literal>,
+    <literal>numsubfiles</literal> (atualmente não pode ser usado para
+    filtragem numérica; use <literal>is:superfile</literal> ou
+    <literal>is:normal</literal> para o tipo de arquivo),
+    <literal>numparts</literal>, <literal>compressedSize</literal>,
+    <literal>numDiskReads</literal>, <literal>numDiskWrites</literal>,
+    <literal>maxSkew</literal>, <literal>minSkew</literal>,
+    <literal>maxSkewPart</literal>, <literal>minSkewPart</literal>,
+    <literal>expireDays</literal>.</para></listitem>
+    <listitem><para>Ponto flutuante: <literal>cost</literal>,
+    <literal>atRestCost</literal>, <literal>accessCost</literal>,
+    <literal>readCost</literal>, <literal>writeCost</literal>.
+    Os filtros de custo usam valores <literal>cost_type</literal>
+    armazenados em milionésimos de uma unidade monetária:
+    <literal>readCost&gt;=1</literal> significa pelo menos um milionésimo,
+    não uma unidade monetária. Use <literal>readCost&gt;=1000000</literal>
+    para pelo menos uma unidade monetária.
+    Os filtros de <literal>cost</literal>, <literal>atRestCost</literal> e
+    <literal>accessCost</literal> examinam atributos armazenados, não os
+    custos calculados internamente. Esses três campos não são retornados
+    por esta função. Os filtros não podem usar os valores calculados
+    internamente; por exemplo, <literal>atRestCost&gt;0</literal>
+    não seleciona arquivos com base no custo de armazenamento em repouso
+    calculado.</para></listitem>
+    <listitem><para>Booleano: <literal>persistent</literal>,
+    <literal>compressed</literal>, <literal>blockCompressed</literal>,
+    <literal>rowCompressed</literal>. O filtro <literal>compressed</literal>
+    lê o atributo armazenado <literal>Attr/@compressed</literal>, não o
+    estado de compressão retornado, que pode ser derivado de outros
+    sinalizadores ou do tipo de arquivo. Use
+    <literal>blockCompressed</literal> e <literal>rowCompressed</literal>
+    para filtrar seus respectivos sinalizadores armazenados,
+    <literal>Attr/@blockCompressed</literal> e
+    <literal>Attr/@rowCompressed</literal>.</para></listitem>
+  </itemizedlist>
+
+  <para><literal>group</literal> (e seu alias <literal>cluster</literal>)
+  filtra o valor armazenado em <literal>Attr/@group</literal>, não os nomes
+  dos clusters no atributo <literal>@group</literal> da raiz do arquivo.
+  Por exemplo, <literal>group:thor</literal> não seleciona arquivos pelo
+  nome do cluster armazenado na raiz. Os filtros de valor para
+  <literal>protect</literal> e <literal>subfilenames</literal> não examinam
+  os metadados usados para a proteção de arquivos ou o conteúdo de
+  SuperFiles. Os filtros de existência
+  (<literal>has:</literal> e <literal>!has:</literal>) para
+  <literal>protect</literal>, <literal>subfilenames</literal> e
+  <literal>numsubfiles</literal> também testam atributos que não representam
+  esses metadados; eles não detectam a proteção de arquivos nem se um
+  SuperFile contém subarquivos. Os nomes dos subarquivos não são retornados
+  por esta função. Os filtros de valor de
+  <literal>superowners</literal> examinam o elemento
+  <literal>SuperOwner</literal> em vez de seu atributo
+  <literal>@name</literal>; por exemplo,
+  <literal>superowners:*scope*</literal> não corresponde a um nome de
+  superowner.</para>
+
+  <para>Os aliases são <literal>rowcount</literal> para
+  <literal>recordcount</literal>, <literal>cluster</literal> para
+  <literal>group</literal> e <literal>superfile</literal> para
+  <literal>numsubfiles</literal>. Para selecionar arquivos por tipo, use
+  <literal>is:superfile</literal> ou <literal>is:normal</literal> em vez de
+  comparar <literal>superfile</literal> numericamente. Separe as expressões
+  com vírgulas, não com espaços. Apenas <literal>has:</literal> suporta o
+  prefixo <literal>!</literal>; OR e outras negações não são suportados.
+  Comparações de ponto flutuante com <literal>&gt;</literal>,
+  <literal>&gt;=</literal>, <literal>&lt;</literal> ou
+  <literal>&lt;=</literal> atualmente exigem um valor inteiro.</para>
 
   <para>A função <emphasis role="bold">LogicalFileListFiltered
   </emphasis>retorna um registro contendo o número de arquivos retornados, um

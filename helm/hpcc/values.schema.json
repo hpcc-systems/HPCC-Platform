@@ -208,6 +208,9 @@
             "type": "string",
             "description": "The name of the dfuserver process"
           },
+          "externalDaliSvc": {
+            "$ref": "#/definitions/externalDaliSvc"
+          },
           "mtls": {
             "type": "boolean",
             "description": "Override the global mTLS setting for this component"
@@ -332,6 +335,9 @@
         },
         "defaultEsp": {
           "type": "string"
+        },
+        "externalDaliSvc": {
+          "$ref": "#/definitions/externalDaliSvc"
         },
         "busybox": {
           "description": "The image for busybox containers",
@@ -549,6 +555,10 @@
           "$ref": "#/definitions/eclSecurity"
         }
       }
+    },
+    "externalDaliSvc": {
+      "type": "string",
+      "description": "host:port for a Dali service endpoint."
     },
     "eclSecurity": {
       "type": "object",
@@ -1830,6 +1840,9 @@
           "type": "string",
           "description": "The name of the eclccserver process"
         },
+        "externalDaliSvc": {
+          "$ref": "#/definitions/externalDaliSvc"
+        },
         "mtls": {
           "type": "boolean",
           "description": "Override the global mTLS setting for this component"
@@ -1957,6 +1970,9 @@
           "type": "string",
           "description": "The name of the eclccserver process"
         },
+        "externalDaliSvc": {
+          "$ref": "#/definitions/externalDaliSvc"
+        },
         "mtls": {
           "type": "boolean",
           "description": "Override the global mTLS setting for this component"
@@ -2007,6 +2023,9 @@
         },
         "replicas": {
           "type": "integer"
+        },
+        "externalDaliSvc": {
+          "$ref": "#/definitions/externalDaliSvc"
         },
         "image": {
           "$ref": "#/definitions/image"
@@ -2092,6 +2111,9 @@
         },
         "replicas": {
           "type": "integer"
+        },
+        "externalDaliSvc": {
+          "$ref": "#/definitions/externalDaliSvc"
         },
         "architecture": {
           "type": "string",
@@ -2220,6 +2242,9 @@
         "prefix": {
           "type": "string",
           "description": "The (optional) file prefix to add to relative filenames"
+        },
+        "externalDaliSvc": {
+          "$ref": "#/definitions/externalDaliSvc"
         },
         "minStartupTime": {
           "$ref": "#/definitions/minStartupTime"
@@ -3153,6 +3178,9 @@
           "type": "string",
           "description": "The (optional) file prefix to add to relative filenames"
         },
+        "externalDaliSvc": {
+          "$ref": "#/definitions/externalDaliSvc"
+        },
         "numWorkers": {
           "type": "integer",
           "description": "The number of worker containers. NB: There will be <numWorker>/<numWorkersPerPod> pods",
@@ -3333,6 +3361,9 @@
         "env": {
           "$ref": "#/definitions/env"
         },
+        "externalDaliSvc": {
+          "$ref": "#/definitions/externalDaliSvc"
+        },
         "annotations": {
           "type": "object",
           "additionalProperties": { "type": "string" }
@@ -3425,6 +3456,7 @@
               "description": "Coalescing will only begin, if the delta size is above this threshold (K)"
             },
             "disabled": {},
+            "externalDaliSvc": {},
             "interval": {},
             "service": {},
             "at" : {},
@@ -3474,6 +3506,7 @@
             },
             "mtls": {},
             "disabled": {},
+            "externalDaliSvc": {},
             "interval": {},
             "service": {},
             "at" : {},
@@ -3505,6 +3538,7 @@
           {
             "mtls": {},
             "disabled": {},
+            "externalDaliSvc": {},
             "interval": {},
             "service": {},
             "at" : {},
@@ -3534,6 +3568,7 @@
           "properties": {
             "mtls": {},
             "disabled": {},
+            "externalDaliSvc": {},
             "interval": {},
             "service": {},
             "at" : {},
@@ -3575,6 +3610,7 @@
         },
         "mtls": {},
         "disabled": {},
+        "externalDaliSvc": {},
         "interval": {},
         "user": {},
         "service": {},
@@ -3608,6 +3644,7 @@
         },
         "mtls": {},
         "disabled": {},
+        "externalDaliSvc": {},
         "hold": {},
         "interval": {},
         "image": {},
@@ -3631,6 +3668,7 @@
         },
         "mtls": {},
         "disabled": {},
+        "externalDaliSvc": {},
         "interval": {},
         "at" : {},
         "image": {},
@@ -3648,6 +3686,7 @@
         "properties": {
           "mtls": {},
           "disabled": {},
+          "externalDaliSvc": {},
           "interval": {},
           "user": {},
           "env": {},
@@ -3683,6 +3722,7 @@
         "properties": {
           "mtls": {},
           "disabled": {},
+          "externalDaliSvc": {},
           "interval": {
             "type": "integer",
             "description": "Interval (in hours) to run global message housekeeping",

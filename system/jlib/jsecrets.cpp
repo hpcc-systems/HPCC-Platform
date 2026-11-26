@@ -2511,29 +2511,41 @@ std::string generateGithubIAT(const char * appId, const char * appKey, const cha
     return "";
 }
 
-IFile * getFileWithGitAccessToken(const char * gitUser)
+bool getGitAccessToken(StringBuffer & token, const char * gitUser)
 {
     Owned<const IPropertyTree> secret = getSecret("git", gitUser);
     if (!secret)
     {
         DBGLOG("No secret found for git user %s", gitUser);
-        return nullptr;
+        return false;
     }
 
     MemoryBuffer gitKey;
     if (getSecretKeyValue(gitKey, secret, "password"))
-        return writeToProtectedTempFile("eclcc", "git", gitKey.length(), gitKey.toByteArray());
+    {
+        token.append(gitKey.length(), gitKey.toByteArray());
+        return true;
+    }
 
     StringBuffer appId, appKey, installationId;
     if (getSecretKeyValue(appId, secret, "appid") && getSecretKeyValue(appKey, secret, "appkey") && getSecretKeyValue(installationId, secret, "installationid"))
     {
         // Generate an Installation Access Token (IAT) from the App ID, Private Key, and Installation ID
         std::string iat = generateGithubIAT(appId.str(), appKey.str(), installationId.str());
-        if (!iat.empty())
-            return writeToProtectedTempFile("eclcc", "git", iat.length(), iat.c_str());
-        return nullptr;
+        if (iat.empty())
+            return false;
+        token.append(iat.c_str());
+        return true;
     }
 
     DBGLOG("Secret doesn't contain password or github app credentials for git user %s", gitUser);
-    return nullptr;
+    return false;
+}
+
+IFile * getFileWithGitAccessToken(const char * gitUser)
+{
+    StringBuffer token;
+    if (!getGitAccessToken(token, gitUser))
+        return nullptr;
+    return writeToProtectedTempFile("eclcc", "git", token.length(), token.str());
 }

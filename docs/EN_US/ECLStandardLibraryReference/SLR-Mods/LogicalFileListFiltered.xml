@@ -39,12 +39,10 @@
           <entry><emphasis>filters</emphasis></entry>
 
           <entry>Optional. A comma-separated string of filter expressions for
-          advanced filtering. Examples include 'size&gt;100000000' for files
-          larger than 100MB, 'owner:username' to filter by owner,
-          'is:superfile' to include only SuperFiles, 'is:normal' for normal
-          files, 'has:description' for files with descriptions, and
-          'modified&gt;=2026-01-01' for files modified on or after a specific
-          date. If omitted, the default is '' (no filtering).</entry>
+          advanced filtering. Attribute expressions are combined with AND; if
+          multiple <literal>is:</literal> expressions are supplied, the last one
+          takes precedence. See the supported syntax and field names below.
+          If omitted, the default is '' (no filtering).</entry>
         </row>
 
         <row>
@@ -96,6 +94,118 @@
       </tbody>
     </tgroup>
   </informaltable>
+
+  <para>Supported <emphasis>filters</emphasis> expressions:</para>
+
+  <itemizedlist>
+    <listitem><para><literal>field:pattern</literal> matches a value using
+    wildcards, for example <literal>owner:*smith</literal>.</para></listitem>
+    <listitem><para><literal>field=value</literal> matches an exact value.
+    Integer equality treats missing properties as zero, so
+    <literal>rowcount=0</literal> also matches files without a stored row
+    count. Use <literal>has:rowcount,rowcount=0</literal> to require an
+    explicitly stored zero. Boolean and floating-point equality compare
+    stored text, not typed values: <literal>persistent=1</literal> does not
+    match stored <literal>true</literal>, and <literal>readCost=1</literal>
+    does not match stored <literal>1.0</literal>. Missing Boolean properties
+    do not match equality filters, including <literal>persistent=0</literal>;
+    use <literal>!has:persistent</literal> to select files where that
+    property is absent.</para></listitem>
+    <listitem><para><literal>field&gt;value</literal>,
+    <literal>field&gt;=value</literal>, <literal>field&lt;value</literal>, and
+    <literal>field&lt;=value</literal> compare numeric fields. String fields
+    support only the inclusive forms <literal>&gt;=</literal> and
+    <literal>&lt;=</literal>, for example
+    <literal>modified&gt;=2026-01-01</literal>. Date bounds compare full
+    timestamp strings, so <literal>modified&lt;=2026-01-01</literal> excludes
+    timestamps on January 1, not just later days. Bounds containing
+    <literal>:</literal> (such as a time of day) are rejected by the parser.
+    To select all January 1 timestamps, use
+    <literal>modified&gt;=2026-01-01,modified&lt;=2026-01-02</literal>;
+    the date-only upper bound excludes January 2 timestamps.</para></listitem>
+    <listitem><para><literal>has:field</literal> tests whether a property
+    exists; <literal>!has:field</literal> tests whether it does not, for
+    example <literal>!has:description</literal>.</para></listitem>
+    <listitem><para><literal>is:superfile</literal> selects SuperFiles,
+    <literal>is:normal</literal> selects normal files, and
+    <literal>is:any</literal> selects both (the default).</para></listitem>
+  </itemizedlist>
+
+  <para>Recognized field names (case-insensitive); use
+  <emphasis>namepattern</emphasis> to filter file names:</para>
+
+  <itemizedlist>
+    <listitem><para>String and date: <literal>description</literal>,
+    <literal>group</literal>,
+    <literal>kind</literal>, <literal>modified</literal>, <literal>job</literal>,
+    <literal>owner</literal>, <literal>workunit</literal>,
+    <literal>accessed</literal>, <literal>directory</literal>,
+    <literal>partmask</literal>, <literal>superowners</literal>,
+    <literal>protect</literal>, <literal>subfilenames</literal>.</para></listitem>
+    <listitem><para>Integer: <literal>recordcount</literal>,
+    <literal>recordSize</literal>, <literal>size</literal>,
+    <literal>numsubfiles</literal> (currently not usable for numeric
+    filtering; use <literal>is:superfile</literal> or
+    <literal>is:normal</literal> for file type), <literal>numparts</literal>,
+    <literal>compressedSize</literal>, <literal>numDiskReads</literal>,
+    <literal>numDiskWrites</literal>, <literal>maxSkew</literal>,
+    <literal>minSkew</literal>, <literal>maxSkewPart</literal>,
+    <literal>minSkewPart</literal>, <literal>expireDays</literal>.</para></listitem>
+    <listitem><para>Floating-point: <literal>cost</literal>,
+    <literal>atRestCost</literal>, <literal>accessCost</literal>,
+    <literal>readCost</literal>, <literal>writeCost</literal>.
+    Cost filters use stored <literal>cost_type</literal> amounts in
+    millionths of a currency unit: <literal>readCost&gt;=1</literal> means
+    at least one millionth, not one currency unit. Use
+    <literal>readCost&gt;=1000000</literal> for at least one currency unit.
+    Filters on <literal>cost</literal>, <literal>atRestCost</literal>, and
+    <literal>accessCost</literal> inspect stored attributes, not internally
+    calculated costs. These three fields are not returned by this function.
+    Filters cannot use the internally calculated values; for example,
+    <literal>atRestCost&gt;0</literal>
+    does not select files based on their calculated at-rest
+    cost.</para></listitem>
+    <listitem><para>Boolean: <literal>persistent</literal>,
+    <literal>compressed</literal>, <literal>blockCompressed</literal>,
+    <literal>rowCompressed</literal>. The <literal>compressed</literal>
+    filter reads the stored <literal>Attr/@compressed</literal> attribute,
+    not the returned compression status, which can be derived from other
+    flags or the file kind. Use <literal>blockCompressed</literal> and
+    <literal>rowCompressed</literal> to filter their respective stored
+    flags, <literal>Attr/@blockCompressed</literal> and
+    <literal>Attr/@rowCompressed</literal>.</para></listitem>
+  </itemizedlist>
+
+  <para><literal>group</literal> (and its <literal>cluster</literal> alias)
+  filters the stored <literal>Attr/@group</literal> value, not the file's
+  root <literal>@group</literal> cluster names. For example,
+  <literal>group:thor</literal> does not select files by their root cluster
+  name. Value filters for <literal>protect</literal> and
+  <literal>subfilenames</literal> do not inspect the metadata used for file
+  protection or SuperFile contents. Existence filters
+  (<literal>has:</literal> and <literal>!has:</literal>) for
+  <literal>protect</literal>, <literal>subfilenames</literal>, and
+  <literal>numsubfiles</literal> likewise test attributes that do not
+  represent that metadata; they do not detect file protection or whether a
+  SuperFile contains subfiles. Subfile names are not returned by this
+  function.
+  <literal>superowners</literal> value filters inspect the
+  <literal>SuperOwner</literal> element rather than its
+  <literal>@name</literal>; for example,
+  <literal>superowners:*scope*</literal> does not match a superowner
+  name.</para>
+
+  <para>Aliases are <literal>rowcount</literal> for
+  <literal>recordcount</literal>, <literal>cluster</literal> for
+  <literal>group</literal>, and <literal>superfile</literal> for
+  <literal>numsubfiles</literal>. To select files by type, use
+  <literal>is:superfile</literal> or <literal>is:normal</literal> instead of
+  comparing <literal>superfile</literal> numerically. Separate expressions
+  with commas, not spaces. Only <literal>has:</literal> supports the
+  <literal>!</literal> prefix; OR and other negations are not supported.
+  Floating-point comparisons with <literal>&gt;</literal>,
+  <literal>&gt;=</literal>, <literal>&lt;</literal>, or
+  <literal>&lt;=</literal> currently require an integer value.</para>
 
   <para>The <emphasis role="bold">LogicalFileListFiltered </emphasis>function
   returns a record containing the number of files returned, a flag indicating
