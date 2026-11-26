@@ -1,0 +1,109 @@
+name: Collapse outdated Copilot review summaries
+
+on:
+  pull_request:
+    types: [synchronize]
+
+concurrency:
+  group: copilot-summary-cleanup-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+
+jobs:
+  collapse-outdated-summaries:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      # Only review overviews are minimized; inline threads and review states are unchanged.
+      # Fork PRs require a token permitted to minimize reviews; read-only tokens fail explicitly.
+      - name: Mark older Copilot summaries as outdated
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          script: |
+            const reviews = [];
+            let cursor = null;
+            const pushedCommit = context.payload.pull_request.head.sha;
+            let headRefOid;
+            do {
+              const result = await github.graphql(`
+                query($owner: String!, $repo: String!, $number: Int!, $cursor: String) {
+                  repository(owner: $owner, name: $repo) {
+                    pullRequest(number: $number) {
+                      headRefOid
+                      reviews(first: 100, after: $cursor) {
+                        nodes {
+                          id
+                          body
+                          isCopilotCodeReview
+                          submittedAt
+                          isMinimized
+                          viewerCanMinimize
+                          commit {
+                            oid
+                          }
+                        }
+                        pageInfo {
+                          hasNextPage
+                          endCursor
+                        }
+                      }
+                    }
+                  }
+                }
+              `, {
+                ...context.repo,
+                number: context.issue.number,
+                cursor,
+              }).catch(error => {
+                if (error.errors) {
+                  core.error(JSON.stringify(error.errors.map(({ message, path }) => ({ message, path }))));
+                }
+                throw error;
+              });
+              const page = result.repository.pullRequest.reviews;
+              headRefOid = result.repository.pullRequest.headRefOid;
+              reviews.push(...page.nodes.filter(review =>
+                review.isCopilotCodeReview && review.submittedAt && review.body?.trim()
+                && review.commit?.oid !== pushedCommit
+              ));
+              cursor = page.pageInfo.hasNextPage ? page.pageInfo.endCursor : null;
+            } while (cursor);
+
+            if (headRefOid !== pushedCommit) {
+              core.info('Skipping outdated cleanup run because the PR head has changed');
+              return;
+            }
+
+            reviews.sort((left, right) => Date.parse(left.submittedAt) - Date.parse(right.submittedAt));
+            if (!reviews.length) {
+              core.info('No previous-cycle Copilot review summaries to collapse');
+              return;
+            }
+            const retained = reviews.pop();
+            core.info(`Keeping latest previous-cycle Copilot summary ${retained.id}; summaries for ${pushedCommit} are untouched`);
+
+            for (const review of reviews) {
+              if (review.isMinimized) {
+                continue;
+              }
+              if (!review.viewerCanMinimize) {
+                throw new Error(`Token cannot minimize Copilot review ${review.id}; issues and pull-requests write permissions are required`);
+              }
+              const result = await github.graphql(`
+                mutation($id: ID!) {
+                  minimizeComment(input: {subjectId: $id, classifier: OUTDATED}) {
+                    minimizedComment {
+                      isMinimized
+                    }
+                  }
+                }
+              `, { id: review.id });
+              if (!result.minimizeComment.minimizedComment.isMinimized) {
+                throw new Error(`Copilot review ${review.id} was not minimized`);
+              }
+              core.info(`Marked Copilot summary ${review.id} as outdated`);
+            }
