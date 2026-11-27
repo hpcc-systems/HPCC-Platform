@@ -166,13 +166,13 @@ void stopSashaServer(const char *eps,unsigned short port)
     IInterCommunicator & comm=queryWorldCommunicator();
     Owned<ISashaCommand> cmd = createSashaCommand();
     cmd->setAction(SCA_STOP);
-    if (!queryWorldCommunicator().verifyConnection(node,1000)) {
+    if (queryWorldCommunicator().verifyConnection(node, 1000, true) != ConnectionVerifyResult::verified) {
         PROGLOG("Sasha Server already stopped");
         return;
     }
     PROGLOG("Sasha Server being stopped");
     cmd->send(node,1000*60);    
-    while (queryWorldCommunicator().verifyConnection(node,500)) {
+    while (queryWorldCommunicator().verifyConnection(node, 500, true) == ConnectionVerifyResult::verified) {
         PROGLOG("Waiting for Sasha Server to stop....");
         Sleep(2000);
     }

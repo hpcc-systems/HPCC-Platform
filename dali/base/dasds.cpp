@@ -3511,7 +3511,8 @@ public:
 };
 
 typedef Int64Array IdPath;
-#define LOCKSESSCHECK (1000*60*5)
+static constexpr unsigned lockSessionCheckInterval = 5*60*1000;
+static constexpr unsigned lockSessionVerifyTimeout = 30*1000;
 
 class CLock : implements IInterface, public CInterface
 {
@@ -3569,7 +3570,8 @@ class CLock : implements IInterface, public CInterface
                             StringBuffer nodeStr;
                             node->endpoint().getEndpointHostText(nodeStr);
                             PROGLOG("Validating connection to %s", nodeStr.str());
-                            if (!queryWorldCommunicator().verifyConnection(node, LOCKSESSCHECK))
+                            // Only disconnect explicitly when a live channel failed its verification.
+                            if (queryWorldCommunicator().verifyConnection(node, lockSessionVerifyTimeout, false) == ConnectionVerifyResult::failed)
                             {
                                 StringBuffer out("Terminating connection session to ");
                                 out.append(nodeStr);
@@ -3612,7 +3614,7 @@ class CLock : implements IInterface, public CInterface
                     {
                         CHECKEDCRITICALUNBLOCK(crit, fakeCritTimeout);
                         callback.unblock();
-                        timedout = !sem.wait(LOCKSESSCHECK);
+                        timedout = !sem.wait(lockSessionCheckInterval);
                         callback.block();
                     }
                     if (timedout)
@@ -3652,7 +3654,7 @@ class CLock : implements IInterface, public CInterface
                         CHECKEDCRITICALUNBLOCK(crit, fakeCritTimeout);
                         callback.unblock();
                         unsigned remaining;
-                        if (tm.timedout(&remaining) || !sem.wait(remaining>LOCKSESSCHECK?LOCKSESSCHECK:remaining))
+                        if (tm.timedout(&remaining) || !sem.wait(remaining>lockSessionCheckInterval?lockSessionCheckInterval:remaining))
                             timedout = true;
                         callback.block();
                     }

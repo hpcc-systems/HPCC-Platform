@@ -61,6 +61,14 @@ interface ICommunicator: extends IInterface
     virtual const SocketEndpoint &queryChannelPeerEndpoint(const SocketEndpoint &sender) const = 0;
 };
 
+enum class ConnectionVerifyResult
+{
+    verified,
+    notConnected,
+    failed,
+    timedOut
+};
+
 interface IInterCommunicator: extends IInterface
 // Non-grouped communication
 {
@@ -79,7 +87,7 @@ interface IInterCommunicator: extends IInterface
     virtual bool reply   (CMessageBuffer &mbuff, unsigned timeout=MP_WAIT_FOREVER) = 0;
     virtual void cancel  (INode *src, mptag_t tag) = 0;   // cancels in-progress recvs
     virtual void flush  (mptag_t tag) = 0;    // flushes pending buffers
-    virtual bool verifyConnection  (INode *node, unsigned timeout=1000*60*5) = 0; // verifies connected to node
+    virtual ConnectionVerifyResult verifyConnection(INode *node, unsigned timeout, bool allowConnect) = 0;
     virtual bool verifyAll(IGroup *group,bool duplex=false, unsigned timeout=1000*60*30) = 0;
     virtual void verifyAll(StringBuffer &log) = 0;
     virtual void disconnect(INode *node) = 0;
