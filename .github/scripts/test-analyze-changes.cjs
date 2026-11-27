@@ -9,7 +9,7 @@ const action = readFileSync(`${__dirname}/../actions/analyze-changes/action.yaml
 const script = action.split('      run: |\n')[1]
     .split('\n').map(line => line.replace(/^ {8}/, '')).join('\n');
 
-function analyze(paths, { unknownBase = false, contents = {}, extraCategories = '' } = {}) {
+function analyze(paths, { unknownBase = false, contents = {}, extraCategories = '', baseOnlyPaths = [], useMergeBase } = {}) {
     const directory = mkdtempSync(join(tmpdir(), 'hpcc-analyze-changes-'));
     const git = (...args) => execFileSync('git', [
         '-c', 'user.name=Change analyzer test',
@@ -20,7 +20,19 @@ function analyze(paths, { unknownBase = false, contents = {}, extraCategories = 
     try {
         git('init', '--quiet');
         git('commit', '--quiet', '--allow-empty', '-m', 'Base');
-        const base = git('rev-parse', 'HEAD');
+        const fork = git('rev-parse', 'HEAD');
+        let base = fork;
+        if (baseOnlyPaths.length) {
+            // Advance the base side after the fork so the two tips diverge
+            for (const path of baseOnlyPaths) {
+                mkdirSync(dirname(join(directory, path)), { recursive: true });
+                writeFileSync(join(directory, path), 'base only content\n');
+            }
+            git('add', '--', '.');
+            git('commit', '--quiet', '-m', 'Base-only change');
+            base = git('rev-parse', 'HEAD');
+            git('checkout', '--quiet', '--detach', fork);
+        }
         for (const path of paths) {
             const filename = join(directory, path);
             mkdirSync(dirname(filename), { recursive: true });
@@ -39,6 +51,7 @@ function analyze(paths, { unknownBase = false, contents = {}, extraCategories = 
                 ...process.env,
                 BASE_SHA: unknownBase ? '0'.repeat(40) : base,
                 HEAD_SHA: git('rev-parse', 'HEAD'),
+                ...(useMergeBase === undefined ? {} : { USE_MERGE_BASE: String(useMergeBase) }),
                 GITHUB_OUTPUT: output,
             },
         });
@@ -359,4 +372,19 @@ test('an unknown base still conservatively triggers regression-suite with the ne
     assert.equal(impacts.docs, true);
     assert.equal(impacts.platform, true);
     assert.equal(impacts.eclwatch, true);
+});
+
+test('merge-base comparison excludes base-only changes only when enabled', () => {
+    const options = { baseOnlyPaths: ['roxie/base-only.cpp'] };
+    const headPath = 'docs/example.md';
+    const endpoints = analyze([headPath], { ...options, useMergeBase: false });
+    assert.equal(endpoints.changes['has-component'].roxie, true);
+
+    const defaulted = analyze([headPath], options);
+    assert.deepEqual(defaulted.changes, endpoints.changes);
+
+    const mergeBase = analyze([headPath], { ...options, useMergeBase: true });
+    assert.equal(mergeBase.changes['has-component'].roxie, undefined);
+    assert.equal(mergeBase.changes['has-type'].cpp, undefined);
+    assert.deepEqual(Object.keys(mergeBase.changes['has-component']), Object.keys(analyze([headPath]).changes['has-component']));
 });
