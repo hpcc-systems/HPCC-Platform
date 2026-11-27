@@ -12,6 +12,9 @@ global:
     ## For best results, the helm chart version and platform version should match, which is the default if version is
     ## not specified. Do not override without good reason as undefined behavior may result. 
     ## version: x.y.z
+    ## To pin an image by digest, set version to "sha256:<64 lowercase hex digits>" (without a repository prefix).
+    ## This renders repository@sha256:... instead of repository:tag. Component image.version overrides accept
+    ## the same format; an omitted or empty version retains the global-version, then chart-version fallback.
     root: "hpccsystems"    # change this if you want to pull your images from somewhere other than DockerHub hpccsystems
     pullPolicy: IfNotPresent
     ## If you need to provide credentials to pull your image, they should be added as a k8s secret, and the secret name provided here

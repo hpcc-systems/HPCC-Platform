@@ -41,6 +41,9 @@ jlib_decl bool isActiveService(const char *serviceName);
 jlib_decl void deleteResource(const char *componentName, const char *job, const char *resource);
 jlib_decl void waitJob(const char *componentName, const char *resourceType, const char *job, unsigned pendingTimeoutSecs, unsigned totalWaitTimeSecs, KeepJobs keepJob, IAbortRequestCallback *abortCheck, bool &wasScheduled);
 jlib_decl bool applyYaml(const char *componentName, const char *wuid, const char *job, const char *resourceType, const std::list<std::pair<std::string, std::string>> &extraParams, bool optional, bool autoCleanup);
+#ifdef _USE_CPPUNIT
+jlib_decl void testReplaceYamlImageVersion(StringBuffer &jobYaml, const char *baseImageRootName, const char *baseImageVersion, const char *newVersion);
+#endif
 jlib_decl void runJob(const char *componentName, const char *wuid, const char *job, const std::list<std::pair<std::string, std::string>> &extraParams, IAbortRequestCallback *abortCheck, bool &wasScheduled);
 
 constexpr unsigned defaultKubectlRetrySecs = 60;

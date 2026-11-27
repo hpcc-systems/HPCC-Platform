@@ -41,11 +41,55 @@
 #include "jutil.hpp"
 #include "junicode.hpp"
 #include "jtrace.hpp"
+#include "jcontainerized.hpp"
 
 #include "opentelemetry/sdk/common/attribute_utils.h"
 #include "opentelemetry/sdk/resource/resource.h"
 
 #include "unittests.hpp"
+
+class ContainerImageVersionTest : public CppUnit::TestFixture
+{
+public:
+    CPPUNIT_TEST_SUITE(ContainerImageVersionTest);
+        CPPUNIT_TEST(testSubstitution);
+    CPPUNIT_TEST_SUITE_END();
+
+    void testSubstitution()
+    {
+        const char *digest = "sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
+        const char *otherDigest = "sha256:abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789";
+        const char *invalidVersions[] = {
+            "sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde",
+            "sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0",
+            "sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdeF",
+            "sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdeg",
+            "SHA256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+        };
+        auto check = [](const char *original, char originalSeparator, const char *replacement, char replacementSeparator)
+        {
+            const char *repository = "registry.example:5000/hpcc/platform-core";
+            VStringBuffer yaml("containers:\n- image: %s%c%s\n- image: other/image:stable\n- image: %s%c%s\n",
+                              repository, originalSeparator, original, repository, originalSeparator, original);
+            VStringBuffer expected("containers:\n- image: %s%c%s\n- image: other/image:stable\n- image: %s%c%s\n",
+                                  repository, replacementSeparator, replacement, repository, replacementSeparator, replacement);
+            k8s::testReplaceYamlImageVersion(yaml, repository, original, replacement);
+            CPPUNIT_ASSERT_EQUAL_STR(expected.str(), yaml.str());
+        };
+        check("10.8.0", ':', digest, '@');
+        check(digest, '@', "10.8.0", ':');
+        check(digest, '@', otherDigest, '@');
+        check("10.8.0", ':', "latest", ':');
+        for (const char *invalid : invalidVersions)
+        {
+            check(invalid, ':', digest, '@');
+            check(digest, '@', invalid, ':');
+        }
+    }
+};
+
+CPPUNIT_TEST_SUITE_REGISTRATION(ContainerImageVersionTest);
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(ContainerImageVersionTest, "ContainerImageVersionTest");
 
 static const unsigned oneMinute = 60000; // msec
 

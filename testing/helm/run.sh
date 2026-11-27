@@ -29,6 +29,10 @@ assert_not_contains() {
 }
 
 helm version
+echo Testing image version rendering
+if ! bash "$scriptdir/image-versions.sh"; then
+   failed=1
+fi
 echo Testing unmodified values file
 helm lint $hpccchart ${options} > results.txt 2> errors.txt
 if [ $? -ne 0 ]

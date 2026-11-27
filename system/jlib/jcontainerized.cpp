@@ -251,6 +251,29 @@ void waitJob(const char *componentName, const char *resourceType, const char *jo
         throw exception.getClear();
 }
 
+static void replaceYamlImageVersion(StringBuffer &jobYaml, const char *baseImageRootName, const char *baseImageVersion, const char *newVersion)
+{
+    auto imageSeparator = [](const char *version)
+    {
+        bool isDigest = strlen(version) == 71 && strncmp(version, "sha256:", 7) == 0 &&
+                        std::all_of(version + 7, version + 71, [](char digit)
+                        {
+                            return (digit >= '0' && digit <= '9') || (digit >= 'a' && digit <= 'f');
+                        });
+        return isDigest ? '@' : ':';
+    };
+    VStringBuffer oriImagePatternSpec("image: %s%c%s", baseImageRootName, imageSeparator(baseImageVersion), baseImageVersion);
+    VStringBuffer newImagePatternSpec("image: %s%c%s", baseImageRootName, imageSeparator(newVersion), newVersion);
+    jobYaml.replaceString(oriImagePatternSpec, newImagePatternSpec);
+}
+
+#ifdef _USE_CPPUNIT
+void testReplaceYamlImageVersion(StringBuffer &jobYaml, const char *baseImageRootName, const char *baseImageVersion, const char *newVersion)
+{
+    replaceYamlImageVersion(jobYaml, baseImageRootName, baseImageVersion, newVersion);
+}
+#endif
+
 bool applyYaml(const char *componentName, const char *wuid, const char *job, const char *resourceType, const std::list<std::pair<std::string, std::string>> &extraParams, bool optional, bool autoCleanup)
 {
     StringBuffer jobName(job);
@@ -284,13 +307,10 @@ bool applyYaml(const char *componentName, const char *wuid, const char *job, con
             const char *newVersion = p.second.c_str();
             if (!isEmptyString(newVersion))
             {
-                // locates "image: <baseImageRootName>:<baseImageVersion>" and replaces with "image: <baseImageRootName>:<p.second>"
                 const char *baseImageRootName = getenv("baseImageRootName");
                 if (!isEmptyString(baseImageRootName)) // NB: should never be empty (given baseImageVersion is not empty)
                 {
-                    VStringBuffer oriImagePatternSpec("image: %s:%s", baseImageRootName, baseImageVersion);
-                    VStringBuffer newImagePatternSpec("image: %s:%s", baseImageRootName, newVersion);
-                    jobYaml.replaceString(oriImagePatternSpec, newImagePatternSpec);
+                    replaceYamlImageVersion(jobYaml, baseImageRootName, baseImageVersion, newVersion);
                     DBGLOG("Job image version changed from '%s' to '%s'", baseImageVersion, newVersion);
                     runtimeImageVersion = newVersion; // used to substitute _HPCC_JOB_VERSION_ in jobYaml (in runtimeImageVersion env variable)
                 }

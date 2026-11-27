@@ -999,9 +999,11 @@ Get image name
 {{- define "hpcc.imageName" -}}
 {{- /* Pass in a dictionary with root and me defined */ -}}
 {{- if .me.image -}}
-{{ .me.image.root | default .root.Values.global.image.root | default "hpccsystems" }}/{{ .me.image.name | default .root.Values.global.image.name | default "platform-core" }}:{{ .me.image.version | default .root.Values.global.image.version | default .root.Chart.Version }}
+{{- $version := .me.image.version | default .root.Values.global.image.version | default .root.Chart.Version | toString -}}
+{{ .me.image.root | default .root.Values.global.image.root | default "hpccsystems" }}/{{ .me.image.name | default .root.Values.global.image.name | default "platform-core" }}{{ if regexMatch "^sha256:[a-f0-9]{64}$" $version }}@{{ else }}:{{ end }}{{ $version }}
 {{- else -}}
-{{ .root.Values.global.image.root | default "hpccsystems" }}/{{ .root.Values.global.image.name | default "platform-core" }}:{{ .root.Values.global.image.version | default .root.Chart.Version }}
+{{- $version := .root.Values.global.image.version | default .root.Chart.Version | toString -}}
+{{ .root.Values.global.image.root | default "hpccsystems" }}/{{ .root.Values.global.image.name | default "platform-core" }}{{ if regexMatch "^sha256:[a-f0-9]{64}$" $version }}@{{ else }}:{{ end }}{{ $version }}
 {{- end -}}
 {{- end -}}
 
