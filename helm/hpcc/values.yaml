@@ -560,6 +560,9 @@ sasha:
     #throttle: 0 # throttle ratio (0-99, 0 no throttling, 50 is half speed)
     #retryinterval: 7 # minimal time before retrying archive of failed WorkUnits (days)
     #keepResultFiles: false # option to keep result files owned by workunits after workunit is archived
+    # archiveSql:
+    #  enabled: true
+    #  backend: duckdb
 
   dfuwu-archiver:
     #disabled: true

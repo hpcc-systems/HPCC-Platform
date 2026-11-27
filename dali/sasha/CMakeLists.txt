@@ -39,6 +39,8 @@ set (    SRCS
          saxreflite.cpp
          sadbghk.cpp
          wuarchivepublisher.cpp
+         wuarchive_sql.cpp
+         wuarchive_duckdb_backend.cpp
     )
 
 include_directories ( 
@@ -69,6 +71,14 @@ endif()
 
 HPCC_ADD_LIBRARY ( sashalib SHARED ${SRCS} )
 
+find_package(DuckDB CONFIG REQUIRED)
+# vcpkg exports a different target for dynamic and static triplets.
+if (TARGET duckdb)
+    set ( DUCKDB_TARGET duckdb )
+else ()
+    set ( DUCKDB_TARGET duckdb_static )
+endif ()
+
 target_compile_definitions ( sashalib PRIVATE SASHALIB_EXPORTS _USRDLL )
 
 target_link_libraries ( sashalib PRIVATE
@@ -81,6 +91,7 @@ target_link_libraries ( sashalib PRIVATE
          eclrtl 
          deftype 
          workunit 
+         ${DUCKDB_TARGET}
          ${CppUnit_LIBRARIES}
     )
 
@@ -88,7 +99,7 @@ if (NOT CONTAINERIZED)
     target_link_libraries ( sashalib PRIVATE environment )
 endif()
 
-install ( TARGETS sashalib RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )
+install ( TARGETS sashalib RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} CALC_DEPS)
 
 
 set (    SRCS

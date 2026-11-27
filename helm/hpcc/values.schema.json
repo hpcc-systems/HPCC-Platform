@@ -3411,6 +3411,11 @@
           "type": "string",
           "description": "which storage plane to store the sasha data on"
         },
+        "replicas": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Number of Sasha service replicas; DuckDB archive publishing requires one replica"
+        },
         "resources": {
           "$ref": "#/definitions/resources"
         },
@@ -3505,6 +3510,22 @@
               "default": 7
             },
             "mtls": {},
+            "archiveSql": {
+              "type": "object",
+              "properties": {
+                "enabled": {
+                  "type": "boolean",
+                  "default": true
+                },
+                "backend": {
+                  "type": "string",
+                  "enum": [ "duckdb" ],
+                  "default": "duckdb"
+                }
+              },
+              "additionalProperties": false
+            },
+            "replicas": {},
             "disabled": {},
             "externalDaliSvc": {},
             "interval": {},

@@ -115,7 +115,21 @@
 
 - Scheduling/limits are read per archiver branch from config (`interval`, `at`, `limit`, `cutoff`, optional `backup`).
 - WU archiver-specific options include `keepResultFiles` and `retryinterval`.
-- Archive publishing is provided by a separate publisher abstraction.
+- Archive publishing is provided by a separate publisher abstraction. The optional DuckDB backend stores its database file under the selected Sasha storage plane; configure that plane with the standard `sasha.<service>.plane` setting and use persistent local storage with a single writer replica.
+
+For example, configure a persistent storage plane with category `sasha`, then select it using the standard `plane` setting:
+
+```yaml
+sasha:
+    wu-archiver:
+        plane: sasha
+        replicas: 1
+        archiveSql:
+            enabled: true
+            backend: duckdb
+```
+
+The DuckDB database file is created under that plane's mounted prefix.
 
 #### Practical File Map
 

@@ -20,8 +20,16 @@
 #include "jptree.hpp"
 #include "jlog.hpp"
 #include "wuarchivepublisher.hpp"
+#include "wuarchive_sql.hpp"
 
-IArchivedWuPublisher * createArchivedWuPublisher(const IPropertyTree * /*config*/)
+IArchivedWuPublisher * createArchivedWuPublisher(const IPropertyTree * config)
 {
-    return nullptr;
+    if (!config)
+        return nullptr;
+
+    const IPropertyTree * sqlConfig = config->queryPropTree("archiveSql");
+    if (!sqlConfig || !sqlConfig->getPropBool("@enabled", true))
+        return nullptr;
+
+    return createSqlArchivedWuPublisher(sqlConfig);
 }

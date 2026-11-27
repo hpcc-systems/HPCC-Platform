@@ -51,20 +51,22 @@ struct ArchivedWuApplicationValueRecord
 // ECL text is excluded because it can be very large.
 struct ArchivedWuRecord
 {
+    // When changing fields, update the DuckDB schema and SQL statements in wuarchive_duckdb_backend.cpp, and bump both versions.
+    static constexpr unsigned version = 1;
+
     StringAttr wuid;
     StringAttr clusterLc;       // cluster name, lowercase
     StringAttr ownerLc;         // submitting user, lowercase
     StringAttr jobNameLc;       // job name, lowercase
     StringAttr state;           // WU state name text (for example: completed)
     bool       isProtected = false;
-    bool       isPausing = false;
     int        WUAction = 0;
     cost_type  executeCost = 0;
     cost_type  fileAccessCost = 0;
     cost_type  compileCost = 0;
     cost_type  costSavingPotential = 0;
     unsigned   totalClusterTime = 0; // milliseconds (from getTotalThorTime)
-    CDateTime  modifiedAt;     // workunit last-modified timestamp
+    CDateTime  archivedAt;     // workunit archive timestamp
     StringAttr failureDesc;
 
     std::vector<ArchivedWuFileRecord>     files;

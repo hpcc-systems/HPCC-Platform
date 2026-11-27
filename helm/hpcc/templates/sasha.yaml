@@ -26,6 +26,9 @@
 {{ range $sashaName, $_sasha := $sashaServicesCtx.services -}}
 {{ $sasha := deepCopy ($_sasha | default dict) -}}
 {{- $_ := set $sasha "name" $sashaName -}}
+{{- if and (eq $sashaName "wu-archiver") (hasKey $sasha "archiveSql") (dig "archiveSql" "enabled" true $sasha) (gt (int (default 1 $sasha.replicas)) 1) -}}
+{{- fail "DuckDB archive publishing requires exactly one wu-archiver replica" -}}
+{{- end -}}
 {{- $_ := set $sasha "access" (splitList " " (include "hpcc.getSashaServiceAccess" $sasha)) -}}
 {{- $secretsCategories := append ((or (has "data" $sasha.access) (has "dalidata" $sasha.access)) | ternary (list "storage") list) "system" -}}
 {{- $commonCtx := dict "root" $ "me" $sasha "secretsCategories" $secretsCategories -}}
@@ -41,6 +44,11 @@ kind: Deployment
 metadata:
   name: {{ $serviceName | quote }}
 spec:
+{{- if and (eq $sashaName "wu-archiver") (hasKey $sasha "archiveSql") (dig "archiveSql" "enabled" true $sasha) }}
+  strategy:
+    type: Recreate
+    rollingUpdate: null
+{{- end }}
   replicas: {{ $sasha.replicas | default 1 }}
   selector:
     matchLabels:

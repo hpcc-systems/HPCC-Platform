@@ -43,26 +43,23 @@ static bool isArchivableWorkUnitState(WUState state)
     return state == WUStateCompleted || state == WUStateFailed || state == WUStateAborted || state == WUStateSubmitted || state == WUStateCompiled;
 }
 
+static void setLower(StringAttr & out, const char * value)
+{
+    out.set(value);
+    out.toLowerCase();
+}
+
 // Build the internal archived metadata representation from a Dali workunit.
 // Text fields are normalized to lowercase for consistent, case-insensitive lookup.
-static void buildArchivedWuRecord(ArchivedWuRecord & record, const IConstWorkUnit & wu, const CDateTime * time)
+static void buildArchivedWuRecord(ArchivedWuRecord & record, const IConstWorkUnit & wu, const CDateTime & time)
 {
     record.wuid.set(wu.queryWuid());
-    StringBuffer tmp;
 
-    tmp.clear().append(wu.queryClusterName()).toLowerCase();
-    record.clusterLc.set(tmp);
-
-    tmp.clear().append(wu.queryUser()).toLowerCase();
-    record.ownerLc.set(tmp);
-
-    tmp.clear().append(wu.queryJobName()).toLowerCase();
-    record.jobNameLc.set(tmp);
-
-    tmp.clear().append(wu.queryStateDesc()).toLowerCase();
-    record.state.set(tmp);
+    setLower(record.clusterLc, wu.queryClusterName());
+    setLower(record.ownerLc, wu.queryUser());
+    setLower(record.jobNameLc, wu.queryJobName());
+    setLower(record.state, wu.queryStateDesc());
     record.isProtected = wu.isProtected();
-    record.isPausing = wu.isPausing();
     record.WUAction = wu.getAction();
     record.executeCost = wu.getExecuteCost();
     record.fileAccessCost = wu.getFileAccessCost();
@@ -85,24 +82,22 @@ static void buildArchivedWuRecord(ArchivedWuRecord & record, const IConstWorkUni
         record.applicationValues.push_back(std::move(archivedValue));
     }
 
-    // Preserve the caller-supplied archive timestamp when available.
-    if (time && !time->isNull())
-        record.modifiedAt.set(*time);
+    record.archivedAt.set(time);
 
     // Capture logical files read by the workunit.
     {
         Owned<IPropertyTreeIterator> fileIter = &wu.getFilesReadIterator();
         ForEach(*fileIter)
         {
-            const char * name = fileIter->query().queryProp("@name");
+            const IPropertyTree & curFile = fileIter->query();
+            const char * name = curFile.queryProp("@name");
             if (isEmptyString(name))
                 continue;
             ArchivedWuFileRecord f;
-            tmp.clear().append(name).toLowerCase();
-            f.fileNameLc = tmp.str();
-            unsigned useCount = (unsigned)fileIter->query().getPropInt("@useCount", 1);
+            setLower(f.fileNameLc, name);
+            unsigned useCount = (unsigned)curFile.getPropInt("@useCount", 1);
             f.useCount = useCount;
-            f.isSuper = fileIter->query().getPropBool("@super", false);
+            f.isSuper = curFile.getPropBool("@super", false);
             record.files.push_back(std::move(f));
         }
     }
@@ -936,7 +931,7 @@ static bool doArchiveDfuWorkUnit(const char *dfuwuid, StringBuffer &res)
     return false;
 }
 
-static bool doArchiveWorkUnit(IWorkUnitFactory *wufactory, const char *wuid, StringBuffer &res, bool deleteOwned, bool del, CDateTime *time, IArchivedWuPublisher *publisher)
+static bool doArchiveWorkUnit(IWorkUnitFactory *wufactory, const char *wuid, StringBuffer &res, bool deleteOwned, bool del, IArchivedWuPublisher *publisher, const CDateTime *lastModified = nullptr)
 {
     if (del)
         res.append("ARCHIVE: ");
@@ -969,9 +964,21 @@ static bool doArchiveWorkUnit(IWorkUnitFactory *wufactory, const char *wuid, Str
 #ifdef TESTING
                     del = false;
 #endif
-                    shouldPublish = publisher && del && isArchivableWorkUnitState(wu->getState());
+                    if (del && !isArchivableWorkUnitState(wu->getState()))
+                    {
+                        // Skip archiving for any workunits that may be active.  Note: this behaviour is different from previous versions
+                        OWARNLOG("ARCHIVE SQL: Workunit is not archivable: %s (state %s)", wuid, getWorkunitStateStr(wu->getState()));
+                        res.append("FAILED");
+                        return false;
+                    }
+                    shouldPublish = publisher && del;
                     if (shouldPublish)
-                        buildArchivedWuRecord(record, *wu, time);
+                    {
+                        // Build the archived workunit record for publishing before removing from dali
+                        CDateTime archivedAt;
+                        archivedAt.setNow();
+                        buildArchivedWuRecord(record, *wu, archivedAt);
+                    }
 
                     StringBuffer ldspath("Archive/WorkUnits");
                     splitWUIDpath(wuid,ldspath);
@@ -988,21 +995,15 @@ static bool doArchiveWorkUnit(IWorkUnitFactory *wufactory, const char *wuid, Str
                             {
                                 CDateTime dt;
                                 file->getTime(&dt,NULL,NULL);
-                                if (time&&(time->compare(dt,false)<0))
+                                if (!del && lastModified && !lastModified->isNull() && (dt.compare(*lastModified)>=0))
                                 {
-                                    // Workunit is already backed up
-                                    if (!del)
-                                    {
-                                        res.clear();
-                                        return true;
-                                    }
+                                    // already backed up and unchanged since
+                                    res.append("OK");
+                                    return true;
                                 }
-                                else
-                                {
-                                    renpath.clear().append(wuid).append('.');
-                                    dt.getString(renpath).append(".xml");
-                                    file->rename(renpath.str());
-                                }
+                                renpath.clear().append(wuid).append('.');
+                                dt.getString(renpath).append(".xml");
+                                file->rename(renpath.str());
                             }
                         }
                         catch (IException *e)
@@ -1244,7 +1245,7 @@ class CWorkUnitArchiver: public CBranchArchiver
 
         bool archive()
         {
-            return parent->archive(wuid,true,&time);
+            return parent->archive(wuid,true);
         }
 
         bool backup()
@@ -1271,10 +1272,10 @@ public:
 
 
 
-    bool archive(const char *wuid,bool del,CDateTime *time)
+    bool archive(const char *wuid,bool del,const CDateTime *lastModified=nullptr)
     {
         StringBuffer s;
-        if (doArchiveWorkUnit(wufactory,wuid,s,!keepResultFiles,del,time,publisher))
+        if (doArchiveWorkUnit(wufactory,wuid,s,!keepResultFiles,del,publisher,lastModified))
         {
             if (s.length()) 
                 PROGLOG("%s",s.str());
@@ -1857,7 +1858,7 @@ bool processArchiverCommand(ISashaCommand *cmd)
                         if (cmd->getDFU())
                             doArchiveDfuWorkUnit(wuid,ret); 
                         else
-                            doArchiveWorkUnit(wufactory,wuid,ret,true,cmd->getAction()==SCA_ARCHIVE,NULL,publisher);
+                            doArchiveWorkUnit(wufactory,wuid,ret,true,cmd->getAction()==SCA_ARCHIVE,publisher);
                     }
                     else  if (cmd->getDFU()) 
                         doRestoreDfuWorkUnit(wuid,ret); 

@@ -11,6 +11,9 @@
 #include "jptree.hpp"
 #include "jtime.hpp"
 
+// Define to enable very short interval for debugging purposes
+//#define DEBUG_OVERRIDE_INTERVAL 1
+
 interface ISashaServer: extends IInterface  // for all coven based servers
 {
     virtual void start() = 0;
@@ -70,7 +73,13 @@ public:
     {
         if (!mininterval)
             return false;
-        if (last&&((msTick()-last)/(60*60*1000)<mininterval))
+        unsigned elapsed = msTick() - last;
+    #ifdef DEBUG_OVERRIDE_INTERVAL
+        constexpr unsigned debugIntervalMs = 15 * 1000;
+        if (last && elapsed < debugIntervalMs)
+    #else
+        if (last && (elapsed / (60 * 60 * 1000) < mininterval))
+    #endif
             return false;
         if (atenabled) {
             CDateTime atnow;
