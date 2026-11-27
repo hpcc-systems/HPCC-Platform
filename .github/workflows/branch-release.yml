@@ -1,0 +1,60 @@
+name: Branch Release
+run-name: Gold release (${{ inputs.mode }}, ${{ inputs.branch }}${{ inputs.force && ', forced' || '' }})
+
+# Tag a new gold point release from candidate-A.B.x branches. The nightly
+# Daily Branch Maintenance workflow does this automatically for branches that
+# changed; use this workflow to release a branch on demand, or to rerun a failed
+# release outside the nightly schedule.
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: Branch to release; auto releases every configured branch that changed
+        required: true
+        type: choice
+        options: [auto, candidate-10.2.x, candidate-10.4.x, candidate-10.6.x, candidate-10.8.x]
+        default: auto
+      force:
+        description: Release the selected branch even if no trigger repository changed (requires a branch)
+        required: true
+        type: boolean
+        default: false
+      mode:
+        description: Operation mode (dry-run prepares the release locally without pushes)
+        required: true
+        type: choice
+        options: [dry-run, apply]
+        default: apply
+      upmerge:
+        description: Upmerge first, so the release includes the latest fixes from older branches
+        required: true
+        type: boolean
+        default: true
+      sync:
+        description: Synchronize to the OSS repositories after tagging
+        required: true
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: branch-synchronization-${{ github.repository }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    if: ${{ github.repository == 'risk-hsy/HPCC-Platform' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch) }}
+    uses: ./.github/workflows/branch-operations.yml
+    with:
+      run_upmerge: ${{ inputs.upmerge }}
+      upmerge_mode: ${{ inputs.mode }}
+      run_tag: true
+      tag_mode: ${{ inputs.mode }}
+      tag_branch: ${{ inputs.branch }}
+      tag_force: ${{ inputs.force }}
+      run_sync: ${{ inputs.sync }}
+      sync_mode: ${{ inputs.mode }}
+      repository: all
+    secrets: inherit

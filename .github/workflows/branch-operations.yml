@@ -18,6 +18,18 @@ on:
       repository:
         type: string
         default: all
+      run_tag:
+        type: boolean
+        default: false
+      tag_mode:
+        type: string
+        default: dry-run
+      tag_branch:
+        type: string
+        default: auto
+      tag_force:
+        type: boolean
+        default: false
     secrets:
       BRANCH_APP_ID_INTERNAL:
         required: true
@@ -36,15 +48,21 @@ permissions:
 # Only entry-point callers acquire the shared concurrency slot.
 jobs:
   operations:
-    if: ${{ github.repository == 'risk-hsy/HPCC-Platform' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch) && (inputs.run_upmerge || inputs.run_sync) }}
+    if: ${{ github.repository == 'risk-hsy/HPCC-Platform' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch) && (inputs.run_upmerge || inputs.run_sync || inputs.run_tag) }}
     runs-on: ubuntu-24.04
-    timeout-minutes: 90
+    timeout-minutes: 120
+    outputs:
+      tag_failure: ${{ steps.tag.outputs.failure }}
     env:
       RUN_UPMERGE: ${{ inputs.run_upmerge }}
       RUN_SYNC: ${{ inputs.run_sync }}
       SYNC_MODE: ${{ inputs.sync_mode }}
       UPMERGE_MODE: ${{ inputs.upmerge_mode }}
       INPUT_REPOSITORY: ${{ inputs.repository }}
+      RUN_TAG: ${{ inputs.run_tag }}
+      TAG_MODE: ${{ inputs.tag_mode }}
+      TAG_BRANCH: ${{ inputs.tag_branch }}
+      TAG_FORCE: ${{ inputs.tag_force }}
     steps:
       - name: Checkout authoritative scripts and policy
         uses: actions/checkout@v6
@@ -60,14 +78,27 @@ jobs:
           set -euo pipefail
           case "$SYNC_MODE" in dry-run|apply) ;; *) echo "::error::Invalid sync mode"; exit 2;; esac
           case "$UPMERGE_MODE" in dry-run|apply) ;; *) echo "::error::Invalid upmerge mode"; exit 2;; esac
+          case "$TAG_MODE" in dry-run|apply) ;; *) echo "::error::Invalid tag mode"; exit 2;; esac
+          [[ "$TAG_BRANCH" == auto || "$TAG_BRANCH" =~ ^candidate-[0-9]+\.[0-9]+\.x$ ]] || { echo "::error::Invalid tag branch"; exit 2; }
+          if [[ "$TAG_FORCE" == true && "$TAG_BRANCH" == auto ]]; then echo "::error::Forcing a release requires an explicit branch"; exit 2; fi
           jq -e '
             .schema_version == 1 and
             (.paused | type == "boolean") and
             (.repositories | type == "array" and length > 0)
           ' branch-policy.json >/dev/null
           echo "paused=$(jq -r '.paused' branch-policy.json)" >> "$GITHUB_OUTPUT"
-          echo "Operations: upmerge=$RUN_UPMERGE ($UPMERGE_MODE); sync=$RUN_SYNC ($SYNC_MODE); repository: $INPUT_REPOSITORY" >> "$GITHUB_STEP_SUMMARY"
-          if [[ "$RUN_UPMERGE" != true && "$RUN_SYNC" != true ]]; then
+          # A release always covers every tagged repository, so it only runs for "all".
+          tag=false
+          if [[ "$RUN_TAG" == true && "$INPUT_REPOSITORY" == all ]]; then tag=true; fi
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "Operations: upmerge=$RUN_UPMERGE ($UPMERGE_MODE); tag=$tag ($TAG_MODE, $TAG_BRANCH, force=$TAG_FORCE); sync=$RUN_SYNC ($SYNC_MODE); repository: $INPUT_REPOSITORY" >> "$GITHUB_STEP_SUMMARY"
+          if [[ "$RUN_TAG" == true && "$tag" != true ]]; then
+            echo "Tagging skipped: releases are only made when all repositories are selected." >> "$GITHUB_STEP_SUMMARY"
+          fi
+          if [[ "$RUN_UPMERGE" == true && "$UPMERGE_MODE" == dry-run && "$tag" == true ]]; then
+            echo "Upmerge is simulated locally; tagging uses actual internal remote commits, not simulated merges." >> "$GITHUB_STEP_SUMMARY"
+          fi
+          if [[ "$RUN_UPMERGE" != true && "$RUN_SYNC" != true && "$tag" != true ]]; then
             echo "No operations selected; nothing to do." >> "$GITHUB_STEP_SUMMARY"
           elif [[ "$RUN_UPMERGE" == true && "$RUN_SYNC" == true && "$UPMERGE_MODE" == dry-run ]]; then
             echo "Upmerge is simulated locally; synchronization uses actual internal remote commits, not simulated merges." >> "$GITHUB_STEP_SUMMARY"
@@ -109,9 +140,53 @@ jobs:
             --policy "$GITHUB_WORKSPACE/branch-policy.json" \
             --mode "$UPMERGE_MODE" --repository "$INPUT_REPOSITORY"
 
+      # Tagging releases what upmerge produced, so it is skipped when upmerge failed.
+      # A skipped upmerge token step must also block tagging; only success is safe.
+      - name: Create read-only tagging App token
+        id: tag-read
+        if: ${{ !cancelled() && steps.settings.outcome == 'success' && steps.settings.outputs.tag == 'true' && (!inputs.run_upmerge || steps.upmerge.outcome == 'success') && inputs.tag_mode == 'dry-run' }}
+        uses: actions/create-github-app-token@v3
+        with:
+          client-id: ${{ secrets.BRANCH_APP_ID_INTERNAL }}
+          private-key: ${{ secrets.BRANCH_APP_PRIVATE_KEY_INTERNAL }}
+          owner: risk-hsy
+          repositories: HPCC-Platform,ln,eclide,hpcc4j,helm-chart
+          permission-contents: read
+
+      - name: Create write-enabled tagging App token
+        id: tag-write
+        if: ${{ !cancelled() && steps.settings.outcome == 'success' && steps.settings.outputs.tag == 'true' && (!inputs.run_upmerge || steps.upmerge.outcome == 'success') && inputs.tag_mode == 'apply' && steps.settings.outputs.paused != 'true' }}
+        uses: actions/create-github-app-token@v3
+        with:
+          client-id: ${{ secrets.BRANCH_APP_ID_INTERNAL }}
+          private-key: ${{ secrets.BRANCH_APP_PRIVATE_KEY_INTERNAL }}
+          owner: risk-hsy
+          repositories: HPCC-Platform,ln,eclide,hpcc4j,helm-chart
+          permission-contents: write
+          permission-workflows: write
+
+      - name: Install helm for chart publishing
+        if: ${{ steps.tag-read.outcome == 'success' || steps.tag-write.outcome == 'success' }}
+        uses: azure/setup-helm@v5
+
+      - name: Tag changed release branches gold
+        id: tag
+        if: ${{ !cancelled() && steps.settings.outcome == 'success' && steps.settings.outputs.tag == 'true' && (!inputs.run_upmerge || steps.upmerge.outcome == 'success') && (steps.tag-read.outcome == 'success' || steps.tag-write.outcome == 'success' || steps.settings.outputs.paused == 'true' && inputs.tag_mode == 'apply') }}
+        continue-on-error: true
+        timeout-minutes: 45
+        shell: bash
+        env:
+          BRANCH_APP_TOKEN_INTERNAL: ${{ steps.tag-write.outputs.token || steps.tag-read.outputs.token }}
+        run: |
+          args=(--policy "$GITHUB_WORKSPACE/branch-policy.json" --mode "$TAG_MODE" --branch "$TAG_BRANCH")
+          if [[ "$TAG_FORCE" == true ]]; then args+=(--force); fi
+          bash tools/tagging/release-policy-branches.sh "${args[@]}"
+
+      # Do not publish a partially pushed release; the rerun completes it first.
+      # Tag-enabled runs must finish tagging before synchronization can proceed.
       - name: Create fresh internal synchronization App token
         id: internal-sync
-        if: ${{ !cancelled() && steps.settings.outcome == 'success' && inputs.run_sync && (steps.settings.outputs.paused != 'true' || inputs.sync_mode == 'dry-run') }}
+        if: ${{ !cancelled() && steps.settings.outcome == 'success' && (steps.settings.outputs.tag != 'true' || steps.tag.outcome == 'success') && inputs.run_sync && (steps.settings.outputs.paused != 'true' || inputs.sync_mode == 'dry-run') }}
         uses: actions/create-github-app-token@v3
         with:
           client-id: ${{ secrets.BRANCH_APP_ID_INTERNAL }}
@@ -122,7 +197,7 @@ jobs:
 
       - name: Create OSS synchronization App token
         id: oss-sync
-        if: ${{ !cancelled() && steps.settings.outcome == 'success' && inputs.run_sync && (steps.settings.outputs.paused != 'true' || inputs.sync_mode == 'dry-run') }}
+        if: ${{ !cancelled() && steps.settings.outcome == 'success' && (steps.settings.outputs.tag != 'true' || steps.tag.outcome == 'success') && inputs.run_sync && (steps.settings.outputs.paused != 'true' || inputs.sync_mode == 'dry-run') }}
         uses: actions/create-github-app-token@v3
         with:
           client-id: ${{ secrets.BRANCH_APP_ID_OSS }}
@@ -133,7 +208,7 @@ jobs:
           permission-workflows: write
 
       - name: Synchronize verified internal refs
-        if: ${{ !cancelled() && steps.settings.outcome == 'success' && inputs.run_sync && (steps.settings.outputs.paused == 'true' && inputs.sync_mode == 'apply' || steps.internal-sync.outcome == 'success' && steps.oss-sync.outcome == 'success') }}
+        if: ${{ !cancelled() && steps.settings.outcome == 'success' && (steps.settings.outputs.tag != 'true' || steps.tag.outcome == 'success') && inputs.run_sync && (steps.settings.outputs.paused == 'true' && inputs.sync_mode == 'apply' || steps.internal-sync.outcome == 'success' && steps.oss-sync.outcome == 'success') }}
         timeout-minutes: 45
         shell: bash
         env:
@@ -148,7 +223,16 @@ jobs:
         if: ${{ !cancelled() && steps.upmerge.outcome == 'failure' }}
         shell: bash
         run: |
-          echo "::error::Upmerge failed; independent synchronization was still attempted. See operation output."
+          echo "::error::Upmerge failed; tagging was skipped and independent synchronization was still attempted. See operation output."
+          exit 1
+
+      - name: Preserve tagging failure status
+        if: ${{ !cancelled() && steps.tag.outcome == 'failure' }}
+        shell: bash
+        env:
+          TAG_FAILURE: ${{ steps.tag.outputs.failure }}
+        run: |
+          echo "::error::Tagging failed; synchronization was skipped. ${TAG_FAILURE:-See operation output.} Rerun the workflow to resume."
           exit 1
 
   notify-failure:
@@ -162,11 +246,15 @@ jobs:
         shell: bash
         env:
           CICD_WEBHOOK_URL: ${{ secrets.CICD_WEBHOOK_URL }}
+          TAG_FAILURE: ${{ needs.operations.outputs.tag_failure }}
         run: |
           set -euo pipefail
           : "${CICD_WEBHOOK_URL:?CICD_WEBHOOK_URL secret is missing}"
           run_url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
           message="$GITHUB_WORKFLOW failed in $GITHUB_REPOSITORY (run $GITHUB_RUN_NUMBER, attempt $GITHUB_RUN_ATTEMPT)."
+          if [[ -n "${TAG_FAILURE:-}" ]]; then
+            message="$message Tagging: $TAG_FAILURE Rerun the workflow once the cause is fixed; it resumes the release."
+          fi
           jq -n --arg message "$message" --arg url "$run_url" '{
             type: "message",
             attachments: [{

@@ -47,7 +47,7 @@ The root [branch-policy.json](../../branch-policy.json) defines the ordered
 upmerge chain and repository enablement. The automation runs only from the
 default branch of `risk-hsy/HPCC-Platform`.
 
-Three Actions entry points are available:
+Four Actions entry points are available:
 
 * [Branch Upmerge](../../.github/workflows/branch-upmerge.yml): independently
   dispatch an internal upmerge, with `dry-run` (default) or `apply` and a
@@ -55,10 +55,13 @@ Three Actions entry points are available:
 * [Branch Synchronization](../../.github/workflows/branch-sync.yml): independently
   dispatch the existing OSS synchronization with the same mode/repository inputs.
 * [Daily Branch Maintenance](../../.github/workflows/branch-maintenance.yml):
-  runs upmerge then sync at **23:30 UTC**, and can also be dispatched manually
-  with separate upmerge/sync modes.
+  runs upmerge, then [automated gold tagging](#automated-gold-releases), then
+  sync at **23:30 UTC**, and can also be dispatched manually with separate
+  upmerge/tag/sync modes.
+* [Branch Release](../../.github/workflows/branch-release.yml): dispatch a gold
+  release on demand for one branch (optionally forced) or for every changed branch.
 
-All three entry points share a concurrency group; reusable operation jobs do not
+All four entry points share a concurrency group; reusable operation jobs do not
 acquire a nested lock. A cleanly aborted upmerge conflict blocks that repository's
 later upmerge edges, not independent repositories or the subsequent sync. Failed
 operations remain visible in the final run status and Actions output/summary.
@@ -100,6 +103,57 @@ Run local fixture tests without accessing GitHub:
 ```bash
 bash tools/tagging/tests/test-upmerge-policy-branches.sh
 bash tools/tagging/tests/test-sync-oss-branches.sh
+bash tools/tagging/tests/test-release-policy-branches.sh
+```
+
+### Automated gold releases
+
+[release-policy-branches.sh](release-policy-branches.sh) splits and tags new
+gold point releases. It runs after upmerge in the nightly maintenance run, and is
+skipped if upmerge failed. For each branch in `tagging.branches` of
+[branch-policy.json](../../branch-policy.json) (see the
+[design notes](../../devdoc/AutomatedGoldTagging.md) for the rationale and
+failure analysis):
+
+* If any repository with `tag_triggers: true` has changed since the
+  `Split off A.B.N` commit of the previous release (empty upmerge merges do not
+  count), every repository with `tag_enabled: true` gets a new release.
+* Each release is a `gorc.sh`-style split: `candidate-A.B.x` moves to the next odd
+  closedown point, and the new `candidate-A.B.N` branch is tagged gold directly
+  (`<project>_A.B.N-1`, or `hpcc4j_A.B.N-1-release`). The helm charts are
+  published to `helm-chart`, as `gogold.sh` does.
+* Currently eclide, ln and platform trigger releases. hpcc4j is released with
+  them, but a change only in hpcc4j does not trigger a release.
+
+Repositories are processed in policy order. `platform` must be the last tagged
+repository, because its tag starts the builds. All branches and repositories are
+prepared locally with `go_rc.sh --gold --no-push` and checked before anything is
+pushed. Then each repository is pushed with one atomic push of the `.x` branch,
+the new branch and its tags, followed by `helm-chart`. The first failed push stops
+all later pushes, the job fails and the failure detail is posted to
+`CICD_WEBHOOK_URL`. Rerunning the workflow resumes the release:
+
+* If some repositories were released, the rest are released at the same version
+  without change detection.
+* If the charts were not published, they are republished from the released branch.
+* Anything else unexpected (a missing branch, versions that disagree, or a release
+  this process did not make) is an internal error. Nothing is pushed until it is
+  resolved by hand.
+
+To release a branch on demand, dispatch **Branch Release**, choosing the branch and
+`force` if nothing has changed. It upmerges first and synchronizes afterwards by
+default. Set `paused` in the policy before tagging by hand, so the automation does
+not race with you. Existing rc branches are ignored; the next automated release
+uses the next even point.
+
+The internal App also needs permission (a ruleset bypass where needed) to create
+`candidate-*` branches and tags in each tagged repository and to push `helm-chart`
+master. The runner needs `helm` (installed by the workflow) and `mvn` (used for
+hpcc4j).
+
+```bash
+bash tools/tagging/release-policy-branches.sh --mode dry-run
+bash tools/tagging/release-policy-branches.sh --mode dry-run --branch candidate-10.4.x --force
 ```
 
 ### Manual tagging process
@@ -125,6 +179,18 @@ For example:
 ./gorc.sh A.b.x
 ./gorc.sh A.c.x
 ```
+
+To split and tag a point release gold in one step, as the automation does, use
+`--gold`. Every repository is prepared before anything is pushed. Each one is then
+pushed atomically in order, followed by helm-chart:
+
+```
+./gorc.sh A.b.x --gold
+```
+
+Gold mode currently supports only the `origin` remote. It rejects `--remote` or
+`-r` overrides rather than risk fetching from one remote and pushing the release
+to another.
 
 ## Taking a build gold:
 

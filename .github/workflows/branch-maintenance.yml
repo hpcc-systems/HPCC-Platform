@@ -1,5 +1,5 @@
 name: Daily Branch Maintenance
-run-name: Upmerge then synchronize (${{ github.event_name }})
+run-name: Upmerge, tag, then synchronize (${{ github.event_name }})
 
 on:
   schedule:
@@ -8,6 +8,12 @@ on:
     inputs:
       upmerge_mode:
         description: Upmerge mode; initially dry-run for gradual rollout
+        required: true
+        type: choice
+        options: [dry-run, apply]
+        default: apply
+      tag_mode:
+        description: Gold tagging mode for branches changed since their last release
         required: true
         type: choice
         options: [dry-run, apply]
@@ -39,6 +45,8 @@ jobs:
     with:
       run_upmerge: true
       upmerge_mode: ${{ inputs.upmerge_mode || 'apply' }}
+      run_tag: true
+      tag_mode: ${{ inputs.tag_mode || 'apply' }}
       run_sync: true
       sync_mode: ${{ inputs.sync_mode || 'apply' }}
       repository: ${{ inputs.repository || 'all' }}

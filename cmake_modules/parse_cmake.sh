@@ -17,6 +17,8 @@ RETAG=
 VERBOSE=
 VERSIONFILE=version.cmake
 CREATE_NEW_MAJOR=0
+GOLD=
+NOPUSH=
 
 POSITIONAL=()
 while [[ $# -gt 0 ]]
@@ -56,6 +58,16 @@ do
     CREATE_NEW_MAJOR=1
     shift
     ;;
+    --gold)
+    GOLD=$1
+    shift
+    ;;
+    --no-push)
+    # Work on local state only: no fetch, submodule update or push.
+    # The caller is responsible for pushing the resulting branches and tags.
+    NOPUSH=$1
+    shift
+    ;;
     *)    # unknown option
     POSITIONAL+=("$1") # save it in an array for later
     shift # past argument
@@ -79,8 +91,12 @@ function extract()
     local _file=$1
     local _name=$2
     local _search=$2
-    local _result=`grep -i "set *( *$_search " $_file | sed -E "s/^.*$_search *\"?//" | sed -E "s/\"? *\)//"`
-    eval "$_name='$_result'"
+    local _result
+    # Normalize conditional definitions before assigning the value without eval.
+    _result=$(grep -i "set *( *$_search " "$_file" |
+      sed -E "s/^.*$_search *\"?//" | sed -E "s/\"? *\)//" |
+      tr '\n' ' ' | sed -E 's/[[:space:]]+$//')
+    printf -v "$_name" '%s' "$_result"
 }
 
 function parse_cmake()
@@ -106,6 +122,20 @@ function parse_cmake()
     fi
 }
 
+function validate_metadata()
+{
+    # Legacy command construction uses these values, so reject shell metacharacters first.
+    [[ "${HPCC_NAME:-}" == "" || "$HPCC_NAME" =~ ^[A-Za-z0-9][A-Za-z0-9_.\ -]*$ ]] ||
+      { echo "Invalid HPCC_NAME metadata" >&2; return 2; }
+    [[ "${HPCC_PROJECT:-}" =~ ^[A-Za-z0-9_.-]+( [A-Za-z0-9_.-]+)*$ ]] ||
+      { echo "Invalid HPCC_PROJECT metadata" >&2; return 2; }
+    [[ "${HPCC_MAJOR:-}" =~ ^[0-9]+$ && "${HPCC_MINOR:-}" =~ ^[0-9]+$ &&
+       "${HPCC_POINT:-}" =~ ^[0-9]+$ && "${HPCC_SEQUENCE:-}" =~ ^[0-9]+$ ]] ||
+      { echo "Invalid numeric version metadata" >&2; return 2; }
+    [[ "${HPCC_MATURITY:-}" =~ ^(trunk|closedown|rc|release|SNAPSHOT)$ ]] ||
+      { echo "Invalid HPCC_MATURITY metadata" >&2; return 2; }
+}
+
 function doit()
 {
     if [ -n "$VERBOSE" ] || [ -n "$DRYRUN" ] ; then echo $1 ; fi
@@ -116,6 +146,21 @@ function doit2()
 {
     if [ -n "$VERBOSE" ] || [ -n "$DRYRUN" ] ; then echo $1 ; fi
     eval $1
+}
+
+# Commands that contact the remote are skipped with --no-push
+function doremote()
+{
+    if [ -n "$NOPUSH" ] ; then
+      echo "Skipped (--no-push): $1"
+    else
+      doit "$1"
+    fi
+}
+
+function update_submodules()
+{
+    doremote "git submodule update --init --recursive"
 }
 
 function set_tag()
@@ -188,13 +233,59 @@ function do_tag()
       fi
       # Provide a tag message to avoid interactive editor prompts when tag.gpgSign is enabled.
       doit "git tag -m \"$HPCC_NAME $HPCC_SHORT_TAG\" $HPCC_LONG_TAG"
-      doit "git push $REMOTE $HPCC_LONG_TAG $FORCE"
+      doremote "git push $REMOTE $HPCC_LONG_TAG $FORCE"
     done
 }
 
 function sync_git()
 {
-    doit "git fetch $REMOTE"
-    doit "git merge --ff-only $REMOTE/$GIT_BRANCH"
-    doit "git submodule update --init --recursive"
+    doremote "git fetch $REMOTE"
+    doremote "git merge --ff-only $REMOTE/$GIT_BRANCH"
+    update_submodules
+}
+
+# Package the helm charts for the current version into ../helm-chart and commit them.
+# Must be called after set_tag.  Gold releases also publish the example and managed charts.
+function publish_helm_charts()
+{
+    local _gold=$1
+    local _message
+    if [ -n "$_gold" ] ; then
+      _message="HPCC Helm Charts $HPCC_SHORT_TAG-$HPCC_SEQUENCE"
+    else
+      _message="HPCC Helm Charts $HPCC_SHORT_TAG Release Candidate $HPCC_SEQUENCE"
+    fi
+
+    # We publish any tagged version of helm chart to the helm-chart repo
+    # but only copy helm chart sources across for "latest stable" version
+    HPCC_DIR="$( pwd )"
+    doit2 "pushd ../helm-chart 2>&1 > /dev/null"
+    doremote "git fetch $REMOTE"
+    doit "git checkout master"
+    doremote "git merge --ff-only $REMOTE/master"
+    update_submodules
+    if [ -n "$_gold" ] && [[ "$HPCC_MAJOR" == "8" ]] && [[ "$HPCC_MINOR" == "10" ]] ; then
+      doit "rm -rf ./helm"
+      doit "cp -rf $HPCC_DIR/helm ./helm"
+      doit "rm -f ./helm/*.bak"
+      doit "git add -A ./helm"
+    fi
+    doit2 "cd docs"
+    if [ -n "$_gold" ] ; then
+      for f in `find ${HPCC_DIR}/helm/examples ${HPCC_DIR}/helm/managed -name Chart.yaml` ; do
+        doit "helm package ${f%/*}/ --dependency-update"
+      done
+    fi
+    doit "helm package ${HPCC_DIR}/helm/hpcc/"
+    doit "helm repo index . --url https://hpcc-systems.github.io/helm-chart"
+    doit "git add *.tgz"
+
+    doit "git commit -a -s -m \"$_message\""
+    if [ -n "$_gold" ] && [[ "$HPCC_MAJOR" == "8" ]] && [[ "$HPCC_MINOR" == "10" ]] ; then
+      # Provide a tag message to avoid interactive editor prompts when tag.gpgSign is enabled.
+      doit "git tag $FORCE -m \"$_message\" $HPCC_MAJOR.$HPCC_MINOR.$HPCC_POINT"
+      doremote "git push $REMOTE $HPCC_MAJOR.$HPCC_MINOR.$HPCC_POINT $FORCE"
+    fi
+    doremote "git push $REMOTE master $FORCE"
+    doit2 "popd 2>&1 > /dev/null"
 }

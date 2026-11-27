@@ -11,7 +11,11 @@ set -e
 #default _mvn_return_value should be 0 for found
 _mvn_return_value=0
 
-if ! `which mvn 1>/dev/null 2>&1` ; then
+if [ -n "$HPCC_TAGGING_NO_MAVEN" ] ; then
+  echo "HPCC_TAGGING_NO_MAVEN is set"
+  echo "-- Using gnu utils instead"
+  _mvn_return_value=1
+elif ! `which mvn 1>/dev/null 2>&1` ; then
   echo "Maven dependency not located"
   echo "-- Using gnu utils instead"
   _mvn_return_value=1

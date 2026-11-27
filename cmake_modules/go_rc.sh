@@ -2,6 +2,10 @@
 #
 # Automatically tag the first rc for a new point release
 #
+# --gold      Split a new point release from a candidate-A.B.x branch and tag it
+#             gold (release, sequence 1) directly instead of as rc1.
+# --no-push   Prepare the branches, tags and helm-chart commit locally only.
+#
 
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 
@@ -13,7 +17,16 @@ if [ -e pom.xml ] ; then
 fi
 
 sync_git
+# The Maven parser does not set HPCC_NAME; do not inherit an untrusted environment value.
+HPCC_NAME=
 parse_cmake
+# Validate metadata before it is interpolated into legacy command strings.
+validate_metadata
+
+if [ -n "$GOLD" ] && [ "$HPCC_MATURITY" != "closedown" ] ; then
+  echo "--gold requires a candidate-A.B.x branch with closedown maturity (use go_gold.sh for an existing rc)"
+  exit 2
+fi
 
 NEW_MAJOR=$HPCC_MAJOR
 if [ "$HPCC_MATURITY" = "closedown" ] || [ "$HPCC_MATURITY" = "trunk" ] ; then
@@ -56,7 +69,7 @@ if [ "$HPCC_MATURITY" = "closedown" ] || [ "$HPCC_MATURITY" = "trunk" ] ; then
   fi
   doit "git checkout -b candidate-$NEW_MAJOR.$NEW_MINOR.$NEW_POINT"
   doit "git checkout $GIT_BRANCH"
-  doit "git submodule update --init --recursive"
+  update_submodules
   if [ "$GIT_BRANCH" = "master" ]; then
     TRUNK_POINT=0
     TRUNK_MINOR=$((NEW_MINOR+1))
@@ -78,7 +91,7 @@ if [ "$HPCC_MATURITY" = "closedown" ] || [ "$HPCC_MATURITY" = "trunk" ] ; then
   fi
   doit "git add $VERSIONFILE"
   doit "git commit -s -m \"Split off $NEW_MAJOR.$NEW_MINOR.$NEW_POINT\""
-  doit "git push $REMOTE $GIT_BRANCH"
+  doremote "git push $REMOTE $GIT_BRANCH"
   if [ "$GIT_BRANCH" = "master" ]; then
     doit "git checkout candidate-$NEW_MAJOR.$NEW_MINOR.x"
     update_version_file closedown 1 0 $NEW_MINOR $NEW_MAJOR
@@ -95,11 +108,11 @@ if [ "$HPCC_MATURITY" = "closedown" ] || [ "$HPCC_MATURITY" = "trunk" ] ; then
     fi
     doit "git add $VERSIONFILE"
     doit "git commit -s -m \"Split off $NEW_MAJOR.$NEW_MINOR.$NEW_POINT\""
-    doit "git push $REMOTE candidate-$NEW_MAJOR.$NEW_MINOR.x"
+    doremote "git push $REMOTE candidate-$NEW_MAJOR.$NEW_MINOR.x"
   fi
   GIT_BRANCH=candidate-$NEW_MAJOR.$NEW_MINOR.$NEW_POINT
   doit "git checkout $GIT_BRANCH"
-  doit "git submodule update --init --recursive"
+  update_submodules
   NEW_SEQUENCE=1
 else
   if [ "$HPCC_MATURITY" != "rc" ] ; then
@@ -115,19 +128,25 @@ else
   NEW_SEQUENCE=$((HPCC_SEQUENCE+1))
 fi
 
-update_version_file rc $NEW_POINT $NEW_SEQUENCE $NEW_MINOR $NEW_MAJOR
+if [ -n "$GOLD" ] ; then
+  NEW_MATURITY=release
+else
+  NEW_MATURITY=rc
+fi
+
+update_version_file $NEW_MATURITY $NEW_POINT $NEW_SEQUENCE $NEW_MINOR $NEW_MAJOR
 if [ -e helm/hpcc/Chart.yaml ] ; then
-  update_chart_file helm/hpcc/Chart.yaml rc $NEW_POINT $NEW_SEQUENCE $NEW_MINOR $NEW_MAJOR
+  update_chart_file helm/hpcc/Chart.yaml $NEW_MATURITY $NEW_POINT $NEW_SEQUENCE $NEW_MINOR $NEW_MAJOR
   doit "git add helm/hpcc/Chart.yaml"
   for f in helm/hpcc/templates/* ; do
-    update_chart_file $f rc $NEW_POINT $NEW_SEQUENCE $NEW_MINOR $NEW_MAJOR
+    update_chart_file $f $NEW_MATURITY $NEW_POINT $NEW_SEQUENCE $NEW_MINOR $NEW_MAJOR
     if [ "$CHART_CHANGED" != "0" ] ; then
       doit "git add $f"
     fi
   done
 fi
 
-HPCC_MATURITY=rc
+HPCC_MATURITY=$NEW_MATURITY
 HPCC_SEQUENCE=$NEW_SEQUENCE
 HPCC_MAJOR=$NEW_MAJOR
 HPCC_MINOR=$NEW_MINOR
@@ -136,29 +155,16 @@ set_tag
 
 # Commit the change
 doit "git add $VERSIONFILE"
-doit "git commit -s -m \"$HPCC_NAME $HPCC_SHORT_TAG Release Candidate $HPCC_SEQUENCE\""
-doit "git push $REMOTE $GIT_BRANCH $FORCE"
+if [ -n "$GOLD" ] ; then
+  doit "git commit -s -m \"$HPCC_NAME $HPCC_SHORT_TAG-$HPCC_SEQUENCE Gold\""
+else
+  doit "git commit -s -m \"$HPCC_NAME $HPCC_SHORT_TAG Release Candidate $HPCC_SEQUENCE\""
+fi
+doremote "git push $REMOTE $GIT_BRANCH $FORCE"
 
 # tag it
 do_tag
 
 if [ -e helm/hpcc/Chart.yaml ] ; then
-  # We publish any tagged version of helm chart to the helm-chart repo
-  # but only copy helm chart sources across for "latest stable" version
-  HPCC_DIR="$( pwd )"
-  doit2 "pushd ../helm-chart 2>&1 > /dev/null"
-  doit "git fetch $REMOTE"
-  doit "git checkout master"
-  doit "git merge --ff-only $REMOTE/master"
-  doit "git submodule update --init --recursive"
-  HPCC_PROJECTS=hpcc-helm
-  HPCC_NAME=HPCC
-  doit2 "cd docs"
-  doit "helm package ${HPCC_DIR}/helm/hpcc/"
-  doit "helm repo index . --url https://hpcc-systems.github.io/helm-chart"
-  doit "git add *.tgz"
-  
-  doit "git commit -a -s -m \"$HPCC_NAME Helm Charts $HPCC_SHORT_TAG Release Candidate $HPCC_SEQUENCE\""
-  doit "git push $REMOTE master $FORCE"
-  doit2 "popd 2>&1 > /dev/null"
+  publish_helm_charts "$GOLD"
 fi
