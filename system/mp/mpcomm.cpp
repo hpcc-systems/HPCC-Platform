@@ -83,7 +83,8 @@
 #define TRACESLOW_THRESHOLD      1000 // 1 sec
 
 #define VERIFY_DELAY            (1*60*1000)  // 1 Minute
-#define VERIFY_TIMEOUT          (1*60*1000)  // 1 Minute
+static constexpr unsigned verifyTimeout = 1*60*1000;
+static constexpr unsigned verifyMinTimeout = 10*1000;
 
 #define DIGIT1 U64C(0x10000000000) // (256ULL*256ULL*256ULL*65536ULL)
 #define DIGIT2 U64C(0x100000000)   // (256ULL*256ULL*65536ULL)
@@ -1527,39 +1528,45 @@ public:
     bool sendPing(CTimeMon &tm);
     bool sendPingReply(unsigned timeout,bool identifyself);
 
-    bool verifyConnection(CTimeMon &tm,bool allowconnect)
+    ConnectionVerifyResult verifyConnection(CTimeMon &tm,bool allowconnect)
     {
         {
             CriticalBlock block(connectsect);
             if (!channelsock&&allowconnect)
-                return connect(tm);
+                return connect(tm) ? ConnectionVerifyResult::verified : ConnectionVerifyResult::failed;
             if (closed||!channelsock)
-                return false;
+                return ConnectionVerifyResult::notConnected;
             if ((msTick()-lastxfer)<VERIFY_DELAY) 
-                return true;
+                return ConnectionVerifyResult::verified;
         }
         StringBuffer ep;
         remoteep.getEndpointHostText(ep); 
         for (;;) {
-            CTimeMon pingtm(1000*60);
+            unsigned remaining;
+            tm.timedout(&remaining);
+            unsigned pingTimeout = remaining < verifyTimeout ? remaining : verifyTimeout;
+            // Deliberately wait at least verifyMinTimeout per ping, even if the caller's timeout is shorter,
+            // so a reply within that window counts as verified even after the caller's timeout has elapsed.
+            if (pingTimeout < verifyMinTimeout)
+                pingTimeout = verifyMinTimeout;
+            CTimeMon pingtm(pingTimeout);
             if (sendPing(pingtm)) 
                 break;
             {
                 CriticalBlock block(connectsect);
                 if (closed||!channelsock)
-                    return false;
+                    return ConnectionVerifyResult::notConnected;
             }
             if (tm.timedout()) {
                 LOG(MCdebugInfo, "MP: verify, ping failed to %s",ep.str());
                 closeSocket();
-                return false;
+                return ConnectionVerifyResult::failed;
             }
             LOG(MCdebugInfo, "MP: verify, ping failed to %s, retrying",ep.str());
-            unsigned remaining;
             if (!pingtm.timedout(&remaining)&&remaining) 
                 Sleep(remaining);
         }
-        return true;
+        return ConnectionVerifyResult::verified;
     }
 
 
@@ -2144,7 +2151,7 @@ bool CMPChannel::attachSocket(ISocket *newsock,const SocketEndpoint &_remoteep,c
                 else {
                     Sleep(50);  // give the other side some time to close
                     CTimeMon tm(10000);
-                    if (verifyConnection(tm,false)) {
+                    if (verifyConnection(tm,false) == ConnectionVerifyResult::verified) {
                         LOG(MCdebugInfo, "MP: resolving socket attach clash (verified)");
                         return false;
                     }
@@ -3094,15 +3101,15 @@ public:
         return true;
     }
 
-    bool verifyConnection(INode *node, unsigned timeout)
+    ConnectionVerifyResult verifyConnection(INode *node, unsigned timeout, bool allowConnect)
     {
         CriticalBlock block(verifysect);
         CTimeMon tm(timeout);
         Owned<CMPChannel> channel = parent->lookup(node->endpoint());
         unsigned remaining;
         if (tm.timedout(&remaining))
-            return false;
-        return channel->verifyConnection(tm,true);
+            return ConnectionVerifyResult::timedOut;
+        return channel->verifyConnection(tm, allowConnect);
     }
 
     void verifyAll(StringBuffer &log)
@@ -3115,7 +3122,7 @@ public:
                 CMPChannel &channel = iter.query();
                 if (!channel.isClosed()) {
                     channel.queryEpStr(log).append(' ');
-                    if (channel.verifyConnection(tm,false))
+                    if (channel.verifyConnection(tm,false) == ConnectionVerifyResult::verified)
                         log.append("OK\n");
                     else
                         log.append("FAILED\n");
@@ -3146,7 +3153,7 @@ public:
                     if (tm.timedout(&remaining)) {
                         return false;
                     }
-                    if (!channel->verifyConnection(tm,true)) {
+                    if (channel->verifyConnection(tm,true) != ConnectionVerifyResult::verified) {
                         return false;
                     }
                 }
@@ -3157,7 +3164,7 @@ public:
                 bool doverify = ((rank&1)==(myrank&1))?(myrank<rank):(myrank>rank);
                 if (doverify) {
                     Owned<CMPChannel> channel = parent->lookup(group->queryNode(rank).endpoint());
-                    while (!channel->verifyConnection(tm,false)) {
+                    while (channel->verifyConnection(tm,false) != ConnectionVerifyResult::verified) {
                         unsigned remaining;
                         if (tm.timedout(&remaining))
                             return false;
@@ -3404,7 +3411,7 @@ public:
         unsigned remaining;
         if (tm.timedout(&remaining))
             return false;
-        return channel->verifyConnection(tm,allowConnect);
+        return channel->verifyConnection(tm,allowConnect) == ConnectionVerifyResult::verified;
     }
 
     bool verifyAll(bool duplex, unsigned totalTimeout, unsigned perConnectionTimeout)
@@ -3420,7 +3427,7 @@ public:
         {
             CTimeMon tm(timeout);
             Owned<CMPChannel> channel = getChannel(rank);
-            return channel->verifyConnection(tm, true);    
+            return channel->verifyConnection(tm, true) == ConnectionVerifyResult::verified;
         };
 
         auto verifyConnWithoutConnect = [&](unsigned rank, unsigned timeout)
@@ -3429,7 +3436,7 @@ public:
             while (true)
             {
                 Owned<CMPChannel> channel = getChannel(rank);
-                if (channel->verifyConnection(tm, false))
+                if (channel->verifyConnection(tm, false) == ConnectionVerifyResult::verified)
                     return true;
                 if (abort || tm.timedout())
                     return false;

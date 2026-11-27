@@ -236,6 +236,8 @@ public:
 
 };
 
+static constexpr unsigned clientVerifyTimeout = 5*60*1000;
+
 class MpInterClientState: public MpTransportStateCommon
 {
     Owned<INode>            servernode;
@@ -244,7 +246,7 @@ public:
     MpInterClientState(INode* _servernode, mptag_t _connecttag)
     {
         servernode.set(_servernode);
-        queryWorldCommunicator().verifyConnection(servernode);
+        queryWorldCommunicator().verifyConnection(servernode, clientVerifyTimeout, true);
         connecttag = _connecttag;
     }
 
