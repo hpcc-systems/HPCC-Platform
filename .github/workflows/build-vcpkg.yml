@@ -231,6 +231,7 @@ jobs:
         with:
           base-sha: ${{ github.event.pull_request.base.sha || github.event.before }}
           head-sha: ${{ github.event.pull_request.head.sha || github.event.after }}
+          use-merge-base: ${{ github.event_name == 'pull_request' }}
 
   # Consumers use this gate's impacts without depending directly on the analyzer.
   triage:
