@@ -25,6 +25,7 @@ jobs:
         with:
           base-sha: ${{ inputs.base-sha }}
           head-sha: ${{ inputs.head-sha }}
+          use-merge-base: false
 
       - name: Display analysis results
         run: |
