@@ -71,6 +71,10 @@ inputs:
   head-sha:
     description: 'Head commit SHA'
     required: true
+  use-merge-base:
+    description: 'Compare against the merge base of base-sha and head-sha instead of base-sha itself'
+    required: false
+    default: false
 
 outputs:
   changes:
@@ -94,6 +98,7 @@ runs:
       env:
         BASE_SHA: ${{ inputs.base-sha }}
         HEAD_SHA: ${{ inputs.head-sha }}
+        USE_MERGE_BASE: ${{ inputs.use-merge-base }}
       run: |
         #!/bin/bash
         set -e
@@ -423,7 +428,11 @@ runs:
           type_component_map[ecl_unknown]=true
         else
           # Fetch base commit if needed (for force-push scenarios)
-          git fetch origin "$base_sha" --depth=1 2>/dev/null || true
+          git fetch origin "$base_sha" 2>/dev/null || true
+          # Compare against the common ancestor so changes made only on the base side are excluded
+          if [[ "$USE_MERGE_BASE" == "true" ]] && merge_base=$(git merge-base "$base_sha" "$head_sha" 2>/dev/null); then
+            base_sha="$merge_base"
+          fi
           # Disable renames so that both the original and new file paths are tracked
           changed_files=$(git diff --no-renames --name-only "$base_sha" "$head_sha")
         fi
