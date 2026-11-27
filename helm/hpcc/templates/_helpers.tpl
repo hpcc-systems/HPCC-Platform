@@ -793,7 +793,9 @@ vaults:
   {{ $categoryname }}:
   {{- range $vault := . }}
     - name: {{ $vault.name }}
+    {{- if $vault.kind }}
       kind: {{ $vault.kind }}
+    {{- end }}
     {{- if $vault.type }}
       type: {{ $vault.type }}
     {{- end }}
